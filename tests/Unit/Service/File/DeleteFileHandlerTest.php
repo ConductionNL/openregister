@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\DeleteFileSources;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
@@ -88,11 +89,8 @@ class DeleteFileHandlerTest extends TestCase {
 		$this->fileLockHandler = $this->createMock(FileLockHandler::class);
 
 		$this->handler = new DeleteFileHandler(
-			$this->rootFolder,
-			$this->readFileHandler,
+			new DeleteFileSources($this->rootFolder, $this->readFileHandler, $this->logger),
 			$this->fileValidHandler,
-			$this->fileOwnershipHandler,
-			$this->logger,
 			$this->fileLockHandler
 		);
 	}//end setUp()
@@ -135,6 +133,23 @@ class DeleteFileHandlerTest extends TestCase {
 
 		$this->assertFalse($this->handler->deleteFile(file: $file, object: $this->createMock(ObjectEntity::class)));
 	}//end testADeleteThatLeavesTheNodeBehindIsReportedFalse()
+
+	/**
+	 * A delete the trash bin catches keeps the file id, but the file is gone from where it was.
+	 */
+	public function testADeleteMovedToTheTrashBinIsReportedTrue(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(42);
+		$file->method('getPath')->willReturn('/openregister/files/Open Registers/doc.txt');
+		$file->method('isDeletable')->willReturn(true);
+		$file->expects($this->once())->method('delete');
+
+		$trashed = $this->createMock(File::class);
+		$trashed->method('getPath')->willReturn('/openregister/files_trashbin/files/doc.txt.d1700000000');
+		$this->rootFolder->method('getFirstNodeById')->with(42)->willReturn($trashed);
+
+		$this->assertTrue($this->handler->deleteFile(file: $file, object: $this->createMock(ObjectEntity::class)));
+	}//end testADeleteMovedToTheTrashBinIsReportedTrue()
 
 	/**
 	 * A Node argument MUST be deleted directly, never cast to string.

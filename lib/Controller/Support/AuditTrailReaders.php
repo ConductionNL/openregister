@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
-use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 
 /**
  * The domain services of the audit trail API.
@@ -34,14 +34,14 @@ final class AuditTrailReaders {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectHistoryForReaders    $historyForReaders One object's history for a non-admin reader of it.
-	 * @param ?ExplicitRevealTrailMasker $revealMasker      Masks explicit-reveal values in the admin lists.
+	 * @param ObjectHistoryForReadersInterface    $historyForReaders One object's history for a non-admin reader of it.
+	 * @param ?ExplicitRevealTrailMaskerInterface $revealMasker      Masks explicit-reveal values in the admin lists.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 	 */
 	public function __construct(
-		public readonly ObjectHistoryForReaders $historyForReaders,
-		public readonly ?ExplicitRevealTrailMasker $revealMasker = null,
+		public readonly ObjectHistoryForReadersInterface $historyForReaders,
+		public readonly ?ExplicitRevealTrailMaskerInterface $revealMasker = null,
 	) {
 	}//end __construct()
 }//end class

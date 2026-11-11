@@ -38,7 +38,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Vocabulary;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Throwable;
 
 /**
@@ -63,16 +62,12 @@ class CodedFilterExpander {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptRepository $concepts Reads the scheme's concepts.
-	 * @param ConceptHierarchy $hierarchy Walks broader and narrower.
-	 * @param SchemaMapperInterface $schemas Resolves the schema being queried.
-	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
+	 * @param ConceptSchemeAccess $scheme Reads the scheme's concepts and walks broader and narrower.
+	 * @param CodedSchemaTables   $tables Resolves the schema being queried and reads its coded declarations.
 	 */
 	public function __construct(
-		private readonly ConceptRepository $concepts,
-		private readonly ConceptHierarchy $hierarchy,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly CodedPropertyDeclarationFactory $declarationFactory,
+		private readonly ConceptSchemeAccess $scheme,
+		private readonly CodedSchemaTables $tables,
 	) {
 
 	}//end __construct()
@@ -88,82 +83,96 @@ class CodedFilterExpander {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function expand(array $filters, int|string|array|null $schemaRef): array {
-		if ($this->carriesBranchFilter(filters: $filters) === false) {
-			return $filters;
-		}
-
-		$schema = $this->resolveSchema(schemaRef: $schemaRef);
-		if ($schema === null) {
-			return $filters;
-		}
-
-		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
+		$declarations = $this->declarationsFor(filters: $filters, schemaRef: $schemaRef);
 		if ($declarations === []) {
 			return $filters;
 		}
 
 		foreach ($filters as $property => $value) {
-			$branch = $this->branchOf(value: $value);
-			if ($branch === null) {
-				continue;
+			$expanded = $this->expandValue(value: $value, declaration: ($declarations[(string)$property] ?? null));
+			if ($expanded !== []) {
+				$filters[$property] = ['in' => $expanded];
 			}
-
-			$declaration = ($declarations[(string)$property] ?? null);
-			if ($declaration === null) {
-				continue;
-			}
-
-			$expanded = $this->valuesForBranch(
-				branch: $branch,
-				declaration: $declaration,
-				depth: $this->depthOf(value: $value)
-			);
-			if ($expanded === []) {
-				continue;
-			}
-
-			$filters[$property] = ['in' => $expanded];
-		}//end foreach
+		}
 
 		return $filters;
 	}//end expand()
 
 	/**
+	 * The coded-property declarations of the filtered schema, or [] when no
+	 * filter carries a branch, the schema does not resolve, or it declares none.
+	 *
+	 * @param array<string, mixed>        $filters   The filters.
+	 * @param int|string|array<mixed>|null $schemaRef The schema reference.
+	 *
+	 * @return array<string, CodedPropertyDeclaration>
+	 */
+	private function declarationsFor(array $filters, int|string|array|null $schemaRef): array {
+		if ($this->carriesBranchFilter(filters: $filters) === false) {
+			return [];
+		}
+
+		$schema = $this->resolveSchema(schemaRef: $schemaRef);
+		if ($schema === null) {
+			return [];
+		}
+
+		return $this->tables->declarations->fromProperties(properties: ($schema->getProperties() ?? []));
+	}//end declarationsFor()
+
+	/**
+	 * The expanded values of one filter value, or [] to leave it as it is.
+	 *
+	 * @param mixed                         $value       The filter value.
+	 * @param CodedPropertyDeclaration|null $declaration The property's declaration, if coded.
+	 *
+	 * @return string[]
+	 */
+	private function expandValue(mixed $value, ?CodedPropertyDeclaration $declaration): array {
+		$filter = BranchFilter::fromFilterValue(value: $value);
+		if ($filter === null || $declaration === null) {
+			return [];
+		}
+
+		return $this->valuesForBranch(declaration: $declaration, filter: $filter);
+	}//end expandValue()
+
+	/**
 	 * The stored values a branch stands for, in the declaration's storage form.
 	 *
-	 * @param string $branch The branch root's uri.
 	 * @param CodedPropertyDeclaration $declaration The property's declaration.
-	 * @param integer|null $depth The requested depth bound.
+	 * @param BranchFilter             $filter      The branch asked for and its optional depth bound.
 	 *
 	 * @return array<int,string> The stored values, empty when the branch is unresolvable.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function valuesForBranch(
-		string $branch,
-		CodedPropertyDeclaration $declaration,
-		?int $depth = null,
-	): array {
-		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
-		if (isset($conceptsByUri[$branch]) === false) {
+	public function valuesForBranch(CodedPropertyDeclaration $declaration, BranchFilter $filter): array {
+		$conceptsByUri = $this->scheme->concepts->conceptsOf(schemeUri: $declaration->scheme);
+		if (isset($conceptsByUri[$filter->root]) === false) {
 			return [];
 		}
 
-		$bound = $depth;
-		if ($bound === null) {
-			$bound = $declaration->maxDepth;
-		}
-
-		$uris = $this->hierarchy->branchUris(
-			rootUri: $branch,
-			conceptsByUri: $conceptsByUri,
-			maxDepth: $bound
+		$uris = $this->scheme->hierarchy->branchUris(
+			branch: new ConceptBranch(rootUri: $filter->root, conceptsByUri: $conceptsByUri, maxDepth: ($filter->depth ?? $declaration->maxDepth))
 		);
 
 		if ($declaration->store === 'uri') {
 			return $uris;
 		}
 
+		return $this->notationsOf(uris: $uris, conceptsByUri: $conceptsByUri);
+	}//end valuesForBranch()
+
+	/**
+	 * The non-blank notations of the given concepts, in order.
+	 *
+	 * @param string[]                            $uris          The concept URIs.
+	 * @param array<string, array<string, mixed>> $conceptsByUri The scheme's concepts by URI.
+	 *
+	 * @return string[]
+	 */
+	private function notationsOf(array $uris, array $conceptsByUri): array {
 		$notations = [];
 		foreach ($uris as $uri) {
 			$notation = trim((string)(($conceptsByUri[$uri]['notation'] ?? '')));
@@ -173,7 +182,7 @@ class CodedFilterExpander {
 		}
 
 		return $notations;
-	}//end valuesForBranch()
+	}//end notationsOf()
 
 	/**
 	 * Whether any filter asks for a branch.
@@ -187,59 +196,13 @@ class CodedFilterExpander {
 	 */
 	private function carriesBranchFilter(array $filters): bool {
 		foreach ($filters as $value) {
-			if ($this->branchOf(value: $value) !== null) {
+			if (BranchFilter::fromFilterValue(value: $value) !== null) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end carriesBranchFilter()
-
-	/**
-	 * The branch a filter value asks for, or null when it asks for none.
-	 *
-	 * @param mixed $value The filter value.
-	 *
-	 * @return string|null The branch root's uri.
-	 */
-	private function branchOf(mixed $value): ?string {
-		if (is_array($value) === false) {
-			return null;
-		}
-
-		$branch = ($value[self::BRANCH_KEY] ?? null);
-		if (is_string($branch) === false) {
-			return null;
-		}
-
-		$branch = trim($branch);
-
-		if ($branch === '') {
-			return null;
-		}
-
-		return $branch;
-	}//end branchOf()
-
-	/**
-	 * The depth bound a filter value asks for, or null.
-	 *
-	 * @param mixed $value The filter value.
-	 *
-	 * @return integer|null The requested depth.
-	 */
-	private function depthOf(mixed $value): ?int {
-		if (is_array($value) === false) {
-			return null;
-		}
-
-		$depth = ($value[self::DEPTH_KEY] ?? null);
-		if (is_numeric($depth) === false) {
-			return null;
-		}
-
-		return (int)$depth;
-	}//end depthOf()
 
 	/**
 	 * Resolve the single schema a query names, or null.
@@ -254,22 +217,34 @@ class CodedFilterExpander {
 	 * @return Schema|null The resolved schema.
 	 */
 	private function resolveSchema(int|string|array|null $schemaRef): ?Schema {
-		if (is_array($schemaRef) === true) {
-			if (count($schemaRef) !== 1) {
-				return null;
-			}
-
-			$schemaRef = reset($schemaRef);
-		}
-
+		$schemaRef = $this->singleReference(schemaRef: $schemaRef);
 		if ($schemaRef === null || $schemaRef === '') {
 			return null;
 		}
 
 		try {
-			return $this->schemas->find(id: $schemaRef, _rbac: false, _multitenancy: false);
+			return $this->tables->schemas->find(id: $schemaRef, _rbac: false, _multitenancy: false);
 		} catch (Throwable $missing) {
 			return null;
 		}
 	}//end resolveSchema()
+
+	/**
+	 * The one reference a list holds (null when it holds none or several), or the reference itself.
+	 *
+	 * @param int|string|array<mixed>|null $schemaRef The schema reference.
+	 *
+	 * @return mixed
+	 */
+	private function singleReference(int|string|array|null $schemaRef): mixed {
+		if (is_array($schemaRef) === false) {
+			return $schemaRef;
+		}
+
+		if (count($schemaRef) !== 1) {
+			return null;
+		}
+
+		return reset($schemaRef);
+	}//end singleReference()
 }//end class

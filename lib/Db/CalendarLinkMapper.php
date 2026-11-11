@@ -26,7 +26,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<CalendarLink>
  */
-class CalendarLinkMapper extends QBMapper {
+class CalendarLinkMapper extends QBMapper implements CalendarLinkMapperInterface {
 	use SelectByColumnTrait;
 	use DeleteLinksByObjectUuidTrait;
 	use CountLinksByObjectUuidTrait;

@@ -6,6 +6,8 @@ namespace Unit\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\QueueFlushDelivery;
+use OCA\OpenRegister\Notifications\BackgroundJob\QueueFlushTiming;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -102,12 +104,8 @@ class NotificationQueueFlushJobTest extends TestCase {
 	private function runJob(): void {
 		$job = new NotificationQueueFlushJob(
 			$this->time,
-			$this->queuedMapper,
-			$this->schemaMapper,
-			$this->dispatcher,
-			$this->windowService,
-			$this->digestEvaluator,
-			$this->logger
+			new QueueFlushTiming($this->schemaMapper, $this->windowService, $this->digestEvaluator),
+			new QueueFlushDelivery($this->queuedMapper, $this->dispatcher, $this->logger)
 		);
 
 		$reflection = new \ReflectionClass($job);

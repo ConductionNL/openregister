@@ -145,11 +145,11 @@ References between schemas MUST be resolvable as nested objects in a single quer
 
 ### Requirement: GraphQL MUST support filtering and sorting matching the REST API
 
-List queries MUST support the full filtering, sorting, and search capabilities of the REST API. `GraphQLResolver.argsToRequestParams()` MUST translate GraphQL arguments into the request parameter format expected by `ObjectService.buildSearchQuery()`.
+List queries MUST support the full filtering, sorting, and search capabilities of the REST API. `ListRequest.requestParams()` MUST translate GraphQL arguments into the request parameter format expected by `ObjectService.buildSearchQuery()`.
 
 #### Scenario: Filter by property value
 - **GIVEN** a query: `meldingen(filter: { status: "in_behandeling" }) { edges { node { title } } }`
-- **WHEN** `argsToRequestParams()` processes the filter argument
+- **WHEN** `ListRequest.requestParams()` processes the filter argument
 - **THEN** it MUST set `$params['status'] = "in_behandeling"` (property filters are flattened into top-level params)
 - **AND** `ObjectService.buildSearchQuery()` MUST receive these params and delegate to `MagicSearchHandler`
 
@@ -160,20 +160,20 @@ List queries MUST support the full filtering, sorting, and search capabilities o
 
 #### Scenario: Full-text search with fuzzy matching
 - **GIVEN** a query: `meldingen(search: "wateroverlast", fuzzy: true) { edges { node { title } } }`
-- **WHEN** `argsToRequestParams()` processes the arguments
+- **WHEN** `ListRequest.requestParams()` processes the arguments
 - **THEN** it MUST set `$params['_search'] = "wateroverlast"` and `$params['_fuzzy'] = "true"`
 - **AND** the search MUST delegate to `MagicSearchHandler`'s full-text search (ILIKE across string properties)
 - **AND** when fuzzy is enabled, each edge MUST include a `_relevance` field (0-100) in the connection response
 
 #### Scenario: Sort results
 - **GIVEN** a query: `meldingen(sort: { field: "created", order: "DESC" })`
-- **WHEN** `argsToRequestParams()` processes the sort argument
+- **WHEN** `ListRequest.requestParams()` processes the sort argument
 - **THEN** it MUST set `$params['_order']` to a JSON-encoded array: `[{"field": "created", "direction": "DESC"}]`
 - **AND** `SortInput` is a shared `InputObjectType` with fields `field: String!` and `order: String` (default "ASC")
 
 #### Scenario: Metadata filtering via selfFilter
 - **GIVEN** a query using `selfFilter: { owner: "user-1", organisation: "gemeente-tilburg" }`
-- **WHEN** `argsToRequestParams()` processes the selfFilter argument
+- **WHEN** `ListRequest.requestParams()` processes the selfFilter argument
 - **THEN** it MUST set `$params['@self']['owner'] = "user-1"` and `$params['@self']['organisation'] = "gemeente-tilburg"`
 - **AND** this MUST match the REST API's `@self[owner]=user-1` behavior
 - **AND** `SelfFilter` is a shared `InputObjectType` with fields: `owner`, `organisation`, `register`, `schema`, `uuid`
@@ -184,7 +184,7 @@ Connection types MUST expose facets and facetable field lists matching `FacetHan
 
 #### Scenario: Request facets in a list query
 - **GIVEN** a query: `meldingen(facets: ["status", "priority"]) { edges { node { title } } facets facetable }`
-- **WHEN** `argsToRequestParams()` processes the facets argument
+- **WHEN** `ListRequest.requestParams()` processes the facets argument
 - **THEN** it MUST set `$params['_facets'] = "status,priority"` (comma-separated)
 - **AND** `ObjectService.searchObjectsPaginated()` MUST return facet data
 - **AND** the connection response MUST include `facets` (JSON scalar with value counts per field) and `facetable` (list of field names)
@@ -204,7 +204,7 @@ The API MUST support both offset-based pagination (matching the REST API) and Re
 #### Scenario: Offset-based pagination
 - **GIVEN** 100 meldingen objects
 - **AND** a query: `meldingen(first: 10, offset: 20) { edges { node { title } } totalCount }`
-- **THEN** `argsToRequestParams()` MUST set `$params['_limit'] = 10` and `$params['_offset'] = 20`
+- **THEN** `ListRequest.requestParams()` MUST set `$params['_limit'] = 10` and `$params['_offset'] = 20`
 - **AND** exactly 10 objects MUST be returned starting from offset 20
 - **AND** `totalCount` MUST reflect the total filtered count (100)
 
@@ -213,7 +213,7 @@ The API MUST support both offset-based pagination (matching the REST API) and Re
 - **AND** a query: `meldingen(first: 10, after: "eyJ1dWlk...") { edges { cursor node { title } } pageInfo { hasNextPage endCursor } }`
 - **THEN** 10 objects MUST be returned after the cursor position
 - **AND** `pageInfo.hasNextPage` MUST be `true` if `(offset + limit) < totalCount`
-- **AND** cursors MUST be opaque base64-encoded JSON containing `{uuid, offset}` (via `GraphQLResolver.encodeCursor()`)
+- **AND** cursors MUST be opaque base64-encoded JSON containing `{uuid, offset}` (via `ListConnection.encodeCursor()`)
 
 #### Scenario: Connection type follows Relay specification
 - **GIVEN** any schema `meldingen`
@@ -705,7 +705,7 @@ type GroupBucket {
 #### Scenario: Resolve a groupBy aggregation
 
 - **GIVEN** a list query with a `groupBy` argument and a schema bound to a register
-- **WHEN** `resolveGroupBy()` runs
+- **WHEN** `ListAggregations.groups()` runs
 - **THEN** it MUST normalize the raw args (field, interval, from, to, metric lowercased, metricField) and validate them through the timeseries validator
 - **AND** it MUST run the aggregation via the aggregation runner and return buckets as `[{key: string, value: float}]`
 - **AND** a validation error or RBAC denial MUST be re-thrown as a GraphQL `Error` (field-level), and a schema with no register MUST return `null` rather than erroring
@@ -720,7 +720,7 @@ type GroupBucket {
 #### Scenario: Encode an opaque pagination cursor
 
 - **GIVEN** an object UUID and an offset position
-- **WHEN** `encodeCursor()` runs
+- **WHEN** `ListConnection.encodeCursor()` runs
 - **THEN** it MUST return a base64-encoded JSON string containing `{uuid, offset}`
 
 ## Current Implementation Status

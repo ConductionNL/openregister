@@ -97,25 +97,49 @@ final class ConditionDialect {
 
 		// A value source node is replaced by its value before either dialect
 		// sees it; an unresolved one fails closed (expression-value-sources D-1, D-3).
-		if ($this->sources !== null && $this->sources->mentionsSource(node: $node) === true) {
-			$substituted = $this->sources->substitute(node: $node);
-			if ($substituted['resolved'] === false) {
-				return false;
-			}
-
-			$node = $substituted['node'];
+		$substituted = $this->substituted(node: $node);
+		if ($substituted['resolved'] === false) {
+			return false;
 		}
 
+		$node = $substituted['node'];
 		if ($this->isAst(op: (string)array_key_first($node)) === false) {
 			return FlowExpression::isTrue(logic: $node, data: $document);
 		}
 
+		return $this->astHolds(node: $node, document: $document);
+	}//end holds()
+
+	/**
+	 * The node with every value source replaced by its value.
+	 *
+	 * @param array<mixed> $node The condition node.
+	 *
+	 * @return array{resolved: bool, node: mixed} The node, unchanged when there are no sources to resolve.
+	 */
+	private function substituted(array $node): array {
+		if ($this->sources === null || $this->sources->mentionsSource(node: $node) === false) {
+			return ['resolved' => true, 'node' => $node];
+		}
+
+		return $this->sources->substitute(node: $node);
+	}//end substituted()
+
+	/**
+	 * Whether a JSON-AST node holds; a node that cannot be evaluated does not.
+	 *
+	 * @param mixed $node The JSON-AST node.
+	 * @param array<string, mixed> $document The evaluation document.
+	 *
+	 * @return bool True when the node holds.
+	 */
+	private function astHolds(mixed $node, array $document): bool {
 		try {
 			return (bool)$this->ast->evaluate($document, $node);
 		} catch (Throwable $e) {
 			return false;
 		}
-	}//end holds()
+	}//end astHolds()
 
 	/**
 	 * Whether an operator key belongs to the JSON AST rather than to JSONLogic.
@@ -187,6 +211,19 @@ final class ConditionDialect {
 		}
 
 		$op = (string)array_key_first($node);
+
+		return self::isWellFormedOperation(op: $op, args: $node[$op]);
+	}//end isWellFormedAst()
+
+	/**
+	 * Whether one operator and its argument are well formed.
+	 *
+	 * @param string $op The operator key.
+	 * @param mixed $args The operator's argument.
+	 *
+	 * @return bool True when the evaluator holds the operator and every node below it.
+	 */
+	private static function isWellFormedOperation(string $op, mixed $args): bool {
 		if (array_key_exists($op, CalculationEvaluator::OPERATORS) === false) {
 			return false;
 		}
@@ -195,17 +232,12 @@ final class ConditionDialect {
 			return true;
 		}
 
-		$args = $node[$op];
 		if (CalculationEvaluator::OPERATORS[$op]['arity'] === 'dict') {
-			if (is_array($args) === false) {
-				return false;
-			}
-
-			return self::everyItemIsWellFormed(items: array_values($args));
+			return is_array($args) === true && self::everyItemIsWellFormed(items: array_values($args)) === true;
 		}
 
 		return self::isWellFormedAst(node: $args);
-	}//end isWellFormedAst()
+	}//end isWellFormedOperation()
 
 	/**
 	 * Whether every item of a list is a well-formed node or literal.

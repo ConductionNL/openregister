@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Reporting;
 
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
-use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Service\Export\Odt\OdtWriterInterface;
 
 /**
  * Render a resolved dashboard as a single PDF document.
@@ -39,10 +39,12 @@ class PdfReportWriter {
 	 *
 	 * @param HtmlReportWriter           $htmlWriter      HTML writer used as the input layer.
 	 * @param NcOfficeConverterInterface $officeConverter Office server conversion to PDF.
+	 * @param OdtWriterInterface         $odtWriter       Writes the report HTML as an ODT.
 	 */
 	public function __construct(
 		private readonly HtmlReportWriter $htmlWriter,
 		private readonly NcOfficeConverterInterface $officeConverter,
+		private readonly OdtWriterInterface $odtWriter,
 	) {
 
 	}//end __construct()
@@ -65,7 +67,7 @@ class PdfReportWriter {
 		}
 
 		$html = $this->htmlWriter->write(dashboard: $dashboard, resolvedWidgets: $resolvedWidgets);
-		$odt = (new OdtWriter())->fromHtml(html: $html, landscape: false);
+		$odt = $this->odtWriter->fromHtml(html: $html, landscape: false);
 
 		return $this->officeConverter->odtToPdf(odtBytes: $odt);
 	}//end write()

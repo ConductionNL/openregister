@@ -26,9 +26,7 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
-use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
 use RuntimeException;
@@ -57,6 +55,20 @@ use RuntimeException;
 class CacheSettingsHandler {
 
 	/**
+	 * The cache services each clear type empties, in clearing order.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const CLEAR_TARGETS = [
+		'all' => ['object', 'schema', 'facet', 'distributed', 'names'],
+		'object' => ['object'],
+		'schema' => ['schema'],
+		'facet' => ['facet'],
+		'distributed' => ['distributed'],
+		'names' => ['names'],
+	];
+
+	/**
 	 * The object cache service block: output field => [stats key, default].
 	 *
 	 * @var array<string, array{0: string, 1: int}>
@@ -79,6 +91,23 @@ class CacheSettingsHandler {
 		'hits' => ['name_hits', 0],
 		'misses' => ['name_misses', 0],
 		'warmups' => ['name_warmups', 0],
+	];
+
+	/**
+	 * The object cache statistics used when the object cache cannot be read.
+	 *
+	 * @var array<string, int|float>
+	 */
+	private const EMPTY_OBJECT_STATS = [
+		'entries' => 0,
+		'hits' => 0,
+		'requests' => 0,
+		'memoryUsage' => 0,
+		'name_cache_size' => 0,
+		'name_hit_rate' => 0.0,
+		'name_hits' => 0,
+		'name_misses' => 0,
+		'name_warmups' => 0,
 	];
 
 	/**
@@ -124,41 +153,6 @@ class CacheSettingsHandler {
 	];
 
 	/**
-	 * Cache factory
-	 *
-	 * @var ICacheFactory
-	 */
-	private ICacheFactory $cacheFactory;
-
-	/**
-	 * Schema cache handler
-	 *
-	 * @var SchemaCacheHandler
-	 */
-	private SchemaCacheHandler $schemaCacheService;
-
-	/**
-	 * Schema facet cache service
-	 *
-	 * @var FacetResultCacheClearer
-	 */
-	private FacetResultCacheClearer $facetResults;
-
-	/**
-	 * Object cache service (lazy-loaded when needed)
-	 *
-	 * @var CacheHandlerInterface|null
-	 */
-	private ?CacheHandlerInterface $objectCacheService = null;
-
-	/**
-	 * Container for lazy loading services
-	 *
-	 * @var IAppContainer|null
-	 */
-	private ?IAppContainer $container = null;
-
-	/**
 	 * In-process cache for object cache stats with a short TTL to avoid
 	 * calling CacheHandler on every request. Instance-scoped rather than
 	 * method-static so test isolation is preserved.
@@ -178,25 +172,18 @@ class CacheSettingsHandler {
 	 * Constructor for CacheSettingsHandler
 	 *
 	 * @param ICacheFactory $cacheFactory Cache factory.
-	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler.
-	 * @param FacetResultCacheClearer $facetResults Clears the facet result caches.
-	 * @param CacheHandlerInterface|null $objectCacheService Object cache service (optional, lazy-loaded).
+	 * @param SchemaCacheClearers $schemaCaches Schema cache handler and facet result cache clearer.
+	 * @param ObjectCacheMaintenanceInterface|null $objectCacheService Object cache service (optional, lazy-loaded).
 	 * @param IAppContainer|null $container Container for lazy loading (optional).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ICacheFactory $cacheFactory,
-		SchemaCacheHandler $schemaCacheService,
-		FacetResultCacheClearer $facetResults,
-		?CacheHandlerInterface $objectCacheService = null,
-		?IAppContainer $container = null,
+		private readonly ICacheFactory $cacheFactory,
+		private readonly SchemaCacheClearers $schemaCaches,
+		private readonly ?ObjectCacheMaintenanceInterface $objectCacheService = null,
+		private readonly ?IAppContainer $container = null,
 	) {
-		$this->cacheFactory = $cacheFactory;
-		$this->schemaCacheService = $schemaCacheService;
-		$this->facetResults = $facetResults;
-		$this->objectCacheService = $objectCacheService;
-		$this->container = $container;
 	}//end __construct()
 
 	/**
@@ -213,24 +200,9 @@ class CacheSettingsHandler {
 	 */
 	public function getCacheStats(): array {
 		try {
-			$distributedStats = $this->getDistributedCacheStats();
-			$performanceStats = $this->getCachePerformanceMetrics();
-
-			// Cached object stats avoid expensive operations on every request.
-			$objectStats = $this->getCachedObjectStats();
-
-			return [
-				'overview' => $this->cacheOverview(objectStats: $objectStats, averageHitTime: $performanceStats['averageHitTime'] ?? 0.0),
-				'services' => [
-					'object' => $this->countsOf(stats: $objectStats, fields: self::SERVICE_FIELDS),
-					'schema' => self::UNTRACKED_SERVICE,
-					'facet' => self::UNTRACKED_SERVICE,
-				],
-				'names' => $this->countsOf(stats: $objectStats, fields: self::NAME_FIELDS) + ['enabled' => true],
-				'distributed' => $distributedStats,
-				'performance' => $performanceStats,
-				'lastUpdated' => (new DateTime())->format('c'),
-			];
+			return $this->assembledStats(
+				sources: ['distributed' => $this->getDistributedCacheStats(), 'performance' => $this->getCachePerformanceMetrics()]
+			);
 		} catch (Exception $e) {
 			return self::UNAVAILABLE_STATS + [
 				'lastUpdated' => (new DateTime())->format('c'),
@@ -238,6 +210,31 @@ class CacheSettingsHandler {
 			];
 		}//end try
 	}//end getCacheStats()
+
+	/**
+	 * The statistics answer built from the distributed and performance figures and the object cache.
+	 *
+	 * @param array{distributed: array, performance: array} $sources The distributed cache statistics and the performance metrics.
+	 *
+	 * @return array<string, mixed> The statistics, in the order the settings screen reads them.
+	 */
+	private function assembledStats(array $sources): array {
+		// Cached object stats avoid expensive operations on every request.
+		$objectStats = $this->getCachedObjectStats();
+
+		return [
+			'overview' => $this->cacheOverview(objectStats: $objectStats, averageHitTime: $sources['performance']['averageHitTime'] ?? 0.0),
+			'services' => [
+				'object' => $this->countsOf(stats: $objectStats, fields: self::SERVICE_FIELDS),
+				'schema' => self::UNTRACKED_SERVICE,
+				'facet' => self::UNTRACKED_SERVICE,
+			],
+			'names' => $this->countsOf(stats: $objectStats, fields: self::NAME_FIELDS) + ['enabled' => true],
+			'distributed' => $sources['distributed'],
+			'performance' => $sources['performance'],
+			'lastUpdated' => (new DateTime())->format('c'),
+		];
+	}//end assembledStats()
 
 	/**
 	 * The overview block: size, entries and hit rate of the object cache.
@@ -283,41 +280,26 @@ class CacheSettingsHandler {
 		// In-memory cache with 30-second TTL to avoid expensive CacheHandler calls.
 		$now = time();
 		if ($this->objectStatsCache === null || ($now - $this->objectStatsCacheTimestamp) > 30) {
-			try {
-				$objectCacheService = $this->objectCacheService;
-				if ($objectCacheService === null && $this->container !== null) {
-					try {
-						$objectCacheService = $this->container->get(CacheHandler::class);
-					} catch (Exception $e) {
-						throw new Exception('CacheHandler not available');
-					}
-				}
-
-				if ($objectCacheService === null) {
-					throw new Exception('CacheHandler not available');
-				}
-
-				$this->objectStatsCache = $objectCacheService->getStats();
-			} catch (Exception $e) {
-				// If no object cache stats available, use defaults.
-				$this->objectStatsCache = [
-					'entries' => 0,
-					'hits' => 0,
-					'requests' => 0,
-					'memoryUsage' => 0,
-					'name_cache_size' => 0,
-					'name_hit_rate' => 0.0,
-					'name_hits' => 0,
-					'name_misses' => 0,
-					'name_warmups' => 0,
-				];
-			}//end try
-
+			$this->objectStatsCache = $this->freshObjectStats();
 			$this->objectStatsCacheTimestamp = $now;
 		}//end if
 
 		return $this->objectStatsCache;
 	}//end getCachedObjectStats()
+
+	/**
+	 * The object cache's statistics read now, or zeroed defaults when it cannot be read.
+	 *
+	 * @return array Object cache statistics.
+	 */
+	private function freshObjectStats(): array {
+		try {
+			return $this->objectCacheHandler()->getStats();
+		} catch (Exception $e) {
+			// If no object cache stats available, use defaults.
+			return self::EMPTY_OBJECT_STATS;
+		}
+	}//end freshObjectStats()
 
 	/**
 	 * Calculate hit rate from cache statistics
@@ -360,14 +342,25 @@ class CacheSettingsHandler {
 				'size' => 'Unknown',
 			];
 		} catch (Exception $e) {
-			return [
-				'type' => 'none',
-				'backend' => 'fallback',
-				'available' => false,
-				'error' => $e->getMessage(),
-			];
+			return self::unavailableDistributed(error: $e);
 		}
 	}//end getDistributedCacheStats()
+
+	/**
+	 * The distributed-cache statistics when no distributed cache can be created.
+	 *
+	 * @param Exception $error Why the cache could not be created.
+	 *
+	 * @return array{type: string, backend: string, available: bool, error: string}
+	 */
+	private static function unavailableDistributed(Exception $error): array {
+		return [
+			'type' => 'none',
+			'backend' => 'fallback',
+			'available' => false,
+			'error' => $error->getMessage(),
+		];
+	}//end unavailableDistributed()
 
 	/**
 	 * Get cache performance metrics for the last period
@@ -395,7 +388,6 @@ class CacheSettingsHandler {
 	 *
 	 * @param string $type Cache type: 'all', 'object', 'schema', 'facet', 'distributed', 'names'
 	 * @param string|null $userId Specific user ID to clear cache for (if supported)
-	 * @param array $_options Additional options for cache clearing
 	 *
 	 * @return (((float|int[]|mixed|string)[]|bool|int|mixed|string)[][]|int|mixed|null|string)[]
 	 *
@@ -439,67 +431,83 @@ class CacheSettingsHandler {
 	 *     errors: array<never, never>, totalCleared: 0|mixed}
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple cache types require switch-based routing
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
 	 */
-	public function clearCache(string $type = 'all', ?string $userId = null, array $_options = []): array {
+	public function clearCache(string $type = 'all', ?string $userId = null): array {
 		try {
-			$results = [
-				'type' => $type,
-				'userId' => $userId,
-				'timestamp' => (new DateTime())->format('c'),
-				'results' => [],
-				'errors' => [],
-				'totalCleared' => 0,
-			];
-
-			switch ($type) {
-				case 'all':
-					$results['results']['object'] = $this->clearObjectCache(_userId: $userId);
-					$results['results']['schema'] = $this->clearSchemaCache(_userId: $userId);
-					$results['results']['facet'] = $this->clearFacetCache(_userId: $userId);
-					$results['results']['distributed'] = $this->clearDistributedCache(_userId: $userId);
-					$results['results']['names'] = $this->clearNamesCache();
-					break;
-
-				case 'object':
-					$results['results']['object'] = $this->clearObjectCache(_userId: $userId);
-					break;
-
-				case 'schema':
-					$results['results']['schema'] = $this->clearSchemaCache(_userId: $userId);
-					break;
-
-				case 'facet':
-					$results['results']['facet'] = $this->clearFacetCache(_userId: $userId);
-					break;
-
-				case 'distributed':
-					$results['results']['distributed'] = $this->clearDistributedCache(_userId: $userId);
-					break;
-
-				case 'names':
-					$results['results']['names'] = $this->clearNamesCache();
-					break;
-
-				default:
-					throw new InvalidArgumentException("Invalid cache type: {$type}");
-			}//end switch
-
-			// Calculate total cleared entries.
-			foreach ($results['results'] as $serviceResult) {
-				$cleared = $serviceResult['cleared'] ?? 0;
-				if (is_int($cleared) === true) {
-					$results['totalCleared'] += $cleared;
-				}
+			$results = self::emptyClearResults(type: $type, userId: $userId);
+			if (isset(self::CLEAR_TARGETS[$type]) === false) {
+				throw new InvalidArgumentException("Invalid cache type: {$type}");
 			}
+
+			foreach (self::CLEAR_TARGETS[$type] as $service) {
+				$results['results'][$service] = $this->clearService(service: $service, userId: $userId);
+			}
+
+			$results['totalCleared'] = $this->totalCleared(serviceResults: $results['results']);
 
 			return $results;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to clear cache: ' . $e->getMessage());
 		}//end try
 	}//end clearCache()
+
+	/**
+	 * The clear report before any service is cleared.
+	 *
+	 * @param string      $type   The cache type asked for.
+	 * @param string|null $userId The user the clear is for.
+	 *
+	 * @return array{type: string, userId: string|null, timestamp: string, results: array<never, never>, errors: array<never, never>, totalCleared: 0}
+	 */
+	private static function emptyClearResults(string $type, ?string $userId): array {
+		return [
+			'type' => $type,
+			'userId' => $userId,
+			'timestamp' => (new DateTime())->format('c'),
+			'results' => [],
+			'errors' => [],
+			'totalCleared' => 0,
+		];
+	}//end emptyClearResults()
+
+	/**
+	 * Clear one cache service.
+	 *
+	 * @param string      $service One of `object`, `schema`, `facet`, `distributed`, `names`.
+	 * @param string|null $userId  The user the clear is for.
+	 *
+	 * @return array The service's clear result.
+	 */
+	private function clearService(string $service, ?string $userId): array {
+		return match ($service) {
+			'object' => $this->clearObjectCache(_userId: $userId),
+			'schema' => $this->clearSchemaCache(_userId: $userId),
+			'facet' => $this->clearFacetCache(_userId: $userId),
+			'distributed' => $this->clearDistributedCache(_userId: $userId),
+			default => $this->clearNamesCache(),
+		};
+	}//end clearService()
+
+	/**
+	 * Sum the integer `cleared` counts of the service results.
+	 *
+	 * @param array<string, array> $serviceResults The per-service results.
+	 *
+	 * @return int The total; a non-integer count adds nothing.
+	 */
+	private function totalCleared(array $serviceResults): int {
+		$total = 0;
+		foreach ($serviceResults as $serviceResult) {
+			$cleared = $serviceResult['cleared'] ?? 0;
+			if (is_int($cleared) === true) {
+				$total += $cleared;
+			}
+		}
+
+		return $total;
+	}//end totalCleared()
 
 	/**
 	 * Clear object cache service
@@ -523,45 +531,41 @@ class CacheSettingsHandler {
 	 */
 	private function clearObjectCache(?string $_userId = null): array {
 		try {
-			$objectCacheService = $this->objectCacheService;
-			if ($objectCacheService === null && $this->container !== null) {
-				try {
-					$objectCacheService = $this->container->get(CacheHandler::class);
-				} catch (Exception $e) {
-					throw new Exception('CacheHandler not available');
-				}
-			}
-
-			if ($objectCacheService === null) {
-				throw new Exception('CacheHandler not available');
-			}
+			$objectCacheService = $this->objectCacheHandler();
 
 			$beforeStats = $objectCacheService->getStats();
 			$objectCacheService->clearCache();
 			$afterStats = $objectCacheService->getStats();
 
-			// CacheHandler::getStats() reports cache_size, query_cache_size and
-			// name_cache_size, and never an `entries` key. Reading `entries`
-			// produced two "Undefined array key" warnings per call and a cleared
-			// count of 0 - 0, so the admin action always reported clearing
-			// nothing. clearCache() empties all three in-memory caches, so all
-			// three are what it cleared.
-			return [
-				'service' => 'object',
-				'cleared' => ($this->countCacheEntries(stats: $beforeStats) - $this->countCacheEntries(stats: $afterStats)),
-				'before' => $beforeStats,
-				'after' => $afterStats,
-				'success' => true,
-			];
+			return $this->objectClearReport(beforeStats: $beforeStats, afterStats: $afterStats);
 		} catch (Exception $e) {
-			return [
-				'service' => 'object',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'object', error: $e);
 		}//end try
 	}//end clearObjectCache()
+
+	/**
+	 * The report of an object cache clear, from the statistics either side of it.
+	 *
+	 * @param array $beforeStats The object cache statistics before the clear.
+	 * @param array $afterStats  The object cache statistics after the clear.
+	 *
+	 * @return array{service: string, cleared: int, before: array, after: array, success: bool}
+	 */
+	private function objectClearReport(array $beforeStats, array $afterStats): array {
+		// CacheHandler::getStats() reports cache_size, query_cache_size and
+		// name_cache_size, and never an `entries` key. Reading `entries`
+		// produced two "Undefined array key" warnings per call and a cleared
+		// count of 0 - 0, so the admin action always reported clearing
+		// nothing. clearCache() empties all three in-memory caches, so all
+		// three are what it cleared.
+		return [
+			'service' => 'object',
+			'cleared' => ($this->countCacheEntries(stats: $beforeStats) - $this->countCacheEntries(stats: $afterStats)),
+			'before' => $beforeStats,
+			'after' => $afterStats,
+			'success' => true,
+		];
+	}//end objectClearReport()
 
 	/**
 	 * Total in-memory entries a CacheHandler stats payload reports.
@@ -588,104 +592,69 @@ class CacheSettingsHandler {
 	 *     name_hits: int|mixed, name_misses: int|mixed},
 	 *     after?: array{name_cache_size: int|mixed, name_hits: int|mixed,
 	 *     name_misses: int|mixed}}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache clearing with fallback logic requires multiple branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional branches for cache service resolution
 	 */
 	private function clearNamesCache(): array {
 		try {
-			$objectCacheService = $this->objectCacheService;
-			if ($objectCacheService === null && $this->container !== null) {
-				try {
-					$objectCacheService = $this->container->get(CacheHandler::class);
-				} catch (Exception $e) {
-					throw new Exception('CacheHandler not available');
-				}
-			}
-
-			if ($objectCacheService === null) {
-				throw new Exception('CacheHandler not available');
-			}
+			$objectCacheService = $this->objectCacheHandler();
 
 			$beforeStats = $objectCacheService->getStats();
-			$beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
 
 			$objectCacheService->clearNameCache();
 
-			$afterStats = $objectCacheService->getStats();
-			$afterNameCacheSize = $afterStats['name_cache_size'] ?? 0;
-
-			return [
-				'service' => 'names',
-				'cleared' => $beforeNameCacheSize - $afterNameCacheSize,
-				'before' => [
-					'name_cache_size' => $beforeNameCacheSize,
-					'name_hits' => $beforeStats['name_hits'] ?? 0,
-					'name_misses' => $beforeStats['name_misses'] ?? 0,
-				],
-				'after' => [
-					'name_cache_size' => $afterNameCacheSize,
-					'name_hits' => $afterStats['name_hits'] ?? 0,
-					'name_misses' => $afterStats['name_misses'] ?? 0,
-				],
-				'success' => true,
-			];
+			return self::namesCleared(before: $beforeStats, after: $objectCacheService->getStats());
 		} catch (Exception $e) {
-			return [
-				'service' => 'names',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'names', error: $e);
 		}//end try
 	}//end clearNamesCache()
+
+	/**
+	 * The result of a names-cache clear: how many names went, and the statistics either side.
+	 *
+	 * @param array<string, mixed> $before The statistics before the clear.
+	 * @param array<string, mixed> $after  The statistics after the clear.
+	 *
+	 * @return array<string, mixed> The result.
+	 */
+	private static function namesCleared(array $before, array $after): array {
+		$beforeNames = self::nameHitStats(stats: $before);
+		$afterNames = self::nameHitStats(stats: $after);
+
+		return [
+			'service' => 'names',
+			'cleared' => $beforeNames['name_cache_size'] - $afterNames['name_cache_size'],
+			'before' => $beforeNames,
+			'after' => $afterNames,
+			'success' => true,
+		];
+	}//end namesCleared()
+
+	/**
+	 * The names-cache size, hits and misses out of the object cache statistics.
+	 *
+	 * @param array<string, mixed> $stats The object cache statistics.
+	 *
+	 * @return array{name_cache_size: mixed, name_hits: mixed, name_misses: mixed}
+	 */
+	private static function nameHitStats(array $stats): array {
+		return [
+			'name_cache_size' => $stats['name_cache_size'] ?? 0,
+			'name_hits' => $stats['name_hits'] ?? 0,
+			'name_misses' => $stats['name_misses'] ?? 0,
+		];
+	}//end nameHitStats()
 
 	/**
 	 * Warmup object names cache manually
 	 *
 	 * @return array Result with success, loaded_names, execution_time, and before/after stats.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache warmup with fallback logic requires multiple branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional branches for cache service resolution
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
 	 */
 	public function warmupNamesCache(): array {
 		try {
 			$startTime = microtime(true);
-			$objectCacheService = $this->objectCacheService;
-			if ($objectCacheService === null && $this->container !== null) {
-				try {
-					$objectCacheService = $this->container->get(CacheHandler::class);
-				} catch (Exception $e) {
-					throw new Exception('CacheHandler not available');
-				}
-			}
 
-			if ($objectCacheService === null) {
-				throw new Exception('CacheHandler not available');
-			}
-
-			$beforeStats = $objectCacheService->getStats();
-
-			$loadedCount = $objectCacheService->warmupNameCache();
-
-			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-			$afterStats = $objectCacheService->getStats();
-
-			return [
-				'success' => true,
-				'loaded_names' => $loadedCount,
-				'execution_time' => $executionTime . 'ms',
-				'before' => [
-					'name_cache_size' => $beforeStats['name_cache_size'] ?? 0,
-					'name_warmups' => $beforeStats['name_warmups'] ?? 0,
-				],
-				'after' => [
-					'name_cache_size' => $afterStats['name_cache_size'] ?? 0,
-					'name_warmups' => $afterStats['name_warmups'] ?? 0,
-				],
-			];
+			return self::warmedUp(cache: $this->objectCacheHandler(), startTime: $startTime);
 		} catch (Exception $e) {
 			return [
 				'success' => false,
@@ -694,6 +663,44 @@ class CacheSettingsHandler {
 			];
 		}//end try
 	}//end warmupNamesCache()
+
+	/**
+	 * Warm the names cache and report how many names it loaded, how long it took, and the statistics either side.
+	 *
+	 * @param ObjectCacheMaintenanceInterface $cache     The object cache.
+	 * @param float                           $startTime When the warm-up was asked for.
+	 *
+	 * @return array<string, mixed> The result.
+	 */
+	private static function warmedUp(ObjectCacheMaintenanceInterface $cache, float $startTime): array {
+		$beforeStats = $cache->getStats();
+
+		$loadedCount = $cache->warmupNameCache();
+
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+		return [
+			'success' => true,
+			'loaded_names' => $loadedCount,
+			'execution_time' => $executionTime . 'ms',
+			'before' => self::nameWarmupStats(stats: $beforeStats),
+			'after' => self::nameWarmupStats(stats: $cache->getStats()),
+		];
+	}//end warmedUp()
+
+	/**
+	 * The names-cache size and warm-up count out of the object cache statistics.
+	 *
+	 * @param array<string, mixed> $stats The object cache statistics.
+	 *
+	 * @return array{name_cache_size: mixed, name_warmups: mixed}
+	 */
+	private static function nameWarmupStats(array $stats): array {
+		return [
+			'name_cache_size' => $stats['name_cache_size'] ?? 0,
+			'name_warmups' => $stats['name_warmups'] ?? 0,
+		];
+	}//end nameWarmupStats()
 
 	/**
 	 * Clear schema cache service
@@ -707,30 +714,37 @@ class CacheSettingsHandler {
 	 */
 	private function clearSchemaCache(?string $_userId = null): array {
 		try {
-			$beforeStats = $this->schemaCacheService->getCacheStatistics();
-			$this->schemaCacheService->clearAllCaches();
-			$afterStats = $this->schemaCacheService->getCacheStatistics();
+			$beforeStats = $this->schemaCaches->schemaCache->getCacheStatistics();
+			$this->schemaCaches->schemaCache->clearAllCaches();
+			$afterStats = $this->schemaCaches->schemaCache->getCacheStatistics();
 
-			// Stats arrays may contain 'entries' key even if not in type definition.
-			$beforeEntries = $beforeStats['entries'] ?? 0;
-			$afterEntries = $afterStats['entries'] ?? 0;
-
-			return [
-				'service' => 'schema',
-				'cleared' => $beforeEntries - $afterEntries,
-				'before' => $beforeStats,
-				'after' => $afterStats,
-				'success' => true,
-			];
+			return self::schemaClearReport(beforeStats: $beforeStats, afterStats: $afterStats);
 		} catch (Exception $e) {
-			return [
-				'service' => 'schema',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'schema', error: $e);
 		}//end try
 	}//end clearSchemaCache()
+
+	/**
+	 * The report of a schema cache clear, from the statistics either side of it.
+	 *
+	 * @param array $beforeStats The schema cache statistics before the clear.
+	 * @param array $afterStats  The schema cache statistics after the clear.
+	 *
+	 * @return array{service: string, cleared: mixed, before: array, after: array, success: bool}
+	 */
+	private static function schemaClearReport(array $beforeStats, array $afterStats): array {
+		// Stats arrays may contain 'entries' key even if not in type definition.
+		$beforeEntries = $beforeStats['entries'] ?? 0;
+		$afterEntries = $afterStats['entries'] ?? 0;
+
+		return [
+			'service' => 'schema',
+			'cleared' => $beforeEntries - $afterEntries,
+			'before' => $beforeStats,
+			'after' => $afterStats,
+			'success' => true,
+		];
+	}//end schemaClearReport()
 
 	/**
 	 * Clear facet cache service
@@ -743,7 +757,7 @@ class CacheSettingsHandler {
 	 */
 	private function clearFacetCache(?string $_userId = null): array {
 		$before = $this->emptyFacetStatistics();
-		$this->facetResults->clearAll();
+		$this->schemaCaches->facetResults->clearAll();
 
 		return [
 			'service' => 'facet',
@@ -800,12 +814,51 @@ class CacheSettingsHandler {
 				'success' => true,
 			];
 		} catch (Exception $e) {
-			return [
-				'service' => 'distributed',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'distributed', error: $e);
 		}
 	}//end clearDistributedCache()
+
+	/**
+	 * The object cache handler: the one injected, else the one the container builds.
+	 *
+	 * @return ObjectCacheMaintenanceInterface The handler.
+	 *
+	 * @throws Exception When neither supplies one.
+	 */
+	private function objectCacheHandler(): ObjectCacheMaintenanceInterface {
+		$objectCacheService = $this->objectCacheService;
+		if ($objectCacheService === null && $this->container !== null) {
+			try {
+				$objectCacheService = $this->container->get(CacheHandler::class);
+			} catch (Exception $e) {
+				throw new Exception('CacheHandler not available');
+			}
+		}
+
+		if ($objectCacheService === null) {
+			throw new Exception('CacheHandler not available');
+		}
+
+		return $objectCacheService;
+	}//end objectCacheHandler()
+
+	/**
+	 * The result of a cache clear that failed.
+	 *
+	 * @param string    $service The cache that was being cleared.
+	 * @param Exception $error   Why it failed.
+	 *
+	 * @return array{service: T, cleared: 0, success: false, error: string}
+	 *
+	 * @template T of string
+	 * @phpstan-param T $service
+	 */
+	private function clearFailed(string $service, Exception $error): array {
+		return [
+			'service' => $service,
+			'cleared' => 0,
+			'success' => false,
+			'error' => $error->getMessage(),
+		];
+	}//end clearFailed()
 }//end class

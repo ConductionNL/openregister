@@ -63,60 +63,52 @@ class ObjectActionAudit {
 	 * Constructor.
 	 *
 	 * @param AuditTrailMapperInterface $auditTrail Writes the entry.
-	 * @param LoggerInterface  $logger     Records a failure to write it.
+	 * @param LoggerInterface           $logger     Records a failure to write it.
+	 * @param ObjectActionGate          $gate       The acting user.
 	 */
 	public function __construct(
 		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
+		private readonly ObjectActionGate $gate,
 	) {
 	}//end __construct()
 
 	/**
 	 * Write the entry. A failure is logged and never undoes the run, which has happened.
 	 *
-	 * @param ObjectEntity                                  $object       The subject.
-	 * @param string                                        $action       The declared action key.
-	 * @param string                                        $kind         `transition`, `flow` or `steps`.
-	 * @param string|null                                   $run          The run's uuid; null for a transition.
-	 * @param string                                        $inputsDigest The digest of the storable inputs.
-	 * @param array<int, array{step: string, kind: string}> $changes      What the run changed.
-	 * @param string                                        $outcome      The outcome.
-	 * @param string|null                                   $userId       The acting user.
+	 * @param ObjectEntity           $object       The subject.
+	 * @param ObjectActionDefinition $definition   The declared action: its key and kind.
+	 * @param ObjectActionRunOutcome $outcome      The run's uuid (null for a transition), its changes and its outcome.
+	 * @param string                 $inputsDigest The digest of the storable inputs.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One argument per field of the entry's context.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-every-run-is-audited-once-and-the-objects-action-history-can-be-read
 	 */
 	public function record(
 		ObjectEntity $object,
-		string $action,
-		string $kind,
-		?string $run,
+		ObjectActionDefinition $definition,
+		ObjectActionRunOutcome $outcome,
 		string $inputsDigest,
-		array $changes,
-		string $outcome,
-		?string $userId,
 	): void {
 		try {
 			$this->auditTrail->createAuditTrailEntry(
 				object: $object,
 				action: self::ACTION_RUN,
 				context: [
-					'declaredAction' => $action,
-					'kind' => $kind,
-					'run' => $run,
+					'declaredAction' => $definition->key,
+					'kind' => (string)$definition->kind,
+					'run' => $outcome->run,
 					'inputsDigest' => $inputsDigest,
-					'changes' => $changes,
-					'outcome' => $outcome,
+					'changes' => $outcome->changes,
+					'outcome' => $outcome->outcome,
 				],
-				actorId: $userId
+				actorId: $this->gate->userId()
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				message: '[ObjectActionAudit] Could not write the audit entry for action "' . $action . '": ' . $e->getMessage(),
-				context: ['action' => $action, 'run' => $run]
+				message: '[ObjectActionAudit] Could not write the audit entry for action "' . $definition->key . '": ' . $e->getMessage(),
+				context: ['action' => $definition->key, 'run' => $outcome->run]
 			);
 		}
 	}//end record()

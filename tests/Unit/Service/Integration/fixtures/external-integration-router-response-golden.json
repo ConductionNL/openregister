@@ -1,0 +1,954 @@
+{
+    "array response": {
+        "call": {
+            "result": {
+                "a": 1,
+                "statusCode": 201,
+                "responseTime": "12.6",
+                "headers": {
+                    "x-correlation-id": [
+                        "CID-1",
+                        "CID-2"
+                    ],
+                    "Content-Type": "application/json",
+                    "X-Empty": []
+                }
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "a": 1,
+                    "statusCode": 201,
+                    "responseTime": "12.6",
+                    "headers": {
+                        "x-correlation-id": [
+                            "CID-1",
+                            "CID-2"
+                        ],
+                        "Content-Type": "application/json",
+                        "X-Empty": []
+                    }
+                },
+                "meta": {
+                    "status": 201,
+                    "durationMs": 13,
+                    "correlationId": "CID-1",
+                    "headers": {
+                        "x-correlation-id": "CID-1",
+                        "Content-Type": "application/json",
+                        "X-Empty": ""
+                    }
+                }
+            }
+        },
+        "logs": []
+    },
+    "array, numeric duration": {
+        "call": {
+            "result": {
+                "responseTime": 7,
+                "headers": "none"
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "responseTime": 7,
+                    "headers": "none"
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 7,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "array, non-numeric duration": {
+        "call": {
+            "result": {
+                "responseTime": "slow",
+                "headers": {
+                    "X-Correlation-ID": ""
+                }
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "responseTime": "slow",
+                    "headers": {
+                        "X-Correlation-ID": ""
+                    }
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": {
+                        "X-Correlation-ID": ""
+                    }
+                }
+            }
+        },
+        "logs": []
+    },
+    "json string": {
+        "call": {
+            "result": {
+                "x": [
+                    1,
+                    2
+                ]
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "x": [
+                        1,
+                        2
+                    ]
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "json scalar string": {
+        "call": {
+            "result": {
+                "body": "\"text\""
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "body": "\"text\""
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "plain string": {
+        "call": {
+            "result": {
+                "body": "not json"
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "body": "not json"
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "integer": {
+        "call": {
+            "result": {
+                "body": 42
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "body": 42
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "null": {
+        "call": {
+            "result": {
+                "body": null
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "body": null
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "serializable, array": {
+        "call": {
+            "result": {
+                "k": "v"
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "k": "v"
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "serializable, scalar": {
+        "call": {
+            "result": {
+                "body": "flat"
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "body": "flat"
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "log, payload without body": {
+        "call": {
+            "result": {
+                "statusCode": 200,
+                "data": 1
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "statusCode": 200,
+                    "data": 1
+                },
+                "meta": {
+                    "status": 200,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "log, json body": {
+        "call": {
+            "result": {
+                "ok": true
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "ok": true
+                },
+                "meta": {
+                    "status": 202,
+                    "durationMs": 3,
+                    "correlationId": "CID-1",
+                    "headers": {
+                        "x-correlation-id": "CID-1",
+                        "Content-Type": "application/json",
+                        "X-Empty": ""
+                    }
+                }
+            }
+        },
+        "logs": []
+    },
+    "log, base64 body": {
+        "call": {
+            "result": {
+                "b": 64
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "b": 64
+                },
+                "meta": {
+                    "status": 200,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "log, base64 array body": {
+        "call": {
+            "result": {
+                "raw": 1
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "raw": 1
+                },
+                "meta": {
+                    "status": 200,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "log, bad base64": {
+        "call": {
+            "result": {
+                "body": ""
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "body": ""
+                },
+                "meta": {
+                    "status": 200,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "log, null body": {
+        "call": {
+            "result": {
+                "body": null
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "body": null
+                },
+                "meta": {
+                    "status": 200,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "log, no payload": {
+        "call": {
+            "result": {
+                "body": {}
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "body": {}
+                },
+                "meta": {
+                    "status": 200,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "log, 401": {
+        "call": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "Upstream service answered HTTP 401.",
+                "provider-auth",
+                null
+            ]
+        },
+        "withMeta": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "Upstream service answered HTTP 401.",
+                "provider-auth",
+                null
+            ]
+        },
+        "logs": []
+    },
+    "log, 403": {
+        "call": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "Upstream service answered HTTP 403.",
+                "provider-auth",
+                null
+            ]
+        },
+        "withMeta": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "Upstream service answered HTTP 403.",
+                "provider-auth",
+                null
+            ]
+        },
+        "logs": []
+    },
+    "log, 500": {
+        "call": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "Upstream service answered HTTP 500.",
+                "upstream-service-down",
+                null
+            ]
+        },
+        "withMeta": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "Upstream service answered HTTP 500.",
+                "upstream-service-down",
+                null
+            ]
+        },
+        "logs": []
+    },
+    "log, 399": {
+        "call": {
+            "result": {
+                "body": {}
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "body": {}
+                },
+                "meta": {
+                    "status": 399,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "entity log, response": {
+        "call": {
+            "result": [
+                1
+            ]
+        },
+        "withMeta": {
+            "result": {
+                "body": [
+                    1
+                ],
+                "meta": {
+                    "status": 200,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "entity log, status only": {
+        "call": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "Upstream service answered HTTP 502.",
+                "upstream-service-down",
+                null
+            ]
+        },
+        "withMeta": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "Upstream service answered HTTP 502.",
+                "upstream-service-down",
+                null
+            ]
+        },
+        "logs": []
+    },
+    "entity log, response status wins": {
+        "call": {
+            "result": {
+                "statusCode": 200
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "statusCode": 200
+                },
+                "meta": {
+                    "status": 200,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "entity log, non-numeric status": {
+        "call": {
+            "result": {
+                "statusCode": "x",
+                "@self": {
+                    "id": null,
+                    "slug": null,
+                    "name": null,
+                    "description": null,
+                    "summary": null,
+                    "image": null,
+                    "uri": null,
+                    "version": null,
+                    "register": null,
+                    "schema": null,
+                    "schemaVersion": null,
+                    "files": [],
+                    "relations": [],
+                    "locked": null,
+                    "owner": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "folder": null,
+                    "application": null,
+                    "validation": [],
+                    "quality": [],
+                    "geo": [],
+                    "retention": [],
+                    "tmlo": [],
+                    "size": null,
+                    "updated": null,
+                    "lastUserActivity": null,
+                    "created": null,
+                    "deleted": [],
+                    "archived": [],
+                    "frozen": [],
+                    "status": null,
+                    "source": null,
+                    "mail": null,
+                    "contacts": null,
+                    "notes": null,
+                    "todos": null,
+                    "calendar": null,
+                    "talk": null,
+                    "deck": null
+                }
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "statusCode": "x",
+                    "@self": {
+                        "id": null,
+                        "slug": null,
+                        "name": null,
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": null,
+                        "schema": null,
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    }
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "entity log, response not array": {
+        "call": {
+            "result": {
+                "response": "text",
+                "@self": {
+                    "id": null,
+                    "slug": null,
+                    "name": null,
+                    "description": null,
+                    "summary": null,
+                    "image": null,
+                    "uri": null,
+                    "version": null,
+                    "register": null,
+                    "schema": null,
+                    "schemaVersion": null,
+                    "files": [],
+                    "relations": [],
+                    "locked": null,
+                    "owner": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "folder": null,
+                    "application": null,
+                    "validation": [],
+                    "quality": [],
+                    "geo": [],
+                    "retention": [],
+                    "tmlo": [],
+                    "size": null,
+                    "updated": null,
+                    "lastUserActivity": null,
+                    "created": null,
+                    "deleted": [],
+                    "archived": [],
+                    "frozen": [],
+                    "status": null,
+                    "source": null,
+                    "mail": null,
+                    "contacts": null,
+                    "notes": null,
+                    "todos": null,
+                    "calendar": null,
+                    "talk": null,
+                    "deck": null
+                }
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "response": "text",
+                    "@self": {
+                        "id": null,
+                        "slug": null,
+                        "name": null,
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": null,
+                        "schema": null,
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    }
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "connector throws": {
+        "call": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "Upstream service for integration \"golden\" is unreachable.",
+                "upstream-service-down",
+                "RuntimeException"
+            ]
+        },
+        "withMeta": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "Upstream service for integration \"golden\" is unreachable.",
+                "upstream-service-down",
+                "RuntimeException"
+            ]
+        },
+        "logs": [
+            "error: [ExternalIntegrationRouter] upstream call failed for provider golden POST items",
+            "error: [ExternalIntegrationRouter] upstream call (with meta) failed for provider golden GET items"
+        ]
+    },
+    "connector throws classified": {
+        "call": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "already",
+                "provider-auth",
+                null
+            ]
+        },
+        "withMeta": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "already",
+                "provider-auth",
+                null
+            ]
+        },
+        "logs": []
+    },
+    "mock, canned body": {
+        "call": {
+            "result": {
+                "m": 1
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "m": 1
+                },
+                "meta": {
+                    "status": 200,
+                    "durationMs": 12,
+                    "correlationId": "C-9",
+                    "headers": {
+                        "X-Correlation-ID": "C-9"
+                    }
+                }
+            }
+        },
+        "logs": []
+    },
+    "mock, body not array": {
+        "call": {
+            "result": []
+        },
+        "withMeta": {
+            "result": {
+                "body": [],
+                "meta": {
+                    "status": 204,
+                    "durationMs": 5,
+                    "correlationId": "C-9",
+                    "headers": {
+                        "X-Correlation-ID": "C-9"
+                    }
+                }
+            }
+        },
+        "logs": [
+            "warning: [ExternalIntegrationRouter] mock source \"golden\" has a non-array mockResponse; returning empty body.",
+            "warning: [ExternalIntegrationRouter] mock source \"golden\" has a non-array mockResponse; returning empty body."
+        ]
+    },
+    "mock, meta headers": {
+        "call": {
+            "result": []
+        },
+        "withMeta": {
+            "result": {
+                "body": [],
+                "meta": {
+                    "status": 200,
+                    "durationMs": 12,
+                    "correlationId": "7",
+                    "headers": {
+                        "X-Correlation-ID": "kept",
+                        "A": "1"
+                    }
+                }
+            }
+        },
+        "logs": []
+    },
+    "mock, headers not array": {
+        "call": {
+            "result": []
+        },
+        "withMeta": {
+            "result": {
+                "body": [],
+                "meta": {
+                    "status": 200,
+                    "durationMs": 12,
+                    "correlationId": "C-1",
+                    "headers": {
+                        "X-Correlation-ID": "C-1"
+                    }
+                }
+            }
+        },
+        "logs": []
+    },
+    "mock flag not true": {
+        "call": {
+            "result": {
+                "real": true
+            }
+        },
+        "withMeta": {
+            "result": {
+                "body": {
+                    "real": true
+                },
+                "meta": {
+                    "status": 0,
+                    "durationMs": 0,
+                    "correlationId": null,
+                    "headers": []
+                }
+            }
+        },
+        "logs": []
+    },
+    "configuration": {
+        "answer": {
+            "result": {
+                "a": 1
+            }
+        }
+    },
+    "configuration not array": {
+        "answer": {
+            "result": []
+        }
+    },
+    "configuration missing source": {
+        "answer": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+                "OpenConnector source \"golden\" for integration \"golden\" is missing or unreadable.",
+                "openconnector-source-missing",
+                null
+            ]
+        }
+    },
+    "probe, local": {
+        "answer": {
+            "status": "ok",
+            "authStatus": "configured",
+            "message": null
+        }
+    },
+    "probe, connector missing": {
+        "answer": {
+            "status": "unavailable",
+            "authStatus": "missing",
+            "message": "OpenConnector app is not installed or enabled."
+        }
+    },
+    "probe, source missing": {
+        "answer": {
+            "status": "unavailable",
+            "authStatus": "missing",
+            "message": "OpenConnector source \"golden\" for integration \"golden\" is missing or unreadable."
+        }
+    },
+    "probe, ok": {
+        "answer": {
+            "status": "ok",
+            "authStatus": "configured",
+            "message": null
+        }
+    }
+}

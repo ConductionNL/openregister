@@ -24,8 +24,8 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionLifecycleInterface;
 
 /**
  * Services of the registry subscription API.
@@ -38,16 +38,16 @@ final class RegistrySubscriptionDomain {
 	 *
 	 * @param SchemaMapperInterface                $schemaMapper      Resolves the object's schema.
 	 * @param ObjectOperationsInterface               $objectService     Resolves the target object.
-	 * @param PermissionHandler           $permissionHandler The per-object `update` guard.
-	 * @param RegistrySubscriptionService $subscriptions     Owns the subscription lifecycle.
+	 * @param PermissionHandlerInterface           $permissionHandler The per-object `update` guard.
+	 * @param RegistrySubscriptionLifecycleInterface $subscriptions     Owns the subscription lifecycle.
 	 *
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
 	public function __construct(
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly ObjectOperationsInterface $objectService,
-		public readonly PermissionHandler $permissionHandler,
-		public readonly RegistrySubscriptionService $subscriptions,
+		public readonly PermissionHandlerInterface $permissionHandler,
+		public readonly RegistrySubscriptionLifecycleInterface $subscriptions,
 	) {
 	}//end __construct()
 }//end class

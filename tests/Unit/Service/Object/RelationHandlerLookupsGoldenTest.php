@@ -10,14 +10,18 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use PHPUnit\Framework\TestCase;
@@ -286,7 +290,11 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 				return array_map(fn (array $data): ObjectEntity => $this->entity(data: $data), ($this->world['located'] ?? []));
 			}
 		);
-		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(fn (...$args): array => $this->tableRead(args: $args));
+		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			fn (RegisterSchema $table, ListQuery $listing): array => $this->tableRead(
+				args: [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort]
+			)
+		);
 
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturnCallback(
@@ -319,11 +327,13 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->method('isAdmin')->willReturnCallback(fn (): bool => in_array($this->uid, $this->admins, true));
 		$rbac->method('getCurrentUserId')->willReturnCallback(fn (): ?string => $this->uid);
-		$rbac->method('hasPermission')->willReturnCallback(
-			function (...$args): bool {
-				$this->record(name: 'hasPermission', args: $args);
-				$uuid = $args[5] ?? null;
-				return $this->uid !== null && in_array($uuid, ($this->readableByUser[$this->uid] ?? []), true) === true;
+		$rbac->method('hasRowPermission')->willReturnCallback(
+			function (RbacPermissionAsk $ask, ObjectEntity $row): bool {
+				// The row's facts are recorded as the old six-argument call passed
+				// them, so the golden shows the same facts reach the verdict.
+				$facts = [$ask->schema, $ask->action, $row->getOwner(), $row->getMatchEnvelope(), $row->getAuthorization(), $row->getUuid()];
+				$this->record(name: 'hasRowPermission', args: $facts);
+				return $this->uid !== null && in_array($row->getUuid(), ($this->readableByUser[$this->uid] ?? []), true) === true;
 			}
 		);
 
@@ -356,12 +366,14 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 		}
 
 		return new RelationHandler(
-			objectEntityMapper: $magic,
-			schemaMapper: $schemaMapper,
+			stores: new RelationHandlerStores(
+				objects: $magic,
+				schemas: $schemaMapper,
+				registers: $registerMapper,
+				relationTypes: $resolver
+			),
 			rbacHandler: $rbac,
-			logger: $logger,
-			registerMapper: $registerMapper,
-			relationTypes: $resolver
+			logger: $logger
 		);
 	}//end handler()
 

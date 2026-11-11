@@ -69,10 +69,9 @@ class ViewScopeApplierTest extends TestCase {
 
 		$this->expectException(Exception::class);
 
-		$this->applier()->apply(
+		$this->applier()->applyRequired(
 			query: ['_limit' => 200],
-			viewIds: ['view-uuid'],
-			_viewScopeRequired: true
+			viewIds: ['view-uuid']
 		);
 	}//end testAnUnresolvableViewThrowsWhenTheViewIsTheOnlyBound()
 
@@ -94,10 +93,9 @@ class ViewScopeApplierTest extends TestCase {
 
 		$this->expectException(Exception::class);
 
-		$this->applier()->apply(
+		$this->applier()->applyRequired(
 			query: [],
-			viewIds: ['view-uuid'],
-			_viewScopeRequired: true
+			viewIds: ['view-uuid']
 		);
 	}//end testAViewThatNarrowsNothingThrows()
 
@@ -112,10 +110,9 @@ class ViewScopeApplierTest extends TestCase {
 
 		$this->expectException(Exception::class);
 
-		$this->applier()->apply(
+		$this->applier()->applyRequired(
 			query: [],
-			viewIds: ['view-uuid'],
-			_viewScopeRequired: true
+			viewIds: ['view-uuid']
 		);
 	}//end testASearchTermOnlyViewThrowsBecauseItSetsNoRegisterOrSchema()
 
@@ -132,20 +129,18 @@ class ViewScopeApplierTest extends TestCase {
 	public function testNoViewAtAllThrowsRatherThanRunningUnbounded(): void {
 		$this->expectException(Exception::class);
 
-		$this->applier()->apply(
+		$this->applier()->applyRequired(
 			query: ['_limit' => 200],
-			viewIds: [],
-			_viewScopeRequired: true
+			viewIds: []
 		);
 	}//end testNoViewAtAllThrowsRatherThanRunningUnbounded()
 
 	public function testAResolvableViewStillNarrowsTheQuery(): void {
 		$this->viewMapper->method('find')->willReturn($this->view(['registers' => [7]]));
 
-		$query = $this->applier()->apply(
+		$query = $this->applier()->applyRequired(
 			query: [],
-			viewIds: ['view-uuid'],
-			_viewScopeRequired: true
+			viewIds: ['view-uuid']
 		);
 
 		$this->assertContains(7, $query['@self']['register']);
@@ -158,10 +153,9 @@ class ViewScopeApplierTest extends TestCase {
 		// there. array_values() in mergeIds() is what keeps it a list.
 		$this->viewMapper->method('find')->willReturn($this->view(['registers' => [7, 8]]));
 
-		$query = $this->applier()->apply(
+		$query = $this->applier()->applyRequired(
 			query: ['@self' => ['register' => 7]],
-			viewIds: ['view-uuid'],
-			_viewScopeRequired: true
+			viewIds: ['view-uuid']
 		);
 
 		$this->assertTrue(array_is_list($query['@self']['register']));
@@ -171,10 +165,9 @@ class ViewScopeApplierTest extends TestCase {
 	public function testASchemaBoundIsMergedTheSameWay(): void {
 		$this->viewMapper->method('find')->willReturn($this->view(['schemas' => [4, 5]]));
 
-		$query = $this->applier()->apply(
+		$query = $this->applier()->applyRequired(
 			query: ['@self' => ['schema' => 4]],
-			viewIds: ['view-uuid'],
-			_viewScopeRequired: true
+			viewIds: ['view-uuid']
 		);
 
 		$this->assertTrue(array_is_list($query['@self']['schema']));
@@ -190,10 +183,9 @@ class ViewScopeApplierTest extends TestCase {
 			->with('view-uuid', false, false)
 			->willReturn($this->view(['registers' => [7]]));
 
-		$this->applier()->apply(
+		$this->applier()->applyRequired(
 			query: [],
-			viewIds: ['view-uuid'],
-			_viewScopeRequired: true
+			viewIds: ['view-uuid']
 		);
 	}//end testTheViewIsResolvedExemptSoAnAnonymousCallerCanOpenTheLink()
 }//end class

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\Node;
@@ -37,10 +37,10 @@ class ManagedFileOwnerLookup {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $objects Finds an object by the name of its folder.
+	 * @param MagicObjectFinderInterface $objects Finds an object by the name of its folder.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objects,
+		private readonly MagicObjectFinderInterface $objects,
 	) {
 	}//end __construct()
 
@@ -62,12 +62,26 @@ class ManagedFileOwnerLookup {
 	 */
 	public function find(Node $file): ?ObjectEntity {
 		$parent = $file->getParent();
+		$object = $this->objectNamed(name: $parent->getName());
+		if ($object === null || (string)$object->getFolder() !== (string)$parent->getId()) {
+			return null;
+		}
+
+		return $object;
+	}//end find()
+
+	/**
+	 * The object a folder name names, across all sources and without RBAC or tenancy.
+	 *
+	 * Only "no such object" is null; any other lookup failure propagates.
+	 *
+	 * @param string $name The folder name, an object's uuid.
+	 *
+	 * @return ObjectEntity|null The object, or null when there is none.
+	 */
+	private function objectNamed(string $name): ?ObjectEntity {
 		try {
-			$found = $this->objects->findAcrossAllSources(
-				identifier: $parent->getName(),
-				_rbac: false,
-				_multitenancy: false
-			);
+			$found = $this->objects->findAcrossAllSources(identifier: $name, _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return null;
 		}
@@ -77,10 +91,6 @@ class ManagedFileOwnerLookup {
 			return null;
 		}
 
-		if ((string)$object->getFolder() !== (string)$parent->getId()) {
-			return null;
-		}
-
 		return $object;
-	}//end find()
+	}//end objectNamed()
 }//end class

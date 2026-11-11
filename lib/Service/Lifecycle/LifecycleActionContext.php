@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * engine would declare on one instance and the listeners would read an empty
  * one, and every named call would silently fall back to value matching.
  */
-class LifecycleActionContext {
+class LifecycleActionContext implements LifecycleActionContextInterface {
 
 	/**
 	 * Declared actions, a stack per object uuid.

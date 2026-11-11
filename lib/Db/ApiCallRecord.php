@@ -59,6 +59,7 @@ use OCP\AppFramework\Db\Entity;
  * @package  OCA\OpenRegister\Db
  */
 class ApiCallRecord extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The Nextcloud uid, or the empty string for an anonymous caller.
@@ -126,32 +127,42 @@ class ApiCallRecord extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * The published shape of one record.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * An anonymous caller is published as the explicit string `anonymous`
-	 * rather than an empty one, because an empty principal in a report reads
-	 * as a bug in the report.
-	 *
-	 * @return array<string, mixed> The record.
+	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
-	public function jsonSerialize(): array {
-		$principal = (string)$this->principal;
-		if ($principal === '') {
-			$principal = 'anonymous';
-		}
-
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'principal' => $principal,
+			'principal' => $this->principalOrAnonymous(),
 			'route' => (string)$this->route,
 			'method' => (string)$this->method,
-			'version' => (string)$this->apiVersion,
-			'calls' => (int)$this->callCount,
-			'firstSeen' => $this->firstSeen?->format('c'),
-			'lastSeen' => $this->lastSeen?->format('c'),
+			'apiVersion' => (string)$this->apiVersion,
+			'callCount' => (int)$this->callCount,
 		];
+	}//end jsonOverrides()
 
-	}//end jsonSerialize()
+	/**
+	 * Field name to the key it is serialised under.
+	 *
+	 * @return array<string, string>
+	 */
+	protected function jsonRenames(): array {
+		return ['apiVersion' => 'version', 'callCount' => 'calls'];
+	}//end jsonRenames()
+
+	/**
+	 * The principal, or 'anonymous' when there is none.
+	 *
+	 * @return string
+	 */
+	private function principalOrAnonymous(): string {
+		$principal = (string)$this->principal;
+		if ($principal === '') {
+			return 'anonymous';
+		}
+
+		return $principal;
+	}//end principalOrAnonymous()
 }//end class

@@ -23,9 +23,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\DatabaseServerProfile;
+use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -179,16 +182,14 @@ class SettingsController extends Controller {
 	/**
 	 * SettingsController constructor.
 	 *
-	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param SettingsControllerServices $services The settings controller services.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		SettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->config = $services->store->config;
 		$this->db = $services->store->db;
 		$this->container = $services->store->container;
@@ -361,27 +362,29 @@ class SettingsController extends Controller {
 	 */
 	public function getSearchIndexStatus(): JSONResponse {
 		try {
-			$maintenance = $this->container->get(SearchIndexMaintenance::class);
-
-			$tables = $maintenance->indexNamesFor(tableNames: $maintenance->tablesInScope());
-			$indexCount = 0;
-			foreach ($tables as $indexes) {
-				$indexCount += count($indexes);
-			}
-
-			return new JSONResponse(
-				data: [
-					'concurrentRebuildSupported' => $maintenance->supportsConcurrentRebuild(),
-					'tables' => $tables,
-					'tableCount' => count($tables),
-					'indexCount' => $indexCount,
-					'lastRun' => $maintenance->lastRun(),
-				] + $maintenance->rowCounts()
-			);
+			return new JSONResponse(data: $this->searchIndexReport());
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
 	}//end getSearchIndexStatus()
+
+	/**
+	 * The search indexes in scope, their row counts and the last rebuild.
+	 *
+	 * @return array<string, mixed> The report.
+	 */
+	private function searchIndexReport(): array {
+		$maintenance = $this->container->get(SearchIndexMaintenanceInterface::class);
+		$tables = $maintenance->indexNamesFor(tableNames: $maintenance->tablesInScope());
+
+		return [
+			'concurrentRebuildSupported' => $maintenance->supportsConcurrentRebuild(),
+			'tables' => $tables,
+			'tableCount' => count($tables),
+			'indexCount' => array_sum(array_map('count', $tables)),
+			'lastRun' => $maintenance->lastRun(),
+		] + $maintenance->rowCounts();
+	}//end searchIndexReport()
 
 	/**
 	 * Get database information and vector search capabilities
@@ -403,57 +406,48 @@ class SettingsController extends Controller {
 				return new JSONResponse(data: $cached);
 			}
 
-			$platformName = $this->databasePlatformName();
-			$profile = $this->databaseProfile(platformName: $platformName);
-
-			// Build the database info array.
-			$databaseInfo = [
-				'type' => $profile['type'],
-				'version' => $profile['version'],
-				'platform' => $platformName,
-				'vectorSupport' => $profile['vectorSupport'],
-				'recommendedPlugin' => $profile['recommendedPlugin'],
-				'performanceNote' => $profile['performanceNote'],
-				'extensions' => $profile['extensions'],
-				'hybridSearch' => $this->getHybridSearchDiagnostics(isPostgres: $profile['type'] === 'PostgreSQL'),
-				'lastUpdated' => (new DateTime())->format('c'),
-			];
-
-			// Build the response data.
-			$responseData = [
-				'success' => true,
-				'database' => $databaseInfo,
-				'fromCache' => false,
-			];
-
-			// Store in app config for later use.
-			$this->config->setValueString(
-				'openregister',
-				'databaseInfo',
-				json_encode($responseData)
-			);
+			$responseData = ['success' => true, 'database' => $this->freshDatabaseInfo(), 'fromCache' => false];
+			$this->config->setValueString('openregister', 'databaseInfo', json_encode($responseData));
 
 			return new JSONResponse(data: $responseData);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[SettingsController] Failed to get database info',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $this->l10n->t('Failed to get database information: %s', [$e->getMessage()]),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->databaseInfoFailure(e: $e);
+		}
 	}//end getDatabaseInfo()
+
+	/**
+	 * The database info as read now.
+	 *
+	 * @return array<string, mixed> The database info.
+	 */
+	private function freshDatabaseInfo(): array {
+		$info = (new DatabaseServerProfile(db: $this->db, logger: $this->logger))->describe();
+		$diagnostics = new HybridSearchDiagnostics(db: $this->db, container: $this->container, logger: $this->logger);
+		$info['hybridSearch'] = $diagnostics->report(isPostgres: $info['type'] === 'PostgreSQL');
+		$info['lastUpdated'] = (new DateTime())->format('c');
+
+		return $info;
+	}//end freshDatabaseInfo()
+
+	/**
+	 * The response when the database info could not be read.
+	 *
+	 * @param Exception $e What went wrong.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function databaseInfoFailure(Exception $e): JSONResponse {
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
+		$this->logger->error(message: '[SettingsController] Failed to get database info', context: $context);
+
+		return new JSONResponse(
+			data: [
+				'success' => false,
+				'error' => $this->l10n->t('Failed to get database information: %s', [$e->getMessage()]),
+			],
+			statusCode: 500
+		);
+	}//end databaseInfoFailure()
 
 	/**
 	 * The cached database info, unless the caller asked for a refresh.
@@ -461,20 +455,12 @@ class SettingsController extends Controller {
 	 * @return array<string, mixed>|null The cached response data marked as from cache, or null.
 	 */
 	private function cachedDatabaseInfo(): ?array {
-		$refresh = filter_var(
-			$this->request->getParam('refresh', false),
-			FILTER_VALIDATE_BOOLEAN
-		);
+		$refresh = filter_var($this->request->getParam('refresh', false), FILTER_VALIDATE_BOOLEAN);
 		if ($refresh === true) {
 			return null;
 		}
 
-		$cachedInfo = $this->config->getValueString('openregister', 'databaseInfo', '');
-		if (empty($cachedInfo) === true) {
-			return null;
-		}
-
-		$cached = json_decode($cachedInfo, true);
+		$cached = json_decode($this->config->getValueString('openregister', 'databaseInfo', ''), true);
 		if ($cached === null || isset($cached['database']) === false) {
 			return null;
 		}
@@ -482,160 +468,6 @@ class SettingsController extends Controller {
 		$cached['fromCache'] = true;
 		return $cached;
 	}//end cachedDatabaseInfo()
-
-	/**
-	 * The name of the active database platform.
-	 *
-	 * The platform instance from getDatabasePlatform() is deliberately not type hinted.
-	 *
-	 * @return string The platform name, or 'unknown'.
-	 */
-	private function databasePlatformName(): string {
-		$platform = $this->db->getDatabasePlatform();
-		if (method_exists($platform, 'getName') === true) {
-			return $platform->getName();
-		}
-
-		return 'unknown';
-	}//end databasePlatformName()
-
-	/**
-	 * The database type, version, extensions and vector-search advice for a platform.
-	 *
-	 * @param string $platformName The active platform's name.
-	 *
-	 * @return array{type: string, version: string, vectorSupport: bool, recommendedPlugin: string|null,
-	 *     performanceNote: string|null, extensions: list<array{name: mixed, version: mixed}>}
-	 */
-	private function databaseProfile(string $platformName): array {
-		if (strpos($platformName, 'mysql') !== false || strpos($platformName, 'mariadb') !== false) {
-			return $this->mysqlProfile();
-		}
-
-		if (strpos($platformName, 'postgres') !== false) {
-			return $this->postgresProfile();
-		}
-
-		$profile = [
-			'type' => 'Unknown',
-			'version' => 'Unknown',
-			'vectorSupport' => false,
-			'recommendedPlugin' => null,
-			'performanceNote' => null,
-			'extensions' => [],
-		];
-		if (strpos($platformName, 'sqlite') !== false) {
-			$profile['type'] = 'SQLite';
-			$profile['recommendedPlugin'] = 'sqlite-vss or migrate to PostgreSQL';
-			$profile['performanceNote'] = 'SQLite not recommended for production vector search.';
-		}
-
-		return $profile;
-	}//end databaseProfile()
-
-	/**
-	 * The profile of a MySQL or MariaDB server, which has no native vector operations.
-	 *
-	 * @return array{type: string, version: string, vectorSupport: bool, recommendedPlugin: string,
-	 *     performanceNote: string, extensions: list<array{name: mixed, version: mixed}>}
-	 */
-	private function mysqlProfile(): array {
-		$profile = [
-			'type' => 'MySQL/MariaDB',
-			'version' => 'Unknown',
-			'vectorSupport' => false,
-			'recommendedPlugin' => 'pgvector for PostgreSQL',
-			'performanceNote' => 'Current: Similarity calculated in PHP (slow).'
-				. ' Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.',
-			'extensions' => [],
-		];
-
-		try {
-			$version = $this->serverVersion();
-
-			$profile['type'] = 'MySQL';
-			if (stripos($version, 'MariaDB') !== false) {
-				$profile['type'] = 'MariaDB';
-			}
-
-			preg_match('/\d+\.\d+\.\d+/', $version, $matches);
-			$profile['version'] = $matches[0] ?? $version;
-		} catch (Exception $e) {
-			// Reported as MySQL/MariaDB of unknown version.
-		}
-
-		return $profile;
-	}//end mysqlProfile()
-
-	/**
-	 * The profile of a PostgreSQL server, with its installed extensions and pgvector status.
-	 *
-	 * @return array{type: string, version: string, vectorSupport: bool, recommendedPlugin: string,
-	 *     performanceNote: string, extensions: list<array{name: mixed, version: mixed}>}
-	 */
-	private function postgresProfile(): array {
-		$version = 'Unknown';
-		try {
-			preg_match('/PostgreSQL (\d+\.\d+)/', $this->serverVersion(), $matches);
-			$version = $matches[1] ?? 'Unknown';
-		} catch (Exception $e) {
-			// Reported as an unknown version.
-		}
-
-		$extensions = $this->postgresExtensions();
-		$profile = [
-			'type' => 'PostgreSQL',
-			'version' => $version,
-			'vectorSupport' => false,
-			'recommendedPlugin' => 'pgvector (not installed)',
-			'performanceNote' => 'Install pgvector extension: CREATE EXTENSION vector;',
-			'extensions' => $extensions,
-		];
-		if (in_array('vector', array_column($extensions, 'name'), true) === true) {
-			$profile['vectorSupport'] = true;
-			$profile['recommendedPlugin'] = 'pgvector (installed)';
-			$profile['performanceNote'] = 'Optimal: Using database-level vector operations for fast semantic search.';
-		}
-
-		return $profile;
-	}//end postgresProfile()
-
-	/**
-	 * The database server's version string.
-	 *
-	 * @return mixed The result of SELECT VERSION().
-	 */
-	private function serverVersion() {
-		$stmt = $this->db->prepare('SELECT VERSION()');
-		$result = $stmt->execute();
-		return $result->fetchOne();
-	}//end serverVersion()
-
-	/**
-	 * The installed PostgreSQL extensions; empty when the catalog cannot be read.
-	 *
-	 * @return list<array{name: mixed, version: mixed}>
-	 */
-	private function postgresExtensions(): array {
-		$extensions = [];
-		try {
-			$stmt = $this->db->prepare('SELECT extname, extversion FROM pg_extension ORDER BY extname');
-			$result = $stmt->execute();
-			while (is_array($row = $result->fetch()) === true) {
-				$extensions[] = [
-					'name' => $row['extname'],
-					'version' => $row['extversion'],
-				];
-			}
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[SettingsController] Failed to fetch PostgreSQL extensions',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-		}
-
-		return $extensions;
-	}//end postgresExtensions()
 
 	/**
 	 * Refresh database information
@@ -658,194 +490,6 @@ class SettingsController extends Controller {
 	}//end refreshDatabaseInfo()
 
 	/**
-	 * Hybrid-document-search readiness diagnostics.
-	 *
-	 * Reports whether the hybrid-search schema surface exists — the
-	 * `openregister_vec_ann` pgvector ANN sidecar table + HNSW index (the
-	 * sidecar replaces the originally-designed in-table column, which broke
-	 * Doctrine schema introspection) and the functional tsvector GIN index on
-	 * openregister_chunks — plus vectorization/backfill progress so an
-	 * operator can watch the job-only warm-up converge (DECIDED 2026-07-06).
-	 *
-	 * All lookups are tolerant: a failed catalog query reports `false`/zero
-	 * rather than failing the database-info panel.
-	 *
-	 * @param bool $isPostgres Whether the active platform is PostgreSQL
-	 *
-	 * @return array<string, mixed> Diagnostics payload
-	 *
-	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#6.1
-	 */
-	private function getHybridSearchDiagnostics(bool $isPostgres): array {
-		$diagnostics = [
-			'annSidecarTable' => false,
-			'embeddingVectorDimension' => null,
-			'hnswIndex' => false,
-			'textSearchGinIndex' => false,
-			'chunks' => [
-				'total' => 0,
-				'vectorized' => 0,
-			],
-			'vectors' => [
-				'total' => 0,
-				'pgvectorPopulated' => 0,
-			],
-		];
-
-		$sidecar = \OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform::SIDECAR_TABLE;
-
-		if ($isPostgres === true) {
-			$diagnostics = array_replace(
-				$diagnostics,
-				$this->annSidecarDiagnostics(sidecar: $sidecar),
-				$this->searchIndexDiagnostics()
-			);
-			$diagnostics['vectors'] = $this->vectorCounts(sidecar: $sidecar);
-		}
-
-		// Chunk vectorization progress (platform-agnostic).
-		$diagnostics['chunks'] = $this->chunkVectorizationProgress();
-
-		return $diagnostics;
-	}//end getHybridSearchDiagnostics()
-
-	/**
-	 * Whether the pgvector ANN sidecar table exists, and its embedding dimension.
-	 *
-	 * @param string $sidecar The sidecar table name.
-	 *
-	 * @return array{annSidecarTable?: true, embeddingVectorDimension?: int} Empty when the sidecar is unavailable.
-	 */
-	private function annSidecarDiagnostics(string $sidecar): array {
-		try {
-			$result = $this->db->executeQuery(
-				'SELECT a.atttypmod FROM pg_attribute a '
-				. "WHERE a.attrelid = '" . $sidecar . "'::regclass "
-				. "AND a.attname = 'embedding' AND NOT a.attisdropped"
-			);
-			$typmod = $result->fetchOne();
-			$result->closeCursor();
-
-			if ($typmod !== false && (int)$typmod > 0) {
-				return ['annSidecarTable' => true, 'embeddingVectorDimension' => (int)$typmod];
-			}
-		} catch (\Throwable $e) {
-			// Sidecar unavailable — reported as false.
-		}
-
-		return [];
-	}//end annSidecarDiagnostics()
-
-	/**
-	 * Whether the HNSW and the text-search GIN indexes exist.
-	 *
-	 * @return array{hnswIndex: bool, textSearchGinIndex: bool}
-	 */
-	private function searchIndexDiagnostics(): array {
-		$found = ['hnswIndex' => false, 'textSearchGinIndex' => false];
-		try {
-			$result = $this->db->executeQuery(
-				'SELECT indexname FROM pg_indexes WHERE indexname IN '
-				. "('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
-			);
-			while (is_array($row = $result->fetch()) === true) {
-				if ($row['indexname'] === 'idx_or_vec_ann_hnsw') {
-					$found['hnswIndex'] = true;
-				}
-
-				if ($row['indexname'] === 'idx_or_chunks_text_search_gin') {
-					$found['textSearchGinIndex'] = true;
-				}
-			}
-
-			$result->closeCursor();
-		} catch (\Throwable $e) {
-			// Reported as false.
-		}
-
-		return $found;
-	}//end searchIndexDiagnostics()
-
-	/**
-	 * The vector row count and how many of them have a pgvector sidecar row.
-	 *
-	 * @param string $sidecar The sidecar table name.
-	 *
-	 * @return array{total: int, pgvectorPopulated: int}
-	 */
-	private function vectorCounts(string $sidecar): array {
-		$counts = ['total' => 0, 'pgvectorPopulated' => 0];
-		try {
-			$result = $this->db->executeQuery(
-				'SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated '
-				. 'FROM *PREFIX*openregister_vectors v '
-				. "LEFT JOIN $sidecar a ON a.vector_id = v.id"
-			);
-			$row = $result->fetch();
-			$result->closeCursor();
-
-			// An is_array check, not `!== false`: fetch() can answer NULL
-			// as well as false, which passes a `!== false` guard and then
-			// warns on every offset read.
-			if (is_array($row) === true) {
-				$counts['total'] = (int)$row['total'];
-				$counts['pgvectorPopulated'] = (int)$row['populated'];
-			}
-		} catch (\Throwable $e) {
-			// The ANN sidecar may not exist yet — plain row count only.
-			$counts['total'] = $this->plainVectorCount();
-		}
-
-		return $counts;
-	}//end vectorCounts()
-
-	/**
-	 * The vector row count without the sidecar join.
-	 *
-	 * @return int The count, or zero when it cannot be read.
-	 */
-	private function plainVectorCount(): int {
-		try {
-			$result = $this->db->executeQuery(
-				'SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors'
-			);
-			$total = $result->fetchOne();
-			$result->closeCursor();
-
-			if ($total !== false) {
-				return (int)$total;
-			}
-		} catch (\Throwable $inner) {
-			// Reported as zero.
-		}
-
-		return 0;
-	}//end plainVectorCount()
-
-	/**
-	 * How many chunks exist and how many are vectorized.
-	 *
-	 * @return array{total: int, vectorized: int} Zeros for what cannot be read.
-	 */
-	private function chunkVectorizationProgress(): array {
-		$progress = ['total' => 0, 'vectorized' => 0];
-		try {
-			$chunkMapper = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface::class);
-			if ($chunkMapper instanceof \OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface) {
-				$progress['total'] = $chunkMapper->countAll();
-				$progress['vectorized'] = $chunkMapper->countVectorized();
-			}
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[SettingsController] Failed to fetch chunk vectorization progress',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-		}
-
-		return $progress;
-	}//end chunkVectorizationProgress()
-
-	/**
 	 * Get version information only
 	 *
 	 * @NoCSRFRequired
@@ -862,157 +506,4 @@ class SettingsController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
 	}//end getVersionInfo()
-
-	/**
-	 * Debug endpoint for type filtering issue
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse JSON response with type filtering debug information
-	 *
-	 * @psalm-return JSONResponse<200|404|500,
-	 *     array{error?: string, trace?: string,
-	 *     all_organizations?: array{count: int<0, max>,
-	 *     organizations: array<array{id: int, name: null|string,
-	 *     type: 'NO TYPE'|mixed, object_data: array|null}>},
-	 *     type_samenwerking?: array{count: int<0, max>,
-	 *     organizations: array<array{id: int, name: null|string,
-	 *     type: 'NO TYPE'|mixed}>},
-	 *     type_community?: array{count: int<0, max>,
-	 *     organizations: array<array{id: int, name: null|string,
-	 *     type: 'NO TYPE'|mixed}>},
-	 *     type_both?: array{count: int<0, max>,
-	 *     organizations: array<array{id: int, name: null|string,
-	 *     type: 'NO TYPE'|mixed}>},
-	 *     direct_database_query?: array{count: int<0, max>,
-	 *     organizations: array<array{id: mixed, name: mixed,
-	 *     type: 'NO TYPE'|mixed, object_json: mixed}>}},
-	 *     array<never, never>>
-	 *
-	 * @spec exclude Debug/test scaffolding endpoint ("Debug endpoint for type filtering issue"): dumps
-	 *              organisation/object data; not a product contract (see proposal Notes — routed debug surface,
-	 *              information-disclosure risk).
-	 *
-	 * @NoAdminRequired
-	 */
-	public function debugTypeFiltering(): JSONResponse {
-		try {
-			// Get services.
-			$objectService = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class);
-
-			// Set register and schema context. The register slug is RESOLVED,
-			// not written: stackiq's repair step renames it from
-			// `voorzieningen` to `stackiq` per instance, and reading with the
-			// name this instance does not carry returns an empty set that this
-			// endpoint would have rendered as "no organisations". That is the
-			// wrong answer for a diagnostic whose whole job is to say whether
-			// filtering works.
-			$slugResolver = $this->container->get(\OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class);
-			$register = $slugResolver->slugOrNull(canonical: 'stackiq');
-			if ($register === null) {
-				return new JSONResponse(
-					data: ['error' => 'No stackiq register on this instance under any of its known slugs.'],
-					statusCode: 404
-				);
-			}
-
-			$objectService->setRegister($register);
-			$objectService->setSchema('organisation');
-
-			$results = [
-				'all_organizations' => $this->organisationsOfType(objectService: $objectService, types: []),
-				'type_samenwerking' => $this->organisationsOfType(objectService: $objectService, types: ['samenwerking']),
-				'type_community' => $this->organisationsOfType(objectService: $objectService, types: ['community']),
-				'type_both' => $this->organisationsOfType(
-					objectService: $objectService,
-					types: ['samenwerking', 'community']
-				),
-				'direct_database_query' => $this->organisationsByNameInDatabase(),
-			];
-
-			return new JSONResponse(data: $results);
-		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end debugTypeFiltering()
-
-	/**
-	 * Search the organisation schema in the database, optionally filtered on type.
-	 *
-	 * The unfiltered search also returns each organisation's object data.
-	 *
-	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService The object service, set to the organisation schema.
-	 * @param list<string>  $types         The types to filter on; empty for no filter.
-	 *
-	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
-	 */
-	private function organisationsOfType(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService, array $types): array {
-		$query = [
-			'_limit' => 10,
-			'_page' => 1,
-			'_source' => 'database',
-		];
-		if ($types !== []) {
-			$query['type'] = $types;
-		}
-
-		$found = $objectService->searchObjectsPaginated($query);
-		$organisations = [];
-		foreach ($found['results'] as $org) {
-			$objectData = $org->getObject();
-			$summary = [
-				'id' => $org->getId(),
-				'name' => $org->getName(),
-				'type' => $objectData['type'] ?? 'NO TYPE',
-			];
-			if ($types === []) {
-				$summary['object_data'] = $objectData;
-			}
-
-			$organisations[] = $summary;
-		}
-
-		return ['count' => count($found['results']), 'organizations' => $organisations];
-	}//end organisationsOfType()
-
-	/**
-	 * Read the objects named like Samenwerking or Community straight from the objects table.
-	 *
-	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
-	 */
-	private function organisationsByNameInDatabase(): array {
-		$connection = $this->container->get(\OCP\IDBConnection::class);
-		$qb = $connection->getQueryBuilder();
-		$qb->select('o.id', 'o.name', 'o.object')
-			->from('openregister_objects', 'o')
-			->where($qb->expr()->like('o.name', $qb->createNamedParameter('%Samenwerking%')))
-			->orWhere($qb->expr()->like('o.name', $qb->createNamedParameter('%Community%')));
-
-		// NC's IResult does not expose Doctrine's fetchAllAssociative() on every
-		// supported server (absent on NC 32), and a fetch() that answers NULL never
-		// satisfies `!== false`, so the loop ends on anything that is not a row.
-		$stmt = $qb->executeQuery();
-		$organisations = [];
-		$row = $stmt->fetch();
-		while (is_array($row) === true) {
-			$objectData = json_decode($row['object'], true);
-			$organisations[] = [
-				'id' => $row['id'],
-				'name' => $row['name'],
-				'type' => $objectData['type'] ?? 'NO TYPE',
-				'object_json' => $row['object'],
-			];
-			$row = $stmt->fetch();
-		}
-
-		$stmt->closeCursor();
-
-		return ['count' => count($organisations), 'organizations' => $organisations];
-	}//end organisationsByNameInDatabase()
 }//end class

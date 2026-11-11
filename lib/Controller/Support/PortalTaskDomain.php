@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Portal\PortalSubjectAssertion;
-use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
-use OCA\OpenRegister\Service\Portal\PortalTaskService;
+use OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface;
+use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryServiceInterface;
+use OCA\OpenRegister\Service\Portal\PortalTaskServiceInterface;
 use OCP\IUserSession;
 
 /**
@@ -36,17 +36,17 @@ final class PortalTaskDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param PortalSubjectAssertion    $assertion   Verifies the acting subject.
-	 * @param PortalTaskService         $portal      The subject-scoped read and completion.
-	 * @param PortalTaskDeliveryService $delivery    The delivery ledger.
+	 * @param PortalSubjectAssertionInterface    $assertion   Verifies the acting subject.
+	 * @param PortalTaskServiceInterface         $portal      The subject-scoped read and completion.
+	 * @param PortalTaskDeliveryServiceInterface $delivery    The delivery ledger.
 	 * @param IUserSession              $userSession Names the operator on the delivery routes.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
 	 */
 	public function __construct(
-		public readonly PortalSubjectAssertion $assertion,
-		public readonly PortalTaskService $portal,
-		public readonly PortalTaskDeliveryService $delivery,
+		public readonly PortalSubjectAssertionInterface $assertion,
+		public readonly PortalTaskServiceInterface $portal,
+		public readonly PortalTaskDeliveryServiceInterface $delivery,
 		public readonly IUserSession $userSession,
 	) {
 	}//end __construct()

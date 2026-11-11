@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -56,7 +57,7 @@ class ConditionMatcherOrganisationContextTest extends TestCase {
 		$container->method('get')->willReturn($organisations);
 
 		$matcher = new ConditionMatcher(
-			$this->createMock(IUserSession::class),
+			new ConditionUserResolvers($this->createMock(IUserSession::class)),
 			$container,
 			$this->createMock(OperatorEvaluator::class),
 			$this->createMock(LoggerInterface::class)
@@ -73,7 +74,7 @@ class ConditionMatcherOrganisationContextTest extends TestCase {
 
 	public function testUserTokensDenyInsideAContext(): void {
 		$matcher = new ConditionMatcher(
-			$this->createMock(IUserSession::class),
+			new ConditionUserResolvers($this->createMock(IUserSession::class)),
 			$this->createMock(ContainerInterface::class),
 			$this->createMock(OperatorEvaluator::class),
 			$this->createMock(LoggerInterface::class)

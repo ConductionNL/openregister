@@ -31,14 +31,14 @@ final class ConversationControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ConversationMappers  $mappers  The mappers bundle.
+	 * @param ChatMappers          $mappers  The mappers bundle.
 	 * @param ConversationDomain   $domain   The domain bundle.
 	 * @param ConversationPlatform $platform The platform bundle.
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		public readonly ConversationMappers $mappers,
+		public readonly ChatMappers $mappers,
 		public readonly ConversationDomain $domain,
 		public readonly ConversationPlatform $platform,
 	) {

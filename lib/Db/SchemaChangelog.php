@@ -58,6 +58,7 @@ use OCP\AppFramework\Db\Entity;
 class SchemaChangelog extends Entity implements JsonSerializable {
 	use JsonFieldsTrait;
 	use HydrateEmptyJsonAsNullTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The schema this changelog entry belongs to.
@@ -131,22 +132,13 @@ class SchemaChangelog extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * JSON serialisation.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<string, mixed> The serialised changelog entry.
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'schemaId' => $this->schemaId,
-			'version' => $this->version,
-			'classification' => $this->classification,
 			'changes' => ($this->changes ?? []),
-			'actor' => $this->actor,
-			'acknowledgedBy' => $this->acknowledgedBy,
-			'acknowledgedAt' => $this->acknowledgedAt?->format(DateTime::ATOM),
-			'created' => $this->created?->format(DateTime::ATOM),
 		];
-
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

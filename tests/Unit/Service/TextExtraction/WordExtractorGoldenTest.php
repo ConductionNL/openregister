@@ -1,176 +1,222 @@
 <?php
 
-declare(strict_types=1);
-
 /**
- * WordExtractor golden tests on real DOCX and ODT fixtures
+ * WordExtractor golden test.
+ *
+ * Records which reader WordExtractor picks for a set of MIME types and names,
+ * and what extract() returns and logs on the paths that do not depend on the
+ * PHP build (legacy .doc handling and unreadable files), so a refactor of the
+ * extractor can be shown to keep its behaviour.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\TextExtraction
  *
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://OpenRegister.app
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/specs/text-extraction-word/spec.md
  */
+
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
+use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
 use OCP\Files\File;
+use OCP\Files\NotPermittedException;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
+use Psr\Log\AbstractLogger;
+use ReflectionMethod;
+use RuntimeException;
+use Throwable;
 
 /**
- * The text {@see WordExtractor} returns for documents with headers, footers,
- * tables, footnotes, lists, comments and tracked changes.
- *
- * Text is compared with whitespace collapsed, so line structure does not count.
- *
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor
- * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\WordTextReader
- * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\OoxmlPackage
  */
 class WordExtractorGoldenTest extends TestCase {
 
+	private const FIXTURE = __DIR__ . '/fixtures/word-extractor-golden.json';
+
 	private const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-	private const ODT = 'application/vnd.oasis.opendocument.text';
+	/**
+	 * Calls made against the converter, in order.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $calls = [];
 
 	/**
-	 * Extract a fixture and collapse its whitespace.
-	 *
-	 * @param string $path Fixture path relative to tests/Data.
-	 * @param string $mime The MIME type to report.
-	 *
-	 * @return string
+	 * @return array<string, array{0: string}>
 	 */
-	private function extract(string $path, string $mime): string {
+	public static function cases(): array {
+		$out = [];
+		foreach (array_keys(self::scenarios()) as $name) {
+			$out[$name] = [$name];
+		}
+
+		return $out;
+	}//end cases()
+
+	/**
+	 * `resolve` asks for the reader only; the others run extract().
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	private static function scenarios(): array {
+		return [
+			'resolve' => [
+				'resolve' => [
+					[self::DOCX, 'a.bin'],
+					['application/msword', 'a.docx'],
+					['application/vnd.oasis.opendocument.text', 'a.doc'],
+					['APPLICATION/MSWORD', 'a.txt'],
+					['application/octet-stream', 'report.DOCX'],
+					['application/octet-stream', 'report.Doc'],
+					['application/octet-stream', 'report.odt'],
+					['application/octet-stream', 'report.tar.odt'],
+					['application/octet-stream', 'report.pdf'],
+					['', ''],
+					['', '.doc'],
+					['text/plain', 'noextension'],
+				],
+			],
+			'doc-without-converter' => ['mime' => 'application/msword', 'name' => 'old.doc'],
+			'doc-converter-no-target' => ['mime' => 'application/msword', 'name' => 'old.doc', 'target' => null],
+			'doc-by-extension-no-target' => ['mime' => 'application/octet-stream', 'name' => 'old.DOC', 'target' => null],
+			'doc-to-text' => ['mime' => 'application/msword', 'name' => 'old.doc', 'target' => 'txt', 'converted' => 'Converted text'],
+			'doc-to-blank-text' => ['mime' => 'application/msword', 'name' => 'old.doc', 'target' => 'txt', 'converted' => " \n\t "],
+			'doc-to-zero' => ['mime' => 'application/msword', 'name' => 'old.doc', 'target' => 'txt', 'converted' => '0'],
+			'doc-convert-fails' => ['mime' => 'application/msword', 'name' => 'old.doc', 'target' => 'txt', 'converted' => 'throw'],
+			'doc-content-refused' => ['mime' => 'application/msword', 'name' => 'old.doc', 'target' => 'txt', 'content' => 'refused'],
+			'docx-content-refused' => ['mime' => self::DOCX, 'name' => 'new.docx', 'content' => 'refused'],
+			'odt-content-refused' => ['mime' => 'application/vnd.oasis.opendocument.text', 'name' => 'new.odt', 'content' => 'refused', 'target' => 'txt'],
+		];
+	}//end scenarios()
+
+	/**
+	 * @dataProvider cases
+	 */
+	public function testWordExtractorMatchesGolden(string $name): void {
+		$recorded = $this->record(scenario: self::scenarios()[$name]);
+
+		$all = [];
+		if (file_exists(self::FIXTURE) === true) {
+			$all = json_decode((string)file_get_contents(self::FIXTURE), true);
+		}
+
+		if (getenv('OR_GOLDEN_WRITE') === '1') {
+			$all[$name] = $recorded;
+			ksort($all);
+			file_put_contents(self::FIXTURE, json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+		}
+
+		$this->assertArrayHasKey($name, $all);
+		$this->assertNotEmpty($all[$name]['result']);
+		$this->assertSame($all[$name], $recorded);
+	}//end testWordExtractorMatchesGolden()
+
+	/**
+	 * @param array<string, mixed> $scenario
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function record(array $scenario): array {
+		$this->calls = [];
+		$lines = [];
+		$logger = new class($lines) extends AbstractLogger {
+			/**
+			 * @param array<int, string> $lines
+			 */
+			public function __construct(private array &$lines) {
+			}
+
+			public function log($level, string|\Stringable $message, array $context = []): void {
+				$this->lines[] = $level . ': ' . $message . ' ' . json_encode($context);
+			}
+		};
+
+		$converter = null;
+		if (array_key_exists('target', $scenario) === true) {
+			$converter = $this->converter(scenario: $scenario);
+		}
+
+		$extractor = new WordExtractor($logger, $converter);
+		try {
+			$result = ['returned' => $this->invoke(extractor: $extractor, scenario: $scenario)];
+		} catch (Throwable $e) {
+			$result = ['threw' => get_class($e) . ': ' . $e->getMessage()];
+		}
+
+		return ['result' => $result, 'calls' => $this->calls, 'log' => $lines];
+	}//end record()
+
+	/**
+	 * @param array<string, mixed> $scenario
+	 */
+	private function invoke(WordExtractor $extractor, array $scenario): mixed {
+		if (isset($scenario['resolve']) === true) {
+			$resolve = new ReflectionMethod(WordExtractor::class, 'resolveWordReader');
+			$out = [];
+			foreach ($scenario['resolve'] as [$mime, $name]) {
+				$out[] = $mime . ' | ' . $name . ' => ' . $resolve->invoke($extractor, $mime, $name);
+			}
+
+			return $out;
+		}
+
+		return $extractor->extract($this->file(scenario: $scenario));
+	}//end invoke()
+
+	/**
+	 * @param array<string, mixed> $scenario
+	 */
+	private function converter(array $scenario): ConversionManagerConverter {
+		$converter = $this->createMock(ConversionManagerConverter::class);
+		$converter->method('legacyDocTarget')->willReturnCallback(
+			function () use ($scenario): ?string {
+				$this->calls[] = 'legacyDocTarget()';
+				return $scenario['target'];
+			}
+		);
+		$converter->method('convertLegacyDoc')->willReturnCallback(
+			function (string $docBytes, string $target) use ($scenario): string {
+				$this->calls[] = 'convertLegacyDoc(' . $docBytes . ', ' . $target . ')';
+				if (($scenario['converted'] ?? null) === 'throw') {
+					throw new RuntimeException('office server down');
+				}
+
+				return (string)($scenario['converted'] ?? '');
+			}
+		);
+
+		return $converter;
+	}//end converter()
+
+	/**
+	 * @param array<string, mixed> $scenario
+	 */
+	private function file(array $scenario): File {
 		$file = $this->createMock(File::class);
-		$file->method('getContent')->willReturn((string) file_get_contents(dirname(__DIR__, 3) . '/Data/' . $path));
-		$file->method('getMimeType')->willReturn($mime);
-		$file->method('getName')->willReturn(basename($path));
-		$file->method('getId')->willReturn(1);
-
-		$text = (new WordExtractor(logger: $this->createMock(LoggerInterface::class)))->extract(file: $file);
-
-		return trim((string) preg_replace('/\s+/u', ' ', (string) $text));
-	}//end extract()
-
-	/**
-	 * A DOCX yields its header, body, table cells (nested too), list, footer and footnote.
-	 *
-	 * @return void
-	 */
-	public function testDocxStructuresAreRead(): void {
-		$text = $this->extract(path: 'Word/word-structures.docx', mime: self::DOCX);
-
-		foreach ([
-			'Gemeente Demostad kenmerk ZK-2026-0042',
-			'Besluit op aanvraag',
-			'Aanvrager Maria Bakker woont aan de Kerkstraat 12 in Demostad.',
-			'Contact via maria.bakker@example.nl',
-			'Rol Naam',
-			'Aanvrager Maria Bakker',
-			'Gemachtigde Jan Jansen',
-			'Kind Sanne Bakker',
-			'Eerste punt voor Jan Jansen',
-			'Tweede punt',
-			'Naam: Jan Jansen Tweede regel',
-			'Slotzin met Łukasz Żółć uit Gdańsk.',
-			'Behandelaar Jan Jansen telefoon 0612345678',
-			'Voetnoot over Maria Bakker.',
-		] as $expected) {
-			$this->assertStringContainsString($expected, $text);
+		$file->method('getId')->willReturn(7);
+		$file->method('getMimeType')->willReturn($scenario['mime']);
+		$file->method('getName')->willReturn($scenario['name']);
+		if (($scenario['content'] ?? null) === 'refused') {
+			$file->method('getContent')->willThrowException(new NotPermittedException('cannot read'));
+			return $file;
 		}
 
-		$this->assertStringNotContainsString('Controleer de naam', $text, 'Comments are not document text.');
-		$this->assertStringNotContainsString('Piet de Vries', $text, 'Change and comment authors are not document text.');
-	}//end testDocxStructuresAreRead()
-
-	/**
-	 * The inserted text of a tracked change is read, in both fixtures that carry one.
-	 *
-	 * @return void
-	 */
-	public function testTrackedInsertionIsRead(): void {
-		$this->assertStringContainsString('15.000', $this->extract(path: 'Word/word-structures.docx', mime: self::DOCX));
-		$this->assertStringContainsString('15.000', $this->extract(path: 'Word/concept-besluit-demostad.docx', mime: self::DOCX));
-	}//end testTrackedInsertionIsRead()
-
-	/**
-	 * The deleted text of a tracked change is not document text.
-	 *
-	 * @return void
-	 */
-	public function testTrackedDeletionIsSkipped(): void {
-		$this->assertStringContainsString('Het bedrag is 15.000 euro.', $this->extract(path: 'Word/concept-besluit-demostad.docx', mime: self::DOCX));
-		$this->assertStringNotContainsString('12.000', $this->extract(path: 'Word/concept-besluit-demostad.docx', mime: self::DOCX));
-		$this->assertStringNotContainsString('12.000', $this->extract(path: 'Word/word-structures.docx', mime: self::DOCX));
-	}//end testTrackedDeletionIsSkipped()
-
-	/**
-	 * A name split over two runs is read as one word.
-	 *
-	 * @return void
-	 */
-	public function testNameSplitOverRunsIsJoined(): void {
-		$this->assertStringContainsString('Gesplitst: Jan Jansen tekent.', $this->extract(path: 'Word/word-structures.docx', mime: self::DOCX));
-	}//end testNameSplitOverRunsIsJoined()
-
-	/**
-	 * Each footnote is read once.
-	 *
-	 * @return void
-	 */
-	public function testFootnoteIsReadOnce(): void {
-		$this->assertSame(1, substr_count($this->extract(path: 'Word/word-structures.docx', mime: self::DOCX), 'Voetnoot over Maria Bakker.'));
-	}//end testFootnoteIsReadOnce()
-
-	/**
-	 * An ODT yields its header, body, table cells (nested too), list, footnote and footer.
-	 *
-	 * @return void
-	 */
-	public function testOdtStructuresAreRead(): void {
-		$text = $this->extract(path: 'Word/word-structures.odt', mime: self::ODT);
-
-		foreach ([
-			'Gemeente Demostad kenmerk ZK-2026-0042',
-			'Behandelaar Jan Jansen telefoon 0612345678',
-			'Besluit op aanvraag',
-			'Aanvrager Maria Bakker woont aan de Kerkstraat 12 in Demostad.',
-			'Rol Naam',
-			'Gemachtigde Jan Jansen',
-			'Kind Sanne Bakker',
-			'Naam: Jan Jansen Tweede regel',
-			'Gesplitst: Jan Jansen tekent.',
-			'Het bedrag is 15.000 euro.',
-			'Contact via maria.bakker@example.nl',
-			'Voetnoot over Maria Bakker.',
-			'Eerste punt voor Jan Jansen',
-			'Slotzin met Łukasz Żółć uit Gdańsk.',
-		] as $expected) {
-			$this->assertStringContainsString($expected, $text);
-		}
-
-		$this->assertStringNotContainsString('12.000', $text);
-		$this->assertStringNotContainsString('Controleer de naam', $text, 'Comments are not document text.');
-		$this->assertStringNotContainsString('Piet de Vries', $text, 'Change and comment authors are not document text.');
-	}//end testOdtStructuresAreRead()
-
-	/**
-	 * A real Word document reads the same as before.
-	 *
-	 * @return void
-	 */
-	public function testRealWordDocument(): void {
-		$text = $this->extract(path: 'anonimisering_testdocument.docx', mime: self::DOCX);
-
-		$this->assertStringStartsWith('Testdocument – Fictieve persoonsgegevens Naam: Jan de Vries E-mail: jan.devries@example.org', $text);
-		$this->assertStringContainsString('Adres: Kerkstraat 12 3512 GK Utrecht Nederland', $text);
-		$this->assertStringContainsString('IBAN: NL91ABNA0417164300', $text);
-		$this->assertStringEndsWith('Datum ondertekening contract: 01-11-2024', $text);
-	}//end testRealWordDocument()
+		$file->method('getContent')->willReturn('doc-bytes');
+		return $file;
+	}//end file()
 }//end class

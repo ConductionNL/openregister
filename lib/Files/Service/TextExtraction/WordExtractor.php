@@ -27,8 +27,32 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Extracts text content from Word-family documents.
+ *
+ * @spec openspec/specs/text-extraction-word/spec.md
  */
 class WordExtractor {
+	/**
+	 * Reader name per Word-family MIME type.
+	 *
+	 * @var array<string, string>
+	 */
+	private const READERS_BY_MIME = [
+		'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'Word2007',
+		'application/msword' => 'MsDoc',
+		'application/vnd.oasis.opendocument.text' => 'ODText',
+	];
+
+	/**
+	 * Reader name per file extension, used when the MIME type is generic or ambiguous.
+	 *
+	 * @var array<string, string>
+	 */
+	private const READERS_BY_EXTENSION = [
+		'docx' => 'Word2007',
+		'doc' => 'MsDoc',
+		'odt' => 'ODText',
+	];
+
 	/**
 	 * Constructor.
 	 *
@@ -76,16 +100,7 @@ class WordExtractor {
 	 * @return string|null The text, or null when empty or unreadable.
 	 */
 	private function extractPackage(File $file, string $readerName): ?string {
-		try {
-			$text = $this->textOf(file: $file, readerName: $readerName);
-		} catch (\Throwable $e) {
-			$text = null;
-			$this->logger->error(
-				message: '[WordExtractor] Word extraction failed; returning null',
-				context: ['fileId' => $file->getId(), 'mimeType' => (string)$file->getMimeType(), 'reader' => $readerName, 'exception' => get_class($e)]
-			);
-		}
-
+		$text = $this->textOrNull(file: $file, readerName: $readerName);
 		if ($text === null || trim($text) === '') {
 			$this->logger->warning(
 				message: '[WordExtractor] Word extraction returned empty text',
@@ -96,6 +111,26 @@ class WordExtractor {
 
 		return $text;
 	}//end extractPackage()
+
+	/**
+	 * The text of a document, or null when reading it fails; a failure is logged without document content.
+	 *
+	 * @param File   $file       The document.
+	 * @param string $readerName `Word2007`, `ODText` or `MsDoc`.
+	 *
+	 * @return string|null
+	 */
+	private function textOrNull(File $file, string $readerName): ?string {
+		try {
+			return $this->textOf(file: $file, readerName: $readerName);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[WordExtractor] Word extraction failed; returning null',
+				context: ['fileId' => $file->getId(), 'mimeType' => (string)$file->getMimeType(), 'reader' => $readerName, 'exception' => get_class($e)]
+			);
+			return null;
+		}
+	}//end textOrNull()
 
 	/**
 	 * The text of a document: DOCX and ODT directly, legacy .doc after conversion.
@@ -130,28 +165,12 @@ class WordExtractor {
 	 * @return string Reader name (Word2007 | MsDoc | ODText).
 	 */
 	private function resolveWordReader(string $mimeType, string $fileName): string {
-		$byMime = [
-			'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'Word2007',
-			'application/msword' => 'MsDoc',
-			'application/vnd.oasis.opendocument.text' => 'ODText',
-		];
-
-		if (isset($byMime[$mimeType]) === true) {
-			return $byMime[$mimeType];
+		if (isset(self::READERS_BY_MIME[$mimeType]) === true) {
+			return self::READERS_BY_MIME[$mimeType];
 		}
 
 		// Fall back to the filename extension when the MIME is generic/ambiguous.
-		$byExt = [
-			'docx' => 'Word2007',
-			'doc' => 'MsDoc',
-			'odt' => 'ODText',
-		];
-
 		$ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-		if (isset($byExt[$ext]) === true) {
-			return $byExt[$ext];
-		}
-
-		return 'Word2007';
+		return (self::READERS_BY_EXTENSION[$ext] ?? 'Word2007');
 	}//end resolveWordReader()
 }//end class

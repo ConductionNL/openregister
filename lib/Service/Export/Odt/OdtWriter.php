@@ -35,7 +35,7 @@ use ZipArchive;
  *
  * @spec openspec/specs/export-pdf-format/spec.md
  */
-class OdtWriter {
+class OdtWriter implements OdtWriterInterface {
 
 	/**
 	 * Namespace declarations shared by every part.
@@ -218,6 +218,7 @@ class OdtWriter {
 
 		$zip->close();
 		$bytes = (string) file_get_contents($path);
+		// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is the tempnam() file this method created.
 		unlink($path);
 
 		return $bytes;

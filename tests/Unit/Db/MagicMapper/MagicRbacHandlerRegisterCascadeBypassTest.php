@@ -31,7 +31,10 @@ namespace Unit\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -40,6 +43,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
@@ -56,6 +60,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use PDO;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Tests that the register cascade admits org-less rows only, and that hasPermission() reads it.
@@ -107,7 +114,7 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$userManager,
 			$this->groupManager,
@@ -121,7 +128,7 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 
 		$container->method('get')->willReturnCallback(
 			function (string $service) use ($permissionHandler) {
-				if ($service === PermissionHandler::class) {
+				if ($service === PermissionHandlerInterface::class) {
 					return $permissionHandler;
 				}
 
@@ -134,13 +141,19 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 		);
 
 		$this->handler = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$userManager,
-			$appConfig,
-			$conditionMatcher,
-			$container,
-			$logger
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $container,
+				logger: $logger
+			)
 		);
 
 	}//end setUp()
@@ -252,7 +265,7 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 	 * @return array<int, string> The uuids the list returns, sorted.
 	 */
 	private function visibleRows(Schema $schema, array $query = []): array {
-		$conditions = $this->searchHandler()->buildWhereConditionsSql(query: $query, schema: $schema);
+		$conditions = $this->searchHandler()->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: $schema)));
 
 		$pdo = new PDO('sqlite::memory:');
 		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -525,10 +538,12 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 
 		$this->assertFalse(
 			condition: $this->handler->hasPermission(
-				schema: $this->createSchema(authorization: null),
-				action: 'read',
-				objectOwner: 'importer',
-				objectData: ['name' => 'De Wilg', '_organisation' => null]
+				ask: new RbacPermissionAsk(
+					schema: $this->createSchema(authorization: null),
+					action: 'read',
+					objectOwner: 'importer',
+					objectData: ['name' => 'De Wilg', '_organisation' => null]
+				)
 			)
 		);
 
@@ -545,10 +560,12 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 
 		$this->assertTrue(
 			condition: $this->handler->hasPermission(
-				schema: $this->createSchema(authorization: null),
-				action: 'read',
-				objectOwner: 'importer',
-				objectData: ['name' => 'De Wilg', '_organisation' => null]
+				ask: new RbacPermissionAsk(
+					schema: $this->createSchema(authorization: null),
+					action: 'read',
+					objectOwner: 'importer',
+					objectData: ['name' => 'De Wilg', '_organisation' => null]
+				)
 			)
 		);
 
@@ -565,7 +582,7 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
 
 		$this->assertFalse(
-			condition: $this->handler->hasPermission(schema: $schema, action: 'read', objectData: ['name' => 'x'])
+			condition: $this->handler->hasPermission(ask: new RbacPermissionAsk(schema: $schema, action: 'read', objectData: ['name' => 'x']))
 		);
 
 	}//end testHasPermissionOnASchemaOwnBlockIsUnchanged()
@@ -581,9 +598,11 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 
 		$this->assertTrue(
 			condition: $this->handler->hasPermission(
-				schema: $this->createSchema(authorization: null),
-				action: 'read',
-				objectData: ['name' => 'x']
+				ask: new RbacPermissionAsk(
+					schema: $this->createSchema(authorization: null),
+					action: 'read',
+					objectData: ['name' => 'x']
+				)
 			)
 		);
 

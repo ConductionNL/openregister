@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\ImportPreviewMapper;
-use OCA\OpenRegister\Db\ImportPreviewRowMapper;
+use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
+use OCA\OpenRegister\Db\ImportPreviewRowMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
@@ -35,15 +35,15 @@ final class ImportPreviewMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ImportPreviewMapper    $previewMapper  Preview persistence.
-	 * @param ImportPreviewRowMapper $rowMapper      Per-row decision persistence.
+	 * @param ImportPreviewMapperInterface    $previewMapper  Preview persistence.
+	 * @param ImportPreviewRowMapperInterface $rowMapper      Per-row decision persistence.
 	 * @param RegisterMapperInterface         $registerMapper Register lookup.
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	public function __construct(
-		public readonly ImportPreviewMapper $previewMapper,
-		public readonly ImportPreviewRowMapper $rowMapper,
+		public readonly ImportPreviewMapperInterface $previewMapper,
+		public readonly ImportPreviewRowMapperInterface $rowMapper,
 		public readonly RegisterMapperInterface $registerMapper,
 	) {
 	}//end __construct()

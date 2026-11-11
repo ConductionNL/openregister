@@ -21,15 +21,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices;
 
 /**
  * @covers \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider
@@ -46,7 +49,7 @@ class ProviderItemsBelongToObjectTest extends TestCase {
 		$notes = $this->createMock(NoteService::class);
 		$notes->method('requireNoteOf')->with('uuid-mine', 5)->willThrowException(new Exception('Note not found', 404));
 		$notes->expects($this->never())->method('deleteNote');
-		$notes->expects($this->never())->method('updateNote');
+		$notes->expects($this->never())->method('editNote');
 
 		return new NotesProvider($notes, $this->createMock(IL10N::class));
 	}
@@ -58,36 +61,38 @@ class ProviderItemsBelongToObjectTest extends TestCase {
 	 */
 	private function tasksProvider(): TasksProvider {
 		$tasks = $this->createMock(TaskService::class);
-		$tasks->method('requireTaskOf')->with('uuid-mine', '7', 'task.ics')->willThrowException(new Exception('Task not found', 404));
+		$tasks->method('requireTaskAt')->with('uuid-mine', new TaskLocation(calendarId: '7', uri: 'task.ics'))->willThrowException(new Exception('Task not found', 404));
 		$tasks->expects($this->never())->method('deleteTask');
-		$tasks->expects($this->never())->method('updateTask');
+		$tasks->expects($this->never())->method('changeTask');
 
 		return new TasksProvider(
-			$tasks,
-			$this->createMock(RegisterMapperInterface::class),
-			$this->createMock(SchemaMapperInterface::class),
-			$this->createMock(ObjectOperationsInterface::class),
-			$this->createMock(IL10N::class)
+			new TasksProviderServices(
+				$tasks,
+				$this->createMock(RegisterMapperInterface::class),
+				$this->createMock(SchemaMapperInterface::class),
+				$this->createMock(ObjectOperationsInterface::class),
+			),
+			$this->createMock(IL10N::class),
 		);
 	}
 
 	public function testDeletingANoteOfAnotherObjectIsRefused(): void {
 		$this->expectExceptionCode(404);
-		$this->notesProvider()->delete('r', 's', 'uuid-mine', '5');
+		$this->notesProvider()->delete(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '5');
 	}
 
 	public function testUpdatingANoteOfAnotherObjectIsRefused(): void {
 		$this->expectExceptionCode(404);
-		$this->notesProvider()->update('r', 's', 'uuid-mine', '5', ['message' => 'x']);
+		$this->notesProvider()->update(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '5', ['message' => 'x']);
 	}
 
 	public function testDeletingATaskOfAnotherObjectIsRefused(): void {
 		$this->expectExceptionCode(404);
-		$this->tasksProvider()->delete('r', 's', 'uuid-mine', '7/task.ics');
+		$this->tasksProvider()->delete(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '7/task.ics');
 	}
 
 	public function testUpdatingATaskOfAnotherObjectIsRefused(): void {
 		$this->expectExceptionCode(404);
-		$this->tasksProvider()->update('r', 's', 'uuid-mine', '7/task.ics', ['summary' => 'x']);
+		$this->tasksProvider()->update(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '7/task.ics', ['summary' => 'x']);
 	}
 }

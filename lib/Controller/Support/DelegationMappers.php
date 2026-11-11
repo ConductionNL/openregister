@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 
 /**
  * The mappers and repositories of the delegation API.
@@ -33,12 +33,12 @@ final class DelegationMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param DelegationGrantMapper $grants Reads the grant store.
+	 * @param DelegationGrantMapperInterface $grants Reads the grant store.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function __construct(
-		public readonly DelegationGrantMapper $grants,
+		public readonly DelegationGrantMapperInterface $grants,
 	) {
 	}//end __construct()
 }//end class

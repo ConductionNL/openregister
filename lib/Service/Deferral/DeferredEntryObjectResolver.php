@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service\Deferral;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
@@ -46,7 +47,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/event-driven-architecture/spec.md
  */
-class DeferredEntryObjectResolver {
+class DeferredEntryObjectResolver implements DeferredEntryObjectResolverInterface {
 	/**
 	 * Wire the object lookup.
 	 *
@@ -83,11 +84,13 @@ class DeferredEntryObjectResolver {
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
-				register: $this->nonEmptyString(value: ($entry['register'] ?? null)),
-				schema: $this->nonEmptyString(value: ($entry['schema'] ?? null)),
+				options: new ObjectFindOptions(
+					register: $this->nonEmptyString(value: ($entry['register'] ?? null)),
+					schema: $this->nonEmptyString(value: ($entry['schema'] ?? null)),
+					render: false
+				),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			));
 		} catch (\Throwable $e) {
 			$this->logger->info(

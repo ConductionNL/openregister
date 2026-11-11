@@ -38,7 +38,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<FlowTimerEvent>
  */
-class FlowTimerEventMapper extends QBMapper {
+class FlowTimerEventMapper extends QBMapper implements FlowTimerEventMapperInterface {
 
 	use SelectByColumnTrait;
 

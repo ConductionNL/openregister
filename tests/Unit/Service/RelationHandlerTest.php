@@ -23,10 +23,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -74,13 +76,31 @@ class RelationHandlerTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 
 		$this->handler = new RelationHandler(
-			$this->objectMapper,
-			$this->schemaMapper,
+			new RelationHandlerStores($this->objectMapper, $this->schemaMapper, $this->registerMapper),
 			$this->rbacHandler,
-			$this->logger,
-			$this->registerMapper
+			$this->logger
 		);
 	}
+
+	/**
+	 * The cross-table lookup and the per-table read both answer these rows, readable by an admin.
+	 *
+	 * @param ObjectEntity[] $entities The related rows.
+	 *
+	 * @return void
+	 */
+	private function relatedRowsAre(array $entities): void {
+		foreach ($entities as $entity) {
+			$entity->setRegister('1');
+			$entity->setSchema('1');
+		}
+
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($entities);
+		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturn($entities);
+		$this->registerMapper->method('find')->willReturn(new Register());
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+		$this->rbacHandler->method('isAdmin')->willReturn(true);
+	}//end relatedRowsAre()
 
 	// =============================================
 	// bulkLoadRelationshipsBatched tests
@@ -102,17 +122,12 @@ class RelationHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testBulkLoadRelationshipsBatchedIndexesByUuidAndId(): void {
-		$obj = $this->getMockBuilder(ObjectEntity::class)
-			->onlyMethods(['getUuid'])
-			->addMethods(['getId'])
-			->onlyMethods(['getObject'])
-			->getMock();
-		$obj->method('getUuid')->willReturn('test-uuid-123');
-		$obj->method('getId')->willReturn(42);
-
-		$this->objectMapper
-			->method('findAll')
-			->willReturn([$obj]);
+		$obj = new ObjectEntity();
+		$obj->setUuid('test-uuid-123');
+		$idProp = (new \ReflectionClass($obj))->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($obj, 42);
+		$this->relatedRowsAre(entities: [$obj]);
 
 		$result = $this->handler->bulkLoadRelationshipsBatched(['test-uuid-123']);
 
@@ -134,12 +149,13 @@ class RelationHandlerTest extends TestCase {
 		}
 
 		$this->objectMapper
-			->method('findAll')
+			->expects($this->exactly(4))
+			->method('findMultipleAcrossAllMagicTables')
 			->willReturn([]);
 
 		// Should not throw, just cap.
 		$result = $this->handler->bulkLoadRelationshipsBatched($ids);
-		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	/**
@@ -149,7 +165,7 @@ class RelationHandlerTest extends TestCase {
 	 */
 	public function testBulkLoadRelationshipsBatchedHandlesExceptions(): void {
 		$this->objectMapper
-			->method('findAll')
+			->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \Exception('DB error'));
 
 		// Should not throw, continue with next batch.
@@ -178,12 +194,10 @@ class RelationHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedDelegatesToMapper(): void {
-		$obj = $this->createMock(ObjectEntity::class);
-
-		$this->objectMapper
-			->expects($this->once())
-			->method('findAll')
-			->willReturn([$obj]);
+		$obj = new ObjectEntity();
+		$obj->setUuid('uuid-1');
+		$this->relatedRowsAre(entities: [$obj]);
+		$this->objectMapper->expects($this->once())->method('findMultipleAcrossAllMagicTables');
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
 		$this->assertCount(1, $result);
@@ -197,7 +211,7 @@ class RelationHandlerTest extends TestCase {
 	 */
 	public function testLoadRelationshipChunkOptimizedReturnsEmptyOnException(): void {
 		$this->objectMapper
-			->method('findAll')
+			->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \Exception('DB error'));
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);

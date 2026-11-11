@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
-use OCA\OpenRegister\Service\Archival\DestructionListCreator;
+use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
+use OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface;
 
 /**
  * The domain services of the archival API.
@@ -34,14 +34,14 @@ final class ArchivalNomination {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ArchivalNominationService $nominations Derives and writes an archival nomination.
-	 * @param DestructionListCreator    $creator     Creates a destruction list for the objects an app names.
+	 * @param ArchivalNominationServiceInterface $nominations Derives and writes an archival nomination.
+	 * @param DestructionListCreatorInterface    $creator     Creates a destruction list for the objects an app names.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function __construct(
-		public readonly ArchivalNominationService $nominations,
-		public readonly DestructionListCreator $creator,
+		public readonly ArchivalNominationServiceInterface $nominations,
+		public readonly DestructionListCreatorInterface $creator,
 	) {
 	}//end __construct()
 }//end class

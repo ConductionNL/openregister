@@ -49,6 +49,7 @@ use ReflectionMethod;
  * `MagicFacetHandler::callerMayFacet()`.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetFieldLabel
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
@@ -76,10 +77,7 @@ class FacetsObeyThePropertyReadRuleTest extends TestCase {
 			$this->createMock(IDBConnection::class),
 			new NullLogger(),
 			null,
-			null,
-			null,
-			$container,
-			null
+			$container
 		);
 	}//end handlerWhereReadIs()
 

@@ -94,20 +94,26 @@ class CommentsEntityListener implements IEventListener {
 			return;
 		}
 
-		$event->addEntityCollection(
-			'openregister',
-			function (string $objectUuid): bool {
-				try {
-					$this->objectEntityMapper->find($objectUuid);
-					return true;
-				} catch (\Exception $e) {
-					$this->logger->debug(
-						'Object UUID not found for comments entity: ' . $objectUuid,
-						['exception' => $e]
-					);
-					return false;
-				}
-			}
-		);
+		$event->addEntityCollection('openregister', $this->objectExists(...));
 	}//end handle()
+
+	/**
+	 * Whether an object with this uuid exists, so comments may be attached to it.
+	 *
+	 * @param string $objectUuid The object uuid the comments are about.
+	 *
+	 * @return bool True when the object is found.
+	 */
+	private function objectExists(string $objectUuid): bool {
+		try {
+			$this->objectEntityMapper->find($objectUuid);
+			return true;
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				'Object UUID not found for comments entity: ' . $objectUuid,
+				['exception' => $e]
+			);
+			return false;
+		}
+	}//end objectExists()
 }//end class

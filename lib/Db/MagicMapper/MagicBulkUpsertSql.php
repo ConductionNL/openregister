@@ -52,64 +52,60 @@ class MagicBulkUpsertSql {
 	}//end hasManagedSlugs()
 
 	/**
-	 * The value of a row's `_slug` column.
+	 * The value of a row's `_slug` column for a schema without managed slugs.
 	 *
-	 * For a managed schema the slug decision is final, including an explicit
-	 * null: falling back to a top-level `slug` property would undo a collision
-	 * (#4037). Any other schema keeps the legacy fallback.
+	 * The `@self` slug, else the top-level `slug` property, else null.
 	 *
-	 * @param array<string, mixed> $selfData    The object's `@self` metadata.
-	 * @param array<string, mixed> $object      The raw object payload.
-	 * @param bool                 $managedSlug Whether the schema has managed slugs.
+	 * @param array<string, mixed> $selfData The object's `@self` metadata.
+	 * @param array<string, mixed> $object   The raw object payload.
 	 *
 	 * @return mixed The slug, or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) A fact about the schema, not a mode of the method.
 	 */
-	public static function rowSlug(array $selfData, array $object, bool $managedSlug): mixed {
-		if ($managedSlug === true && array_key_exists('slug', $selfData) === true) {
-			return $selfData['slug'];
-		}
-
+	public static function rowSlug(array $selfData, array $object): mixed {
 		return ($selfData['slug'] ?? $object['slug'] ?? null);
 	}//end rowSlug()
 
 	/**
+	 * The value of a row's `_slug` column for a schema with managed slugs.
+	 *
+	 * The slug decision is final, including an explicit null: falling back to a
+	 * top-level `slug` property would undo a collision (#4037). Only an object
+	 * without a decided slug falls back as rowSlug() does.
+	 *
+	 * @param array<string, mixed> $selfData The object's `@self` metadata.
+	 * @param array<string, mixed> $object   The raw object payload.
+	 *
+	 * @return mixed The slug, or null.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	public static function managedRowSlug(array $selfData, array $object): mixed {
+		if (array_key_exists('slug', $selfData) === true) {
+			return $selfData['slug'];
+		}
+
+		return self::rowSlug(selfData: $selfData, object: $object);
+	}//end managedRowSlug()
+
+	/**
 	 * The assignment that updates one column when the row already exists.
 	 *
-	 * With managed slugs the `_slug` assignment keeps a stored slug and only
-	 * fills an empty one (a stored slug is frozen, #4037): the slug decision
-	 * already keeps it, and this guard also covers a row whose slug was written
-	 * between that decision and the upsert.
+	 * A managed `_slug` column takes frozenSlugClause() instead.
 	 *
-	 * @param string $column        The column name.
-	 * @param bool   $isPostgres    True for `ON CONFLICT`, false for MySQL/MariaDB.
-	 * @param string $fullTableName The table name, qualifying the stored value on PostgreSQL.
-	 * @param bool   $freezeSlug    Whether the schema has managed slugs.
+	 * @param string $column     The column name.
+	 * @param bool   $isPostgres True for `ON CONFLICT`, false for MySQL/MariaDB.
 	 *
 	 * @return string The assignment, e.g. "`_title` = VALUES(`_title`)".
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Platform and schema facts the one statement varies on.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The platform fact the one statement varies on.
 	 */
-	public static function updateClause(string $column, bool $isPostgres, string $fullTableName, bool $freezeSlug): string {
+	public static function updateClause(string $column, bool $isPostgres): string {
 		if ($column === '_updated') {
-			if ($isPostgres === true) {
-				return '"_updated" = NOW()';
-			}
-
-			return '`_updated` = NOW()';
-		}
-
-		if ($column === '_slug' && $freezeSlug === true) {
-			if ($isPostgres === true) {
-				return "\"_slug\" = COALESCE(NULLIF(\"{$fullTableName}\".\"_slug\", ''), EXCLUDED.\"_slug\")";
-			}
-
-			return '`_slug` = COALESCE(NULLIF(`_slug`, \'\'), VALUES(`_slug`))';
+			return self::touchClause(isPostgres: $isPostgres);
 		}
 
 		if ($isPostgres === true) {
@@ -118,4 +114,39 @@ class MagicBulkUpsertSql {
 
 		return "`{$column}` = VALUES(`{$column}`)";
 	}//end updateClause()
+
+	/**
+	 * The assignment that stamps `_updated` with the time of the write.
+	 *
+	 * @param bool $isPostgres True for `ON CONFLICT`, false for MySQL/MariaDB.
+	 *
+	 * @return string The assignment.
+	 */
+	private static function touchClause(bool $isPostgres): string {
+		if ($isPostgres === true) {
+			return '"_updated" = NOW()';
+		}
+
+		return '`_updated` = NOW()';
+	}//end touchClause()
+
+	/**
+	 * The `_slug` assignment that keeps a stored slug and only fills an empty one.
+	 *
+	 * With managed slugs a stored slug is frozen (#4037): the slug decision
+	 * already keeps it, and this guard also covers a row whose slug was written
+	 * between that decision and the upsert.
+	 *
+	 * @param bool   $isPostgres    True for `ON CONFLICT`, false for MySQL/MariaDB.
+	 * @param string $fullTableName The table name, qualifying the stored value on PostgreSQL.
+	 *
+	 * @return string The assignment.
+	 */
+	public static function frozenSlugClause(bool $isPostgres, string $fullTableName): string {
+		if ($isPostgres === true) {
+			return "\"_slug\" = COALESCE(NULLIF(\"{$fullTableName}\".\"_slug\", ''), EXCLUDED.\"_slug\")";
+		}
+
+		return '`_slug` = COALESCE(NULLIF(`_slug`, \'\'), VALUES(`_slug`))';
+	}//end frozenSlugClause()
 }//end class

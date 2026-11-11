@@ -49,12 +49,23 @@ class FilePropertyRules {
 		}
 
 		$items = ($property['items'] ?? null);
-		if (($property['type'] ?? null) === 'array' && is_array($items) === true && ($items['type'] ?? null) === 'file') {
+		if (($property['type'] ?? null) === 'array' && $this->isFileItems(items: $items) === true) {
 			return $items;
 		}
 
 		return null;
 	}//end fileConfigOf()
+
+	/**
+	 * Whether an array property's `items` declare a file.
+	 *
+	 * @param mixed $items The declared items.
+	 *
+	 * @return bool
+	 */
+	private function isFileItems(mixed $items): bool {
+		return is_array($items) === true && ($items['type'] ?? null) === 'file';
+	}//end isFileItems()
 
 	/**
 	 * The MIME types a file property accepts.
@@ -96,8 +107,8 @@ class FilePropertyRules {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	public function maxSizeBytes(array $fileConfig): int {
-		$bytes = ($fileConfig['maxSize'] ?? null);
-		if (is_numeric($bytes) === true && (float)$bytes > 0) {
+		$bytes = $this->positiveNumber(value: ($fileConfig['maxSize'] ?? null));
+		if ($bytes !== null) {
 			return (int)$bytes;
 		}
 
@@ -106,11 +117,26 @@ class FilePropertyRules {
 			return 0;
 		}
 
-		$megabytes = ($editorConfig['maxSize'] ?? null);
-		if (is_numeric($megabytes) === true && (float)$megabytes > 0) {
-			return (int)round((float)$megabytes * 1024 * 1024);
+		$megabytes = $this->positiveNumber(value: ($editorConfig['maxSize'] ?? null));
+		if ($megabytes === null) {
+			return 0;
 		}
 
-		return 0;
+		return (int)round((float)$megabytes * 1024 * 1024);
 	}//end maxSizeBytes()
+
+	/**
+	 * A value when it is a number above zero, as given; else null.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return int|float|string|null
+	 */
+	private function positiveNumber(mixed $value): int|float|string|null {
+		if (is_numeric($value) === true && (float)$value > 0) {
+			return $value;
+		}
+
+		return null;
+	}//end positiveNumber()
 }//end class

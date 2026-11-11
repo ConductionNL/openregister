@@ -285,7 +285,7 @@ class BlobMigrationJob extends TimedJob {
 				$schema = 'current_schema()';
 			}
 
-			$sql      = "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = $schema LIMIT 1";
+			$sql      = "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = $schema LIMIT 1";
 
 			$stmt = $db->prepare($sql);
 			$stmt->execute();

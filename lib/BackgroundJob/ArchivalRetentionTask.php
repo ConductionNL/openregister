@@ -55,6 +55,8 @@ use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
+use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionPlatform;
+use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionSources;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -73,6 +75,7 @@ use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Background job that enforces `x-openregister-archival` retention rules.
@@ -158,38 +161,26 @@ class ArchivalRetentionTask extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for TimedJob scheduling.
-	 * @param IDBConnection $db Database connection for native SQL row scan.
-	 * @param RegisterMapperInterface $registerMapper Register repository.
-	 * @param SchemaMapperInterface $schemaMapper Schema repository.
-	 * @param MagicMapperInterface $magicMapper Magic-table resolver.
-	 * @param ObjectOperationsInterface $objectService Service used to perform the sweep deletes.
-	 * @param RetentionServiceInterface $retentionService Answers whether a row is under an active legal hold.
-	 * @param ContainerInterface $container App container the notification collaborators come from.
-	 * @param LoggerInterface $logger Logger for per-schema summaries.
+	 * @param ArchivalRetentionSources $sources Database and the register, schema and magic-table lookups.
+	 * @param ArchivalRetentionPlatform $platform Delete path, legal-hold answer, notification container and logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		IDBConnection $db,
-		RegisterMapperInterface $registerMapper,
-		SchemaMapperInterface $schemaMapper,
-		MagicMapperInterface $magicMapper,
-		ObjectOperationsInterface $objectService,
-		RetentionServiceInterface $retentionService,
-		ContainerInterface $container,
-		LoggerInterface $logger,
+		ArchivalRetentionSources $sources,
+		ArchivalRetentionPlatform $platform,
 	) {
 		parent::__construct(time: $time);
 
-		$this->db = $db;
-		$this->registerMapper = $registerMapper;
-		$this->schemaMapper = $schemaMapper;
-		$this->magicMapper = $magicMapper;
-		$this->objectService = $objectService;
-		$this->retentionService = $retentionService;
-		$this->container = $container;
-		$this->logger = $logger;
+		$this->db = $sources->db;
+		$this->registerMapper = $sources->registerMapper;
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->magicMapper = $sources->magicMapper;
+		$this->objectService = $platform->objectService;
+		$this->retentionService = $platform->retentionService;
+		$this->container = $platform->container;
+		$this->logger = $platform->logger;
 
-		$this->rowExpiry = new ArchivalRowExpiry(logger: $logger);
+		$this->rowExpiry = new ArchivalRowExpiry(logger: $platform->logger);
 
 		// Run every hour (3600 seconds).
 		$this->setInterval(seconds: 3600);
@@ -459,7 +450,12 @@ class ArchivalRetentionTask extends TimedJob {
 			$this->objectService->setRegister(register: $sweep->register);
 			$this->objectService->setSchema(schema: $sweep->schema);
 
-			$deleteOk = $this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false, _retentionSweep: true);
+			$deleteOk = $this->objectService->deleteObject(
+				deletion: new ObjectDeletion(uuid: $uuid),
+				_rbac: false,
+				_multitenancy: false,
+				_retentionSweep: true
+			);
 			if ($deleteOk === true) {
 				$sweep->deleted++;
 			}

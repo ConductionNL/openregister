@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\HandoffQueueEntry\HandoffQueueEntryFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -217,23 +218,11 @@ class HandoffQueueEntry extends Entity implements JsonSerializable {
 	 * @return void
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'sourceObjectUuid', type: 'string');
-		$this->addType(fieldName: 'sourceRegister', type: 'integer');
-		$this->addType(fieldName: 'sourceSchema', type: 'integer');
-		$this->addType(fieldName: 'handoffId', type: 'string');
-		$this->addType(fieldName: 'targetKind', type: 'string');
-		$this->addType(fieldName: 'requestingUser', type: 'string');
-		$this->addType(fieldName: 'correlationId', type: 'string');
-		$this->addType(fieldName: 'mappingHash', type: 'string');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'attempt', type: 'integer');
-		$this->addType(fieldName: 'lastError', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'lastAttemptAt', type: 'datetime');
-		$this->addType(fieldName: 'executedAt', type: 'datetime');
+		foreach (HandoffQueueEntryFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 
 		$this->created = new DateTime();
-
 	}//end __construct()
 
 	/**
@@ -245,22 +234,9 @@ class HandoffQueueEntry extends Entity implements JsonSerializable {
 	 *   (Requirement: Handoff REST surface)
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'sourceObjectUuid' => $this->sourceObjectUuid,
-			'sourceRegister' => $this->sourceRegister,
-			'sourceSchema' => $this->sourceSchema,
-			'handoffId' => $this->handoffId,
-			'targetKind' => $this->targetKind,
-			'requestingUser' => $this->requestingUser,
-			'correlationId' => $this->correlationId,
-			'status' => $this->status,
-			'attempt' => $this->attempt,
-			'lastError' => $this->lastError,
-			'created' => $this->created->format('c'),
-			'lastAttemptAt' => $this->lastAttemptAt?->format('c'),
-			'executedAt' => $this->executedAt?->format('c'),
-		];
+		$json = (new TypedFieldsJson())->pick(values: get_object_vars($this), names: array_diff(array_keys($this->getFieldTypes()), ['mappingHash']));
+		$json['created'] = $this->created->format('c');
 
+		return $json;
 	}//end jsonSerialize()
 }//end class

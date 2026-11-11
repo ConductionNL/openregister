@@ -26,7 +26,8 @@ use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use Throwable;
 
 /**
@@ -39,11 +40,11 @@ class ShareTargets {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterScopedSchemaResolver $resolver      Resolves the share's register, and its schema inside that register.
+	 * @param RegisterScopedSchemaResolverInterface $resolver      Resolves the share's register, and its schema inside that register.
 	 * @param ObjectOperationsInterface                $objectService Reads the share's object as the caller.
 	 */
 	public function __construct(
-		private readonly RegisterScopedSchemaResolver $resolver,
+		private readonly RegisterScopedSchemaResolverInterface $resolver,
 		private readonly ObjectOperationsInterface $objectService,
 	) {
 	}//end __construct()
@@ -115,12 +116,9 @@ class ShareTargets {
 		try {
 			$object = $this->objectService->find(
 				id: $id,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				options: new ObjectFindOptions(register: $share->getRegister(), schema: $share->getSchema(), render: false, audit: false),
 				_rbac: true,
-				_multitenancy: true,
-				_render: false,
-				_audit: false
+				_multitenancy: true
 			);
 		} catch (Throwable $e) {
 			return false;

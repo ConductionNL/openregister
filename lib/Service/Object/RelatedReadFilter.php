@@ -25,7 +25,8 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
-use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -40,13 +41,13 @@ final class RelatedReadFilter {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicRbacHandler      $rbac    The RBAC handler.
-	 * @param SchemaMapperInterface $schemas The schema mapper.
+	 * @param RelatedRowRbacInterface $rbac    The RBAC handler.
+	 * @param SchemaMapperInterface   $schemas The schema mapper.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicRbacHandler $rbac,
+		private readonly RelatedRowRbacInterface $rbac,
 		private readonly SchemaMapperInterface $schemas,
 	) {
 	}//end __construct()
@@ -123,7 +124,7 @@ final class RelatedReadFilter {
 	 *
 	 * Another user's draft is kept from this caller, as on every other path. The
 	 * candidates come from a lookup that applied no access rule, so a draft the
-	 * per-table query left out can reach this list; hasPermission() has no draft rule.
+	 * per-table query left out can reach this list; hasRowPermission() has no draft rule.
 	 *
 	 * @param ObjectEntity $object The object.
 	 * @param Schema       $schema Its schema.
@@ -134,17 +135,13 @@ final class RelatedReadFilter {
 	 */
 	private function readableUnder(ObjectEntity $object, Schema $schema): bool {
 		$userId = $this->rbac->getCurrentUserId();
-		if ((new DraftCallerRule())->keptFromCaller(object: $object, schema: $schema, userId: $userId, isAdmin: false) === true) {
+		if ((new DraftCallerRule())->keptFromCaller(
+			subject: new DraftSubject(object: $object, schema: $schema),
+			caller: new DraftCaller(userId: $userId, isAdmin: false)
+		) === true) {
 			return false;
 		}
 
-		return $this->rbac->hasPermission(
-			schema: $schema,
-			action: 'read',
-			objectOwner: $object->getOwner(),
-			objectData: $object->getMatchEnvelope(),
-			objectAuthorization: $object->getAuthorization(),
-			objectUuid: $object->getUuid()
-		) === true;
+		return $this->rbac->hasRowPermission(ask: new RbacPermissionAsk(schema: $schema, action: 'read'), row: $object) === true;
 	}//end readableUnder()
 }//end class

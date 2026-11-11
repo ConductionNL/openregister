@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingAccounts;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -103,10 +104,12 @@ class ShareUrlBuilderTest extends TestCase {
 	private function handlerLink(ShareUrlBuilder $builder): string {
 		$handler = new FileSharingHandler(
 			shareManager: $this->createMock(IManager::class),
-			userManager: $this->createMock(IUserManager::class),
+			accounts: new FileSharingAccounts(
+				userManager: $this->createMock(IUserManager::class),
+				fileOwnershipHandler: $this->createMock(FileOwnershipHandler::class)
+			),
 			shareUrls: $builder,
-			logger: $this->createMock(LoggerInterface::class),
-			fileOwnershipHandler: $this->createMock(FileOwnershipHandler::class),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 		$share = $this->createMock(IShare::class);
 		$share->method('getToken')->willReturn('abc123');

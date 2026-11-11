@@ -5,8 +5,8 @@
  * linked to an OpenRegister object.
  *
  * NO LINK TABLE / NO CACHE: every endpoint delegates straight to
- * `ShareLinkService`, which wraps `OCP\Share\IManager` (the single
- * source of truth). See `ShareLinkService` for the rationale.
+ * `ShareLinkServiceInterface`, which wraps `OCP\Share\IManager` (the single
+ * source of truth). See `ShareLinkServiceInterface` for the rationale.
  *
  * Endpoints:
  *   - GET    /api/objects/{register}/{schema}/{id}/file-shares     — list
@@ -33,15 +33,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
+use OCA\OpenRegister\Controller\Support\ShareLinksControllerServices;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\ShareLinkService;
 use OCA\OpenRegister\Service\ShareDraft;
+use OCA\OpenRegister\Service\ShareLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\Share\IShare;
 
 /**
  * Tier-2 share links controller.
@@ -53,22 +56,34 @@ class ShareLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var ShareLinkServiceInterface
+	 */
+	private readonly ShareLinkServiceInterface $shareLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request HTTP request.
-	 * @param ShareLinkService $shareLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param IRequest                     $request  HTTP request.
+	 * @param ShareLinksControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ShareLinkService $shareLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		ShareLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->shareLinkService = $services->shareLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -86,10 +101,9 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getLinkedShares($object->getUuid()))
-		);
+		$action = $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getLinkedShares($object->getUuid()));
+
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end index()
 
 	/**
@@ -111,53 +125,82 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$fileId = (int)$this->request->getParam('fileId', 0);
-				if ($fileId === 0) {
-					return new JSONResponse(['error' => 'fileId is required'], 400);
-				}
-
-				$shareType = (int)$this->request->getParam('shareType', -1);
-				$permissions = (int)$this->request->getParam('permissions', 1);
-				$shareWith = $this->request->getParam('shareWith');
-				$password = $this->request->getParam('password');
-				$expiration = $this->request->getParam('expiration');
-
-				$shareWithStr = null;
-				if ($shareWith !== null) {
-					$shareWithStr = (string)$shareWith;
-				}
-
-				$passwordStr = null;
-				if ($password !== null) {
-					$passwordStr = (string)$password;
-				}
-
-				$expirationStr = null;
-				if ($expiration !== null) {
-					$expirationStr = (string)$expiration;
-				}
-
-				$share = $this->shareLinkService->createShare(
-					objectUuid: $object->getUuid(),
-					draft: (new ShareDraft(fileId: $fileId, shareType: $shareType))
-						->withRecipient(shareWith: $shareWithStr, permissions: $permissions)
-						->withProtection(password: $passwordStr, expiration: $expirationStr)
-				);
-
-				return new JSONResponse(
-					[
-						'shareId' => (string)$share->getId(),
-						'shareType' => (int)$share->getShareType(),
-						'token' => (string)($share->getToken() ?? ''),
-					],
-					201
-				);
-			}
-		);
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $this->createOn(...));
 	}//end create()
+
+	/**
+	 * Create the requested share on a file inside the object's folder.
+	 *
+	 * @param ObjectEntity $object The resolved object.
+	 *
+	 * @return JSONResponse 400 without a file, else 201 with the share.
+	 */
+	private function createOn(ObjectEntity $object): JSONResponse {
+		$fileId = (int)$this->request->getParam('fileId', 0);
+		if ($fileId === 0) {
+			return new JSONResponse(['error' => 'fileId is required'], 400);
+		}
+
+		$share = $this->shareLinkService->createShare(
+			objectUuid: $object->getUuid(),
+			draft: $this->requestedDraft(fileId: $fileId)
+		);
+
+		return $this->created(share: $share);
+	}//end createOn()
+
+	/**
+	 * The 201 answer for a created share.
+	 *
+	 * @param IShare $share The created share.
+	 *
+	 * @return JSONResponse The answer.
+	 */
+	private function created(IShare $share): JSONResponse {
+		return new JSONResponse(
+			[
+				'shareId' => (string)$share->getId(),
+				'shareType' => (int)$share->getShareType(),
+				'token' => (string)($share->getToken() ?? ''),
+			],
+			201
+		);
+	}//end created()
+
+	/**
+	 * The share the request body describes, on the given file.
+	 *
+	 * @param int $fileId The file to share.
+	 *
+	 * @return ShareDraft The draft.
+	 */
+	private function requestedDraft(int $fileId): ShareDraft {
+		$shareType = (int)$this->request->getParam('shareType', -1);
+		$permissions = (int)$this->request->getParam('permissions', 1);
+
+		return (new ShareDraft(fileId: $fileId, shareType: $shareType))
+			->withRecipient(shareWith: $this->optionalString(name: 'shareWith'), permissions: $permissions)
+			->withProtection(
+				password: $this->optionalString(name: 'password'),
+				expiration: $this->optionalString(name: 'expiration')
+			);
+	}//end requestedDraft()
+
+	/**
+	 * A request parameter as a string, or null when it is absent.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return string|null The value.
+	 */
+	private function optionalString(string $name): ?string {
+		$value = $this->request->getParam($name);
+		if ($value === null) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end optionalString()
 
 	/**
 	 * Revoke a share by id (ownership-checked).
@@ -175,15 +218,24 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $shareId): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object) use ($shareId): JSONResponse {
-				$this->shareLinkService->revokeShare($object->getUuid(), $shareId);
+		$action = fn (ObjectEntity $object): JSONResponse => $this->revokeOn(object: $object, shareId: $shareId);
 
-				return new JSONResponse(['success' => true]);
-			}
-		);
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end destroy()
+
+	/**
+	 * Revoke one share of the object.
+	 *
+	 * @param ObjectEntity $object  The object.
+	 * @param string       $shareId The share.
+	 *
+	 * @return JSONResponse Success.
+	 */
+	private function revokeOn(ObjectEntity $object, string $shareId): JSONResponse {
+		$this->shareLinkService->revokeShare($object->getUuid(), $shareId);
+
+		return new JSONResponse(['success' => true]);
+	}//end revokeOn()
 
 	/**
 	 * List the files inside an object's folder that can be shared.
@@ -200,10 +252,9 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function files(string $register, string $schema, string $id): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getShareableFiles($object->getUuid()))
-		);
+		$action = $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getShareableFiles($object->getUuid()));
+
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end files()
 
 	/**

@@ -42,21 +42,20 @@ class SimilarityCalculator {
 	/**
 	 * Compute the similarity of two values under a named method.
 	 *
-	 * @param string $method One of `exact`, `normalized`, `levenshtein`.
-	 * @param mixed $a First value.
-	 * @param mixed $b Second value.
+	 * @param string         $method One of `exact`, `normalized`, `levenshtein`.
+	 * @param ComparedValues $values The two values.
 	 *
 	 * @return float Similarity in [0, 1]; 0.0 for unknown method or non-scalar operands.
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-4
 	 */
-	public function similarity(string $method, $a, $b): float {
-		if (is_scalar($a) === false || is_scalar($b) === false) {
+	public function similarity(string $method, ComparedValues $values): float {
+		if (is_scalar($values->left) === false || is_scalar($values->right) === false) {
 			return 0.0;
 		}
 
-		$left = (string)$a;
-		$right = (string)$b;
+		$left = (string)$values->left;
+		$right = (string)$values->right;
 
 		return match ($method) {
 			'exact' => $this->boolScore(matched: $left === $right),
@@ -118,11 +117,7 @@ class SimilarityCalculator {
 	 *   after, so the operator is the idiomatic guard, not a swallowed error.
 	 */
 	private function normalize(string $value): string {
-		$value = trim($value);
-		$value = strtolower($value);
-		if (function_exists('mb_strtolower') === true) {
-			$value = mb_strtolower($value, 'UTF-8');
-		}
+		$value = $this->foldCase(value: trim($value));
 
 		// Strip common diacritics to ASCII where iconv is available.
 		$ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
@@ -130,14 +125,40 @@ class SimilarityCalculator {
 			$value = $ascii;
 		}
 
-		// Collapse internal whitespace runs to a single space.
-		$collapsed = preg_replace('/\s+/', ' ', $value);
-		if (is_string($collapsed) === true) {
-			$value = $collapsed;
+		return trim($this->collapseWhitespace(value: $value));
+	}//end normalize()
+
+	/**
+	 * Lowercase a string, multibyte-aware when mbstring is loaded.
+	 *
+	 * @param string $value Raw value.
+	 *
+	 * @return string Lowercased value.
+	 */
+	private function foldCase(string $value): string {
+		$value = strtolower($value);
+		if (function_exists('mb_strtolower') === true) {
+			$value = mb_strtolower($value, 'UTF-8');
 		}
 
-		return trim($value);
-	}//end normalize()
+		return $value;
+	}//end foldCase()
+
+	/**
+	 * Collapse internal whitespace runs to a single space.
+	 *
+	 * @param string $value Raw value.
+	 *
+	 * @return string The collapsed value, or the input when the regex fails.
+	 */
+	private function collapseWhitespace(string $value): string {
+		$collapsed = preg_replace('/\s+/', ' ', $value);
+		if (is_string($collapsed) === true) {
+			return $collapsed;
+		}
+
+		return $value;
+	}//end collapseWhitespace()
 
 	/**
 	 * Levenshtein similarity ratio over normalised strings.
@@ -148,31 +169,16 @@ class SimilarityCalculator {
 	 * @return float 1 - distance/maxLen, clamped to [0, 1].
 	 */
 	private function levenshteinRatio(string $a, string $b): float {
-		$left = $this->normalize(value: $a);
-		$right = $this->normalize(value: $b);
-
+		// Only the first 255 bytes are compared (the historical levenshtein()
+		// input cap). Equal strings, including two empty ones, score 1.0, so
+		// the longest length below is never zero.
+		$left = substr($this->normalize(value: $a), 0, 255);
+		$right = substr($this->normalize(value: $b), 0, 255);
 		if ($left === $right) {
 			return 1.0;
 		}
 
-		$maxLen = max(strlen($left), strlen($right));
-		if ($maxLen === 0) {
-			return 1.0;
-		}
-
-		// PHP's levenshtein() caps inputs at 255 bytes; guard longer strings.
-		if (strlen($left) > 255 || strlen($right) > 255) {
-			$left = substr($left, 0, 255);
-			$right = substr($right, 0, 255);
-			$maxLen = max(strlen($left), strlen($right));
-			if ($maxLen === 0) {
-				return 1.0;
-			}
-		}
-
-		$distance = levenshtein($left, $right);
-		$ratio = (1.0 - ($distance / $maxLen));
-
+		$ratio = (1.0 - (levenshtein($left, $right) / max(strlen($left), strlen($right))));
 		return max(0.0, min(1.0, $ratio));
 	}//end levenshteinRatio()
 }//end class

@@ -19,6 +19,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization\Handlers;
 
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCP\DB\IResult;
@@ -89,11 +93,12 @@ class VectorStorageHandlerTest extends TestCase {
 			);
 
 		$vectorId = $this->handler->storeVector(
-			entityType: 'file',
-			entityId: '42',
-			embedding: [0.1, 0.2, 0.3],
-			model: 'test-model',
-			dimensions: 3
+			vector: new StoredVector(
+				subject: new VectorSubject(entityType: 'file', entityId: '42'),
+				payload: new VectorPayload(embedding: [0.1, 0.2, 0.3], model: 'test-model', dimensions: 3),
+				position: new VectorChunkPosition(chunkIndex: 0, totalChunks: 1, chunkText: null),
+				metadata: []
+			)
 		);
 
 		$this->assertSame(7, $vectorId);
@@ -114,11 +119,12 @@ class VectorStorageHandlerTest extends TestCase {
 		$this->db->expects($this->never())->method('executeStatement');
 
 		$vectorId = $this->handler->storeVector(
-			entityType: 'file',
-			entityId: '42',
-			embedding: [0.1, 0.2, 0.3],
-			model: 'test-model',
-			dimensions: 3
+			vector: new StoredVector(
+				subject: new VectorSubject(entityType: 'file', entityId: '42'),
+				payload: new VectorPayload(embedding: [0.1, 0.2, 0.3], model: 'test-model', dimensions: 3),
+				position: new VectorChunkPosition(chunkIndex: 0, totalChunks: 1, chunkText: null),
+				metadata: []
+			)
 		);
 
 		$this->assertSame(8, $vectorId);
@@ -136,11 +142,12 @@ class VectorStorageHandlerTest extends TestCase {
 		$this->db->expects($this->never())->method('executeStatement');
 
 		$vectorId = $this->handler->storeVector(
-			entityType: 'file',
-			entityId: '42',
-			embedding: [0.1, 0.2, 0.3],
-			model: 'test-model',
-			dimensions: 3
+			vector: new StoredVector(
+				subject: new VectorSubject(entityType: 'file', entityId: '42'),
+				payload: new VectorPayload(embedding: [0.1, 0.2, 0.3], model: 'test-model', dimensions: 3),
+				position: new VectorChunkPosition(chunkIndex: 0, totalChunks: 1, chunkText: null),
+				metadata: []
+			)
 		);
 
 		$this->assertSame(9, $vectorId);
@@ -162,11 +169,12 @@ class VectorStorageHandlerTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
 		$vectorId = $this->handler->storeVector(
-			entityType: 'file',
-			entityId: '42',
-			embedding: [0.1, 0.2, 0.3],
-			model: 'test-model',
-			dimensions: 3
+			vector: new StoredVector(
+				subject: new VectorSubject(entityType: 'file', entityId: '42'),
+				payload: new VectorPayload(embedding: [0.1, 0.2, 0.3], model: 'test-model', dimensions: 3),
+				position: new VectorChunkPosition(chunkIndex: 0, totalChunks: 1, chunkText: null),
+				metadata: []
+			)
 		);
 
 		$this->assertSame(10, $vectorId);

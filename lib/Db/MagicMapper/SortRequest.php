@@ -29,22 +29,45 @@ use OCA\OpenRegister\Db\Schema;
 final class SortRequest {
 
 	/**
+	 * The search term, for relevance ordering.
+	 *
+	 * @var string|null
+	 */
+	public ?string $searchTerm = null;
+
+	/**
+	 * The read history ordering a `_recent` page (uuid => last read), or null.
+	 *
+	 * @var mixed
+	 */
+	public mixed $recentViews = null;
+
+	/**
+	 * Columns whose real type is a date or timestamp; null when unknown.
+	 *
+	 * @var array<int, string>|null
+	 */
+	public ?array $dateTimeColumns = null;
+
+	/**
+	 * Language chain a translatable property sorts by.
+	 *
+	 * @var array<int, string>
+	 */
+	public array $sortLanguages = [];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array<int|string, mixed> $order           The requested order, field => direction.
-	 * @param Schema                   $schema          The schema being searched.
-	 * @param string|null              $searchTerm      The search term, for relevance ordering.
-	 * @param mixed                    $recentViews     The read history ordering a `_recent` page (uuid => last read), or null.
-	 * @param array<int, string>|null  $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown.
-	 * @param array<int, string>       $sortLanguages   Language chain a translatable property sorts by.
+	 * The search term, read history, date-time columns and language chain
+	 * are set one by one by the search that knows them.
+	 *
+	 * @param array<int|string, mixed> $order  The requested order, field => direction.
+	 * @param Schema                   $schema The schema being searched.
 	 */
 	public function __construct(
 		public readonly array $order,
 		public readonly Schema $schema,
-		public readonly ?string $searchTerm = null,
-		public readonly mixed $recentViews = null,
-		public readonly ?array $dateTimeColumns = null,
-		public readonly array $sortLanguages = [],
 	) {
 	}//end __construct()
 }//end class

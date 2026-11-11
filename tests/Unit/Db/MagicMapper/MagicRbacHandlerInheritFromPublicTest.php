@@ -26,9 +26,11 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -40,6 +42,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Tests for MagicRbacHandler SQL emission under the inheritFromPublic flag.
@@ -112,9 +117,9 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 	/**
 	 * Mock permission handler (resolved via the container).
 	 *
-	 * @var PermissionHandler&MockObject
+	 * @var PermissionHandlerInterface&MockObject
 	 */
-	private PermissionHandler&MockObject $permissionHandler;
+	private PermissionHandlerInterface&MockObject $permissionHandler;
 
 	/**
 	 * Build mocks and the subject under test.
@@ -129,7 +134,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 		$this->conditionMatcher = $this->createMock(originalClassName: ConditionMatcher::class);
 		$this->container = $this->createMock(originalClassName: ContainerInterface::class);
 		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
-		$this->permissionHandler = $this->createMock(originalClassName: PermissionHandler::class);
+		$this->permissionHandler = $this->createMock(originalClassName: PermissionHandlerInterface::class);
 
 		// Default tenant default is `true`. Tests override on the
 		// PermissionHandler mock to set per-test cascade behaviour.
@@ -139,17 +144,23 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 		// schema-authorization lookup to PermissionHandler via the container.
 		// Each test sets explicit return values on $this->permissionHandler.
 		$this->container->method('get')->willReturnCallback(
-			fn (string $class) => $class === PermissionHandler::class ? $this->permissionHandler : null
+			fn (string $class) => $class === PermissionHandlerInterface::class ? $this->permissionHandler : null
 		);
 
 		$this->handler = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->userManager,
-			$this->appConfig,
-			$this->conditionMatcher,
-			$this->container,
-			$this->logger
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $this->userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->conditionMatcher,
+				container: $this->container,
+				logger: $this->logger
+			)
 		);
 
 	}//end setUp()
@@ -236,7 +247,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse(condition: $result['bypass']);
 		$this->assertNotEmpty(actual: $result['conditions']);
@@ -258,7 +269,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse(condition: $result['bypass']);
 		$this->assertNotEmpty(actual: $result['conditions']);
@@ -281,7 +292,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse(condition: $result['bypass']);
 		// Owner-condition is always added for authenticated users; the public
@@ -306,7 +317,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse(condition: $result['bypass']);
 		// The public-match is dropped, because alice does not qualify for
@@ -362,7 +373,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertGrantsEveryNonPrivateRow(result: $result);
 
@@ -383,7 +394,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse(condition: $result['bypass']);
 		// No unconditional public bypass for alice. Asserted on the conditions
@@ -408,7 +419,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertGrantsEveryNonPrivateRow(result: $result);
 
@@ -430,7 +441,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertGrantsEveryNonPrivateRow(result: $result);
 
@@ -450,7 +461,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertTrue(condition: $result['bypass']);
 
@@ -483,7 +494,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 		// including the owner condition — via andWhere(orX(...)).
 		$qb->expects($this->atLeastOnce())->method('andWhere');
 
-		$this->handler->applyRbacFilters(qb: $qb, schema: $schema, action: 'read');
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $schema))->forAction('read'));
 
 	}//end testApplyRbacFiltersAuthInheritFalseDeniesAccess()
 

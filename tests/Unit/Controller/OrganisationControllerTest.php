@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\TenantDirectory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\OrganisationController;
@@ -245,7 +247,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['uuid' => 'custom-uuid']);
 		$this->organisationService->expects($this->once())
 			->method('createOrganisation')
-			->with('My Org', 'Desc', true, 'custom-uuid')
+			->with(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'My Org', description: 'Desc', uuid: 'custom-uuid'), true)
 			->willReturn($org);
 
 		$result = $this->controller->create('My Org', 'Desc');
@@ -1220,8 +1222,8 @@ class OrganisationControllerTest extends TestCase {
 		]);
 
 		$this->organisationMapper->expects($this->once())
-			->method('findByName')
-			->with('Search', 50, 0)
+			->method('findListByName')
+			->with('Search', new ListQuery(50, 0))
 			->willReturn([$org]);
 		$this->organisationMapper->method('findAll')->willReturn([]);
 
@@ -1242,7 +1244,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->organisationMapper->expects($this->once())
 			->method('findAll')
 			->willReturn([]);
-		$this->organisationMapper->expects($this->never())->method('findByName');
+		$this->organisationMapper->expects($this->never())->method('findListByName');
 
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -1367,7 +1369,7 @@ class OrganisationControllerTest extends TestCase {
 	}
 
 	public function testSearchByNameException(): void {
-		$this->organisationMapper->method('findByName')
+		$this->organisationMapper->method('findListByName')
 			->willThrowException(new Exception('Search error'));
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -1440,7 +1442,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 		$this->organisationService->expects($this->once())
 			->method('createOrganisation')
-			->with('Valid Org', '', true, '')
+			->with(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Valid Org'), true)
 			->willReturn($org);
 
 		$result = $this->controller->create('Valid Org');
@@ -1814,8 +1816,8 @@ class OrganisationControllerTest extends TestCase {
 		]);
 
 		$this->organisationMapper->expects($this->once())
-			->method('findByName')
-			->with('Found', 10, 5)
+			->method('findListByName')
+			->with('Found', new ListQuery(10, 5))
 			->willReturn([$org]);
 
 		$this->request->method('getParam')
@@ -2176,7 +2178,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['someOtherKey' => 'value']);
 		$this->organisationService->expects($this->once())
 			->method('createOrganisation')
-			->with('Org', 'Desc', true, '')
+			->with(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Org', description: 'Desc'), true)
 			->willReturn($org);
 
 		$result = $this->controller->create('Org', 'Desc');
@@ -2194,8 +2196,8 @@ class OrganisationControllerTest extends TestCase {
 		]);
 
 		$this->organisationMapper->expects($this->once())
-			->method('findByName')
-			->with('Search Term', 50, 0)
+			->method('findListByName')
+			->with('Search Term', new ListQuery(50, 0))
 			->willReturn([$org]);
 
 		$this->request->method('getParam')
@@ -2216,8 +2218,7 @@ class OrganisationControllerTest extends TestCase {
 	private function controllerWithRealLifecycle(): OrganisationController {
 		$lifecycle = new TenantLifecycleService(
 			$this->organisationMapper,
-			$this->groupManager,
-			$this->createMock(IUserManager::class),
+			new TenantDirectory($this->groupManager, $this->createMock(IUserManager::class)),
 			$this->logger
 		);
 

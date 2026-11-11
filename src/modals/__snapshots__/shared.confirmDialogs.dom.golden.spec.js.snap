@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`confirm dialog auditTrail asks 1`] = `
-"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="">
+"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -22,7 +22,7 @@ exports[`confirm dialog auditTrail asks 1`] = `
       <p><strong>t:ID:</strong> 5</p>
       <p><strong>t:Action:</strong><span class="action-badge action-create">CREATE</span></p>
       <p><strong>t:Object:</strong> 9</p>
-      <p><strong>t:Created:</strong> 1/1/2026, 1:00:00 AM</p>
+      <p><strong>t:Created:</strong> 1/1/2026, 12:00:00 AM</p>
     </div></slot-default>
 </x-ncdialog>"
 `;
@@ -37,7 +37,7 @@ exports[`confirm dialog auditTrail cancels 1`] = `
 `;
 
 exports[`confirm dialog auditTrail closed by hand after a success, stops its timer and asks again 1`] = `
-"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="">
+"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -58,13 +58,13 @@ exports[`confirm dialog auditTrail closed by hand after a success, stops its tim
       <p><strong>t:ID:</strong> 5</p>
       <p><strong>t:Action:</strong><span class="action-badge action-create">CREATE</span></p>
       <p><strong>t:Object:</strong> 9</p>
-      <p><strong>t:Created:</strong> 1/1/2026, 1:00:00 AM</p>
+      <p><strong>t:Created:</strong> 1/1/2026, 12:00:00 AM</p>
     </div></slot-default>
 </x-ncdialog>"
 `;
 
 exports[`confirm dialog auditTrail confirms, reports success and closes by itself 1`] = `
-"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="">
+"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Close</slot-default>
@@ -102,7 +102,7 @@ exports[`confirm dialog auditTrail confirms, reports success and closes by itsel
 `;
 
 exports[`confirm dialog auditTrail reports a refusal 1`] = `
-"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="">
+"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Close</slot-default>
@@ -120,7 +120,7 @@ exports[`confirm dialog auditTrail reports a refusal 1`] = `
 `;
 
 exports[`confirm dialog auditTrail shows the busy state 1`] = `
-"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="">
+"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -141,13 +141,13 @@ exports[`confirm dialog auditTrail shows the busy state 1`] = `
       <p><strong>t:ID:</strong> 5</p>
       <p><strong>t:Action:</strong><span class="action-badge action-create">CREATE</span></p>
       <p><strong>t:Object:</strong> 9</p>
-      <p><strong>t:Created:</strong> 1/1/2026, 1:00:00 AM</p>
+      <p><strong>t:Created:</strong> 1/1/2026, 12:00:00 AM</p>
     </div></slot-default>
 </x-ncdialog>"
 `;
 
 exports[`confirm dialog clear asks 1`] = `
-"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="">
+"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -186,7 +186,7 @@ exports[`confirm dialog clear cancels 1`] = `
 `;
 
 exports[`confirm dialog clear closed by hand after a success, stops its timer and asks again 1`] = `
-"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="">
+"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -216,7 +216,7 @@ exports[`confirm dialog clear closed by hand after a success, stops its timer an
 `;
 
 exports[`confirm dialog clear confirms, reports success and closes by itself 1`] = `
-"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="">
+"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Close</slot-default>
@@ -245,7 +245,7 @@ exports[`confirm dialog clear confirms, reports success and closes by itself 2`]
 `;
 
 exports[`confirm dialog clear reports a refusal 1`] = `
-"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="">
+"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Close</slot-default>
@@ -263,7 +263,7 @@ exports[`confirm dialog clear reports a refusal 1`] = `
 `;
 
 exports[`confirm dialog clear shows the busy state 1`] = `
-"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="">
+"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -293,7 +293,7 @@ exports[`confirm dialog clear shows the busy state 1`] = `
 `;
 
 exports[`confirm dialog object asks 1`] = `
-"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="">
+"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -323,7 +323,7 @@ exports[`confirm dialog object cancels 1`] = `
 `;
 
 exports[`confirm dialog object closed by hand after a success, stops its timer and asks again 1`] = `
-"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="">
+"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -344,7 +344,7 @@ exports[`confirm dialog object closed by hand after a success, stops its timer a
 `;
 
 exports[`confirm dialog object confirms, reports success and closes by itself 1`] = `
-"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="">
+"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Close</slot-default>
@@ -395,7 +395,7 @@ exports[`confirm dialog object confirms, reports success and closes by itself 2`
 `;
 
 exports[`confirm dialog object reports a refusal 1`] = `
-"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="">
+"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Close</slot-default>
@@ -413,7 +413,7 @@ exports[`confirm dialog object reports a refusal 1`] = `
 `;
 
 exports[`confirm dialog object shows the busy state 1`] = `
-"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="">
+"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -434,7 +434,7 @@ exports[`confirm dialog object shows the busy state 1`] = `
 `;
 
 exports[`confirm dialog organisation asks 1`] = `
-"<x-ncdialog name="Delete Organisation" size="normal" noclose="">
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -464,7 +464,7 @@ exports[`confirm dialog organisation cancels 1`] = `
 `;
 
 exports[`confirm dialog organisation closed by hand after a success, stops its timer and asks again 1`] = `
-"<x-ncdialog name="Delete Organisation" size="normal" noclose="">
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -485,7 +485,7 @@ exports[`confirm dialog organisation closed by hand after a success, stops its t
 `;
 
 exports[`confirm dialog organisation confirms, reports success and closes by itself 1`] = `
-"<x-ncdialog name="Delete Organisation" size="normal" noclose="">
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -529,7 +529,7 @@ exports[`confirm dialog organisation confirms, reports success and closes by its
 `;
 
 exports[`confirm dialog organisation reports a refusal 1`] = `
-"<x-ncdialog name="Delete Organisation" size="normal" noclose="">
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -554,7 +554,7 @@ exports[`confirm dialog organisation reports a refusal 1`] = `
 `;
 
 exports[`confirm dialog organisation shows the blocked state 1`] = `
-"<x-ncdialog name="Delete Organisation" size="normal" noclose="">
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -580,7 +580,7 @@ exports[`confirm dialog organisation shows the blocked state 1`] = `
 exports[`confirm dialog organisation shows the blocked state 2`] = `2`;
 
 exports[`confirm dialog organisation shows the busy state 1`] = `
-"<x-ncdialog name="Delete Organisation" size="normal" noclose="">
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -601,7 +601,7 @@ exports[`confirm dialog organisation shows the busy state 1`] = `
 `;
 
 exports[`confirm dialog register asks 1`] = `
-"<x-ncdialog name="Register verwijderen" size="normal" noclose="">
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Annuleer</slot-default>
@@ -631,7 +631,7 @@ exports[`confirm dialog register cancels 1`] = `
 `;
 
 exports[`confirm dialog register closed by hand after a success, stops its timer and asks again 1`] = `
-"<x-ncdialog name="Register verwijderen" size="normal" noclose="">
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Annuleer</slot-default>
@@ -652,7 +652,7 @@ exports[`confirm dialog register closed by hand after a success, stops its timer
 `;
 
 exports[`confirm dialog register confirms, reports success and closes by itself 1`] = `
-"<x-ncdialog name="Register verwijderen" size="normal" noclose="">
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Sluiten</slot-default>
@@ -694,7 +694,7 @@ exports[`confirm dialog register confirms, reports success and closes by itself 
 `;
 
 exports[`confirm dialog register reports a refusal 1`] = `
-"<x-ncdialog name="Register verwijderen" size="normal" noclose="">
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Annuleer</slot-default>
@@ -719,7 +719,7 @@ exports[`confirm dialog register reports a refusal 1`] = `
 `;
 
 exports[`confirm dialog register shows the blocked state 1`] = `
-"<x-ncdialog name="Register verwijderen" size="normal" noclose="">
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Sluiten</slot-default>
@@ -736,7 +736,7 @@ exports[`confirm dialog register shows the blocked state 1`] = `
 exports[`confirm dialog register shows the blocked state 2`] = `1`;
 
 exports[`confirm dialog register shows the busy state 1`] = `
-"<x-ncdialog name="Register verwijderen" size="normal" noclose="">
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Annuleer</slot-default>
@@ -757,7 +757,7 @@ exports[`confirm dialog register shows the busy state 1`] = `
 `;
 
 exports[`confirm dialog schema asks 1`] = `
-"<x-ncdialog name="Verwijder Schema" size="normal" noclose="">
+"<x-ncdialog name="Verwijder Schema" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Annuleren</slot-default>
@@ -787,7 +787,7 @@ exports[`confirm dialog schema cancels 1`] = `
 `;
 
 exports[`confirm dialog schema closed by hand after a success, stops its timer and asks again 1`] = `
-"<x-ncdialog name="Verwijder Schema" size="normal" noclose="">
+"<x-ncdialog name="Verwijder Schema" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Annuleren</slot-default>
@@ -808,7 +808,7 @@ exports[`confirm dialog schema closed by hand after a success, stops its timer a
 `;
 
 exports[`confirm dialog schema confirms, reports success and closes by itself 1`] = `
-"<x-ncdialog name="Verwijder Schema" size="normal" noclose="">
+"<x-ncdialog name="Verwijder Schema" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Sluiten</slot-default>
@@ -846,7 +846,7 @@ exports[`confirm dialog schema confirms, reports success and closes by itself 2`
 `;
 
 exports[`confirm dialog schema reports a refusal 1`] = `
-"<x-ncdialog name="Verwijder Schema" size="normal" noclose="">
+"<x-ncdialog name="Verwijder Schema" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Annuleren</slot-default>
@@ -871,7 +871,7 @@ exports[`confirm dialog schema reports a refusal 1`] = `
 `;
 
 exports[`confirm dialog schema shows the busy state 1`] = `
-"<x-ncdialog name="Verwijder Schema" size="normal" noclose="">
+"<x-ncdialog name="Verwijder Schema" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Annuleren</slot-default>
@@ -892,7 +892,7 @@ exports[`confirm dialog schema shows the busy state 1`] = `
 `;
 
 exports[`confirm dialog source asks 1`] = `
-"<x-ncdialog name="Delete Source" size="normal" noclose="">
+"<x-ncdialog name="Delete Source" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -922,7 +922,7 @@ exports[`confirm dialog source cancels 1`] = `
 `;
 
 exports[`confirm dialog source closed by hand after a success, stops its timer and asks again 1`] = `
-"<x-ncdialog name="Delete Source" size="normal" noclose="">
+"<x-ncdialog name="Delete Source" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -943,7 +943,7 @@ exports[`confirm dialog source closed by hand after a success, stops its timer a
 `;
 
 exports[`confirm dialog source confirms, reports success and closes by itself 1`] = `
-"<x-ncdialog name="Delete Source" size="normal" noclose="">
+"<x-ncdialog name="Delete Source" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Close</slot-default>
@@ -984,7 +984,7 @@ exports[`confirm dialog source confirms, reports success and closes by itself 2`
 `;
 
 exports[`confirm dialog source reports a refusal 1`] = `
-"<x-ncdialog name="Delete Source" size="normal" noclose="">
+"<x-ncdialog name="Delete Source" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -1009,7 +1009,7 @@ exports[`confirm dialog source reports a refusal 1`] = `
 `;
 
 exports[`confirm dialog source shows the busy state 1`] = `
-"<x-ncdialog name="Delete Source" size="normal" noclose="">
+"<x-ncdialog name="Delete Source" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>

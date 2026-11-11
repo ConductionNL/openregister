@@ -24,9 +24,13 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -102,17 +106,22 @@ class MagicMapperUnionRoutingTest extends TestCase {
 
 		return new MagicMapper(
 			$this->db,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->createMock(IConfig::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->logger,
-			$this->createMock(SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->schemaMapper,
+				$this->registerMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->userSession,
+				$this->groupManager,
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->createMock(IConfig::class),
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->logger
+			)
 		);
 	}//end makeMapper()
 
@@ -131,13 +140,13 @@ class MagicMapperUnionRoutingTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
-				if ($id === DateTimeNormalizer::class) {
+				if ($id === DateTimeNormalizerInterface::class) {
 					return $dateTimeNormalizer;
 				}
 				if ($id === \OCA\OpenRegister\Service\ConditionMatcher::class) {
 					return $conditionMatcher;
 				}
-				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class) {
+				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class) {
 					return $schemaTypeConverter;
 				}
 				return null;
@@ -165,4 +174,15 @@ class MagicMapperUnionRoutingTest extends TestCase {
 		$this->assertFalse($route->invoke($mapper, ['_referenced' => $related]));
 		$this->assertFalse($route->invoke($mapper, ['_aggregations' => ['x']]));
 	}//end testARelatedRowFilterTakesTheSequentialRoute()
+
+	/**
+	 * The raw-SQL union has no relation filter, so a search on one takes the sequential route.
+	 *
+	 * @return void
+	 */
+	public function testARelationFilterTakesTheSequentialRoute(): void {
+		$route = new \ReflectionMethod(MagicMapper::class, 'shouldUseUnionQuery');
+
+		$this->assertFalse($route->invoke($this->makeMapper(), ['_relations_contains' => 'u']));
+	}//end testARelationFilterTakesTheSequentialRoute()
 }//end class

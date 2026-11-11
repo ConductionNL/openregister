@@ -40,6 +40,8 @@ use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Calendar\IcalendarWriter;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
+use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedRendering;
+use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedSources;
 use OCA\OpenRegister\Service\Calendar\ObjectDateEventBuilder;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IDateTimeZone;
@@ -124,14 +126,18 @@ class ObjectCalendarFeedServiceTest extends TestCase {
 		);
 
 		$this->service = new ObjectCalendarFeedService(
-			objects: $this->objects,
-			schemas: $this->schemas,
-			views: $this->views,
-			userManager: $this->userManager,
-			dateTimeZone: $this->dateTimeZone,
-			eventBuilder: $this->eventBuilder,
-			writer: new IcalendarWriter(),
-			logger: $this->createMock(LoggerInterface::class)
+			new ObjectCalendarFeedSources(
+				$this->objects,
+				$this->schemas,
+				$this->views,
+				$this->userManager
+			),
+			new ObjectCalendarFeedRendering(
+				$this->dateTimeZone,
+				$this->eventBuilder,
+				new IcalendarWriter()
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}
 

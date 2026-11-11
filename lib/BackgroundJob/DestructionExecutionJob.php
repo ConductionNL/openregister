@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  * and generates destruction certificates.
  *
  */
-class DestructionExecutionJob extends QueuedJob {
+class DestructionExecutionJob extends QueuedJob implements DestructionExecutionJobInterface {
 
 	/**
 	 * Default batch size for destruction processing.

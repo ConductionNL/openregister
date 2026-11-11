@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Deletion;
  *
  * @spec openspec/specs/deletion-audit-trail/spec.md
  */
-final class DestructionScope {
+final class DestructionScope implements DestructionActionInterface {
 	/**
 	 * The object's version history, held as audit rows.
 	 *
@@ -99,17 +99,6 @@ final class DestructionScope {
 		self::TIMELINE,
 		self::AUDIT_CONTENT,
 	];
-
-	/**
-	 * The audit action that records a destruction.
-	 *
-	 * A destruction record with no object is the point, so this row is never
-	 * inside a scope. Every handler that touches audit rows excludes it from
-	 * this one definition.
-	 *
-	 * @var string
-	 */
-	public const DESTRUCTION_ACTION = 'object.destroyed';
 
 	/**
 	 * The audit actions that ARE the evidence, excluded from every scope.

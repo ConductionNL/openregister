@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\SchemaRun\SchemaRunFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -75,6 +76,7 @@ use OCP\AppFramework\Db\Entity;
 class SchemaRun extends Entity implements JsonSerializable {
 	use JsonFieldsTrait;
 	use HydrateEmptyJsonAsNullTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Run type constants.
@@ -224,23 +226,9 @@ class SchemaRun extends Entity implements JsonSerializable {
 	 * Constructor — registers field types for hydration.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'type', type: 'string');
-		$this->addType(fieldName: 'state', type: 'string');
-		$this->addType(fieldName: 'proposedDefinition', type: 'json');
-		$this->addType(fieldName: 'plan', type: 'json');
-		$this->addType(fieldName: 'options', type: 'json');
-		$this->addType(fieldName: 'processed', type: 'integer');
-		$this->addType(fieldName: 'total', type: 'integer');
-		$this->addType(fieldName: 'cursor', type: 'integer');
-		$this->addType(fieldName: 'report', type: 'json');
-		$this->addType(fieldName: 'startedBy', type: 'string');
-		$this->addType(fieldName: 'rolledBackFrom', type: 'integer');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-
+		foreach (SchemaRunFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -253,30 +241,15 @@ class SchemaRun extends Entity implements JsonSerializable {
 	}//end isActive()
 
 	/**
-	 * JSON serialisation.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<string, mixed> The serialised run.
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'schemaId' => $this->schemaId,
-			'registerId' => $this->registerId,
-			'type' => $this->type,
-			'state' => $this->state,
-			'proposedDefinition' => $this->proposedDefinition,
 			'plan' => ($this->plan ?? []),
 			'options' => ($this->options ?? []),
-			'processed' => $this->processed,
-			'total' => $this->total,
-			'cursor' => $this->cursor,
 			'report' => ($this->report ?? []),
-			'startedBy' => $this->startedBy,
-			'rolledBackFrom' => $this->rolledBackFrom,
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
 		];
-
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

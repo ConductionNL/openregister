@@ -161,7 +161,7 @@ class FlowRunVersionPinGoldenTest extends TestCase {
 	 */
 	private function container(array $case): ContainerInterface {
 		$services = [
-			FlowVersionMapper::class => fn () => $this->versionMapper(case: $case),
+			\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => fn () => $this->versionMapper(case: $case),
 			FlowDefinitionPin::class => fn () => $this->definitions(case: $case),
 			'OCA\OpenRegister\Db\FlowMapper' => fn () => $this->flows(case: $case),
 			'OCA\OpenRegister\Service\Flow\FlowNodePreflight' => fn () => $this->preflight(case: $case),
@@ -169,7 +169,7 @@ class FlowRunVersionPinGoldenTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(function (string $id) use ($services, $case): mixed {
 			$this->calls[] = ['container.get' => $id];
-			$key = ['FlowVersionMapper' => 'versionMapper', 'FlowMapper' => 'flowMapper', 'FlowNodePreflight' => 'preflight'][substr($id, (int)strrpos($id, '\\') + 1)] ?? null;
+			$key = ['FlowVersionMapperInterface' => 'versionMapper', 'FlowMapper' => 'flowMapper', 'FlowNodePreflight' => 'preflight'][substr($id, (int)strrpos($id, '\\') + 1)] ?? null;
 			if ($key !== null && ($case[$key] ?? null) === 'throw') {
 				throw new RuntimeException('no ' . $id);
 			}

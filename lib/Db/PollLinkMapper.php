@@ -26,7 +26,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<PollLink>
  * @method list<PollLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class PollLinkMapper extends QBMapper {
+class PollLinkMapper extends QBMapper implements PollLinkMapperInterface {
 
 	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;

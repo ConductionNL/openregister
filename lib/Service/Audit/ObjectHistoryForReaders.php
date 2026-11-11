@@ -43,18 +43,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Reads one object's audit trail on behalf of a non-admin reader of that object.
  */
-class ObjectHistoryForReaders {
+class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 
 	/**
 	 * Filter and sort columns a reader may not use.
@@ -82,18 +82,14 @@ class ObjectHistoryForReaders {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectReadAccess    $access           Decides readability exactly as the object GET does.
-	 * @param AuditTrailMapperInterface    $auditTrailMapper Reads the object's entries.
-	 * @param HistoryEntryRedactor $redactor        Removes what the reader may not see from each entry.
-	 * @param RegisterMapperInterface      $registerMapper   Resolves the register for the doelbinding guard.
-	 * @param PurposeGuard        $purposeGuard     The doelbinding guard the object GET runs.
-	 * @param ReadEventVisibility $readEvents       Whether this reader may see who read the object.
+	 * @param ObjectReadAccess      $access       Decides readability exactly as the object GET does.
+	 * @param ObjectHistoryServices $services     Reads, redacts and resolves the register of the entries.
+	 * @param PurposeGuard          $purposeGuard The doelbinding guard the object GET runs.
+	 * @param ReadEventVisibility   $readEvents   Whether this reader may see who read the object.
 	 */
 	public function __construct(
 		private readonly ObjectReadAccess $access,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly HistoryEntryRedactor $redactor,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly ObjectHistoryServices $services,
 		private readonly PurposeGuard $purposeGuard,
 		private readonly ReadEventVisibility $readEvents,
 	) {
@@ -107,10 +103,8 @@ class ObjectHistoryForReaders {
 	 * the stored payload: matched in SQL, `?_search=<value>` would tell a
 	 * reader whether a hidden property ever held that value.
 	 *
-	 * @param string $register The register slug or id from the path.
-	 * @param string $schema   The schema slug or id from the path.
-	 * @param string $id       The object id from the path.
-	 * @param array  $params   limit, offset, page, filters, sort and search, as the controller extracts them.
+	 * @param ObjectRef $ref    The register and schema slug or id and the object id from the path.
+	 * @param array     $params limit, offset, page, filters, sort and search, as the controller extracts them.
 	 *
 	 * @return array{results: array<int, array>, total: int, page: int|null, pages: float, limit: int, offset: int|null, readEventsVisible: bool}|null
 	 *     The page, with whether read entries are shown to this caller, or null when the object is not readable for this caller.
@@ -120,18 +114,21 @@ class ObjectHistoryForReaders {
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
-	public function page(string $register, string $schema, string $id, array $params): ?array {
-		$object = $this->access->readableOrAmbiguous(register: $register, schema: $schema, id: $id);
+	public function page(ObjectRef $ref, array $params): ?array {
+		$object = $this->access->readableOrAmbiguous(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
 		if ($object === null) {
 			return null;
 		}
 
-		$schemaEntity = $this->readerSchema(object: $object);
-		if ($schemaEntity === null) {
+		$readable = $this->readerObject(object: $object);
+		if ($readable === null) {
 			return null;
 		}
 
+		// The route's register and schema are the object's address now, not the history's:
+		// entries from before a move carry the address they were written at.
 		$filters = $this->readerColumns(columns: ($params['filters'] ?? []));
+		unset($filters['register'], $filters['schema']);
 		$filters['object_uuid'] = $object->getUuid();
 
 		$sort = $this->readerColumns(columns: ($params['sort'] ?? []));
@@ -139,9 +136,9 @@ class ObjectHistoryForReaders {
 			$sort = ['created' => 'DESC'];
 		}
 
-		$rows = $this->auditTrailMapper->findAll(filters: $filters, sort: $sort);
+		$rows = $this->services->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $filters, sort: $sort));
 
-		$entries = $this->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
+		$entries = $this->services->redactor->redact(rows: $rows, readable: $readable);
 
 		// Who read the object is shown only to the groups named for it, and
 		// dropped before paging so the totals count what the reader is given.
@@ -172,8 +169,29 @@ class ObjectHistoryForReaders {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
 	public function readerEntries(ObjectEntity $located, array $rows): ?array {
-		$uuid = $located->getUuid();
-		if ($uuid === null || $uuid === '') {
+		$object = $this->readAgain(located: $located);
+		if ($object === null) {
+			return null;
+		}
+
+		$readable = $this->readerObject(object: $object);
+		if ($readable === null) {
+			return null;
+		}
+
+		return $this->services->redactor->redact(rows: $rows, readable: $readable);
+	}//end readerEntries()
+
+	/**
+	 * The located object read again through the object GET's read path, by its register, schema and uuid.
+	 *
+	 * @param ObjectEntity $located The object as some lookup found it.
+	 *
+	 * @return ObjectEntity|null The object, or null when it has no uuid, is not readable, or the read answers another object.
+	 */
+	private function readAgain(ObjectEntity $located): ?ObjectEntity {
+		$uuid = self::uuidOf(object: $located);
+		if ($uuid === null) {
 			return null;
 		}
 
@@ -186,16 +204,27 @@ class ObjectHistoryForReaders {
 			return null;
 		}
 
-		$schemaEntity = $this->readerSchema(object: $object);
-		if ($schemaEntity === null) {
+		return $object;
+	}//end readAgain()
+
+	/**
+	 * An object's uuid, or null when it has none.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return string|null The uuid; null for a missing or empty one.
+	 */
+	private static function uuidOf(ObjectEntity $object): ?string {
+		$uuid = $object->getUuid();
+		if ($uuid === null || $uuid === '') {
 			return null;
 		}
 
-		return $this->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
-	}//end readerEntries()
+		return $uuid;
+	}//end uuidOf()
 
 	/**
-	 * The schema a readable object's entries are redacted with, after the doelbinding guard.
+	 * A readable object with the schema its entries are redacted with, after the doelbinding guard.
 	 *
 	 * Every unknown hides: without the schema the property rules cannot be
 	 * applied, and an unfiltered history is the leak this prevents. The guard
@@ -204,14 +233,14 @@ class ObjectHistoryForReaders {
 	 *
 	 * @param ObjectEntity $object An object the read check returned.
 	 *
-	 * @return Schema|null The schema, or null when the object's uuid, schema or register does not resolve.
+	 * @return ReadableObject|null The object and its schema, or null when the object's uuid, schema or register does not resolve.
 	 *
 	 * @throws PurposeRefusedException When the schema asks for a purpose and none usable was named.
 	 */
-	private function readerSchema(ObjectEntity $object): ?Schema {
-		$objectUuid = $object->getUuid();
+	private function readerObject(ObjectEntity $object): ?ReadableObject {
+		$objectUuid = self::uuidOf(object: $object);
 		$schemaEntity = $this->access->schemaOf(object: $object);
-		if ($objectUuid === null || $objectUuid === '' || $schemaEntity === null) {
+		if ($objectUuid === null || $schemaEntity === null) {
 			return null;
 		}
 
@@ -222,8 +251,8 @@ class ObjectHistoryForReaders {
 
 		$this->enforcePurpose(register: $registerEntity, schema: $schemaEntity);
 
-		return $schemaEntity;
-	}//end readerSchema()
+		return new ReadableObject(object: $object, schema: $schemaEntity);
+	}//end readerObject()
 
 	/**
 	 * Run the doelbinding guard once per register and schema in this request.
@@ -301,7 +330,7 @@ class ObjectHistoryForReaders {
 		}
 
 		try {
-			return $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+			return $this->services->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Db\SourceMapperInterface;
 
 /**
  * The mappers and repositories of the sources API.
@@ -33,12 +33,12 @@ final class SourcesMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SourceMapper $sourceMapper The source mapper
+	 * @param SourceMapperInterface $sourceMapper The source mapper
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function __construct(
-		public readonly SourceMapper $sourceMapper,
+		public readonly SourceMapperInterface $sourceMapper,
 	) {
 	}//end __construct()
 }//end class

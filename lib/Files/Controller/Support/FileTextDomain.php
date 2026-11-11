@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller\Support;
 
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
@@ -37,7 +37,7 @@ final class FileTextDomain {
 	 * Bundle the services.
 	 *
 	 * @param TextExtractionService $textExtractor       Text extraction service
-	 * @param FileService           $fileService         File service for file operations
+	 * @param FileServiceInterface           $fileService         File service for file operations
 	 * @param ManualEntityService   $manualEntityService Orchestrator for the manual-entity write path
 	 * @param ?FileReadScope        $fileReadScope       The object read rule for an object's file.
 	 *
@@ -45,7 +45,7 @@ final class FileTextDomain {
 	 */
 	public function __construct(
 		public readonly TextExtractionService $textExtractor,
-		public readonly FileService $fileService,
+		public readonly FileServiceInterface $fileService,
 		public readonly ManualEntityService $manualEntityService,
 		public readonly ?FileReadScope $fileReadScope = null,
 	) {

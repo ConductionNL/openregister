@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService;
-use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleService;
-use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
-use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
+use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
+use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteServiceInterface;
 
 /**
  * The domain services of the dsar case API.
@@ -36,18 +36,18 @@ final class DsarCaseDisclosure {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param EvidenceHarvestService $harvestService   Evidence-collection service.
-	 * @param RedactionWriteService  $redactionService Field-level redaction write path.
-	 * @param ExportBundleService    $bundleService    Export-bundle + dossier service.
-	 * @param DsarPolicyPackResolver $packResolver     Resolves the case's active pack seam selectors.
+	 * @param EvidenceHarvestServiceInterface $harvestService   Evidence-collection service.
+	 * @param RedactionWriteServiceInterface  $redactionService Field-level redaction write path.
+	 * @param ExportBundleServiceInterface    $bundleService    Export-bundle + dossier service.
+	 * @param DsarPolicyPackResolverInterface $packResolver     Resolves the case's active pack seam selectors.
 	 *
 	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	public function __construct(
-		public readonly EvidenceHarvestService $harvestService,
-		public readonly RedactionWriteService $redactionService,
-		public readonly ExportBundleService $bundleService,
-		public readonly DsarPolicyPackResolver $packResolver,
+		public readonly EvidenceHarvestServiceInterface $harvestService,
+		public readonly RedactionWriteServiceInterface $redactionService,
+		public readonly ExportBundleServiceInterface $bundleService,
+		public readonly DsarPolicyPackResolverInterface $packResolver,
 	) {
 	}//end __construct()
 }//end class

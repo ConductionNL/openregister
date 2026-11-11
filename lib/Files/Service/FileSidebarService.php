@@ -26,12 +26,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service;
 
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -47,28 +50,124 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class FileSidebarService {
+
+	/**
+	 * The extraction status of a file that has no chunks, after its fileId.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const NOT_EXTRACTED = [
+		'extractionStatus' => 'none',
+		'chunkCount' => 0,
+		'entityCount' => 0,
+		'riskLevel' => 'none',
+		'extractedAt' => null,
+		'entities' => [],
+		'anonymized' => false,
+		'anonymizedAt' => null,
+		'anonymizedFileId' => null,
+	];
+
+	/**
+	 * System columns that should not be searched for file references.
+	 *
+	 * @var list<string>
+	 */
+	private const SYSTEM_COLUMNS = [
+		'id',
+		'uuid',
+		'register',
+		'schema',
+		'object',
+		'created',
+		'updated',
+		'owner',
+		'organisation',
+		'authorization',
+		'version',
+		'status',
+		'folder',
+		'textContent',
+	];
+
+	/**
+	 * Register mapper for RBAC-aware register lookups.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper for schema lookups.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Database connection for magic table queries.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Chunk mapper for extraction data.
+	 *
+	 * @var ChunkSourceReaderInterface
+	 */
+	private readonly ChunkSourceReaderInterface $chunkMapper;
+
+	/**
+	 * Entity relation mapper for PII data.
+	 *
+	 * @var EntityRelationMapperInterface
+	 */
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * GDPR entity mapper for entity type lookups.
+	 *
+	 * @var GdprEntityMapperInterface
+	 */
+	private readonly GdprEntityMapperInterface $gdprEntityMapper;
+
+	/**
+	 * Risk level computation service.
+	 *
+	 * @var RiskLevelService
+	 */
+	private readonly RiskLevelService $riskLevelService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register mapper for RBAC-aware register lookups.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema lookups.
-	 * @param IDBConnection $db Database connection for magic table queries.
-	 * @param ChunkMapper $chunkMapper Chunk mapper for extraction data.
-	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper for PII data.
-	 * @param GdprEntityMapper $gdprEntityMapper GDPR entity mapper for entity type lookups.
-	 * @param RiskLevelService $riskLevelService Risk level computation service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param FileSidebarSchemaLookup $schemas          The register and schema mappers
+	 * @param FileSidebarEntityStore  $entities         The database, chunk, entity relation and GDPR entity mappers
+	 * @param RiskLevelService        $riskLevelService Risk level computation service.
+	 * @param LoggerInterface         $logger           Logger.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly IDBConnection $db,
-		private readonly ChunkMapper $chunkMapper,
-		private readonly EntityRelationMapperInterface $entityRelationMapper,
-		private readonly GdprEntityMapper $gdprEntityMapper,
-		private readonly RiskLevelService $riskLevelService,
-		private readonly LoggerInterface $logger,
+		FileSidebarSchemaLookup $schemas,
+		FileSidebarEntityStore $entities,
+		RiskLevelService $riskLevelService,
+		LoggerInterface $logger,
 	) {
+		$this->registerMapper = $schemas->registerMapper;
+		$this->schemaMapper = $schemas->schemaMapper;
+		$this->db = $entities->db;
+		$this->chunkMapper = $entities->chunkMapper;
+		$this->entityRelationMapper = $entities->entityRelationMapper;
+		$this->gdprEntityMapper = $entities->gdprEntityMapper;
+		$this->riskLevelService = $riskLevelService;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -103,45 +202,91 @@ class FileSidebarService {
 		}
 
 		foreach ($registers as $register) {
-			$schemaIds = $register->getSchemas();
-			if (empty($schemaIds) === true) {
-				continue;
-			}
-
-			foreach ($schemaIds as $schemaId) {
-				try {
-					$schema = $this->schemaMapper->find((int)$schemaId);
-				} catch (\Exception $e) {
-					continue;
-				}
-
-				$tableName = 'openregister_table_' . $register->getId() . '_' . $schema->getId();
-
-				// Check if the table exists before querying.
-				if ($this->db->tableExists($tableName) === false) {
-					continue;
-				}
-
-				$found = $this->searchTableForFileId(tableName: $tableName, fileId: $fileId);
-				foreach ($found as $row) {
-					$results[] = [
-						'uuid' => $row['uuid'] ?? ($row['id'] ?? ''),
-						'title' => $this->extractTitle(row: $row),
-						'register' => [
-							'id' => $register->getId(),
-							'title' => $register->getTitle() ?? 'Register ' . $register->getId(),
-						],
-						'schema' => [
-							'id' => $schema->getId(),
-							'title' => $schema->getTitle() ?? 'Schema ' . $schema->getId(),
-						],
-					];
-				}
-			}//end foreach
-		}//end foreach
+			array_push($results, ...$this->objectsInRegister(register: $register, fileId: $fileId));
+		}
 
 		return $results;
 	}//end getObjectsForFile()
+
+	/**
+	 * The objects in one register's magic tables that reference the file.
+	 *
+	 * @param Register $register The register.
+	 * @param int      $fileId   The file ID to search for.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private function objectsInRegister(Register $register, int $fileId): array {
+		$schemaIds = $register->getSchemas();
+		if (empty($schemaIds) === true) {
+			return [];
+		}
+
+		$results = [];
+		foreach ($schemaIds as $schemaId) {
+			$schema = $this->findSchema(schemaId: $schemaId);
+			if ($schema !== null) {
+				$table = new FileSidebarTable(register: $register, schema: $schema);
+				array_push($results, ...$this->objectsInTable(table: $table, fileId: $fileId));
+			}
+		}
+
+		return $results;
+	}//end objectsInRegister()
+
+	/**
+	 * The schema with the given id, or null when it cannot be found.
+	 *
+	 * @param int|string $schemaId The schema id.
+	 *
+	 * @return Schema|null
+	 */
+	private function findSchema(int|string $schemaId): ?Schema {
+		try {
+			return $this->schemaMapper->find((int)$schemaId);
+		} catch (\Exception $e) {
+			return null;
+		}
+	}//end findSchema()
+
+	/**
+	 * The objects in one magic table that reference the file; none when the table does not exist.
+	 *
+	 * @param FileSidebarTable $table  The register/schema magic table.
+	 * @param int              $fileId The file ID to search for.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private function objectsInTable(FileSidebarTable $table, int $fileId): array {
+		$tableName = $table->tableName();
+
+		// Check if the table exists before querying.
+		if ($this->db->tableExists($tableName) === false) {
+			return [];
+		}
+
+		return array_map(
+			fn (array $row): array => $this->objectEntry(row: $row, table: $table),
+			$this->searchTableForFileId(tableName: $tableName, fileId: $fileId)
+		);
+	}//end objectsInTable()
+
+	/**
+	 * One result: the object's uuid and title, and its register and schema.
+	 *
+	 * @param array<string, mixed> $row   The database row.
+	 * @param FileSidebarTable     $table The table the row came from.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function objectEntry(array $row, FileSidebarTable $table): array {
+		return [
+			'uuid' => $row['uuid'] ?? ($row['id'] ?? ''),
+			'title' => $this->extractTitle(row: $row),
+			'register' => $table->registerSummary(),
+			'schema' => $table->schemaSummary(),
+		];
+	}//end objectEntry()
 
 	/**
 	 * Search a specific magic table for rows containing a file ID.
@@ -156,61 +301,7 @@ class FileSidebarService {
 	 */
 	private function searchTableForFileId(string $tableName, int $fileId): array {
 		try {
-			// Get column names for the table to search all data columns.
-			$schemaManager = $this->db->getInner()->createSchemaManager();
-			$columns = $schemaManager->listTableColumns($tableName);
-
-			// System columns that should not be searched for file references.
-			$systemColumns = [
-				'id',
-				'uuid',
-				'register',
-				'schema',
-				'object',
-				'created',
-				'updated',
-				'owner',
-				'organisation',
-				'authorization',
-				'version',
-				'status',
-				'folder',
-				'textContent',
-			];
-
-			$searchColumns = [];
-			foreach ($columns as $column) {
-				$colName = $column->getName();
-				if (in_array($colName, $systemColumns, true) === false) {
-					$searchColumns[] = $colName;
-				}
-			}
-
-			if (empty($searchColumns) === true) {
-				return [];
-			}
-
-			// Build a query that searches for the file ID as a string value in any column.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from($tableName);
-
-			$fileIdStr = (string)$fileId;
-			$orConds = [];
-			foreach ($searchColumns as $colName) {
-				$orConds[] = $qb->expr()->eq(
-					$colName,
-					$qb->createNamedParameter($fileIdStr)
-				);
-			}
-
-			$qb->where($qb->expr()->orX(...$orConds));
-
-			$result = $qb->executeQuery();
-			$rows = $result->fetchAll();
-			$result->closeCursor();
-
-			return $rows;
+			return $this->rowsReferencingFile(search: new FileReferenceSearch(tableName: $tableName, fileId: $fileId));
 		} catch (\Exception $e) {
 			$this->logger->debug(
 				'[FileSidebarService] Error searching table ' . $tableName . ': ' . $e->getMessage()
@@ -218,6 +309,74 @@ class FileSidebarService {
 			return [];
 		}//end try
 	}//end searchTableForFileId()
+
+	/**
+	 * The rows whose data columns hold the file id; none when the table has no data columns.
+	 *
+	 * @param FileReferenceSearch $search The table and file id; receives the data columns.
+	 *
+	 * @return array<int, array<string, mixed>> Matching rows.
+	 */
+	private function rowsReferencingFile(FileReferenceSearch $search): array {
+		$search->columns = $this->searchableColumns(tableName: $search->tableName);
+		if (empty($search->columns) === true) {
+			return [];
+		}
+
+		$result = $this->fileIdQuery(search: $search)->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return $rows;
+	}//end rowsReferencingFile()
+
+	/**
+	 * The table's columns other than the system columns.
+	 *
+	 * @param string $tableName The magic table name (without prefix).
+	 *
+	 * @return list<string>
+	 */
+	private function searchableColumns(string $tableName): array {
+		// Get column names for the table to search all data columns.
+		$schemaManager = $this->db->getInner()->createSchemaManager();
+		$columns = $schemaManager->listTableColumns($tableName);
+
+		$searchColumns = [];
+		foreach ($columns as $column) {
+			$colName = $column->getName();
+			if (in_array($colName, self::SYSTEM_COLUMNS, true) === false) {
+				$searchColumns[] = $colName;
+			}
+		}
+
+		return $searchColumns;
+	}//end searchableColumns()
+
+	/**
+	 * A query that searches for the file ID as a string value in any of the data columns.
+	 *
+	 * @param FileReferenceSearch $search The table, file id and data columns.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function fileIdQuery(FileReferenceSearch $search): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($search->tableName);
+
+		$fileIdStr = (string)$search->fileId;
+		$orConds = [];
+		foreach ($search->columns as $colName) {
+			$orConds[] = $qb->expr()->eq(
+				$colName,
+				$qb->createNamedParameter($fileIdStr)
+			);
+		}
+
+		$qb->where($qb->expr()->orX(...$orConds));
+		return $qb;
+	}//end fileIdQuery()
 
 	/**
 	 * Extract a human-readable title from an object row.
@@ -275,83 +434,83 @@ class FileSidebarService {
 	 */
 	public function getExtractionStatus(int $fileId): array {
 		// Get chunks for this file.
-		$chunks = $this->chunkMapper->findBySource('file', $fileId);
-		$chunkCount = count($chunks);
+		$chunkCount = count($this->chunkMapper->findBySource('file', $fileId));
 
 		// If no chunks exist, this file has not been extracted.
 		if ($chunkCount === 0) {
-			return [
-				'fileId' => $fileId,
-				'extractionStatus' => 'none',
-				'chunkCount' => 0,
-				'entityCount' => 0,
-				'riskLevel' => 'none',
-				'extractedAt' => null,
-				'entities' => [],
-				'anonymized' => false,
-				'anonymizedAt' => null,
-				'anonymizedFileId' => null,
-			];
+			return ['fileId' => $fileId] + self::NOT_EXTRACTED;
 		}
 
-		// Get extraction timestamp from chunk mapper.
-		$timestamp = $this->chunkMapper->getLatestUpdatedTimestamp('file', $fileId);
-		$extractedAt = null;
-		if ($timestamp !== null) {
-			$extractedAt = date('c', $timestamp);
-		}
-
-		// Get entity relations for this file.
+		// Extraction timestamp from the chunk mapper, then the file's entity relations.
+		$extractedAt     = $this->extractedAt(fileId: $fileId);
 		$entityRelations = $this->entityRelationMapper->findByFileId($fileId);
-		$entityCount = count($entityRelations);
+		$entities        = $this->entitiesByType(entityRelations: $entityRelations);
 
-		// Aggregate entities by type.
+		return [
+			'fileId' => $fileId, 'extractionStatus' => 'completed', 'chunkCount' => $chunkCount, 'entityCount' => count($entityRelations),
+			'riskLevel' => $this->riskLevelService->getRiskLevel($fileId), 'extractedAt' => $extractedAt, 'entities' => $entities,
+			'anonymized' => $this->anyAnonymized(entityRelations: $entityRelations), 'anonymizedAt' => null, 'anonymizedFileId' => null,
+		];
+	}//end getExtractionStatus()
+
+	/**
+	 * When the file's chunks were last updated, as ISO 8601, or null.
+	 *
+	 * @param int $fileId The Nextcloud file ID.
+	 *
+	 * @return string|null
+	 */
+	private function extractedAt(int $fileId): ?string {
+		$timestamp = $this->chunkMapper->getLatestUpdatedTimestamp('file', $fileId);
+		if ($timestamp === null) {
+			return null;
+		}
+
+		return date('c', $timestamp);
+	}//end extractedAt()
+
+	/**
+	 * Count the file's entities by their GDPR entity type; a relation whose entity is gone is skipped.
+	 *
+	 * @param array $entityRelations The file's entity relations.
+	 *
+	 * @return array<int, array{type: string, count: int}>
+	 */
+	private function entitiesByType(array $entityRelations): array {
 		$entityTypeCounts = [];
-		$anonymized = false;
 		foreach ($entityRelations as $relation) {
-			// Check anonymization status.
-			if ($relation->getAnonymized() === true) {
-				$anonymized = true;
-			}
-
 			// Look up entity type from GdprEntity.
 			try {
-				$entity = $this->gdprEntityMapper->find($relation->getEntityId());
-				$type = $entity->getType();
-				if (isset($entityTypeCounts[$type]) === false) {
-					$entityTypeCounts[$type] = 0;
-				}
-
-				$entityTypeCounts[$type]++;
+				$type = $this->gdprEntityMapper->find($relation->getEntityId())->getType();
+				$entityTypeCounts[$type] = ($entityTypeCounts[$type] ?? 0) + 1;
 			} catch (\Exception $e) {
 				// Entity not found — skip.
 				continue;
 			}
-		}//end foreach
-
-		// Build entity type array.
-		$entities = [];
-		foreach ($entityTypeCounts as $type => $count) {
-			$entities[] = [
-				'type' => $type,
-				'count' => $count,
-			];
 		}
 
-		// Get risk level.
-		$riskLevel = $this->riskLevelService->getRiskLevel($fileId);
+		$entities = [];
+		foreach ($entityTypeCounts as $type => $count) {
+			$entities[] = ['type' => $type, 'count' => $count];
+		}
 
-		return [
-			'fileId' => $fileId,
-			'extractionStatus' => 'completed',
-			'chunkCount' => $chunkCount,
-			'entityCount' => $entityCount,
-			'riskLevel' => $riskLevel,
-			'extractedAt' => $extractedAt,
-			'entities' => $entities,
-			'anonymized' => $anonymized,
-			'anonymizedAt' => null,
-			'anonymizedFileId' => null,
-		];
-	}//end getExtractionStatus()
+		return $entities;
+	}//end entitiesByType()
+
+	/**
+	 * Whether any of the file's entity relations is anonymized.
+	 *
+	 * @param array $entityRelations The file's entity relations.
+	 *
+	 * @return bool
+	 */
+	private function anyAnonymized(array $entityRelations): bool {
+		foreach ($entityRelations as $relation) {
+			if ($relation->getAnonymized() === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyAnonymized()
 }//end class

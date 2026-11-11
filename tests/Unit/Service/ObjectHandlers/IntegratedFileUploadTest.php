@@ -198,7 +198,7 @@ class IntegratedFileUploadTest extends TestCase {
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-123');
 
 		// Default: isFileProperty returns false (overridden per-test as needed).
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$linkedEntityHandler = $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class);
 		$computedFieldHandler = $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class);
@@ -209,28 +209,46 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Create SaveObject instance with correct constructor params.
 		$this->saveObject = new SaveObject(
-			$this->objectEntityMapper,
-			$this->unifiedObjectMapper,
-			$this->metaHydrationHandler,
-			$this->filePropertyHandler,
-			$linkedEntityHandler,
-			$this->userSession,
-			$this->auditTrailMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->urlGenerator,
-			$this->organisationService,
-			$this->cacheHandler,
-			$this->settingsService,
-			$this->propertyRbacHandler,
-			$computedFieldHandler,
-			$translationHandler,
-			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->logger,
-			$tmloService,
-			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$permissionHandler
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $tmloService
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $linkedEntityHandler,
+						computedFieldHandler: $computedFieldHandler
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $translationHandler,
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisationService
+				)
+			),
+			propertyRbacHandler: $this->propertyRbacHandler,
+			permissionHandler: $permissionHandler,
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 	}
 
@@ -304,7 +322,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			$objectData,
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -360,7 +377,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			$objectData,
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -370,6 +386,8 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Assert: Object was created.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame('Test Image', $result->getObject()['title']);
+		$this->assertSame($dataUri, $result->getObject()['image']);
 	}
 
 	/**
@@ -408,7 +426,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			$objectData,
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -418,6 +435,7 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Assert: Object was created.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame('https://example.com/files/document.pdf', $result->getObject()['document']);
 	}
 
 	/**
@@ -468,6 +486,7 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Mock processUploadedFiles to inject multipart file data.
 		$this->filePropertyHandler
+			->expects($this->once())
 			->method('processUploadedFiles')
 			->willReturnCallback(function ($uploadedFiles, $data) {
 				$data['attachment'] = 123;
@@ -488,7 +507,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			$objectData,
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -499,6 +517,10 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Assert: Object was created.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// The multipart upload's processed value lands on its property; the other values are kept.
+		$this->assertSame(123, $result->getObject()['attachment']);
+		$this->assertSame($dataUri, $result->getObject()['image']);
+		$this->assertSame('https://example.com/file.doc', $result->getObject()['reference']);
 
 		// Cleanup.
 		if (file_exists($tmpFile)) {
@@ -553,7 +575,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			$objectData,
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -563,6 +584,7 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Assert: Object was created.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame([$file1, $file2, $file3], $result->getObject()['attachments']);
 	}
 
 	/**
@@ -597,6 +619,7 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Mock processUploadedFiles to pass through data unchanged (error file skipped).
 		$this->filePropertyHandler
+			->expects($this->once())
 			->method('processUploadedFiles')
 			->willReturnCallback(function ($uploadedFiles, $data) {
 				return $data;
@@ -612,7 +635,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			$objectData,
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -623,6 +645,8 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Assert: Object created despite upload error.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame('Test', $result->getObject()['title']);
+		$this->assertArrayNotHasKey('attachment', $result->getObject());
 	}
 
 	/**
@@ -680,7 +704,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockRegister,
 			$this->mockSchema,
 			$objectData,
-			null,
 			null,
 			false,
 			false,
@@ -753,7 +776,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			[],
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -807,7 +829,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			['pdf' => $dataUri],
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -817,5 +838,6 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Assert: PDF uploaded successfully.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($dataUri, $result->getObject()['pdf']);
 	}
 }

@@ -59,21 +59,10 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of every shape
  * the boundary refuses; each refusal is one `if` with one message, and the
  * spec asks for all of them to fail at save time.
- * @SuppressWarnings(PHPMD.ExcessiveParameterList) `rowFrom()` takes the
- * anchor triple, the tree position, the settings and the provenance
- * separately because they come from different callers (definition import,
- * ad-hoc attach, repetition); a parameter object would be built and unpacked
- * at every one of them.
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
  */
 class CasePlanDefinition {
-
-	/**
-	 * What an item key may look like: something a sentry can name and a URL
-	 * can carry.
-	 */
-	private const KEY_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/';
 
 	/**
 	 * Constructor.
@@ -99,37 +88,7 @@ class CasePlanDefinition {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function validate(array $definition): array {
-		$items = ($definition['items'] ?? null);
-		if (is_array($items) === false || $items === []) {
-			throw new CaseValidationException(message: 'A case-plan definition needs a non-empty `items` list.');
-		}
-
-		$settings = ($definition['settings'] ?? []);
-		if (is_array($settings) === false) {
-			throw new CaseValidationException(message: '`settings` must be an object.');
-		}
-
-		$this->validateRuleList(rules: ($settings['authorization'] ?? null), where: 'settings.authorization');
-		if (isset($settings['results']) === true && $this->isStringList(value: $settings['results']) === false) {
-			throw new CaseValidationException(message: '`settings.results` must be a list of result names.');
-		}
-
-		if (isset($settings['writeThrough']) === true && is_array($settings['writeThrough']) === false) {
-			throw new CaseValidationException(message: '`settings.writeThrough` must be an object of field names.');
-		}
-
-		$keys = [];
-		$flows = [];
-		$normalised = [];
-		foreach ($items as $index => $node) {
-			$normalised[] = $this->validateNode(node: $node, path: 'items[' . (int)$index . ']', keys: $keys, flows: $flows);
-		}
-
-		if ($flows !== []) {
-			$settings['flows'] = $flows;
-		}
-
-		return ['settings' => $settings, 'items' => $normalised];
+		return (new CasePlanValidation(sentries: $this->sentries))->definition(definition: $definition);
 	}//end validate()
 
 	/**
@@ -148,6 +107,24 @@ class CasePlanDefinition {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function validateAdHoc(array $node): array {
+		$this->validateAdHocShape(node: $node);
+
+		return (new CasePlanValidation(sentries: $this->sentries))->validateNode(node: $node, path: 'item');
+	}//end validateAdHoc()
+
+	/**
+	 * What an ad-hoc item may not carry: its own authorization, a discretionary
+	 * flag, children or a flow binding.
+	 *
+	 * @param array<string, mixed> $node The item as submitted.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseValidationException On any refused element.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function validateAdHocShape(array $node): void {
 		if (array_key_exists('authorization', $node) === true) {
 			throw new CaseValidationException(
 				message: 'An ad-hoc item cannot declare its own authorization; it derives it from its parent stage or the plan root.'
@@ -161,62 +138,121 @@ class CasePlanDefinition {
 		if (isset($node['children']) === true || isset($node['flow']) === true) {
 			throw new CaseValidationException(message: 'An ad-hoc item cannot carry children or a flow binding.');
 		}
-
-		$keys = [];
-		$flows = [];
-
-		return $this->validateNode(node: $node, path: 'item', keys: $keys, flows: $flows);
-	}//end validateAdHoc()
+	}//end validateAdHocShape()
 
 	/**
-	 * Build the unsaved row for one normalised node.
+	 * Build the unsaved row for one placed node.
 	 *
-	 * @param array<string, mixed> $node The normalised node.
-	 * @param string $objectUuid The anchor.
-	 * @param int|null $registerId The anchor's register.
-	 * @param int|null $schemaId The anchor's schema.
-	 * @param int|null $parentId The containing stage's row id, or null.
-	 * @param int $position Order among siblings.
-	 * @param array<string, mixed> $settings The plan settings, carried on every row.
-	 * @param string $origin defined | discretionary | adhoc.
-	 * @param string|null $actor The creating identity.
-	 * @param string|null $flowUuid Definition provenance, when any.
-	 * @param int|null $flowVersion Definition provenance, when any.
+	 * @param CasePlanPlacement $placed    The normalised node, its parent row id and its position.
+	 * @param CasePlanInsertion $insertion The anchor, the plan settings carried on every row, the creating
+	 *                                     identity and the provenance; an origin it names wins over the node's own.
 	 *
 	 * @return CaseItem The unsaved row in `available`.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	public function rowFrom(
-		array $node,
-		string $objectUuid,
-		?int $registerId,
-		?int $schemaId,
-		?int $parentId,
-		int $position,
-		array $settings,
-		string $origin,
-		?string $actor,
-		?string $flowUuid = null,
-		?int $flowVersion = null,
-	): CaseItem {
-		$row = new CaseItem();
-		$row->setItemKey((string)$node['key']);
-		$row->setName($this->stringOrNull(value: ($node['name'] ?? null)));
-		$row->setDescription($this->stringOrNull(value: ($node['description'] ?? null)));
-		$row->setObjectUuid($objectUuid);
-		$row->setRegisterId($registerId);
-		$row->setSchemaId($schemaId);
-		$row->setFlowUuid($flowUuid);
-		$row->setFlowVersion($flowVersion);
+	public function rowFrom(CasePlanPlacement $placed, CasePlanInsertion $insertion): CaseItem {
+		$node = $placed->node;
+		$origin = ($insertion->provenance->origin ?? $this->originOf(node: $node));
+		$row = $this->describedRow(node: $node);
+		$this->anchor(row: $row, insertion: $insertion);
 		if ($origin !== CaseItem::ORIGIN_ADHOC) {
 			$row->setDefinitionItemKey((string)$node['key']);
 		}
 
 		$row->setOrigin($origin);
-		$row->setParentItemId($parentId);
-		$row->setPlanItemType((string)$node['type']);
-		$row->setPosition($position);
+		$this->place(row: $row, placed: $placed);
+		$this->applyRules(row: $row, node: $node);
+		$this->applyAssignment(row: $row, node: $node);
+
+		return $row;
+	}//end rowFrom()
+
+	/**
+	 * Where a definition node comes from: a discretionary node waits to be
+	 * enabled, every other one is defined.
+	 *
+	 * @param array<string, mixed> $node The normalised node.
+	 *
+	 * @return string discretionary | defined.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 */
+	public function originOf(array $node): string {
+		if (($node['discretionary'] ?? false) === true) {
+			return CaseItem::ORIGIN_DISCRETIONARY;
+		}
+
+		return CaseItem::ORIGIN_DEFINED;
+	}//end originOf()
+
+	/**
+	 * A new row carrying the node's key, name and description.
+	 *
+	 * @param array<string, mixed> $node The normalised node.
+	 *
+	 * @return CaseItem The unsaved row.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 */
+	private function describedRow(array $node): CaseItem {
+		$row = new CaseItem();
+		$row->setItemKey((string)$node['key']);
+		$row->setName($this->stringOrNull(value: ($node['name'] ?? null)));
+		$row->setDescription($this->stringOrNull(value: ($node['description'] ?? null)));
+
+		return $row;
+	}//end describedRow()
+
+	/**
+	 * What every row of one insertion shares: the anchor, the provenance, the
+	 * plan settings and the creating identity.
+	 *
+	 * @param CaseItem          $row       The unsaved row.
+	 * @param CasePlanInsertion $insertion The anchor, settings, creating identity and provenance.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 */
+	private function anchor(CaseItem $row, CasePlanInsertion $insertion): void {
+		$row->setObjectUuid($insertion->anchor->objectUuid);
+		$row->setRegisterId($insertion->anchor->registerId);
+		$row->setSchemaId($insertion->anchor->schemaId);
+		$row->setFlowUuid($insertion->provenance->flowUuid);
+		$row->setFlowVersion($insertion->provenance->flowVersion);
+		$row->setPlanSettings($insertion->settings);
+		$row->setCreatedBy($insertion->actor);
+	}//end anchor()
+
+	/**
+	 * Where a row sits: its parent, its type and its order among its siblings.
+	 *
+	 * @param CaseItem          $row    The unsaved row.
+	 * @param CasePlanPlacement $placed The normalised node, its parent row id and its position.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 */
+	private function place(CaseItem $row, CasePlanPlacement $placed): void {
+		$row->setParentItemId($placed->parentId);
+		$row->setPlanItemType((string)$placed->node['type']);
+		$row->setPosition($placed->position);
+	}//end place()
+
+	/**
+	 * The row's lifecycle rules: its start state, criteria, required and
+	 * discretionary flags, repetition and authorization.
+	 *
+	 * @param CaseItem $row The unsaved row.
+	 * @param array<string, mixed> $node The normalised node.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 */
+	private function applyRules(CaseItem $row, array $node): void {
 		$row->setState(CaseItem::STATE_AVAILABLE);
 		$row->setIsTerminal(false);
 		$row->setEntryCriteria($this->listOrNull(value: ($node['entryCriteria'] ?? null)));
@@ -226,6 +262,21 @@ class CasePlanDefinition {
 		$row->setRepetition($this->listOrNull(value: ($node['repetition'] ?? null)));
 		$row->setRealisationCount(1);
 		$row->setAuthorizationRules($this->listOrNull(value: ($node['authorization'] ?? null)));
+	}//end applyRules()
+
+	/**
+	 * Who the row's work is for and by when: candidates, deadlines and the carried terms.
+	 *
+	 * @param CaseItem $row The unsaved row.
+	 * @param array<string, mixed> $node The normalised node.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseValidationException When a deadline is not a date.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 */
+	private function applyAssignment(CaseItem $row, array $node): void {
 		$row->setCandidateUsers($this->listOrNull(value: ($node['candidateUsers'] ?? null)));
 		$row->setCandidateGroups($this->listOrNull(value: ($node['candidateGroups'] ?? null)));
 		$row->setCandidateRole($this->stringOrNull(value: ($node['candidateRole'] ?? null)));
@@ -233,160 +284,7 @@ class CasePlanDefinition {
 		$row->setExpiresAt($this->dateOrNull(value: ($node['expiresAt'] ?? null), field: 'expiresAt'));
 		$row->setDoorlooptijd($this->stringOrNull(value: ($node['doorlooptijd'] ?? null)));
 		$row->setServicenorm($this->stringOrNull(value: ($node['servicenorm'] ?? null)));
-		$row->setPlanSettings($settings);
-		$row->setCreatedBy($actor);
-
-		return $row;
-	}//end rowFrom()
-
-	/**
-	 * Validate one node and, recursively, its children.
-	 *
-	 * @param mixed $node The node as submitted.
-	 * @param string $path Where it is, for messages.
-	 * @param array<string, bool> $keys Keys seen so far (by reference).
-	 * @param array<string, string> $flows Stage flow bindings collected (by reference).
-	 *
-	 * @return array<string, mixed> The normalised node.
-	 *
-	 * @throws CaseValidationException On the first refused element.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
-	 */
-	private function validateNode(mixed $node, string $path, array &$keys, array &$flows): array {
-		if (is_array($node) === false) {
-			throw new CaseValidationException(message: sprintf('%s must be an object.', $path));
-		}
-
-		$key = trim((string)($node['key'] ?? ''));
-		if ($key === '' || preg_match(self::KEY_PATTERN, $key) !== 1) {
-			throw new CaseValidationException(message: sprintf('%s needs a `key` of letters, digits, `_`, `.` or `-` (max 128).', $path));
-		}
-
-		if (isset($keys[$key]) === true) {
-			throw new CaseValidationException(message: sprintf("%s repeats item key '%s'; keys are unique within a plan.", $path, $key));
-		}
-
-		$keys[$key] = true;
-		$type = (string)($node['type'] ?? '');
-		if (in_array($type, CaseItem::TYPES, true) === false) {
-			throw new CaseValidationException(
-				message: sprintf("%s ('%s') has type '%s'; expected one of %s.", $path, $key, $type, implode(', ', CaseItem::TYPES))
-			);
-		}
-
-		$this->sentries->validateCriteria(criteria: ($node['entryCriteria'] ?? null), where: sprintf("'%s' entry", $key));
-		$this->sentries->validateCriteria(criteria: ($node['exitCriteria'] ?? null), where: sprintf("'%s' exit", $key));
-		$this->validateRuleList(rules: ($node['authorization'] ?? null), where: sprintf("'%s'.authorization", $key));
-
-		$repetition = ($node['repetition'] ?? null);
-		if ($repetition !== null && (is_array($repetition) === false || (int)($repetition['max'] ?? 0) < 1)) {
-			throw new CaseValidationException(message: sprintf("'%s'.repetition must be {\"max\": N} with N >= 1.", $key));
-		}
-
-		if ($type === CaseItem::TYPE_MILESTONE && ($node['discretionary'] ?? false) === true) {
-			throw new CaseValidationException(message: sprintf("'%s' is a milestone and cannot be discretionary: a milestone is never enabled.", $key));
-		}
-
-		if ($type !== CaseItem::TYPE_STAGE) {
-			if (isset($node['children']) === true) {
-				throw new CaseValidationException(message: sprintf("'%s' is a %s and cannot contain children; only a stage nests.", $key, $type));
-			}
-
-			if (isset($node['flow']) === true && $type !== CaseItem::TYPE_PROCESS_TASK) {
-				throw new CaseValidationException(
-					message: sprintf("'%s' is a %s and cannot bind a flow; only a stage or a process task is realised by a run.", $key, $type)
-				);
-			}
-		}
-
-		if ($type === CaseItem::TYPE_PROCESS_TASK) {
-			$flow = trim((string)($node['flow'] ?? ''));
-			if ($flow === '') {
-				throw new CaseValidationException(
-					message: sprintf("'%s' is a process task and names no flow; a process task without a flow would be work nobody does.", $key)
-				);
-			}
-
-			$flows[$key] = $flow;
-		}
-
-		$node['key'] = $key;
-		$children = ($node['children'] ?? []);
-		$node['children'] = [];
-		if ($type === CaseItem::TYPE_STAGE) {
-			$flow = trim((string)($node['flow'] ?? ''));
-			if ($flow !== '') {
-				$flows[$key] = $flow;
-			}
-
-			if (is_array($children) === false) {
-				throw new CaseValidationException(message: sprintf("'%s'.children must be a list.", $key));
-			}
-
-			// A stage bound to a flow is driven by its run; children under it
-			// would have two masters.
-			if ($flow !== '' && $children !== []) {
-				throw new CaseValidationException(message: sprintf("'%s' binds a flow and cannot also contain children.", $key));
-			}
-
-			$normalisedChildren = [];
-			foreach ($children as $index => $child) {
-				$normalisedChildren[] = $this->validateNode(node: $child, path: sprintf('%s.children[%d]', $path, (int)$index), keys: $keys, flows: $flows);
-			}
-
-			$node['children'] = $normalisedChildren;
-		}
-
-		return $node;
-	}//end validateNode()
-
-	/**
-	 * An authorization rule list is a list of non-empty strings, or absent.
-	 *
-	 * @param mixed $rules The list.
-	 * @param string $where For the message.
-	 *
-	 * @return void
-	 *
-	 * @throws CaseValidationException When malformed.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
-	 */
-	private function validateRuleList(mixed $rules, string $where): void {
-		if ($rules === null) {
-			return;
-		}
-
-		if ($this->isStringList(value: $rules) === false) {
-			throw new CaseValidationException(
-				message: sprintf('%s must be a list of group ids, `user:<uid>` or `role:<name>` entries.', $where)
-			);
-		}
-	}//end validateRuleList()
-
-	/**
-	 * Whether a value is a list of non-empty strings.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return boolean True for a (possibly empty) list of non-empty strings.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
-	 */
-	private function isStringList(mixed $value): bool {
-		if (is_array($value) === false) {
-			return false;
-		}
-
-		foreach ($value as $entry) {
-			if (is_string($entry) === false || trim($entry) === '') {
-				return false;
-			}
-		}
-
-		return true;
-	}//end isStringList()
+	}//end applyAssignment()
 
 	/**
 	 * A trimmed string, or null for empty.
@@ -398,11 +296,12 @@ class CasePlanDefinition {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
 	 */
 	private function stringOrNull(mixed $value): ?string {
-		if ($value === null || is_scalar($value) === false) {
-			return null;
+		// Null is not a scalar, so it is refused here too.
+		$text = '';
+		if (is_scalar($value) === true) {
+			$text = trim((string)$value);
 		}
 
-		$text = trim((string)$value);
 		if ($text === '') {
 			return null;
 		}
@@ -440,7 +339,7 @@ class CasePlanDefinition {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function dateOrNull(mixed $value, string $field): ?DateTime {
-		if ($value === null || $value === '') {
+		if (in_array($value, [null, ''], true) === true) {
 			return null;
 		}
 

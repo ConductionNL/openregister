@@ -26,14 +26,14 @@ use DateInterval;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ProcessingLogMapper;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
+use OCA\OpenRegister\BackgroundJob\Support\ProcessingLogRetentionStores;
 
 /**
  * Daily prune of `openregister_processing_log` by the `created` index.
@@ -70,22 +70,48 @@ class ProcessingLogRetentionJob extends TimedJob {
 	public const ACTION_PRUNED = 'processing-log.pruned';
 
 	/**
+	 * Deletes expired entries.
+	 *
+	 * @var ProcessingLogMapperInterface
+	 */
+	private readonly ProcessingLogMapperInterface $entries;
+
+	/**
+	 * Holds the record of each purge.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrail;
+
+	/**
+	 * Config, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $config;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory        $time       The clock.
-	 * @param ProcessingLogMapper $entries    Deletes expired entries.
-	 * @param AuditTrailMapper    $auditTrail Holds the record of each purge.
-	 * @param IAppConfig          $config     Reads the retention period.
-	 * @param LoggerInterface     $logger     Logger.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
+	 * @param ProcessingLogRetentionStores $stores Processing log and the audit trail of each purge.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly ProcessingLogMapper $entries,
-		private readonly AuditTrailMapper $auditTrail,
-		private readonly IAppConfig $config,
-		private readonly LoggerInterface $logger,
+		ConfiguredJobRuntime $runtime,
+		ProcessingLogRetentionStores $stores,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		$this->config = $runtime->appConfig;
+		$this->entries = $stores->entries;
+		$this->auditTrail = $stores->auditTrail;
+		parent::__construct(time: $runtime->time);
 
 		$this->setInterval(seconds: 86400);
 
@@ -106,13 +132,8 @@ class ProcessingLogRetentionJob extends TimedJob {
 		$retention = $this->retention();
 		$cutoff = $this->cutoff(retention: $retention);
 
-		try {
-			$deleted = $this->entries->deleteCreatedBefore(cutoff: $cutoff);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[ProcessingLogRetention] Prune failed: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$deleted = $this->prunedCount(cutoff: $cutoff);
+		if ($deleted === null) {
 			return;
 		}
 
@@ -122,10 +143,29 @@ class ProcessingLogRetentionJob extends TimedJob {
 		);
 
 		if ($deleted > 0) {
-			$this->recordPurge(retention: $retention, cutoff: $cutoff, deleted: $deleted);
+			$this->recordPurge(prune: new ProcessingLogPrune(retention: $retention, cutoff: $cutoff, deleted: $deleted));
 		}
 
 	}//end run()
+
+	/**
+	 * Delete the entries created before the cutoff.
+	 *
+	 * @param DateTime $cutoff The retention cutoff.
+	 *
+	 * @return int|null How many were deleted; null, logged, when the prune failed.
+	 */
+	private function prunedCount(DateTime $cutoff): ?int {
+		try {
+			return $this->entries->deleteCreatedBefore(cutoff: $cutoff);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[ProcessingLogRetention] Prune failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end prunedCount()
 
 	/**
 	 * The configured retention, or the default when it is not a positive duration.
@@ -167,28 +207,38 @@ class ProcessingLogRetentionJob extends TimedJob {
 	/**
 	 * Put the purge (period and count) on the audit trail.
 	 *
-	 * @param string   $retention The retention applied.
-	 * @param DateTime $cutoff    The cutoff applied.
-	 * @param int      $deleted   How many entries went.
+	 * @param ProcessingLogPrune $prune The retention and cutoff applied and how many entries went.
 	 *
 	 * @return void
 	 */
-	private function recordPurge(string $retention, DateTime $cutoff, int $deleted): void {
-		$row = new AuditTrail();
-		$row->setUuid(Uuid::v4()->toRfc4122());
-		$row->setAction(self::ACTION_PRUNED);
-		$row->setUser('system');
-		$row->setUserName('System');
-		$row->setChanged(['retention' => $retention, 'before' => $cutoff->format('c'), 'deleted' => $deleted]);
-		$row->setCreated($this->time->getDateTime());
+	private function recordPurge(ProcessingLogPrune $prune): void {
+		$row = $this->purgeRow(prune: $prune);
 
 		try {
 			$this->auditTrail->insertAuditTrails(entries: [$row]);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[ProcessingLogRetention] Entries were pruned but the purge was not recorded: ' . $e->getMessage(),
-				context: ['retention' => $retention, 'before' => $cutoff->format('c'), 'deleted' => $deleted]
+				context: $prune->recorded()
 			);
 		}
 	}//end recordPurge()
+
+	/**
+	 * The audit-trail row that records a prune.
+	 *
+	 * @param ProcessingLogPrune $prune The prune.
+	 *
+	 * @return AuditTrail
+	 */
+	private function purgeRow(ProcessingLogPrune $prune): AuditTrail {
+		$row = new AuditTrail();
+		$row->setUuid(Uuid::v4()->toRfc4122());
+		$row->setAction(self::ACTION_PRUNED);
+		$row->setUser('system');
+		$row->setUserName('System');
+		$row->setChanged($prune->recorded());
+		$row->setCreated($this->time->getDateTime());
+		return $row;
+	}//end purgeRow()
 }//end class

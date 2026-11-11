@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 
 /**
@@ -37,7 +37,7 @@ final class TaskWork {
 	 * Bundle the services.
 	 *
 	 * @param TaskManagerInterface     $tasks         The authorized lifecycle.
-	 * @param TaskInboxService         $inbox         The inbox queries.
+	 * @param TaskInboxServiceInterface         $inbox         The inbox queries.
 	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
 	 * @param TaskTemporalProjection   $temporal      The one overdue derivation.
 	 *
@@ -45,7 +45,7 @@ final class TaskWork {
 	 */
 	public function __construct(
 		public readonly TaskManagerInterface $tasks,
-		public readonly TaskInboxService $inbox,
+		public readonly TaskInboxServiceInterface $inbox,
 		public readonly TaskAuthorizationService $authorization,
 		public readonly TaskTemporalProjection $temporal,
 	) {

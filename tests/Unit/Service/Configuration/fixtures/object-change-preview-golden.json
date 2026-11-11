@@ -1,0 +1,1336 @@
+{
+    "both unknown, both planned": {
+        "row": {
+            "type": "object",
+            "action": "create",
+            "slug": "obj-1",
+            "title": "Remote",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": null,
+            "proposed": {
+                "title": "Remote",
+                "omschrijving": "Nieuw",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "2.0.0"
+                }
+            },
+            "changes": []
+        },
+        "created": {
+            "obj-1": true,
+            "mixed-case": true,
+            "": true
+        },
+        "calls": []
+    },
+    "both unknown, register planned": {
+        "row": {
+            "type": "object",
+            "action": "skip",
+            "slug": "obj-1",
+            "title": "Remote",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": null,
+            "proposed": {
+                "title": "Remote",
+                "omschrijving": "Nieuw",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "2.0.0"
+                }
+            },
+            "changes": [],
+            "reason": "Register or schema not found locally"
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": []
+    },
+    "duplicate slug": {
+        "row": {
+            "type": "object",
+            "action": "skip",
+            "slug": "obj-1",
+            "title": "Remote",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": null,
+            "proposed": {
+                "title": "Remote",
+                "omschrijving": "Nieuw",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "2.0.0"
+                }
+            },
+            "changes": [],
+            "reason": "This register holds more than one ZaakType object with slug \"obj-1\"; the import skips it until the duplicates are resolved"
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": [
+            [
+                "find",
+                [
+                    "obj-1",
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        ]
+    },
+    "missing everything": {
+        "row": {
+            "type": "object",
+            "action": "skip",
+            "slug": "",
+            "title": "",
+            "register": "",
+            "schema": "",
+            "current": null,
+            "proposed": {
+                "title": "",
+                "name": 7
+            },
+            "changes": [],
+            "reason": "Missing required fields (slug, register, or schema)"
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": []
+    },
+    "missing slug": {
+        "row": {
+            "type": "object",
+            "action": "skip",
+            "slug": "",
+            "title": "Named",
+            "register": "zaken",
+            "schema": "zaaktype",
+            "current": null,
+            "proposed": {
+                "name": "Named",
+                "@self": {
+                    "register": "zaken",
+                    "schema": "zaaktype"
+                }
+            },
+            "changes": [],
+            "reason": "Missing required fields (slug, register, or schema)"
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": []
+    },
+    "newer with changes": {
+        "row": {
+            "type": "object",
+            "action": "update",
+            "slug": "obj-1",
+            "title": "Remote",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": {
+                "title": "Old",
+                "omschrijving": "Oud",
+                "@self": {
+                    "id": "11111111-2222-3333-4444-555555555555",
+                    "slug": "obj-1",
+                    "name": "11111111-2222-3333-4444-555555555555",
+                    "description": null,
+                    "summary": null,
+                    "image": null,
+                    "uri": null,
+                    "version": "1.0.0",
+                    "register": "4",
+                    "schema": "9",
+                    "schemaVersion": null,
+                    "files": [],
+                    "relations": [],
+                    "locked": null,
+                    "owner": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "folder": null,
+                    "application": null,
+                    "validation": [],
+                    "quality": [],
+                    "geo": [],
+                    "retention": [],
+                    "tmlo": [],
+                    "size": null,
+                    "updated": null,
+                    "lastUserActivity": null,
+                    "created": null,
+                    "deleted": [],
+                    "archived": [],
+                    "frozen": [],
+                    "status": null,
+                    "source": null,
+                    "mail": null,
+                    "contacts": null,
+                    "notes": null,
+                    "todos": null,
+                    "calendar": null,
+                    "talk": null,
+                    "deck": null
+                },
+                "id": "11111111-2222-3333-4444-555555555555"
+            },
+            "proposed": {
+                "title": "Remote",
+                "omschrijving": "Nieuw",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "2.0.0"
+                }
+            },
+            "changes": [
+                {
+                    "field": "title",
+                    "current": "Old",
+                    "proposed": "Remote"
+                },
+                {
+                    "field": "omschrijving",
+                    "current": "Oud",
+                    "proposed": "Nieuw"
+                },
+                {
+                    "field": "@self",
+                    "current": {
+                        "id": "11111111-2222-3333-4444-555555555555",
+                        "slug": "obj-1",
+                        "name": "11111111-2222-3333-4444-555555555555",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "proposed": {
+                        "slug": "obj-1"
+                    }
+                }
+            ]
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": [
+            [
+                "find",
+                [
+                    "obj-1",
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "compare",
+                {
+                    "title": "Old",
+                    "omschrijving": "Oud",
+                    "@self": {
+                        "id": "11111111-2222-3333-4444-555555555555",
+                        "slug": "obj-1",
+                        "name": "11111111-2222-3333-4444-555555555555",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "11111111-2222-3333-4444-555555555555"
+                },
+                {
+                    "title": "Remote",
+                    "omschrijving": "Nieuw",
+                    "@self": {
+                        "slug": "obj-1"
+                    }
+                }
+            ]
+        ]
+    },
+    "newer without changes": {
+        "row": {
+            "type": "object",
+            "action": "update",
+            "slug": "obj-1",
+            "title": "Old",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": {
+                "title": "Old",
+                "omschrijving": "Oud",
+                "@self": {
+                    "id": "11111111-2222-3333-4444-555555555555",
+                    "slug": "obj-1",
+                    "name": "11111111-2222-3333-4444-555555555555",
+                    "description": null,
+                    "summary": null,
+                    "image": null,
+                    "uri": null,
+                    "version": "1.0.0",
+                    "register": "4",
+                    "schema": "9",
+                    "schemaVersion": null,
+                    "files": [],
+                    "relations": [],
+                    "locked": null,
+                    "owner": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "folder": null,
+                    "application": null,
+                    "validation": [],
+                    "quality": [],
+                    "geo": [],
+                    "retention": [],
+                    "tmlo": [],
+                    "size": null,
+                    "updated": null,
+                    "lastUserActivity": null,
+                    "created": null,
+                    "deleted": [],
+                    "archived": [],
+                    "frozen": [],
+                    "status": null,
+                    "source": null,
+                    "mail": null,
+                    "contacts": null,
+                    "notes": null,
+                    "todos": null,
+                    "calendar": null,
+                    "talk": null,
+                    "deck": null
+                },
+                "id": "11111111-2222-3333-4444-555555555555"
+            },
+            "proposed": {
+                "title": "Old",
+                "omschrijving": "Oud",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "3"
+                }
+            },
+            "changes": [
+                {
+                    "field": "@self",
+                    "current": {
+                        "id": "11111111-2222-3333-4444-555555555555",
+                        "slug": "obj-1",
+                        "name": "11111111-2222-3333-4444-555555555555",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "proposed": {
+                        "slug": "obj-1"
+                    }
+                }
+            ]
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": [
+            [
+                "find",
+                [
+                    "obj-1",
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "compare",
+                {
+                    "title": "Old",
+                    "omschrijving": "Oud",
+                    "@self": {
+                        "id": "11111111-2222-3333-4444-555555555555",
+                        "slug": "obj-1",
+                        "name": "11111111-2222-3333-4444-555555555555",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "11111111-2222-3333-4444-555555555555"
+                },
+                {
+                    "title": "Old",
+                    "omschrijving": "Oud",
+                    "@self": {
+                        "slug": "obj-1"
+                    }
+                }
+            ]
+        ]
+    },
+    "newer, no version anywhere": {
+        "row": {
+            "type": "object",
+            "action": "skip",
+            "slug": "obj-1",
+            "title": "x",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": {
+                "title": "x",
+                "@self": {
+                    "id": "11111111-2222-3333-4444-555555555555",
+                    "slug": "obj-1",
+                    "name": "11111111-2222-3333-4444-555555555555",
+                    "description": null,
+                    "summary": null,
+                    "image": null,
+                    "uri": null,
+                    "version": null,
+                    "register": "4",
+                    "schema": "9",
+                    "schemaVersion": null,
+                    "files": [],
+                    "relations": [],
+                    "locked": null,
+                    "owner": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "folder": null,
+                    "application": null,
+                    "validation": [],
+                    "quality": [],
+                    "geo": [],
+                    "retention": [],
+                    "tmlo": [],
+                    "size": null,
+                    "updated": null,
+                    "lastUserActivity": null,
+                    "created": null,
+                    "deleted": [],
+                    "archived": [],
+                    "frozen": [],
+                    "status": null,
+                    "source": null,
+                    "mail": null,
+                    "contacts": null,
+                    "notes": null,
+                    "todos": null,
+                    "calendar": null,
+                    "talk": null,
+                    "deck": null
+                },
+                "id": "11111111-2222-3333-4444-555555555555"
+            },
+            "proposed": {
+                "title": "x",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1"
+                }
+            },
+            "changes": [],
+            "reason": "Remote version (1.0.0) is not newer than current version (1.0.0)"
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": [
+            [
+                "find",
+                [
+                    "obj-1",
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        ]
+    },
+    "not stored yet": {
+        "row": {
+            "type": "object",
+            "action": "create",
+            "slug": "obj-1",
+            "title": "Remote",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": null,
+            "proposed": {
+                "title": "Remote",
+                "omschrijving": "Nieuw",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "2.0.0"
+                }
+            },
+            "changes": []
+        },
+        "created": {
+            "obj-1": true,
+            "mixed-case": true,
+            "": true
+        },
+        "calls": [
+            [
+                "find",
+                [
+                    "obj-1",
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        ]
+    },
+    "older remote": {
+        "row": {
+            "type": "object",
+            "action": "skip",
+            "slug": "obj-1",
+            "title": "Remote",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": {
+                "title": "Old",
+                "omschrijving": "Oud",
+                "@self": {
+                    "id": "11111111-2222-3333-4444-555555555555",
+                    "slug": "obj-1",
+                    "name": "11111111-2222-3333-4444-555555555555",
+                    "description": null,
+                    "summary": null,
+                    "image": null,
+                    "uri": null,
+                    "version": "1.0.0",
+                    "register": "4",
+                    "schema": "9",
+                    "schemaVersion": null,
+                    "files": [],
+                    "relations": [],
+                    "locked": null,
+                    "owner": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "folder": null,
+                    "application": null,
+                    "validation": [],
+                    "quality": [],
+                    "geo": [],
+                    "retention": [],
+                    "tmlo": [],
+                    "size": null,
+                    "updated": null,
+                    "lastUserActivity": null,
+                    "created": null,
+                    "deleted": [],
+                    "archived": [],
+                    "frozen": [],
+                    "status": null,
+                    "source": null,
+                    "mail": null,
+                    "contacts": null,
+                    "notes": null,
+                    "todos": null,
+                    "calendar": null,
+                    "talk": null,
+                    "deck": null
+                },
+                "id": "11111111-2222-3333-4444-555555555555"
+            },
+            "proposed": {
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "0.9"
+                },
+                "title": "Remote",
+                "omschrijving": "Nieuw"
+            },
+            "changes": [],
+            "reason": "Remote version (0.9) is not newer than current version (1.0.0)"
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": [
+            [
+                "find",
+                [
+                    "obj-1",
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        ]
+    },
+    "register unknown": {
+        "row": {
+            "type": "object",
+            "action": "skip",
+            "slug": "obj-1",
+            "title": "Remote",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": null,
+            "proposed": {
+                "title": "Remote",
+                "omschrijving": "Nieuw",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "2.0.0"
+                }
+            },
+            "changes": [],
+            "reason": "Register or schema not found locally"
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": []
+    },
+    "same version top-level": {
+        "row": {
+            "type": "object",
+            "action": "skip",
+            "slug": "obj-1",
+            "title": "x",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": {
+                "title": "Old",
+                "omschrijving": "Oud",
+                "@self": {
+                    "id": "11111111-2222-3333-4444-555555555555",
+                    "slug": "obj-1",
+                    "name": "11111111-2222-3333-4444-555555555555",
+                    "description": null,
+                    "summary": null,
+                    "image": null,
+                    "uri": null,
+                    "version": "1.0.0",
+                    "register": "4",
+                    "schema": "9",
+                    "schemaVersion": null,
+                    "files": [],
+                    "relations": [],
+                    "locked": null,
+                    "owner": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "folder": null,
+                    "application": null,
+                    "validation": [],
+                    "quality": [],
+                    "geo": [],
+                    "retention": [],
+                    "tmlo": [],
+                    "size": null,
+                    "updated": null,
+                    "lastUserActivity": null,
+                    "created": null,
+                    "deleted": [],
+                    "archived": [],
+                    "frozen": [],
+                    "status": null,
+                    "source": null,
+                    "mail": null,
+                    "contacts": null,
+                    "notes": null,
+                    "todos": null,
+                    "calendar": null,
+                    "talk": null,
+                    "deck": null
+                },
+                "id": "11111111-2222-3333-4444-555555555555"
+            },
+            "proposed": {
+                "version": "1.0.0",
+                "title": "x",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1"
+                }
+            },
+            "changes": [],
+            "reason": "Remote version (1.0.0) is not newer than current version (1.0.0)"
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": [
+            [
+                "find",
+                [
+                    "obj-1",
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        ]
+    },
+    "schema declares slug": {
+        "row": {
+            "type": "object",
+            "action": "update",
+            "slug": "obj-1",
+            "title": "Remote",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": {
+                "title": "Old",
+                "omschrijving": "Oud",
+                "@self": {
+                    "id": "11111111-2222-3333-4444-555555555555",
+                    "slug": "obj-1",
+                    "name": "11111111-2222-3333-4444-555555555555",
+                    "description": null,
+                    "summary": null,
+                    "image": null,
+                    "uri": null,
+                    "version": "1.0.0",
+                    "register": "4",
+                    "schema": "9",
+                    "schemaVersion": null,
+                    "files": [],
+                    "relations": [],
+                    "locked": null,
+                    "owner": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "folder": null,
+                    "application": null,
+                    "validation": [],
+                    "quality": [],
+                    "geo": [],
+                    "retention": [],
+                    "tmlo": [],
+                    "size": null,
+                    "updated": null,
+                    "lastUserActivity": null,
+                    "created": null,
+                    "deleted": [],
+                    "archived": [],
+                    "frozen": [],
+                    "status": null,
+                    "source": null,
+                    "mail": null,
+                    "contacts": null,
+                    "notes": null,
+                    "todos": null,
+                    "calendar": null,
+                    "talk": null,
+                    "deck": null
+                },
+                "id": "11111111-2222-3333-4444-555555555555"
+            },
+            "proposed": {
+                "title": "Remote",
+                "uuid": "u-1",
+                "slug": "obj-1",
+                "more": 1,
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "2.0.0"
+                }
+            },
+            "changes": [
+                {
+                    "field": "title",
+                    "current": "Old",
+                    "proposed": "Remote"
+                },
+                {
+                    "field": "slug",
+                    "current": null,
+                    "proposed": "obj-1"
+                },
+                {
+                    "field": "@self",
+                    "current": {
+                        "id": "11111111-2222-3333-4444-555555555555",
+                        "slug": "obj-1",
+                        "name": "11111111-2222-3333-4444-555555555555",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "proposed": {
+                        "slug": "obj-1"
+                    }
+                }
+            ],
+            "discarded": [
+                "more"
+            ]
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": [
+            [
+                "find",
+                [
+                    "obj-1",
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "compare",
+                {
+                    "title": "Old",
+                    "omschrijving": "Oud",
+                    "@self": {
+                        "id": "11111111-2222-3333-4444-555555555555",
+                        "slug": "obj-1",
+                        "name": "11111111-2222-3333-4444-555555555555",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "11111111-2222-3333-4444-555555555555"
+                },
+                {
+                    "title": "Remote",
+                    "slug": "obj-1",
+                    "@self": {
+                        "slug": "obj-1"
+                    }
+                }
+            ]
+        ]
+    },
+    "schema unknown, planned": {
+        "row": {
+            "type": "object",
+            "action": "create",
+            "slug": "obj-1",
+            "title": "Remote",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": null,
+            "proposed": {
+                "title": "Remote",
+                "omschrijving": "Nieuw",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "2.0.0"
+                }
+            },
+            "changes": []
+        },
+        "created": {
+            "obj-1": true,
+            "mixed-case": true,
+            "": true
+        },
+        "calls": []
+    },
+    "self not an array": {
+        "row": {
+            "type": "object",
+            "action": "skip",
+            "slug": "",
+            "title": "T",
+            "register": "",
+            "schema": "",
+            "current": null,
+            "proposed": {
+                "title": "T",
+                "@self": "zaken/zaaktype/obj"
+            },
+            "changes": [],
+            "reason": "Missing required fields (slug, register, or schema)"
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": []
+    },
+    "undeclared and identity keys": {
+        "row": {
+            "type": "object",
+            "action": "update",
+            "slug": "obj-1",
+            "title": "Remote",
+            "register": "Zaken",
+            "schema": "ZaakType",
+            "current": {
+                "title": "Old",
+                "omschrijving": "Oud",
+                "@self": {
+                    "id": "11111111-2222-3333-4444-555555555555",
+                    "slug": "obj-1",
+                    "name": "11111111-2222-3333-4444-555555555555",
+                    "description": null,
+                    "summary": null,
+                    "image": null,
+                    "uri": null,
+                    "version": "1.0.0",
+                    "register": "4",
+                    "schema": "9",
+                    "schemaVersion": null,
+                    "files": [],
+                    "relations": [],
+                    "locked": null,
+                    "owner": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "folder": null,
+                    "application": null,
+                    "validation": [],
+                    "quality": [],
+                    "geo": [],
+                    "retention": [],
+                    "tmlo": [],
+                    "size": null,
+                    "updated": null,
+                    "lastUserActivity": null,
+                    "created": null,
+                    "deleted": [],
+                    "archived": [],
+                    "frozen": [],
+                    "status": null,
+                    "source": null,
+                    "mail": null,
+                    "contacts": null,
+                    "notes": null,
+                    "todos": null,
+                    "calendar": null,
+                    "talk": null,
+                    "deck": null
+                },
+                "id": "11111111-2222-3333-4444-555555555555"
+            },
+            "proposed": {
+                "title": "Remote",
+                "uuid": "u-1",
+                "slug": "obj-1",
+                "id": 5,
+                "_meta": 1,
+                "extra": "dropped",
+                "": "empty key",
+                "0": "numeric",
+                "@other": "kept",
+                "@self": {
+                    "register": "Zaken",
+                    "schema": "ZaakType",
+                    "slug": "obj-1",
+                    "version": "2.0.0"
+                }
+            },
+            "changes": [
+                {
+                    "field": "title",
+                    "current": "Old",
+                    "proposed": "Remote"
+                },
+                {
+                    "field": "id",
+                    "current": "11111111-2222-3333-4444-555555555555",
+                    "proposed": 5
+                },
+                {
+                    "field": "_meta",
+                    "current": null,
+                    "proposed": 1
+                },
+                {
+                    "field": "",
+                    "current": null,
+                    "proposed": "empty key"
+                },
+                {
+                    "field": "@other",
+                    "current": null,
+                    "proposed": "kept"
+                },
+                {
+                    "field": "@self",
+                    "current": {
+                        "id": "11111111-2222-3333-4444-555555555555",
+                        "slug": "obj-1",
+                        "name": "11111111-2222-3333-4444-555555555555",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "proposed": {
+                        "slug": "obj-1"
+                    }
+                }
+            ],
+            "discarded": [
+                "extra",
+                "0"
+            ]
+        },
+        "created": {
+            "mixed-case": true,
+            "": true
+        },
+        "calls": [
+            [
+                "find",
+                [
+                    "obj-1",
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "compare",
+                {
+                    "title": "Old",
+                    "omschrijving": "Oud",
+                    "@self": {
+                        "id": "11111111-2222-3333-4444-555555555555",
+                        "slug": "obj-1",
+                        "name": "11111111-2222-3333-4444-555555555555",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "11111111-2222-3333-4444-555555555555"
+                },
+                {
+                    "title": "Remote",
+                    "id": 5,
+                    "_meta": 1,
+                    "": "empty key",
+                    "@other": "kept",
+                    "@self": {
+                        "slug": "obj-1"
+                    }
+                }
+            ]
+        ]
+    }
+}

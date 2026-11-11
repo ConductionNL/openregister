@@ -31,6 +31,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\BulkJob\BulkJobFieldTypes;
+use OCA\OpenRegister\Db\BulkJob\BulkJobJson;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -318,31 +320,9 @@ class BulkJob extends Entity implements JsonSerializable {
 	 * Constructor — registers field types for hydration.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'action', type: 'string');
-		$this->addType(fieldName: 'parameters', type: 'json');
-		$this->addType(fieldName: 'selectionType', type: 'string');
-		$this->addType(fieldName: 'selection', type: 'json');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'justification', type: 'string');
-		$this->addType(fieldName: 'state', type: 'string');
-		$this->addType(fieldName: 'total', type: 'integer');
-		$this->addType(fieldName: 'processed', type: 'integer');
-		$this->addType(fieldName: 'applied', type: 'integer');
-		$this->addType(fieldName: 'skipped', type: 'integer');
-		$this->addType(fieldName: 'refused', type: 'integer');
-		$this->addType(fieldName: 'failed', type: 'integer');
-		$this->addType(fieldName: 'cursor', type: 'integer');
-		$this->addType(fieldName: 'report', type: 'json');
-		$this->addType(fieldName: 'startedBy', type: 'string');
-		$this->addType(fieldName: 'reversalWindow', type: 'integer');
-		$this->addType(fieldName: 'reversibleUntil', type: 'datetime');
-		$this->addType(fieldName: 'reversesJobId', type: 'integer');
-		$this->addType(fieldName: 'reversedByJobId', type: 'integer');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-
+		foreach (BulkJobFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -376,36 +356,9 @@ class BulkJob extends Entity implements JsonSerializable {
 	 * @return array<string, mixed> The serialised job.
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'action' => $this->action,
-			'parameters' => ($this->parameters ?? []),
-			'selectionType' => $this->selectionType,
-			'selection' => ($this->selection ?? []),
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'justification' => $this->justification,
-			'state' => $this->state,
-			'total' => $this->total,
-			'processed' => $this->processed,
-			'counts' => [
-				'applied' => $this->applied,
-				'skipped' => $this->skipped,
-				'refused' => $this->refused,
-				'failed' => $this->failed,
-			],
-			'cursor' => $this->cursor,
-			'report' => ($this->report ?? []),
-			'startedBy' => $this->startedBy,
-			'reversible' => $this->isReversible(),
-			'reversalWindow' => $this->reversalWindow,
-			'reversibleUntil' => $this->reversibleUntil?->format(DateTime::ATOM),
-			'reversesJobId' => $this->reversesJobId,
-			'reversedByJobId' => $this->reversedByJobId,
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
+		$values = get_object_vars($this);
+		$values['fieldTypes'] = $this->getFieldTypes();
 
+		return (new BulkJobJson())->serialise(values: $values, reversible: $this->isReversible());
 	}//end jsonSerialize()
 }//end class

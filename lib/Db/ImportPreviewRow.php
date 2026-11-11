@@ -195,17 +195,12 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 	 * @return array<string, mixed> The serialised row.
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'previewId' => $this->previewId,
-			'row' => $this->sourceRow,
-			'decision' => $this->decision,
-			'reason' => $this->reason,
-			'targetUuid' => $this->targetUuid,
-			'candidates' => ($this->candidates ?? []),
-			'payload' => ($this->payload ?? []),
-			'appliedAt' => $this->appliedAt?->format('c'),
-			'created' => $this->created?->format('c'),
-		];
+		return array_merge(
+			(new TypedFieldsJson())->renamed(json: (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)), names: ['sourceRow' => 'row']),
+			[
+				'candidates' => ($this->candidates ?? []),
+				'payload' => ($this->payload ?? []),
+			]
+		);
 	}//end jsonSerialize()
 }//end class

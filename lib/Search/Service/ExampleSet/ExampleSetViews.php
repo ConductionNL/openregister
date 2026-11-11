@@ -32,7 +32,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\ExampleSet;
 
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 use OCA\OpenRegister\Search\Service\ViewService;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use Psr\Container\ContainerInterface;
 use Throwable;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
@@ -42,7 +46,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
  */
-class ExampleSetViews extends ExampleSetEngineRows {
+class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRowsInterface {
 	/**
 	 * The view fields a fragment may set.
 	 */
@@ -64,6 +68,17 @@ class ExampleSetViews extends ExampleSetEngineRows {
 		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
+
+	/**
+	 * This writer: the saved views of a fragment.
+	 *
+	 * @return ExampleSetEngineRows
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	public function rows(): ExampleSetEngineRows {
+		return $this;
+	}//end rows()
 
 	/**
 	 * The fragment and record part views live in.
@@ -103,6 +118,29 @@ class ExampleSetViews extends ExampleSetEngineRows {
 			return 'field "'.implode('", "', $unknown).'" is not a view field a set may write';
 		}
 
+		$refusal = $this->nameAndOwnerRefusal(data: $data, users: $users);
+		if ($refusal === '') {
+			$refusal = $this->objectFieldRefusal(data: $data);
+		}
+
+		if ($refusal === '') {
+			$refusal = $this->shareRefusal(shares: ($data['sharedWith'] ?? []), users: $users);
+		}
+
+		return $refusal;
+	}//end refusal()
+
+	/**
+	 * Why a view's name or owner cannot be written, or ''.
+	 *
+	 * @param array<string, mixed> $data  The filled view fields.
+	 * @param array<int, string>   $users The account ids the set creates or adopts.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	private function nameAndOwnerRefusal(array $data, array $users): string {
 		if (is_string($data['name'] ?? null) === false || trim($data['name']) === '') {
 			return 'a view needs a name';
 		}
@@ -112,14 +150,27 @@ class ExampleSetViews extends ExampleSetEngineRows {
 			return 'owner "'.$owner.'" is not an account the set creates or adopts';
 		}
 
+		return '';
+	}//end nameAndOwnerRefusal()
+
+	/**
+	 * Why a view's query, presentation or alert cannot be written, or ''.
+	 *
+	 * @param array<string, mixed> $data The filled view fields.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	private function objectFieldRefusal(array $data): string {
 		foreach (['query', 'presentation', 'alert'] as $field) {
 			if (isset($data[$field]) === true && is_array($data[$field]) === false) {
 				return $field.' must be an object';
 			}
 		}
 
-		return $this->shareRefusal(shares: ($data['sharedWith'] ?? []), users: $users);
-	}//end refusal()
+		return '';
+	}//end objectFieldRefusal()
 
 	/**
 	 * Why a view's shares cannot be written, or ''.
@@ -140,19 +191,9 @@ class ExampleSetViews extends ExampleSetEngineRows {
 		}
 
 		foreach ($shares as $share) {
-			$user  = (string) (((array) $share)['user'] ?? '');
-			$group = (string) (((array) $share)['group'] ?? '');
-			if (($user === '') === ($group === '')) {
-				return 'a share names one user or one group';
-			}
-
-			if ($user !== '' && in_array($user, $users, true) === false) {
-				return 'share to "'.$user.'" is not an account the set creates or adopts';
-			}
-
-			$mode = (string) (((array) $share)['mode'] ?? 'read');
-			if (in_array($mode, self::SHARE_MODES, true) === false) {
-				return 'share mode "'.$mode.'" is not one of '.implode(', ', self::SHARE_MODES);
+			$refusal = $this->oneShareRefusal(share: (array) $share, users: $users);
+			if ($refusal !== '') {
+				return $refusal;
 			}
 		}
 
@@ -160,37 +201,59 @@ class ExampleSetViews extends ExampleSetEngineRows {
 	}//end shareRefusal()
 
 	/**
+	 * Why one share cannot be written, or ''.
+	 *
+	 * @param array<string, mixed> $share The share.
+	 * @param array<int, string>   $users The account ids the set creates or adopts.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	private function oneShareRefusal(array $share, array $users): string {
+		$user  = (string) ($share['user'] ?? '');
+		$group = (string) ($share['group'] ?? '');
+		if (($user === '') === ($group === '')) {
+			return 'a share names one user or one group';
+		}
+
+		if ($user !== '' && in_array($user, $users, true) === false) {
+			return 'share to "'.$user.'" is not an account the set creates or adopts';
+		}
+
+		$mode = (string) ($share['mode'] ?? 'read');
+		if (in_array($mode, self::SHARE_MODES, true) === false) {
+			return 'share mode "'.$mode.'" is not one of '.implode(', ', self::SHARE_MODES);
+		}
+
+		return '';
+	}//end oneShareRefusal()
+
+	/**
 	 * Write a view through the view service, under the uuid its app and key give it.
 	 *
 	 * A view the set wrote before under that uuid (an earlier install that was removed without its views, or a record
 	 * that was lost) is updated where it is, so the uuid every link, menu entry and route names stays valid.
 	 *
-	 * @param string               $app  The app that ships the fragment.
-	 * @param string               $key  The view's key in the fragment.
-	 * @param array<string, mixed> $data The filled view fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$key = $row->key;
+		$data = $row->data;
 		$uuid = self::uuidFor(app: $app, key: $key);
 		if ($this->exists(uuid: $uuid) === true) {
-			return $this->update(entry: ['uuid' => $uuid], app: $app, key: $key, data: $data);
+			return $this->update(entry: ['uuid' => $uuid], row: $row);
 		}
 
 		try {
 			$view = $this->service()->create(
-				name: (string) $data['name'],
-				description: (string) ($data['description'] ?? ''),
-				owner: (string) $data['owner'],
-				isPublic: ($data['isPublic'] ?? false) === true,
-				isDefault: false,
-				query: (array) ($data['query'] ?? []),
-				presentation: $this->optional(data: $data, field: 'presentation'),
-				sharedWith: $this->shares(declared: ($data['sharedWith'] ?? [])),
-				alert: $this->optional(data: $data, field: 'alert'),
+				edit: $this->viewEdit(data: $data)
 			);
 			$view->setUuid($uuid);
 			$this->mapper()->update($view);
@@ -216,32 +279,23 @@ class ExampleSetViews extends ExampleSetEngineRows {
 	 * Update the view the record holds to its declaration; a view that is gone is written again.
 	 *
 	 * @param array<string, mixed> $entry The record entry, with the view's uuid.
-	 * @param string               $app   The app that ships the fragment.
-	 * @param string               $key   The view's key in the fragment.
-	 * @param array<string, mixed> $data  The filled view fields.
+	 * @param ExampleSetRow        $row   The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the update failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
-	public function update(array $entry, string $app, string $key, array $data): array {
+	public function update(array $entry, ExampleSetRow $row): array {
+		$data = $row->data;
 		$uuid = (string) ($entry['uuid'] ?? '');
 		if ($this->exists(uuid: $uuid) === false) {
-			return $this->write(app: $app, key: $key, data: $data);
+			return $this->write(row: $row);
 		}
 
 		try {
-			$this->service()->update(
+			$this->service()->revise(
 				id: $uuid,
-				name: (string) $data['name'],
-				description: (string) ($data['description'] ?? ''),
-				owner: (string) $data['owner'],
-				isPublic: ($data['isPublic'] ?? false) === true,
-				isDefault: false,
-				query: (array) ($data['query'] ?? []),
-				presentation: $this->optional(data: $data, field: 'presentation'),
-				sharedWith: $this->shares(declared: ($data['sharedWith'] ?? [])),
-				alert: $this->optional(data: $data, field: 'alert'),
+				edit: $this->viewEdit(data: $data)
 			);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
@@ -249,6 +303,33 @@ class ExampleSetViews extends ExampleSetEngineRows {
 
 		return ['error' => '', 'entry' => ['uuid' => $uuid]];
 	}//end update()
+
+	/**
+	 * The edit a declared view's fields describe: its definition, its audience and its alert.
+	 *
+	 * A seeded view is never the owner's default.
+	 *
+	 * @param array<string, mixed> $data The row's filled fields.
+	 *
+	 * @return ViewEdit The edit.
+	 */
+	private function viewEdit(array $data): ViewEdit {
+		return new ViewEdit(
+			definition: new ViewDefinition(
+				name: (string) $data['name'],
+				description: (string) ($data['description'] ?? ''),
+				query: (array) ($data['query'] ?? []),
+				presentation: $this->optional(data: $data, field: 'presentation')
+			),
+			audience: new ViewAudience(
+				owner: (string) $data['owner'],
+				isPublic: ($data['isPublic'] ?? false) === true,
+				isDefault: false,
+				sharedWith: $this->shares(declared: ($data['sharedWith'] ?? []))
+			),
+			alert: $this->optional(data: $data, field: 'alert')
+		);
+	}//end viewEdit()
 
 	/**
 	 * The uuid a seeded view has: the same for the same app and key, on every instance and every install.
@@ -261,6 +342,7 @@ class ExampleSetViews extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
 	public static function uuidFor(string $app, string $key): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5('openregister-example-set-view:'.$app.'/'.$key);
 
 		return sprintf(

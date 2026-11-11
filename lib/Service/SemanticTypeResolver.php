@@ -47,9 +47,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -66,7 +65,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
  */
-final class SemanticTypeResolver {
+final class SemanticTypeResolver implements SemanticTypeResolverInterface {
 
 	/**
 	 * Request-scoped cache of resolved schemas, keyed by
@@ -84,8 +83,7 @@ final class SemanticTypeResolver {
 	 * Constructor-injection only; the service is autowired (no explicit DI
 	 * registration needed, matching RegisterResolverService).
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Cross-register, org/RBAC-scoped schema enumeration.
-	 * @param RegisterMapperInterface $registerMapper Register enumeration for register/app resolution + tie-break.
+	 * @param SchemaCatalogInterface $catalog The register and schema mappers.
 	 * @param JsonLdContextService $jsonLdContextService Computes a schema's implemented semantic types.
 	 * @param LoggerInterface $logger Logger for ambiguity WARN.
 	 * @param IAppManager|null $appManager App manager used to treat a provider whose owning
@@ -93,13 +91,11 @@ final class SemanticTypeResolver {
 	 *                                     unavailable the app-enabled filter is skipped).
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly JsonLdContextService $jsonLdContextService,
 		private readonly LoggerInterface $logger,
 		private readonly ?IAppManager $appManager = null,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -127,57 +123,74 @@ final class SemanticTypeResolver {
 		}
 
 		$cacheKey = $uri . ':' . ((string)($consumingRegisterId ?? ''));
-		if (array_key_exists($cacheKey, $this->resolveCache) === true) {
-			return $this->resolveCache[$cacheKey];
+		if (array_key_exists($cacheKey, $this->resolveCache) === false) {
+			$this->resolveCache[$cacheKey] = $this->resolveUncached(
+				query: new SemanticTypeQuery(uri: $uri, consumingRegisterId: $consumingRegisterId)
+			);
 		}
 
-		// Enumerate every schema the caller may read (org/RBAC-scoped, all
-		// registers). findAll never throws "not found"; treat any failure as
-		// "no providers" so resolution stays null-safe.
+		return $this->resolveCache[$cacheKey];
+	}//end resolveSchemaByImplements()
+
+	/**
+	 * Resolve a query without the request cache: no candidate is null, one is
+	 * the answer, more go through the tie-break.
+	 *
+	 * @param SemanticTypeQuery $query The uri and consuming register.
+	 *
+	 * @return Schema|null
+	 */
+	private function resolveUncached(SemanticTypeQuery $query): ?Schema {
+		$candidates = $this->candidatesFor(uri: $query->uri);
+		if ($candidates === []) {
+			// Standalone-safe: no installed schema provides this type.
+			return null;
+		}
+
+		if (count($candidates) === 1) {
+			return $candidates[0];
+		}
+
+		return $this->tieBreak(query: $query, candidates: $candidates);
+	}//end resolveUncached()
+
+	/**
+	 * Every visible schema that implements `$uri` and whose owning app is enabled.
+	 *
+	 * @param string $uri The semantic-type URI.
+	 *
+	 * @return array<int, Schema>
+	 */
+	private function candidatesFor(string $uri): array {
+		// A provider whose owning register's app is disabled is NOT an
+		// available provider (ADR-048): its schemas may linger in OR after
+		// `occ app:disable`, but the app that gives them meaning is gone, so
+		// resolution must degrade exactly as if no provider were installed.
+		$provides = fn (Schema $schema): bool => in_array($uri, $this->implementedTypesWithAncestors(schema: $schema), true) === true
+			&& $this->isSchemaProvidedByEnabledApp(schema: $schema) === true;
+
+		return array_values(array_filter($this->allSchemas(uri: $uri), $provides));
+	}//end candidatesFor()
+
+	/**
+	 * Enumerate every schema the caller may read (org/RBAC-scoped, all
+	 * registers); any failure counts as "no providers" so resolution stays null-safe.
+	 *
+	 * @param string $uri The semantic-type URI (for the log).
+	 *
+	 * @return array<int, Schema>
+	 */
+	private function allSchemas(string $uri): array {
 		try {
-			$schemas = $this->schemaMapper->findAll();
+			return $this->catalog->schemas()->findAll();
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[SemanticTypeResolver] schema enumeration failed — treating as no providers',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'uri' => $uri, 'exception' => $e->getMessage()]
 			);
-			$this->resolveCache[$cacheKey] = null;
-			return null;
+			return [];
 		}
-
-		$candidates = [];
-		foreach ($schemas as $schema) {
-			$implemented = $this->implementedTypesWithAncestors(schema: $schema);
-			if (in_array($uri, $implemented, true) === false) {
-				continue;
-			}
-
-			// A provider whose owning register's app is disabled is NOT an
-			// available provider (ADR-048): its schemas may linger in OR after
-			// `occ app:disable`, but the app that gives them meaning is gone, so
-			// resolution must degrade exactly as if no provider were installed.
-			if ($this->isSchemaProvidedByEnabledApp(schema: $schema) === false) {
-				continue;
-			}
-
-			$candidates[] = $schema;
-		}
-
-		if ($candidates === []) {
-			// Standalone-safe: no installed schema provides this type.
-			$this->resolveCache[$cacheKey] = null;
-			return null;
-		}
-
-		if (count($candidates) === 1) {
-			$this->resolveCache[$cacheKey] = $candidates[0];
-			return $candidates[0];
-		}
-
-		$pick = $this->tieBreak(uri: $uri, candidates: $candidates, consumingRegisterId: $consumingRegisterId);
-		$this->resolveCache[$cacheKey] = $pick;
-		return $pick;
-	}//end resolveSchemaByImplements()
+	}//end allSchemas()
 
 	/**
 	 * Compute a schema's implemented semantic types INCLUDING those inherited via
@@ -214,23 +227,30 @@ final class SemanticTypeResolver {
 			$visited[] = $currentId;
 		}
 
-		// Start with the schema's own markers.
+		// The schema's own markers, then each `allOf` ancestor's (recursive).
 		$types = $this->jsonLdContextService->getImplementedTypes(schema: $schema);
-
-		$allOf = $schema->getAllOf();
-		if (is_array($allOf) === false || $allOf === []) {
-			return array_values(array_unique($types));
-		}
-
-		// Union each `allOf` ancestor's implemented types (recursive).
-		foreach ($allOf as $parentRef) {
-			foreach ($this->ancestorTypesForRef(parentRef: $parentRef, visited: $visited) as $inherited) {
-				$types[] = $inherited;
-			}
+		foreach ($this->allOfRefs(schema: $schema) as $parentRef) {
+			$types = array_merge($types, $this->ancestorTypesForRef(parentRef: $parentRef, visited: $visited));
 		}
 
 		return array_values(array_unique($types));
 	}//end implementedTypesWithAncestors()
+
+	/**
+	 * A schema's `allOf` references, empty when it has none.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<mixed>
+	 */
+	private function allOfRefs(Schema $schema): array {
+		$allOf = $schema->getAllOf();
+		if (is_array($allOf) === false) {
+			return [];
+		}
+
+		return $allOf;
+	}//end allOfRefs()
 
 	/**
 	 * Resolve the implemented types contributed by a single `allOf` parent
@@ -248,27 +268,47 @@ final class SemanticTypeResolver {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-1.1
 	 */
 	private function ancestorTypesForRef(mixed $parentRef, array $visited): array {
-		if (is_string($parentRef) === false && is_int($parentRef) === false) {
+		if ($this->isUsableRef(parentRef: $parentRef) === false) {
 			return [];
 		}
 
-		if ((string)$parentRef === '') {
-			return [];
-		}
-
-		try {
-			$parent = $this->schemaMapper->find(id: $parentRef);
-		} catch (\Throwable $e) {
-			// A missing/unreadable ancestor contributes nothing; never raise.
-			$this->logger->debug(
-				message: '[SemanticTypeResolver] allOf ancestor unresolved — skipping',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'ref' => (string)$parentRef, 'exception' => $e->getMessage()]
-			);
+		$parent = $this->findAncestor(parentRef: $parentRef);
+		if ($parent === null) {
 			return [];
 		}
 
 		return $this->implementedTypesWithAncestors(schema: $parent, visited: $visited);
 	}//end ancestorTypesForRef()
+
+	/**
+	 * Whether an `allOf` entry can name a schema: a non-empty id/uuid/slug.
+	 *
+	 * @param mixed $parentRef A single `allOf` entry.
+	 *
+	 * @return bool
+	 */
+	private function isUsableRef(mixed $parentRef): bool {
+		return (is_string($parentRef) === true || is_int($parentRef) === true) && (string)$parentRef !== '';
+	}//end isUsableRef()
+
+	/**
+	 * Load an `allOf` ancestor; a missing/unreadable ancestor is null, never an exception.
+	 *
+	 * @param int|string $parentRef The schema id/uuid/slug.
+	 *
+	 * @return Schema|null
+	 */
+	private function findAncestor(int|string $parentRef): ?Schema {
+		try {
+			return $this->catalog->schemas()->find(id: $parentRef);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[SemanticTypeResolver] allOf ancestor unresolved — skipping',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'ref' => (string)$parentRef, 'exception' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end findAncestor()
 
 	/**
 	 * Find the register a resolved schema belongs to.
@@ -287,27 +327,44 @@ final class SemanticTypeResolver {
 	 */
 	public function findRegisterForSchema(Schema $schema): ?Register {
 		$schemaId = $schema->getId();
-
-		try {
-			$registers = $this->registerMapper->findAll();
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[SemanticTypeResolver] register enumeration failed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId, 'exception' => $e->getMessage()]
-			);
-			return null;
-		}
-
-		foreach ($registers as $register) {
-			foreach ($register->getSchemas() as $memberId) {
-				if ((int)$memberId === (int)$schemaId) {
-					return $register;
-				}
+		foreach ($this->allRegisters(schemaId: $schemaId) as $register) {
+			if (in_array((int)$schemaId, $this->memberIds(register: $register), true) === true) {
+				return $register;
 			}
 		}
 
 		return null;
 	}//end findRegisterForSchema()
+
+	/**
+	 * Every register, empty when enumeration fails.
+	 *
+	 * @param int|null $schemaId The schema being located (for the log).
+	 *
+	 * @return array<int, Register>
+	 */
+	private function allRegisters(?int $schemaId): array {
+		try {
+			return $this->catalog->registers()->findAll();
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[SemanticTypeResolver] register enumeration failed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId, 'exception' => $e->getMessage()]
+			);
+			return [];
+		}
+	}//end allRegisters()
+
+	/**
+	 * A register's member schema ids, as ints.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<int, int>
+	 */
+	private function memberIds(Register $register): array {
+		return array_map('intval', $register->getSchemas());
+	}//end memberIds()
 
 	/**
 	 * Whether the app that owns a candidate schema is installed AND enabled.
@@ -336,23 +393,46 @@ final class SemanticTypeResolver {
 		}
 
 		$appId = $this->owningAppId(schema: $schema);
-		if ($appId === null || $appId === '' || $appId === 'openregister') {
+		if ($appId === null || $appId === 'openregister') {
 			return true;
 		}
 
-		try {
-			return $this->appManager->isEnabledForUser($appId);
-		} catch (\Throwable $e) {
-			// Some app entities reject anonymous / user-less contexts; fall back
-			// to install-state so resolution never raises.
-			try {
-				return $this->appManager->isInstalled($appId);
-			} catch (\Throwable $inner) {
-				return true;
-			}
-		}
-
+		return $this->isAppEnabled(appManager: $this->appManager, appId: $appId);
 	}//end isSchemaProvidedByEnabledApp()
+
+	/**
+	 * Whether an app is enabled for the current user; contexts that reject the
+	 * check fall back to install state so resolution never raises.
+	 *
+	 * @param IAppManager $appManager The app manager.
+	 * @param string $appId The owning app id.
+	 *
+	 * @return bool
+	 */
+	private function isAppEnabled(IAppManager $appManager, string $appId): bool {
+		try {
+			return $appManager->isEnabledForUser($appId);
+		} catch (\Throwable $e) {
+			// Some app entities reject anonymous / user-less contexts.
+			return $this->isAppInstalled(appManager: $appManager, appId: $appId);
+		}
+	}//end isAppEnabled()
+
+	/**
+	 * Whether an app is installed; true when even that cannot be determined.
+	 *
+	 * @param IAppManager $appManager The app manager.
+	 * @param string $appId The owning app id.
+	 *
+	 * @return bool
+	 */
+	private function isAppInstalled(IAppManager $appManager, string $appId): bool {
+		try {
+			return $appManager->isInstalled($appId);
+		} catch (\Throwable $inner) {
+			return true;
+		}
+	}//end isAppInstalled()
 
 	/**
 	 * Determine the id of the app that owns a schema, or null when none is
@@ -369,22 +449,28 @@ final class SemanticTypeResolver {
 	 */
 	private function owningAppId(Schema $schema): ?string {
 		$appId = $schema->getApplication();
-		if (is_string($appId) === true && $appId !== '') {
+		if ($this->isAppName(value: $appId) === true) {
 			return $appId;
 		}
 
-		$register = $this->findRegisterForSchema(schema: $schema);
-		if ($register === null) {
-			return null;
-		}
-
-		$registerApp = $register->getApplication();
-		if (is_string($registerApp) === true && $registerApp !== '') {
+		$registerApp = $this->findRegisterForSchema(schema: $schema)?->getApplication();
+		if ($this->isAppName(value: $registerApp) === true) {
 			return $registerApp;
 		}
 
 		return null;
 	}//end owningAppId()
+
+	/**
+	 * Whether a declared application value names an app.
+	 *
+	 * @param mixed $value The `application` field value.
+	 *
+	 * @return bool
+	 */
+	private function isAppName(mixed $value): bool {
+		return is_string($value) === true && $value !== '';
+	}//end isAppName()
 
 	/**
 	 * Clear the request-scoped resolve cache. Test hook.
@@ -405,53 +491,69 @@ final class SemanticTypeResolver {
 	 * (2) the first candidate by slug. Emits a WARN naming the pick so
 	 * ambiguous vocabulary is observable.
 	 *
-	 * @param string $uri The semantic-type URI being resolved (for the log).
+	 * @param SemanticTypeQuery $query The uri being resolved and the consuming register.
 	 * @param array<Schema> $candidates The >1 matching schemas.
-	 * @param int|null $consumingRegisterId The consuming schema's register id, or null.
 	 *
 	 * @return Schema The chosen schema.
 	 */
-	private function tieBreak(string $uri, array $candidates, ?int $consumingRegisterId): Schema {
+	private function tieBreak(SemanticTypeQuery $query, array $candidates): Schema {
 		// Deterministic base order: by slug ascending.
-		usort(
-			$candidates,
-			fn (Schema $a, Schema $b) => strcmp($this->slugOf(schema: $a), $this->slugOf(schema: $b))
-		);
-
-		$pick = $candidates[0];
-
-		// Bias to a candidate that lives in the consuming register, when known.
-		if ($consumingRegisterId !== null) {
-			$consumingIds = $this->schemaIdsOfRegister(registerId: $consumingRegisterId);
-			foreach ($candidates as $candidate) {
-				if (in_array((int)$candidate->getId(), $consumingIds, true) === true) {
-					$pick = $candidate;
-					break;
-				}
-			}
-		}
-
-		$this->logger->warning(
-			message: sprintf(
-				"[SemanticTypeResolver] %d schemas implement '%s'; picked '%s' (id %s)",
-				count($candidates),
-				$uri,
-				$this->slugOf(schema: $pick),
-				(string)$pick->getId()
-			),
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uri' => $uri,
+		usort($candidates, fn (Schema $a, Schema $b) => strcmp($this->slugOf(schema: $a), $this->slugOf(schema: $b)));
+		$pick = $this->preferConsuming(candidates: $candidates, consumingRegisterId: $query->consumingRegisterId);
+		$this->warnAmbiguous(
+			summary: [
+				'uri' => $query->uri,
 				'candidates' => array_map(fn (Schema $s) => $this->slugOf(schema: $s), $candidates),
 				'picked' => $this->slugOf(schema: $pick),
 				'pickedId' => $pick->getId(),
-				'consumingReg' => $consumingRegisterId,
+				'consumingReg' => $query->consumingRegisterId,
 			]
 		);
-
 		return $pick;
 	}//end tieBreak()
+
+	/**
+	 * The first candidate that lives in the consuming register, else the first candidate.
+	 *
+	 * @param array<int, Schema> $candidates The slug-ordered candidates.
+	 * @param int|null $consumingRegisterId The consuming schema's register id, or null.
+	 *
+	 * @return Schema
+	 */
+	private function preferConsuming(array $candidates, ?int $consumingRegisterId): Schema {
+		if ($consumingRegisterId === null) {
+			return $candidates[0];
+		}
+
+		$consumingIds = $this->schemaIdsOfRegister(registerId: $consumingRegisterId);
+		foreach ($candidates as $candidate) {
+			if (in_array((int)$candidate->getId(), $consumingIds, true) === true) {
+				return $candidate;
+			}
+		}
+
+		return $candidates[0];
+	}//end preferConsuming()
+
+	/**
+	 * Emit the WARN that names an ambiguous pick, so ambiguous vocabulary is observable.
+	 *
+	 * @param array<string, mixed> $summary uri, candidates (slugs), picked, pickedId, consumingReg.
+	 *
+	 * @return void
+	 */
+	private function warnAmbiguous(array $summary): void {
+		$this->logger->warning(
+			message: sprintf(
+				"[SemanticTypeResolver] %d schemas implement '%s'; picked '%s' (id %s)",
+				count($summary['candidates']),
+				$summary['uri'],
+				$summary['picked'],
+				(string)$summary['pickedId']
+			),
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $summary)
+		);
+	}//end warnAmbiguous()
 
 	/**
 	 * Read the schema-id list of a register by id, empty on any failure.
@@ -462,12 +564,10 @@ final class SemanticTypeResolver {
 	 */
 	private function schemaIdsOfRegister(int $registerId): array {
 		try {
-			$register = $this->registerMapper->find(id: (string)$registerId);
+			return $this->memberIds(register: $this->catalog->registers()->find(id: (string)$registerId));
 		} catch (\Throwable $e) {
 			return [];
 		}
-
-		return array_map('intval', $register->getSchemas());
 	}//end schemaIdsOfRegister()
 
 	/**

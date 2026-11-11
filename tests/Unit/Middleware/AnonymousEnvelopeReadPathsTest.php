@@ -43,6 +43,9 @@ use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\GetObject;
@@ -110,6 +113,13 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\AggregationTypes
  * @uses   \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses   \OCA\OpenRegister\Support\FilterParams
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\GraphQLNames
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\GraphQLScalars
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectMetadataFields
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectPropertyFields
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectTypes
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntry
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntryFields
  */
 class AnonymousEnvelopeReadPathsTest extends TestCase {
 
@@ -338,16 +348,22 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 		);
 
 		$resolver = new GraphQLResolver(
-			$getObject,
-			$this->createMock(ObjectService::class),
-			$permissionHandler,
-			$rbac,
-			$this->createMock(RelationHandler::class),
-			$registerMapper,
-			$this->createMock(LoggerInterface::class),
-			$translation,
-			$this->createMock(AggregationRunner::class),
-			new TimeseriesRequestValidator()
+			new GraphQLResolverObjects(
+				$getObject,
+				$this->createMock(ObjectService::class),
+				$this->createMock(RelationHandler::class),
+				$registerMapper
+			),
+			new GraphQLResolverRights(
+				$permissionHandler,
+				$rbac
+			),
+			new GraphQLResolverShaping(
+				$translation,
+				$this->createMock(AggregationRunner::class),
+				new TimeseriesRequestValidator()
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$generator = new SchemaGenerator($schemaMapper, $this->session(signedIn: $signedIn), $rbac);

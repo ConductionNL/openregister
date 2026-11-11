@@ -74,18 +74,7 @@ final class OrganisationScopeCondition {
 		}
 
 		// Condition 1: objects belonging to the caller's active organisation(s).
-		$conditions = [];
-		$conditions[] = $qb->expr()->in(
-			't._organisation',
-			$qb->createNamedParameter($scope['uuids'], IQueryBuilder::PARAM_STR_ARRAY)
-		);
-		if (count($scope['uuids']) === 1) {
-			array_pop($conditions);
-			$conditions[] = $qb->expr()->eq(
-				't._organisation',
-				$qb->createNamedParameter($scope['uuids'][0])
-			);
-		}
+		$conditions = [$this->memberCondition(qb: $qb, uuids: $scope['uuids'])];
 
 		// Condition 2: objects with no organisation, for admins and for a
 		// register-cascade grant (admitOrganisationless()).
@@ -95,4 +84,31 @@ final class OrganisationScopeCondition {
 
 		return $qb->expr()->orX(...$conditions);
 	}//end condition()
+
+	/**
+	 * The condition that holds the rows of the given organisations.
+	 *
+	 * The `IN` parameter is created first and then replaced by an `=` for a
+	 * single organisation, so the named parameters stay the ones the query
+	 * has always carried.
+	 *
+	 * @param IQueryBuilder      $qb    The query builder.
+	 * @param array<int, string> $uuids The organisation UUIDs.
+	 *
+	 * @return mixed The condition.
+	 */
+	private function memberCondition(IQueryBuilder $qb, array $uuids): mixed {
+		$condition = $qb->expr()->in(
+			't._organisation',
+			$qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)
+		);
+		if (count($uuids) === 1) {
+			$condition = $qb->expr()->eq(
+				't._organisation',
+				$qb->createNamedParameter($uuids[0])
+			);
+		}
+
+		return $condition;
+	}//end memberCondition()
 }//end class

@@ -30,11 +30,9 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
-use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
-use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use RuntimeException;
 
 /**
@@ -48,7 +46,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  */
-class SchemasToolProvider implements IMcpToolProvider {
+class SchemasToolProvider extends AbstractBuiltInToolProvider {
 
 	/**
 	 * Tool id for the schemas tool
@@ -59,29 +57,20 @@ class SchemasToolProvider implements IMcpToolProvider {
 	 * Constructor
 	 *
 	 * @param SchemaMapperInterface          $schemaMapper Schema database mapper
-	 * @param DefinitionWriteRights $rights       The rights of the signed-in user
+	 * @param DefinitionWriteRightsInterface $rights       The rights of the signed-in user
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly DefinitionWriteRights $rights,
+		private readonly DefinitionWriteRightsInterface $rights,
 	) {
 	}//end __construct()
-
-	/**
-	 * Returns the owning app id.
-	 *
-	 * @return string Always "openregister"
-	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
 
 	/**
 	 * The tool definitions.
 	 *
 	 * @var array<int, array<string, mixed>>
 	 */
-	private const TOOLS = [
+	protected const TOOLS = [
 		[
 			'id' => self::TOOL_ID,
 			'name' => 'schemas',
@@ -89,11 +78,7 @@ class SchemasToolProvider implements IMcpToolProvider {
 			'inputSchema' => [
 				'type' => 'object',
 				'properties' => [
-					'action' => [
-						'type' => 'string',
-						'enum' => ['list', 'get', 'create', 'update', 'delete'],
-						'description' => 'The CRUD action to perform',
-					],
+					...CrudToolSchema::ACTION,
 					'id' => [
 						'type' => 'integer',
 						'description' => 'Schema ID (required for get, update, delete)',
@@ -102,28 +87,12 @@ class SchemasToolProvider implements IMcpToolProvider {
 						'type' => 'object',
 						'description' => 'Schema fields (for create and update)',
 					],
-					'limit' => [
-						'type' => 'integer',
-						'description' => 'Maximum number of results (for list)',
-					],
-					'offset' => [
-						'type' => 'integer',
-						'description' => 'Number of results to skip (for list)',
-					],
+					...CrudToolSchema::PAGING,
 				],
 				'required' => ['action'],
 			],
 		],
 	];
-
-	/**
-	 * Returns tool descriptors.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
-	 */
-	public function getTools(): array {
-		return self::TOOLS;
-	}//end getTools()
 
 	/**
 	 * Invoke the schemas tool.
@@ -241,7 +210,7 @@ class SchemasToolProvider implements IMcpToolProvider {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function refuseOrphanCleanupChange(Schema $schema, array $document): void {
-		if ((new OrphanCleanupFlag())->changedBy(schema: $schema, document: $document) === true && $this->rights->isAdmin() === false) {
+		if (RbacRuleChecks::orphanCleanupFlag()->changedBy(schema: $schema, document: $document) === true && $this->rights->isAdmin() === false) {
 			throw new InvalidArgumentException('Only an administrator can change orphanCleanup on a schema');
 		}
 	}//end refuseOrphanCleanupChange()
@@ -303,38 +272,49 @@ class SchemasToolProvider implements IMcpToolProvider {
 			return $data;
 		}
 
-		$change = new CrossOrganisationMarkerChange();
-		$stored = $change->asStored(authorization: $data['authorization']);
-		if ($change->widens(old: $old, new: $stored) === true && $this->rights->isAdmin() === false) {
-			throw new RuntimeException('Only an administrator may let a rule read across organisations (crossOrganisation: true)');
-		}
-
+		$stored = $this->storedAuthorization(authorization: $data['authorization'], old: $old);
 		if (is_array($stored) === false) {
 			return $data;
 		}
 
-		if ((new ExternalGrantGuard())->refusalFor($stored) !== null) {
-			throw new RuntimeException('An external grant needs an end date');
-		}
-
+		$this->refuseOpenEndedExternalGrant(stored: $stored);
 		$data['authorization'] = $stored;
 
 		return $data;
 	}//end checkedBody()
 
 	/**
-	 * Assert a parameter is present in arguments.
+	 * The authorization in the form it is stored, refused when a non-administrator widens a crossing.
 	 *
-	 * @param array<string, mixed> $arguments Tool arguments
-	 * @param string $param Required parameter name
+	 * @param mixed      $authorization The authorization block as written.
+	 * @param array|null $old           The stored authorization, null for a new schema.
+	 *
+	 * @return mixed The block as stored.
+	 *
+	 * @throws RuntimeException When the block adds a crossing and the caller is not an administrator
+	 */
+	private function storedAuthorization(mixed $authorization, ?array $old): mixed {
+		$change = RbacRuleChecks::crossOrganisationMarkerChange();
+		$stored = $change->asStored(authorization: $authorization);
+		if ($change->widens(old: $old, new: $stored) === true && $this->rights->isAdmin() === false) {
+			throw new RuntimeException('Only an administrator may let a rule read across organisations (crossOrganisation: true)');
+		}
+
+		return $stored;
+	}//end storedAuthorization()
+
+	/**
+	 * Refuse an external grant that has no end date.
+	 *
+	 * @param array<string, mixed> $stored The authorization block as stored.
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException If parameter is missing
+	 * @throws RuntimeException When an external grant has no end
 	 */
-	private function requireParam(array $arguments, string $param): void {
-		if (isset($arguments[$param]) === false) {
-			throw new InvalidArgumentException('Missing required parameter: ' . $param);
+	private function refuseOpenEndedExternalGrant(array $stored): void {
+		if (RbacChecks::externalGrants()->refusalFor($stored) !== null) {
+			throw new RuntimeException('An external grant needs an end date');
 		}
-	}//end requireParam()
+	}//end refuseOpenEndedExternalGrant()
 }//end class

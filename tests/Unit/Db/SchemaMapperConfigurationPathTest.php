@@ -60,9 +60,10 @@ class SchemaMapperConfigurationPathTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFallbackOfPathsIntoAnObjectPropertyIsAccepted(): void {
-		$this->validate(['objectNameField' => 'name', 'objectDescriptionField' => 'description.nl.longDescription | description.en.longDescription']);
+		$refusal = $this->refusalOf(['objectNameField' => 'name', 'objectDescriptionField' => 'description.nl.longDescription | description.en.longDescription']);
 
-		$this->addToAssertionCount(1);
+		// Pair: testAPathIntoAPropertyTheSchemaDoesNotHaveIsRefused, 'summary' for 'description'.
+		$this->assertNull($refusal);
 	}//end testAFallbackOfPathsIntoAnObjectPropertyIsAccepted()
 
 	/**
@@ -71,10 +72,41 @@ class SchemaMapperConfigurationPathTest extends TestCase {
 	 * @return void
 	 */
 	public function testASinglePathIntoAnObjectPropertyIsAccepted(): void {
-		$this->validate(['objectDescriptionField' => 'description.en.longDescription']);
+		$refusal = $this->refusalOf(['objectDescriptionField' => 'description.en.longDescription']);
 
-		$this->addToAssertionCount(1);
+		// Pair: testASinglePathIntoAPropertyTheSchemaDoesNotHaveIsRefused.
+		$this->assertNull($refusal);
 	}//end testASinglePathIntoAnObjectPropertyIsAccepted()
+
+	/**
+	 * Refusal pair for the single-path case: the same path rooted in a
+	 * property the schema does not have is refused.
+	 *
+	 * @return void
+	 */
+	public function testASinglePathIntoAPropertyTheSchemaDoesNotHaveIsRefused(): void {
+		$refusal = $this->refusalOf(['objectDescriptionField' => 'summary.en.longDescription']);
+
+		$this->assertInstanceOf(Exception::class, $refusal);
+		$this->assertStringContainsString('objectDescriptionField', $refusal->getMessage());
+	}//end testASinglePathIntoAPropertyTheSchemaDoesNotHaveIsRefused()
+
+	/**
+	 * Run the check and return its refusal, or null when the configuration is accepted.
+	 *
+	 * @param array<string, mixed> $configuration The schema configuration.
+	 *
+	 * @return Exception|null The refusal.
+	 */
+	private function refusalOf(array $configuration): ?Exception {
+		try {
+			$this->validate($configuration);
+		} catch (Exception $refusal) {
+			return $refusal;
+		}
+
+		return null;
+	}//end refusalOf()
 
 	/**
 	 * Control: a path whose first segment is no property is still refused.

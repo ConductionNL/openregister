@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\OrganisationContext;
  * organisation the code acted for. It sits inside the canonical JSON the hash
  * chain seals, so it MUST be applied before the row is inserted.
  */
-class OrganisationContextAttribution {
+class OrganisationContextAttribution implements OrganisationContextAttributionInterface {
 
 	/**
 	 * Stamp the current organisation context onto a row being built.

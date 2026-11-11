@@ -40,7 +40,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<FlowTimerFire>
  */
-class FlowTimerFireMapper extends QBMapper {
+class FlowTimerFireMapper extends QBMapper implements FlowTimerFireMapperInterface {
 
 	use SelectByColumnTrait;
 

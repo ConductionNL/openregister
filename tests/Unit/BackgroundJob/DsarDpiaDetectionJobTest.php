@@ -29,17 +29,21 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\DsarDpiaDetectionServices;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * DsarDpiaDetectionJobTest.
@@ -68,13 +72,8 @@ class DsarDpiaDetectionJobTest extends TestCase {
 		);
 
 		$this->job = new DsarDpiaDetectionJob(
-			time: $this->createMock(ITimeFactory::class),
-			appConfig: $this->appConfig,
-			objectService: $this->objectService,
-			packResolver: $this->packResolver,
-			detectionService: new DpiaPatternDetectionService(),
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->createMock(LoggerInterface::class),
+			runtime: new ConfiguredJobRuntime(time: $this->createMock(ITimeFactory::class), appConfig: $this->appConfig, logger: $this->createMock(LoggerInterface::class)),
+			services: new DsarDpiaDetectionServices(objectService: $this->objectService, packResolver: $this->packResolver, detectionService: new DpiaPatternDetectionService(), auditTrailMapper: $this->auditTrailMapper)
 		);
 
 	}//end setUp()
@@ -117,7 +116,8 @@ class DsarDpiaDetectionJobTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use (&$savedFlags) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$savedFlags) {
+				$uuid = $options->uuid;
 				$savedFlags[(string)$uuid] = $object['dpiaRequired'];
 				$saved = new ObjectEntity();
 				$saved->setUuid((string)$uuid);
@@ -126,7 +126,7 @@ class DsarDpiaDetectionJobTest extends TestCase {
 		);
 
 		$auditContexts = [];
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = []) use (&$auditContexts) {
 				$auditContexts[(string)$object->getUuid()] = [
 					'action' => $action,
@@ -134,7 +134,7 @@ class DsarDpiaDetectionJobTest extends TestCase {
 				];
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 			}
-		);
+		));
 
 		$this->runJob();
 
@@ -188,14 +188,15 @@ class DsarDpiaDetectionJobTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use (&$written) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$written) {
+				$uuid = $options->uuid;
 				$written[] = $uuid;
 				$saved = new ObjectEntity();
 				$saved->setUuid((string)$uuid);
 				return $saved;
 			}
 		);
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturn($this->createMock(\OCA\OpenRegister\Db\AuditTrail::class));
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturn($this->createMock(\OCA\OpenRegister\Db\AuditTrail::class));
 
 		$this->runJob();
 
@@ -224,7 +225,7 @@ class DsarDpiaDetectionJobTest extends TestCase {
 		);
 
 		$this->objectService->expects($this->never())->method('saveObject');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->runJob();
 
@@ -247,7 +248,7 @@ class DsarDpiaDetectionJobTest extends TestCase {
 		);
 
 		$this->objectService->expects($this->never())->method('saveObject');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->runJob();
 
@@ -263,13 +264,8 @@ class DsarDpiaDetectionJobTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn('false');
 
 		$job = new DsarDpiaDetectionJob(
-			time: $this->createMock(ITimeFactory::class),
-			appConfig: $appConfig,
-			objectService: $this->objectService,
-			packResolver: $this->packResolver,
-			detectionService: new DpiaPatternDetectionService(),
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->createMock(LoggerInterface::class),
+			runtime: new ConfiguredJobRuntime(time: $this->createMock(ITimeFactory::class), appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class)),
+			services: new DsarDpiaDetectionServices(objectService: $this->objectService, packResolver: $this->packResolver, detectionService: new DpiaPatternDetectionService(), auditTrailMapper: $this->auditTrailMapper)
 		);
 
 		$this->objectService->expects($this->never())->method('findAll');

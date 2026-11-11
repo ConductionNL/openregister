@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The search provider registrar registers both unified search providers.
+ * The search provider registrar registers the objects provider; the Notifications component registers its own.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -22,7 +22,7 @@ class SearchProviderRegistrarTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testRegistersBothSearchProviders(): void {
+	public function testRegistersTheObjectsProvider(): void {
 		$registered = [];
 		$context    = $this->createMock(originalClassName: IRegistrationContext::class);
 		$context->method('registerSearchProvider')->willReturnCallback(
@@ -37,9 +37,8 @@ class SearchProviderRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				'OCA\OpenRegister\Search\ObjectsProvider',
-				'OCA\OpenRegister\Notifications\Search\TimelineEntriesProvider',
 			],
 			actual: $registered
 		);
-	}//end testRegistersBothSearchProviders()
+	}//end testRegistersTheObjectsProvider()
 }//end class

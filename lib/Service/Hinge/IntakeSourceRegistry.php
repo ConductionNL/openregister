@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Hinge;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Repair\SeedIntakeSourceRegister;
+use OCA\OpenRegister\Repair\IntakeSourceRegisterSlugsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -109,18 +109,43 @@ class IntakeSourceRegistry {
 	 * @return array<int, array> The sources, each as its object data.
 	 */
 	private function read(array $filters): array {
+		$objects = $this->findSourceObjects(filters: $filters);
+		if ($objects === null) {
+			return [];
+		}
+
+		return $this->sourcesFrom(objects: $objects);
+	}//end read()
+
+	/**
+	 * The intake-source objects matching the filters, or null when there is no register to read.
+	 *
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return array|null The objects, or null.
+	 */
+	private function findSourceObjects(array $filters): ?array {
 		try {
-			$objects = $this->objectService
-				->setRegister(register: SeedIntakeSourceRegister::REGISTER_SLUG)
-				->setSchema(schema: SeedIntakeSourceRegister::SCHEMA_SLUG)
+			return $this->objectService
+				->setRegister(register: IntakeSourceRegisterSlugsInterface::REGISTER_SLUG)
+				->setSchema(schema: IntakeSourceRegisterSlugsInterface::SCHEMA_SLUG)
 				->findAll(config: ['filters' => $filters]);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				sprintf('[IntakeSourceRegistry] No intake-sources register to read: %s', $e->getMessage())
 			);
-			return [];
+			return null;
 		}
+	}//end findSourceObjects()
 
+	/**
+	 * The source declarations the found objects carry; anything else is skipped.
+	 *
+	 * @param array $objects The found objects or rows.
+	 *
+	 * @return array<int, array<string, mixed>> The declarations.
+	 */
+	private function sourcesFrom(array $objects): array {
 		$sources = [];
 		foreach ($objects as $object) {
 			if ($object instanceof ObjectEntity) {
@@ -134,5 +159,5 @@ class IntakeSourceRegistry {
 		}
 
 		return $sources;
-	}//end read()
+	}//end sourcesFrom()
 }//end class

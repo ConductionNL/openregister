@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\Relation;
  *
  * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
  */
-class AffectedSet {
+class AffectedSet implements AffectedSetInterface {
 
 	/**
 	 * A reached node that is a record.
@@ -219,12 +219,11 @@ class AffectedSet {
 		$paths = [$root => []];
 		$queue = [$root];
 		while ($queue !== []) {
-			$from = (string)array_shift($queue);
-			foreach (($outgoing[$from] ?? []) as $to => $type) {
-				if (array_key_exists($to, $paths) === false) {
-					$paths[$to] = array_merge($paths[$from], [['from' => $from, 'to' => (string)$to, 'type' => $type]]);
-					$queue[] = (string)$to;
-				}
+			$from  = (string)array_shift($queue);
+			$found = self::newlyReached(steps: ($outgoing[$from] ?? []), paths: $paths);
+			$paths = $paths + $found;
+			foreach (array_keys($found) as $to) {
+				$queue[] = (string)$to;
 			}
 		}
 
@@ -232,12 +231,32 @@ class AffectedSet {
 		return $paths;
 	}//end reachableFrom()
 
+
 	/**
-	 * The kept edges grouped by the node they leave: from => [to => type], first edge wins.
+	 * The paths to the neighbours of one node that no earlier path reached.
+	 *
+	 * @param array<string, array<string, string>>             $steps The edges leaving the node, keyed by the uuid they reach.
+	 * @param array<string, array<int, array<string, string>>> $paths The paths found so far.
+	 *
+	 * @return array<string, array<int, array<string, string>>> The path to each newly reached uuid, in edge order.
+	 */
+	private static function newlyReached(array $steps, array $paths): array {
+		$found = [];
+		foreach ($steps as $to => $step) {
+			if (array_key_exists($to, $paths) === false) {
+				$found[$to] = array_merge($paths[$step['from']], [$step]);
+			}
+		}
+
+		return $found;
+	}//end newlyReached()
+
+	/**
+	 * The kept edges grouped by the node they leave: from => [to => edge], first edge wins.
 	 *
 	 * @param array<int, array<string, mixed>> $edges The kept edges.
 	 *
-	 * @return array<string, array<string, string>> The outgoing edges.
+	 * @return array<string, array<string, array<string, string>>> The outgoing edges.
 	 */
 	private function outgoing(array $edges): array {
 		$outgoing = [];
@@ -245,7 +264,7 @@ class AffectedSet {
 			$from = (string)($edge['from'] ?? '');
 			$to = (string)($edge['to'] ?? '');
 			if ($from !== '' && $to !== '' && isset($outgoing[$from][$to]) === false) {
-				$outgoing[$from][$to] = (string)($edge['type'] ?? '');
+				$outgoing[$from][$to] = ['from' => $from, 'to' => $to, 'type' => (string)($edge['type'] ?? '')];
 			}
 		}
 

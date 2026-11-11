@@ -30,21 +30,57 @@ namespace OCA\OpenRegister\Files\Service\File;
 final class OfficeSession {
 
 	/**
+	 * The Collabora address for this mimetype, from discovery.
+	 *
+	 * @var string
+	 */
+	public readonly string $urlSrc;
+
+	/**
+	 * The WOPI source Collabora calls back on.
+	 *
+	 * @var string
+	 */
+	public readonly string $wopiSrc;
+
+	/**
+	 * The WOPI access token.
+	 *
+	 * @var string
+	 */
+	public readonly string $token;
+
+	/**
+	 * The token expiry, as a unix timestamp in milliseconds.
+	 *
+	 * @var integer
+	 */
+	public readonly int $tokenTtl;
+
+	/**
+	 * Whether the token may not save.
+	 *
+	 * @var boolean
+	 */
+	public readonly bool $readOnly;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $urlSrc   The Collabora address for this mimetype, from discovery.
-	 * @param string $wopiSrc  The WOPI source Collabora calls back on.
-	 * @param string $token    The WOPI access token.
-	 * @param int    $tokenTtl The token expiry, as a unix timestamp in milliseconds.
-	 * @param bool   $readOnly Whether the token may not save.
+	 * @param string             $urlSrc  The Collabora address for this mimetype, from discovery.
+	 * @param string             $wopiSrc The WOPI source Collabora calls back on.
+	 * @param OfficeSessionToken $access  The WOPI access token, its expiry and whether it may save.
 	 */
 	public function __construct(
-		public readonly string $urlSrc,
-		public readonly string $wopiSrc,
-		public readonly string $token,
-		public readonly int $tokenTtl,
-		public readonly bool $readOnly,
+		string $urlSrc,
+		string $wopiSrc,
+		OfficeSessionToken $access,
 	) {
+		$this->urlSrc = $urlSrc;
+		$this->wopiSrc = $wopiSrc;
+		$this->token = $access->token;
+		$this->tokenTtl = $access->tokenTtl;
+		$this->readOnly = $access->readOnly;
 	}//end __construct()
 
 	/**

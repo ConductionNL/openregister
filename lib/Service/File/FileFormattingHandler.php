@@ -23,27 +23,23 @@ namespace OCA\OpenRegister\Service\File;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\File as OrFile;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\Files\InvalidPathException;
-use OCP\Files\Lock\ILock;
 use OCP\Files\Lock\ILockManager;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
-use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Lock\LockedException;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
-use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 
 /**
  * Handles file formatting and filtering operations.
  *
  * This handler is responsible for:
  * - Formatting single files to metadata arrays
- * - Formatting multiple files with pagination
- * - Extracting filter parameters from requests
- * - Applying filters to formatted files
+ * - Formatting multiple files with pagination ({@see FileListFilter})
+ * - Showing the lock of a file to authenticated callers only ({@see FileLockEnvelope})
  * - Managing file metadata (labels, tags, shares)
  *
  * @category Service
@@ -52,68 +48,79 @@ use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
- *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Handler coordinates formatting, sharing, tagging, locking, URL generation, and session lookup.
  */
 class FileFormattingHandler {
 	/**
-	 * The file filters read from a request, and how each is taken: bool and
-	 * int are cast, trim is a trimmed string, and list is a comma-separated
-	 * string or an array.
+	 * The publication fields of a file that was never published; an OR-side
+	 * row overwrites them.
+	 *
+	 * @var array{published: null, depublished: null, isPublished: false}
 	 */
-	private const FILE_FILTER_PARAMETERS = [
-		'_hasLabels' => 'bool',
-		'_noLabels' => 'bool',
-		'labels' => 'list',
-		'extension' => 'trim',
-		'extensions' => 'list',
-		'minSize' => 'int',
-		'maxSize' => 'int',
-		'title' => 'trim',
-	];
-
+	private const UNPUBLISHED = ['published' => null, 'depublished' => null, 'isPublished' => false];
 
 	/**
 	 * Reference to FileService for cross-handler coordination (circular dependency break).
 	 *
-	 * @var FileService|null
+	 * @var FileHandlerSupportInterface|null
 	 */
-	private ?FileService $fileService = null;
+	private ?FileHandlerSupportInterface $fileService = null;
+
+	/**
+	 * Builds the lock envelope shown to authenticated callers.
+	 *
+	 * @var FileLockEnvelope
+	 */
+	private readonly FileLockEnvelope $lockEnvelope;
+
+	/**
+	 * Filters and pages a formatted listing.
+	 *
+	 * @var FileListFilter
+	 */
+	private readonly FileListFilter $listFilter;
+
+	/**
+	 * Session used to gate lock fields for authenticated callers only.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
 
 	/**
 	 * Constructor for FileFormattingHandler.
 	 *
-	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for tag operations.
-	 * @param FileSharingHandler $fileSharingHandler Sharing handler for share operations.
-	 * @param IURLGenerator $urlGenerator URL generator for creating URLs.
-	 * @param ILockManager $lockManager Lock manager for reading file lock state.
-	 * @param IUserSession $userSession Session used to gate lock fields for authenticated callers only.
-	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Files\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
-	 *                                                         description / category / labels / downloadCount
-	 *                                                         enrichment. When null (test fixtures, legacy
-	 *                                                         callers), enrichment is skipped silently.
+	 * @param ILockManager             $lockManager Lock manager for reading file lock state.
+	 * @param FileSession              $session     The session that gates lock fields for authenticated callers only, and the logger.
+	 * @param FileMapperInterface|null $fileMapper  Optional OR-side metadata mapper for description / category /
+	 *                                              labels / downloadCount enrichment. When null (test fixtures,
+	 *                                              legacy callers), enrichment is skipped silently.
 	 */
 	public function __construct(
-		private readonly TaggingHandlerInterface $taggingHandler,
-		private readonly FileSharingHandler $fileSharingHandler,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly ILockManager $lockManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Files\Db\FileMapperInterface $fileMapper = null,
+		ILockManager $lockManager,
+		FileSession $session,
+		private readonly ?FileMapperInterface $fileMapper = null,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
+		$this->lockEnvelope = new FileLockEnvelope(lockManager: $lockManager, logger: $session->logger);
+		$this->listFilter = new FileListFilter();
 	}//end __construct()
 
 	/**
 	 * Set the FileService instance for cross-handler coordination.
 	 *
-	 * @param FileService $fileService The file service instance.
+	 * @param FileHandlerSupportInterface $fileService The file service instance.
 	 *
 	 * @return void
 	 */
-	public function setFileService(FileService $fileService): void {
+	public function setFileService(FileHandlerSupportInterface $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
 
@@ -123,6 +130,8 @@ class FileFormattingHandler {
 	 * This method converts a Nextcloud file node into a standardized metadata array
 	 * including file properties, shares, tags, and download links. Labels containing
 	 * ':' are processed as key-value pairs and extracted into separate metadata fields.
+	 *
+	 * Anonymous callers MUST NOT see who holds a lock (design.md Decision 6).
 	 *
 	 * @param Node $file The file node to format.
 	 *
@@ -137,14 +146,8 @@ class FileFormattingHandler {
 	 */
 	public function formatFile(Node $file): array {
 		$metadata = $this->baseMetadata(file: $file);
-
-		// Anonymous callers MUST NOT see who holds a lock (design.md Decision 6).
 		if ($this->userSession->getUser() !== null) {
-			$lockEnvelope = $this->formatLock(fileId: (int)$file->getId());
-			$metadata['locked'] = $lockEnvelope !== null;
-			if ($lockEnvelope !== null) {
-				$metadata['lock'] = $lockEnvelope;
-			}
+			$metadata = $this->withLock(fileId: (int)$file->getId(), metadata: $metadata);
 		}
 
 		if ($this->fileMapper !== null) {
@@ -153,6 +156,82 @@ class FileFormattingHandler {
 
 		return $this->withLabelFields(metadata: $metadata);
 	}//end formatFile()
+
+	/**
+	 * Format multiple files with filtering, sorting, and pagination.
+	 *
+	 * Formats the file nodes, keeps those matching the request's filters and
+	 * returns the requested page with its paging figures.
+	 *
+	 * @param Node[] $files         Array of Node files to format.
+	 * @param array  $requestParams Optional request parameters for filtering.
+	 *
+	 * @psalm-param array<int, Node> $files
+	 * @psalm-param array<string, mixed> $requestParams
+	 *
+	 * @phpstan-param array<int, Node> $files
+	 * @phpstan-param array<string, mixed> $requestParams
+	 *
+	 * @return (array[]|int)[]
+	 *
+	 * @psalm-return   array{results: list<array<string, mixed>>,
+	 *     total: int<0, max>, page: int<1, max>, pages: int,
+	 *     limit: int<1, max>, offset: int<0, max>}
+	 * @phpstan-return array{results: array<int, array<string, mixed>>,
+	 *     total: int, page: int, pages: int, limit: int, offset: int}
+	 *
+	 * @throws InvalidPathException If any file path is invalid.
+	 * @throws NotFoundException If files are not found.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function formatFiles(array $files, ?array $requestParams = []): array {
+		$requestParams = ($requestParams ?? []);
+		$formattedFiles = $this->formatEach(files: $files);
+		$filters = $this->listFilter->extract(requestParams: $requestParams);
+
+		return $this->listFilter->page(
+			files: $this->listFilter->apply(files: $formattedFiles, filters: $filters),
+			requestParams: $requestParams
+		);
+	}//end formatFiles()
+
+	/**
+	 * Format every file. A single NC-locked file must not break the whole
+	 * listing: its LockedException becomes a minimal stub entry so the caller
+	 * still sees it (design.md Decision 3).
+	 *
+	 * @param array<int, Node> $files The file nodes.
+	 *
+	 * @return list<array<string, mixed>> The formatted files and stubs.
+	 */
+	private function formatEach(array $files): array {
+		$isAuthenticated = $this->userSession->getUser() !== null;
+		$formattedFiles = [];
+		foreach ($files as $file) {
+			$formattedFiles[] = $this->formatOrStub(file: $file, isAuthenticated: $isAuthenticated);
+		}
+
+		return $formattedFiles;
+	}//end formatEach()
+
+	/**
+	 * One file formatted, or its stub when it raised LockedException.
+	 *
+	 * @param Node $file            The file node.
+	 * @param bool $isAuthenticated Whether the request has a user session.
+	 *
+	 * @return array<string, mixed> The formatted file or its stub.
+	 */
+	private function formatOrStub(Node $file, bool $isAuthenticated): array {
+		try {
+			return $this->formatFile(file: $file);
+		} catch (LockedException $lockedException) {
+			$stub = $this->buildLockedStubEntry(file: $file, isAuthenticated: $isAuthenticated);
+			$this->logLockedStub(stub: $stub, reason: $lockedException->getMessage());
+			return $stub;
+		}
+	}//end formatOrStub()
 
 	/**
 	 * The metadata every formatted file carries: node properties, share links
@@ -168,34 +247,71 @@ class FileFormattingHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function baseMetadata(Node $file): array {
-		// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare.
-		$shares = $this->fileService->findShares($file);
+		$identity = ['id' => $file->getId(), 'path' => $file->getPath(), 'title' => $file->getName()];
 
-		$accessUrl = null;
-		$downloadUrl = null;
-		if (count($shares) > 0) {
-			$accessUrl = $this->fileService->getShareLink($shares[0]);
-			$downloadUrl = $accessUrl . '/download';
-		}
-
-		return [
-			'id' => $file->getId(),
-			'path' => $file->getPath(),
-			'title' => $file->getName(),
-			'accessUrl' => $accessUrl,
-			'downloadUrl' => $downloadUrl,
-			'type' => $file->getMimetype(),
-			'extension' => $file->getExtension(),
-			'size' => $file->getSize(),
-			'hash' => $file->getEtag(),
-			'published' => null,
-			'depublished' => null,
-			'isPublished' => false,
+		return $identity + $this->shareUrls(file: $file) + $this->nodeProperties(file: $file) + self::UNPUBLISHED + [
 			'created' => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
 			'modified' => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
 			'labels' => $this->fileService->getFileTags((string)$file->getId()),
 		];
 	}//end baseMetadata()
+
+	/**
+	 * The access and download URL of the file's first share, or nulls when it
+	 * is not shared.
+	 *
+	 * IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare.
+	 *
+	 * @param Node $file The file node.
+	 *
+	 * @return array{accessUrl: ?string, downloadUrl: ?string}
+	 */
+	private function shareUrls(Node $file): array {
+		$shares = $this->fileService->findShares($file);
+		if (count($shares) === 0) {
+			return ['accessUrl' => null, 'downloadUrl' => null];
+		}
+
+		$accessUrl = $this->fileService->getShareLink($shares[0]);
+
+		return ['accessUrl' => $accessUrl, 'downloadUrl' => $accessUrl . '/download'];
+	}//end shareUrls()
+
+	/**
+	 * The node's type, extension, size and hash.
+	 *
+	 * @param Node $file The file node.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function nodeProperties(Node $file): array {
+		return [
+			'type' => $file->getMimetype(),
+			'extension' => $file->getExtension(),
+			'size' => $file->getSize(),
+			'hash' => $file->getEtag(),
+		];
+	}//end nodeProperties()
+
+	/**
+	 * Add the `locked` flag and, when there is one, the lock envelope.
+	 *
+	 * Only called for authenticated callers.
+	 *
+	 * @param int                  $fileId   The file id.
+	 * @param array<string, mixed> $metadata The metadata so far.
+	 *
+	 * @return array<string, mixed> The metadata with the lock fields.
+	 */
+	private function withLock(int $fileId, array $metadata): array {
+		$lockEnvelope = $this->lockEnvelope->forFile(fileId: $fileId);
+		$metadata['locked'] = $lockEnvelope !== null;
+		if ($lockEnvelope !== null) {
+			$metadata['lock'] = $lockEnvelope;
+		}
+
+		return $metadata;
+	}//end withLock()
 
 	/**
 	 * Add the OR-side row's metadata, when a row exists for the file. A failed
@@ -215,19 +331,26 @@ class FileFormattingHandler {
 				$metadata = $this->applyOrFile(orFile: $orFile, metadata: $metadata);
 			}
 		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[FileFormattingHandler] OR-side metadata lookup failed; continuing without enrichment',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => (int)$file->getId(),
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
+			$this->logOrLookupFailure(fileId: (int)$file->getId(), error: $e);
+		}
 
 		return $metadata;
 	}//end withOrMetadata()
+
+	/**
+	 * Log a failed OR-side metadata lookup.
+	 *
+	 * @param int        $fileId The file id.
+	 * @param \Throwable $error  The failure.
+	 *
+	 * @return void
+	 */
+	private function logOrLookupFailure(int $fileId, \Throwable $error): void {
+		$this->logger->warning(
+			message: '[FileFormattingHandler] OR-side metadata lookup failed; continuing without enrichment',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'error' => $error->getMessage()]
+		);
+	}//end logOrLookupFailure()
 
 	/**
 	 * Copy an OR-side row onto the metadata.
@@ -244,24 +367,48 @@ class FileFormattingHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function applyOrFile(OrFile $orFile, array $metadata): array {
+		$metadata = $this->withPublicOrFields(orFile: $orFile, metadata: $metadata);
+		if ($this->userSession->getUser() === null) {
+			return $metadata;
+		}
+
+		return $this->withAuthenticatedOrFields(orFile: $orFile, metadata: $metadata);
+	}//end applyOrFile()
+
+	/**
+	 * The row's public-safe fields: description, category, publication window,
+	 * and the OR-managed labels joined to the tag-backed labels, de-duplicated.
+	 *
+	 * @param OrFile               $orFile   The OR-side row.
+	 * @param array<string, mixed> $metadata The metadata so far.
+	 *
+	 * @return array<string, mixed> The metadata with the public fields.
+	 */
+	private function withPublicOrFields(OrFile $orFile, array $metadata): array {
 		$metadata['description'] = $orFile->getDescription();
 		$metadata['category'] = $orFile->getCategory();
 		$metadata['published'] = $orFile->getPublished()?->format('c');
 		$metadata['depublished'] = $orFile->getDepublished()?->format('c');
 		$metadata['isPublished'] = $orFile->isPublishedAt();
 
-		// OR-managed labels join the tag-backed labels, de-duplicated.
 		$orLabels = ($orFile->getLabels() ?? []);
 		if (empty($orLabels) === false) {
-			$metadata['labels'] = array_values(
-				array_unique(array_merge($metadata['labels'], $orLabels))
-			);
+			$metadata['labels'] = array_values(array_unique(array_merge($metadata['labels'], $orLabels)));
 		}
 
-		if ($this->userSession->getUser() === null) {
-			return $metadata;
-		}
+		return $metadata;
+	}//end withPublicOrFields()
 
+	/**
+	 * The row's fields for authenticated callers: the download count and the
+	 * OR-side lock.
+	 *
+	 * @param OrFile               $orFile   The OR-side row.
+	 * @param array<string, mixed> $metadata The metadata so far.
+	 *
+	 * @return array<string, mixed> The metadata with those fields.
+	 */
+	private function withAuthenticatedOrFields(OrFile $orFile, array $metadata): array {
 		$metadata['downloadCount'] = $orFile->getDownloadCount();
 		if ($orFile->getLockedBy() !== null) {
 			$metadata['orLock'] = [
@@ -272,7 +419,7 @@ class FileFormattingHandler {
 		}
 
 		return $metadata;
-	}//end applyOrFile()
+	}//end withAuthenticatedOrFields()
 
 	/**
 	 * Turn `key:value` labels into metadata fields.
@@ -290,19 +437,13 @@ class FileFormattingHandler {
 	private function withLabelFields(array $metadata): array {
 		$remainingLabels = [];
 		foreach ($metadata['labels'] as $label) {
-			if (strpos($label, ':') === false) {
+			$field = $this->labelField(label: $label, metadata: $metadata);
+			if ($field === null) {
 				$remainingLabels[] = $label;
 				continue;
 			}
 
-			[$key, $value] = explode(':', $label, 2);
-			$key = trim($key);
-			if (isset($metadata[$key]) === true) {
-				$remainingLabels[] = $label;
-				continue;
-			}
-
-			$metadata[$key] = trim($value);
+			$metadata[$field['key']] = $field['value'];
 		}
 
 		$metadata['labels'] = $remainingLabels;
@@ -311,351 +452,26 @@ class FileFormattingHandler {
 	}//end withLabelFields()
 
 	/**
-	 * Format multiple files with filtering, sorting, and pagination.
+	 * The field a `key:value` label becomes, or null when it stays a label.
 	 *
-	 * This method formats an array of file nodes into standardized metadata arrays,
-	 * applies filtering based on request parameters (labels, extensions, size, search),
-	 * and returns paginated results with metadata.
+	 * @param string               $label    The label.
+	 * @param array<string, mixed> $metadata The metadata so far.
 	 *
-	 * @param Node[] $files Array of Node files to format.
-	 * @param array $requestParams Optional request parameters for filtering.
-	 *
-	 * @psalm-param array<int, Node> $files
-	 * @psalm-param array<string, mixed> $requestParams
-	 *
-	 * @phpstan-param array<int, Node> $files
-	 * @phpstan-param array<string, mixed> $requestParams
-	 *
-	 * @return (array[]|int)[]
-	 *
-	 * @psalm-return   array{results: list<array<string, mixed>>,
-	 *     total: int<0, max>, page: int<1, max>, pages: int,
-	 *     limit: int<1, max>, offset: int<0, max>}
-	 * @phpstan-return array{results: array<int, array<string, mixed>>,
-	 *     total: int, page: int, pages: int, limit: int, offset: int}
-	 *
-	 * @throws InvalidPathException If any file path is invalid.
-	 * @throws NotFoundException If files are not found.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) File formatting with pagination requires multiple branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter and pagination paths
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
+	 * @return array{key: string, value: string}|null The field.
 	 */
-	public function formatFiles(array $files, ?array $requestParams = []): array {
-		// Format all files first. A single NC-locked file must not break the
-		// whole listing — catch LockedException per-file and emit a minimal
-		// envelope so the caller can still see the entry. See design.md
-		// Decision 3.
-		$isAuthenticated = $this->userSession->getUser() !== null;
-		$formattedFiles = [];
-		foreach ($files as $file) {
-			try {
-				$formattedFiles[] = $this->formatFile(file: $file);
-			} catch (LockedException $lockedException) {
-				$formattedFiles[] = $this->buildLockedStubEntry(
-					file: $file,
-					lockedException: $lockedException,
-					isAuthenticated: $isAuthenticated
-				);
-			}
-		}
-
-		// Extract and apply filters.
-		$filters = $this->extractFilterParameters(requestParams: $requestParams ?? []);
-		$formattedFiles = $this->applyFileFilters(formattedFiles: $formattedFiles, filters: $filters);
-
-		// Apply pagination (support both _page/_limit and page/limit conventions).
-		// No upper ceiling on `_limit`: per-object attachment counts are the
-		// natural bound, and a 100-file cap silently truncated production
-		// listings. Floor at 1 keeps pagination arithmetic sound. See
-		// design.md Decision 4.
-		$page = max(1, (int)($requestParams['_page'] ?? $requestParams['page'] ?? 1));
-		$limit = max(1, (int)($requestParams['_limit'] ?? $requestParams['limit'] ?? 30));
-		$offset = ($page - 1) * $limit;
-		$total = count($formattedFiles);
-		$pages = (int)ceil($total / $limit);
-
-		// Slice the results for the current page.
-		$results = array_slice($formattedFiles, $offset, $limit);
-
-		return [
-			'results' => $results,
-			'total' => $total,
-			'page' => $page,
-			'pages' => $pages,
-			'limit' => $limit,
-			'offset' => $offset,
-		];
-	}//end formatFiles()
-
-	/**
-	 * Extract and normalize filter parameters from request.
-	 *
-	 * This method extracts filter-specific parameters from the request, excluding
-	 * pagination and other control parameters. It normalizes string parameters
-	 * to arrays where appropriate for consistent filtering logic.
-	 *
-	 * @param array $requestParams Raw request parameters.
-	 *
-	 * @return array{
-	 *     _hasLabels?: bool,
-	 *     _noLabels?: bool,
-	 *     labels?: array<string>,
-	 *     extension?: string,
-	 *     extensions?: array<string>,
-	 *     minSize?: int,
-	 *     maxSize?: int,
-	 *     title?: string,
-	 *     search?: string
-	 * } Normalized filter parameters.
-	 *
-	 * @psalm-param   array<string, mixed> $requestParams
-	 * @phpstan-param array<string, mixed> $requestParams
-	 *
-	 */
-	private function extractFilterParameters(array $requestParams): array {
-		$filters = [];
-		foreach (self::FILE_FILTER_PARAMETERS as $key => $kind) {
-			$value = ($requestParams[$key] ?? null);
-			if ($value === null) {
-				continue;
-			}
-
-			if ($kind === 'list' && is_string($value) === true) {
-				$value = array_map('trim', explode(',', $value));
-			}
-
-			if ($kind === 'list' && is_array($value) === false) {
-				continue;
-			}
-
-			$filters[$key] = match ($kind) {
-				'bool' => (bool)$value,
-				'int' => (int)$value,
-				'trim' => trim($value),
-				default => $value,
-			};
-		}
-
-		$search = ($requestParams['search'] ?? $requestParams['_search'] ?? null);
-		if ($search !== null) {
-			$filters['search'] = trim($search);
-		}
-
-		return $filters;
-	}//end extractFilterParameters()
-
-	/**
-	 * Apply filters to formatted files.
-	 *
-	 * This method applies various filters to the formatted file metadata based on
-	 * the provided filter parameters. Filters are applied in sequence and files
-	 * must match ALL specified criteria to be included in the results.
-	 *
-	 * Supported filters:
-	 * - _hasLabels: Files must have at least one label
-	 * - _noLabels: Files must have no labels
-	 * - labels: Files must have at least one of the specified labels
-	 * - extension: Files must have the exact extension (case-insensitive)
-	 * - extensions: Files must have one of the specified extensions
-	 * - minSize: Files must be at least this size in bytes
-	 * - maxSize: Files must be at most this size in bytes
-	 * - title: Files must contain this text in their title (case-insensitive)
-	 * - search: Files must contain this text in their title (case-insensitive)
-	 *
-	 * @param array $formattedFiles Array of formatted file metadata.
-	 * @param array $filters Filter parameters to apply.
-	 *
-	 * @psalm-param   array<int, array<string, mixed>> $formattedFiles
-	 * @psalm-param   array<string, mixed> $filters
-	 * @phpstan-param array<int, array<string, mixed>> $formattedFiles
-	 * @phpstan-param array<string, mixed> $filters
-	 *
-	 * @return array Filtered array of file metadata.
-	 *
-	 * @psalm-return   array<int, array<string, mixed>>
-	 * @phpstan-return array<int, array<string, mixed>>
-	 *
-	 */
-	private function applyFileFilters(array $formattedFiles, array $filters): array {
-		if (empty($filters) === true) {
-			return $formattedFiles;
-		}
-
-		return array_filter(
-			$formattedFiles,
-			fn (array $file): bool => $this->fileMatchesLabelFilters(file: $file, filters: $filters) === true
-				&& $this->fileMatchesExtensionFilters(file: $file, filters: $filters) === true
-				&& $this->fileMatchesSizeFilters(file: $file, filters: $filters) === true
-				&& $this->fileMatchesTextFilters(file: $file, filters: $filters) === true
-		);
-	}//end applyFileFilters()
-
-	/**
-	 * Whether a file passes `_hasLabels`, `_noLabels` and `labels` (any one of them).
-	 *
-	 * @param array<string, mixed> $file    The formatted file.
-	 * @param array<string, mixed> $filters The filters.
-	 *
-	 * @return bool
-	 */
-	private function fileMatchesLabelFilters(array $file, array $filters): bool {
-		$hasLabels = empty($file['labels']) === false;
-		if (($filters['_hasLabels'] ?? null) !== null && $filters['_hasLabels'] !== $hasLabels) {
-			return false;
-		}
-
-		if (($filters['_noLabels'] ?? null) === true && $hasLabels === true) {
-			return false;
-		}
-
-		if (empty($filters['labels']) === true) {
-			return true;
-		}
-
-		return $this->anyLabelPresent(required: $filters['labels'], fileLabels: ($file['labels'] ?? []));
-	}//end fileMatchesLabelFilters()
-
-	/**
-	 * Whether any required label is among the file's labels, compared strictly.
-	 *
-	 * @param array $required   The labels of which one must be present.
-	 * @param array $fileLabels The file's labels.
-	 *
-	 * @return bool
-	 */
-	private function anyLabelPresent(array $required, array $fileLabels): bool {
-		foreach ($required as $requiredLabel) {
-			if (in_array($requiredLabel, $fileLabels, true) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end anyLabelPresent()
-
-	/**
-	 * Whether a file passes `extension` and `extensions` (any one of them), ignoring case.
-	 *
-	 * @param array<string, mixed> $file    The formatted file.
-	 * @param array<string, mixed> $filters The filters.
-	 *
-	 * @return bool
-	 */
-	private function fileMatchesExtensionFilters(array $file, array $filters): bool {
-		$fileExtension = $file['extension'] ?? '';
-		if (($filters['extension'] ?? null) !== null && strcasecmp($fileExtension, $filters['extension']) !== 0) {
-			return false;
-		}
-
-		if (empty($filters['extensions']) === true) {
-			return true;
-		}
-
-		foreach ($filters['extensions'] as $allowedExtension) {
-			if (strcasecmp($fileExtension, $allowedExtension) === 0) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end fileMatchesExtensionFilters()
-
-	/**
-	 * Whether a file's size lies within `minSize` and `maxSize`, a missing size counting as 0.
-	 *
-	 * @param array<string, mixed> $file    The formatted file.
-	 * @param array<string, mixed> $filters The filters.
-	 *
-	 * @return bool
-	 */
-	private function fileMatchesSizeFilters(array $file, array $filters): bool {
-		$fileSize = $file['size'] ?? 0;
-		if (($filters['minSize'] ?? null) !== null && $fileSize < $filters['minSize']) {
-			return false;
-		}
-
-		return ($filters['maxSize'] ?? null) === null || $fileSize <= $filters['maxSize'];
-	}//end fileMatchesSizeFilters()
-
-	/**
-	 * Whether a file's title contains `title` and `search`, ignoring case.
-	 *
-	 * @param array<string, mixed> $file    The formatted file.
-	 * @param array<string, mixed> $filters The filters.
-	 *
-	 * @return bool
-	 */
-	private function fileMatchesTextFilters(array $file, array $filters): bool {
-		$fileTitle = $file['title'] ?? '';
-		foreach (['title', 'search'] as $key) {
-			if (empty($filters[$key]) === false && stripos($fileTitle, $filters[$key]) === false) {
-				return false;
-			}
-		}
-
-		return true;
-	}//end fileMatchesTextFilters()
-
-	/**
-	 * Build the `lock` response envelope for a given file id.
-	 *
-	 * Returns `null` when no lock provider is registered (the `files_lock` app
-	 * is not installed / disabled) or when there are no locks on the file.
-	 * Otherwise returns the first lock's public fields mapped to stable
-	 * string aliases so the API contract does not leak Nextcloud's numeric
-	 * constants to consumers.
-	 *
-	 * This helper MUST only be invoked for authenticated callers; anonymous
-	 * requests never reach `ILockManager`. See design.md Decision 6.
-	 *
-	 * @param int $fileId The file id to look up locks for.
-	 *
-	 * @return array{type: string, scope: string, owner: string, createdAt: string, expiresAt: ?string}|null
-	 *
-	 * @psalm-return   array{type: string, scope: string, owner: string, createdAt: string, expiresAt: ?string}|null
-	 * @phpstan-return array{type: string, scope: string, owner: string, createdAt: string, expiresAt: string|null}|null
-	 */
-	private function formatLock(int $fileId): ?array {
-		if ($this->lockManager->isLockProviderAvailable() === false) {
+	private function labelField(string $label, array $metadata): ?array {
+		if (strpos($label, ':') === false) {
 			return null;
 		}
 
-		try {
-			$locks = $this->lockManager->getLocks(fileId: $fileId);
-		} catch (Exception $lockLookupException) {
-			// A failure to query the lock provider must not break the listing;
-			// treat it as "no lock info available" and move on.
-			$this->logger->warning(
-				message: "[FileFormattingHandler] formatLock: lock lookup failed for fileId {$fileId}: " . $lockLookupException->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
-			);
-
+		$parts = explode(':', $label, 2);
+		$key = trim($parts[0]);
+		if (isset($metadata[$key]) === true) {
 			return null;
 		}
 
-		if (count($locks) === 0) {
-			return null;
-		}
-
-		$lock = $locks[0];
-
-		$createdAt = $lock->getCreatedAt();
-		$timeout = $lock->getTimeout();
-		$expiresAt = null;
-		if ($timeout > 0) {
-			$expiresAt = (new DateTime())->setTimestamp($createdAt + $timeout)->format('c');
-		}
-
-		return [
-			'type' => $this->mapLockType(type: $lock->getType()),
-			'scope' => $this->mapLockScope(scope: $lock->getScope()),
-			'owner' => $lock->getOwner(),
-			'createdAt' => (new DateTime())->setTimestamp($createdAt)->format('c'),
-			'expiresAt' => $expiresAt,
-		];
-	}//end formatLock()
+		return ['key' => $key, 'value' => trim($parts[1])];
+	}//end labelField()
 
 	/**
 	 * Build a minimal stub entry for a file that raised `LockedException`
@@ -666,82 +482,60 @@ class FileFormattingHandler {
 	 * it omits both fields entirely so the authentication gate is honoured
 	 * even on the error path. See design.md Decisions 3 and 6.
 	 *
-	 * @param Node $file The file node that failed to format.
-	 * @param LockedException $lockedException The raised LockedException.
+	 * @param Node $file            The file node that failed to format.
 	 * @param bool $isAuthenticated Whether the request has a user session.
 	 *
 	 * @return array<string, mixed>
-	 *
-	 * @psalm-return   array<string, mixed>
-	 * @phpstan-return array<string, mixed>
 	 */
-	private function buildLockedStubEntry(Node $file, LockedException $lockedException, bool $isAuthenticated): array {
-		$fileId = (int)$file->getId();
-		$name = $file->getName();
-
-		$bestEffortLock = null;
-		if ($isAuthenticated === true) {
-			$bestEffortLock = $this->formatLock(fileId: $fileId);
+	private function buildLockedStubEntry(Node $file, bool $isAuthenticated): array {
+		$stub = ['id' => (int)$file->getId(), 'title' => $file->getName(), 'error' => 'locked'];
+		if ($isAuthenticated === false) {
+			return $stub;
 		}
 
-		$this->logger->info(
-			message: "[FileFormattingHandler] formatFiles: file {$name} (ID: {$fileId}) is locked, emitting stub entry",
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'app' => 'openregister',
-				'fileId' => $fileId,
-				'name' => $name,
-				'lockType' => $bestEffortLock['type'] ?? null,
-				'lockOwner' => $bestEffortLock['owner'] ?? null,
-				'reason' => $lockedException->getMessage(),
-			]
-		);
-
-		$stub = [
-			'id' => $fileId,
-			'title' => $name,
-			'error' => 'locked',
-		];
-
-		if ($isAuthenticated === true) {
-			$stub['locked'] = true;
-			if ($bestEffortLock !== null) {
-				$stub['lock'] = $bestEffortLock;
-			}
-		}
-
-		return $stub;
+		return $this->withStubLock(stub: $stub, lock: $this->lockEnvelope->forFile(fileId: (int)$file->getId()));
 	}//end buildLockedStubEntry()
 
 	/**
-	 * Map an `ILock::TYPE_*` constant to a stable string alias for the public API.
+	 * The stub's `locked` flag and, when one was found, its lock envelope.
 	 *
-	 * @param int $type One of `ILock::TYPE_USER`, `ILock::TYPE_APP`, `ILock::TYPE_TOKEN`.
+	 * Only called for authenticated callers.
 	 *
-	 * @return string The string alias (`"user"`, `"app"`, `"token"`, or `"unknown"`).
+	 * @param array<string, mixed>      $stub The stub.
+	 * @param array<string, mixed>|null $lock The best-effort lock envelope.
+	 *
+	 * @return array<string, mixed> The stub with its lock fields.
 	 */
-	private function mapLockType(int $type): string {
-		return match ($type) {
-			ILock::TYPE_USER => 'user',
-			ILock::TYPE_APP => 'app',
-			ILock::TYPE_TOKEN => 'token',
-			default => 'unknown',
-		};
-	}//end mapLockType()
+	private function withStubLock(array $stub, ?array $lock): array {
+		$stub['locked'] = true;
+		if ($lock !== null) {
+			$stub['lock'] = $lock;
+		}
+
+		return $stub;
+	}//end withStubLock()
 
 	/**
-	 * Map an `ILock::LOCK_*` scope constant to a stable string alias for the public API.
+	 * Log that a locked file is listed as a stub.
 	 *
-	 * @param int $scope One of `ILock::LOCK_EXCLUSIVE`, `ILock::LOCK_SHARED`.
+	 * @param array<string, mixed> $stub   The stub entry, with its best-effort lock envelope when one was found.
+	 * @param string               $reason The LockedException message.
 	 *
-	 * @return string The string alias (`"exclusive"`, `"shared"`, or `"unknown"`).
+	 * @return void
 	 */
-	private function mapLockScope(int $scope): string {
-		return match ($scope) {
-			ILock::LOCK_EXCLUSIVE => 'exclusive',
-			ILock::LOCK_SHARED => 'shared',
-			default => 'unknown',
-		};
-	}//end mapLockScope()
+	private function logLockedStub(array $stub, string $reason): void {
+		$fileId = $stub['id'];
+		$name = $stub['title'];
+		$lock = ($stub['lock'] ?? null);
+		$this->logger->info(
+			message: "[FileFormattingHandler] formatFiles: file {$name} (ID: {$fileId}) is locked, emitting stub entry",
+			context: [
+				'file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister',
+				'fileId' => $fileId, 'name' => $name,
+				'lockType' => $lock['type'] ?? null,
+				'lockOwner' => $lock['owner'] ?? null,
+				'reason' => $reason,
+			]
+		);
+	}//end logLockedStub()
 }//end class

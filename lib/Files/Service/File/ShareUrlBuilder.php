@@ -38,7 +38,7 @@ use OCP\IURLGenerator;
  *
  * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
  */
-class ShareUrlBuilder {
+class ShareUrlBuilder implements ShareUrlBuilderInterface {
 
 	/**
 	 * The SAPIs that run without an HTTP request.

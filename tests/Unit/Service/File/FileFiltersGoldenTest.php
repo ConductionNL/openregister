@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden record of which files FileFormattingHandler::applyFileFilters() keeps for each filter set.
+ * Golden record of which files FileListFilter::apply() (formerly FileFormattingHandler::applyFileFilters()) keeps for each filter set.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -14,17 +14,11 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
-use OCA\OpenRegister\Service\File\FileFormattingHandler;
-use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
-use OCA\OpenRegister\Files\Service\File\TaggingHandler;
-use OCP\Files\Lock\ILockManager;
-use OCP\IURLGenerator;
-use OCP\IUserSession;
+use OCA\OpenRegister\Service\File\FileListFilter;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenRegister\Service\File\FileFormattingHandler
+ * @covers \OCA\OpenRegister\Service\File\FileListFilter
  *
  * @spec openspec/specs/file-actions/spec.md
  */
@@ -70,15 +64,8 @@ class FileFiltersGoldenTest extends TestCase {
 	}//end filterSets()
 
 	public function testFiltersMatchGolden(): void {
-		$handler = new FileFormattingHandler(
-			$this->createMock(TaggingHandler::class),
-			$this->createMock(FileSharingHandler::class),
-			$this->createMock(IURLGenerator::class),
-			$this->createMock(ILockManager::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(LoggerInterface::class)
-		);
-		$method = new \ReflectionMethod($handler, 'applyFileFilters');
+		$handler = new FileListFilter();
+		$method = new \ReflectionMethod($handler, 'apply');
 		$actual = [];
 		foreach (self::filterSets() as $name => $filters) {
 			$actual[$name] = array_keys($method->invoke($handler, self::files(), $filters));

@@ -26,7 +26,6 @@ use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -133,7 +132,6 @@ final class SearchQueryHandlerRecordingModeTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$settings,
 			$logger,
-			$this->createMock(IRequest::class),
 			$trails ?? $this->createMock(SearchTrailService::class)
 		);
 	}//end handler()

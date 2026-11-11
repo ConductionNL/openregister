@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 
 /**
  * Imports the decision-table register descriptor idempotently.
@@ -77,7 +77,7 @@ class ImportDecisionTableRegister extends AbstractRegisterImportStep {
 	 *
 	 * @var string
 	 */
-	protected const CONFIG_APP_ID = DescriptorConfigIds::DECISION_TABLES;
+	protected const CONFIG_APP_ID = DescriptorConfigIdsInterface::DECISION_TABLES;
 
 	/**
 	 * Get the name of this repair step.

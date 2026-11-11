@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 
 /**
@@ -36,7 +36,7 @@ final class SchemaImportControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SchemaImportService      $importService    Standards import orchestrator.
+	 * @param SchemaImportServiceInterface      $importService    Standards import orchestrator.
 	 * @param SchemaMapperInterface    $schemaMapper     Schema persistence.
 	 * @param RegisterMapperInterface  $registerMapper   Register lookup/association.
 	 * @param ?SchemaVersioningService $schemaVersioning Classifies, versions and logs a merged definition change (#4102).
@@ -44,7 +44,7 @@ final class SchemaImportControllerServices {
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function __construct(
-		public readonly SchemaImportService $importService,
+		public readonly SchemaImportServiceInterface $importService,
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly RegisterMapperInterface $registerMapper,
 		public readonly ?SchemaVersioningService $schemaVersioning = null,

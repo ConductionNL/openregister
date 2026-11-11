@@ -24,11 +24,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolver;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolverInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 
 /**
@@ -44,16 +45,14 @@ class SelectielijstReferenceController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                         $appName  The app name.
 	 * @param IRequest                       $request  The request.
-	 * @param SelectielijstReferenceResolver $resolver Reads the row behind a URL.
+	 * @param SelectielijstReferenceResolverInterface $resolver Reads the row behind a URL.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly SelectielijstReferenceResolver $resolver,
+		private readonly SelectielijstReferenceResolverInterface $resolver,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -62,7 +61,7 @@ class SelectielijstReferenceController extends Controller {
 	 * @return JSONResponse `{url, code, name}`; 400 for a URL that is not a selectielijst row, 404 when it cannot be read.
 	 *
 	 * @no-admin-idor-exempt Takes no object id: it reads public reference data behind a URL.
-	 *   SelectielijstReferenceResolver::isResolvable() admits only the allowed selectielijst
+	 *   SelectielijstReferenceResolverInterface::isResolvable() admits only the allowed selectielijst
 	 *   hosts, and the answer holds nothing the caller could not read there themselves.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md

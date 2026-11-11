@@ -187,7 +187,7 @@ class DepartmentMatrixPersonSourceTest extends TestCase {
 			static fn (string $app, string $key, bool $default = false): bool => $default
 		);
 
-		$handler = new PermissionHandler(
+		$handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$userManager,
 			$groups,

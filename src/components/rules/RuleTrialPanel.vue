@@ -77,28 +77,18 @@
 			<p v-if="!hasWrites" class="muted">
 				{{ t('openregister', 'Nothing. This rule writes no value.') }}
 			</p>
-			<table v-else class="writeTable">
-				<thead>
-					<tr>
-						<th scope="col">
-							{{ t('openregister', 'Property') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Value') }}
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="(value, key) in result.writes" :key="key">
-						<td>
-							<code>{{ key }}</code>
-						</td>
-						<td>
-							<code>{{ renderValue(value) }}</code>
-						</td>
-					</tr>
-				</tbody>
-			</table>
+			<CnDataTable
+				v-else
+				class="writeTable"
+				:columns="writeColumns"
+				:rows="writeRows">
+				<template #column-id="{ value }">
+					<code>{{ value }}</code>
+				</template>
+				<template #column-value="{ value }">
+					<code>{{ renderValue(value) }}</code>
+				</template>
+			</CnDataTable>
 		</div>
 
 		<p v-if="error" class="refusal">
@@ -108,6 +98,7 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 import RuleTraceView from './RuleTraceView.vue'
@@ -124,6 +115,7 @@ export default {
 	name: 'RuleTrialPanel',
 
 	components: {
+		CnDataTable,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcTextField,
@@ -182,6 +174,27 @@ export default {
 		 */
 		hasWrites() {
 			return this.result?.writes && Object.keys(this.result.writes).length > 0
+		},
+
+		/**
+		 * The write table's columns: the property and the value written.
+		 *
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		writeColumns() {
+			return [
+				{ key: 'id', label: t('openregister', 'Property'), cellClass: 'cn-cell--wrap' },
+				{ key: 'value', label: t('openregister', 'Value'), cellClass: 'cn-cell--wrap' },
+			]
+		},
+
+		/**
+		 * The writes as table rows, keyed by property.
+		 *
+		 * @return {Array<object>} One `{ id, value }` per write
+		 */
+		writeRows() {
+			return Object.entries(this.result?.writes || {}).map(([id, value]) => ({ id, value }))
 		},
 	},
 
@@ -343,18 +356,6 @@ export default {
 .trialField textarea {
 	width: 100%;
 	font-family: monospace;
-}
-
-.writeTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.writeTable th,
-.writeTable td {
-	text-align: start;
-	padding: 6px 10px;
-	border-bottom: 1px solid var(--color-border);
 }
 
 .refusal {

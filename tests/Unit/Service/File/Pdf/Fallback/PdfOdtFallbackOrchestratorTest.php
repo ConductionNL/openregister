@@ -30,8 +30,12 @@ namespace Unit\Service\File\Pdf\Fallback;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\OdtRoundTripRequest;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\PdfOdtFallbackOrchestrator;
+use OCA\OpenRegister\Files\Service\File\Pdf\PdfRedaction;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -104,7 +108,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 		$this->expectExceptionMessage('Path A failed');
 
 		try {
-			$orchestrator->attempt(pdfBytes: 'fake', substitutions: ['x' => 'y'], cause: $cause);
+			$orchestrator->attempt(request: new OdtRoundTripRequest(pdfBytes: 'fake', substitutions: ['x' => 'y'], cause: $cause));
 		} catch (PdfAnonymisationException $e) {
 			$this->assertSame(PdfAnonymisationException::REASON_VALIDATION_FAILED, $e->getReason());
 			$this->assertSame($cause, $e, 'Orchestrator MUST re-raise the very same exception when dormant');
@@ -131,7 +135,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 		$this->expectException(PdfAnonymisationException::class);
 
 		try {
-			$orchestrator->attempt(pdfBytes: 'fake', substitutions: ['x' => 'y'], cause: $cause);
+			$orchestrator->attempt(request: new OdtRoundTripRequest(pdfBytes: 'fake', substitutions: ['x' => 'y'], cause: $cause));
 		} catch (PdfAnonymisationException $e) {
 			$this->assertSame($cause, $e);
 			throw $e;
@@ -156,7 +160,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 		$this->expectException(PdfAnonymisationException::class);
 
 		try {
-			$this->buildOrchestrator()->attempt(pdfBytes: 'fake', substitutions: [], cause: $cause);
+			$this->buildOrchestrator()->attempt(request: new OdtRoundTripRequest(pdfBytes: 'fake', substitutions: [], cause: $cause));
 		} catch (PdfAnonymisationException $e) {
 			$this->assertSame(PdfAnonymisationException::REASON_ENCRYPTED_PDF, $e->getReason());
 			throw $e;
@@ -180,7 +184,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 		$this->expectException(PdfAnonymisationException::class);
 
 		try {
-			$this->buildOrchestrator()->attempt(pdfBytes: 'fake', substitutions: [], cause: $cause);
+			$this->buildOrchestrator()->attempt(request: new OdtRoundTripRequest(pdfBytes: 'fake', substitutions: [], cause: $cause));
 		} catch (PdfAnonymisationException $e) {
 			$this->assertSame(PdfAnonymisationException::REASON_TEXT_LAYER_MISSING, $e->getReason());
 			throw $e;
@@ -200,19 +204,15 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 		$this->pdfTextReplacer
 			->expects($this->once())
 			->method('replaceInPdf')
-			->with('rebuilt-pdf', ['Jan Jansen' => '[PERSON: 1]'], true)
-			->willReturn('clean-pdf');
+			->with('rebuilt-pdf', new RedactionPlan(['Jan Jansen' => '[PERSON: 1]'], true))
+			->willReturn(new PdfRedaction('clean-pdf', new StructurePreservation(false, false, 0, 0)));
 
 		$cause = new PdfAnonymisationException(
 			reason: PdfAnonymisationException::REASON_VALIDATION_FAILED,
 			message: 'Path A failed'
 		);
 
-		$result = $this->buildOrchestrator()->attempt(
-			pdfBytes: 'fake-pdf',
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			cause: $cause
-		);
+		$result = $this->buildOrchestrator()->attempt(request: new OdtRoundTripRequest(pdfBytes: 'fake-pdf', substitutions: ['Jan Jansen' => '[PERSON: 1]'], cause: $cause));
 
 		$this->assertSame('clean-pdf', $result);
 	}//end testHappyPathReturnsCleanBytes()
@@ -233,7 +233,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 		);
 
 		try {
-			$this->buildOrchestrator()->attempt(pdfBytes: 'fake', substitutions: [], cause: $cause);
+			$this->buildOrchestrator()->attempt(request: new OdtRoundTripRequest(pdfBytes: 'fake', substitutions: [], cause: $cause));
 			$this->fail('Expected PdfAnonymisationException to be raised');
 		} catch (PdfAnonymisationException $e) {
 			$this->assertSame(
@@ -260,7 +260,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 		);
 
 		try {
-			$this->buildOrchestrator()->attempt(pdfBytes: 'fake', substitutions: [], cause: $cause);
+			$this->buildOrchestrator()->attempt(request: new OdtRoundTripRequest(pdfBytes: 'fake', substitutions: [], cause: $cause));
 			$this->fail('Expected PdfAnonymisationException to be raised');
 		} catch (PdfAnonymisationException $e) {
 			$this->assertSame(
@@ -293,7 +293,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 		);
 
 		try {
-			$this->buildOrchestrator()->attempt(pdfBytes: 'fake', substitutions: [], cause: $cause);
+			$this->buildOrchestrator()->attempt(request: new OdtRoundTripRequest(pdfBytes: 'fake', substitutions: [], cause: $cause));
 			$this->fail('Expected PdfAnonymisationException to be raised');
 		} catch (PdfAnonymisationException $e) {
 			$this->assertSame(

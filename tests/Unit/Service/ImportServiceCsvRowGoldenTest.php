@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden test for ImportService::transformCsvRowToObject.
+ * Golden test for ImportService::transformCsvRow.
  *
  * Records the object built from each row, for an admin, a regular user and no user,
  * in fixtures/import-csv-row-golden.json. Set UPDATE_GOLDEN=1 to rewrite it.
@@ -22,8 +22,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Import\ImportTarget;
+use OCA\OpenRegister\Service\Import\RowImportTarget;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -92,15 +95,10 @@ class ImportServiceCsvRowGoldenTest extends TestCase {
 		$codec = $this->createMock(TranslationCsvCodec::class);
 		$codec->method('unflattenFromCsv')->willReturnCallback(static fn (array $row) => $row);
 		$service = new ImportService(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(ObjectService::class),
-			$this->createMock(LoggerInterface::class),
-			$groups,
-			$codec,
-			$this->createMock(AuditTrailMapper::class),
-			new MappingEngine($this->passThroughL10n()),
-			$this->createMock(ValidateObject::class),
-			$this->createMock(ContainerInterface::class)
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->createMock(SchemaMapper::class), $this->createMock(ObjectService::class), $this->createMock(AuditTrailMapper::class), $this->createMock(ValidateObject::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($codec, new MappingEngine($this->passThroughL10n())),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($this->createMock(ContainerInterface::class), new \OCA\OpenRegister\Listener\NotifyPushBatch(), $this->createMock(LoggerInterface::class)),
+			$groups
 		);
 
 		$user = null;
@@ -128,7 +126,7 @@ class ImportServiceCsvRowGoldenTest extends TestCase {
 		$actual = [];
 		foreach (self::rows() as $label => $row) {
 			try {
-				$actual[$label] = $service->transformCsvRowToObject($row, $register, $schema, $user);
+				$actual[$label] = $service->transformCsvRow($row, new RowImportTarget(new RegisterSchema($register, $schema), $user));
 			} catch (Throwable $e) {
 				$actual[$label] = ['error' => [get_class($e), $e->getMessage()]];
 			}
@@ -170,7 +168,7 @@ class ImportServiceCsvRowGoldenTest extends TestCase {
 		$service = (new \ReflectionClass(ImportService::class))->newInstanceWithoutConstructor();
 		$transform = new \ReflectionMethod(ImportService::class, 'transformExcelRowToObject');
 
-		$row = $transform->invoke($service, ['2024' => 'x', 'name' => 'y'], null, null, null);
+		$row = $transform->invoke($service, ['2024' => 'x', 'name' => 'y'], new ImportTarget(null, null, null));
 
 		$this->assertSame([2024 => 'x', 'name' => 'y'], $row);
 	}
@@ -185,6 +183,6 @@ class ImportServiceCsvRowGoldenTest extends TestCase {
 		$transform = new \ReflectionMethod(ImportService::class, 'transformExcelRowToObject');
 		$row = ['_hidden' => 'a', '@self.owner' => 'b', '@other' => 'c', 'name' => 'd', 'empty' => '', 'id' => 'e'];
 
-		$this->assertSame(['name' => 'd', 'id' => 'e', '@self' => ['id' => 'e']], $transform->invoke($service, $row, null, null, null));
+		$this->assertSame(['name' => 'd', 'id' => 'e', '@self' => ['id' => 'e']], $transform->invoke($service, $row, new ImportTarget(null, null, null)));
 	}
 }

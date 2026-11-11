@@ -32,7 +32,7 @@ use JsonSerializable;
  *
  * @spec openspec/specs/row-field-level-security/spec.md
  */
-final class AnonymousEnvelope {
+final class AnonymousEnvelope implements AnonymousEnvelopeInterface {
 
 	/**
 	 * The `@self` fields withheld whole: they name users (`retention` in its holds and outcomes) or link to their mail, contacts and other items.

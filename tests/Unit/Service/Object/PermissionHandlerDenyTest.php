@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\DenialQuestion;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -57,6 +58,7 @@ use Psr\Log\NullLogger;
  * Pins the deny precedence on the single-object path.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
@@ -147,7 +149,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturn(false);
 		$appConfig->method('getValueString')->willReturn($mode);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,
@@ -457,8 +459,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		$handler = $this->handlerFor('ana', ['waarnemers']);
 
 		$denial = $handler->denialFor(
-			['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]],
-			'read',
+			new DenialQuestion(authorization: ['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]], action: 'read'),
 			'ana'
 		);
 
@@ -556,8 +557,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		$handler = $this->handlerInMode('ana', ['waarnemers'], DenyEnforcementMode::MODE_STAGING);
 
 		$denial = $handler->denialFor(
-			['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]],
-			'read',
+			new DenialQuestion(authorization: ['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]], action: 'read'),
 			'ana'
 		);
 

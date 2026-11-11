@@ -432,6 +432,7 @@
         "Costs": "Costs",
         "Count": "Count",
         "Counting objects...": "Counting objects...",
+        "We could not count the objects. Close this window and try again.": "We could not count the objects. Close this window and try again.",
         "Create": "Create",
         "Create API Token": "Create API Token",
         "Create Agent": "Create Agent",
@@ -3311,7 +3312,8 @@
         "The value could not be saved": "The value could not be saved",
         "Audit trail export ready": "Audit trail export ready",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Your audit trail export of %1$s entries was saved to %2$s%3$s.",
-        "Open Files": "Open Files"
+        "Open Files": "Open Files",
+        "Some objects could not be copied.": "Some objects could not be copied."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

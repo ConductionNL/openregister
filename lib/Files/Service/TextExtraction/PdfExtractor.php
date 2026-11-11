@@ -32,6 +32,8 @@ use Smalot\PdfParser\Parser as PdfParser;
 
 /**
  * Extracts text content from PDF files.
+ *
+ * @spec openspec/specs/text-extraction/spec.md
  */
 class PdfExtractor {
 	/**
@@ -56,70 +58,83 @@ class PdfExtractor {
 	 * @spec openspec/specs/text-extraction/spec.md
 	 */
 	public function extract(File $file): ?string {
-		// Check if PdfParser library is available.
-		if (class_exists('Smalot\PdfParser\Parser') === false) {
-			$this->logger->warning(
-				message: '[PdfExtractor] PDF parser library not available',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $file->getId(),
-				]
-			);
-			$msg = 'PDF parser library (smalot/pdfparser) is not installed. ';
-			$msg .= 'Run: composer require smalot/pdfparser';
-			throw new Exception($msg);
-		}
+		$this->assertParserAvailable(file: $file);
 
 		try {
-			$this->logger->debug(
-				message: '[PdfExtractor] Extracting PDF',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $file->getId(),
-					'name' => $file->getName(),
-				]
-			);
-
-			$text = $this->extractText(pdfBytes: $file->getContent());
-
-			if ($text === '') {
-				$this->logger->warning(
-					message: '[PdfExtractor] PDF extraction returned empty text',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'fileId' => $file->getId(),
-					]
-				);
-				return null;
-			}
-
-			$this->logger->debug(
-				message: '[PdfExtractor] PDF extracted successfully',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $file->getId(),
-					'length' => strlen($text),
-				]
-			);
-
-			return $text;
+			return $this->readText(file: $file);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[PdfExtractor] PDF extraction failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $file->getId(),
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'error' => $e->getMessage()]
 			);
 			throw new Exception('PDF extraction failed: ' . $e->getMessage());
-		}//end try
+		}
 	}//end extract()
+
+	/**
+	 * Refuse when the PDF parsing library is not installed.
+	 *
+	 * @param File $file The PDF file, for the log.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When smalot/pdfparser is not available.
+	 */
+	private function assertParserAvailable(File $file): void {
+		if (class_exists('Smalot\PdfParser\Parser') === true) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: '[PdfExtractor] PDF parser library not available',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId()]
+		);
+		$msg = 'PDF parser library (smalot/pdfparser) is not installed. ';
+		$msg .= 'Run: composer require smalot/pdfparser';
+		throw new Exception($msg);
+	}//end assertParserAvailable()
+
+	/**
+	 * Read a PDF file's text layer, logging the outcome.
+	 *
+	 * @param File $file The PDF file.
+	 *
+	 * @return string|null The text, or null when it is empty.
+	 *
+	 * @throws Exception When the file cannot be read or parsed.
+	 */
+	private function readText(File $file): ?string {
+		$this->logger->debug(
+			message: '[PdfExtractor] Extracting PDF',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'name' => $file->getName()]
+		);
+
+		return $this->nonEmptyText(file: $file, text: $this->extractText(pdfBytes: $file->getContent()));
+	}//end readText()
+
+	/**
+	 * The extracted text, or null when it is empty; either outcome is logged.
+	 *
+	 * @param File   $file The PDF file, for the log.
+	 * @param string $text The extracted text.
+	 *
+	 * @return string|null
+	 */
+	private function nonEmptyText(File $file, string $text): ?string {
+		if ($text === '') {
+			$this->logger->warning(
+				message: '[PdfExtractor] PDF extraction returned empty text',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId()]
+			);
+			return null;
+		}
+
+		$this->logger->debug(
+			message: '[PdfExtractor] PDF extracted successfully',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'length' => strlen($text)]
+		);
+		return $text;
+	}//end nonEmptyText()
 
 	/**
 	 * Extract the raw text layer from PDF bytes.

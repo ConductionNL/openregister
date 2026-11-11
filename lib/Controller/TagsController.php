@@ -27,11 +27,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
+use OCA\OpenRegister\Controller\Support\TagsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -62,25 +64,21 @@ class TagsController extends Controller {
 	/**
 	 * TagsController constructor
 	 *
-	 * @param string $appName Application name
-	 * @param IRequest $request HTTP request object
-	 * @param ObjectService $objectService Object service instance
-	 * @param FileService $fileService File service instance for tag retrieval
-	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for object-level tags
-	 * @param IUserSession $userSession Session for the @PublicPage anonymous-deny guard
+	 * @param IRequest                     $request       HTTP request object
+	 * @param ObjectHandlerAccessInterface $objectService Object service instance
+	 * @param TagsControllerServices       $services      File tag catalogue and object tagging handler
+	 * @param IUserSession                 $userSession   Session for the @PublicPage anonymous-deny guard
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly FileService $fileService,
-		private readonly TaggingHandlerInterface $taggingHandler,
+		private readonly ObjectHandlerAccessInterface $objectService,
+		private readonly TagsControllerServices $services,
 		private readonly ?IUserSession $userSession = null,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -115,7 +113,7 @@ class TagsController extends Controller {
 			);
 		}
 
-		$tags = $this->fileService->getAllTags();
+		$tags = $this->services->fileService->getAllTags();
 
 		return new JSONResponse(data: $tags);
 	}//end getAllTags()
@@ -151,30 +149,31 @@ class TagsController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
-	public function index(
-		string $register,
-		string $schema,
-		string $id,
-	): JSONResponse {
-		try {
-			$this->objectService->setRegister($register);
-			$this->objectService->setSchema($schema);
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
+	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
 
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse JSON response with the object's tags
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
+		try {
+			$object = $this->selectObject(route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 			if ($object === null) {
-				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+				return $this->objectNotFound();
 			}
 
-			$tags = $this->taggingHandler->getObjectTags($object->getUuid());
-
-			return new JSONResponse(data: $tags);
+			return new JSONResponse(data: $this->services->taggingHandler->getObjectTags($object->getUuid()));
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+			return $this->objectNotFound();
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}
-	}//end index()
+	}//end indexForObject()
 
 	/**
 	 * Add a tag to an object.
@@ -190,47 +189,23 @@ class TagsController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
-	public function add(
-		string $register,
-		string $schema,
-		string $id,
-	): JSONResponse {
-		try {
-			$this->objectService->setRegister($register);
-			$this->objectService->setSchema($schema);
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-			}
-
-			$refusal = $this->refuseWithoutUpdateRight(object: $object);
-			if ($refusal !== null) {
-				return $refusal;
-			}
-
-			$data = $this->request->getParams();
-
-			if (empty($data['tag']) === true) {
-				return new JSONResponse(
-					data: ['error' => 'Tag name is required'],
-					statusCode: 400
-				);
-			}
-
-			$this->taggingHandler->addObjectTag($object->getUuid(), $data['tag']);
-			$tags = $this->taggingHandler->getObjectTags($object->getUuid());
-
-			return new JSONResponse(data: $tags, statusCode: 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+	public function add(string $register, string $schema, string $id): JSONResponse {
+		return $this->addForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end add()
+
+	/**
+	 * add() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse JSON response with the updated tags
+	 */
+	private function addForObject(ObjectRef $ref): JSONResponse {
+		return $this->changeTags(
+			route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+			change: fn (ObjectEntity $object): JSONResponse => $this->addTag(object: $object)
+		);
+	}//end addForObject()
 
 	/**
 	 * Remove a tag from an object.
@@ -247,39 +222,114 @@ class TagsController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
-	public function remove(
-		string $register,
-		string $schema,
-		string $id,
-		string $tag,
-	): JSONResponse {
+	public function remove(string $register, string $schema, string $id, string $tag): JSONResponse {
+		return $this->removeForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), tag: $tag);
+	}//end remove()
+
+	/**
+	 * remove() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string    $tag The tag name to remove
+	 *
+	 * @return JSONResponse JSON response with the updated tags
+	 */
+	private function removeForObject(ObjectRef $ref, string $tag): JSONResponse {
+		return $this->changeTags(
+			route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+			change: fn (ObjectEntity $object): JSONResponse => $this->removeTag(object: $object, tag: $tag)
+		);
+	}//end removeForObject()
+
+	/**
+	 * Select the object addressed by the route and load it through the read path.
+	 *
+	 * @param ObjectLinkRoute $route The register slug or identifier, the schema slug or identifier and the object ID
+	 *
+	 * @return ObjectEntity|null The object, or null when it is not found.
+	 */
+	private function selectObject(ObjectLinkRoute $route): ?ObjectEntity {
+		$this->objectService->setRegister($route->register);
+		$this->objectService->setSchema($route->schema);
+		$this->objectService->setObject($route->id);
+
+		return $this->objectService->getObject();
+	}//end selectObject()
+
+	/**
+	 * Load the object, refuse without the update right, then apply a tag change.
+	 *
+	 * The right is checked BEFORE the change runs; every failure maps to the
+	 * same statuses add() and remove() always answered.
+	 *
+	 * @param ObjectLinkRoute $route  The register slug or identifier, the schema slug or identifier and the object ID
+	 * @param callable        $change The change, given the object: (ObjectEntity): JSONResponse
+	 *
+	 * @return JSONResponse The change's response, or the refusal.
+	 */
+	private function changeTags(ObjectLinkRoute $route, callable $change): JSONResponse {
 		try {
-			$this->objectService->setRegister($register);
-			$this->objectService->setSchema($schema);
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-
+			$object = $this->selectObject(route: $route);
 			if ($object === null) {
-				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+				return $this->objectNotFound();
 			}
 
-			$refusal = $this->refuseWithoutUpdateRight(object: $object);
-			if ($refusal !== null) {
-				return $refusal;
-			}
-
-			$this->taggingHandler->removeObjectTag($object->getUuid(), $tag);
-			$tags = $this->taggingHandler->getObjectTags($object->getUuid());
-
-			return new JSONResponse(data: $tags);
+			return ($this->refuseWithoutUpdateRight(object: $object) ?? $change($object));
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+			return $this->objectNotFound();
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		}//end try
+	}//end changeTags()
+
+	/**
+	 * Add the posted tag to an object the caller may update.
+	 *
+	 * @param ObjectEntity $object The object being tagged.
+	 *
+	 * @return JSONResponse 201 with the updated tags, or 400 without a tag name.
+	 */
+	private function addTag(ObjectEntity $object): JSONResponse {
+		$data = $this->request->getParams();
+
+		if (empty($data['tag']) === true) {
+			return new JSONResponse(
+				data: ['error' => 'Tag name is required'],
+				statusCode: 400
+			);
 		}
-	}//end remove()
+
+		$this->services->taggingHandler->addObjectTag($object->getUuid(), $data['tag']);
+		$tags = $this->services->taggingHandler->getObjectTags($object->getUuid());
+
+		return new JSONResponse(data: $tags, statusCode: 201);
+	}//end addTag()
+
+	/**
+	 * Remove a tag from an object the caller may update.
+	 *
+	 * @param ObjectEntity $object The object being untagged.
+	 * @param string       $tag    The tag name to remove.
+	 *
+	 * @return JSONResponse The updated tags.
+	 */
+	private function removeTag(ObjectEntity $object, string $tag): JSONResponse {
+		$this->services->taggingHandler->removeObjectTag($object->getUuid(), $tag);
+		$tags = $this->services->taggingHandler->getObjectTags($object->getUuid());
+
+		return new JSONResponse(data: $tags);
+	}//end removeTag()
+
+	/**
+	 * The 404 for an object that cannot be found.
+	 *
+	 * @return JSONResponse The 404 response.
+	 */
+	private function objectNotFound(): JSONResponse {
+		return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+	}//end objectNotFound()
 
 	/**
 	 * Refuse a tag change on an object the caller may read but not update.
@@ -297,18 +347,7 @@ class TagsController extends Controller {
 	 * @spec openspec/changes/flow-tag-object-step/proposal.md
 	 */
 	private function refuseWithoutUpdateRight(ObjectEntity $object): ?JSONResponse {
-		$schema = $this->objectService->getCurrentSchemaEntity();
-		$mayUpdate = false;
-		if ($schema !== null) {
-			$mayUpdate = $this->objectService->getPermissionHandler()->hasPermission(
-				schema: $schema,
-				action: 'update',
-				objectOwner: $object->getOwner(),
-				object: $object
-			);
-		}
-
-		if ($mayUpdate === true) {
+		if ($this->mayUpdate(object: $object) === true) {
 			return null;
 		}
 
@@ -317,4 +356,25 @@ class TagsController extends Controller {
 			statusCode: 403
 		);
 	}//end refuseWithoutUpdateRight()
+
+	/**
+	 * Whether the permission handler grants `update` on the object.
+	 *
+	 * @param ObjectEntity $object The object being tagged.
+	 *
+	 * @return bool False when the schema cannot be resolved or the right is not held.
+	 */
+	private function mayUpdate(ObjectEntity $object): bool {
+		$schema = $this->objectService->getCurrentSchemaEntity();
+		if ($schema === null) {
+			return false;
+		}
+
+		return $this->objectService->getPermissionHandler()->hasPermission(
+			schema: $schema,
+			action: 'update',
+			objectOwner: $object->getOwner(),
+			object: $object
+		);
+	}//end mayUpdate()
 }//end class

@@ -30,7 +30,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
+use OCA\OpenRegister\Listener\ViewAlertAudience;
 use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
+use OCA\OpenRegister\Listener\ViewAlertMail;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
@@ -193,13 +195,17 @@ class ViewAlertCrossedListenerTest extends TestCase {
 		$factory->method('get')->willReturn($l10n);
 
 		return new ViewAlertCrossedListener(
-			recipients: new NotificationRecipientResolver(userManager: $userManager, groupManager: $groupManager, logger: $logger),
+			audience: new ViewAlertAudience(
+				recipients: new NotificationRecipientResolver(userManager: $userManager, groupManager: $groupManager, logger: $logger),
+				viewers: new ViewerReachResolver(caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->createMock(IUserSession::class), $groupManager), logger: $logger)
+			),
 			notifications: $manager,
-			email: new EmailSender(userManager: $userManager, mailer: $mailer, logger: $logger),
-			l10nFactory: $factory,
-			userManager: $userManager,
-			logger: $logger,
-			viewers: new ViewerReachResolver(userSession: $this->createMock(IUserSession::class), groupManager: $groupManager, logger: $logger)
+			mail: new ViewAlertMail(
+				email: new EmailSender(userManager: $userManager, mailer: $mailer, logger: $logger),
+				l10nFactory: $factory,
+				userManager: $userManager
+			),
+			logger: $logger
 		);
 	}//end listener()
 

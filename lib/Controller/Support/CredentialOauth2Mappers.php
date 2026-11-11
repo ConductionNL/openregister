@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepositoryInterface;
 
 /**
  * The mappers and repositories of the credential oauth2 API.
@@ -33,12 +33,12 @@ final class CredentialOauth2Mappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param OAuth2ConnectionRepository $connections Loads, gates and disables a stored connection.
+	 * @param OAuth2ConnectionRepositoryInterface $connections Loads, gates and disables a stored connection.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	public function __construct(
-		public readonly OAuth2ConnectionRepository $connections,
+		public readonly OAuth2ConnectionRepositoryInterface $connections,
 	) {
 	}//end __construct()
 }//end class

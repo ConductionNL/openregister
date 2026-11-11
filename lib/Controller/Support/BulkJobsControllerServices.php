@@ -32,13 +32,13 @@ final class BulkJobsControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param BulkJobsDomain   $domain   The domain bundle.
-	 * @param BulkJobsPlatform $platform The platform bundle.
+	 * @param AuditTrailPlatform $platform The platform bundle.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function __construct(
 		public readonly BulkJobsDomain $domain,
-		public readonly BulkJobsPlatform $platform,
+		public readonly AuditTrailPlatform $platform,
 	) {
 	}//end __construct()
 }//end class

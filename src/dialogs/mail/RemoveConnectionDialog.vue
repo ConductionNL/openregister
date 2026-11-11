@@ -1,10 +1,17 @@
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="show"
 		:name="t('openregister', 'Remove connection')"
-		:noClose="removing"
+		size="small"
+		:closable="!removing"
 		class="or-remove-connection-dialog"
-		@closing="$emit('cancel')">
+		:loading="removing"
+		:cancelDisabled="removing"
+		:closeLabel="t('openregister', 'Cancel')"
+		:confirmLabel="t('openregister', 'Remove connection')"
+		showConfirm
+		@cancel="$emit('cancel')"
+		@confirm="$emit('confirm')">
 		<p>
 			{{
 				t(
@@ -20,23 +27,10 @@
 				class="or-remove-connection-dialog__warning-icon" />
 			<span>{{ t('openregister', 'This cannot be undone.') }}</span>
 		</p>
-
-		<template #actions>
-			<NcButton :disabled="removing" @click="$emit('cancel')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton :disabled="removing" variant="error" @click="$emit('confirm')">
-				<template #icon>
-					<NcLoadingIcon v-if="removing" :size="20" />
-					<LinkVariantOff v-else :size="20" />
-				</template>
-				{{ t('openregister', 'Remove connection') }}
-			</NcButton>
+		<template #confirmIcon>
+			<LinkVariantOff :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
@@ -48,21 +42,13 @@
  * @spec openspec/specs/integration-email/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
-import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
+import ConfirmDialogFrame from '../../modals/shared/ConfirmDialogFrame.vue'
 
 export default {
 	name: 'RemoveConnectionDialog',
-	components: {
-		NcButton,
-		NcDialog,
-		NcLoadingIcon,
-		Cancel,
-		LinkVariantOff,
-		AlertOutline,
-	},
+	components: { ConfirmDialogFrame, LinkVariantOff, AlertOutline },
 
 	props: {
 		show: {
@@ -80,6 +66,8 @@ export default {
 			default: false,
 		},
 	},
+
+	emits: ['cancel', 'confirm'],
 
 	methods: {
 		t,

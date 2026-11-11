@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 
 /**
  * Resolves the UUIDs a page of search results refers to into human-readable names.
@@ -46,9 +47,9 @@ final class ResultNameCollector {
 	/**
 	 * Hold the name lookup.
 	 *
-	 * @param CacheHandlerInterface $cacheHandler Resolves UUIDs to names.
+	 * @param ObjectNameCacheInterface $cacheHandler Resolves UUIDs to names.
 	 */
-	public function __construct(private readonly CacheHandlerInterface $cacheHandler) {
+	public function __construct(private readonly ObjectNameCacheInterface $cacheHandler) {
 	}//end __construct()
 
 	/**

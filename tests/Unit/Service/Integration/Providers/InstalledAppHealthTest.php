@@ -80,6 +80,12 @@ class InstalledAppHealthTest extends TestCase {
 				continue;
 			}
 
+			if ((new ReflectionClass($type->getName()))->isFinal() === true) {
+				// A dependency bundle: build it from mocks the same way.
+				$args[] = $this->build($type->getName(), $flag);
+				continue;
+			}
+
 			$mock = $this->createMock($type->getName());
 			foreach ((new ReflectionClass($type->getName()))->getMethods() as $method) {
 				$ret = $method->getReturnType();

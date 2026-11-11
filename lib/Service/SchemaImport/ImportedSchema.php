@@ -33,26 +33,65 @@ namespace OCA\OpenRegister\Service\SchemaImport;
  *
  * @spec openspec/specs/schema-import/spec.md
  */
-final class ImportedSchema {
+final class ImportedSchema implements ImportedSchemaInterface {
+	/**
+	 * The schema title.
+	 *
+	 * @var string
+	 */
+	public readonly string $title;
+
+	/**
+	 * The schema description.
+	 *
+	 * @var string
+	 */
+	public readonly string $description;
+
+	/**
+	 * JSON Schema property definitions keyed by name.
+	 *
+	 * @var array<string, array<string,mixed>>
+	 */
+	public readonly array $properties;
+
+	/**
+	 * The `configuration.jsonld` block (@vocab, type, properties map).
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $jsonld;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $title The schema title.
-	 * @param string $description The schema description.
-	 * @param array<string, array<string,mixed>> $properties JSON Schema property definitions keyed by name.
-	 * @param array<string, mixed> $jsonld The `configuration.jsonld` block (@vocab, type, properties map).
+	 * @param ImportedSchemaHeading $heading The schema title and description.
+	 * @param ImportedSchemaDefinition $definition The property definitions and JSON-LD block.
 	 * @param array<string, mixed> $importSource The `configuration.importSource` provenance block.
 	 * @param array<int, string> $unknownRequested Requested property names not present on the source type.
 	 */
 	public function __construct(
-		public readonly string $title,
-		public readonly string $description,
-		public readonly array $properties,
-		public readonly array $jsonld,
+		ImportedSchemaHeading $heading,
+		ImportedSchemaDefinition $definition,
 		public readonly array $importSource,
 		public readonly array $unknownRequested = [],
 	) {
+		$this->title       = $heading->title;
+		$this->description = $heading->description;
+		$this->properties  = $definition->properties;
+		$this->jsonld      = $definition->jsonld;
 	}//end __construct()
+
+	/**
+	 * Requested property names not present on the source type.
+	 *
+	 * @return array<int, string> The names.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md
+	 */
+	public function unknownRequested(): array {
+		return $this->unknownRequested;
+	}//end unknownRequested()
 
 	/**
 	 * Render the schema payload ready for SchemaMapper hydration / upload.

@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 
 /**
  * Import the e-Depot transfer + proof-of-transfer register from lib/Settings.
@@ -78,7 +78,7 @@ class ImportEdepotTransferRegister extends AbstractRegisterImportStep {
 	 *
 	 * @var string
 	 */
-	protected const CONFIG_APP_ID = DescriptorConfigIds::EDEPOT_TRANSFERS;
+	protected const CONFIG_APP_ID = DescriptorConfigIdsInterface::EDEPOT_TRANSFERS;
 
 	/**
 	 * Get the name of this repair step.

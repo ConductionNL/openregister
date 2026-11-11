@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunContextInterface;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
@@ -51,14 +51,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
  */
-class AuditFlowAttribution extends QBMapper {
-	/**
-	 * The action of a per-hop audit row. A hop row carries the run's attribution
-	 * but records that the hop ran, not that it wrote anything.
-	 *
-	 * @var string
-	 */
-	public const ACTION_HOP = 'flow.hop';
+class AuditFlowAttribution extends QBMapper implements AuditFlowAttributionInterface {
 
 	/**
 	 * Constructor.
@@ -91,17 +84,7 @@ class AuditFlowAttribution extends QBMapper {
 	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
-		try {
-			$context = $this->container->get(FlowRunContext::class);
-		} catch (Throwable $e) {
-			return;
-		}
-
-		if (($context instanceof FlowRunContext) === false) {
-			return;
-		}
-
-		$frame = $context->current();
+		$frame = $this->currentFrame();
 		if ($frame === null) {
 			return;
 		}
@@ -110,6 +93,25 @@ class AuditFlowAttribution extends QBMapper {
 		$auditTrail->setFlowNode($frame['node']);
 		$auditTrail->setFlowStep($frame['step']);
 	}//end apply()
+
+	/**
+	 * The innermost flow step executing now, or null outside a run or without a usable run context.
+	 *
+	 * @return array{run: string, node: string, step: int}|null The frame.
+	 */
+	private function currentFrame(): ?array {
+		try {
+			$context = $this->container->get(FlowRunContextInterface::class);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if (($context instanceof FlowRunContextInterface) === false) {
+			return null;
+		}
+
+		return $context->current();
+	}//end currentFrame()
 
 	/**
 	 * Every write attributed to one flow run, oldest first. Hop rows are left

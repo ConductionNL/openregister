@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
-use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\SftpTransport;
+use OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\SftpTransportInterface;
 
 /**
  * The domain services of the edepot settings API.
@@ -36,18 +36,18 @@ final class EdepotSettingsDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param EdepotTransferService  $transferService The transfer service.
-	 * @param SftpTransport          $sftpTransport   SFTP transport.
-	 * @param RestApiTransport       $restTransport   REST API transport.
-	 * @param OpenConnectorTransport $ocTransport     OpenConnector transport.
+	 * @param EdepotTransferServiceInterface  $transferService The transfer service.
+	 * @param SftpTransportInterface          $sftpTransport   SFTP transport.
+	 * @param RestApiTransportInterface       $restTransport   REST API transport.
+	 * @param OpenConnectorTransportInterface $ocTransport     OpenConnector transport.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
 	 */
 	public function __construct(
-		public readonly EdepotTransferService $transferService,
-		public readonly SftpTransport $sftpTransport,
-		public readonly RestApiTransport $restTransport,
-		public readonly OpenConnectorTransport $ocTransport,
+		public readonly EdepotTransferServiceInterface $transferService,
+		public readonly SftpTransportInterface $sftpTransport,
+		public readonly RestApiTransportInterface $restTransport,
+		public readonly OpenConnectorTransportInterface $ocTransport,
 	) {
 	}//end __construct()
 }//end class

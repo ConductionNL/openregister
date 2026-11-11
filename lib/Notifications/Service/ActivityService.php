@@ -24,16 +24,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service;
 
-use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\Activity\IManager;
-use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
 
 /**
  * Service for publishing OpenRegister activity events.
@@ -44,10 +40,8 @@ class ActivityService {
 	 *
 	 * @param IManager $activityManager The activity manager.
 	 * @param IUserSession $userSession The user session.
-	 * @param IURLGenerator $urlGenerator The URL generator.
+	 * @param ActivityEntries $entries Builds each activity.
 	 * @param LoggerInterface $logger The logger.
-	 * @param SchemaMapperInterface|null $schemaMapper Resolves the schema title an object activity names; null only in hand-built tests.
-	 * @param DeepLinkRegistryService|null $deepLinks The owning app's detail route per register and schema.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
@@ -55,10 +49,8 @@ class ActivityService {
 	public function __construct(
 		private IManager $activityManager,
 		private IUserSession $userSession,
-		private IURLGenerator $urlGenerator,
+		private ActivityEntries $entries,
 		private LoggerInterface $logger,
-		private ?SchemaMapperInterface $schemaMapper = null,
-		private ?DeepLinkRegistryService $deepLinks = null,
 	) {
 	}//end __construct()
 
@@ -73,19 +65,7 @@ class ActivityService {
 	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function publishObjectCreated(ObjectEntity $object): void {
-		$title = $this->resolveTitle(primary: $object->getName(), fallback: $object->getUuid());
-		$link = $this->buildObjectLink(object: $object);
-
-		$this->publish(
-			subject: 'object_created',
-			type: 'openregister_objects',
-			parameters: $this->objectParameters(object: $object, title: $title),
-			objectType: 'object',
-			objectId: (string)$object->getId(),
-			objectName: $title,
-			link: $link,
-			ownerUserId: $object->getOwner()
-		);
+		$this->publish(entry: $this->entries->object(object: $object, action: 'created'));
 	}//end publishObjectCreated()
 
 	/**
@@ -102,19 +82,7 @@ class ActivityService {
 	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function publishObjectUpdated(ObjectEntity $newObject, ?ObjectEntity $oldObject = null): void {
-		$title = $this->resolveTitle(primary: $newObject->getName(), fallback: $newObject->getUuid());
-		$link = $this->buildObjectLink(object: $newObject);
-
-		$this->publish(
-			subject: 'object_updated',
-			type: 'openregister_objects',
-			parameters: $this->objectParameters(object: $newObject, title: $title),
-			objectType: 'object',
-			objectId: (string)$newObject->getId(),
-			objectName: $title,
-			link: $link,
-			ownerUserId: $newObject->getOwner()
-		);
+		$this->publish(entry: $this->entries->object(object: $newObject, action: 'updated'));
 	}//end publishObjectUpdated()
 
 	/**
@@ -128,18 +96,7 @@ class ActivityService {
 	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function publishObjectDeleted(ObjectEntity $object): void {
-		$title = $this->resolveTitle(primary: $object->getName(), fallback: $object->getUuid());
-
-		$this->publish(
-			subject: 'object_deleted',
-			type: 'openregister_objects',
-			parameters: $this->objectParameters(object: $object, title: $title),
-			objectType: 'object',
-			objectId: (string)$object->getId(),
-			objectName: $title,
-			link: '',
-			ownerUserId: $object->getOwner()
-		);
+		$this->publish(entry: $this->entries->object(object: $object, action: 'deleted'));
 	}//end publishObjectDeleted()
 
 	/**
@@ -152,19 +109,7 @@ class ActivityService {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function publishRegisterCreated(Register $register): void {
-		$title = $this->resolveTitle(primary: $register->getTitle(), fallback: $register->getUuid());
-		$link = $this->buildRegisterLink(register: $register);
-
-		$this->publish(
-			subject: 'register_created',
-			type: 'openregister_registers',
-			parameters: ['title' => $title],
-			objectType: 'register',
-			objectId: (string)$register->getId(),
-			objectName: $title,
-			link: $link,
-			ownerUserId: $register->getOwner()
-		);
+		$this->publish(entry: $this->entries->register(register: $register, action: 'created'));
 	}//end publishRegisterCreated()
 
 	/**
@@ -177,19 +122,7 @@ class ActivityService {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function publishRegisterUpdated(Register $register): void {
-		$title = $this->resolveTitle(primary: $register->getTitle(), fallback: $register->getUuid());
-		$link = $this->buildRegisterLink(register: $register);
-
-		$this->publish(
-			subject: 'register_updated',
-			type: 'openregister_registers',
-			parameters: ['title' => $title],
-			objectType: 'register',
-			objectId: (string)$register->getId(),
-			objectName: $title,
-			link: $link,
-			ownerUserId: $register->getOwner()
-		);
+		$this->publish(entry: $this->entries->register(register: $register, action: 'updated'));
 	}//end publishRegisterUpdated()
 
 	/**
@@ -202,18 +135,7 @@ class ActivityService {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function publishRegisterDeleted(Register $register): void {
-		$title = $this->resolveTitle(primary: $register->getTitle(), fallback: $register->getUuid());
-
-		$this->publish(
-			subject: 'register_deleted',
-			type: 'openregister_registers',
-			parameters: ['title' => $title],
-			objectType: 'register',
-			objectId: (string)$register->getId(),
-			objectName: $title,
-			link: '',
-			ownerUserId: $register->getOwner()
-		);
+		$this->publish(entry: $this->entries->register(register: $register, action: 'deleted'));
 	}//end publishRegisterDeleted()
 
 	/**
@@ -226,19 +148,7 @@ class ActivityService {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function publishSchemaCreated(Schema $schema): void {
-		$title = $this->resolveTitle(primary: $schema->getTitle(), fallback: $schema->getUuid());
-		$link = $this->buildSchemaLink(schema: $schema);
-
-		$this->publish(
-			subject: 'schema_created',
-			type: 'openregister_schemas',
-			parameters: ['title' => $title],
-			objectType: 'schema',
-			objectId: (string)$schema->getId(),
-			objectName: $title,
-			link: $link,
-			ownerUserId: $schema->getOwner()
-		);
+		$this->publish(entry: $this->entries->schema(schema: $schema, action: 'created'));
 	}//end publishSchemaCreated()
 
 	/**
@@ -251,19 +161,7 @@ class ActivityService {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function publishSchemaUpdated(Schema $schema): void {
-		$title = $this->resolveTitle(primary: $schema->getTitle(), fallback: $schema->getUuid());
-		$link = $this->buildSchemaLink(schema: $schema);
-
-		$this->publish(
-			subject: 'schema_updated',
-			type: 'openregister_schemas',
-			parameters: ['title' => $title],
-			objectType: 'schema',
-			objectId: (string)$schema->getId(),
-			objectName: $title,
-			link: $link,
-			ownerUserId: $schema->getOwner()
-		);
+		$this->publish(entry: $this->entries->schema(schema: $schema, action: 'updated'));
 	}//end publishSchemaUpdated()
 
 	/**
@@ -276,288 +174,52 @@ class ActivityService {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function publishSchemaDeleted(Schema $schema): void {
-		$title = $this->resolveTitle(primary: $schema->getTitle(), fallback: $schema->getUuid());
-
-		$this->publish(
-			subject: 'schema_deleted',
-			type: 'openregister_schemas',
-			parameters: ['title' => $title],
-			objectType: 'schema',
-			objectId: (string)$schema->getId(),
-			objectName: $title,
-			link: '',
-			ownerUserId: $schema->getOwner()
-		);
+		$this->publish(entry: $this->entries->schema(schema: $schema, action: 'deleted'));
 	}//end publishSchemaDeleted()
 
 	/**
-	 * Build the subject parameters of an object activity.
+	 * Publish an activity, and log a failure instead of failing the write it follows.
 	 *
-	 * Always carries the object title. Adds the schema title when the schema
-	 * resolves, so the provider can say "Client Gemeente Demo updated" rather
-	 * than "Object updated: Gemeente Demo". A schema that does not resolve
-	 * leaves the old form in place; it never stops the activity.
-	 *
-	 * @param ObjectEntity $object The object the activity is about.
-	 * @param string $title The resolved object title.
-	 *
-	 * @return array<string, string> The subject parameters.
-	 *
-	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
-	 */
-	private function objectParameters(ObjectEntity $object, string $title): array {
-		$parameters = ['title' => $title];
-		$schemaId = $object->getSchema();
-		if ($this->schemaMapper === null || $schemaId === null || $schemaId === '') {
-			return $parameters;
-		}
-
-		try {
-			// A read for a label only. The activity goes to the author and the
-			// owner, who both reach the object and so its schema.
-			$schemaTitle = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false)->getTitle();
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[ActivityService] Schema title not resolved for an object activity',
-				context: ['schema' => $schemaId, 'exception' => $e->getMessage()]
-			);
-			return $parameters;
-		}
-
-		if (is_string($schemaTitle) === true && trim($schemaTitle) !== '') {
-			$parameters['schema'] = trim($schemaTitle);
-		}
-
-		return $parameters;
-	}//end objectParameters()
-
-	/**
-	 * Build a deep link to an object: its owning app's page, else OpenRegister's.
-	 *
-	 * An app that owns a schema registers its detail route through the deep
-	 * link registry (pipelinq: `/apps/pipelinq/clients/{uuid}`). The activity
-	 * stream used to link every object to the OpenRegister admin view, so a
-	 * pipelinq user clicking a client update landed in a register browser
-	 * (live audit E1, 7 October 2026). The admin URL stays the fallback for a
-	 * schema no app claims.
-	 *
-	 * @param ObjectEntity $object The object entity.
-	 *
-	 * @return string The absolute URL to the object.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 * @spec openspec/specs/activity-provider/spec.md
-	 */
-	private function buildObjectLink(ObjectEntity $object): string {
-		$registerId = $object->getRegister();
-		$schemaId = $object->getSchema();
-		$uuid = $object->getUuid();
-
-		if ($this->deepLinks !== null && is_numeric($registerId) === true && is_numeric($schemaId) === true) {
-			$owned = $this->deepLinks->resolveUrl(
-				registerId: (int) $registerId,
-				schemaId: (int) $schemaId,
-				objectData: (($object->getObject() ?? []) + ['uuid' => (string) $uuid, 'id' => (string) $uuid])
-			);
-			if ($owned !== null && $owned !== '') {
-				if (str_starts_with($owned, 'http') === true) {
-					return $owned;
-				}
-
-				return $this->urlGenerator->getAbsoluteURL($owned);
-			}
-		}
-
-		$baseUrl = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
-
-		return $baseUrl . '#/registers/' . $registerId . '/schemas/' . $schemaId . '/objects/' . $uuid;
-	}//end buildObjectLink()
-
-	/**
-	 * Build a deep link to a register in the OpenRegister UI.
-	 *
-	 * @param Register $register The register entity.
-	 *
-	 * @return string The absolute URL to the register.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	private function buildRegisterLink(Register $register): string {
-		$baseUrl = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
-
-		return $baseUrl . '#/registers/' . $register->getId();
-	}//end buildRegisterLink()
-
-	/**
-	 * Build a deep link to a schema in the OpenRegister UI.
-	 *
-	 * @param Schema $schema The schema entity.
-	 *
-	 * @return string The absolute URL to the schema.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	private function buildSchemaLink(Schema $schema): string {
-		$baseUrl = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
-
-		return $baseUrl . '#/schemas/' . $schema->getId();
-	}//end buildSchemaLink()
-
-	/**
-	 * Publish an activity event.
-	 *
-	 * Handles author resolution, affected user logic (including dual-notification
-	 * for object owners), and error handling.
-	 *
-	 * @param string $subject The activity subject.
-	 * @param string $type The activity type.
-	 * @param array $parameters The activity parameters.
-	 * @param string $objectType The object type.
-	 * @param string $objectId The object ID.
-	 * @param string $objectName The object name.
-	 * @param string $link The link to the entity.
-	 * @param ?string $ownerUserId The entity owner user ID for dual-notification.
+	 * @param ActivityEntry $entry The activity.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
-	private function publish(
-		string $subject,
-		string $type,
-		array $parameters,
-		string $objectType,
-		string $objectId,
-		string $objectName,
-		string $link,
-		?string $ownerUserId = null,
-	): void {
+	private function publish(ActivityEntry $entry): void {
 		try {
-			$currentUser = $this->userSession->getUser();
-			$author = '';
-			if ($currentUser !== null) {
-				$author = $currentUser->getUID();
-			}
-
-			// Determine affected user: the author, or the owner in system context.
-			$affectedUser = $author;
-			if ($affectedUser === '' && $ownerUserId !== null && $ownerUserId !== '') {
-				$affectedUser = $ownerUserId;
-			}
-
-			// If no affected user can be determined, skip publishing.
-			if ($affectedUser === '') {
-				return;
-			}
-
-			// Publish event for the acting user.
-			$this->publishEvent(
-				subject: $subject,
-				type: $type,
-				parameters: $parameters,
-				objectType: $objectType,
-				objectId: $objectId,
-				objectName: $objectName,
-				link: $link,
-				author: $author,
-				affectedUser: $affectedUser
-			);
-
-			// Dual-notification: if the owner differs from the author, notify the owner too.
-			if ($ownerUserId !== null
-				&& $ownerUserId !== ''
-				&& $ownerUserId !== $author
-				&& $author !== ''
-			) {
-				$this->publishEvent(
-					subject: $subject,
-					type: $type,
-					parameters: $parameters,
-					objectType: $objectType,
-					objectId: $objectId,
-					objectName: $objectName,
-					link: $link,
-					author: $author,
-					affectedUser: $ownerUserId
-				);
-			}
+			$this->deliver(entry: $entry);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				'Failed to publish OpenRegister activity',
-				[
-					'subject' => $subject,
-					'type' => $type,
-					'exception' => $e->getMessage(),
-				]
+				['subject' => $entry->subject(), 'type' => $entry->type(), 'exception' => $e->getMessage()]
 			);
-		}//end try
+		}
 	}//end publish()
 
 	/**
-	 * Publish a single activity event to the Nextcloud activity manager.
+	 * Send an activity to the author, or in system context to the owner, and to an owner who is not the author.
 	 *
-	 * @param string $subject The activity subject.
-	 * @param string $type The activity type.
-	 * @param array $parameters The activity parameters.
-	 * @param string $objectType The object type.
-	 * @param string $objectId The object ID.
-	 * @param string $objectName The object name.
-	 * @param string $link The link to the entity.
-	 * @param string $author The author user ID.
-	 * @param string $affectedUser The affected user ID.
+	 * Without either there is nobody to tell.
+	 *
+	 * @param ActivityEntry $entry The activity.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	private function publishEvent(
-		string $subject,
-		string $type,
-		array $parameters,
-		string $objectType,
-		string $objectId,
-		string $objectName,
-		string $link,
-		string $author,
-		string $affectedUser,
-	): void {
-		$event = $this->activityManager->generateEvent();
-		$event->setApp(AppIdentity::APP_ID)
-			->setType($type)
-			->setAuthor($author)
-			->setTimestamp(time())
-			->setSubject($subject, $parameters)
-			->setObject($objectType, (int)$objectId, $objectName)
-			->setAffectedUser($affectedUser);
-
-		if ($link !== '') {
-			$event->setLink($link);
+	private function deliver(ActivityEntry $entry): void {
+		$author = (string)$this->userSession->getUser()?->getUID();
+		foreach ($this->receivers(author: $author, owner: (string)$entry->about->owner) as $receiver) {
+			$this->activityManager->publish($entry->fill(event: $this->activityManager->generateEvent(), author: $author)->setAffectedUser($receiver));
 		}
-
-		$this->activityManager->publish($event);
-	}//end publishEvent()
+	}//end deliver()
 
 	/**
-	 * Resolve a display title from primary and fallback values.
+	 * The distinct users to tell.
 	 *
-	 * @param string|null $primary The primary title candidate.
-	 * @param string|null $fallback The fallback title candidate.
+	 * @param string $author The acting user, empty in system context.
+	 * @param string $owner  The entity's owner, empty when it has none.
 	 *
-	 * @return string The resolved title.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @return list<string>
 	 */
-	private function resolveTitle(?string $primary, ?string $fallback): string {
-		if ($primary !== null && $primary !== '') {
-			return $primary;
-		}
-
-		if ($fallback !== null && $fallback !== '') {
-			return $fallback;
-		}
-
-		return 'Unknown';
-	}//end resolveTitle()
+	private function receivers(string $author, string $owner): array {
+		return array_values(array_unique(array_filter([$author, $owner], static fn (string $user): bool => $user !== '')));
+	}//end receivers()
 }//end class

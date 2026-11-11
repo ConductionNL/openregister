@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 
 /**
  * The mappers and repositories of the organisation API.
@@ -35,13 +35,13 @@ final class OrganisationMappers {
 	 * Bundle the services.
 	 *
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param TenantUsageMapper  $tenantUsageMapper  Usage mapper
+	 * @param TenantUsageMapperInterface $tenantUsageMapper Usage mapper
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly OrganisationMapperInterface $organisationMapper,
-		public readonly TenantUsageMapper $tenantUsageMapper,
+		public readonly TenantUsageMapperInterface $tenantUsageMapper,
 	) {
 	}//end __construct()
 }//end class

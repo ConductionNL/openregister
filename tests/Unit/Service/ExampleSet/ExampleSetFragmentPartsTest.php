@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
@@ -70,6 +71,11 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -370,7 +376,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	public function testTheInstanceAddressFillsAPlaceholderAndIsNeverEmpty(): void {
 		$this->alpha(['objects' => [['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['url' => '{{instance:baseUrl}}/apps/x']]]]);
 		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
-		$this->assertSame('https://cloud.example.test/apps/x', $this->store->find(register: 'pub', schema: 'publication', filters: [])[0]['url']);
+		$this->assertSame('https://cloud.example.test/apps/x', $this->store->find(table: new RegisterSchemaRef(register: 'pub', schema: 'publication'), filters: [])[0]['url']);
 
 		$this->remover->remove(set: 'demo');
 		$this->baseUrl = '';
@@ -392,8 +398,8 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 
 		$this->assertTrue($report['ok'], json_encode($report));
-		$case   = $this->store->find(register: 'cases', schema: 'case', filters: [])[0];
-		$result = $this->store->find(register: 'cases', schema: 'result', filters: [])[0];
+		$case   = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0];
+		$result = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'result'), filters: [])[0];
 		$this->assertSame($result['id'], $case['result']);
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -467,7 +473,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertCount(2, $this->organisations, 'created once');
-		$row = $this->store->find(register: 'pub', schema: 'publication', filters: [])[0];
+		$row = $this->store->find(table: new RegisterSchemaRef(register: 'pub', schema: 'publication'), filters: [])[0];
 		$this->assertSame('org-2', $row['organization']);
 		$this->assertSame('org-existing', $row['other']);
 

@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -40,13 +40,13 @@ final class FacetCalculation {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $mapper The object mapper.
+	 * @param MagicObjectSearchInterface $mapper The object mapper.
 	 * @param LoggerInterface      $logger The logger.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $mapper,
+		private readonly MagicObjectSearchInterface $mapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

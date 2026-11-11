@@ -34,11 +34,16 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -46,6 +51,7 @@ use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Wiring tests for the two recording nodes.
@@ -102,18 +108,12 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	private function spy(): FlowRunSubjectRecorder {
 		$spy = $this->createMock(FlowRunSubjectRecorder::class);
 		$spy->method('recordOne')->willReturnCallback(
-			function (
-				array $context,
-				string $role,
-				array $uuids,
-				string $register = '',
-				string $schema = ''
-			): void {
+			function (array $context, FlowSubjectCandidates $candidates): void {
 				$this->recorded[] = [
-					'role' => $role,
-					'uuids' => $uuids,
-					'register' => $register,
-					'schema' => $schema,
+					'role' => $candidates->role,
+					'uuids' => $candidates->uuids,
+					'register' => $candidates->register,
+					'schema' => $candidates->schema,
 				];
 			}
 		);
@@ -188,13 +188,9 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		);
 
 		return new ObjectWriteNode(
-			$this->objects,
-			$registers,
-			$schemas,
-			$this->users(),
-			$appConfig,
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class),
+			new ObjectWriteStores($this->objects, $registers, $schemas),
+			new ObjectWritePlatform($this->users(), $appConfig),
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class)),
 			$recorder
 		);
 	}//end writeNode()
@@ -257,11 +253,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		$this->objects->expects($this->once())->method('saveObject')
 			->willReturn($this->saved('obj-1'));
 
-		$this->writeNode($this->spy())->execute(
+		$this->writeNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['title' => 'a'])],
 			config: $this->createConfig(''),
 			context: $this->context()
-		);
+		));
 
 		$this->assertSame([], $this->recorded, 'recording is opt-in, and this step did not opt in');
 	}//end testAWriteWithNoRoleRecordsNothing()
@@ -278,11 +274,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	public function testADeclaredRoleRecordsTheWrittenObject(): void {
 		$this->objects->method('saveObject')->willReturn($this->saved('obj-1'));
 
-		$this->writeNode($this->spy())->execute(
+		$this->writeNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['title' => 'a'])],
 			config: $this->createConfig('case'),
 			context: $this->context()
-		);
+		));
 
 		$this->assertCount(1, $this->recorded);
 		$this->assertSame('case', $this->recorded[0]['role']);
@@ -304,16 +300,16 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	public function testAMultiObjectWriteHandsOverEveryUuid(): void {
 		$uuids = ['obj-1', 'obj-2'];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function () use (&$uuids): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$uuids): ObjectEntity {
 				return $this->saved((string)array_shift($uuids));
 			}
 		);
 
-		$this->writeNode($this->spy())->execute(
+		$this->writeNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['title' => 'a']), FlowItems::item(json: ['title' => 'b'])],
 			config: $this->createConfig('case'),
 			context: $this->context()
-		);
+		));
 
 		$this->assertSame(['obj-1', 'obj-2'], $this->recorded[0]['uuids']);
 	}//end testAMultiObjectWriteHandsOverEveryUuid()
@@ -332,11 +328,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		$config = $this->createConfig('case');
 		$config['output'] = 'written';
 
-		$this->writeNode($this->spy())->execute(
+		$this->writeNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['title' => 'a'])],
 			config: $config,
 			context: $this->context()
-		);
+		));
 
 		$this->assertSame(['obj-1'], $this->recorded[0]['uuids']);
 	}//end testTheUuidIsFoundUnderTheOutputKey()
@@ -365,8 +361,7 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		return new LockObjectNode(
 			$this->objects,
 			$this->users(),
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class),
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class)),
 			$recorder
 		);
 	}//end lockNode()
@@ -396,11 +391,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	public function testALockedObjectIsRecordedUnderItsRole(): void {
 		$this->objects->expects($this->once())->method('lockObject')->willReturn([]);
 
-		$this->lockNode($this->spy())->execute(
+		$this->lockNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['uuid' => 'obj-1'])],
 			config: ['subjectRole' => 'case'],
 			context: $this->lockContext()
-		);
+		));
 
 		$this->assertSame('case', $this->recorded[0]['role']);
 		$this->assertSame(['obj-1'], $this->recorded[0]['uuids']);
@@ -421,11 +416,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	public function testALockWithNoRoleInventsNone(): void {
 		$this->objects->method('lockObject')->willReturn([]);
 
-		$this->lockNode($this->spy())->execute(
+		$this->lockNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['uuid' => 'obj-1'])],
 			config: [],
 			context: $this->lockContext()
-		);
+		));
 
 		$this->assertSame('', $this->recorded[0]['role'], 'no role named, so none passed on');
 	}//end testALockWithNoRoleInventsNone()
@@ -443,11 +438,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		$this->objects->method('lockObject')->willThrowException(new \RuntimeException('held by run-9'));
 
 		try {
-			$this->lockNode($this->spy())->execute(
+			$this->lockNode($this->spy())->execute(new FlowNodeCall(
 				items: [FlowItems::item(json: ['uuid' => 'obj-1'])],
 				config: ['subjectRole' => 'case'],
 				context: $this->lockContext()
-			);
+			));
 		} catch (\Throwable $e) {
 			// Parking or giving up; either way the lock was not taken.
 			$this->addToAssertionCount(1);

@@ -17,6 +17,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -25,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Throwable;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * Golden record of validateReadOnlyConstraints() and validateImmutableConstraints() over omitted,
@@ -60,8 +63,8 @@ class ValidateObjectWriteConstraintsGoldenTest extends TestCase {
 			$schema = new Schema();
 			$schema->setProperties($properties);
 			$validator = $this->validator(count: 0);
-			$actual['readOnly: ' . $name]  = $this->outcome(fn () => $validator->validateReadOnlyConstraints($incoming, $existing, $schema));
-			$actual['immutable: ' . $name] = $this->outcome(fn () => $validator->validateImmutableConstraints($incoming, $existing, $schema));
+			$actual['readOnly: ' . $name]  = $this->outcome(fn () => $validator->validateReadOnlyConstraints(new WriteConstraintCheck($incoming, $existing), $schema));
+			$actual['immutable: ' . $name] = $this->outcome(fn () => $validator->validateImmutableConstraints(new WriteConstraintCheck($incoming, $existing), $schema));
 		}
 
 		foreach ($this->uniqueScenarios() as $name => [$unique, $object, $count]) {
@@ -185,12 +188,9 @@ class ValidateObjectWriteConstraintsGoldenTest extends TestCase {
 			return $count;
 		});
 		return new ValidateObject(
-			$this->createMock(IAppConfig::class),
-			$mapper,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IURLGenerator::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->createMock(IAppConfig::class), schemaMapper: $this->createMock(SchemaMapper::class), urlGenerator: $this->createMock(IURLGenerator::class)),
+			lookups: new ValidationLookups(objectMapper: $mapper, userManager: $this->createMock(IUserManager::class)),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end validator()
 }//end class

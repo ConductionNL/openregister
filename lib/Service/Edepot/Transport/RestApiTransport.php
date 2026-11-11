@@ -38,7 +38,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class RestApiTransport extends HttpSipTransport {
+class RestApiTransport extends HttpSipTransport implements RestApiTransportInterface {
 
 	use SipTransportSteps;
 

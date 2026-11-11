@@ -26,6 +26,7 @@ use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\Exception as DbException;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -42,7 +43,7 @@ use OCP\IDBConnection;
  *
  * @link https://OpenRegister.app
  */
-class FlowStateMapper extends QBMapper {
+class FlowStateMapper extends QBMapper implements FlowStateMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -73,13 +74,25 @@ class FlowStateMapper extends QBMapper {
 			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)))
 			->setMaxResults(1);
 
+		return $this->findOneOrNull(query: $qb);
+
+	}//end findByFlow()
+
+	/**
+	 * The one state row a query selects, or null when it selects none.
+	 *
+	 * @param IQueryBuilder $query The query.
+	 *
+	 * @return FlowState|null The row, or null.
+	 */
+	private function findOneOrNull(IQueryBuilder $query): ?FlowState {
 		try {
-			return $this->findEntity(query: $qb);
+			return $this->findEntity(query: $query);
 		} catch (DoesNotExistException $e) {
 			return null;
 		}
 
-	}//end findByFlow()
+	}//end findOneOrNull()
 
 	/**
 	 * Write a flow's state, creating the row on first use.
@@ -112,27 +125,43 @@ class FlowStateMapper extends QBMapper {
 		try {
 			return $this->insert(entity: $entity);
 		} catch (DbException $e) {
-			if ($e->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
-				throw $e;
-			}
-
-			// Another writer created this flow's state between our insert and
-			// theirs. Update the row that won.
-			$existing = $this->findByFlow(flowId: $flowId);
-			if ($existing === null) {
-				// Vanished between the violation and the re-read — the only way
-				// this happens is a concurrent delete, so rethrow rather than
-				// invent a row.
-				throw $e;
-			}
-
-			$existing->setState($state);
-			$existing->setUpdated(new DateTime());
-
-			return $this->update(entity: $existing);
-		}//end try
+			return $this->updateAfterLostInsert(lost: $e, entity: $entity);
+		}
 
 	}//end put()
+
+	/**
+	 * Recover from an insert that failed, by updating the row that won.
+	 *
+	 * Only a unique-constraint violation is recoverable: another writer
+	 * created this flow's state between our insert and theirs. If that row
+	 * vanished between the violation and the re-read — the only way this
+	 * happens is a concurrent delete — the failure is rethrown rather than a
+	 * row invented.
+	 *
+	 * @param DbException $lost   Why the insert failed.
+	 * @param FlowState   $entity The state that failed to insert.
+	 *
+	 * @return FlowState The updated state.
+	 *
+	 * @throws DbException When the failure is not a concurrent insert, or the
+	 *                     winning row vanished before it could be re-read.
+	 */
+	private function updateAfterLostInsert(DbException $lost, FlowState $entity): FlowState {
+		if ($lost->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
+			throw $lost;
+		}
+
+		$existing = $this->findByFlow(flowId: $entity->getFlowId());
+		if ($existing === null) {
+			throw $lost;
+		}
+
+		$existing->setState($entity->getState());
+		$existing->setUpdated(new DateTime());
+
+		return $this->update(entity: $existing);
+	}//end updateAfterLostInsert()
 
 	/**
 	 * Drop a flow's state.

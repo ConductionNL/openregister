@@ -181,6 +181,20 @@ final class GitHubIssueQuery {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-1
 	 */
 	public function requestOptions(?string $label): array {
+		return [
+			'query' => $this->query(label: $label),
+			'headers' => $this->headers(),
+		];
+	}//end requestOptions()
+
+	/**
+	 * The query of one request, filtered on one label or none.
+	 *
+	 * @param string|null $label The label, or null for no label filter.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private function query(?string $label): array {
 		$query = [
 			'state' => $this->state,
 			'sort' => $this->sort,
@@ -191,6 +205,15 @@ final class GitHubIssueQuery {
 			$query['labels'] = $label;
 		}
 
+		return $query;
+	}//end query()
+
+	/**
+	 * The headers of a request, with the token when there is one.
+	 *
+	 * @return array<string, string> The headers.
+	 */
+	private function headers(): array {
 		$headers = [
 			'Accept' => 'application/vnd.github+json',
 			'X-GitHub-Api-Version' => '2022-11-28',
@@ -199,11 +222,8 @@ final class GitHubIssueQuery {
 			$headers['Authorization'] = 'Bearer ' . $this->token;
 		}
 
-		return [
-			'query' => $query,
-			'headers' => $headers,
-		];
-	}//end requestOptions()
+		return $headers;
+	}//end headers()
 
 	/**
 	 * OR-merge the pages of several labels: first occurrence of each issue
@@ -216,17 +236,7 @@ final class GitHubIssueQuery {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-1
 	 */
 	public function merge(array $pages): array {
-		$merged = [];
-		foreach ($pages as $page) {
-			foreach ($page as $item) {
-				$number = (int)($item['number'] ?? 0);
-				if ($number > 0 && isset($merged[$number]) === false) {
-					$merged[$number] = $item;
-				}
-			}
-		}
-
-		$items = array_values($merged);
+		$items = array_values($this->firstByNumber(pages: $pages));
 		usort(
 			$items,
 			static function (array $a, array $b): int {
@@ -238,4 +248,25 @@ final class GitHubIssueQuery {
 
 		return array_slice($items, 0, $this->perPage);
 	}//end merge()
+
+	/**
+	 * The first occurrence of each positive issue number across the pages, in page order.
+	 *
+	 * @param array<int, array<int, array>> $pages The pages, one per label.
+	 *
+	 * @return array<int, array> The issues by number.
+	 */
+	private function firstByNumber(array $pages): array {
+		$merged = [];
+		foreach ($pages as $page) {
+			foreach ($page as $item) {
+				$number = (int)($item['number'] ?? 0);
+				if ($number > 0 && isset($merged[$number]) === false) {
+					$merged[$number] = $item;
+				}
+			}
+		}
+
+		return $merged;
+	}//end firstByNumber()
 }//end class

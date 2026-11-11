@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace Unit\Db;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\LinkedTypesRule;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -107,7 +108,7 @@ class SchemaLinkedTypesCleanupTest extends TestCase {
 	 * test exercises the validator directly via reflection so the rejection
 	 * itself stays covered.
 	 *
-	 * @covers \OCA\OpenRegister\Db\Schema::validateLinkedTypesValue
+	 * @covers \OCA\OpenRegister\Db\Schema\LinkedTypesRule::validateLinkedTypesValue
 	 *
 	 * @spec openspec/changes/cleanup-linked-entity-type-map/tasks.md#task-3
 	 */
@@ -115,9 +116,7 @@ class SchemaLinkedTypesCleanupTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/linkedTypes.*must be an array/');
 
-		$method = new \ReflectionMethod(Schema::class, 'validateLinkedTypesValue');
-		$method->setAccessible(true);
-		$method->invoke($this->schema, 'not-an-array');
+		(new LinkedTypesRule())->validateLinkedTypesValue('not-an-array');
 	}//end testLinkedTypesThrowsWhenNotArray()
 
 	/**
@@ -147,7 +146,7 @@ class SchemaLinkedTypesCleanupTest extends TestCase {
 	 * `setConfiguration()` no longer lets this exception escape — see
 	 * {@see testLinkedTypesThrowsWhenNotArray()} for the rationale.
 	 *
-	 * @covers \OCA\OpenRegister\Db\Schema::validateLinkedTypesValue
+	 * @covers \OCA\OpenRegister\Db\Schema\LinkedTypesRule::validateLinkedTypesValue
 	 *
 	 * @spec openspec/changes/cleanup-linked-entity-type-map/tasks.md#task-3
 	 */
@@ -155,9 +154,7 @@ class SchemaLinkedTypesCleanupTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/linkedTypes.*must be strings/');
 
-		$method = new \ReflectionMethod(Schema::class, 'validateLinkedTypesValue');
-		$method->setAccessible(true);
-		$method->invoke($this->schema, ['files', 42]);
+		(new LinkedTypesRule())->validateLinkedTypesValue(['files', 42]);
 	}//end testLinkedTypesThrowsWhenContainsNonString()
 
 	/**

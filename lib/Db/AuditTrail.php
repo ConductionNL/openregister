@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailFieldTypes;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -495,45 +497,9 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 * Sets up field types for all properties
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'schema', type: 'integer');
-		$this->addType(fieldName: 'register', type: 'integer');
-		$this->addType(fieldName: 'object', type: 'integer');
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerUuid', type: 'string');
-		$this->addType(fieldName: 'schemaUuid', type: 'string');
-		$this->addType(fieldName: 'action', type: 'string');
-		$this->addType(fieldName: 'changed', type: 'json');
-		$this->addType(fieldName: 'user', type: 'string');
-		$this->addType(fieldName: 'userName', type: 'string');
-		$this->addType(fieldName: 'session', type: 'string');
-		$this->addType(fieldName: 'request', type: 'string');
-		$this->addType(fieldName: 'ipAddress', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'organisationId', type: 'string');
-		$this->addType(fieldName: 'organisationIdType', type: 'string');
-		$this->addType(fieldName: 'processingActivityId', type: 'string');
-		$this->addType(fieldName: 'processingActivityUrl', type: 'string');
-		$this->addType(fieldName: 'processingId', type: 'string');
-		$this->addType(fieldName: 'confidentiality', type: 'string');
-		$this->addType(fieldName: 'retentionPeriod', type: 'string');
-		$this->addType(fieldName: 'size', type: 'integer');
-		$this->addType(fieldName: 'expires', type: 'datetime');
-		$this->addType(fieldName: 'hash', type: 'string');
-		$this->addType(fieldName: 'previousHash', type: 'string');
-		$this->addType(fieldName: 'importJobId', type: 'string');
-		$this->addType(fieldName: 'toolId', type: 'string');
-		$this->addType(fieldName: 'paramsDigest', type: 'string');
-		$this->addType(fieldName: 'resultSummary', type: 'json');
-		$this->addType(fieldName: 'purgedAt', type: 'datetime');
-		$this->addType(fieldName: 'cause', type: 'string');
-		$this->addType(fieldName: 'causeRun', type: 'string');
-		$this->addType(fieldName: 'flowRun', type: 'string');
-		$this->addType(fieldName: 'flowNode', type: 'string');
-		$this->addType(fieldName: 'flowStep', type: 'integer');
-		$this->addType(fieldName: 'purpose', type: 'string');
-		$this->addType(fieldName: 'consumer', type: 'string');
+		foreach (AuditTrailFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -601,63 +567,7 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 * }
 	 */
 	public function jsonSerialize(): array {
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
-
-		$expires = null;
-		if ($this->expires !== null) {
-			$expires = $this->expires->format('c');
-		}
-
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'schema' => $this->schema,
-			'register' => $this->register,
-			'object' => $this->object,
-			'objectUuid' => $this->objectUuid,
-			'registerUuid' => $this->registerUuid,
-			'schemaUuid' => $this->schemaUuid,
-			'action' => $this->action,
-			'changed' => $this->changed,
-			'user' => $this->user,
-			'userName' => $this->userName,
-			'session' => $this->session,
-			'request' => $this->request,
-			'ipAddress' => $this->ipAddress,
-			'version' => $this->version,
-			'created' => $created,
-			'organisationId' => $this->organisationId,
-			'organisationIdType' => $this->organisationIdType,
-			'processingActivityId' => $this->processingActivityId,
-			'processingActivityUrl' => $this->processingActivityUrl,
-			'processingId' => $this->processingId,
-			'confidentiality' => $this->confidentiality,
-			'retentionPeriod' => $this->retentionPeriod,
-			'size' => $this->size,
-			'expires' => $expires,
-			'hash' => $this->hash,
-			'previousHash' => $this->previousHash,
-			'toolId' => $this->toolId,
-			'paramsDigest' => $this->paramsDigest,
-			'resultSummary' => $this->resultSummary,
-			// ⚠️ These three are COVERED BY THE HASH CHAIN. They are part of the
-			// canonical JSON that AuditHashService seals, which is what makes
-			// re-pointing a row at a different run detectable rather than
-			// merely unlikely. That coverage is also why adding them was a
-			// genesis-seed migration (v1 → v2, ADR-003 Rule 4) rather than a
-			// column addition: any key added here changes the canonical form of
-			// every row ever written. Do not add a key to this array without
-			// reading that ADR — and note that `purgedAt` is deliberately
-			// ABSENT for exactly this reason.
-			'cause' => $this->cause,
-			'causeRun' => $this->causeRun,
-			'flowRun' => $this->flowRun,
-			'flowNode' => $this->flowNode,
-			'flowStep' => $this->flowStep,
-		];
+		return (new AuditTrailSealedForm())->serialise(values: get_object_vars($this));
 	}//end jsonSerialize()
 
 	/**
@@ -669,22 +579,29 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 * @return string String representation of the audit trail
 	 */
 	public function __toString(): string {
-		// Return the UUID if available, otherwise return a descriptive string.
-		if ($this->uuid !== null && $this->uuid !== '') {
+		if ($this->isFilled(value: $this->uuid) === true) {
 			return $this->uuid;
 		}
 
-		// Fallback to action if available.
-		if ($this->action !== null && $this->action !== '') {
+		if ($this->isFilled(value: $this->action) === true) {
 			return 'Audit: ' . $this->action;
 		}
 
-		// Fallback to ID if available.
 		if ($this->id !== null) {
 			return 'AuditTrail #' . $this->id;
 		}
 
-		// Final fallback.
 		return 'Audit Trail';
 	}//end __toString()
+
+	/**
+	 * Whether a string field holds a non-empty value.
+	 *
+	 * @param string|null $value The value.
+	 *
+	 * @return bool
+	 */
+	private function isFilled(string|null $value): bool {
+		return $value !== null && $value !== '';
+	}//end isFilled()
 }//end class

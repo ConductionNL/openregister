@@ -11,12 +11,15 @@ use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\ContactCardRef;
+use OCA\OpenRegister\Service\ContactPlacement;
 
 /**
  * Records the CardDAV calls, mapper writes and the returned link of linkContact(), per scenario,
@@ -86,7 +89,7 @@ class ContactServiceLinkContactGoldenTest extends TestCase {
 		$urls->method('linkToRoute')->willReturnCallback(fn ($route, $args = []) => $route . '?' . http_build_query($args));
 		$urls->method('getAbsoluteURL')->willReturnCallback(fn ($url) => 'https://cloud' . $url);
 
-		return new ContactService($mapper, $cardDav, $session, $this->createMock(LoggerInterface::class), $urls);
+		return new ContactService($mapper, $cardDav, new LinkSessionRuntime($session, $this->createMock(LoggerInterface::class)), $urls);
 	}
 
 	/**
@@ -128,7 +131,7 @@ class ContactServiceLinkContactGoldenTest extends TestCase {
 	public function testLinkContactGolden(array $s): void {
 		$service = $this->service($s);
 		try {
-			$link = $service->linkContact('obj-1', 5, 3, 'jan.vcf', $s['role'], $s['schema']);
+			$link = $service->linkCard(new ContactCardRef(3, 'jan.vcf'), new ContactPlacement('obj-1', 5, $s['schema'], $s['role']));
 			$this->calls[] = ['result', $this->row($link)];
 		} catch (Throwable $e) {
 			$this->calls[] = ['thrown', get_class($e), $e->getMessage(), $e->getCode()];

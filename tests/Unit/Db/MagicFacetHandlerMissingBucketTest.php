@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
-use OCA\OpenRegister\Db\MagicMapper\TableTermsFacet;
+use OCA\OpenRegister\Db\MagicMapper\TermsFacetTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\IPreparedStatement;
@@ -198,14 +198,12 @@ class MagicFacetHandlerMissingBucketTest extends TestCase {
 
 		return $method->invoke(
 			$handler,
-			new TableTermsFacet(
+			(new TermsFacetTable(
 				'openregister_table_1_2',
-				'result_type',
 				[],
-				false,
 				$this->createMock(Register::class),
 				$this->createMock(Schema::class)
-			)
+			))->forPropertyField('result_type')
 		);
 	}//end facetOver()
 

@@ -33,12 +33,15 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -121,8 +124,8 @@ class AggregationCacheEvictionBySlugTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnMap(
 			[
-				[RegisterMapper::class, $registerMapper],
-				[SchemaMapper::class, $schemaMapper],
+				[RegisterMapperInterface::class, $registerMapper],
+				[SchemaMapperInterface::class, $schemaMapper],
 			]
 		);
 
@@ -144,33 +147,33 @@ class AggregationCacheEvictionBySlugTest extends TestCase {
 
 	public function testAWriteEvictsTheEntryTheRunnerCachedBySlug(): void {
 		$filter = ['metric' => 'count', 'filter' => ['lead' => 'l-1']];
-		$this->cache->set('pipelinq', 'leadProduct', 'lineItems', $filter, ['value' => 0]);
-		$this->assertSame(['value' => 0], $this->cache->get('pipelinq', 'leadProduct', 'lineItems', $filter));
+		$this->cache->set(slot: new AggregationSlot(registerSlug: 'pipelinq', schemaSlug: 'leadProduct', name: 'lineItems', filter: $filter), result: ['value' => 0]);
+		$this->assertSame(['value' => 0], $this->cache->get(slot: new AggregationSlot(registerSlug: 'pipelinq', schemaSlug: 'leadProduct', name: 'lineItems', filter: $filter)));
 
 		$listener = new AggregationCacheInvalidationListener($this->cache, $this->container());
 		$listener->handle(new ObjectCreatedEvent($this->leadProduct()));
 
-		$this->assertNull($this->cache->get('pipelinq', 'leadProduct', 'lineItems', $filter));
+		$this->assertNull($this->cache->get(slot: new AggregationSlot(registerSlug: 'pipelinq', schemaSlug: 'leadProduct', name: 'lineItems', filter: $filter)));
 	}//end testAWriteEvictsTheEntryTheRunnerCachedBySlug()
 
 	public function testAnUpdateEvictsToo(): void {
 		$filter = ['metric' => 'count'];
-		$this->cache->set('pipelinq', 'leadProduct', 'lineItems', $filter, ['value' => 1]);
+		$this->cache->set(slot: new AggregationSlot(registerSlug: 'pipelinq', schemaSlug: 'leadProduct', name: 'lineItems', filter: $filter), result: ['value' => 1]);
 
 		$object = $this->leadProduct();
 		(new AggregationCacheInvalidationListener($this->cache, $this->container()))
 			->handle(new ObjectUpdatedEvent($object, $object));
 
-		$this->assertNull($this->cache->get('pipelinq', 'leadProduct', 'lineItems', $filter));
+		$this->assertNull($this->cache->get(slot: new AggregationSlot(registerSlug: 'pipelinq', schemaSlug: 'leadProduct', name: 'lineItems', filter: $filter)));
 	}//end testAnUpdateEvictsToo()
 
 	public function testAnotherSchemaKeepsItsEntry(): void {
 		$filter = ['metric' => 'count'];
-		$this->cache->set('pipelinq', 'client', 'leads', $filter, ['value' => 5]);
+		$this->cache->set(slot: new AggregationSlot(registerSlug: 'pipelinq', schemaSlug: 'client', name: 'leads', filter: $filter), result: ['value' => 5]);
 
 		(new AggregationCacheInvalidationListener($this->cache, $this->container()))
 			->handle(new ObjectCreatedEvent($this->leadProduct()));
 
-		$this->assertSame(['value' => 5], $this->cache->get('pipelinq', 'client', 'leads', $filter));
+		$this->assertSame(['value' => 5], $this->cache->get(slot: new AggregationSlot(registerSlug: 'pipelinq', schemaSlug: 'client', name: 'leads', filter: $filter)));
 	}//end testAnotherSchemaKeepsItsEntry()
 }//end class

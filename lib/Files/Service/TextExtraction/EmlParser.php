@@ -49,20 +49,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
-use DateTimeImmutable;
 use OCA\OpenRegister\Exception\EmlParseException;
 use OCP\Files\File;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use ZBateson\MailMimeParser\IMessage;
 use ZBateson\MailMimeParser\MailMimeParser;
-use ZBateson\MailMimeParser\Message\IMessagePart;
 
 /**
  * Parser for `message/rfc822` files.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   MIME parsing requires several collaborating types
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex MIME/RFC 2822 parsing logic
+ * @spec openspec/specs/text-extraction-eml/spec.md
  */
 class EmlParser {
 	/**
@@ -75,6 +72,13 @@ class EmlParser {
 	 * @var int
 	 */
 	public const MAX_DEPTH = 3;
+
+	/**
+	 * Encodings tried when a body part is not UTF-8.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ENCODING_CANDIDATES = ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ISO-8859-15'];
 
 	/**
 	 * Underlying mime parser, lazily constructed.
@@ -163,64 +167,14 @@ class EmlParser {
 	 *
 	 * @return string Flat plain-text output.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Mostly attachment-loop branching
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Nested attachment-tree traversal
-	 *
 	 * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
 	 */
 	public function flatten(EmlStructure $structure, int $depth = 0): string {
-		$lines = [];
+		$flattener = new EmlFlattener(
+			toUtf8: fn (string $value): string => $this->ensureUtf8(value: $value)
+		);
 
-		$headerOrder = ['from', 'to', 'cc', 'subject', 'date'];
-		foreach ($headerOrder as $key) {
-			$value = $structure->headers[$key] ?? null;
-			if ($value === null || $value === '' || $value === []) {
-				continue;
-			}
-
-			$rendered = (string)$value;
-			if ($key === 'date' && $value instanceof DateTimeImmutable) {
-				$rendered = $value->format(DateTimeImmutable::ATOM);
-			} elseif (is_array($value) === true) {
-				$rendered = implode(', ', $value);
-			}
-
-			$lines[] = ucfirst($key) . ': ' . $rendered;
-		}
-
-		$lines[] = '';
-
-		// Multipart/alternative preference: plainText > html-stripped fallback.
-		// The spec is explicit — when both parts exist, MUST emit plain only
-		// (do NOT concatenate the HTML).
-		$bodyText = '';
-		if ($structure->body->plainText !== null && $structure->body->plainText !== '') {
-			$bodyText = $this->ensureUtf8(value: $structure->body->plainText);
-		} elseif ($structure->body->html !== null && $structure->body->html !== '') {
-			$bodyText = $this->htmlToText(html: $this->ensureUtf8(value: $structure->body->html));
-		}
-
-		if ($bodyText !== '') {
-			$lines[] = $bodyText;
-			$lines[] = '';
-		}
-
-		foreach ($structure->attachments as $attachment) {
-			if ($attachment->nestedEml !== null) {
-				$lines[] = '--- Attachment: ' . $attachment->filename . ' ---';
-				$lines[] = $this->flatten(structure: $attachment->nestedEml, depth: ($depth + 1));
-				$lines[] = '';
-				continue;
-			}
-
-			// Non-EML extractable types — inline text extraction is deferred
-			// (see class docblock). For v1 we list the attachment by name + MIME.
-			$marker = '--- Attachment: ' . $attachment->filename . ' (' . $attachment->mimeType . ', not extractable inline in v1) ---';
-			$lines[] = $marker;
-			$lines[] = '';
-		}
-
-		return rtrim(implode("\n", $lines), "\n");
+		return $flattener->flatten(structure: $structure, depth: $depth);
 	}//end flatten()
 
 	/**
@@ -242,7 +196,7 @@ class EmlParser {
 			'to' => $this->splitAddressList(raw: $message->getHeaderValue(name: 'To')),
 			'cc' => $this->splitAddressList(raw: $message->getHeaderValue(name: 'Cc')),
 			'subject' => $message->getSubject(),
-			'date' => $this->parseDate(raw: $rawDate),
+			'date' => (new EmlHeaderParser())->date(raw: $rawDate),
 			'messageId' => $message->getMessageId(),
 		];
 	}//end extractHeaders()
@@ -252,75 +206,22 @@ class EmlParser {
 	 *
 	 * Naive comma-split breaks on quoted display names containing commas
 	 * (e.g. `"Doe, John" <john@example.com>` parses as two bad tokens).
-	 * The walker below preserves commas inside double-quoted strings and
-	 * inside angle-bracketed addresses (the two contexts where RFC 2822
-	 * permits structural characters to appear).
+	 * The walk ({@see AddressListSplitter}) preserves commas inside
+	 * double-quoted strings and inside angle-bracketed addresses (the two
+	 * contexts where RFC 2822 permits structural characters to appear).
 	 *
 	 * Backslash-escaped quotes inside quoted strings are honoured.
 	 *
 	 * @param string|null $raw Raw header value.
 	 *
 	 * @return array<int, string>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) RFC 2822 address-list parsing state machine
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      RFC 2822 address-list parsing state machine
 	 */
 	private function splitAddressList(?string $raw): array {
 		if ($raw === null || $raw === '') {
 			return [];
 		}
 
-		$tokens = [];
-		$buffer = '';
-		$inQuote = false;
-		$inAngle = false;
-		$length = strlen($raw);
-		for ($i = 0; $i < $length; $i++) {
-			$char = $raw[$i];
-
-			if ($char === '\\' && $inQuote === true && $i + 1 < $length) {
-				// Honour escaped character inside a quoted display name.
-				$buffer .= $char . $raw[++$i];
-				continue;
-			}
-
-			if ($char === '"' && $inAngle === false) {
-				$inQuote = !$inQuote;
-				$buffer .= $char;
-				continue;
-			}
-
-			if ($char === '<' && $inQuote === false) {
-				$inAngle = true;
-				$buffer .= $char;
-				continue;
-			}
-
-			if ($char === '>' && $inQuote === false) {
-				$inAngle = false;
-				$buffer .= $char;
-				continue;
-			}
-
-			if ($char === ',' && $inQuote === false && $inAngle === false) {
-				$tokens[] = trim($buffer);
-				$buffer = '';
-				continue;
-			}
-
-			$buffer .= $char;
-		}//end for
-
-		if ($buffer !== '') {
-			$tokens[] = trim($buffer);
-		}
-
-		return array_values(
-			array: array_filter(
-				array: $tokens,
-				callback: static fn (string $part): bool => $part !== ''
-			)
-		);
+		return (new EmlHeaderParser())->addresses(raw: $raw);
 	}//end splitAddressList()
 
 	/**
@@ -333,22 +234,9 @@ class EmlParser {
 	 * @spec openspec/specs/text-extraction-eml/spec.md#requirement-non-utf-8-body-parts-must-be-transcoded-to-utf-8-on-a-best-effort-basis
 	 */
 	private function extractBody(IMessage $message): EmlBody {
-		$plain = $message->getTextContent();
-		$html = $message->getHtmlContent();
-
-		$plainText = null;
-		if ($plain !== null && $plain !== '') {
-			$plainText = $plain;
-		}
-
-		$htmlText = null;
-		if ($html !== null && $html !== '') {
-			$htmlText = $html;
-		}
-
 		return new EmlBody(
-			plainText: $plainText,
-			html: $htmlText
+			plainText: $this->nonEmptyString(value: $message->getTextContent()),
+			html: $this->nonEmptyString(value: $message->getHtmlContent())
 		);
 	}//end extractBody()
 
@@ -365,14 +253,10 @@ class EmlParser {
 	private function extractAttachments(IMessage $message, int $depth): array {
 		$result = [];
 		$position = 0;
-		$parts = $message->getAllAttachmentParts();
-
-		foreach ($parts as $part) {
+		foreach ($message->getAllAttachmentParts() as $part) {
 			$position++;
 			$result[] = $this->buildAttachment(
-				part: $part,
-				position: $position,
-				depth: $depth
+				attachment: new EmlAttachmentPart(part: $part, position: $position, depth: $depth)
 			);
 		}
 
@@ -382,48 +266,48 @@ class EmlParser {
 	/**
 	 * Build a single `EmlAttachment` from a MIME part.
 	 *
-	 * @param IMessagePart $part Source part.
-	 * @param int $position 1-indexed position in multipart order.
-	 * @param int $depth Current recursion depth.
+	 * @param EmlAttachmentPart $attachment The part, its position and the current recursion depth.
 	 *
 	 * @return EmlAttachment
 	 *
 	 * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
 	 */
-	private function buildAttachment(IMessagePart $part, int $position, int $depth): EmlAttachment {
-		$mimeType = (string)($part->getContentType(default: 'application/octet-stream') ?? 'application/octet-stream');
-		$filename = $this->resolveFilename(part: $part, position: $position);
-		$bytes = (string)($part->getContent() ?? '');
-		$isInline = strtolower(string: (string)$part->getContentDisposition(default: 'attachment')) === 'inline';
-		$contentId = $this->stripAngleBrackets(raw: $part->getContentId());
-
+	private function buildAttachment(EmlAttachmentPart $attachment): EmlAttachment {
+		$mimeType = (string)($attachment->part->getContentType(default: 'application/octet-stream') ?? 'application/octet-stream');
+		$filename = $this->resolveFilename(attachment: $attachment);
+		$bytes = (string)($attachment->part->getContent() ?? '');
 		$nestedEml = null;
 		if (strtolower(string: $mimeType) === 'message/rfc822') {
-			if ($depth < self::MAX_DEPTH) {
-				$nestedEml = $this->parseNestedEml(bytes: $bytes, depth: ($depth + 1));
-			}
-
-			if ($depth >= self::MAX_DEPTH) {
-				$this->logger->debug(
-					message: '[EmlParser] EML nesting depth limit reached',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'depth' => $depth,
-					]
-				);
-			}
+			$nestedEml = $this->nestedEmlAt(bytes: $bytes, depth: $attachment->depth);
 		}
 
 		return new EmlAttachment(
-			filename: $filename,
-			mimeType: $mimeType,
-			content: $bytes,
-			isInline: $isInline,
-			contentId: $contentId,
+			file: new EmlAttachmentFile(filename: $filename, mimeType: $mimeType, content: $bytes),
+			isInline: strtolower(string: (string)$attachment->part->getContentDisposition(default: 'attachment')) === 'inline',
+			contentId: $this->stripAngleBrackets(raw: $attachment->part->getContentId()),
 			nestedEml: $nestedEml
 		);
 	}//end buildAttachment()
+
+	/**
+	 * Parse a nested EML found at a depth, or log that the depth limit is reached.
+	 *
+	 * @param string $bytes Decoded message bytes.
+	 * @param int    $depth Depth of the message that holds the attachment.
+	 *
+	 * @return EmlStructure|null Null at the depth limit or on a parse failure.
+	 */
+	private function nestedEmlAt(string $bytes, int $depth): ?EmlStructure {
+		if ($depth < self::MAX_DEPTH) {
+			return $this->parseNestedEml(bytes: $bytes, depth: ($depth + 1));
+		}
+
+		$this->logger->debug(
+			message: '[EmlParser] EML nesting depth limit reached',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'depth' => $depth]
+		);
+		return null;
+	}//end nestedEmlAt()
 
 	/**
 	 * Filename resolution: Content-Disposition `filename` → Content-Type
@@ -437,43 +321,64 @@ class EmlParser {
 	 * attachments to a holding directory) MUST be able to use the value
 	 * directly as a leaf filename without further validation.
 	 *
-	 * @param IMessagePart $part Source part.
-	 * @param int $position 1-indexed multipart position.
+	 * @param EmlAttachmentPart $attachment Source part and its 1-indexed multipart position.
 	 *
 	 * @return string Always non-empty, always free of path components.
 	 */
-	private function resolveFilename(IMessagePart $part, int $position): string {
-		$raw = null;
-
-		$fromDisposition = $part->getFilename();
-		if (is_string(value: $fromDisposition) === true && $fromDisposition !== '') {
-			$raw = $fromDisposition;
-		}
-
-		if ($raw === null
-			&& method_exists(object_or_class: $part, method: 'getHeaderParameter') === true
-		) {
-			// Positional args here: zbateson's IMessagePart subclasses
-			// expose getHeaderParameter but the interface does not, so
-			// PHPStan analyses against a generic stdClass fallback and
-			// would reject named-parameter calls.
-			$fromType = $part->getHeaderParameter('Content-Type', 'name');
-			if (is_string(value: $fromType) === true && $fromType !== '') {
-				$raw = $fromType;
-			}
-		}
-
-		if ($raw === null) {
-			return 'attachment-' . $position;
-		}
-
-		$sanitised = $this->sanitiseFilename(raw: $raw);
+	private function resolveFilename(EmlAttachmentPart $attachment): string {
+		$sanitised = $this->sanitiseFilename(raw: ($this->rawFilename(attachment: $attachment) ?? ''));
 		if ($sanitised === '') {
-			return 'attachment-' . $position;
+			return 'attachment-' . $attachment->position;
 		}
 
 		return $sanitised;
 	}//end resolveFilename()
+
+	/**
+	 * The sender's filename: Content-Disposition `filename`, else Content-Type `name`.
+	 *
+	 * @param EmlAttachmentPart $attachment Source part.
+	 *
+	 * @return string|null The unsanitised name, or null when the part has none.
+	 */
+	private function rawFilename(EmlAttachmentPart $attachment): ?string {
+		return $this->nonEmptyString(value: $attachment->part->getFilename()) ?? $this->contentTypeName(attachment: $attachment);
+	}//end rawFilename()
+
+	/**
+	 * The Content-Type `name` parameter of a part, when the part exposes it.
+	 *
+	 * @param EmlAttachmentPart $attachment Source part.
+	 *
+	 * @return string|null The name, or null.
+	 */
+	private function contentTypeName(EmlAttachmentPart $attachment): ?string {
+		$part = $attachment->part;
+		if (method_exists(object_or_class: $part, method: 'getHeaderParameter') === false) {
+			return null;
+		}
+
+		// Positional args here: zbateson's IMessagePart subclasses
+		// expose getHeaderParameter but the interface does not, so
+		// PHPStan analyses against a generic stdClass fallback and
+		// would reject named-parameter calls.
+		return $this->nonEmptyString(value: $part->getHeaderParameter('Content-Type', 'name'));
+	}//end contentTypeName()
+
+	/**
+	 * A header-derived value when it is a non-empty string, else null.
+	 *
+	 * @param string|null $value The value.
+	 *
+	 * @return string|null
+	 */
+	private function nonEmptyString(?string $value): ?string {
+		if ($value !== null && $value !== '') {
+			return $value;
+		}
+
+		return null;
+	}//end nonEmptyString()
 
 	/**
 	 * Strip any path components from a sender-controlled filename.
@@ -528,14 +433,10 @@ class EmlParser {
 		} catch (Throwable $error) {
 			$this->logger->debug(
 				message: '[EmlParser] Nested EML parse failure (' . get_class($error) . ')',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'depth' => $depth,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'depth' => $depth]
 			);
 			return null;
-		}//end try
+		}
 	}//end parseNestedEml()
 
 	/**
@@ -559,83 +460,6 @@ class EmlParser {
 	}//end stripAngleBrackets()
 
 	/**
-	 * Parse a raw Date header into a DateTimeImmutable.
-	 *
-	 * @param string|null $raw Raw header value.
-	 *
-	 * @return DateTimeImmutable|null Null when the header is missing or unparseable.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromFormat is idiomatic PHP
-	 *
-	 * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
-	 */
-	private function parseDate(?string $raw): ?DateTimeImmutable {
-		if ($raw === null || $raw === '') {
-			return null;
-		}
-
-		$patterns = [
-			\DateTimeInterface::RFC2822,
-			\DateTimeInterface::RFC822,
-			'D, d M Y H:i:s O',
-			'D, d M Y H:i:s O (T)',
-			'd M Y H:i:s O',
-		];
-
-		foreach ($patterns as $pattern) {
-			$parsed = DateTimeImmutable::createFromFormat(format: $pattern, datetime: $raw);
-			if ($parsed instanceof DateTimeImmutable) {
-				return $parsed;
-			}
-		}
-
-		try {
-			return new DateTimeImmutable(datetime: $raw);
-		} catch (Throwable) {
-			return null;
-		}
-	}//end parseDate()
-
-	/**
-	 * Strip a plain-text rendering out of an HTML string for the
-	 * fallback path of `flatten()`.
-	 *
-	 * - Drops `<style>` and `<script>` element content entirely (block-level removal).
-	 * - Replaces `<br>`, `<p>`, block-level tags with newlines.
-	 * - Strips remaining tags via `strip_tags`.
-	 * - Decodes entities via `html_entity_decode`.
-	 * - Collapses whitespace runs.
-	 *
-	 * @param string $html HTML source.
-	 *
-	 * @return string Plain text.
-	 *
-	 * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
-	 */
-	private function htmlToText(string $html): string {
-		$stripped = preg_replace(
-			pattern: '#<(style|script)\b[^>]*>.*?</\1>#is',
-			replacement: '',
-			subject: $html
-		) ?? $html;
-
-		$withBreaks = preg_replace(
-			pattern: '#</?(br|p|div|section|article|h[1-6]|li|tr)[^>]*>#i',
-			replacement: "\n",
-			subject: $stripped
-		) ?? $stripped;
-
-		$text = strip_tags(string: $withBreaks);
-		$text = html_entity_decode(string: $text, flags: (ENT_QUOTES | ENT_HTML5), encoding: 'UTF-8');
-
-		// Collapse whitespace runs.
-		$text = preg_replace(pattern: '/[\t ]+/', replacement: ' ', subject: $text) ?? $text;
-		$text = preg_replace(pattern: "/\n{3,}/", replacement: "\n\n", subject: $text) ?? $text;
-
-		return trim(string: $text);
-	}//end htmlToText()
-
-	/**
 	 * Ensure a string is UTF-8; transcode from detected encoding when needed.
 	 *
 	 * Per the spec, non-UTF-8 input SHOULD be transcoded via mb_detect_encoding
@@ -657,38 +481,49 @@ class EmlParser {
 			return $value;
 		}
 
-		$candidates = ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ISO-8859-15'];
-		$detected = mb_detect_encoding(string: $value, encodings: $candidates, strict: true);
+		$detected = mb_detect_encoding(string: $value, encodings: self::ENCODING_CANDIDATES, strict: true);
 		if ($detected === false) {
-			$this->logger->error(
-				message: '[EmlParser] Non-UTF-8 input — encoding detection failed; returning raw bytes',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'value_bytes' => strlen($value),
-					'candidates' => $candidates,
-				]
-			);
+			$this->logUndetectedEncoding(value: $value);
 			return $value;
 		}
 
-		$converted = mb_convert_encoding(string: $value, to_encoding: 'UTF-8', from_encoding: $detected);
+		return $this->transcodeToUtf8(value: $value, from: $detected);
+	}//end ensureUtf8()
+
+	/**
+	 * Log that the encoding of a non-UTF-8 string could not be detected.
+	 *
+	 * @param string $value The string, logged by length only.
+	 *
+	 * @return void
+	 */
+	private function logUndetectedEncoding(string $value): void {
+		$this->logger->error(
+			message: '[EmlParser] Non-UTF-8 input — encoding detection failed; returning raw bytes',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'value_bytes' => strlen($value), 'candidates' => self::ENCODING_CANDIDATES]
+		);
+	}//end logUndetectedEncoding()
+
+	/**
+	 * Transcode a string to UTF-8, logging and returning it unchanged when that fails.
+	 *
+	 * @param string $value The string.
+	 * @param string $from  Its detected encoding.
+	 *
+	 * @return string UTF-8 string (or the raw input when transcoding fails).
+	 */
+	private function transcodeToUtf8(string $value, string $from): string {
+		$converted = mb_convert_encoding(string: $value, to_encoding: 'UTF-8', from_encoding: $from);
 		if (is_string(value: $converted) === true) {
 			return $converted;
 		}
 
 		$this->logger->error(
 			message: '[EmlParser] Non-UTF-8 input — transcoding to UTF-8 failed; returning raw bytes',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'value_bytes' => strlen($value),
-				'detected_from' => $detected,
-				'target_encoding' => 'UTF-8',
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'value_bytes' => strlen($value), 'detected_from' => $from, 'target_encoding' => 'UTF-8']
 		);
 		return $value;
-	}//end ensureUtf8()
+	}//end transcodeToUtf8()
 
 	/**
 	 * Sanitise a string for log output per ADR-005.

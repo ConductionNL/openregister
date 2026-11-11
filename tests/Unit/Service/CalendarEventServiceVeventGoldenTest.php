@@ -9,6 +9,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
+use OCA\OpenRegister\Service\StoredEvent;
 use OCP\IConfig;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -52,12 +54,11 @@ class CalendarEventServiceVeventGoldenTest extends TestCase {
 	public function testVeventGolden(string $ics): void {
 		$service = new CalendarEventService(
 			$this->createMock(CalDavBackend::class),
-			$this->createMock(IUserSession::class),
+			new LinkSessionRuntime($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)),
 			$this->createMock(IConfig::class),
-			$this->createMock(LoggerInterface::class),
 			$this->createMock(IURLGenerator::class)
 		);
-		$actual = (new ReflectionMethod(CalendarEventService::class, 'veventToArray'))->invoke($service, $ics, '7', 'ev.ics');
+		$actual = (new ReflectionMethod(CalendarEventService::class, 'veventToArray'))->invoke($service, new StoredEvent(calendarId: '7', uri: 'ev.ics', calendarData: $ics));
 
 		$file = __DIR__ . '/fixtures/calendar-vevent-golden.json';
 		$name = $this->dataName();

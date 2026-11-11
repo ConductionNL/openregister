@@ -28,9 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetActingAs;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetBackgroundRun;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefreshInterface;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -42,20 +41,26 @@ use Throwable;
  */
 class ExampleSetDailyRefreshJob extends TimedJob {
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory           $time   The clock.
-	 * @param ExampleSetDailyRefresh $daily  The marked sets and their refresh.
-	 * @param LoggerInterface        $logger Logger.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
+	 * @param ExampleSetDailyRefreshInterface $daily  The marked sets and their refresh.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly ExampleSetDailyRefresh $daily,
-		private readonly LoggerInterface $logger,
+		JobRuntime $runtime,
+		private readonly ExampleSetDailyRefreshInterface $daily,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: 86400);
 	}//end __construct()
 
@@ -67,14 +72,14 @@ class ExampleSetDailyRefreshJob extends TimedJob {
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's job contract.
-	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetActingAs::inBackgroundJob() is the process-wide frame a cron run opens.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetBackgroundRun::inBackgroundJob() is the process-wide frame a cron run opens.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	protected function run(mixed $argument): void {
 		try {
 			// A refresh may act as a cast account (a set's grants), also when cron runs inside a web request.
-			$report = ExampleSetActingAs::inBackgroundJob(run: fn (): array => $this->daily->run());
+			$report = ExampleSetBackgroundRun::inBackgroundJob(run: fn (): array => $this->daily->run());
 		} catch (Throwable $e) {
 			$this->logger->error('[ExampleSetDailyRefreshJob] The daily refresh failed', ['exception' => $e->getMessage()]);
 			return;

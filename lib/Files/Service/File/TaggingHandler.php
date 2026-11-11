@@ -47,6 +47,8 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @spec openspec/specs/file-actions/spec.md
  */
 class TaggingHandler implements TaggingHandlerInterface {
 	/**
@@ -97,75 +99,110 @@ class TaggingHandler implements TaggingHandlerInterface {
 	 * @phpstan-param array<int, string> $tags
 	 * @psalm-param   array<int, string> $tags
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Tag management requires handling create/find/attach scenarios
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for tag creation and attachment
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function attachTagsToFile(string $fileId, array $tags = []): void {
-		// Get all existing tags for the file and convert to array of just the IDs.
-		$oldTagIdsResult = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: self::FILE_TAG_TYPE);
-		$oldTagIds = [];
-		if (isset($oldTagIdsResult[$fileId]) === true && empty($oldTagIdsResult[$fileId]) === false) {
-			$oldTagIds = $oldTagIdsResult[$fileId];
-		}
+		$oldTagIds = $this->tagIdsOf(objectId: $fileId, objectType: self::FILE_TAG_TYPE);
 
-		// Create new tags if they don't exist.
 		$newTagIds = [];
 		foreach ($tags as $tag) {
-			// Check if tag exists by trying to get it by name.
-			try {
-				$tagObj = false;
-				if (ctype_digit($tag) === true) {
-					$tagObj = $this->systemTagManager->getTagsByIds([$tag]);
-				}
+			array_push($newTagIds, ...$this->resolveTagIds(tag: $tag));
+		}
 
-				if (empty($tagObj) === false) {
-					// Tag exists (found by ID), just use its ID.
-					$newTagIds[] = $tag;
-				}
-
-				if (empty($tagObj) === true) {
-					// Tag doesn't exist with this ID, search by name and create if needed.
-					$existingTag = $this->findOrCreateTag(tagName: $tag);
-					$newTagIds[] = $existingTag->getId();
-				}
-			} catch (TagNotFoundException) {
-				// Tag doesn't exist, create it.
-				$newTag = $this->findOrCreateTag(tagName: $tag);
-				$newTagIds[] = $newTag->getId();
-			} catch (Exception $e) {
-				$this->logger->error(
-					message: '[TaggingHandler] Error processing tag ' . $tag . ': ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTrace()]
-				);
-				// Try to create it anyway.
-				try {
-					$newTag = $this->findOrCreateTag(tagName: $tag);
-					$newTagIds[] = $newTag->getId();
-				} catch (Exception $e2) {
-					$this->logger->error(
-						message: '[TaggingHandler] Failed to create tag ' . $tag . ': ' . $e2->getMessage(),
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-				}
-			}//end try
-		}//end foreach
-
-		// Calculate tags to add and remove.
 		$tagsToAdd = array_diff($newTagIds, $oldTagIds);
 		$tagsToRemove = array_diff($oldTagIds, $newTagIds);
-
-		// Remove old tags.
 		if (empty($tagsToRemove) === false) {
 			$this->systemTagMapper->unassignTags(objId: $fileId, objectType: self::FILE_TAG_TYPE, tagIds: $tagsToRemove);
 		}
 
-		// Add new tags.
 		if (empty($tagsToAdd) === false) {
 			$this->systemTagMapper->assignTags(objId: $fileId, objectType: self::FILE_TAG_TYPE, tagIds: $tagsToAdd);
 		}
 	}//end attachTagsToFile()
+
+	/**
+	 * The tag ids assigned to one object, or an empty list when it has none.
+	 *
+	 * @param string $objectId   The object (file id or object UUID).
+	 * @param string $objectType The tag object type.
+	 *
+	 * @return array<int, string> The assigned tag ids.
+	 */
+	private function tagIdsOf(string $objectId, string $objectType): array {
+		$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$objectId], objectType: $objectType);
+		if (isset($tagIds[$objectId]) === false || empty($tagIds[$objectId]) === true) {
+			return [];
+		}
+
+		return $tagIds[$objectId];
+	}//end tagIdsOf()
+
+	/**
+	 * The id of one requested tag, as a list of zero or one ids.
+	 *
+	 * A tag that cannot be looked up is logged and created once more; when that
+	 * fails too it is logged and left out. A tag that is not found by its id and
+	 * then cannot be created is not caught here.
+	 *
+	 * @param mixed $tag The requested tag: an id or a name.
+	 *
+	 * @return array<int, mixed> The tag id, or nothing.
+	 */
+	private function resolveTagIds(mixed $tag): array {
+		try {
+			return [$this->tagIdFor(tag: $tag)];
+		} catch (TagNotFoundException) {
+			return [$this->findOrCreateTag(tagName: $tag)->getId()];
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[TaggingHandler] Error processing tag ' . $tag . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTrace()]
+			);
+			return $this->retryCreateTag(tag: $tag);
+		}
+	}//end resolveTagIds()
+
+	/**
+	 * The id of a requested tag: itself when it is the id of an existing tag, else the id of the tag by that name.
+	 *
+	 * @param mixed $tag The requested tag: an id or a name.
+	 *
+	 * @return mixed The tag id.
+	 *
+	 * @throws TagNotFoundException When a numeric tag is no known id.
+	 * @throws Exception             When the tag cannot be found or created.
+	 */
+	private function tagIdFor(mixed $tag): mixed {
+		$tagObj = false;
+		if (ctype_digit($tag) === true) {
+			$tagObj = $this->systemTagManager->getTagsByIds([$tag]);
+		}
+
+		if (empty($tagObj) === false) {
+			return $tag;
+		}
+
+		return $this->findOrCreateTag(tagName: $tag)->getId();
+	}//end tagIdFor()
+
+	/**
+	 * Create a tag once more after its lookup failed, logging and leaving it out when that fails as well.
+	 *
+	 * @param mixed $tag The requested tag name.
+	 *
+	 * @return array<int, string> The tag id, or nothing.
+	 */
+	private function retryCreateTag(mixed $tag): array {
+		try {
+			return [$this->findOrCreateTag(tagName: $tag)->getId()];
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[TaggingHandler] Failed to create tag ' . $tag . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
+	}//end retryCreateTag()
 
 	/**
 	 * Find tag by name or create it if it doesn't exist.
@@ -175,41 +212,54 @@ class TaggingHandler implements TaggingHandlerInterface {
 	 * @return ISystemTag The tag object.
 	 *
 	 * @throws Exception If tag creation fails.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Tag lookup requires handling multiple search and creation scenarios
 	 */
 	private function findOrCreateTag(string $tagName): ISystemTag {
 		try {
-			// Search for tag by name.
-			$allTags = $this->systemTagManager->getAllTags(visibilityFilter: null, nameSearchPattern: $tagName);
-			foreach ($allTags as $tag) {
-				if ($tag->getName() === $tagName) {
-					return $this->hideInternalTag(tag: $tag);
-				}
-			}
-
-			// Tag not found, create it. The internal object link is bookkeeping:
-			// hidden from users and not assignable, so it stays out of the
-			// Files tag picker and of every user's tag list.
-			$userFacing = str_starts_with($tagName, self::OBJECT_TAG_PREFIX) === false;
-
-			return $this->systemTagManager->createTag(
-				tagName: $tagName,
-				userVisible: $userFacing,
-				userAssignable: $userFacing
-			);
+			return $this->findTagByName(tagName: $tagName) ?? $this->createNamedTag(tagName: $tagName);
 		} catch (TagAlreadyExistsException $e) {
 			// Tag exists, get it by searching again.
-			$allTags = $this->systemTagManager->getAllTags(visibilityFilter: null, nameSearchPattern: $tagName);
-			foreach ($allTags as $tag) {
-				if ($tag->getName() === $tagName) {
-					return $this->hideInternalTag(tag: $tag);
-				}
-			}
-
-			throw new Exception('Tag exists but could not be found: ' . $tagName);
-		}//end try
+			return $this->findTagByName(tagName: $tagName) ?? throw new Exception('Tag exists but could not be found: ' . $tagName);
+		}
 	}//end findOrCreateTag()
+
+	/**
+	 * The tag with exactly this name, hidden when it is an internal one, or null.
+	 *
+	 * @param string $tagName Tag name.
+	 *
+	 * @return ISystemTag|null The tag, or null when no tag has this name.
+	 */
+	private function findTagByName(string $tagName): ?ISystemTag {
+		$allTags = $this->systemTagManager->getAllTags(visibilityFilter: null, nameSearchPattern: $tagName);
+		foreach ($allTags as $tag) {
+			if ($tag->getName() === $tagName) {
+				return $this->hideInternalTag(tag: $tag);
+			}
+		}
+
+		return null;
+	}//end findTagByName()
+
+	/**
+	 * Create a tag by name.
+	 *
+	 * The internal object link is bookkeeping: hidden from users and not
+	 * assignable, so it stays out of the Files tag picker and of every user's
+	 * tag list.
+	 *
+	 * @param string $tagName Tag name.
+	 *
+	 * @return ISystemTag The new tag.
+	 */
+	private function createNamedTag(string $tagName): ISystemTag {
+		$userFacing = str_starts_with($tagName, self::OBJECT_TAG_PREFIX) === false;
+
+		return $this->systemTagManager->createTag(
+			tagName: $tagName,
+			userVisible: $userFacing,
+			userAssignable: $userFacing
+		);
+	}//end createNamedTag()
 
 	/**
 	 * Hide an existing internal `object:<uuid>` tag from users, when it is still visible or assignable.
@@ -228,14 +278,36 @@ class TaggingHandler implements TaggingHandlerInterface {
 	 * @return ISystemTag The same tag.
 	 */
 	private function hideInternalTag(ISystemTag $tag): ISystemTag {
+		if ($this->isExposedInternalTag(tag: $tag) === true) {
+			$this->hideTag(tag: $tag);
+		}
+
+		return $tag;
+	}//end hideInternalTag()
+
+	/**
+	 * Whether a tag is an internal object tag that users can still see or assign.
+	 *
+	 * @param ISystemTag $tag The tag.
+	 *
+	 * @return bool True when it should be hidden.
+	 */
+	private function isExposedInternalTag(ISystemTag $tag): bool {
 		if (str_starts_with($tag->getName(), self::OBJECT_TAG_PREFIX) === false) {
-			return $tag;
+			return false;
 		}
 
-		if ($tag->isUserVisible() === false && $tag->isUserAssignable() === false) {
-			return $tag;
-		}
+		return $tag->isUserVisible() === true || $tag->isUserAssignable() === true;
+	}//end isExposedInternalTag()
 
+	/**
+	 * Make a tag invisible and not assignable, logging a refusal instead of failing.
+	 *
+	 * @param ISystemTag $tag The tag.
+	 *
+	 * @return void
+	 */
+	private function hideTag(ISystemTag $tag): void {
 		try {
 			$this->systemTagManager->updateTag(
 				tagId: $tag->getId(),
@@ -250,9 +322,7 @@ class TaggingHandler implements TaggingHandlerInterface {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
-
-		return $tag;
-	}//end hideInternalTag()
+	}//end hideTag()
 
 	/**
 	 * Get tags for a file.
@@ -269,31 +339,48 @@ class TaggingHandler implements TaggingHandlerInterface {
 	 */
 	public function getFileTags(string $fileId): array {
 		try {
-			// Get tag IDs for the file.
-			$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: self::FILE_TAG_TYPE);
-
-			if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
-				return [];
-			}
-
-			// Get actual tag objects from IDs.
-			$tags = $this->systemTagManager->getTagsByIds($tagIds[$fileId]);
-
-			// Extract tag names.
-			$tagNames = [];
-			foreach ($tags as $tag) {
-				$tagNames[] = $tag->getName();
-			}
-
-			return $tagNames;
+			return $this->tagNamesOf(objectId: $fileId, objectType: self::FILE_TAG_TYPE);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[TaggingHandler] Error getting tags for file ' . $fileId . ': ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return [];
-		}//end try
+		}
 	}//end getFileTags()
+
+	/**
+	 * The names of the tags assigned to one object.
+	 *
+	 * @param string $objectId   The object (file id or object UUID).
+	 * @param string $objectType The tag object type.
+	 *
+	 * @return array<int, string> The tag names.
+	 */
+	private function tagNamesOf(string $objectId, string $objectType): array {
+		$tagIds = $this->tagIdsOf(objectId: $objectId, objectType: $objectType);
+		if ($tagIds === []) {
+			return [];
+		}
+
+		return $this->namesOf(tags: $this->systemTagManager->getTagsByIds($tagIds));
+	}//end tagNamesOf()
+
+	/**
+	 * The names of a list of tags.
+	 *
+	 * @param iterable<ISystemTag> $tags The tags.
+	 *
+	 * @return array<int, string> Their names, in order.
+	 */
+	private function namesOf(iterable $tags): array {
+		$tagNames = [];
+		foreach ($tags as $tag) {
+			$tagNames[] = $tag->getName();
+		}
+
+		return $tagNames;
+	}//end namesOf()
 
 	/**
 	 * Generate the tag of an object.
@@ -322,21 +409,7 @@ class TaggingHandler implements TaggingHandlerInterface {
 	 */
 	public function getObjectTags(string $objectUuid): array {
 		try {
-			$tagIds = $this->systemTagMapper->getTagIdsForObjects(
-				objIds: [$objectUuid],
-				objectType: self::OBJECT_TAG_TYPE
-			);
-
-			if (isset($tagIds[$objectUuid]) === false || empty($tagIds[$objectUuid]) === true) {
-				return [];
-			}
-
-			$tags = $this->systemTagManager->getTagsByIds($tagIds[$objectUuid]);
-			$tagNames = [];
-			foreach ($tags as $tag) {
-				$tagNames[] = $tag->getName();
-			}
-
+			$tagNames = $this->tagNamesOf(objectId: $objectUuid, objectType: self::OBJECT_TAG_TYPE);
 			sort($tagNames);
 			return $tagNames;
 		} catch (Exception $e) {
@@ -345,7 +418,7 @@ class TaggingHandler implements TaggingHandlerInterface {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return [];
-		}//end try
+		}
 	}//end getObjectTags()
 
 	/**
@@ -443,14 +516,7 @@ class TaggingHandler implements TaggingHandlerInterface {
 	 */
 	public function getAllTags(): array {
 		try {
-			$tags = $this->systemTagManager->getAllTags(visibilityFilter: null);
-
-			$tagNames = [];
-			foreach ($tags as $tag) {
-				$tagNames[] = $tag->getName();
-			}
-
-			return $tagNames;
+			return $this->namesOf(tags: $this->systemTagManager->getAllTags(visibilityFilter: null));
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[TaggingHandler] Error getting all tags: ' . $e->getMessage(),

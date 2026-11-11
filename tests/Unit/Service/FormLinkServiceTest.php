@@ -29,7 +29,10 @@ use Exception;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapper;
 use OCA\OpenRegister\Db\FormSubmissionRef;
+use OCA\OpenRegister\Service\FormLinkScope;
 use OCA\OpenRegister\Service\FormLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
+use OCA\OpenRegister\Service\NewForm;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -99,10 +102,8 @@ class FormLinkServiceTest extends TestCase {
 		$this->service = new FormLinkService(
 			$this->formLinkMapper,
 			$this->container,
-			$this->appManager,
 			$this->db,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger)
 		);
 
 	}//end setUp()
@@ -177,7 +178,7 @@ class FormLinkServiceTest extends TestCase {
 		// Mapper insert MUST NOT be called when an existing row matches.
 		$this->formLinkMapper->expects($this->never())->method('insert');
 
-		$link = $this->service->linkForm(objectUuid: 'obj-1', registerId: 1, formId: 42);
+		$link = $this->service->linkFormTo(scope: new FormLinkScope(objectUuid: 'obj-1', registerId: 1), formId: 42);
 
 		$this->assertSame($existing, $link);
 
@@ -189,7 +190,7 @@ class FormLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->linkForm(objectUuid: 'obj-1', registerId: 1, formId: 42);
+		$this->service->linkFormTo(scope: new FormLinkScope(objectUuid: 'obj-1', registerId: 1), formId: 42);
 
 	}//end testLinkFormRequiresUser()
 
@@ -203,12 +204,7 @@ class FormLinkServiceTest extends TestCase {
 		$this->formLinkMapper->method('findSubmissionLink')->with('obj-1', new FormSubmissionRef(42, 1001))->willReturn($existing);
 		$this->formLinkMapper->expects($this->never())->method('insert');
 
-		$link = $this->service->linkFormSubmission(
-			objectUuid: 'obj-1',
-			registerId: 1,
-			formId: 42,
-			submissionId: 1001
-		);
+		$link = $this->service->linkSubmissionTo(scope: new FormLinkScope(objectUuid: 'obj-1', registerId: 1), submission: new FormSubmissionRef(formId: 42, submissionId: 1001));
 
 		$this->assertSame($existing, $link);
 
@@ -229,11 +225,7 @@ class FormLinkServiceTest extends TestCase {
 		$this->formLinkMapper->method('findSubmissionLink')->willReturn(null);
 		$this->formLinkMapper->expects($this->never())->method('delete');
 
-		$result = $this->service->unlinkSubmission(
-			objectUuid: 'obj-1',
-			formId: 42,
-			submissionId: 9999
-		);
+		$result = $this->service->unlinkSubmission(objectUuid: 'obj-1', submission: new FormSubmissionRef(formId: 42, submissionId: 9999));
 
 		$this->assertFalse($result);
 
@@ -246,11 +238,7 @@ class FormLinkServiceTest extends TestCase {
 		$this->formLinkMapper->method('findSubmissionLink')->willReturn($existing);
 		$this->formLinkMapper->expects($this->once())->method('delete')->with($existing);
 
-		$result = $this->service->unlinkSubmission(
-			objectUuid: 'obj-1',
-			formId: 42,
-			submissionId: 1001
-		);
+		$result = $this->service->unlinkSubmission(objectUuid: 'obj-1', submission: new FormSubmissionRef(formId: 42, submissionId: 1001));
 
 		$this->assertTrue($result);
 
@@ -264,11 +252,7 @@ class FormLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(503);
 		$this->expectExceptionMessage('NC Forms app is not installed');
 
-		$this->service->createAndLinkForm(
-			objectUuid: 'obj-1',
-			registerId: 1,
-			title: 'Demo form'
-		);
+		$this->service->createAndLinkForm(scope: new FormLinkScope(objectUuid: 'obj-1', registerId: 1), form: new NewForm(title: 'Demo form'));
 
 	}//end testCreateAndLinkFormRequiresFormsApp()
 

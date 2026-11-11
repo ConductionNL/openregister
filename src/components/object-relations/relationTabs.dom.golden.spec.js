@@ -243,6 +243,17 @@ async function clickAll(wrapper) {
 	return wrapper.emitted()
 }
 
+beforeEach(() => {
+	const toLocaleString = Date.prototype.toLocaleString
+	jest.spyOn(Date.prototype, 'toLocaleString').mockImplementation(function(locale, options) {
+		return toLocaleString.call(this, locale, { ...options, timeZone: 'UTC' })
+	})
+})
+
+afterEach(() => {
+	jest.restoreAllMocks()
+})
+
 describe.each(Object.keys(STORE_TABS))('store relation tab %s', (name) => {
 	const { component, items } = STORE_TABS[name]
 	const states = {

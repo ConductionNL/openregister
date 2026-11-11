@@ -29,10 +29,13 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
+use OCA\OpenRegister\Service\Archival\DestructionListWriter;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionStores;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -63,7 +66,7 @@ class DestructionListCreatorTest extends TestCase {
 
 		$objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['find', 'findAll'])
+			->onlyMethods(['find', 'findAllListed'])
 			->getMock();
 		$objectMapper->method('find')->willReturnCallback(
 			function (string|int $identifier): ObjectEntity {
@@ -74,7 +77,7 @@ class DestructionListCreatorTest extends TestCase {
 				return $this->objects[(string)$identifier];
 			}
 		);
-		$objectMapper->method('findAll')->willReturnCallback(fn (): array => $this->storedLists);
+		$objectMapper->method('findAllListed')->willReturnCallback(fn (): array => $this->storedLists);
 
 		$settings = $this->createMock(ObjectRetentionHandler::class);
 		$settings->method('getArchivalSettingsOnly')->willReturnCallback(fn (): array => $this->settings);
@@ -90,16 +93,15 @@ class DestructionListCreatorTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$retention = new RetentionService(
-			$objectMapper,
-			$schemaMapper,
-			$registerMapper,
-			$this->createMock(AuditTrailMapper::class),
-			$settings,
+			new RetentionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), $this->createMock(AuditTrailMapper::class)),
+			new RetentionRules(
+				$settings,
+				$this->createMock(RetentionRowScanner::class),
+				$this->createMock(ArchiveActionDateCalculator::class),
+				$this->createMock(SelectielijstResolver::class)
+			),
 			$session,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(RetentionRowScanner::class),
-			$this->createMock(ArchiveActionDateCalculator::class),
-			$this->createMock(SelectielijstResolver::class)
+			$this->createMock(LoggerInterface::class)
 		);
 
 		/** @var SaveObject&MockObject $saveObject */
@@ -116,8 +118,7 @@ class DestructionListCreatorTest extends TestCase {
 
 		$this->creator = new DestructionListCreator(
 			retention: $retention,
-			objectMapper: $objectMapper,
-			saveObject: $saveObject,
+			writer: new DestructionListWriter(objectMapper: $objectMapper, saveObject: $saveObject),
 			settingsHandler: $settings,
 			logger: $this->createMock(LoggerInterface::class)
 		);

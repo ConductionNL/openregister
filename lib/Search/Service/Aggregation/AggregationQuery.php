@@ -35,7 +35,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Aggregation;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 
 /**
  * Backend-portable aggregation request.
@@ -54,54 +53,60 @@ class AggregationQuery {
 
 	public const METRIC_MAX = 'max';
 
-	private const METRICS = [
-		self::METRIC_COUNT,
-		self::METRIC_SUM,
-		self::METRIC_AVG,
-		self::METRIC_MIN,
-		self::METRIC_MAX,
-	];
-
-	/**
-	 * Allowed gap units for dateBucket. Aligns with Solr's `facet.range.gap`
-	 * and ES's `date_histogram.calendar_interval` vocabularies.
-	 *
-	 * @var string[]
-	 */
-	private const DATE_BUCKET_GAPS = ['minute', 'hour', 'day', 'week', 'month', 'quarter', 'year'];
-
 	/**
 	 * Constructor — use the static factory.
 	 *
-	 * @param string $metric Aggregation metric.
-	 * @param ?string $field Field for sum/avg/min/max; required when metric != count.
+	 * The layout's properties are declared after it so the properties keep their order:
+	 * metric, field, filter, groupBy, dateBucket, metrics, cumulative.
+	 *
+	 * @param string               $metric Aggregation metric.
+	 * @param ?string              $field  Field for sum/avg/min/max; required when metric != count.
 	 * @param array<string, mixed> $filter Filter conditions (see class docblock for shapes).
-	 * @param array<string, mixed>|null $groupBy Optional grouping spec. Accepts a single-field shape
-	 *                                           (`{field: 'status'}`), a multi-field cross-tab shape
-	 *                                           (`{fields: ['vendorId', 'dueDateBucket']}`), or a
-	 *                                           plain ordered list of field names (`['vendorId',
-	 *                                           'dueDateBucket']`).
-	 * @param array<string, mixed>|null $dateBucket Optional date-bucket spec; `{field, start, end, gap}`.
-	 * @param array<int, array{metric: string, field?: ?string}>|null $metrics Optional multi-metric list
-	 *                                                                         — see {@see getMetrics()}
-	 *                                                                         for the canonicalisation and
-	 *                                                                         response-shape contract.
-	 * @param bool $cumulative Optional running-total flag
-	 *                         (REQ-AGG-103) — only valid
-	 *                         alongside `$dateBucket`; see
-	 *                         {@see isCumulative()}.
+	 * @param AggregationLayout    $layout The grouping, date buckets, metric list and running-total flag.
 	 */
 	private function __construct(
 		public readonly string $metric,
 		public readonly ?string $field,
 		public readonly array $filter,
-		public readonly ?array $groupBy,
-		public readonly ?array $dateBucket = null,
-		public readonly ?array $metrics = null,
-		public readonly bool $cumulative = false,
+		AggregationLayout $layout,
 	) {
-
+		$this->groupBy    = $layout->groupBy;
+		$this->dateBucket = $layout->dateBucket;
+		$this->metrics    = $layout->metrics;
+		$this->cumulative = $layout->cumulative;
 	}//end __construct()
+
+	/**
+	 * Optional grouping spec. Accepts a single-field shape (`{field: 'status'}`), a multi-field
+	 * cross-tab shape (`{fields: ['vendorId', 'dueDateBucket']}`), or a plain ordered list of
+	 * field names (`['vendorId', 'dueDateBucket']`).
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	public readonly ?array $groupBy;
+
+	/**
+	 * Optional date-bucket spec; `{field, start, end, gap}`.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	public readonly ?array $dateBucket;
+
+	/**
+	 * Optional multi-metric list — see {@see getMetrics()} for the canonicalisation and
+	 * response-shape contract.
+	 *
+	 * @var array<int, array{metric: string, field?: ?string}>|null
+	 */
+	public readonly ?array $metrics;
+
+	/**
+	 * Optional running-total flag (REQ-AGG-103) — only valid alongside `$dateBucket`;
+	 * see {@see isCumulative()}.
+	 *
+	 * @var boolean
+	 */
+	public readonly bool $cumulative;
 
 	/**
 	 * Construct an aggregation query — fails fast on bad input.
@@ -167,220 +172,29 @@ class AggregationQuery {
 		?array $metrics = null,
 		bool $cumulative = false,
 	): self {
-		self::assertValidMetric(metric: $metric, field: $field);
-		self::assertValidMetricsList(metrics: $metrics, timeBucketed: $dateBucket !== null);
-		self::assertValidGroupBy(groupBy: $groupBy);
-		self::assertValidTimeBucketing(dateBucket: $dateBucket, grouped: $groupBy !== null);
-		self::assertCumulativeIsTimeBucketed(cumulative: $cumulative, timeBucketed: $dateBucket !== null);
-
-		return new self(
-			metric: $metric,
-			field: $field,
-			filter: $filter,
-			groupBy: $groupBy,
-			dateBucket: $dateBucket,
-			metrics: $metrics,
-			cumulative: $cumulative
-		);
+		AggregationQueryRules::assertValidMetric(metric: $metric, field: $field);
+		$layout = new AggregationLayout(groupBy: $groupBy, dateBucket: $dateBucket, metrics: $metrics, cumulative: $cumulative);
+		self::assertValidLayout(layout: $layout);
+		return new self(metric: $metric, field: $field, filter: $filter, layout: $layout);
 	}//end create()
 
 	/**
-	 * The metric must be known, and every metric but count needs a field.
+	 * Fail fast on a metric list, grouping, time bucketing or running total that cannot run together.
 	 *
-	 * @param string      $metric The metric.
-	 * @param string|null $field  The field it runs over.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When the metric is unknown or lacks a field.
-	 */
-	private static function assertValidMetric(string $metric, ?string $field): void {
-		if (in_array($metric, self::METRICS, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'aggregation metric MUST be one of: %s (got: %s)',
-					implode(', ', self::METRICS),
-					$metric
-				)
-			);
-		}
-
-		if ($metric !== self::METRIC_COUNT && ($field === null || $field === '')) {
-			throw new InvalidArgumentException(
-				sprintf('aggregation metric "%s" MUST specify a field', $metric)
-			);
-		}
-	}//end assertValidMetric()
-
-	/**
-	 * A `metrics` list, when supplied, is non-empty, holds valid entries and
-	 * is not combined with a time bucket.
-	 *
-	 * @param array<int, mixed>|null $metrics      The metrics list, or null.
-	 * @param bool                   $timeBucketed Whether a dateBucket is set.
+	 * @param AggregationLayout $layout The grouping, date buckets, metric list and running-total flag.
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException When the list is empty, an entry is invalid or a dateBucket is set.
+	 * @throws InvalidArgumentException When the layout is invalid.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private static function assertValidMetricsList(?array $metrics, bool $timeBucketed): void {
-		if ($metrics === null) {
-			return;
-		}
-
-		if (count($metrics) === 0) {
-			throw new InvalidArgumentException('metrics list, when supplied, MUST NOT be empty');
-		}
-
-		foreach ($metrics as $metricEntry) {
-			self::assertValidMetricsEntry(metricEntry: $metricEntry);
-		}
-
-		if ($timeBucketed === true) {
-			throw new InvalidArgumentException(
-				'a multi-metric `metrics` list MUST NOT be combined with dateBucket (time-bucket) aggregation'
-			);
-		}
-	}//end assertValidMetricsList()
-
-	/**
-	 * One `metrics` entry: an array with a known `metric`, and a field for
-	 * every metric but count.
-	 *
-	 * @param mixed $metricEntry The entry.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When the entry is malformed.
-	 */
-	private static function assertValidMetricsEntry(mixed $metricEntry): void {
-		if (is_array($metricEntry) === false || array_key_exists('metric', $metricEntry) === false) {
-			throw new InvalidArgumentException('each metrics entry MUST be an array with a `metric` key');
-		}
-
-		$entryMetric = (string) $metricEntry['metric'];
-		if (in_array($entryMetric, self::METRICS, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'metrics entry has an invalid metric "%s" (MUST be one of: %s)',
-					$entryMetric,
-					implode(', ', self::METRICS)
-				)
-			);
-		}
-
-		$entryField = ($metricEntry['field'] ?? null);
-		if ($entryMetric !== self::METRIC_COUNT && ($entryField === null || $entryField === '')) {
-			throw new InvalidArgumentException(
-				sprintf('metrics entry "%s" MUST specify a field', $entryMetric)
-			);
-		}
-	}//end assertValidMetricsEntry()
-
-	/**
-	 * A groupBy, when supplied, names one or more distinct, non-empty fields.
-	 *
-	 * @param array<mixed>|null $groupBy The groupBy spec, or null.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When the groupBy is malformed.
-	 */
-	private static function assertValidGroupBy(?array $groupBy): void {
-		if ($groupBy === null) {
-			return;
-		}
-
-		$groupFields = self::normaliseGroupByFields(groupBy: $groupBy);
-		foreach ($groupFields as $groupField) {
-			if (is_string($groupField) === false || $groupField === '') {
-				throw new InvalidArgumentException(
-					'groupBy MUST include a non-empty `field`; every group field MUST be a non-empty string'
-				);
-			}
-		}
-
-		if (count($groupFields) === 0) {
-			throw new InvalidArgumentException(
-				'groupBy MUST include a non-empty `field` or a non-empty `fields` list'
-			);
-		}
-
-		if (count($groupFields) !== count(array_unique($groupFields))) {
-			throw new InvalidArgumentException('groupBy fields MUST be distinct (duplicate field in groupBy list)');
-		}
-	}//end assertValidGroupBy()
-
-	/**
-	 * A dateBucket, when supplied, is well formed and is the only bucketing.
-	 *
-	 * @param array<string, mixed>|null $dateBucket The dateBucket spec, or null.
-	 * @param bool                      $grouped    Whether a groupBy is set.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When the dateBucket is malformed or combined with a groupBy.
-	 */
-	private static function assertValidTimeBucketing(?array $dateBucket, bool $grouped): void {
-		if ($dateBucket === null) {
-			return;
-		}
-
-		self::assertValidDateBucket(spec: $dateBucket);
-		if ($grouped === true) {
-			throw new InvalidArgumentException(
-				'groupBy and dateBucket MUST NOT be combined — pick one bucketing strategy'
-			);
-		}
-	}//end assertValidTimeBucketing()
-
-	/**
-	 * A running total needs time buckets to accumulate over.
-	 *
-	 * @param bool $cumulative   The cumulative flag.
-	 * @param bool $timeBucketed Whether a dateBucket is set.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When cumulative is set without a dateBucket.
-	 */
-	private static function assertCumulativeIsTimeBucketed(bool $cumulative, bool $timeBucketed): void {
-		if ($cumulative === true && $timeBucketed === false) {
-			throw new InvalidArgumentException(
-				'cumulative MUST only be combined with a dateBucket (time-bucket) aggregation'
-			);
-		}
-	}//end assertCumulativeIsTimeBucketed()
-
-	/**
-	 * Validate a dateBucket spec.
-	 *
-	 * @param array<string, mixed> $spec The dateBucket spec.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When malformed.
-	 */
-	private static function assertValidDateBucket(array $spec): void {
-		foreach (['field', 'start', 'end', 'gap'] as $required) {
-			if (isset($spec[$required]) === false || $spec[$required] === '') {
-				throw new InvalidArgumentException(
-					'dateBucket MUST include non-empty `field`, `start`, `end`, `gap`'
-				);
-			}
-		}
-
-		if (in_array($spec['gap'], self::DATE_BUCKET_GAPS, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'dateBucket gap MUST be one of: %s (got: %s)',
-					implode(', ', self::DATE_BUCKET_GAPS),
-					(string)$spec['gap']
-				)
-			);
-		}
-
-	}//end assertValidDateBucket()
+	private static function assertValidLayout(AggregationLayout $layout): void {
+		AggregationQueryRules::assertValidMetricsList(metrics: $layout->metrics, timeBucketed: $layout->dateBucket !== null);
+		AggregationQueryRules::assertValidGroupBy(groupBy: $layout->groupBy);
+		AggregationQueryRules::assertValidTimeBucketing(dateBucket: $layout->dateBucket, grouped: $layout->groupBy !== null);
+		AggregationQueryRules::assertCumulativeIsTimeBucketed(cumulative: $layout->cumulative, timeBucketed: $layout->dateBucket !== null);
+	}//end assertValidLayout()
 
 	/**
 	 * Test whether the request includes a groupBy clause.
@@ -406,12 +220,7 @@ class AggregationQuery {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public function getGroupByField(): ?string {
-		$fields = $this->getGroupByFields();
-		if (count($fields) === 0) {
-			return null;
-		}
-
-		return $fields[0];
+		return ($this->getGroupByFields()[0] ?? null);
 	}//end getGroupByField()
 
 	/**
@@ -471,26 +280,7 @@ class AggregationQuery {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public static function normaliseGroupByFields(mixed $groupBy): array {
-		if (is_array($groupBy) === false) {
-			return [];
-		}
-
-		// Plain ordered list of field names: `['a', 'b']`.
-		if (array_is_list($groupBy) === true) {
-			return $groupBy;
-		}
-
-		// Multi-field cross-tab shape: `{fields: ['a', 'b']}`.
-		if (isset($groupBy['fields']) === true && is_array($groupBy['fields']) === true) {
-			return array_values($groupBy['fields']);
-		}
-
-		// Single-field shape: `{field: 'a'}`.
-		if (array_key_exists('field', $groupBy) === true) {
-			return [$groupBy['field']];
-		}
-
-		return [];
+		return AggregationQueryShape::groupByFields(groupBy: $groupBy);
 	}//end normaliseGroupByFields()
 
 	/**
@@ -529,43 +319,11 @@ class AggregationQuery {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public function getMetrics(): array {
-		if ($this->metrics !== null && count($this->metrics) > 0) {
-			$out = [];
-			foreach ($this->metrics as $entry) {
-				$entryField = ($entry['field'] ?? null);
-				if ($entryField === '') {
-					$entryField = null;
-				}
-
-				$normalised = [
-					'metric' => (string)$entry['metric'],
-					'field' => $entryField,
-				];
-
-				// Carry `condition` and `as` through.
-				//
-				// This method used to rebuild each entry as exactly
-				// {metric, field}, which silently DROPPED both before the
-				// runner ever saw them: a conditional metric came back as the
-				// unconditioned figure, and two aliased entries collided on one
-				// derived key. Neither failed — they just answered wrongly.
-				$condition = ($entry['condition'] ?? null);
-				if (is_array($condition) === true && $condition !== []) {
-					$normalised['condition'] = $condition;
-				}
-
-				$alias = ($entry['as'] ?? null);
-				if (is_string($alias) === true && $alias !== '') {
-					$normalised['as'] = $alias;
-				}
-
-				$out[] = $normalised;
-			}
-
-			return $out;
+		if ($this->metrics === null || count($this->metrics) === 0) {
+			return [['metric' => $this->metric, 'field' => $this->field]];
 		}
 
-		return [['metric' => $this->metric, 'field' => $this->field]];
+		return array_values(array_map(static fn (array $entry): array => AggregationQueryShape::normaliseMetricEntry(entry: $entry), $this->metrics));
 	}//end getMetrics()
 
 	/**
@@ -627,7 +385,7 @@ class AggregationQuery {
 		return [
 			'metric' => $this->metric,
 			'field' => $this->field,
-			'filter' => self::canonicaliseFilter(filter: $this->filter),
+			'filter' => AggregationQueryShape::canonicaliseFilter(filter: $this->filter),
 			'groupBy' => $this->groupBy,
 			'dateBucket' => $this->dateBucket,
 			'metrics' => $this->metrics,
@@ -639,27 +397,4 @@ class AggregationQuery {
 		];
 
 	}//end toArray()
-
-	/**
-	 * Recursively ksort the filter map.
-	 *
-	 * Operator sub-arrays (e.g. `{gt: 5, lte: 10}`) get the same treatment
-	 * so the resulting JSON encoding is stable across input orderings.
-	 *
-	 * @param array<string, mixed> $filter Filter map to canonicalise.
-	 *
-	 * @return array<string, mixed> Sorted filter map.
-	 */
-	private static function canonicaliseFilter(array $filter): array {
-		ksort($filter);
-		foreach ($filter as $key => $value) {
-			if (is_array($value) === true) {
-				$sub = $value;
-				ksort($sub);
-				$filter[$key] = $sub;
-			}
-		}
-
-		return $filter;
-	}//end canonicaliseFilter()
 }//end class

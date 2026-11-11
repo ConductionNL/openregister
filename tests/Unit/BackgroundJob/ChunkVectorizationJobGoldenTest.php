@@ -7,10 +7,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
@@ -230,9 +234,9 @@ class ChunkVectorizationJobGoldenTest extends TestCase
         $storage = $this->createMock(VectorStorageHandler::class);
         $storeCalls = 0;
         $storage->method('storeVector')->willReturnCallback(
-            function (...$args) use ($case, &$storeCalls): int {
+            function (StoredVector $vector) use ($case, &$storeCalls): int {
                 $storeCalls++;
-                $this->record('storeVector', $args);
+                $this->record('storeVector', array_values(get_object_vars($vector)));
                 if (in_array($storeCalls, $case['storeThrow'] ?? [], true) === true) {
                     throw new \Exception('store failed '.$storeCalls);
                 }
@@ -286,9 +290,10 @@ class ChunkVectorizationJobGoldenTest extends TestCase
 
         $this->registerService(LoggerInterface::class, fn () => $logger);
         $this->registerService(IAppConfig::class, fn () => $config);
-        $this->registerService(ChunkMapper::class, fn () => $mapper);
+        $this->registerService(ChunkStoreInterface::class, fn () => $mapper);
         $this->registerService(EmbeddingGeneratorInterface::class, fn () => $embeddings);
         $this->registerService(VectorStorageHandlerInterface::class, fn () => $storage);
+        $this->registerService(ChunkVectorFactoryInterface::class, fn () => new ChunkVectorFactory());
     }//end wire()
 
     /**

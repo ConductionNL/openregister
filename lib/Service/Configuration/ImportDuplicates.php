@@ -152,7 +152,7 @@ final class ImportDuplicates
 		$message .= "slugs to be unique. You can identify duplicates by checking {$kind}s with ";
 		$message .= 'the same slug, uuid, or id.';
 
-		$this->logger->error(message: '[ImportHandler] '.$message, context: ['file' => __FILE__, 'line' => __LINE__]);
+		$this->logger->error(message: ImportLogTag::PREFIX.$message, context: ['file' => __FILE__, 'line' => __LINE__]);
 		throw new Exception($message);
 	}//end refuse()
 

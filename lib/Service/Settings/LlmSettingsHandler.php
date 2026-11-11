@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 use RuntimeException;
 
@@ -83,12 +84,6 @@ class LlmSettingsHandler {
 	 */
 	private IAppConfig $appConfig;
 
-	/**
-	 * Application name
-	 *
-	 * @var string
-	 */
-	private string $appName;
 
 	/**
 	 * Records every save on the audit trail (openregister#4100).
@@ -101,18 +96,15 @@ class LlmSettingsHandler {
 	 * Constructor for LlmSettingsHandler
 	 *
 	 * @param IAppConfig $appConfig Configuration service.
-	 * @param string $appName Application name.
 	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IAppConfig $appConfig,
-		string $appName = 'openregister',
 		?OwnSettingsChangeRecorder $changeRecorder = null,
 	) {
 		$this->appConfig = $appConfig;
-		$this->appName = $appName;
 		$this->changeRecorder = $changeRecorder;
 	}//end __construct()
 
@@ -127,7 +119,7 @@ class LlmSettingsHandler {
 	 */
 	public function getLLMSettingsOnly(): array {
 		try {
-			$llmConfig = $this->appConfig->getValueString($this->appName, 'llm', '');
+			$llmConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'llm', '');
 			if (empty($llmConfig) === true) {
 				return self::LLM_DEFAULTS;
 			}
@@ -182,7 +174,7 @@ class LlmSettingsHandler {
 			$llmConfig = $this->patched(defaults: self::LLM_DEFAULTS, layers: [$llmData, $this->getLLMSettingsOnly()]);
 
 			$before = $this->changeRecorder?->snapshot(keys: ['llm']);
-			$this->appConfig->setValueString($this->appName, 'llm', json_encode($llmConfig));
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'llm', json_encode($llmConfig));
 			if ($before !== null) {
 				$this->changeRecorder?->record(before: $before, keys: ['llm']);
 			}

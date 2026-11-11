@@ -28,8 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectAction;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Throwable;
 
 /**
@@ -42,12 +42,12 @@ class ObjectActionElevationEntries {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registers Resolves a register by id or slug.
-	 * @param SchemaMapper   $schemas   Resolves a schema by id or slug.
+	 * @param RegisterMapperInterface $registers Resolves a register by id or slug.
+	 * @param SchemaMapperInterface   $schemas   Resolves a schema by id or slug.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 	) {
 	}//end __construct()
 

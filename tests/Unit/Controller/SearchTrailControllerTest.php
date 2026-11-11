@@ -7,7 +7,9 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\SearchTrailController;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -47,7 +49,7 @@ class SearchTrailControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
-		$this->controller = new SearchTrailController(
+		$this->controller = SearchTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->searchTrailService,
@@ -443,7 +445,7 @@ class SearchTrailControllerTest extends TestCase {
 			]);
 		$this->searchTrailService->expects($this->once())
 			->method('getSearchActivity')
-			->with('week', null, null)
+			->with(new SearchPeriod(), 'week')
 			->willReturn($activityData);
 
 		$result = $this->controller->activity();
@@ -1667,13 +1669,12 @@ class SearchTrailControllerTest extends TestCase {
 		$this->searchTrailService->expects($this->once())
 			->method('getSearchActivity')
 			->with(
-				'day',
-				$this->callback(function ($from) {
-					return $from instanceof \DateTime && $from->format('Y-m-d') === '2024-06-01';
+				$this->callback(function ($period) {
+					return $period instanceof SearchPeriod
+						&& $period->from instanceof \DateTime && $period->from->format('Y-m-d') === '2024-06-01'
+						&& $period->to instanceof \DateTime && $period->to->format('Y-m-d') === '2024-06-30';
 				}),
-				$this->callback(function ($to) {
-					return $to instanceof \DateTime && $to->format('Y-m-d') === '2024-06-30';
-				})
+				'day'
 			)
 			->willReturn($activityData);
 
@@ -1744,7 +1745,7 @@ class SearchTrailControllerTest extends TestCase {
 			$groupMgr->method('isAdmin')->with($user->getUID())->willReturn($isAdmin);
 		}
 
-		return new SearchTrailController(
+		return SearchTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->searchTrailService,

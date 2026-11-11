@@ -60,7 +60,7 @@ final class RulesControllerFactory {
 				replay: new \OCA\OpenRegister\Controller\Support\RulesReplay(
 					replays: $replays,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\RulesPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\DsarCasePlatform(
 					userSession: $userSession,
 				),
 			),

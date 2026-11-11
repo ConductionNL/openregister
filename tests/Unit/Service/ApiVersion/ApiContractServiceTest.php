@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ApiVersion;
 
 use OCA\OpenRegister\Service\ApiVersion\ApiContractService;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle;
 use OCA\OpenRegister\Service\OasService;
 use PHPUnit\Framework\TestCase;
 
@@ -65,7 +66,7 @@ class ApiContractServiceTest extends TestCase {
 	}//end service()
 
 	public function testTheFirstVersionDescribesTheWholeSurface(): void {
-		$whole = new ApiVersion(id: '1', status: ApiVersion::STATUS_SUPPORTED, pathPrefixes: ['/']);
+		$whole = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED), pathPrefixes: ['/']);
 
 		$document = $this->service()->documentFor(version: $whole);
 
@@ -76,7 +77,7 @@ class ApiContractServiceTest extends TestCase {
 	}//end testTheFirstVersionDescribesTheWholeSurface()
 
 	public function testAVersionDescribesOnlyItsOwnRoutes(): void {
-		$narrow = new ApiVersion(id: '2', status: ApiVersion::STATUS_SUPPORTED, pathPrefixes: ['/objects']);
+		$narrow = new ApiVersion(id: '2', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED), pathPrefixes: ['/objects']);
 
 		$document = $this->service()->documentFor(version: $narrow);
 
@@ -84,13 +85,7 @@ class ApiContractServiceTest extends TestCase {
 	}//end testAVersionDescribesOnlyItsOwnRoutes()
 
 	public function testTheStampNamesTheStatusAndTheDeadline(): void {
-		$deprecated = new ApiVersion(
-			id: '1',
-			status: ApiVersion::STATUS_DEPRECATED,
-			deprecatedOn: '2026-09-01',
-			sunset: '2027-03-01',
-			successor: '2',
-		);
+		$deprecated = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_DEPRECATED, deprecatedOn: '2026-09-01', sunset: '2027-03-01', successor: '2'));
 
 		$document = $this->service()->documentFor(version: $deprecated);
 
@@ -103,12 +98,7 @@ class ApiContractServiceTest extends TestCase {
 	}//end testTheStampNamesTheStatusAndTheDeadline()
 
 	public function testEveryOperationOfADeprecatedVersionIsMarkedDeprecated(): void {
-		$deprecated = new ApiVersion(
-			id: '1',
-			status: ApiVersion::STATUS_DEPRECATED,
-			sunset: '2027-03-01',
-			successor: '2',
-		);
+		$deprecated = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_DEPRECATED, sunset: '2027-03-01', successor: '2'));
 
 		$document = $this->service()->documentFor(version: $deprecated);
 		$item = $document['paths']['/objects/zaken/meldingen'];
@@ -123,7 +113,7 @@ class ApiContractServiceTest extends TestCase {
 	}//end testEveryOperationOfADeprecatedVersionIsMarkedDeprecated()
 
 	public function testASupportedVersionMarksNothingDeprecated(): void {
-		$supported = new ApiVersion(id: '2', status: ApiVersion::STATUS_SUPPORTED);
+		$supported = new ApiVersion(id: '2', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED));
 
 		$document = $this->service()->documentFor(version: $supported);
 
@@ -132,7 +122,7 @@ class ApiContractServiceTest extends TestCase {
 	}//end testASupportedVersionMarksNothingDeprecated()
 
 	public function testTheGeneratedInfoBlockIsLeftAlone(): void {
-		$supported = new ApiVersion(id: '1', status: ApiVersion::STATUS_SUPPORTED);
+		$supported = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED));
 
 		$document = $this->service()->documentFor(version: $supported);
 

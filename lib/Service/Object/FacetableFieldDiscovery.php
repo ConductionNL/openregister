@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Generator;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use Psr\Log\LoggerInterface;
 
@@ -59,13 +59,13 @@ final class FacetableFieldDiscovery {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface          $logger       The logger.
-	 * @param PropertyRbacHandler|null $propertyRbac Decides governed properties; absent, they are withheld.
+	 * @param PropertyRbacHandlerInterface|null $propertyRbac Decides governed properties; absent, they are withheld.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ?PropertyRbacHandler $propertyRbac,
+		private readonly ?PropertyRbacHandlerInterface $propertyRbac,
 	) {
 	}//end __construct()
 

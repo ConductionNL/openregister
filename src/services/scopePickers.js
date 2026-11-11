@@ -48,5 +48,15 @@ export const scopePickers = {
 		selectedSchemaValue() {
 			return scopeOption(schemaStore.schemaItem, 'schema')
 		},
+
+		/**
+		 * Whether a register is picked, so the schema picker can be used.
+		 *
+		 * @spec exclude whether a register is picked, UI plumbing
+		 * @return {boolean} True when a register is picked
+		 */
+		hasRegister() {
+			return !!registerStore.registerItem
+		},
 	},
 }

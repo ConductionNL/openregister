@@ -28,6 +28,7 @@ final class CredentialOauth2ControllerFactory {
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param IThrottler $throttler Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
+	 * @param OAuth2InstanceHostInterface|null $instanceHost Constructor argument; the real host rule when null.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -42,9 +43,9 @@ final class CredentialOauth2ControllerFactory {
 		\OCP\IUserSession $userSession,
 		\OCP\Security\Bruteforce\IThrottler $throttler,
 		\Psr\Log\LoggerInterface $logger,
+		?\OCA\OpenRegister\Service\Credential\OAuth2InstanceHostInterface $instanceHost = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\CredentialOauth2Mappers(
@@ -56,12 +57,13 @@ final class CredentialOauth2ControllerFactory {
 					relay: $relay,
 					endpoints: $endpoints,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\CredentialOauth2Platform(
+				platform: new \OCA\OpenRegister\Controller\Support\AccessLinkPlatform(
 					userSession: $userSession,
 					throttler: $throttler,
 					logger: $logger,
 				),
 			),
+			$instanceHost ?? new \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost(),
 		];
 	}
 

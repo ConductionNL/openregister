@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Search\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Configuration;
@@ -82,7 +83,7 @@ use OCA\OpenRegister\Db\Task;
  * request and never written, and merging those two into one bag would hide
  * what they are to move a number by one.
  */
-class View extends Entity implements JsonSerializable {
+class View extends Entity implements JsonSerializable, ViewInterface {
 	use IsoTimestampsTrait;
 
 	/**
@@ -354,6 +355,29 @@ class View extends Entity implements JsonSerializable {
 	public function jsonSerialize(): array {
 		$favoredBy = $this->favoredBy ?? [];
 
+		return array_merge(
+			$this->identityJson(),
+			$this->definitionJson(),
+			[
+				// `@self.access` is what this CALLER may do, and it is absent
+				// rather than guessed when nobody resolved it: a serialiser that
+				// answered `read` by default would tell a client the view is
+				// read-only on every path that forgot to ask.
+				'@self' => ['access' => $this->access],
+				'favoredBy' => $favoredBy,
+				'quota' => $this->quotaJson(),
+				'usage' => $this->usageJson(favoredBy: $favoredBy),
+			],
+			$this->timestampsJson()
+		);
+	}//end jsonSerialize()
+
+	/**
+	 * Who the view is and who holds it.
+	 *
+	 * @return array<string, mixed> The identity part of the serialised view.
+	 */
+	private function identityJson(): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -363,46 +387,69 @@ class View extends Entity implements JsonSerializable {
 			'organisation' => $this->organisation,
 			'isPublic' => $this->isPublic,
 			'isDefault' => $this->isDefault,
+		];
+	}//end identityJson()
+
+	/**
+	 * What the view searches and shows, its alert and its shares.
+	 *
+	 * @return array<string, mixed> The definition part of the serialised view.
+	 */
+	private function definitionJson(): array {
+		return [
 			'query' => $this->query,
 			'presentation' => $this->getPresentationFormatted(),
 			'alert' => $this->alert,
 			'alertState' => $this->alertState,
 			'sharedWith' => ($this->sharedWith ?? []),
-			// `@self.access` is what this CALLER may do, and it is absent
-			// rather than guessed when nobody resolved it: a serialiser that
-			// answered `read` by default would tell a client the view is
-			// read-only on every path that forgot to ask.
-			'@self' => ['access' => $this->access],
-			'favoredBy' => $favoredBy,
-			'quota' => [
-				'storage' => null,
-				// To be set via admin configuration.
-				'bandwidth' => null,
-				// To be set via admin configuration.
-				'requests' => null,
-				// To be set via admin configuration.
-				'users' => null,
-				// To be set via admin configuration.
-				'groups' => null,
-				// To be set via admin configuration.
-			],
-			'usage' => [
-				'storage' => 0,
-				// To be calculated from actual usage.
-				'bandwidth' => 0,
-				// To be calculated from actual usage.
-				'requests' => 0,
-				// To be calculated from actual usage (query executions).
-				'users' => count($favoredBy),
-				// Number of users who favorited this view.
-				'groups' => 0,
-				// Views don't have groups.
-			],
+		];
+	}//end definitionJson()
+
+	/**
+	 * The quota block; every limit is set via admin configuration, so all are null here.
+	 *
+	 * @return array<string, null> The quota block.
+	 */
+	private function quotaJson(): array {
+		return [
+			'storage' => null,
+			'bandwidth' => null,
+			'requests' => null,
+			'users' => null,
+			'groups' => null,
+		];
+	}//end quotaJson()
+
+	/**
+	 * The usage block: users is the number of users who favorited this view;
+	 * storage, bandwidth and requests are not calculated yet, and views have no groups.
+	 *
+	 * @param array $favoredBy The user ids who favorited this view.
+	 *
+	 * @return array<string, int> The usage block.
+	 */
+	private function usageJson(array $favoredBy): array {
+		return [
+			'storage' => 0,
+			'bandwidth' => 0,
+			'requests' => 0,
+			'users' => count($favoredBy),
+			'groups' => 0,
+		];
+	}//end usageJson()
+
+	/**
+	 * The timestamps and the managing configuration, formatted for the API.
+	 *
+	 * @return array<string, mixed> The timestamp part of the serialised view.
+	 */
+	private function timestampsJson(): array {
+		return [
 			'created' => $this->getCreatedFormatted(),
 			'updated' => $this->getUpdatedFormatted(),
 			'managedByConfiguration' => $this->getManagedByConfigurationFormatted(),
 		];
-	}//end jsonSerialize()
+	}//end timestampsJson()
 
 	/**
 	 * Get the presentation configuration, defaulted to the `table` view.
@@ -417,16 +464,7 @@ class View extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 */
 	private function getPresentationFormatted(): array {
-		$presentation = $this->presentation;
-		if (is_array($presentation) === false) {
-			return ['viewType' => 'table'];
-		}
-
-		if (empty($presentation['viewType']) === true) {
-			$presentation['viewType'] = 'table';
-		}
-
-		return $presentation;
+		return ViewFormatting::presentation(presentation: $this->presentation);
 	}//end getPresentationFormatted()
 
 	/**
@@ -437,15 +475,7 @@ class View extends Entity implements JsonSerializable {
 	 * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
 	 */
 	private function getManagedByConfigurationFormatted(): ?array {
-		if ($this->managedByConfig !== null) {
-			return [
-				'id' => $this->managedByConfig->getId(),
-				'uuid' => $this->managedByConfig->getUuid(),
-				'title' => $this->managedByConfig->getTitle(),
-			];
-		}
-
-		return null;
+		return ViewFormatting::managedBy(configuration: $this->managedByConfig);
 	}//end getManagedByConfigurationFormatted()
 
 	/**
@@ -519,17 +549,6 @@ class View extends Entity implements JsonSerializable {
 	 * @psalm-param   array<Configuration> $configurations
 	 */
 	public function getManagedByConfiguration(array $configurations): ?Configuration {
-		if (empty($configurations) === true || $this->id === null) {
-			return null;
-		}
-
-		foreach ($configurations as $configuration) {
-			$views = $configuration->getViews();
-			if (in_array($this->id, $views, true) === true) {
-				return $configuration;
-			}
-		}
-
-		return null;
+		return ViewFormatting::managing(viewId: $this->id, configurations: $configurations);
 	}//end getManagedByConfiguration()
 }//end class

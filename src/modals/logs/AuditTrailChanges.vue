@@ -20,29 +20,8 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 					}}
 				</h3>
 				<div class="audit-info">
-					<span
-						class="action-badge"
-						:class="`action-${auditTrailStore.auditTrailItem.action}`">
-						<Plus
-							v-if="auditTrailStore.auditTrailItem.action === 'create'"
-							:size="16" />
-						<Pencil
-							v-else-if="
-								auditTrailStore.auditTrailItem.action === 'update'
-							"
-							:size="16" />
-						<Delete
-							v-else-if="
-								auditTrailStore.auditTrailItem.action === 'delete'
-							"
-							:size="16" />
-						<Eye
-							v-else-if="
-								auditTrailStore.auditTrailItem.action === 'read'
-							"
-							:size="16" />
-						{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
-					</span>
+					<AuditActionBadge
+						:action="auditTrailStore.auditTrailItem.action" />
 					<span class="timestamp">
 						{{ formatDate(auditTrailStore.auditTrailItem.created) }}
 					</span>
@@ -164,16 +143,16 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 import { NcButton, NcDialog, NcEmptyContent } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import AuditActionBadge from './AuditActionBadge.vue'
 import auditTrailModal from '../../services/auditTrailModal.js'
+import { printableValue } from './auditValues.js'
 
 export default {
 	name: 'AuditTrailChanges',
 	components: {
+		AuditActionBadge,
 		NcDialog,
 		NcButton,
 		NcEmptyContent,
@@ -181,9 +160,6 @@ export default {
 		Close,
 		ContentCopy,
 		Eye,
-		Plus,
-		Pencil,
-		Delete,
 		InformationOutline,
 	},
 
@@ -204,13 +180,8 @@ export default {
 			// Try to process as table-style changes
 			if (typeof changed === 'object' && !Array.isArray(changed)) {
 				// Check if it's in the format { field: { old: value, new: value } }
-				const hasStandardFormat = Object.values(changed).every(
-					(value) =>
-						typeof value === 'object'
-						&& value !== null
-						&& (Object.hasOwn(value, 'old')
-							|| Object.hasOwn(value, 'new')),
-				)
+				const hasStandardFormat =
+					Object.values(changed).every(isOldNewChange)
 
 				if (hasStandardFormat) {
 					return changed
@@ -246,15 +217,7 @@ export default {
 			if (value === undefined) return 'undefined'
 			if (value === '') return '(empty)'
 
-			if (typeof value === 'object') {
-				try {
-					return JSON.stringify(value, null, 2)
-				} catch {
-					return String(value)
-				}
-			}
-
-			return String(value)
+			return printableValue(value)
 		},
 
 		/**
@@ -323,6 +286,20 @@ export default {
 			navigationStore.setDialog('auditTrailDetails')
 		},
 	},
+}
+
+/**
+ * Whether a logged change is in the `{ old, new }` form.
+ *
+ * @param {unknown} value The logged change of one field
+ * @return {boolean} True when it holds an old or a new value
+ */
+function isOldNewChange(value) {
+	return (
+		typeof value === 'object'
+		&& value !== null
+		&& (Object.hasOwn(value, 'old') || Object.hasOwn(value, 'new'))
+	)
 }
 </script>
 

@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
  * the admin cache clear empty them through this class, because entries are keyed
  * by query hash and cannot be selected by schema.
  */
-class FacetResultCacheClearer {
+class FacetResultCacheClearer implements FacetResultCacheClearerInterface {
 
 	/**
 	 * The namespaces holding computed facet results.

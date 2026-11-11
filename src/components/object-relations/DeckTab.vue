@@ -90,14 +90,9 @@ SPDX-License-Identifier: EUPL-1.2
 						}}</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Remove Deck card')"
-					@click="unlinkCard(card)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Remove Deck card')"
+					@unlink="unlinkCard(card)" />
 			</li>
 		</ul>
 	</div>
@@ -105,11 +100,11 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import TableLarge from 'vue-material-design-icons/TableLarge.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
 import TableRemove from 'vue-material-design-icons/TableRemove.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
 import { useDeckRelationsStore } from '../../store/modules/object-relations/deck.js'
 import { storeRelationTab } from './relationTab.js'
 
@@ -135,7 +130,7 @@ export default {
 		TableLarge,
 		TableLargePlus,
 		TableRemove,
-		CloseCircleOutline,
+		UnlinkButton,
 	},
 
 	mixins: [storeRelationTab(useDeckRelationsStore)],
@@ -168,65 +163,8 @@ export default {
 }
 </script>
 
-<style scoped>
-.deck-tab__toolbar {
-	display: flex;
-	gap: 8px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
 
-.deck-tab__loading {
-	display: flex;
-	justify-content: center;
-	padding: 2em 0;
-}
-
-.deck-tab__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.deck-tab__item {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.deck-tab__item:last-child {
-	border-bottom: none;
-}
-
-.deck-tab__icon {
-	flex-shrink: 0;
-	color: var(--color-text-maxcontrast);
-}
-
-.deck-tab__content {
-	flex-grow: 1;
-	min-width: 0;
-}
-
-.deck-tab__title {
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.deck-tab__meta {
-	display: flex;
-	gap: 6px;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.85em;
-}
-
-.deck-tab__board {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
+@include relation-tab-list('deck-tab', 'title', 'board');
 </style>

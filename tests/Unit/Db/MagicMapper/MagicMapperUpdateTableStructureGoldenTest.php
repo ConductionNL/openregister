@@ -25,11 +25,17 @@ use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\DB\IPreparedStatement;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -234,17 +240,17 @@ class MagicMapperUpdateTableStructureGoldenTest extends TestCase {
 			'missing' => static fn (MagicMapper $m) => $m->findMissingColumns($current, $required),
 			'jsonb' => static fn (MagicMapper $m) => $m->findJsonbColumnsNeedingRetype($current, $required),
 			'relation' => static fn (MagicMapper $m) => $m->findRelationColumnsNeedingRetype($current, $required),
-			'relation retype' => static fn (MagicMapper $m) => $m->migrateRelationColumnsToVarchar($table, $current, $required),
+			'relation retype' => static fn (MagicMapper $m) => $m->migrateRelationColumnsToVarchar($table, new MagicColumnDrift($current, $required)),
 			'decimal' => static fn (MagicMapper $m) => $m->findDecimalColumnsNeedingWiden($current, $required),
-			'widen' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, $current, $numbers),
+			'widen' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, new MagicColumnDrift($current, $numbers)),
 			'decimal retyped to text' => static fn (MagicMapper $m) => $m->findDecimalColumnsNeedingWiden($current, ['amount' => ['name' => 'amount', 'type' => 'string']]),
 			'metadata camelCase kept' => static fn (MagicMapper $m) => $m->updateTableStructure(
 				$table,
 				['_fooBar' => ['name' => '_fooBar', 'type' => 'varchar'], '_foo_bar' => ['name' => '_foo_bar', 'type' => 'varchar']],
 				['fooBar' => ['name' => '_foo_bar', 'type' => 'string']]
 			),
-			'widen nothing' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, ['title' => $current['title']], []),
-			'widen fails' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, $failingLive, $failing),
+			'widen nothing' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, new MagicColumnDrift(['title' => $current['title']], [])),
+			'widen fails' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, new MagicColumnDrift($failingLive, $failing)),
 			'widen to default' => static fn (MagicMapper $m) => $m->widenNumberColumnsToDefault($table),
 			'add column plain' => static fn (MagicMapper $m) => $m->buildAddColumnSql($table, ['name' => 'plain', 'type' => 'string']),
 			'add column text' => static fn (MagicMapper $m) => $m->buildAddColumnSql($table, ['name' => 'who', 'type' => 'string', 'default' => "O'Brien", 'nullable' => false]),
@@ -355,25 +361,30 @@ class MagicMapperUpdateTableStructureGoldenTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$services = [
-			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
-			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
 		return new MagicMapper(
 			$db,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$config,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$logger,
-			$this->createMock(SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(RegisterMapper::class),
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$config,
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$logger
+			)
 		);
 	}//end mapper()
 }//end class

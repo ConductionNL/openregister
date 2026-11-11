@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Files\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 
@@ -38,12 +38,12 @@ class RegisterRiskLevelMetadata implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param RiskLevelService $riskLevelService Risk level service
+	 * @param RiskLevelServiceInterface $riskLevelService Risk level service
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly RiskLevelService $riskLevelService,
+		private readonly RiskLevelServiceInterface $riskLevelService,
 	) {
 	}//end __construct()
 

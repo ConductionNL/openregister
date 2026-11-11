@@ -1,54 +1,16 @@
 <template>
 	<NcAppContent>
 		<div class="viewContainer">
-			<div class="viewHeader">
-				<h1>{{ t('openregister', 'Data Quality') }}</h1>
-				<p>
-					{{
-						t(
-							'openregister',
-							'Review score distribution and the lowest-quality objects for a register and schema.',
-						)
-					}}
-				</p>
-			</div>
-
-			<RegisterSchemaSelector />
-
-			<NcEmptyContent
-				v-if="!hasSelection"
-				:name="t('openregister', 'Select a register and schema')"
-				:description="
-					t(
-						'openregister',
-						'Choose a register and schema above to see its quality statistics.',
-					)
-				">
+			<QualityPageFrame
+				:title="t('openregister', 'Data Quality')"
+				:description="t('openregister', 'Review score distribution and the lowest-quality objects for a register and schema.')"
+				:selectDescription="t('openregister', 'Choose a register and schema above to see its quality statistics.')"
+				:empty="isEmpty"
+				:emptyName="t('openregister', 'No scored objects for this schema')"
+				:emptyDescription="t('openregister', 'This schema has no objects with a materialised quality score yet.')">
 				<template #icon>
 					<ChartBoxOutline :size="64" />
 				</template>
-			</NcEmptyContent>
-
-			<template v-else-if="loading">
-				<NcLoadingIcon :size="32" />
-			</template>
-
-			<template v-else-if="isEmpty">
-				<NcEmptyContent
-					:name="t('openregister', 'No scored objects for this schema')"
-					:description="
-						t(
-							'openregister',
-							'This schema has no objects with a materialised quality score yet.',
-						)
-					">
-					<template #icon>
-						<ChartBoxOutline :size="64" />
-					</template>
-				</NcEmptyContent>
-			</template>
-
-			<template v-else>
 				<!-- KPI cards -->
 				<div class="kpiRow">
 					<div class="kpiCard">
@@ -86,27 +48,11 @@
 						:series="histogramSeries"
 						:categories="histogramCategories"
 						@error="chartAvailable = false" />
-					<table
+					<CnDataTable
 						v-else
-						class="histogramTable"
-						data-testid="histogram-fallback-table">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Bucket') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Count') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="(count, index) in histogram" :key="index">
-								<td>{{ histogramCategories[index] }}</td>
-								<td>{{ count }}</td>
-							</tr>
-						</tbody>
-					</table>
+						data-testid="histogram-fallback-table"
+						:columns="histogramColumns"
+						:rows="histogramRows" />
 				</section>
 
 				<!-- Lowest-quality table -->
@@ -119,80 +65,33 @@
 							<ChartBoxOutline :size="48" />
 						</template>
 					</NcEmptyContent>
-					<table v-else class="lowestQualityTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Id') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Quality score') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Quality status') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="item in lowQualityObjects" :key="item.id">
-								<td>{{ item.id }}</td>
-								<td>{{ item.qualityScore }}</td>
-								<td>
-									<span
-										:class="
-											'badge badge-status-'
-											+ item.qualityStatus
-										"
-										>{{ item.qualityStatus }}</span
-									>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-					<div v-if="lowQualityTotal > lowQualityLimit" class="pagination">
-						<NcButton
-							:disabled="lowQualityOffset === 0"
-							@click="previousPage">
-							{{ t('openregister', 'Previous') }}
-						</NcButton>
-						<span class="paginationInfo">
-							{{
-								t('openregister', 'Showing {from}-{to} of {total}', {
-									from: lowQualityOffset + 1,
-									to: Math.min(
-										lowQualityOffset + lowQualityLimit,
-										lowQualityTotal,
-									),
-									total: lowQualityTotal,
-								})
-							}}
-						</span>
-						<NcButton
-							:disabled="
-								lowQualityOffset + lowQualityLimit >= lowQualityTotal
-							"
-							@click="nextPage">
-							{{ t('openregister', 'Next') }}
-						</NcButton>
-					</div>
+					<CnDataTable v-else :columns="lowQualityColumns" :rows="lowQualityObjects">
+						<template #column-qualityScore="{ value }">
+							{{ value }}
+						</template>
+						<template #column-qualityStatus="{ row }">
+							<span :class="'badge badge-status-' + row.qualityStatus">{{ row.qualityStatus }}</span>
+						</template>
+					</CnDataTable>
+					<RangePager
+						:offset="lowQualityOffset"
+						:limit="lowQualityLimit"
+						:total="lowQualityTotal"
+						@previous="previousPage"
+						@next="nextPage" />
 				</section>
-			</template>
+			</QualityPageFrame>
 		</div>
 	</NcAppContent>
 </template>
 
 <script>
-import { CnChartWidget } from '@conduction/nextcloud-vue'
+import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent } from '@nextcloud/vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
-import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import { qualityStore } from '../../store/store.js'
+import { qualityListPage, QualityPageFrame, RangePager } from './qualityListPage.js'
 
 export default {
 	name: 'QualityIndex',
@@ -200,12 +99,14 @@ export default {
 	components: {
 		NcAppContent,
 		NcEmptyContent,
-		NcLoadingIcon,
-		NcButton,
 		CnChartWidget,
+		CnDataTable,
 		ChartBoxOutline,
-		RegisterSchemaSelector,
+		QualityPageFrame,
+		RangePager,
 	},
+
+	mixins: [qualityListPage('fetchLowQualityObjects', 'lowQuality')],
 
 	data() {
 		return {
@@ -214,20 +115,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec exclude UI plumbing — proxies the store's hasSelection getter, no backend contract of its own
-		 */
-		hasSelection() {
-			return qualityStore.hasSelection
-		},
-
-		/**
-		 * @spec exclude UI plumbing — proxies the store's loading flag, no backend contract of its own
-		 */
-		loading() {
-			return qualityStore.isLoading
-		},
-
 		/**
 		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
@@ -274,6 +161,41 @@ export default {
 		},
 
 		/**
+		 * @spec exclude UI plumbing — static column definitions for the histogram fallback table
+		 * @return {Array<object>}
+		 */
+		histogramColumns() {
+			return [
+				{ key: 'bucket', label: t('openregister', 'Bucket') },
+				{ key: 'count', label: t('openregister', 'Count') },
+			]
+		},
+
+		/**
+		 * @spec exclude UI plumbing — one fallback-table row per histogram bucket
+		 * @return {Array<object>}
+		 */
+		histogramRows() {
+			return this.histogram.map((count, index) => ({
+				id: index,
+				bucket: this.histogramCategories[index],
+				count,
+			}))
+		},
+
+		/**
+		 * @spec exclude UI plumbing — static column definitions for the lowest-quality table
+		 * @return {Array<object>}
+		 */
+		lowQualityColumns() {
+			return [
+				{ key: 'id', label: t('openregister', 'Id') },
+				{ key: 'qualityScore', label: t('openregister', 'Quality score') },
+				{ key: 'qualityStatus', label: t('openregister', 'Quality status') },
+			]
+		},
+
+		/**
 		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		lowQualityObjects() {
@@ -302,19 +224,6 @@ export default {
 		},
 	},
 
-	/**
-	 * @spec openspec/specs/mdm-frontend/spec.md
-	 */
-	mounted() {
-		if (this.hasSelection) {
-			this.loadData()
-		}
-		this.$watch(
-			() => [qualityStore.selectedRegister, qualityStore.selectedSchema],
-			() => this.loadData(),
-		)
-	},
-
 	methods: {
 		/**
 		 * Load quality stats + lowest-quality listing for the current
@@ -338,30 +247,6 @@ export default {
 				),
 			])
 		},
-
-		/**
-		 * @spec exclude UI pagination handler — delegates to fetchLowQualityObjects
-		 */
-		async previousPage() {
-			const offset = Math.max(0, this.lowQualityOffset - this.lowQualityLimit)
-			await qualityStore.fetchLowQualityObjects(
-				qualityStore.selectedRegister,
-				qualityStore.selectedSchema,
-				{ limit: this.lowQualityLimit, offset },
-			)
-		},
-
-		/**
-		 * @spec exclude UI pagination handler — delegates to fetchLowQualityObjects
-		 */
-		async nextPage() {
-			const offset = this.lowQualityOffset + this.lowQualityLimit
-			await qualityStore.fetchLowQualityObjects(
-				qualityStore.selectedRegister,
-				qualityStore.selectedSchema,
-				{ limit: this.lowQualityLimit, offset },
-			)
-		},
 	},
 }
 </script>
@@ -369,11 +254,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
 
-@include view-container-3;
-
-.viewHeader h1 {
-	margin-bottom: 4px;
-}
+@include view-container-3-subtitled;
 
 .kpiRow {
 	display: flex;
@@ -404,21 +285,6 @@ export default {
 .histogramSection,
 .lowestQualitySection {
 	margin-top: 24px;
-}
-
-.histogramTable,
-.lowestQualityTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.histogramTable th,
-.histogramTable td,
-.lowestQualityTable th,
-.lowestQualityTable td {
-	text-align: left;
-	padding: 8px;
-	border-bottom: 1px solid var(--color-border);
 }
 
 @include pagination-2-rules;

@@ -136,6 +136,30 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 
+/**
+ * Fetch the caller's credentials and the providers that can be connected.
+ *
+ * @return {Promise<Array<object>>} The two axios responses.
+ */
+function fetchCredentialsAndProviders() {
+	return Promise.all([
+		axios.get(generateUrl('/apps/openregister/api/credentials')),
+		axios.get(generateUrl('/apps/openregister/api/credentials/providers')),
+	])
+}
+
+/**
+ * The OAuth2 token-set entries of a credentials answer.
+ *
+ * @param {object} response The axios response.
+ * @return {Array<object>} The entries.
+ */
+function tokenSetsOf(response) {
+	return (response.data?.results ?? []).filter(
+		(entry) => entry.kind === 'oauth2-token-set',
+	)
+}
+
 export default {
 	name: 'OAuth2ConnectionsSection',
 	components: {
@@ -191,18 +215,9 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const [credentials, providers] = await Promise.all([
-					axios.get(generateUrl('/apps/openregister/api/credentials')),
-					axios.get(
-						generateUrl('/apps/openregister/api/credentials/providers'),
-					),
-				])
-				this.connections = (credentials.data?.results ?? []).filter(
-					(entry) => entry.kind === 'oauth2-token-set',
-				)
-				this.providers = (providers.data?.results ?? []).filter(
-					(entry) => entry.kind === 'oauth2-token-set',
-				)
+				const [credentials, providers] = await fetchCredentialsAndProviders()
+				this.connections = tokenSetsOf(credentials)
+				this.providers = tokenSetsOf(providers)
 			} catch {
 				this.error = t(
 					'openregister',

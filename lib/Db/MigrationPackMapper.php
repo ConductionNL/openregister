@@ -36,7 +36,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/migration-mapping-packs/spec.md
  */
-class MigrationPackMapper extends QBMapper {
+class MigrationPackMapper extends QBMapper implements MigrationPackMapperInterface {
 
 	use SelectByColumnTrait;
 	/**

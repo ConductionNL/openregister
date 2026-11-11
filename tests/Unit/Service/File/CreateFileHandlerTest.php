@@ -17,17 +17,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\CreateFileSources;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use OCP\Files\Folder;
-use OCP\Files\IRootFolder;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -46,11 +48,6 @@ class CreateFileHandlerTest extends TestCase {
 	 * @var CreateFileHandler
 	 */
 	private CreateFileHandler $handler;
-
-	/**
-	 * @var IRootFolder&MockObject
-	 */
-	private $rootFolder;
 
 	/**
 	 * @var FolderManagementHandler&MockObject
@@ -92,7 +89,6 @@ class CreateFileHandlerTest extends TestCase {
 			$this->markTestSkipped('Nextcloud server classes unavailable; run in the Docker test environment.');
 		}
 
-		$this->rootFolder = $this->createMock(IRootFolder::class);
 		$this->folderMgmtHandler = $this->createMock(FolderManagementHandler::class);
 		$this->fileValidHandler = $this->createMock(FileValidationHandler::class);
 		$this->fileOwnershipHandler = $this->createMock(FileOwnershipHandler::class);
@@ -101,12 +97,9 @@ class CreateFileHandlerTest extends TestCase {
 		$this->fileService = $this->createMock(FileService::class);
 
 		$this->handler = new CreateFileHandler(
-			$this->rootFolder,
-			$this->folderMgmtHandler,
+			new CreateFileSources($this->folderMgmtHandler, $this->objectEntityMapper, $this->logger),
 			$this->fileValidHandler,
-			$this->fileOwnershipHandler,
-			$this->objectEntityMapper,
-			$this->logger
+			$this->fileOwnershipHandler
 		);
 		$this->handler->setFileService($this->fileService);
 	}//end setUp()
@@ -148,9 +141,8 @@ class CreateFileHandlerTest extends TestCase {
 		rewind($stream);
 
 		$result = $this->handler->addFile(
-			objectEntity: $this->createMock(ObjectEntity::class),
-			fileName: 'doc.pdf',
-			content: $stream
+			target: new FileTarget(object: $this->createMock(ObjectEntity::class)),
+			upload: new FileUpload(fileName: 'doc.pdf', content: $stream, share: false)
 		);
 
 		$this->assertSame($file, $result);
@@ -176,9 +168,8 @@ class CreateFileHandlerTest extends TestCase {
 
 		try {
 			$this->handler->addFile(
-				objectEntity: $this->createMock(ObjectEntity::class),
-				fileName: 'evil.pdf',
-				content: $stream
+				target: new FileTarget(object: $this->createMock(ObjectEntity::class)),
+				upload: new FileUpload(fileName: 'evil.pdf', content: $stream, share: false)
 			);
 		} finally {
 			fclose($stream);
@@ -194,9 +185,8 @@ class CreateFileHandlerTest extends TestCase {
 			->with($this->callback(static fn ($arg): bool => is_string($arg) === true));
 
 		$result = $this->handler->addFile(
-			objectEntity: $this->createMock(ObjectEntity::class),
-			fileName: 'doc.pdf',
-			content: 'plain-string-content'
+			target: new FileTarget(object: $this->createMock(ObjectEntity::class)),
+			upload: new FileUpload(fileName: 'doc.pdf', content: 'plain-string-content', share: false)
 		);
 
 		$this->assertSame($file, $result);

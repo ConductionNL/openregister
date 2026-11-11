@@ -1,10 +1,54 @@
 {
+    "both properties legacy and keyed": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "fr",
+                "Titre",
+                null,
+                "bob",
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "en",
+                "B",
+                null,
+                "bob",
+                "de"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "nl",
+                "C",
+                null,
+                "bob",
+                "de"
+            ]
+        },
+        {
+            "delete": "body|de"
+        }
+    ],
     "delete failure is swallowed": [
         {
             "delete": "title|nl"
         },
         {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
+        },
+        {
             "delete": "body|en"
+        },
+        {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
         }
     ],
     "empty string skipped": [],
@@ -120,7 +164,13 @@
             "delete": "title|nl"
         },
         {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
+        },
+        {
             "delete": "body|en"
+        },
+        {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
         }
     ],
     "no uuid": [],
@@ -147,6 +197,78 @@
                 null,
                 null,
                 "en"
+            ]
+        }
+    ],
+    "register lookup fails falls back to nl": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "fr",
+                "Titre",
+                null,
+                null,
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "nl",
+                "Tekst",
+                null,
+                null,
+                "nl"
+            ]
+        }
+    ],
+    "register without languages": [
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "nl",
+                "Tekst",
+                null,
+                null,
+                "nl"
+            ]
+        }
+    ],
+    "scalar language values": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "nl",
+                "1",
+                null,
+                null,
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "de",
+                "1.5",
+                null,
+                null,
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "fr",
+                "0",
+                null,
+                null,
+                "fr"
             ]
         }
     ],

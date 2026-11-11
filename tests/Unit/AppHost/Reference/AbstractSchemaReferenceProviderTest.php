@@ -24,6 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Reference;
 
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\AppHost\Reference\AbstractSchemaReferenceProvider;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -32,6 +35,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -113,10 +117,12 @@ class AbstractSchemaReferenceProviderTest extends TestCase {
 		$this->formatter = new ObjectPreviewFormatter(
 			$this->urlGenerator,
 			$l10n,
-			$objectService,
-			$deepLinkRegistry,
-			$this->schemaMapper,
-			$this->registerMapper,
+			new ObjectPreviewSources(
+				objectService: $objectService,
+				deepLinkRegistry: $deepLinkRegistry,
+				schemaMapper: $this->schemaMapper,
+				registerMapper: $this->registerMapper
+			),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
@@ -131,9 +137,7 @@ class AbstractSchemaReferenceProviderTest extends TestCase {
 	private function buildProvider(?string $userId = 'test-user'): TestLeadReferenceProvider {
 		return new TestLeadReferenceProvider(
 			$this->formatter,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->createMock(LoggerInterface::class),
+			new SchemaScopeLookups(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)), $this->createMock(LoggerInterface::class)),
 			$userId
 		);
 	}//end buildProvider()

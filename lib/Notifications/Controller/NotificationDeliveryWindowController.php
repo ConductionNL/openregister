@@ -41,27 +41,45 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationDeliveryWindowControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
 
 class NotificationDeliveryWindowController extends Controller {
+	use NotificationRequestTrait;
+
+	/**
+	 * Override-only window store and evaluator.
+	 *
+	 * @var NotificationDeliveryWindowService
+	 */
+	private readonly NotificationDeliveryWindowService $windowService;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
-	 * @param NotificationDeliveryWindowService $windowService Override-only window store + evaluator.
-	 * @param IUserSession $userSession Current-user session.
+	 * @param IRequest                                      $request  Request.
+	 * @param NotificationDeliveryWindowControllerServices $services The window store and the session.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly NotificationDeliveryWindowService $windowService,
-		private readonly IUserSession $userSession,
+		NotificationDeliveryWindowControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->windowService = $services->windowService;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**
@@ -78,7 +96,7 @@ class NotificationDeliveryWindowController extends Controller {
 	public function index(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		$window = $this->windowService->getForUser(userId: $userId);
@@ -103,19 +121,29 @@ class NotificationDeliveryWindowController extends Controller {
 	public function update(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		$params = $this->request->getParams();
-		$enabled = ($params['enabled'] ?? true);
-
-		if ($enabled === false) {
+		if (($params['enabled'] ?? true) === false) {
 			$this->windowService->setForUser(userId: $userId, window: null);
 			return new JSONResponse(data: ['enabled' => false]);
 		}
 
+		return $this->storeWindow(userId: $userId, window: $params);
+	}//end update()
+
+	/**
+	 * Store the caller's window, then answer with it as stored.
+	 *
+	 * @param string               $userId The caller.
+	 * @param array<string, mixed> $window The window as posted.
+	 *
+	 * @return JSONResponse The stored window, or a 422 when it is invalid.
+	 */
+	private function storeWindow(string $userId, array $window): JSONResponse {
 		try {
-			$this->windowService->setForUser(userId: $userId, window: $params);
+			$this->windowService->setForUser(userId: $userId, window: $window);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'code' => 'notification-delivery-window-invalid'],
@@ -124,19 +152,5 @@ class NotificationDeliveryWindowController extends Controller {
 		}
 
 		return new JSONResponse(data: ($this->windowService->getForUser(userId: $userId) ?? ['enabled' => false]));
-	}//end update()
-
-	/**
-	 * Resolve the current user's UID, or null when anonymous.
-	 *
-	 * @return string|null
-	 */
-	private function resolveUserId(): ?string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return null;
-		}
-
-		return $user->getUID();
-	}//end resolveUserId()
+	}//end storeWindow()
 }//end class

@@ -38,7 +38,10 @@ import { navigationStore, registerStore } from '../../store/store.js'
 
 <script>
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
-import { confirmDialogState } from '../shared/confirmDialogState.js'
+import {
+	confirmDialogState,
+	settleConfirmRequest,
+} from '../shared/confirmDialogState.js'
 
 export default {
 	name: 'DeleteRegister',
@@ -57,26 +60,11 @@ export default {
 				return
 			}
 			this.loading = true
-			registerStore
-				.deleteRegister({
-					...registerStore.registerItem,
-				})
-				.then(({ response }) => {
-					this.success = response.ok
-					this.error = false
-					if (response.ok) {
-						this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
-					}
-				})
-				.catch((error) => {
-					this.success = false
-					this.error =
-						error.message
-						|| 'Er is een fout opgetreden bij het verwijderen van het register'
-				})
-				.finally(() => {
-					this.loading = false
-				})
+			settleConfirmRequest(
+				this,
+				registerStore.deleteRegister({ ...registerStore.registerItem }),
+				'Er is een fout opgetreden bij het verwijderen van het register',
+			)
 		},
 	},
 }

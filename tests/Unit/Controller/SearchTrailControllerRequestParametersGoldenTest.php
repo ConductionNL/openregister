@@ -17,6 +17,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
 
 /**
  * Golden test for SearchTrailController::extractRequestParameters().
@@ -70,7 +71,7 @@ class SearchTrailControllerRequestParametersGoldenTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($params);
 
-		$controller = new SearchTrailController(
+		$controller = SearchTrailControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(SearchTrailService::class),

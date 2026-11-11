@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Rbac\AdminGate;
-use OCA\OpenRegister\Service\Rbac\ScopeAudit;
+use OCA\OpenRegister\Service\Rbac\AdminGateInterface;
+use OCA\OpenRegister\Service\Rbac\ScopeAuditInterface;
 
 /**
  * The domain services of the permissions audit API.
@@ -34,14 +34,14 @@ final class PermissionsAuditScope {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ScopeAudit $audit     Assembles the per-rule audit.
-	 * @param AdminGate  $adminGate Answers whether the caller is an admin.
+	 * @param ScopeAuditInterface $audit     Assembles the per-rule audit.
+	 * @param AdminGateInterface  $adminGate Answers whether the caller is an admin.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function __construct(
-		public readonly ScopeAudit $audit,
-		public readonly AdminGate $adminGate,
+		public readonly ScopeAuditInterface $audit,
+		public readonly AdminGateInterface $adminGate,
 	) {
 	}//end __construct()
 }//end class

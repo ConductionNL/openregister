@@ -27,8 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Aggregation;
 
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-
 /**
  * Validates the `x-openregister-aggregations` schema annotation shape.
  *
@@ -61,11 +59,30 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
  *   - multi-field object:  `{ "fields": ["a", "b"] }`
  *   - plain ordered list:  `[ "a", "b" ]`
  */
-final class AggregationAnnotationValidator {
+final class AggregationAnnotationValidator implements AggregationAnnotationValidatorInterface {
 
-	private const VALID_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct'];
+	public const VALID_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct'];
 
 	private const REQUIRES_FIELD = ['sum', 'avg', 'min', 'max', 'count_distinct'];
+
+	/**
+	 * Error code and message format per failure, keyed by a short name.
+	 *
+	 * @var array<string, array{0: string, 1: string}>
+	 */
+	private const FAILURES = [
+		'field-missing' => ['aggregation-field-missing', 'Aggregation "%s" with metric "%s" requires a field.'],
+		'field-not-in-schema' => ['aggregation-field-not-in-schema', 'Aggregation "%s" field "%s" is not declared in the schema properties.'],
+		'filter-malformed' => ['aggregation-filter-malformed', 'Aggregation "%s" filter/where must be a map.'],
+		'filter-field-unknown' => ['aggregation-filter-field-unknown', 'Aggregation "%s" filter references unknown field "%s".'],
+		'groupby-shape' => [
+			'aggregation-groupby-malformed',
+			'Aggregation "%s" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names.',
+		],
+		'groupby-member' => ['aggregation-groupby-malformed', 'Aggregation "%s" groupBy members must be non-empty field-name strings.'],
+		'groupby-duplicate' => ['aggregation-groupby-duplicate-field', 'Aggregation "%s" groupBy names "%s" more than once.'],
+		'groupby-unknown' => ['aggregation-groupby-field-unknown', 'Aggregation "%s" groupBy.field "%s" is not declared in the schema properties.'],
+	];
 
 	/**
 	 * The `join` clause grammar, kept in its own class so this one does not
@@ -87,6 +104,14 @@ final class AggregationAnnotationValidator {
 	private AggregationMetricsAnnotationValidator $metricsValidator;
 
 	/**
+	 * Validator for cross-schema entries (`from` set), split out for the
+	 * same reason as the other two.
+	 *
+	 * @var CrossSchemaAggregationValidator
+	 */
+	private CrossSchemaAggregationValidator $crossSchemaValidator;
+
+	/**
 	 * Constructor.
 	 *
 	 * Plain `new` rather than injection: all three classes are pure shape
@@ -96,6 +121,7 @@ final class AggregationAnnotationValidator {
 	public function __construct() {
 		$this->joinValidator = new AggregationJoinAnnotationValidator();
 		$this->metricsValidator = new AggregationMetricsAnnotationValidator();
+		$this->crossSchemaValidator = new CrossSchemaAggregationValidator();
 	}//end __construct()
 
 	/**
@@ -144,13 +170,11 @@ final class AggregationAnnotationValidator {
 		$errors = [];
 		foreach ($aggregations as $name => $spec) {
 			$shapeError = $this->entryShapeError(name: $name, spec: $spec);
-			if ($shapeError !== null) {
-				$errors[] = $shapeError;
-				continue;
+			$entryErrors = [$shapeError];
+			if ($shapeError === null) {
+				$entryErrors = $this->validateEntry(entry: new AggregationSpecEntry(name: $name, spec: $spec), propKeys: $propKeys);
 			}
-
-			$entry = new AggregationSpecEntry(name: $name, spec: $spec);
-			$errors = array_merge($errors, $this->validateEntry(entry: $entry, propKeys: $propKeys));
+			$errors = array_merge($errors, $entryErrors);
 		}
 
 		return $errors;
@@ -192,7 +216,7 @@ final class AggregationAnnotationValidator {
 	 */
 	private function validateEntry(AggregationSpecEntry $entry, array $propKeys): array {
 		if (($entry->spec['from'] ?? null) !== null) {
-			return $this->validateCrossSchemaSpec(name: $entry->name, spec: $entry->spec);
+			return $this->crossSchemaValidator->validate(entry: $entry);
 		}
 
 		if (($entry->spec['metrics'] ?? null) !== null) {
@@ -219,7 +243,7 @@ final class AggregationAnnotationValidator {
 			return $metricsErrors;
 		}
 
-		return $this->validateGroupBy(name: $entry->name, spec: $entry->spec, propKeys: $propKeys);
+		return $this->validateGroupBy(entry: $entry, propKeys: $propKeys);
 	}//end validateMultiMetricEntry()
 
 	/**
@@ -241,8 +265,8 @@ final class AggregationAnnotationValidator {
 		return array_merge(
 			$this->validateMetricField(entry: $entry, propKeys: $propKeys),
 			$this->validateFilter(entry: $entry, propKeys: $propKeys),
-			$this->validateGroupBy(name: $entry->name, spec: $entry->spec, propKeys: $propKeys),
-			$this->joinValidator->validate(name: $entry->name, spec: $entry->spec, propKeys: $propKeys)
+			$this->validateGroupBy(entry: $entry, propKeys: $propKeys),
+			$this->joinValidator->validate(entry: $entry, propKeys: $propKeys)
 		);
 	}//end validateSingleMetricEntry()
 
@@ -279,16 +303,14 @@ final class AggregationAnnotationValidator {
 
 		$field = (string) ($entry->spec['field'] ?? '');
 		if ($field === '') {
-			$message = sprintf('Aggregation "%s" with metric "%s" requires a field.', $entry->name, $metric);
-			return [$this->error(code: 'aggregation-field-missing', message: $message)];
+			return [$this->failed(key: 'field-missing', args: [$entry->name, $metric])];
 		}
 
 		if (in_array($field, $propKeys, true) === true) {
 			return [];
 		}
 
-		$message = sprintf('Aggregation "%s" field "%s" is not declared in the schema properties.', $entry->name, $field);
-		return [$this->error(code: 'aggregation-field-not-in-schema', message: $message)];
+		return [$this->failed(key: 'field-not-in-schema', args: [$entry->name, $field])];
 	}//end validateMetricField()
 
 	/**
@@ -306,20 +328,29 @@ final class AggregationAnnotationValidator {
 		}
 
 		if (is_array($filter) === false) {
-			$message = sprintf('Aggregation "%s" filter/where must be a map.', $entry->name);
-			return [$this->error(code: 'aggregation-filter-malformed', message: $message)];
+			return [$this->failed(key: 'filter-malformed', args: [$entry->name])];
 		}
 
-		$errors = [];
-		foreach (array_keys($filter) as $filterField) {
-			if (in_array((string) $filterField, $propKeys, true) === false) {
-				$message = sprintf('Aggregation "%s" filter references unknown field "%s".', $entry->name, (string) $filterField);
-				$errors[] = $this->error(code: 'aggregation-filter-field-unknown', message: $message);
-			}
-		}
-
-		return $errors;
+		return array_map(
+			fn (string $field): array => $this->failed(key: 'filter-field-unknown', args: [$entry->name, $field]),
+			$this->unknownFields(fields: array_keys($filter), propKeys: $propKeys)
+		);
 	}//end validateFilter()
+
+	/**
+	 * The given field names, cast to string, that the schema does not declare.
+	 *
+	 * @param array<int, int|string> $fields   Field names to check.
+	 * @param array<int, mixed>      $propKeys Declared schema property names.
+	 *
+	 * @return array<int, string> The undeclared names, in input order.
+	 */
+	private function unknownFields(array $fields, array $propKeys): array {
+		$names = array_map(static fn (int|string $field): string => (string) $field, $fields);
+		return array_values(
+			array_filter($names, static fn (string $field): bool => in_array($field, $propKeys, true) === false)
+		);
+	}//end unknownFields()
 
 	/**
 	 * One validation error.
@@ -334,12 +365,25 @@ final class AggregationAnnotationValidator {
 	}//end error()
 
 	/**
+	 * One validation error from the FAILURES table.
+	 *
+	 * @param string            $key  The FAILURES key.
+	 * @param array<int, mixed> $args The sprintf arguments for its message.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function failed(string $key, array $args): array {
+		$failure = self::FAILURES[$key];
+		return $this->error(code: $failure[0], message: sprintf($failure[1], ...$args));
+	}//end failed()
+
+	/**
 	 * Validate the `groupBy` clause of an intra-schema aggregation spec.
 	 *
 	 * Accepts all three spellings the runner accepts — `{field}`,
 	 * `{fields: [...]}` and a plain ordered list — by delegating the shape
 	 * question to {@see AggregationQuery::normaliseGroupByFields()}, the
-	 * SAME canonicaliser {@see AggregationRunner::resolveGroupFields()}
+	 * SAME canonicaliser {@see \OCA\OpenRegister\Service\Aggregation\AggregationRunner::resolveGroupFields()}
 	 * uses. Sharing the canonicaliser is deliberate: a validator that owns
 	 * its own copy of the grammar accepts specs the executor then reads
 	 * differently, and the disagreement is silent in both directions.
@@ -348,11 +392,37 @@ final class AggregationAnnotationValidator {
 	 * the single-field form has always applied, now applied per member so a
 	 * composite groupBy cannot smuggle in an undeclared column.
 	 *
-	 * @param string $name Aggregation name (for error messages).
-	 * @param array<string, mixed> $spec The raw spec object.
-	 * @param array<int, mixed> $propKeys Declared schema property names.
+	 * normaliseGroupByFields() returns [] for a non-array groupBy, so that
+	 * case shares the malformed-shape error.
+	 *
+	 * @param AggregationSpecEntry $entry    The entry.
+	 * @param array<int, mixed>    $propKeys Declared schema property names.
 	 *
 	 * @return array<int, array{code: string, message: string}> Error list (empty = valid).
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function validateGroupBy(AggregationSpecEntry $entry, array $propKeys): array {
+		if (($entry->spec['groupBy'] ?? null) === null) {
+			return [];
+		}
+
+		$members = $this->groupMembers(entry: $entry, propKeys: $propKeys);
+		if ($members === []) {
+			return [$this->failed(key: 'groupby-shape', args: [$entry->name])];
+		}
+
+		return array_merge(...array_map(fn (GroupByMember $member): array => $this->groupMemberErrors(member: $member), $members));
+	}//end validateGroupBy()
+
+	/**
+	 * The members of the entry's groupBy, in order, each with the members
+	 * listed before it.
+	 *
+	 * @param AggregationSpecEntry $entry    The entry (its groupBy is set).
+	 * @param array<int, mixed>    $propKeys Declared schema property names.
+	 *
+	 * @return array<int, GroupByMember>
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *   AggregationQuery::normaliseGroupByFields() is deliberately the ONE
@@ -361,144 +431,42 @@ final class AggregationAnnotationValidator {
 	 *   second implementation, which is exactly the drift this sharing
 	 *   prevents — an accepted-but-differently-executed groupBy is silent
 	 *   in both directions.
-	 *
-	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function validateGroupBy(string $name, array $spec, array $propKeys): array {
-		$groupBy = ($spec['groupBy'] ?? null);
-		if ($groupBy === null) {
-			return [];
-		}
-
-		if (is_array($groupBy) === false) {
-			return [
-				[
-					'code' => 'aggregation-groupby-malformed',
-					'message' => sprintf(
-						'Aggregation "%s" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names.',
-						$name
-					),
-				],
-			];
-		}
-
-		$groupFields = AggregationQuery::normaliseGroupByFields(groupBy: $groupBy);
-		if (count($groupFields) === 0) {
-			return [
-				[
-					'code' => 'aggregation-groupby-malformed',
-					'message' => sprintf(
-						'Aggregation "%s" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names.',
-						$name
-					),
-				],
-			];
-		}
-
-		$errors = [];
-		$seen = [];
-		foreach ($groupFields as $groupField) {
-			if (is_string($groupField) === false || $groupField === '') {
-				$errors[] = [
-					'code' => 'aggregation-groupby-malformed',
-					'message' => sprintf(
-						'Aggregation "%s" groupBy members must be non-empty field-name strings.',
-						$name
-					),
-				];
-				continue;
-			}
-
-			if (in_array($groupField, $seen, true) === true) {
-				$errors[] = [
-					'code' => 'aggregation-groupby-duplicate-field',
-					'message' => sprintf(
-						'Aggregation "%s" groupBy names "%s" more than once.',
-						$name,
-						$groupField
-					),
-				];
-				continue;
-			}
-
-			$seen[] = $groupField;
-
-			if (in_array($groupField, $propKeys, true) === false) {
-				$errors[] = [
-					'code' => 'aggregation-groupby-field-unknown',
-					'message' => sprintf(
-						'Aggregation "%s" groupBy.field "%s" is not declared in the schema properties.',
-						$name,
-						$groupField
-					),
-				];
-			}
-		}//end foreach
-
-		return $errors;
-	}//end validateGroupBy()
+	private function groupMembers(AggregationSpecEntry $entry, array $propKeys): array {
+		$groupFields = AggregationQuery::normaliseGroupByFields(groupBy: $entry->spec['groupBy']);
+		return array_map(
+			fn (int $index): GroupByMember => new GroupByMember(
+				name: $entry->name,
+				field: $groupFields[$index],
+				earlier: array_slice($groupFields, 0, $index),
+				propKeys: $propKeys
+			),
+			array_keys($groupFields)
+		);
+	}//end groupMembers()
 
 	/**
-	 * Validate a cross-schema aggregation spec (`from` key present).
+	 * The error for one groupBy member, if any: it must be a non-empty string,
+	 * named only once, and declared on the schema — checked in that order.
 	 *
-	 * @param string $name Aggregation name (for error messages).
-	 * @param array<string, mixed> $spec The raw spec object.
+	 * @param GroupByMember $member The member with its context.
 	 *
-	 * @return array<int, array{code: string, message: string}> Error list (empty = valid).
+	 * @return array<int, array{code: string, message: string}> At most one error.
 	 */
-	private function validateCrossSchemaSpec(string $name, array $spec): array {
-		$errors = [];
-
-		$from = ($spec['from'] ?? null);
-		if (is_string($from) === false || $from === '') {
-			$errors[] = [
-				'code' => 'aggregation-from-empty',
-				'message' => sprintf('Cross-schema aggregation "%s" must have a non-empty `from` string.', $name),
-			];
+	private function groupMemberErrors(GroupByMember $member): array {
+		if (is_string($member->field) === false || $member->field === '') {
+			return [$this->failed(key: 'groupby-member', args: [$member->name])];
 		}
 
-		// `metric`/`select` defaults to `count` when omitted — only reject unknown non-empty values.
-		$rawMetric = ($spec['metric'] ?? $spec['select'] ?? null);
-		if ($rawMetric !== null) {
-			$metric = (string)$rawMetric;
-			if (in_array($metric, self::VALID_METRICS, true) === false) {
-				$errors[] = [
-					'code' => 'aggregation-bad-metric',
-					'message' => sprintf(
-						'Cross-schema aggregation "%s" metric "%s" is not in [%s].',
-						$name,
-						$metric,
-						implode(', ', self::VALID_METRICS)
-					),
-				];
-			}
+		if (in_array($member->field, $member->earlier, true) === true) {
+			return [$this->failed(key: 'groupby-duplicate', args: [$member->name, $member->field])];
 		}
 
-		// The where/filter clause must be a map when present.
-		$filter = ($spec['where'] ?? $spec['filter'] ?? null);
-		if ($filter !== null && is_array($filter) === false) {
-			$errors[] = [
-				'code' => 'aggregation-filter-malformed',
-				'message' => sprintf('Cross-schema aggregation "%s" where/filter must be a map.', $name),
-			];
+		if (in_array($member->field, $member->propKeys, true) === false) {
+			return [$this->failed(key: 'groupby-unknown', args: [$member->name, $member->field])];
 		}
 
-		// `from` + `join` would name THREE schemas in one spec (host, `from`
-		// target, `join` target) with no declared relationship between the
-		// second and third. Refuse at save time rather than ship a spec the
-		// runner silently ignores half of: runCrossSchema() has no join
-		// stage, so a `join` written beside a `from` would never execute.
-		if (isset($spec['join']) === true) {
-			$errors[] = [
-				'code' => 'aggregation-join-with-from',
-				'message' => sprintf(
-					'Cross-schema aggregation "%s" must not combine `from` with `join` — join is intra-schema only.',
-					$name
-				),
-			];
-		}
-
-		return $errors;
-	}//end validateCrossSchemaSpec()
+		return [];
+	}//end groupMemberErrors()
 
 }//end class

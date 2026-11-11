@@ -39,8 +39,6 @@ namespace OCA\OpenRegister\Service\Gdpr;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface;
-use OCP\IGroupManager;
-use Psr\Log\LoggerInterface;
 
 /**
  * Resolve the pack-declared privacy-officer group to notification uids.
@@ -61,13 +59,11 @@ class PrivacyOfficerRecipientResolver implements RecipientResolverInterface {
 	 * Constructor.
 	 *
 	 * @param DsarPolicyPackResolver $packResolver Active-pack resolution for the case.
-	 * @param IGroupManager $groupManager Group-member expansion.
-	 * @param LoggerInterface $logger Logger for resolution diagnostics.
+	 * @param GdprCallerMembership   $membership   Group-member expansion and the resolution log.
 	 */
 	public function __construct(
 		private readonly DsarPolicyPackResolver $packResolver,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		private readonly GdprCallerMembership $membership,
 	) {
 
 	}//end __construct()
@@ -95,35 +91,73 @@ class PrivacyOfficerRecipientResolver implements RecipientResolverInterface {
 			return [];
 		}
 
-		$groupId = ($pack[self::PACK_FIELD] ?? null);
-		if (is_string($groupId) === false || $groupId === '' || str_starts_with($groupId, '<') === true) {
-			// Unset or placeholder (`<privacy-officer-group>`) — fail-safe.
+		$groupId = $this->officerGroupOf(pack: $pack);
+		if ($groupId === null) {
 			return [];
 		}
 
+		return $this->membersOf(groupId: $groupId);
+
+	}//end resolve()
+
+	/**
+	 * The officer group the pack names, or null when unset or a placeholder.
+	 *
+	 * @param array<string, mixed> $pack The active policy pack.
+	 *
+	 * @return string|null The group id, or null (fail-safe: no recipients).
+	 */
+	private function officerGroupOf(array $pack): ?string {
+		$groupId = ($pack[self::PACK_FIELD] ?? null);
+		if (is_string($groupId) === false || $groupId === '' || str_starts_with($groupId, '<') === true) {
+			// Unset or placeholder (`<privacy-officer-group>`) — fail-safe.
+			return null;
+		}
+
+		return $groupId;
+
+	}//end officerGroupOf()
+
+	/**
+	 * The unique uids of a group's members; empty when unknown or unresolvable.
+	 *
+	 * @param string $groupId The Nextcloud group id the pack names.
+	 *
+	 * @return array<int, string>
+	 */
+	private function membersOf(string $groupId): array {
 		try {
-			$group = $this->groupManager->get($groupId);
-			if ($group === null) {
-				$this->logger->debug(
-					message: '[PrivacyOfficerRecipientResolver] pack names unknown group "' . $groupId . '" — no officer recipients',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				return [];
-			}
-
-			$uids = [];
-			foreach ($group->getUsers() as $user) {
-				$uids[] = $user->getUID();
-			}
-
-			return array_values(array_unique($uids));
+			return $this->expand(groupId: $groupId);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->membership->logger->warning(
 				message: '[PrivacyOfficerRecipientResolver] group resolution failed: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'group' => $groupId]
 			);
 			return [];
-		}//end try
+		}
 
-	}//end resolve()
+	}//end membersOf()
+
+	/**
+	 * Expand a group to its members' unique uids; empty for an unknown group.
+	 *
+	 * @param string $groupId The Nextcloud group id.
+	 *
+	 * @return array<int, string>
+	 */
+	private function expand(string $groupId): array {
+		$group = $this->membership->groupManager->get($groupId);
+		if ($group === null) {
+			$this->membership->logger->debug(
+				message: '[PrivacyOfficerRecipientResolver] pack names unknown group "' . $groupId . '" — no officer recipients',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
+
+		$uids = array_map(static fn ($user): string => $user->getUID(), $group->getUsers());
+
+		return array_values(array_unique($uids));
+
+	}//end expand()
 }//end class

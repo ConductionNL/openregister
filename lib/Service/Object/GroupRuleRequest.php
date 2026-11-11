@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 /**
- * The inputs of {@see PermissionHandler::hasGroupPermission()}.
+ * The inputs of {@see PermissionHandlerInterface::hasGroupPermission()}.
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */

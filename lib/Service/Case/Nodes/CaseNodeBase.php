@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Case\Nodes;
 
+use OCA\OpenRegister\Service\Case\CaseAnchor;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
@@ -39,9 +40,9 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\IUserSession;
 use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 
@@ -53,22 +54,31 @@ use RuntimeException;
 abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	protected readonly IL10N $l10n;
+
+	/**
+	 * For the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	protected readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CasePlanService $plans The case layer's verbs.
-	 * @param FlowRunAsScope $scope Runs the work as the run's identity.
-	 * @param IUserSession $session The interactive user, when the run names nobody.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param CaseStepRunner       $steps        The case layer's verbs, the run-as scope and the interactive user.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 */
 	public function __construct(
-		protected readonly CasePlanService $plans,
-		protected readonly FlowRunAsScope $scope,
-		protected readonly IUserSession $session,
-		protected readonly IL10N $l10n,
-		protected readonly IURLGenerator $urls,
+		protected readonly CaseStepRunner $steps,
+		FlowNodePresentation $presentation,
 	) {
-
+		$this->l10n = $presentation->l10n;
+		$this->urls = $presentation->urls;
 	}//end __construct()
 
 	/**
@@ -131,7 +141,7 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	protected function actingUid(array $context): string {
 		$uid = trim((string)($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? ''));
 		if ($uid === '') {
-			$uid = trim((string)$this->session->getUser()?->getUID());
+			$uid = trim((string)$this->steps->session->getUser()?->getUID());
 		}
 
 		if ($uid === '') {
@@ -152,12 +162,9 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 * @param array $items The incoming items.
 	 * @param array $config The step configuration.
 	 *
-	 * @return array<string, array{uuid: string, register: int|null, schema: int|null}> By uuid.
+	 * @return array<string, CaseAnchor> The targets, by uuid.
 	 *
 	 * @throws RuntimeException When an item names no object.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate is the engine's
-	 * stateless template renderer and every node calls it this way.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
@@ -165,40 +172,161 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 		$configured = ($config['uuid'] ?? null);
 		$targets = [];
 		foreach ($items as $item) {
-			$json = ($item[FlowItems::JSON] ?? []);
-			if (is_array($json) === false) {
-				$json = [];
-			}
-
-			$own = trim((string)($json['uuid'] ?? ($json['id'] ?? '')));
-			$uuid = $own;
-			if (is_string($configured) === true && trim($configured) !== '') {
-				$uuid = trim((string)FlowValueTemplate::render($configured, $json));
-			}
-
-			if ($uuid === '') {
-				throw new RuntimeException($this->l10n->t('A case step could not work out which object the case is from the item it received.'));
-			}
-
-			$self = ($json['@self'] ?? []);
-			if (is_array($self) === false) {
-				$self = [];
-			}
-
-			// The register and schema in `@self` belong to the RECEIVED item. A configured `uuid` may name another
-			// object (a parent, a related record); anchoring that object's plan to the item's register and schema
-			// would make a later ensure refuse the anchor and every read that filters on them miss the rows, so
-			// such a plan is anchored to neither.
-			$ownObject = ($uuid === $own);
-			$targets[$uuid] = [
-				'uuid' => $uuid,
-				'register' => $this->anchorId(value: ($self['register'] ?? null), ownObject: $ownObject),
-				'schema' => $this->anchorId(value: ($self['schema'] ?? null), ownObject: $ownObject),
-			];
-		}//end foreach
+			$target = $this->targetOf(item: $item, configured: $configured);
+			$targets[$target->objectUuid] = $target;
+		}
 
 		return $targets;
 	}//end targets()
+
+	/**
+	 * The object one received item makes the step act on.
+	 *
+	 * @param mixed $item The incoming item.
+	 * @param mixed $configured The configured `uuid` template, when any.
+	 *
+	 * @return CaseAnchor The target, with the register and schema only when they are its own.
+	 *
+	 * @throws RuntimeException When the item names no object.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private function targetOf(mixed $item, mixed $configured): CaseAnchor {
+		$json = self::arrayOrEmpty(value: ($item[FlowItems::JSON] ?? []));
+		$own = self::ownUuid(json: $json);
+		$uuid = self::resolveUuid(configured: $configured, json: $json);
+		if ($uuid === '') {
+			throw new RuntimeException($this->l10n->t('A case step could not work out which object the case is from the item it received.'));
+		}
+
+		// The register and schema in `@self` belong to the RECEIVED item. A configured `uuid` may name another
+		// object (a parent, a related record); anchoring that object's plan to the item's register and schema
+		// would make a later ensure refuse the anchor and every read that filters on them miss the rows, so
+		// such a plan is anchored to neither.
+		$self = self::arrayOrEmpty(value: ($json['@self'] ?? []));
+		$ownObject = ($uuid === $own);
+
+		return new CaseAnchor(
+			objectUuid: $uuid,
+			registerId: $this->anchorId(value: ($self['register'] ?? null), ownObject: $ownObject),
+			schemaId: $this->anchorId(value: ($self['schema'] ?? null), ownObject: $ownObject)
+		);
+	}//end targetOf()
+
+	/**
+	 * The object uuid: the configured template rendered over the item, or the item's own.
+	 *
+	 * @param mixed $configured The configured `uuid` template, when any.
+	 * @param array $json       The item's data.
+	 *
+	 * @return string The trimmed uuid, possibly ''.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate is the engine's
+	 * stateless template renderer and every node calls it this way.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private static function resolveUuid(mixed $configured, array $json): string {
+		if (is_string($configured) === true && trim($configured) !== '') {
+			return trim((string)FlowValueTemplate::render($configured, $json));
+		}
+
+		return self::ownUuid(json: $json);
+	}//end resolveUuid()
+
+	/**
+	 * The received item's own uuid (or id), trimmed; '' when it names none.
+	 *
+	 * @param array<string, mixed> $json The item's data.
+	 *
+	 * @return string The uuid.
+	 */
+	private static function ownUuid(array $json): string {
+		return trim((string)($json['uuid'] ?? ($json['id'] ?? '')));
+	}//end ownUuid()
+
+	/**
+	 * Run a case verb once per distinct object, as the run's identity, and
+	 * hand each item the result for its object. An empty batch passes
+	 * through untouched; otherwise the configuration is validated first.
+	 *
+	 * @param CaseStepRun $run  The incoming items, the step configuration and the run context.
+	 * @param callable    $work Called as `$work(CaseStepCall $call): array` for each distinct object.
+	 *
+	 * @return array The items, each carrying `case`.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	protected function perTarget(CaseStepRun $run, callable $work): array {
+		if ($run->items === []) {
+			return $run->items;
+		}
+
+		$this->validateConfig(config: $run->config);
+		$uid = $this->actingUid(context: $run->context);
+		$results = [];
+		foreach ($this->targets(items: $run->items, config: $run->config) as $uuid => $target) {
+			$call = new CaseStepCall(target: $target, uid: $uid);
+			$results[$uuid] = $this->steps->scope->call(context: $run->context, operation: fn (): array => $work($call));
+		}
+
+		return $this->withResults(run: $run, results: $results);
+	}//end perTarget()
+
+	/**
+	 * Put each distinct object's result on every item that targets it, as `case`.
+	 *
+	 * @param CaseStepRun                         $run     The incoming items and the step configuration.
+	 * @param array<string, array<string, mixed>> $results The result per object uuid.
+	 *
+	 * @return array The items, each carrying `case`.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private function withResults(CaseStepRun $run, array $results): array {
+		$out = [];
+		foreach ($run->items as $index => $item) {
+			$json = ($item[FlowItems::JSON] ?? []);
+			$json['case'] = $results[(string)array_key_first($this->targets(items: [$item], config: $run->config))];
+			$item[FlowItems::JSON] = $json;
+			$out[$index] = $item;
+		}
+
+		return $out;
+	}//end withResults()
+
+	/**
+	 * The editor field that names the case object, shared by every case step.
+	 *
+	 * @return array<string, mixed> The field.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	protected function objectField(): array {
+		return [
+			'key' => 'uuid',
+			'label' => $this->l10n->t('Object'),
+			'type' => 'text',
+			'help' => $this->l10n->t('Which object the case is. Leave empty to use the object the step receives.'),
+		];
+	}//end objectField()
+
+	/**
+	 * An array value, or an empty one.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array The value when it is an array, otherwise [].
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private static function arrayOrEmpty(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [];
+	}//end arrayOrEmpty()
 
 	/**
 	 * The register or schema id to anchor a plan to: the item's own, only for the item's own object.
@@ -228,14 +356,14 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	private function intOrNull(mixed $value): ?int {
-		if (is_int($value) === true) {
-			return $value;
-		}
-
 		if (is_string($value) === true && ctype_digit($value) === true) {
 			return (int)$value;
 		}
 
-		return null;
+		if (is_int($value) === false) {
+			return null;
+		}
+
+		return $value;
 	}//end intOrNull()
 }//end class

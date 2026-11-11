@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 
@@ -58,9 +58,9 @@ class FileBatchHandler {
 	/**
 	 * Reference to FileService for cross-handler coordination.
 	 *
-	 * @var FileService|null
+	 * @var FileHandlerSupportInterface|null
 	 */
-	private ?FileService $fileService = null;
+	private ?FileHandlerSupportInterface $fileService = null;
 
 	/**
 	 * Constructor for FileBatchHandler.
@@ -81,21 +81,19 @@ class FileBatchHandler {
 	/**
 	 * Set the FileService instance for cross-handler coordination.
 	 *
-	 * @param FileService $fileService The file service instance.
+	 * @param FileHandlerSupportInterface $fileService The file service instance.
 	 *
 	 * @return void
 	 */
-	public function setFileService(FileService $fileService): void {
+	public function setFileService(FileHandlerSupportInterface $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
 
 	/**
 	 * Execute a batch operation on multiple files.
 	 *
-	 * @param ObjectEntity $object The object entity owning the files.
-	 * @param string $action The batch action (publish|depublish|delete|label).
-	 * @param array<int> $fileIds Array of file IDs to operate on.
-	 * @param array $params Additional parameters (e.g., labels for label action).
+	 * @param FileBatchRequest $request The object, action and parameters.
+	 * @param array<int>       $fileIds The file IDs to operate on.
 	 *
 	 * @return array{results: array, summary: array{total: int, succeeded: int, failed: int}} Batch results.
 	 *
@@ -103,107 +101,173 @@ class FileBatchHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function executeBatch(
-		ObjectEntity $object,
-		string $action,
-		array $fileIds,
-		array $params = [],
-	): array {
-		// Validate action.
-		if (in_array($action, self::ALLOWED_ACTIONS, true) === false) {
-			throw new Exception(
-				'Invalid batch action. Allowed: ' . implode(', ', self::ALLOWED_ACTIONS)
-			);
+	public function runBatch(FileBatchRequest $request, array $fileIds): array {
+		$this->assertValidBatch(action: $request->action, fileIds: $fileIds);
+
+		$results = [];
+		foreach ($fileIds as $fileId) {
+			$results[] = $this->executeOne(request: $request, fileId: $fileId);
 		}
 
-		// Validate batch size.
+		return ['results' => $results, 'summary' => $this->summary(results: $results)];
+	}//end runBatch()
+
+	/**
+	 * Refuse an unknown action, an oversized batch or an empty one.
+	 *
+	 * @param string     $action  The batch action.
+	 * @param array<int> $fileIds The file IDs.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If validation fails.
+	 */
+	private function assertValidBatch(string $action, array $fileIds): void {
+		if (in_array($action, self::ALLOWED_ACTIONS, true) === false) {
+			throw new Exception('Invalid batch action. Allowed: ' . implode(', ', self::ALLOWED_ACTIONS));
+		}
+
 		if (count($fileIds) > self::MAX_BATCH_SIZE) {
-			throw new Exception(
-				'Batch operations are limited to ' . self::MAX_BATCH_SIZE . ' files per request'
-			);
+			throw new Exception('Batch operations are limited to ' . self::MAX_BATCH_SIZE . ' files per request');
 		}
 
 		if (empty($fileIds) === true) {
 			throw new Exception('No file IDs provided');
 		}
+	}//end assertValidBatch()
 
-		$results = [];
-		$succeeded = 0;
-		$failed = 0;
+	/**
+	 * Run the action on one file and report the outcome; a failure is logged, not thrown.
+	 *
+	 * @param FileBatchRequest $request The batch request.
+	 * @param mixed            $fileId  The file ID as given.
+	 *
+	 * @return array{fileId: mixed, success: bool, error?: string}
+	 */
+	private function executeOne(FileBatchRequest $request, mixed $fileId): array {
+		try {
+			$this->executeAction(request: $request, fileId: (int)$fileId);
+			return ['fileId' => $fileId, 'success' => true];
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: "[FileBatchHandler] Batch {$request->action} failed for file {$fileId}: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return ['fileId' => $fileId, 'success' => false, 'error' => $e->getMessage()];
+		}
+	}//end executeOne()
 
-		foreach ($fileIds as $fileId) {
-			try {
-				$this->executeAction(object: $object, action: $action, fileId: (int)$fileId, params: $params);
-				$results[] = ['fileId' => $fileId, 'success' => true];
-				$succeeded++;
-			} catch (Exception $e) {
-				$results[] = ['fileId' => $fileId, 'success' => false, 'error' => $e->getMessage()];
-				$failed++;
-				$this->logger->warning(
-					message: "[FileBatchHandler] Batch {$action} failed for file {$fileId}: " . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}//end try
-		}//end foreach
+	/**
+	 * Count the outcomes of a batch.
+	 *
+	 * @param list<array{fileId: mixed, success: bool, error?: string}> $results The per-file outcomes.
+	 *
+	 * @return array{total: int, succeeded: int, failed: int}
+	 */
+	private function summary(array $results): array {
+		$succeeded = count(array_filter($results, static fn (array $result): bool => $result['success']));
 
 		return [
-			'results' => $results,
-			'summary' => [
-				'total' => count($fileIds),
-				'succeeded' => $succeeded,
-				'failed' => $failed,
-			],
+			'total' => count($results),
+			'succeeded' => $succeeded,
+			'failed' => (count($results) - $succeeded),
 		];
-	}//end executeBatch()
+	}//end summary()
 
 	/**
 	 * Execute a single batch action on one file.
 	 *
-	 * @param ObjectEntity $object The object entity.
-	 * @param string $action The action to execute.
-	 * @param int $fileId The file ID.
-	 * @param array $params Additional parameters.
+	 * The action was validated by assertValidBatch(), so it is one of the four.
+	 *
+	 * @param FileBatchRequest $request The batch request.
+	 * @param int              $fileId  The file ID.
 	 *
 	 * @return void
 	 *
 	 * @throws Exception If the action fails.
 	 */
-	private function executeAction(
-		ObjectEntity $object,
-		string $action,
-		int $fileId,
-		array $params,
-	): void {
+	private function executeAction(FileBatchRequest $request, int $fileId): void {
+		if ($request->action === 'publish' || $request->action === 'depublish') {
+			$this->changePublication(request: $request, fileId: $fileId);
+			return;
+		}
+
+		if ($request->action === 'delete') {
+			$this->deleteOrFail(request: $request, fileId: $fileId);
+			return;
+		}
+
+		$this->label(request: $request, fileId: $fileId);
+	}//end executeAction()
+
+	/**
+	 * Set one file's labels to the request's `labels` parameter (none when absent).
+	 *
+	 * @param FileBatchRequest $request The batch request.
+	 * @param int              $fileId  The file ID.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the FileService is missing or the update fails.
+	 */
+	private function label(FileBatchRequest $request, int $fileId): void {
+		$this->requireFileService()->overwriteFile(
+			overwrite: new FileOverwrite(filePath: $fileId, content: null, tags: ($request->params['labels'] ?? []), object: $request->object)
+		);
+	}//end label()
+
+	/**
+	 * Publish or depublish one file.
+	 *
+	 * @param FileBatchRequest $request The batch request (action publish or depublish).
+	 * @param int              $fileId  The file ID.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the FileService is missing or the change fails.
+	 */
+	private function changePublication(FileBatchRequest $request, int $fileId): void {
+		$fileService = $this->requireFileService();
+		if ($request->action === 'publish') {
+			$fileService->publishFile(object: $request->object, file: $fileId);
+			return;
+		}
+
+		$fileService->unpublishFile(object: $request->object, filePath: $fileId);
+	}//end changePublication()
+
+	/**
+	 * Delete one file, failing when it is still there.
+	 *
+	 * FileService answers false for a file that is still there (an operation a
+	 * listener aborted, such as the frozen-object guard): that is a failed
+	 * delete, not a succeeded one.
+	 *
+	 * @param FileBatchRequest $request The batch request.
+	 * @param int              $fileId  The file ID.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the FileService is missing or the file was not deleted.
+	 */
+	private function deleteOrFail(FileBatchRequest $request, int $fileId): void {
+		if ($this->requireFileService()->deleteFile(file: $fileId, object: $request->object) === false) {
+			throw new Exception('The file could not be deleted');
+		}
+	}//end deleteOrFail()
+
+	/**
+	 * The FileService, or an exception when it was never set.
+	 *
+	 * @return FileHandlerSupportInterface
+	 *
+	 * @throws Exception If setFileService() was not called.
+	 */
+	private function requireFileService(): FileHandlerSupportInterface {
 		if ($this->fileService === null) {
 			throw new Exception('FileService not initialized in FileBatchHandler');
 		}
 
-		switch ($action) {
-			case 'publish':
-				$this->fileService->publishFile(object: $object, file: $fileId);
-				break;
-			case 'depublish':
-				$this->fileService->unpublishFile(object: $object, filePath: $fileId);
-				break;
-			case 'delete':
-				// FileService answers false for a file that is still there (an
-				// operation a listener aborted, such as the frozen-object guard):
-				// that is a failed delete, not a succeeded one.
-				if ($this->fileService->deleteFile(file: $fileId, object: $object) === false) {
-					throw new Exception('The file could not be deleted');
-				}
-				break;
-			case 'label':
-				$labels = $params['labels'] ?? [];
-				$this->fileService->updateFile(
-					filePath: $fileId,
-					content: null,
-					tags: $labels,
-					object: $object
-				);
-				break;
-			default:
-				throw new Exception("Unknown batch action: {$action}");
-		}//end switch
-	}//end executeAction()
+		return $this->fileService;
+	}//end requireFileService()
 }//end class

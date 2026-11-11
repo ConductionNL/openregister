@@ -149,7 +149,7 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 		$this->container = $this->createMock(originalClassName: ContainerInterface::class);
 		$this->registerMapper = $this->createMock(originalClassName: RegisterMapper::class);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,

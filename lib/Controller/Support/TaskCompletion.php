@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Task\TaskFormCompletion;
-use OCA\OpenRegister\Service\Task\TaskFormResolver;
+use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
+use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
 
 /**
  * The domain services of the task API.
@@ -34,14 +34,14 @@ final class TaskCompletion {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param TaskFormResolver   $forms      Resolves the form a task presents, per read.
-	 * @param TaskFormCompletion $completion Completes a task with a form payload,
+	 * @param TaskFormResolverInterface   $forms      Resolves the form a task presents, per read.
+	 * @param TaskFormCompletionInterface $completion Completes a task with a form payload,
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function __construct(
-		public readonly TaskFormResolver $forms,
-		public readonly TaskFormCompletion $completion,
+		public readonly TaskFormResolverInterface $forms,
+		public readonly TaskFormCompletionInterface $completion,
 	) {
 	}//end __construct()
 }//end class

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\ProcessingLogRetentionJob;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -31,6 +32,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\BackgroundJob\Support\ProcessingLogRetentionStores;
 
 class ProcessingLogRetentionJobTest extends TestCase {
 
@@ -82,7 +84,7 @@ class ProcessingLogRetentionJobTest extends TestCase {
 			)
 		);
 
-		$job = new ProcessingLogRetentionJob($time, $entries, $audit, $config, $this->createMock(LoggerInterface::class));
+		$job = new ProcessingLogRetentionJob(new ConfiguredJobRuntime($time, $config, $this->createMock(LoggerInterface::class)), new ProcessingLogRetentionStores($entries, $audit));
 		(new ReflectionMethod($job, 'run'))->invoke($job, null);
 	}
 

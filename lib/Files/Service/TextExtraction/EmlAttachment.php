@@ -44,23 +44,43 @@ use JsonSerializable;
  */
 final class EmlAttachment implements JsonSerializable {
 	/**
+	 * Resolved filename (always non-empty).
+	 *
+	 * @var string
+	 */
+	public readonly string $filename;
+
+	/**
+	 * MIME type from `Content-Type`.
+	 *
+	 * @var string
+	 */
+	public readonly string $mimeType;
+
+	/**
+	 * Decoded binary bytes of the attachment.
+	 *
+	 * @var string
+	 */
+	public readonly string $content;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $filename Resolved filename (always non-empty).
-	 * @param string $mimeType MIME type from `Content-Type`.
-	 * @param string $content Decoded binary bytes of the attachment.
-	 * @param bool $isInline True when the part has `Content-Disposition: inline`.
-	 * @param string|null $contentId `Content-ID` header value with angle brackets stripped, or null.
+	 * @param EmlAttachmentFile $file      Filename, MIME type and decoded bytes.
+	 * @param bool              $isInline  True when the part has `Content-Disposition: inline`.
+	 * @param string|null       $contentId `Content-ID` header value with angle brackets stripped, or null.
 	 * @param EmlStructure|null $nestedEml Recursively parsed nested EML, or null beyond the depth cap.
 	 */
 	public function __construct(
-		public readonly string $filename,
-		public readonly string $mimeType,
-		public readonly string $content,
+		EmlAttachmentFile $file,
 		public readonly bool $isInline,
 		public readonly ?string $contentId,
 		public readonly ?EmlStructure $nestedEml,
 	) {
+		$this->filename = $file->filename;
+		$this->mimeType = $file->mimeType;
+		$this->content  = $file->content;
 	}//end __construct()
 
 	/**

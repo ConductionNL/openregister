@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -65,8 +66,8 @@ class CascadingHandlerCreateRelatedGoldenTest extends TestCase {
 			}
 		);
 		$save->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, $uuid, $folderId, $rbac, $multi): ObjectEntity {
-				$this->calls[] = ['save', $register, $schema->getSlug(), $data, $uuid, $folderId, $rbac, $multi];
+			function ($register, $schema, array $data, $uuid, $rbac, $multi): ObjectEntity {
+				$this->calls[] = ['save', $register, $schema->getSlug(), $data, $uuid, $rbac, $multi];
 				if (($data['fail'] ?? false) === true) {
 					throw new \RuntimeException('disk full');
 				}
@@ -115,23 +116,18 @@ class CascadingHandlerCreateRelatedGoldenTest extends TestCase {
 	 */
 	#[DataProvider('definitionsWithoutTarget')]
 	public function testADefinitionWithoutATargetCreatesNothing(array $definition): void {
-		$this->assertNull($this->handler()->createRelatedObject(objectData: ['text' => 'x'], definition: $definition, parentUuid: 'p-1', currentRegister: 4));
+		$this->assertNull($this->handler()->createRelatedObject(objectData: ['text' => 'x'], target: (new CascadeTarget(parentUuid: 'p-1', register: 4))->with(definition: $definition)));
 		$this->assertSame([], $this->calls);
 	}//end testADefinitionWithoutATargetCreatesNothing()
 
 	public function testTheCreatedObjectIsLinkedBackStrippedOfIdentityAndTracked(): void {
-		$uuid = $this->handler()->createRelatedObject(
-			objectData: ['id' => 'client-id', 'text' => 'x', '@self' => ['id' => 'a', 'uuid' => 'b', 'slug' => 's']],
-			definition: ['$ref' => '#/components/schemas/note', 'inversedBy' => 'incident'],
-			parentUuid: 'p-1',
-			currentRegister: 4
-		);
+		$uuid = $this->handler()->createRelatedObject(objectData: ['id' => 'client-id', 'text' => 'x', '@self' => ['id' => 'a', 'uuid' => 'b', 'slug' => 's']], target: (new CascadeTarget(parentUuid: 'p-1', register: 4))->with(definition: ['$ref' => '#/components/schemas/note', 'inversedBy' => 'incident']));
 
 		$this->assertSame('new-uuid', $uuid);
 		$this->assertSame(
 			[
 				['assert', 'note'],
-				['save', 4, 'note', ['text' => 'x', '@self' => ['slug' => 's'], 'incident' => 'p-1'], null, null, true, true],
+				['save', 4, 'note', ['text' => 'x', '@self' => ['slug' => 's'], 'incident' => 'p-1'], null, true, true],
 				['track', 'new-uuid', 'stored'],
 			],
 			$this->calls
@@ -139,15 +135,10 @@ class CascadingHandlerCreateRelatedGoldenTest extends TestCase {
 	}//end testTheCreatedObjectIsLinkedBackStrippedOfIdentityAndTracked()
 
 	public function testWithoutInverseOrUuidNothingIsLinkedOrTracked(): void {
-		$uuid = $this->handler()->createRelatedObject(
-			objectData: ['noUuid' => true],
-			definition: ['$ref' => '#/components/schemas/note', 'inversedBy' => ''],
-			parentUuid: 'p-1',
-			currentRegister: null
-		);
+		$uuid = $this->handler()->createRelatedObject(objectData: ['noUuid' => true], target: (new CascadeTarget(parentUuid: 'p-1', register: null))->with(definition: ['$ref' => '#/components/schemas/note', 'inversedBy' => '']));
 
 		$this->assertNull($uuid);
-		$this->assertSame([['assert', 'note'], ['save', null, 'note', ['noUuid' => true], null, null, true, true]], $this->calls);
+		$this->assertSame([['assert', 'note'], ['save', null, 'note', ['noUuid' => true], null, true, true]], $this->calls);
 	}//end testWithoutInverseOrUuidNothingIsLinkedOrTracked()
 
 	public function testAFailedSaveIsLoggedAndCreatesNothing(): void {
@@ -155,12 +146,7 @@ class CascadingHandlerCreateRelatedGoldenTest extends TestCase {
 		$logger->expects($this->once())->method('error')->with('[CascadingHandler] Failed to create related object: disk full');
 
 		$this->assertNull(
-			$this->handler(logger: $logger)->createRelatedObject(
-				objectData: ['fail' => true],
-				definition: ['$ref' => '#/components/schemas/note'],
-				parentUuid: 'p-1',
-				currentRegister: 4
-			)
+			$this->handler(logger: $logger)->createRelatedObject(objectData: ['fail' => true], target: (new CascadeTarget(parentUuid: 'p-1', register: 4))->with(definition: ['$ref' => '#/components/schemas/note']))
 		);
 	}//end testAFailedSaveIsLoggedAndCreatesNothing()
 }//end class

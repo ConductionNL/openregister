@@ -18,7 +18,6 @@ final class ObjectActionsControllerFactory {
 	/**
 	 * The constructor arguments of ObjectActionsController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectService $objects Constructor argument.
 	 * @param MacroActionResolver $macros Constructor argument.
@@ -32,7 +31,6 @@ final class ObjectActionsControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\ObjectService $objects,
 		\OCA\OpenRegister\Service\Flow\MacroActionResolver $macros,
@@ -44,7 +42,6 @@ final class ObjectActionsControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ObjectActionsControllerServices(
 				catalogue: new \OCA\OpenRegister\Controller\Support\ObjectActionsCatalogue(
@@ -58,7 +55,7 @@ final class ObjectActionsControllerFactory {
 					history: $history,
 					bulk: $bulk,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\ObjectActionsPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\ConversationPlatform(
 					logger: $logger,
 				),
 			),

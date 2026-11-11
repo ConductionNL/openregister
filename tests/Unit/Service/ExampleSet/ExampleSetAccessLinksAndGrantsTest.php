@@ -31,6 +31,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapper;
+use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetActingAs;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -43,7 +44,11 @@ use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ShareTimeWriter;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\Files\Folder;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
@@ -56,6 +61,7 @@ use OCP\Share\Exceptions\ShareNotFound;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * The `accessLinks` and `grants` parts of an example set.
@@ -147,7 +153,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$mapper = $this->linkMapper();
 		$this->services = [
 			ExampleSetActingAs::class   => new ExampleSetActingAs(userSession: $this->session, userManager: $this->users, cli: true),
-			AccessLinkMapper::class     => $mapper,
+			AccessLinkMapperInterface::class => $mapper,
 			AccessLinkService::class    => $this->linkService(mapper: $mapper),
 			AccessLinkMintGuard::class  => $this->mintGuard(),
 			ObjectSharingService::class => $this->sharingService(session: $this->session),
@@ -247,10 +253,14 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->caseWith(links: [$this->sanneLink()]);
 		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 		$outside = $this->services[AccessLinkService::class]->mint(
-			userId: 'esra.demir',
-			subjectType: 'object',
-			subjectId: $this->caseId(),
-			expiresAt: '+10 years'
+			new LinkMintRequest(
+				minter: 'esra.demir',
+				subjectType: 'object',
+				subjectId: $this->caseId(),
+				terms: new AccessLinkTerms(
+					expiresAt: '+10 years'
+				)
+			)
 		);
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -777,7 +787,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	 */
 	private function shareRow(): array {
 		$id = (string) $this->record->read(set: 'demo')['objects']['alpha/share-sanne']['id'];
-		return (array) $this->store->get(register: 'dossiq', schema: 'caseShare', id: $id);
+		return (array) $this->store->row(ref: new ObjectRef(register: 'dossiq', schema: 'caseShare', id: $id));
 	}//end shareRow()
 
 	/**
@@ -833,11 +843,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 
 		return new AccessLinkService(
 			mapper: $mapper,
-			auditTrail: $this->createMock(AuditTrailMapper::class),
-			secureRandom: $random,
-			hasher: $this->createMock(IHasher::class),
-			urlGenerator: $urls,
-			logger: new NullLogger()
+			useLog: new AccessLinkUseLog(auditTrail: $this->createMock(AuditTrailMapper::class), logger: new NullLogger()),
+			secrets: new AccessLinkSecrets(secureRandom: $random, hasher: $this->createMock(IHasher::class)),
+			urlGenerator: $urls
 		);
 	}//end linkService()
 
@@ -881,17 +889,10 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		});
 
 		return new ObjectSharingService(
-			authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class),
-			userSession: $session,
-			groupManager: $groups,
-			folders: $folders,
-			scopeResolver: new ObjectScopeResolver(),
-			grantResolver: $this->createMock(ObjectGrantResolver::class),
-			shareManager: $this->shareManager(),
-			logger: new NullLogger(),
-			inheritedGrants: $this->createMock(InheritedGrantLister::class),
-			grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
-			shareTimes: $times
+			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $this->shareManager(), shareTimes: $times),
+			records: new \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords(authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class), scopeResolver: new ObjectScopeResolver(), grantResolver: $this->createMock(ObjectGrantResolver::class), inheritedGrants: $this->createMock(InheritedGrantLister::class)),
+			context: new \OCA\OpenRegister\Service\Rbac\ObjectSharingContext(userSession: $session, groupManager: $groups, logger: new NullLogger()),
+			grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class))
 		);
 	}//end sharingService()
 

@@ -49,6 +49,27 @@ class FileValidationHandlerTest extends TestCase {
 		$this->handler = new FileValidationHandler($this->logger);
 	}//end setUp()
 
+	/**
+	 * Run a guard call and assert it let the input through: no exception and no
+	 * "blocked" warning logged. The refusal side flips one input and expects both.
+	 *
+	 * @param callable $guard The guard invocation.
+	 *
+	 * @return void
+	 */
+	private function assertAccepted(callable $guard): void {
+		$this->logger->expects($this->never())->method('warning');
+
+		$thrown = null;
+		try {
+			$guard();
+		} catch (Exception $e) {
+			$thrown = $e;
+		}
+
+		$this->assertNull($thrown, 'guard refused input it must accept: '.($thrown?->getMessage() ?? ''));
+	}//end assertAccepted()
+
 	// =========================================================================
 	// blockExecutableFile - extension blocking
 	// =========================================================================
@@ -139,10 +160,8 @@ class FileValidationHandlerTest extends TestCase {
 	 */
 	public function testBlockExecutableFileAllowsSafeExtensions(string $fileName): void {
 		// Should not throw.
-		$this->handler->blockExecutableFile($fileName, 'safe content');
+		$this->assertAccepted(fn () => $this->handler->blockExecutableFile($fileName, 'safe content'));
 
-		// If we get here, the assertion is that no exception was thrown.
-		$this->assertTrue(true);
 	}//end testBlockExecutableFileAllowsSafeExtensions()
 
 	/**
@@ -194,15 +213,13 @@ class FileValidationHandlerTest extends TestCase {
 
 	public function testBlockExecutableFileEmptyContentAllowed(): void {
 		// Safe extension with empty content should pass.
-		$this->handler->blockExecutableFile('document.pdf', '');
+		$this->assertAccepted(fn () => $this->handler->blockExecutableFile('document.pdf', ''));
 
-		$this->assertTrue(true);
 	}//end testBlockExecutableFileEmptyContentAllowed()
 
 	public function testBlockExecutableFileSkipsMagicBytesForEmptyContent(): void {
 		// Empty content should skip magic bytes check entirely.
-		$this->handler->blockExecutableFile('file.txt', '');
-		$this->assertTrue(true);
+		$this->assertAccepted(fn () => $this->handler->blockExecutableFile('file.txt', ''));
 	}//end testBlockExecutableFileSkipsMagicBytesForEmptyContent()
 
 	// =========================================================================
@@ -259,16 +276,14 @@ class FileValidationHandlerTest extends TestCase {
 
 	public function testDetectExecutableMagicBytesSafeContent(): void {
 		// Normal content should not trigger detection.
-		$this->handler->detectExecutableMagicBytes('Hello, World! This is a text file.', 'readme.txt');
+		$this->assertAccepted(fn () => $this->handler->detectExecutableMagicBytes('Hello, World! This is a text file.', 'readme.txt'));
 
-		$this->assertTrue(true);
 	}//end testDetectExecutableMagicBytesSafeContent()
 
 	public function testDetectExecutableMagicBytesSignatureNotAtStart(): void {
 		// Magic bytes must be at position 0, not embedded in content.
-		$this->handler->detectExecutableMagicBytes('Some text then MZ more text', 'document.txt');
+		$this->assertAccepted(fn () => $this->handler->detectExecutableMagicBytes('Some text then MZ more text', 'document.txt'));
 
-		$this->assertTrue(true);
 	}//end testDetectExecutableMagicBytesSignatureNotAtStart()
 
 	// =========================================================================
@@ -372,17 +387,15 @@ class FileValidationHandlerTest extends TestCase {
 	public function testRealPngWithEmbeddedPhpShortEchoSequenceIsAccepted(): void {
 		$content = (string)file_get_contents($this->falsePositivePngPath());
 
-		$this->handler->detectExecutableMagicBytes($content, 'Gegevens weergeven.PNG');
+		$this->assertAccepted(fn () => $this->handler->detectExecutableMagicBytes($content, 'Gegevens weergeven.PNG'));
 
-		$this->assertTrue(true, 'a genuine PNG must not be rejected as PHP');
 	}//end testRealPngWithEmbeddedPhpShortEchoSequenceIsAccepted()
 
 	public function testRealPngPassesTheFullBlockExecutableFileGate(): void {
 		$content = (string)file_get_contents($this->falsePositivePngPath());
 
-		$this->handler->blockExecutableFile('Gegevens weergeven.PNG', $content);
+		$this->assertAccepted(fn () => $this->handler->blockExecutableFile('Gegevens weergeven.PNG', $content));
 
-		$this->assertTrue(true, 'a genuine PNG must survive the whole upload gate');
 	}//end testRealPngPassesTheFullBlockExecutableFileGate()
 
 	/**
@@ -391,9 +404,8 @@ class FileValidationHandlerTest extends TestCase {
 	public function testBinaryContainersSkipTheEmbeddedPhpScan(string $magic, string $fileName): void {
 		$content = $magic . str_repeat("\x00", 32) . "<?php system('whoami'); ?>" . str_repeat("\x00", 32);
 
-		$this->handler->detectExecutableMagicBytes($content, $fileName);
+		$this->assertAccepted(fn () => $this->handler->detectExecutableMagicBytes($content, $fileName));
 
-		$this->assertTrue(true, "{$fileName} must not be scanned for PHP tags");
 	}//end testBinaryContainersSkipTheEmbeddedPhpScan()
 
 	/**
@@ -418,9 +430,8 @@ class FileValidationHandlerTest extends TestCase {
 		// 4-byte box length, then the 'ftyp' brand marker at offset 4.
 		$content = "\x00\x00\x00\x20" . 'ftypisom' . str_repeat("\x00", 16) . '<?php echo 1; ?>';
 
-		$this->handler->detectExecutableMagicBytes($content, 'movie.mp4');
+		$this->assertAccepted(fn () => $this->handler->detectExecutableMagicBytes($content, 'movie.mp4'));
 
-		$this->assertTrue(true, 'an mp4 must not be scanned for PHP tags');
 	}//end testIsoBaseMediaMp4SkipsTheEmbeddedPhpScan()
 
 	// --- MUST-FAIL side: the protection is unchanged for everything else. ---
@@ -566,11 +577,10 @@ class FileValidationHandlerTest extends TestCase {
 		$file->method('isReadable')->willReturn(true);
 		$file->method('getName')->willReturn('test.pdf');
 		$file->method('getId')->willReturn(42);
-		$file->method('getOwner')->willReturn(null);
+		$file->expects($this->never())->method('getOwner');
+		$this->logger->expects($this->never())->method('warning');
 
 		$this->handler->checkOwnership(file: $file);
-
-		$this->assertTrue(true);
 	}//end testCheckOwnershipReadableFileWithNullOwnerIsAllowed()
 
 	// =========================================================================
@@ -627,22 +637,58 @@ class FileValidationHandlerTest extends TestCase {
 
 	public function testBlockExecutableFileNoExtension(): void {
 		// File with no extension should pass.
-		$this->handler->blockExecutableFile('Makefile', 'content');
-		$this->assertTrue(true);
+		$this->assertAccepted(fn () => $this->handler->blockExecutableFile('Makefile', 'content'));
 	}//end testBlockExecutableFileNoExtension()
 
 	public function testDetectExecutableMagicBytesEmptyContent(): void {
 		// Empty content should pass.
-		$this->handler->detectExecutableMagicBytes('', 'empty.txt');
-		$this->assertTrue(true);
+		$this->assertAccepted(fn () => $this->handler->detectExecutableMagicBytes('', 'empty.txt'));
 	}//end testDetectExecutableMagicBytesEmptyContent()
 
 	public function testDetectMagicBytesShebangBeyond1024BytesNotDetected(): void {
 		// Shebang beyond first 1024 bytes should not be detected.
 		$content = str_repeat('a', 1025) . "\n#!/bin/bash\necho hi";
-		$this->handler->detectExecutableMagicBytes($content, 'safe.txt');
-		$this->assertTrue(true);
+		$this->assertAccepted(fn () => $this->handler->detectExecutableMagicBytes($content, 'safe.txt'));
 	}//end testDetectMagicBytesShebangBeyond1024BytesNotDetected()
+
+	/**
+	 * Refusal pair for testBlockExecutableFileNoExtension: the same extensionless
+	 * name is refused once its content is a script.
+	 *
+	 * @return void
+	 */
+	public function testBlockExecutableFileNoExtensionWithShebangIsRefused(): void {
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Bash script');
+
+		$this->handler->blockExecutableFile('Makefile', "#!/bin/bash\nrm -rf /");
+	}//end testBlockExecutableFileNoExtensionWithShebangIsRefused()
+
+	/**
+	 * Refusal pair for testIsoBaseMediaMp4SkipsTheEmbeddedPhpScan: without the
+	 * 'ftyp' box the same PHP payload named .mp4 is scanned and refused.
+	 *
+	 * @return void
+	 */
+	public function testMp4NameWithoutFtypBoxIsStillScannedForPhp(): void {
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('PHP code');
+
+		$this->handler->detectExecutableMagicBytes('not a media box <?php echo 1; ?>', 'movie.mp4');
+	}//end testMp4NameWithoutFtypBoxIsStillScannedForPhp()
+
+	/**
+	 * Refusal pair for testDetectMagicBytesShebangBeyond1024BytesNotDetected:
+	 * the same shebang inside the first 1024 bytes is refused.
+	 *
+	 * @return void
+	 */
+	public function testDetectMagicBytesShebangWithin1024BytesIsRefused(): void {
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('script shebang');
+
+		$this->handler->detectExecutableMagicBytes(str_repeat('a', 10)."\n#!/bin/bash\necho hi", 'safe.txt');
+	}//end testDetectMagicBytesShebangWithin1024BytesIsRefused()
 
 	/**
 	 * A text-ish extension is reported as always-scanned.

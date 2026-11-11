@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Mapping\MappingFieldTypes;
+use OCA\OpenRegister\Db\Mapping\MappingSlug;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -74,13 +76,20 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress UnusedClass
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
- *
- * @SuppressWarnings(PHPMD.StaticAccess)         Transliterator::create is the correct pattern for ICU transliteration
- * @SuppressWarnings(PHPMD.ErrorControlOperator) @ suppression needed for Transliterator which may not be available
  */
 class Mapping extends Entity implements JsonSerializable {
 	use JsonFieldsTrait;
 	use HydrateBySettersTrait;
+
+	/**
+	 * The serialised fields, in API order.
+	 *
+	 * @var string[]
+	 */
+	private const JSON_ORDER = [
+		'id', 'uuid', 'name', 'description', 'version', 'reference', 'mapping', 'unset',
+		'cast', 'passThrough', 'configurations', 'slug', 'organisation', 'created', 'updated',
+	];
 
 	/**
 	 * Unique identifier for the mapping.
@@ -185,20 +194,9 @@ class Mapping extends Entity implements JsonSerializable {
 	 * Initialize the entity and define field types
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'reference', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'mapping', type: 'json');
-		$this->addType(fieldName: 'unset', type: 'json');
-		$this->addType(fieldName: 'cast', type: 'json');
-		$this->addType(fieldName: 'passThrough', type: 'boolean');
-		$this->addType(fieldName: 'configurations', type: 'json');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		foreach (MappingFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -245,57 +243,13 @@ class Mapping extends Entity implements JsonSerializable {
 	 *
 	 * @phpstan-return non-empty-string
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
-	 * @psalm-suppress UndefinedClass Transliterator is optional PHP intl extension
 	 */
 	public function getSlug(): string {
-		// Return existing slug when present.
 		if (empty($this->slug) === false) {
 			return $this->slug;
 		}
 
-		// Prepare name.
-		$name = trim((string)($this->name ?? ''));
-
-		// Attempt transliteration to ASCII for non-Latin names.
-		$transliterated = $name;
-		if ($name !== '') {
-			if (class_exists('\Transliterator') === true) {
-				$transliterator = \Transliterator::create('Any-Latin; Latin-ASCII');
-				if ($transliterator !== null) {
-					$transliterated = (string)$transliterator->transliterate($name);
-				}
-			} elseif (function_exists('iconv') === true) {
-				$converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
-				if ($converted !== false) {
-					$transliterated = $converted;
-				}
-			}
-		}//end if
-
-		// Convert to slug: lowercase, non-alphanumeric to hyphens, trim.
-		$generatedSlug = strtolower($transliterated);
-		$generatedSlug = preg_replace('/[^a-z0-9]+/', '-', $generatedSlug ?? '');
-		$generatedSlug = trim((string)$generatedSlug, '-');
-
-		// Return slug if not empty.
-		if ($generatedSlug !== '') {
-			return $generatedSlug;
-		}
-
-		// Safe fallback if empty.
-		$prefix = 'mapping';
-		if ((string)$this->id !== '') {
-			return $prefix . '-' . (string)$this->id;
-		}
-
-		try {
-			return $prefix . '-' . bin2hex(random_bytes(4));
-		} catch (\Exception $e) {
-			return $prefix . '-' . substr(md5((string)$name), 0, 8);
-		}
+		return (new MappingSlug())->generated(name: $this->name, id: $this->id);
 	}//end getSlug()
 
 	/**
@@ -306,32 +260,17 @@ class Mapping extends Entity implements JsonSerializable {
 	 * @phpstan-return array<string,mixed>
 	 */
 	public function jsonSerialize(): array {
-		$result = [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'name' => $this->name,
-			'description' => $this->description,
-			'version' => $this->version,
-			'reference' => $this->reference,
-			'mapping' => $this->getMapping(),
-			'unset' => $this->getUnset(),
-			'cast' => $this->getCast(),
-			'passThrough' => $this->passThrough,
-			'configurations' => $this->getConfigurations(),
-			'slug' => $this->getSlug(),
-			'organisation' => $this->organisation,
-		];
+		$json = (new TypedFieldsJson())->pick(values: get_object_vars($this), names: self::JSON_ORDER);
 
-		$result['created'] = null;
-		if (isset($this->created) === true) {
-			$result['created'] = $this->created->format('c');
-		}
-
-		$result['updated'] = null;
-		if (isset($this->updated) === true) {
-			$result['updated'] = $this->updated->format('c');
-		}
-
-		return $result;
+		return array_merge(
+			$json,
+			[
+				'mapping' => $this->getMapping(),
+				'unset' => $this->getUnset(),
+				'cast' => $this->getCast(),
+				'configurations' => $this->getConfigurations(),
+				'slug' => $this->getSlug(),
+			]
+		);
 	}//end jsonSerialize()
 }//end class

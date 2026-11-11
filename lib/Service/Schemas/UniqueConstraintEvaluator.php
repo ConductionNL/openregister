@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Schemas;
 /**
  * Reads and evaluates a schema's uniqueness constraints.
  */
-class UniqueConstraintEvaluator {
+class UniqueConstraintEvaluator implements UniqueConstraintEvaluatorInterface {
 
 	/**
 	 * The schema configuration key holding the named constraints.
@@ -55,13 +55,6 @@ class UniqueConstraintEvaluator {
 	 * @var string
 	 */
 	public const LEGACY_CONFIG_KEY = 'unique';
-
-	/**
-	 * Refuse the save on a breach.
-	 *
-	 * @var string
-	 */
-	public const ACTION_REFUSE = 'refuse';
 
 	/**
 	 * Let the save through and record the breach.
@@ -94,49 +87,58 @@ class UniqueConstraintEvaluator {
 			return [];
 		}
 
-		$constraints = [];
-
+		$legacy = [];
 		if ($includeLegacy === true) {
-			$legacy = $this->legacyConstraint(value: ($configuration[self::LEGACY_CONFIG_KEY] ?? null));
-			if ($legacy !== null) {
-				$constraints[] = $legacy;
-			}
+			$legacy = $this->legacyConstraints(value: ($configuration[self::LEGACY_CONFIG_KEY] ?? null));
 		}
 
-		$declared = ($configuration[self::CONFIG_KEY] ?? null);
+		return array_merge($legacy, $this->declaredConstraints(declared: ($configuration[self::CONFIG_KEY] ?? null)));
+	}//end constraints()
+
+	/**
+	 * The declared constraints that are well formed, in declaration order.
+	 *
+	 * @param mixed $declared The value of the `uniqueConstraints` key.
+	 *
+	 * @return array<int,array{name:string,properties:array<int,string>,action:string}> The constraints.
+	 */
+	private function declaredConstraints(mixed $declared): array {
 		if (is_array($declared) === false) {
-			return $constraints;
+			return [];
 		}
 
+		$constraints = [];
 		foreach ($declared as $key => $entry) {
 			$constraint = $this->declaredConstraint(key: $key, entry: $entry);
 			if ($constraint !== null) {
 				$constraints[] = $constraint;
 			}
-		}//end foreach
+		}
 
 		return $constraints;
-	}//end constraints()
+	}//end declaredConstraints()
 
 	/**
-	 * The pre-existing `unique` key read as an unnamed refusal, or null.
+	 * The pre-existing `unique` key read as an unnamed refusal: one constraint, or none.
 	 *
 	 * @param mixed $value The value of the legacy `unique` key.
 	 *
-	 * @return array{name:string,properties:array<int,string>,action:string}|null The constraint, or null when none is declared.
+	 * @return array<int,array{name:string,properties:array<int,string>,action:string}> The constraint, or nothing when none is declared.
 	 */
-	private function legacyConstraint(mixed $value): ?array {
+	private function legacyConstraints(mixed $value): array {
 		$properties = $this->propertyList(value: $value);
 		if ($properties === []) {
-			return null;
+			return [];
 		}
 
 		return [
-			'name' => implode('+', $properties),
-			'properties' => $properties,
-			'action' => self::ACTION_REFUSE,
+			[
+				'name' => implode('+', $properties),
+				'properties' => $properties,
+				'action' => self::ACTION_REFUSE,
+			],
 		];
-	}//end legacyConstraint()
+	}//end legacyConstraints()
 
 	/**
 	 * One declared constraint entry, normalised, or null when it is malformed.
@@ -150,38 +152,51 @@ class UniqueConstraintEvaluator {
 	 * @return array{name:string,properties:array<int,string>,action:string}|null The constraint, or null when malformed.
 	 */
 	private function declaredConstraint(int|string $key, mixed $entry): ?array {
-		if (is_array($entry) === false) {
-			return null;
-		}
-
-		$properties = $this->propertyList(value: ($entry['properties'] ?? null));
-		if ($properties === []) {
-			return null;
-		}
-
-		$action = strtolower(trim((string)($entry['action'] ?? self::ACTION_REFUSE)));
-		if (in_array($action, [self::ACTION_REFUSE, self::ACTION_REPORT], true) === false) {
+		if ($this->isWellFormed(entry: $entry) === false) {
 			return null;
 		}
 
 		return [
-			'name' => $this->constraintName(entry: $entry, key: $key, properties: $properties),
-			'properties' => $properties,
-			'action' => $action,
+			'name' => $this->constraintName(entry: $entry, key: $key),
+			'properties' => $this->propertyList(value: ($entry['properties'] ?? null)),
+			'action' => $this->actionOf(entry: $entry),
 		];
 	}//end declaredConstraint()
+
+	/**
+	 * Whether a declared entry names at least one property and a known action.
+	 *
+	 * @param mixed $entry The declared entry.
+	 *
+	 * @return bool True when the entry can become a constraint.
+	 */
+	private function isWellFormed(mixed $entry): bool {
+		return is_array($entry) === true
+			&& $this->propertyList(value: ($entry['properties'] ?? null)) !== []
+			&& in_array($this->actionOf(entry: $entry), [self::ACTION_REFUSE, self::ACTION_REPORT], true) === true;
+	}//end isWellFormed()
+
+	/**
+	 * The action an entry declares, lower-cased and trimmed; refuse when it declares none.
+	 *
+	 * @param array<string,mixed> $entry The declared entry.
+	 *
+	 * @return string The action, which may still be an unknown one.
+	 */
+	private function actionOf(array $entry): string {
+		return strtolower(trim((string)($entry['action'] ?? self::ACTION_REFUSE)));
+	}//end actionOf()
 
 	/**
 	 * The name a declared constraint carries: its own, else its key, else the
 	 * property combination.
 	 *
-	 * @param array<string,mixed> $entry      The declared entry.
-	 * @param int|string          $key        The declaration key.
-	 * @param array<int,string>   $properties The normalised property names.
+	 * @param array<string,mixed> $entry The declared entry.
+	 * @param int|string          $key   The declaration key.
 	 *
 	 * @return string The resolved name.
 	 */
-	private function constraintName(array $entry, int|string $key, array $properties): string {
+	private function constraintName(array $entry, int|string $key): string {
 		$name = trim((string)($entry['name'] ?? ''));
 		if ($name !== '') {
 			return $name;
@@ -191,7 +206,7 @@ class UniqueConstraintEvaluator {
 			return $key;
 		}
 
-		return implode('+', $properties);
+		return implode('+', $this->propertyList(value: ($entry['properties'] ?? null)));
 	}//end constraintName()
 
 	/**
@@ -210,13 +225,25 @@ class UniqueConstraintEvaluator {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function filtersFor(array $constraint, array $object): ?array {
-		$filters = [];
-		foreach ($constraint['properties'] as $property) {
-			if (array_key_exists($property, $object) === false) {
-				return null;
-			}
+		if ($constraint['properties'] === []) {
+			return null;
+		}
 
-			$value = $object[$property];
+		return $this->filledValues(properties: $constraint['properties'], object: $object);
+	}//end filtersFor()
+
+	/**
+	 * The object's value for each property, or null as soon as one is absent, null or empty.
+	 *
+	 * @param array<int,string>   $properties The property names.
+	 * @param array<string,mixed> $object     The submitted object data.
+	 *
+	 * @return array<string,mixed>|null The values by property, or null when the combination is incomplete.
+	 */
+	private function filledValues(array $properties, array $object): ?array {
+		$filters = [];
+		foreach ($properties as $property) {
+			$value = ($object[$property] ?? null);
 			if ($value === null || $value === '') {
 				return null;
 			}
@@ -224,42 +251,50 @@ class UniqueConstraintEvaluator {
 			$filters[$property] = $value;
 		}
 
-		if ($filters === []) {
-			return null;
-		}
-
 		return $filters;
-	}//end filtersFor()
+	}//end filledValues()
 
 	/**
 	 * The breach, in words, naming the combination and the conflicting object.
 	 *
 	 * @param array{name:string,properties:array<int,string>,action:string} $constraint The constraint.
-	 * @param array<string,mixed> $object The submitted object data.
-	 * @param string|null $conflictingId The uuid of an object already holding the combination.
+	 * @param UniqueConflict $conflict The submitted object data and who holds the combination already.
 	 *
 	 * @return string The message.
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	public function describeBreach(array $constraint, array $object, ?string $conflictingId): string {
-		$pairs = [];
-		foreach ($constraint['properties'] as $property) {
-			$pairs[] = $property . '=' . $this->readable(value: ($object[$property] ?? null));
-		}
-
+	public function describeBreach(array $constraint, UniqueConflict $conflict): string {
 		$message = sprintf(
 			'The combination %s (%s) is already in use.',
 			implode(' and ', $constraint['properties']),
-			implode(', ', $pairs)
+			$this->pairsOf(properties: $constraint['properties'], object: $conflict->object)
 		);
 
+		$conflictingId = $conflict->conflictingId;
 		if ($conflictingId !== null && $conflictingId !== '') {
 			$message .= ' It is held by object ' . $conflictingId . '.';
 		}
 
 		return $message;
 	}//end describeBreach()
+
+	/**
+	 * The `property=value` pairs of a combination, comma separated.
+	 *
+	 * @param array<int,string>   $properties The property names.
+	 * @param array<string,mixed> $object     The submitted object data.
+	 *
+	 * @return string The rendered pairs.
+	 */
+	private function pairsOf(array $properties, array $object): string {
+		$pairs = [];
+		foreach ($properties as $property) {
+			$pairs[] = $property . '=' . $this->readable(value: ($object[$property] ?? null));
+		}
+
+		return implode(', ', $pairs);
+	}//end pairsOf()
 
 	/**
 	 * Normalise a declared property list.
@@ -270,27 +305,15 @@ class UniqueConstraintEvaluator {
 	 */
 	private function propertyList(mixed $value): array {
 		if (is_string($value) === true) {
-			$value = trim($value);
-
-			if ($value === '') {
-				return [];
-			}
-
-			return [$value];
+			$value = [$value];
 		}
 
 		if (is_array($value) === false) {
 			return [];
 		}
 
-		$properties = [];
-		foreach ($value as $entry) {
-			if (is_string($entry) === true && trim($entry) !== '') {
-				$properties[] = trim($entry);
-			}
-		}
-
-		return $properties;
+		$named = array_filter($value, static fn (mixed $entry): bool => is_string($entry) === true && trim($entry) !== '');
+		return array_values(array_map('trim', $named));
 	}//end propertyList()
 
 	/**

@@ -29,7 +29,8 @@ use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 /**
  * Concurrency guard, terminal state, batch read and population count of a schema run.
  *
- * The using service provides `$this->runMapper` (SchemaRunMapper) and
+ * The using service provides `$this->runMapper` (SchemaRunMapper),
+ * `$this->runEntryMapper` (SchemaRunEntryMapper) and
  * `$this->objectService` (ObjectOperationsInterface).
  */
 trait SchemaRunPopulation {
@@ -128,4 +129,62 @@ trait SchemaRunPopulation {
 		}
 
 	}//end countPopulation()
+
+	/**
+	 * The run's next batch; an empty one completes the run.
+	 *
+	 * @param SchemaRun $run       The run.
+	 * @param int       $batchSize The batch size.
+	 *
+	 * @return ObjectEntity[] The objects, empty when the run is done.
+	 */
+	private function nextBatch(SchemaRun $run, int $batchSize): array {
+		$objects = $this->loadBatch(run: $run, batchSize: $batchSize);
+		if (count($objects) === 0) {
+			$this->finish(run: $run, state: SchemaRun::STATE_COMPLETED);
+		}
+
+		return $objects;
+	}//end nextBatch()
+
+	/**
+	 * Record one per-object entry of a run.
+	 *
+	 * @param SchemaRun            $run   The run.
+	 * @param array<string, mixed> $entry The entry fields after `runId`.
+	 *
+	 * @return void
+	 */
+	private function recordEntry(SchemaRun $run, array $entry): void {
+		$this->runEntryMapper->createFromArray(['runId' => $run->getId()] + $entry);
+
+	}//end recordEntry()
+
+	/**
+	 * Close a batch that leaves work for the next one, persisting the run.
+	 *
+	 * @param SchemaRunBatch $batch The batch.
+	 *
+	 * @return bool Always true: more work may remain.
+	 */
+	private function saveBatch(SchemaRunBatch $batch): bool {
+		$batch->close();
+		$this->runMapper->save($batch->run);
+
+		return true;
+	}//end saveBatch()
+
+	/**
+	 * Close a batch that halts its run as failed.
+	 *
+	 * @param SchemaRunBatch $batch The batch.
+	 *
+	 * @return bool Always false: the run is done.
+	 */
+	private function haltBatch(SchemaRunBatch $batch): bool {
+		$batch->close();
+		$this->finish(run: $batch->run, state: SchemaRun::STATE_FAILED);
+
+		return false;
+	}//end haltBatch()
 }//end trait

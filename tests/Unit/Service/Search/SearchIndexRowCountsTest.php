@@ -97,9 +97,7 @@ class SearchIndexRowCountsTest extends TestCase {
 		$config->method('getSystemValue')->willReturn('oc_');
 
 		return new SearchIndexMaintenance(
-			db: $db,
-			registerMapper: $mapper,
-			magicMapper: $magic,
+			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores($db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $mapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $magic)),
 			appConfig: $this->createMock(originalClassName: IAppConfig::class),
 			config: $config,
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
@@ -175,9 +173,7 @@ class SearchIndexRowCountsTest extends TestCase {
 		$mapper->method('findAll')->willReturn([]);
 
 		$service = new SearchIndexMaintenance(
-			db: $db,
-			registerMapper: $mapper,
-			magicMapper: $this->createMock(originalClassName: MagicMapper::class),
+			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores($db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $mapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->createMock(originalClassName: MagicMapper::class))),
 			appConfig: $this->createMock(originalClassName: IAppConfig::class),
 			config: $this->createMock(originalClassName: IConfig::class),
 			logger: $this->createMock(originalClassName: LoggerInterface::class)

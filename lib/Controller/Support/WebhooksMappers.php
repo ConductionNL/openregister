@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\WebhookLogMapper;
-use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookLogMapperInterface;
+use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\WebhookService;
 use Psr\Log\LoggerInterface;
 
@@ -36,16 +36,16 @@ final class WebhooksMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param WebhookMapper    $webhookMapper    Webhook mapper
-	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-	 * @param WebhookService   $webhookService   Webhook service
-	 * @param LoggerInterface  $logger           Logger
+	 * @param WebhookMapperInterface $webhookMapper    Webhook mapper
+	 * @param WebhookLogMapperInterface       $webhookLogMapper Webhook log mapper
+	 * @param WebhookService         $webhookService   Webhook service
+	 * @param LoggerInterface        $logger           Logger
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function __construct(
-		public readonly WebhookMapper $webhookMapper,
-		public readonly WebhookLogMapper $webhookLogMapper,
+		public readonly WebhookMapperInterface $webhookMapper,
+		public readonly WebhookLogMapperInterface $webhookLogMapper,
 		public readonly WebhookService $webhookService,
 		public readonly LoggerInterface $logger,
 	) {

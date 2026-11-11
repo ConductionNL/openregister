@@ -190,7 +190,6 @@ class ConversionManagerConverter implements NcOfficeConverterInterface {
 	 */
 	private function convert(string $bytes, array $route): string {
 		[$from, $to] = $route;
-
 		if ($this->supports(from: $from, to: $to) === false) {
 			throw new OfficeServerRequiredException();
 		}
@@ -198,22 +197,35 @@ class ConversionManagerConverter implements NcOfficeConverterInterface {
 		$folder = $this->workFolder->get();
 		$name = bin2hex(random_bytes(16));
 		$source = $folder->newFile($name . '.' . $from, $bytes);
-
 		try {
-			$path = $this->conversionManager->convert($source, self::MIME_TYPES[$to], $folder->getPath() . '/' . $name . '.' . $to);
-			$result = $folder->get(basename($path));
-			if (($result instanceof File) === false) {
-				throw new RuntimeException('The conversion did not produce a file');
-			}
-
-			$converted = (string) $result->getContent();
-			$result->delete();
-
-			return $converted;
+			return $this->convertSource(source: $source, job: new ConversionJob(folder: $folder, name: $name, target: $to));
 		} catch (Throwable $e) {
 			throw new RuntimeException('The office server could not convert the document: ' . $e->getMessage(), 0, $e);
 		} finally {
 			$source->delete();
-		}//end try
+		}
 	}//end convert()
+
+	/**
+	 * Convert a source file in the work folder, read the result and delete it.
+	 *
+	 * @param File          $source The source file in the work folder.
+	 * @param ConversionJob $job    The work folder, the file name and the target extension.
+	 *
+	 * @return string The converted bytes.
+	 *
+	 * @throws RuntimeException When the conversion did not produce a file.
+	 */
+	private function convertSource(File $source, ConversionJob $job): string {
+		$path = $this->conversionManager->convert($source, self::MIME_TYPES[$job->target], $job->targetPath());
+		$result = $job->folder->get(basename($path));
+		if (($result instanceof File) === false) {
+			throw new RuntimeException('The conversion did not produce a file');
+		}
+
+		$converted = (string) $result->getContent();
+		$result->delete();
+
+		return $converted;
+	}//end convertSource()
 }//end class

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
 use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
@@ -51,10 +52,13 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
  * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
  * @uses \OCA\OpenRegister\Event\ObjectDeletingEvent
+ * @uses \OCA\OpenRegister\Event\ObjectLeavingEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  */
 class WorkingCalendarGuardListenersTest extends TestCase {
 
@@ -250,6 +254,22 @@ class WorkingCalendarGuardListenersTest extends TestCase {
 		self::assertSame(expected: ['11111111-1111-1111-1111-111111111111'], actual: $errors['timers']);
 		self::assertStringContainsString(needle: 'gemeente-x', haystack: (string)$errors['message']);
 	}//end testACalendarWithAnArmedTimerSurvivesTheDelete()
+
+	/**
+	 * A move out of the schema is refused like a delete: the timers name the calendar there.
+	 *
+	 * @return void
+	 */
+	public function testACalendarWithAnArmedTimerDoesNotMoveAway(): void {
+		$this->timers->method('countOpenByCalendarSlug')->willReturn(1);
+		$this->timers->method('findOpenByCalendarSlug')->willReturn([]);
+
+		$event = new ObjectLeavingEvent(object: $this->objectOf(data: ['slug' => 'gemeente-x']));
+		$this->deleteListener()->handle($event);
+
+		self::assertTrue(condition: $event->isPropagationStopped());
+		self::assertSame(expected: WorkingCalendarDeleteGuardListener::ERROR_CODE, actual: $event->getErrors()['code']);
+	}//end testACalendarWithAnArmedTimerDoesNotMoveAway()
 
 	/**
 	 * A calendar nothing open refers to is deletable, and costs no second query.

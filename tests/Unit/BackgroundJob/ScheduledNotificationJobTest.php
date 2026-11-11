@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledObjectSources;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
@@ -20,6 +24,8 @@ use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Verifies the scheduled notification job's correctness contract:
@@ -61,7 +67,7 @@ class ScheduledNotificationJobTest extends TestCase {
 
 		// Default: no prior dedup state — every match is treated as a fresh
 		// dispatch. Per-test overrides exercise the dedup paths.
-		$this->dedupeMapper->method('findOne')->willReturn(null);
+		$this->dedupeMapper->method('findByKey')->willReturn(null);
 		$this->appConfig->method('getValueString')->willReturnArgument(2);
 	}
 
@@ -239,14 +245,9 @@ class ScheduledNotificationJobTest extends TestCase {
 	private function runJob(): void {
 		$job = new ScheduledNotificationJob(
 			$this->time,
-			$this->schemaMapper,
-			$this->objectMapper,
-			$this->dispatcher,
-			$this->logger,
-			$this->cacheFactory,
-			new ScheduledFilterEvaluator(logger: $this->logger),
-			$this->dedupeMapper,
-			$this->appConfig
+			new ScheduledObjectSources(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper), new ScheduledFilterEvaluator(logger: $this->logger)),
+			new ScheduledNotificationDelivery($this->dispatcher, $this->dedupeMapper, $this->appConfig, $this->logger),
+			$this->cacheFactory
 		);
 		$reflection = new \ReflectionClass($job);
 		$method = $reflection->getMethod('run');
@@ -297,12 +298,8 @@ class ScheduledNotificationJobTest extends TestCase {
 		$this->dedupeMapper->expects($this->once())
 			->method('upsert')
 			->with(
-				$this->equalTo(1),
-				$this->equalTo('scheduled-test'),
-				$this->equalTo($object->getUuid()),
-				$this->isType('string'),
-				$this->isInstanceOf(\DateTime::class),
-				$this->equalTo(true)
+				$this->equalTo(new NotificationDedupeKey(1, 'scheduled-test', $object->getUuid())),
+				$this->callback(static fn (DedupeSighting $sighting): bool => $sighting->dispatched === true)
 			);
 		$this->dispatcher->expects($this->once())->method('dispatch');
 
@@ -330,7 +327,7 @@ class ScheduledNotificationJobTest extends TestCase {
 		$row->setSeenAt(new \DateTime('-1 hour'));
 
 		$this->dedupeMapper = $this->createMock(NotificationDedupeStateMapper::class);
-		$this->dedupeMapper->method('findOne')->willReturn($row);
+		$this->dedupeMapper->method('findByKey')->willReturn($row);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->appConfig->method('getValueString')->willReturnArgument(2);
 
@@ -340,11 +337,7 @@ class ScheduledNotificationJobTest extends TestCase {
 			->method('upsert')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->equalTo(false)
+				$this->callback(static fn (DedupeSighting $sighting): bool => $sighting->dispatched === false)
 			);
 
 		$this->runJob();
@@ -370,7 +363,7 @@ class ScheduledNotificationJobTest extends TestCase {
 		$row->setSeenAt(new \DateTime('-1 hour'));
 
 		$this->dedupeMapper = $this->createMock(NotificationDedupeStateMapper::class);
-		$this->dedupeMapper->method('findOne')->willReturn($row);
+		$this->dedupeMapper->method('findByKey')->willReturn($row);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->appConfig->method('getValueString')->willReturnArgument(2);
 
@@ -379,11 +372,7 @@ class ScheduledNotificationJobTest extends TestCase {
 			->method('upsert')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->equalTo(true)
+				$this->callback(static fn (DedupeSighting $sighting): bool => $sighting->dispatched === true)
 			);
 
 		$this->runJob();
@@ -419,7 +408,7 @@ class ScheduledNotificationJobTest extends TestCase {
 		$row->setSeenAt(new \DateTime('-1 hour'));
 
 		$this->dedupeMapper = $this->createMock(NotificationDedupeStateMapper::class);
-		$this->dedupeMapper->method('findOne')->willReturn($row);
+		$this->dedupeMapper->method('findByKey')->willReturn($row);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->appConfig->method('getValueString')->willReturnArgument(2);
 
@@ -488,14 +477,9 @@ class ScheduledNotificationJobTest extends TestCase {
 
 		$job = new ScheduledNotificationJob(
 			$this->time,
-			$this->schemaMapper,
-			$this->objectMapper,
-			$this->dispatcher,
-			$this->logger,
-			$this->cacheFactory,
-			new ScheduledFilterEvaluator(logger: $this->logger),
-			$this->dedupeMapper,
-			$appConfig
+			new ScheduledObjectSources(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper), new ScheduledFilterEvaluator(logger: $this->logger)),
+			new ScheduledNotificationDelivery($this->dispatcher, $this->dedupeMapper, $appConfig, $this->logger),
+			$this->cacheFactory
 		);
 		$reflection = new \ReflectionClass($job);
 		$method = $reflection->getMethod('run');

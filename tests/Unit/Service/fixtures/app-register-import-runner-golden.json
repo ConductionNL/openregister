@@ -1,0 +1,1443 @@
+{
+    "app reply empty": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::loadSettings(force: true)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.loadSettings",
+                [
+                    true
+                ]
+            ]
+        ]
+    },
+    "app reply empty error": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::loadConfigurationForced()",
+            "message": "ok"
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.loadConfigurationForced",
+                []
+            ]
+        ]
+    },
+    "app reply error": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": false,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::loadConfigurationForced()",
+            "message": "bad thing"
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.loadConfigurationForced",
+                []
+            ]
+        ]
+    },
+    "app reply not array": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": false,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::loadConfigurationForced()",
+            "message": "The app returned no result."
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.loadConfigurationForced",
+                []
+            ]
+        ]
+    },
+    "app reply success false": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": false,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::loadConfiguration(force: true)",
+            "message": "nope"
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.loadConfiguration",
+                [
+                    true
+                ]
+            ]
+        ]
+    },
+    "app reply throws": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": false,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::loadConfigurationForced()",
+            "message": "app import failed"
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.loadConfigurationForced",
+                []
+            ]
+        ]
+    },
+    "container has throws": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    },
+    "container lacks service": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    },
+    "fallback import empty": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": false,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": "The import returned an empty result."
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    },
+    "fallback import throws": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": false,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": "import failed"
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    },
+    "forced method": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::loadConfigurationForced()",
+            "message": "imported"
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.loadConfigurationForced",
+                []
+            ]
+        ]
+    },
+    "load configuration force": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::loadConfiguration(force: true)",
+            "message": "imported"
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.loadConfiguration",
+                [
+                    true
+                ]
+            ]
+        ]
+    },
+    "load configuration no param": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    },
+    "load configuration wrong param name": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    },
+    "load settings force": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::loadSettings(force: true)",
+            "message": "imported"
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.loadSettings",
+                [
+                    true
+                ]
+            ]
+        ]
+    },
+    "no container": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    },
+    "no namespace, base file": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    },
+    "no namespace, fragments": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    },
+                    "schemas": {
+                        "s": {
+                            "slug": "s"
+                        },
+                        "t": {
+                            "slug": "t"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3+frag.1f08452d",
+            "fragments": 2
+        },
+        "run": {
+            "success": true,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            },
+                            "schemas": {
+                                "s": {
+                                    "slug": "s"
+                                },
+                                "t": {
+                                    "slug": "t"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3+frag.1f08452d",
+                    true
+                ]
+            ]
+        ]
+    },
+    "no namespace, invalid json": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": false,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": "demoapp ships no lib/Settings/demoapp_register.json."
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ]
+        ]
+    },
+    "no namespace, no files": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": false,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": "demoapp ships no lib/Settings/demoapp_register.json."
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ]
+        ]
+    },
+    "private forced method is skipped": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::loadSettings(force: true)",
+            "message": "imported"
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.loadSettings",
+                [
+                    true
+                ]
+            ]
+        ]
+    },
+    "reload with required param is skipped": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    },
+    "reload without params": {
+        "document": {
+            "data": null,
+            "version": "",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "app",
+            "via": "OCA\\DemoApp\\Service\\SettingsService::reloadConfiguration()",
+            "message": "imported"
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "settings.reloadConfiguration",
+                []
+            ]
+        ]
+    },
+    "service not an object": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    },
+    "service without entry point": {
+        "document": {
+            "data": {
+                "info": {
+                    "version": "1.2.3"
+                },
+                "components": {
+                    "registers": {
+                        "r": {
+                            "slug": "r"
+                        }
+                    }
+                }
+            },
+            "version": "1.2.3",
+            "fragments": 0
+        },
+        "run": {
+            "success": true,
+            "path": "openregister",
+            "via": "OpenRegister (lib/Settings/demoapp_register.json + register.d)",
+            "message": ""
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppInfo",
+                "demoapp"
+            ],
+            [
+                "locator.find",
+                "demoapp"
+            ],
+            [
+                "container.has",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "container.get",
+                "OCA\\DemoApp\\Service\\SettingsService"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "apps.getAppPath",
+                "demoapp"
+            ],
+            [
+                "importer.importFromApp",
+                [
+                    "demoapp",
+                    {
+                        "info": {
+                            "version": "1.2.3"
+                        },
+                        "components": {
+                            "registers": {
+                                "r": {
+                                    "slug": "r"
+                                }
+                            }
+                        }
+                    },
+                    "1.2.3",
+                    true
+                ]
+            ]
+        ]
+    }
+}

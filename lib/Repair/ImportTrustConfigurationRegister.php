@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 
 /**
  * Import the MDM trust-configuration register from lib/Settings.
@@ -81,7 +81,7 @@ class ImportTrustConfigurationRegister extends AbstractRegisterImportStep {
 	 *
 	 * @var string
 	 */
-	protected const CONFIG_APP_ID = DescriptorConfigIds::TRUST_CONFIGURATION;
+	protected const CONFIG_APP_ID = DescriptorConfigIdsInterface::TRUST_CONFIGURATION;
 
 	/**
 	 * Get the name of this repair step.

@@ -15,10 +15,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Calculation;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
@@ -109,7 +111,8 @@ class ReferencedCalculationRefresherTest extends TestCase {
 
 		$rows ??= $this->createMock(originalClassName: MagicMapper::class);
 		$rows->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			callback: static function (mixed ...$args) use ($case): array {
+			callback: static function (RegisterSchema $table, ListQuery $listing) use ($case): array {
+				$args = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort];
 				if (in_array(['caseType' => 'type-1'], $args, true) === true) {
 					return [$case];
 				}
@@ -121,7 +124,11 @@ class ReferencedCalculationRefresherTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturn(value: $service);
 
-		return new ReferencedCalculationRefresher(registers: $registers, schemas: $schemas, rows: $rows, container: $container, logger: new NullLogger());
+		return new ReferencedCalculationRefresher(
+			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $rows),
+			$container,
+			new NullLogger()
+		);
 	}//end refresher()
 
 	/**

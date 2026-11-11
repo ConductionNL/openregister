@@ -51,7 +51,7 @@ use OCA\OpenRegister\Mcp\Db\Conversation;
  *
  * @extends QBMapper<Feedback>
  */
-class FeedbackMapper extends QBMapper {
+class FeedbackMapper extends QBMapper implements FeedbackMapperInterface {
 	/**
 	 * Constructor for FeedbackMapper
 	 *

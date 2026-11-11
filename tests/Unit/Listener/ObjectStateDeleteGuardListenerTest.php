@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 /**
  * Caller `alice` deletes one object in a given state.
@@ -71,7 +72,7 @@ class ObjectStateDeleteGuardListenerTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$event = new ObjectDeletingEvent(object: $this->object);
-		(new ObjectStateDeleteGuardListener(userSession: $session, runContext: $this->flow))->handle($event);
+		(new ObjectStateDeleteGuardListener(userSession: $session, runContext: $this->flow, retention: new RetentionDestruction()))->handle($event);
 
 		return $event;
 	}//end delete()
@@ -101,7 +102,7 @@ class ObjectStateDeleteGuardListenerTest extends TestCase {
 
 	public function testTheRunHoldingALockMayDelete(): void {
 		$this->object->setLocked(['kind' => ObjectEntity::LOCK_KIND_RUN, 'runUuid' => self::RUN, 'user' => 'bob']);
-		$this->flow->push(runUuid: self::RUN, nodeId: 'write', sequence: 1);
+		$this->flow->push(frame: new FlowRunFrame(runUuid: self::RUN, nodeId: 'write', sequence: 1));
 
 		$this->assertFalse($this->delete()->isPropagationStopped());
 	}//end testTheRunHoldingALockMayDelete()
@@ -143,7 +144,7 @@ class ObjectStateDeleteGuardListenerTest extends TestCase {
 		$event = new ObjectCreatingEvent(object: $this->object);
 
 		$session = $this->createMock(IUserSession::class);
-		(new ObjectStateDeleteGuardListener(userSession: $session, runContext: $this->flow))->handle($event);
+		(new ObjectStateDeleteGuardListener(userSession: $session, runContext: $this->flow, retention: new RetentionDestruction()))->handle($event);
 
 		$this->assertFalse($event->isPropagationStopped());
 	}//end testAnotherEventIsIgnored()

@@ -30,7 +30,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<MapLink>
  * @method list<MapLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class MapLinkMapper extends QBMapper {
+class MapLinkMapper extends QBMapper implements MapLinkMapperInterface {
 
 	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;

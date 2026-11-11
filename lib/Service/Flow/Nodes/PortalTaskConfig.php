@@ -33,7 +33,6 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowAdvanceBudget;
-use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
@@ -56,21 +55,8 @@ use UnexpectedValueException;
  * node, which is the split this class exists to keep.
  */
 final class PortalTaskConfig {
+	use TaskConfigReadingsTrait;
 
-	/**
-	 * Minutes between heartbeats when the flow does not choose. Same value and
-	 * same reasoning as the other two waiters.
-	 *
-	 * @var int
-	 */
-	private const DEFAULT_HEARTBEAT_MINUTES = 15;
-
-	/**
-	 * The floor a configured heartbeat is clamped to: the stock cron period.
-	 *
-	 * @var int
-	 */
-	private const MIN_HEARTBEAT_MINUTES = 5;
 
 	/**
 	 * The item key the outcome lands under when the flow does not choose.
@@ -111,6 +97,13 @@ final class PortalTaskConfig {
 	public const SLOT_PASSED_AT = 'passedAt';
 
 	/**
+	 * The config readings this step shares with the other task step.
+	 *
+	 * @var TaskConfigCommon
+	 */
+	private readonly TaskConfigCommon $common;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IL10N $l10n Translations, for refusal messages an author reads.
@@ -118,7 +111,7 @@ final class PortalTaskConfig {
 	public function __construct(
 		private readonly IL10N $l10n,
 	) {
-
+		$this->common = new TaskConfigCommon(defaultOutcomeKey: self::DEFAULT_OUTCOME_KEY);
 	}//end __construct()
 
 	/**
@@ -164,20 +157,43 @@ final class PortalTaskConfig {
 	 */
 	private function refuseNonNumericLimits(array $config): void {
 		foreach (['uploadMaxFiles', 'uploadMaxSizeMb', 'heartbeatMinutes'] as $numeric) {
-			$value = ($config[$numeric] ?? null);
-			if ($value !== null && $value !== '' && is_numeric($value) === false) {
+			if (self::isSetButNotNumeric(value: ($config[$numeric] ?? null)) === true) {
 				throw new UnexpectedValueException(
 					$this->l10n->t('%1$s must be a number.', [$numeric])
 				);
 			}
 		}
 
+		$this->refuseTooFewFiles(config: $config);
+	}//end refuseNonNumericLimits()
+
+	/**
+	 * Whether a limit is given (not null, not empty) but is not a number.
+	 *
+	 * @param mixed $value The configured limit.
+	 *
+	 * @return bool
+	 */
+	private static function isSetButNotNumeric(mixed $value): bool {
+		return ($value !== null && $value !== '' && is_numeric($value) === false);
+	}//end isSetButNotNumeric()
+
+	/**
+	 * Refuse a numeric file count below one.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When fewer than one file is allowed.
+	 */
+	private function refuseTooFewFiles(array $config): void {
 		if (isset($config['uploadMaxFiles']) === true && is_numeric($config['uploadMaxFiles']) === true && (int)$config['uploadMaxFiles'] < 1) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('uploadMaxFiles must be at least 1; turn "Upload required" off to allow a completion without a file.')
 			);
 		}
-	}//end refuseNonNumericLimits()
+	}//end refuseTooFewFiles()
 
 	/**
 	 * The party role the node matches on the case.
@@ -221,7 +237,7 @@ final class PortalTaskConfig {
 		return [
 			'required' => $this->truthy(value: ($config['uploadRequired'] ?? false)),
 			'maxFiles' => $maxFiles,
-			'acceptedTypes' => $this->listOf(value: ($config['uploadAcceptedTypes'] ?? null)),
+			'acceptedTypes' => $this->common->listOf(value: ($config['uploadAcceptedTypes'] ?? null)),
 			'maxSizeBytes' => $maxBytes,
 		];
 	}//end uploadConstraints()
@@ -246,18 +262,18 @@ final class PortalTaskConfig {
 	 */
 	public function taskData(PortalTaskRound $round, string $nodeType): array {
 		$config = $round->config;
-		$json = $this->representativeJson(items: $round->items);
+		$json = $this->common->representativeJson(items: $round->items);
 		$partyReference = $round->partyReference();
 
 		$data = [
 			'title' => $this->renderedTitle(config: $config, items: $round->items),
-			'description' => $this->renderedOrNull(value: ($config['description'] ?? null), json: $json),
+			'description' => $this->common->renderedOrNull(value: ($config['description'] ?? null), json: $json),
 			'state' => Task::STATE_ACTIVE,
 			'performerType' => Task::PERFORMER_EXTERNAL,
 			'priority' => 'normal',
 			'assignee' => $partyReference,
-			'dueAt' => $this->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
-			'expiresAt' => $this->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
+			'dueAt' => $this->common->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
+			'expiresAt' => $this->common->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
 			'onTimeout' => $this->behaviourOrNull(value: ($config['onTimeout'] ?? '')),
 			'onReject' => $this->behaviourOrNull(value: ($config['onReject'] ?? '')),
 			'metadata' => [
@@ -273,7 +289,7 @@ final class PortalTaskConfig {
 			],
 		];
 
-		return array_merge($data, $this->subjectAnchor(json: $json));
+		return array_merge($data, $this->common->subjectAnchor(json: $json));
 	}//end taskData()
 
 	/**
@@ -317,7 +333,7 @@ final class PortalTaskConfig {
 	public function reasonFrom(array $config, array $items): string {
 		$rendered = FlowValueTemplate::render(
 			value: '{{ ' . $this->reasonField(config: $config) . ' }}',
-			json: $this->representativeJson(items: $items)
+			json: $this->common->representativeJson(items: $items)
 		);
 		if (is_scalar($rendered) === false) {
 			return '';
@@ -345,59 +361,6 @@ final class PortalTaskConfig {
 	}//end reasonField()
 
 	/**
-	 * The item key the outcome is written under.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 *
-	 * @return string The key; `portalTask` by default.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
-	 */
-	public function outcomeKey(array $config): string {
-		$key = trim((string)($config['outcomeKey'] ?? ''));
-		if ($key === '') {
-			return self::DEFAULT_OUTCOME_KEY;
-		}
-
-		return $key;
-	}//end outcomeKey()
-
-	/**
-	 * The title, templated against the representative item.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 * @param array $items The input items.
-	 *
-	 * @return string The rendered title.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
-	 */
-	public function renderedTitle(array $config, array $items): string {
-		return trim((string)FlowValueTemplate::render(
-			value: (string)($config['title'] ?? ''),
-			json: $this->representativeJson(items: $items)
-		));
-	}//end renderedTitle()
-
-	/**
-	 * When to wake up and re-check, absent a wake. Never null.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 *
-	 * @return DateTime The next heartbeat.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
-	 */
-	public function heartbeatAt(array $config): DateTime {
-		$minutes = (int)($config['heartbeatMinutes'] ?? self::DEFAULT_HEARTBEAT_MINUTES);
-		if ($minutes < self::MIN_HEARTBEAT_MINUTES) {
-			$minutes = self::MIN_HEARTBEAT_MINUTES;
-		}
-
-		return (new DateTime())->modify('+' . $minutes . ' minutes');
-	}//end heartbeatAt()
-
-	/**
 	 * The uuid of the subject case object the representative item is about.
 	 *
 	 * @param array $items The input items.
@@ -407,65 +370,8 @@ final class PortalTaskConfig {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
 	public function subjectObjectUuid(array $items): string {
-		return (string)($this->subjectAnchor(json: $this->representativeJson(items: $items))['objectUuid'] ?? '');
+		return (string)($this->common->subjectAnchor(json: $this->common->representativeJson(items: $items))['objectUuid'] ?? '');
 	}//end subjectObjectUuid()
-
-	/**
-	 * The object anchor an item carries, when it carries one.
-	 *
-	 * @param array<string, mixed> $json The representative record.
-	 *
-	 * @return array<string, mixed> objectUuid, registerId and schemaId as far as known.
-	 */
-	private function subjectAnchor(array $json): array {
-		$self = (array)($json['@self'] ?? []);
-		$objectUuid = trim((string)($self['uuid'] ?? ($json['uuid'] ?? ($self['id'] ?? ''))));
-		if ($objectUuid === '') {
-			return [];
-		}
-
-		$anchor = ['objectUuid' => $objectUuid];
-		if (is_numeric($self['register'] ?? null) === true) {
-			$anchor['registerId'] = (int)$self['register'];
-		}
-
-		if (is_numeric($self['schema'] ?? null) === true) {
-			$anchor['schemaId'] = (int)$self['schema'];
-		}
-
-		return $anchor;
-	}//end subjectAnchor()
-
-	/**
-	 * A list from a list or a comma-separated string; empty for anything else.
-	 *
-	 * @param mixed $value The configured value.
-	 *
-	 * @return array<int, string> Trimmed, non-empty entries.
-	 */
-	private function listOf(mixed $value): array {
-		if (is_string($value) === true) {
-			$value = explode(',', $value);
-		}
-
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		$list = [];
-		foreach ($value as $entry) {
-			if (is_scalar($entry) === false) {
-				continue;
-			}
-
-			$entry = trim((string)$entry);
-			if ($entry !== '') {
-				$list[] = $entry;
-			}
-		}
-
-		return $list;
-	}//end listOf()
 
 	/**
 	 * A boolean read the way a form or a JSON body may spell it.
@@ -481,23 +387,6 @@ final class PortalTaskConfig {
 
 		return in_array(strtolower(trim((string)$value)), ['1', 'true', 'yes', 'on'], true);
 	}//end truthy()
-
-	/**
-	 * The record of the representative item: the first array item's json.
-	 *
-	 * @param array $items The input items.
-	 *
-	 * @return array<string, mixed> The record, empty when there is none.
-	 */
-	private function representativeJson(array $items): array {
-		foreach ($items as $item) {
-			if (is_array($item) === true) {
-				return (array)($item[FlowItems::JSON] ?? []);
-			}
-		}
-
-		return [];
-	}//end representativeJson()
 
 	/**
 	 * A declared behaviour value, trimmed, or null for absent. Vocabulary
@@ -516,29 +405,4 @@ final class PortalTaskConfig {
 		return $behaviour;
 	}//end behaviourOrNull()
 
-	/**
-	 * A templated string, or null when it renders to nothing.
-	 *
-	 * @param mixed $value The configured value.
-	 * @param array<string, mixed> $json The representative record.
-	 *
-	 * @return string|null The rendered string, or null.
-	 */
-	private function renderedOrNull(mixed $value, array $json): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		$rendered = FlowValueTemplate::render(value: $value, json: $json);
-		if (is_scalar($rendered) === false) {
-			return null;
-		}
-
-		$rendered = trim((string)$rendered);
-		if ($rendered === '') {
-			return null;
-		}
-
-		return $rendered;
-	}//end renderedOrNull()
 }//end class

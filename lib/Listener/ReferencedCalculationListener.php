@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -47,11 +47,11 @@ class ReferencedCalculationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ReferencedCalculationRefresher $refresher Re-saves the objects that read the updated one.
-	 * @param LoggerInterface                $logger    The logger.
+	 * @param ReferencedCalculationRefresherInterface $refresher Re-saves the objects that read the updated one.
+	 * @param LoggerInterface                         $logger    The logger.
 	 */
 	public function __construct(
-		private readonly ReferencedCalculationRefresher $refresher,
+		private readonly ReferencedCalculationRefresherInterface $refresher,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

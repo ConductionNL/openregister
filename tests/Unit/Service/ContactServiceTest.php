@@ -8,12 +8,15 @@ use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\ContactCardRef;
+use OCA\OpenRegister\Service\ContactPlacement;
 
 class ContactServiceTest extends TestCase {
 	private ContactLinkMapper&MockObject $contactLinkMapper;
@@ -39,8 +42,7 @@ class ContactServiceTest extends TestCase {
 		$this->service = new ContactService(
 			$this->contactLinkMapper,
 			$this->cardDavBackend,
-			$this->userSession,
-			$this->logger,
+			new LinkSessionRuntime($this->userSession, $this->logger),
 			$this->urlGenerator
 		);
 	}
@@ -267,7 +269,7 @@ class ContactServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Contact not found');
 
-		$this->service->linkContact('abc-123', 5, 1, 'nonexistent.vcf', 'applicant');
+		$this->service->linkCard(new ContactCardRef(1, 'nonexistent.vcf'), new ContactPlacement('abc-123', 5, null, 'applicant'));
 	}
 
 	public function testLinkContactSuccess(): void {
@@ -293,7 +295,7 @@ class ContactServiceTest extends TestCase {
 				return $link;
 			});
 
-		$this->service->linkContact('abc-123', 5, 1, 'jan.vcf', 'applicant');
+		$this->service->linkCard(new ContactCardRef(1, 'jan.vcf'), new ContactPlacement('abc-123', 5, null, 'applicant'));
 	}
 
 	/**
@@ -330,7 +332,7 @@ class ContactServiceTest extends TestCase {
 				return $link;
 			});
 
-		$this->service->linkContact('abc-123', 5, 1, 'jan.vcf', 'applicant');
+		$this->service->linkCard(new ContactCardRef(1, 'jan.vcf'), new ContactPlacement('abc-123', 5, null, 'applicant'));
 	}
 
 	public function testUnlinkContactNotFound(): void {

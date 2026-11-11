@@ -122,7 +122,12 @@ class MagicSearchHandlerResultOrderGoldenTest extends TestCase {
 		$qb = $this->queryBuilder();
 		if ($method->getNumberOfParameters() === 2) {
 			$requestClass = 'OCA\OpenRegister\Db\MagicMapper\SortRequest';
-			$method->invoke($handler, $qb, new $requestClass(...$args));
+			$request = new $requestClass(order: $args['order'], schema: $args['schema']);
+			foreach (array_diff_key($args, ['order' => true, 'schema' => true]) as $field => $value) {
+				$request->$field = $value;
+			}
+
+			$method->invoke($handler, $qb, $request);
 			return;
 		}
 

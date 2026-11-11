@@ -16,7 +16,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\History\StateHistoryProjector;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -146,7 +148,7 @@ class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 		}
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(ReadStateService::class)->willReturn($readState);
+		$container->method('get')->with(ReadStateServiceInterface::class)->willReturn($readState);
 		$controller = $this->controller();
 		$this->set($controller, 'container', $container);
 
@@ -201,7 +203,7 @@ class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 			->with(['a' => [1]], ['p' => 1], ['b'])
 			->willReturn(['restored' => true]);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(SchemaTypeConverter::class)->willReturn($converter);
+		$container->method('get')->with(SchemaTypeConverterInterface::class)->willReturn($converter);
 		$controller = $this->controller();
 		$this->set($controller, 'container', $container);
 

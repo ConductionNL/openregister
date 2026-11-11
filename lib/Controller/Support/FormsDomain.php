@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
-use OCA\OpenRegister\Service\Form\FormDestinationValidator;
-use OCA\OpenRegister\Service\Form\FormSubmitService;
-use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 
 /**
  * The domain services of the forms API.
@@ -36,18 +36,18 @@ final class FormsDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param FormDefinitionResolver   $resolver  Resolves a stored form.
-	 * @param FormSubmitService        $submitter Creates the destination.
-	 * @param FormDestinationValidator $validator Judges a mapping.
-	 * @param FormUploadStore          $uploads   Holds upload tokens.
+	 * @param FormDefinitionResolverInterface   $resolver  Resolves a stored form.
+	 * @param FormSubmitServiceInterface        $submitter Creates the destination.
+	 * @param FormDestinationValidatorInterface $validator Judges a mapping.
+	 * @param FormUploadStoreInterface          $uploads   Holds upload tokens.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function __construct(
-		public readonly FormDefinitionResolver $resolver,
-		public readonly FormSubmitService $submitter,
-		public readonly FormDestinationValidator $validator,
-		public readonly FormUploadStore $uploads,
+		public readonly FormDefinitionResolverInterface $resolver,
+		public readonly FormSubmitServiceInterface $submitter,
+		public readonly FormDestinationValidatorInterface $validator,
+		public readonly FormUploadStoreInterface $uploads,
 	) {
 	}//end __construct()
 }//end class

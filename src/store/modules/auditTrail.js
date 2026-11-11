@@ -7,10 +7,10 @@ import {
 	getRequest,
 	listPageQuery,
 	listPagination,
-	statisticsOrEmpty,
 	storeRequest,
 	withoutIds,
 } from '../../services/listPage.js'
+import { mergedStatisticsActions, statisticsGetter } from './trailStatistics.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
 
@@ -34,6 +34,9 @@ function emptyStatistics() {
  * Store for managing audit trail logs
  * Provides functionality for retrieving, filtering, and managing audit trail entries
  */
+let pendingRefresh = null
+let requestInFlight = null
+
 export const useAuditTrailStore = defineStore('auditTrail', {
 	state: () => ({
 		// Loading states
@@ -60,6 +63,8 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 	}),
 
 	actions: {
+		...mergedStatisticsActions('audit-trails'),
+		...statisticsGetter(emptyStatistics),
 		/**
 		 * Set audit trail list
 		 *
@@ -96,20 +101,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			this.auditTrailPagination = {
 				...this.auditTrailPagination,
 				...pagination,
-			}
-		},
-
-		/**
-		 * Set statistics
-		 *
-		 * @param {object} stats - The statistics object
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		setStatistics(stats) {
-			this.statistics = {
-				...this.statistics,
-				...stats,
 			}
 		},
 
@@ -173,23 +164,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		},
 
 		/**
-		 * Fetch audit trail statistics
-		 *
-		 * @return {Promise<object>} The statistics data
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async fetchStatistics() {
-			return storeRequest(this, {
-				flag: 'statisticsLoading',
-				url: `${apiUrl}/audit-trails/statistics`,
-				request: { method: 'GET', failure: 'Failed to fetch statistics' },
-				log: (error) => console.error('Error fetching statistics:', error),
-				keep: (data) => this.setStatistics(data),
-			})
-		},
-
-		/**
 		 * Delete a single audit trail
 		 *
 		 * @param {string|number} id - The ID of the audit trail to delete
@@ -235,31 +209,48 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		},
 
 		/**
-		 * Refresh audit trail list with current filters
+		 * Refresh audit trail list with current filters. The page and its
+		 * sidebar both ask for this while mounting, so the refreshes of one
+		 * tick share one request, which reads the filters as they end up.
 		 *
 		 * @return {Promise} The refresh promise
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
-		async refreshAuditTrailList() {
-			return this.fetchAuditTrails({
-				limit: this.auditTrailPagination.limit,
-				page: this.auditTrailPagination.page,
+		refreshAuditTrailList() {
+			pendingRefresh ??= Promise.resolve().then(() => {
+				pendingRefresh = null
+				return this.sharedListRequest()
 			})
+			return pendingRefresh
 		},
 
 		/**
-		 * Get audit trail statistics
+		 * The list request for the current query: one already on its way is
+		 * shared, so a sidebar and a page that mount a moment apart ask once.
 		 *
-		 * @return {Promise<object>} The statistics
+		 * @return {Promise} The request
 		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-has
 		 */
-		async getStatistics() {
-			return statisticsOrEmpty(this, {
-				empty: emptyStatistics,
-				log: (error) => console.error('Error getting statistics:', error),
+		sharedListRequest() {
+			const { limit, page } = this.auditTrailPagination
+			const key = JSON.stringify([
+				this.auditTrailFilters,
+				this.auditTrailSearch,
+				this.auditTrailSort,
+				limit,
+				page,
+			])
+			if (requestInFlight?.key === key) {
+				return requestInFlight.promise
+			}
+			const request = { key }
+			request.promise = this.fetchAuditTrails({ limit, page }).finally(() => {
+				if (requestInFlight === request) requestInFlight = null
 			})
+			requestInFlight = request
+			return request.promise
 		},
 
 		/**

@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
+use OCA\OpenRegister\Service\OasSources;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
@@ -30,6 +31,7 @@ use ReflectionProperty;
  * @covers \OCA\OpenRegister\Service\OasService
  * @uses \OCA\OpenRegister\Service\Oas\OasNames
  * @uses \OCA\OpenRegister\Service\Oas\OasPropertySanitizer
+ * @uses \OCA\OpenRegister\Service\Oas\OasReferenceRepair
  * @uses   \OCA\OpenRegister\Service\Oas\OasValidationReport
  * @uses   \OCA\OpenRegister\Service\Oas\OasRbacAnnotator
  * @uses   \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
@@ -77,7 +79,11 @@ class OasServiceIntegrityGoldenTest extends TestCase {
 	}//end documents()
 
 	public function testIntegrityPassesMatchGolden(): void {
-		$service = new OasService($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class), $this->createMock(IURLGenerator::class));
+		$service = new OasService(new OasSources(
+				$this->createMock(RegisterMapper::class),
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(IURLGenerator::class)
+			));
 		$oas = new ReflectionProperty(OasService::class, 'oas');
 		$report = new ReflectionProperty(OasService::class, 'report');
 		$actual = [];

@@ -1,0 +1,63 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DeleteSchemaObjects object count counts the objects of the schema on mount 1`] = `
+"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="true">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Cancel</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton disabled="false" variant="error">
+<slot-default>Delete All Objects</slot-default>
+<slot-icon>
+<x-deletesweep size="20">
+</x-deletesweep>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div>
+<p>Are you sure you want to delete<strong>all objects</strong>in the schema<strong>Books</strong>?</p>
+<div class="deletion-warning-section">
+</div>
+<div class="object-count-info">
+<x-schemastatsblock objectcount="12" objectstats="{&quot;total&quot;:12,&quot;deleted&quot;:2,&quot;invalid&quot;:1}" loading="false" title="t:Objects to be deleted">
+</x-schemastatsblock>
+<div class="hard-delete-option">
+<p class="hard-delete-description">t:This will permanently remove {count} already soft-deleted objects from the database. This action cannot be undone.</p>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`DeleteSchemaObjects object count marks a failed count and logs it 1`] = `
+"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="true">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Cancel</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div>
+<p>Are you sure you want to delete<strong>all objects</strong>in the schema<strong>Books</strong>?</p>
+<div class="no-objects-info">
+<x-schemastatsblock objectcount="0" objectstats="null" loading="false" failed="true" title="t:Objects in schema">
+</x-schemastatsblock>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`ValidateSchema object count counts the objects of the schema on mount 1`] = `""`;
+
+exports[`ValidateSchema object count marks a failed count and logs it 1`] = `""`;

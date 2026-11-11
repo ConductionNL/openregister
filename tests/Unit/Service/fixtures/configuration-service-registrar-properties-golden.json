@@ -1,0 +1,13 @@
+{
+    "appConfig": "OCP\\IAppConfig",
+    "appManager": "OCP\\App\\IAppManager",
+    "cacheHandler": "OCA\\OpenRegister\\Service\\Configuration\\CacheHandler",
+    "configurationMapper": "OCA\\OpenRegister\\Db\\ConfigurationMapper",
+    "container": "(the container itself)",
+    "exportHandler": "OCA\\OpenRegister\\Service\\Configuration\\ExportHandler",
+    "githubHandler": "OCA\\OpenRegister\\Service\\Configuration\\GitHubHandler",
+    "gitlabHandler": "OCA\\OpenRegister\\Service\\Configuration\\GitLabHandler",
+    "logger": "Psr\\Log\\LoggerInterface",
+    "previewHandler": "OCA\\OpenRegister\\Service\\Configuration\\PreviewHandler",
+    "uploadHandler": "OCA\\OpenRegister\\Service\\Configuration\\UploadHandler"
+}

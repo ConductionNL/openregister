@@ -1,5 +1,9 @@
 <template>
-	<NcDialog :open="open" :name="name" @closing="$emit('closing')">
+	<CnDialog
+		:open="open"
+		:name="name"
+		width="confirm"
+		@closing="$emit('closing')">
 		<div class="clear-dialog-content">
 			<h3>⚠️ {{ heading }}</h3>
 			<p>{{ description }}</p>
@@ -9,29 +13,23 @@
 			<p v-if="warning" class="warning-text">{{ warning }}</p>
 			<p><strong>This operation may take some time to complete.</strong></p>
 
-			<div class="dialog-actions">
-				<NcButton @click="$emit('closing')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					variant="error"
-					:disabled="clearing"
-					@click="$emit('confirm')">
-					<template #icon>
-						<NcLoadingIcon v-if="clearing" :size="20" />
-						<Delete v-else :size="20" />
-					</template>
-					{{ clearing ? 'Clearing...' : 'Confirm Clear All' }}
-				</NcButton>
-			</div>
+			<SettingsDialogActions
+				:busy="clearing"
+				:label="clearing ? 'Clearing...' : 'Confirm Clear All'"
+				@cancel="$emit('closing')"
+				@confirm="$emit('confirm')">
+				<template #icon>
+					<Delete :size="20" />
+				</template>
+			</SettingsDialogActions>
 		</div>
-	</NcDialog>
+	</CnDialog>
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
-import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
+import { CnDialog } from '@conduction/nextcloud-vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import SettingsDialogActions from './SettingsDialogActions.vue'
 
 /**
  * Asks before clearing a whole table.
@@ -40,7 +38,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
  */
 export default {
 	name: 'ClearTableDialog',
-	components: { Delete, NcButton, NcDialog, NcLoadingIcon },
+	components: { CnDialog, Delete, SettingsDialogActions },
 	props: {
 		open: { type: Boolean, required: true },
 		clearing: { type: Boolean, default: false },
@@ -52,7 +50,6 @@ export default {
 	},
 
 	emits: ['closing', 'confirm'],
-	methods: { t },
 }
 </script>
 

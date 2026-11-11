@@ -37,7 +37,7 @@ use OCP\IDBConnection;
  * splitting them across two mappers to get under the threshold would put two
  * objects in front of one table without removing a single query.
  */
-class BulkJobMemberMapper extends QBMapper {
+class BulkJobMemberMapper extends QBMapper implements BulkJobMemberMapperInterface {
 	/**
 	 * Constructor.
 	 *

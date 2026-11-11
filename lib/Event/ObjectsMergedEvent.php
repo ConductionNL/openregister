@@ -3,7 +3,7 @@
 /**
  * OpenRegister ObjectsMergedEvent
  *
- * Dispatched after MergeService::executeMerge() or ::reverseMerge() completes.
+ * Dispatched after MergeService::merge() or ::reverseMerge() completes.
  * Carries the survivor uuid, the merged-from uuids, the mergeOperation id, and
  * a flag distinguishing a merge from a reversal, so downstream apps (leaf-app
  * sync, OR's own WebhookService) can subscribe and react. OpenRegister does

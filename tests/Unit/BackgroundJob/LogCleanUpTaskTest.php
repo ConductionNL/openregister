@@ -32,6 +32,7 @@ use OCP\BackgroundJob\IJob;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\LogCleanUpTrails;
 
 class LogCleanUpTaskTest extends TestCase {
 	private const THIRTY_DAYS_MS = 2592000000;
@@ -70,10 +71,9 @@ class LogCleanUpTaskTest extends TestCase {
 
 		$this->task = new LogCleanUpTask(
 			$timeFactory,
-			$this->auditTrailMapper,
-			$this->searchTrailMapper,
+			new LogCleanUpTrails($this->auditTrailMapper, $this->searchTrailMapper),
 			$this->retentionHandler,
-			$this->logger,
+			$this->logger
 		);
 	}
 
@@ -203,10 +203,9 @@ class LogCleanUpTaskTest extends TestCase {
 		$handler->method('getRetentionSettingsOnly')->willReturn(['searchTrailRetention' => '86400000']);
 		$task = new LogCleanUpTask(
 			$this->createMock(ITimeFactory::class),
-			$this->auditTrailMapper,
-			$this->searchTrailMapper,
+			new LogCleanUpTrails($this->auditTrailMapper, $this->searchTrailMapper),
 			$handler,
-			$this->logger,
+			$this->logger
 		);
 
 		$this->searchTrailMapper->expects($this->once())->method('setExpiryDate')->with(86400000)->willReturn(1);
@@ -222,10 +221,9 @@ class LogCleanUpTaskTest extends TestCase {
 		$handler->method('getRetentionSettingsOnly')->willReturn(['searchTrailRetention' => 0]);
 		$task = new LogCleanUpTask(
 			$this->createMock(ITimeFactory::class),
-			$this->auditTrailMapper,
-			$this->searchTrailMapper,
+			new LogCleanUpTrails($this->auditTrailMapper, $this->searchTrailMapper),
 			$handler,
-			$this->logger,
+			$this->logger
 		);
 
 		$this->searchTrailMapper->expects($this->never())->method('setExpiryDate');
@@ -244,10 +242,9 @@ class LogCleanUpTaskTest extends TestCase {
 		$handler->method('getRetentionSettingsOnly')->willThrowException(new \RuntimeException('Failed to retrieve Retention settings'));
 		$task = new LogCleanUpTask(
 			$this->createMock(ITimeFactory::class),
-			$this->auditTrailMapper,
-			$this->searchTrailMapper,
+			new LogCleanUpTrails($this->auditTrailMapper, $this->searchTrailMapper),
 			$handler,
-			$this->logger,
+			$this->logger
 		);
 
 		$this->auditTrailMapper->expects($this->once())->method('clearLogs')->willReturn(true);
@@ -271,11 +268,9 @@ class LogCleanUpTaskTest extends TestCase {
 	private function withMetrics(MetricsService $metrics): void {
 		$this->task = new LogCleanUpTask(
 			$this->createMock(ITimeFactory::class),
-			$this->auditTrailMapper,
-			$this->searchTrailMapper,
+			new LogCleanUpTrails(auditTrailMapper: $this->auditTrailMapper, searchTrailMapper: $this->searchTrailMapper, metrics: $metrics),
 			$this->retentionHandler,
-			$this->logger,
-			metrics: $metrics
+			$this->logger
 		);
 	}
 

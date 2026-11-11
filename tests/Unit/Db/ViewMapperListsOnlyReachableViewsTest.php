@@ -64,10 +64,14 @@ class ViewMapperListsOnlyReachableViewsTest extends TestCase {
 		$mapper = $this->getMockBuilder(ViewMapper::class)
 			->setConstructorArgs([
 				$db,
-				$this->createMock(OrganisationMapper::class),
-				$this->createMock(IAppConfig::class),
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class),
+				new \OCA\OpenRegister\Search\Db\ViewMapperAccess(
+					new \OCA\OpenRegister\Db\Tenancy\TenancyServices(
+						$this->createMock(OrganisationMapper::class),
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class)
+					),
+					$this->createMock(IAppConfig::class)
+				),
 				$this->createMock(IEventDispatcher::class),
 			])
 			->onlyMethods(['findEntities', 'verifyRbacPermission', 'applyOrganisationFilter'])

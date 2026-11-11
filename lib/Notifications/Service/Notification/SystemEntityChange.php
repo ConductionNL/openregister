@@ -92,12 +92,23 @@ class SystemEntityChange {
 			return $value;
 		}
 
-		if (array_is_list($value) === true) {
-			return $this->normaliseList(list: $value);
+		return $this->normaliseArray(array: $value);
+	}//end normalise()
+
+	/**
+	 * A non-empty array: a list or a map.
+	 *
+	 * @param array<int|string, mixed> $array The array.
+	 *
+	 * @return array<int|string, mixed>|null The comparable form.
+	 */
+	private function normaliseArray(array $array): ?array {
+		if (array_is_list($array) === true) {
+			return $this->normaliseList(list: $array);
 		}
 
-		return $this->normaliseMap(map: $value);
-	}//end normalise()
+		return $this->normaliseMap(map: $array);
+	}//end normaliseArray()
 
 	/**
 	 * A date as ISO text, a serialisable object as its data, a scalar as text.
@@ -115,6 +126,17 @@ class SystemEntityChange {
 			$value = $value->jsonSerialize();
 		}
 
+		return $this->scalarAsText(value: $value);
+	}//end plain()
+
+	/**
+	 * A bool as `1`/`0`, any other scalar as text, anything else unchanged.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed
+	 */
+	private function scalarAsText(mixed $value): mixed {
 		if (is_bool($value) === true) {
 			return (string) (int) $value;
 		}
@@ -124,7 +146,7 @@ class SystemEntityChange {
 		}
 
 		return $value;
-	}//end plain()
+	}//end scalarAsText()
 
 	/**
 	 * A map with sorted keys and its empty entries left out, or null when empty.
@@ -134,14 +156,10 @@ class SystemEntityChange {
 	 * @return array<string, mixed>|null The comparable form.
 	 */
 	private function normaliseMap(array $map): ?array {
-		$normalised = [];
-		foreach ($map as $key => $item) {
-			$item = $this->normalise(value: $item);
-			if ($item !== null) {
-				$normalised[(string) $key] = $item;
-			}
-		}
-
+		$normalised = array_filter(
+			$this->normaliseEach(items: $map),
+			static fn (mixed $item): bool => $item !== null
+		);
 		if ($normalised === []) {
 			return null;
 		}
@@ -152,6 +170,17 @@ class SystemEntityChange {
 	}//end normaliseMap()
 
 	/**
+	 * Every item in its comparable form, keys kept.
+	 *
+	 * @param array<int|string, mixed> $items The items.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function normaliseEach(array $items): array {
+		return array_map(fn (mixed $item): mixed => $this->normalise(value: $item), $items);
+	}//end normaliseEach()
+
+	/**
 	 * A list, sorted when it holds only plain values.
 	 *
 	 * @param array<int, mixed> $list The list.
@@ -159,7 +188,7 @@ class SystemEntityChange {
 	 * @return array<int, mixed> The comparable form.
 	 */
 	private function normaliseList(array $list): array {
-		$items = array_map(fn (mixed $item): mixed => $this->normalise(value: $item), $list);
+		$items = $this->normaliseEach(items: $list);
 		if (count(array_filter($items, static fn (mixed $item): bool => is_array($item))) === 0) {
 			sort($items, SORT_STRING);
 		}

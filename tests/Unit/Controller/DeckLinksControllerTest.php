@@ -31,11 +31,13 @@ use Exception;
 use OCA\OpenRegister\Controller\DeckLinksController;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\DeckPlacement;
 use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DeckLinksControllerFactory;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -91,7 +93,7 @@ class DeckLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->settingsService = $this->createMock(SettingsService::class);
 
-		$this->controller = new DeckLinksController(
+		$this->controller = DeckLinksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
@@ -330,7 +332,7 @@ class DeckLinksControllerTest extends TestCase {
 
 		$this->settingsService->expects($this->once())
 			->method('setDeckDefault')
-			->with('zaak', 7, 11);
+			->with('zaak', new DeckPlacement(boardId: 7, stackId: 11));
 
 		$response = $this->controller->setDefault('zaak');
 

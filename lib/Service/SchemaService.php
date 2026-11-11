@@ -27,10 +27,9 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -58,41 +57,200 @@ class SchemaService implements SchemaExplorationInterface {
 	private const SCHEMA_EXPLORE_SAMPLE_SIZE = 1000;
 
 	/**
-	 * Schema mapper for schema operations
+	 * The JSON Schema type of each non-string PHP type, by lower-case name.
 	 *
-	 * @var SchemaMapperInterface
+	 * JSON Schema standard types are preserved as-is.
+	 *
+	 * @var array<string, string>
 	 */
-	private SchemaMapperInterface $schemaMapper;
+	private const JSON_TYPE_OF_PHP_TYPE = [
+		'integer' => 'integer',
+		'double' => 'number',
+		'float' => 'number',
+		'boolean' => 'boolean',
+		'array' => 'array',
+		'object' => 'object',
+		'null' => 'null',
+		'number' => 'number',
+	];
 
 	/**
-	 * Object entity mapper for object queries
+	 * The suggestion for a required property whose data contains null values.
 	 *
-	 * @var MagicMapperInterface
+	 * @var array<string, string>
 	 */
-	private MagicMapperInterface $objectEntityMapper;
+	private const REQUIRED_WITH_NULLS_SUGGESTION = [
+		'type' => 'behavior',
+		'field' => 'required',
+		'current' => 'true',
+		'recommended' => 'false',
+		'description' => 'Some objects have null values for this property',
+	];
 
 	/**
-	 * Logger for debugging and monitoring
+	 * gettype() names that carry a numeric range, and the range type they get.
 	 *
-	 * @var LoggerInterface
+	 * @var array<string, string>
 	 */
-	private LoggerInterface $logger;
+	private const NUMERIC_RANGE_TYPES = [
+		'integer' => 'integer',
+		'double' => 'number',
+	];
+
+	/**
+	 * Property names that are internal or metadata, never suggested (compared lower-case).
+	 *
+	 * @var list<string>
+	 */
+	private const INTERNAL_PROPERTY_NAMES = [
+		'id',
+		'uuid',
+		'_id',
+		'_uuid',
+		'created',
+		'updated',
+		'created_at',
+		'updated_at',
+		'deleted',
+		'deleted_at',
+		'@self',
+		'$schema',
+		'$id',
+	];
+
+	/**
+	 * Simple string formats, in detection order, after dates and identifiers.
+	 *
+	 * @var array<string, string>
+	 */
+	private const FORMAT_PATTERNS = [
+		// Time format (HH:MM:SS).
+		'time' => '/^\d{2}:\d{2}:\d{2}$/',
+		// Duration format (ISO 8601 duration like PT1H30M).
+		'duration' => '/^P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/',
+		// Color format (hex).
+		'color' => '/^#[0-9a-fA-F]{6}$/',
+		// Hostname format.
+		'hostname' => '/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
+	];
+
+	/**
+	 * Naming-convention and filename patterns, in the order they are reported.
+	 *
+	 * The filename pattern uses ~ as the delimiter: the class contains a literal
+	 * "/", which would prematurely close a /…/ pattern (PCRE delimiter scanning is
+	 * naive), making preg_match error with "Unknown modifier '\'" and silently
+	 * never match.
+	 *
+	 * @var array<string, string>
+	 */
+	private const STRING_PATTERNS = [
+		'camelCase' => '/^[a-z]+[A-Z][a-zA-Z]*$/',
+		'PascalCase' => '/^[A-Z][a-z]*([A-Z][a-z]*)*$/',
+		'snake_case' => '/^[a-z]+(_[a-z]+)*$/',
+		'SCREAMING_SNAKE_CASE' => '/^[A-Z]+(_[A-Z]+)*$/',
+		'filename' => '~^[^<>:"/\\|?*]+\.[a-zA-Z0-9]+$~',
+	];
+
+	/**
+	 * A property's discovery record before its first value; `name` goes in front.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const UNDISCOVERED_PROPERTY = [
+		'types' => [],
+		'examples' => [],
+		'nullable' => true,
+		'enum_values' => [],
+		'max_length' => 0,
+		'min_length' => PHP_INT_MAX,
+		'object_structure' => null,
+		'array_structure' => null,
+		'detected_format' => null,
+		'string_patterns' => [],
+		'numeric_range' => null,
+		'usage_count' => 0,
+	];
+
+	/**
+	 * The analysis of one value before its type is looked at; `examples` is set to the value.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const EMPTY_VALUE_ANALYSIS = [
+		'types' => [],
+		'examples' => [],
+		'max_length' => 0,
+		'min_length' => PHP_INT_MAX,
+		'object_structure' => null,
+		'array_structure' => null,
+		'detected_format' => null,
+		'numeric_range' => null,
+		'string_patterns' => [],
+	];
+
+	/**
+	 * How specific a detected format is: when two values disagree, the more specific format wins.
+	 *
+	 * @var array<string, int>
+	 */
+	private const FORMAT_PRIORITY = [
+		'date-time' => 10,
+		'date' => 9,
+		'time' => 8,
+		'uuid' => 7,
+		'email' => 6,
+		'url' => 5,
+		'hostname' => 4,
+		'ipv4' => 3,
+		'ipv6' => 3,
+		'color' => 2,
+		'duration' => 1,
+	];
+
+	/**
+	 * Formats that are string-based in JSON Schema (most are).
+	 *
+	 * @var list<string>
+	 */
+	private const STRING_FORMATS = [
+		'date',
+		'date-time',
+		'time',
+		'email',
+		'url',
+		'hostname',
+		'ipv4',
+		'ipv6',
+		'uuid',
+		'color',
+		'duration',
+	];
+
+	/**
+	 * The JSON Schema type of an array's items, by the gettype() name of its first item type; anything else is a string.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ITEM_SCHEMA_TYPES = [
+		'string' => 'string',
+		'integer' => 'integer',
+		'double' => 'number',
+		'float' => 'number',
+		'boolean' => 'boolean',
+		'array' => 'array',
+	];
 
 	/**
 	 * SchemaService constructor
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations.
-	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for object queries.
-	 * @param LoggerInterface $logger Logger for debugging and monitoring.
+	 * @param SchemaCatalogInterface $catalog The schema mapper (schema operations) and the magic mapper (object queries).
+	 * @param LoggerInterface        $logger  Logger for debugging and monitoring.
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		MagicMapperInterface $objectEntityMapper,
-		LoggerInterface $logger,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->schemaMapper = $schemaMapper;
-		$this->objectEntityMapper = $objectEntityMapper;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -117,6 +275,32 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @spec openspec/specs/schema-property-exploration/spec.md
 	 */
 	public function exploreSchemaProperties(int $schemaId): array {
+		$schema = $this->findSchemaToExplore(schemaId: $schemaId);
+		$objects = $this->sampleObjectsToExplore(schemaId: $schemaId);
+
+		$result = [
+			'schema_id' => $schemaId,
+			'schema_title' => $schema->getTitle(),
+			'total_objects' => count($objects),
+		];
+		if (empty($objects) === true) {
+			return $result + $this->emptyExploration(schema: $schema);
+		}
+
+		return $result + $this->exploreSample(schema: $schema, objects: $objects);
+	}//end exploreSchemaProperties()
+
+
+	/**
+	 * Log the start of an exploration and load the schema it explores.
+	 *
+	 * @param int $schemaId The ID of the schema to explore
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws \Exception If the schema is not found
+	 */
+	private function findSchemaToExplore(int $schemaId): Schema {
 		$this->logger->info(
 			message: '[SchemaService] Starting schema exploration for schema ID: ' . $schemaId,
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -124,65 +308,108 @@ class SchemaService implements SchemaExplorationInterface {
 
 		// Get the schema to validate it exists.
 		try {
-			$schema = $this->schemaMapper->find($schemaId);
+			return $this->catalog->schemas()->find($schemaId);
 		} catch (\Exception $e) {
 			throw new Exception('Schema not found with ID: ' . $schemaId);
 		}
+	}//end findSchemaToExplore()
 
-		// Sample a bounded set of objects for this schema. Exploration is
-		// statistical, so a capped sample avoids loading the full (potentially
-		// huge) object set into memory (bound-unbounded-query-memory).
-		$objects = $this->objectEntityMapper->findBySchema($schemaId, self::SCHEMA_EXPLORE_SAMPLE_SIZE);
+	/**
+	 * Sample a bounded set of objects for a schema.
+	 *
+	 * Exploration is statistical, so a capped sample avoids loading the full
+	 * (potentially huge) object set into memory (bound-unbounded-query-memory).
+	 *
+	 * @param int $schemaId The ID of the schema to explore
+	 *
+	 * @return array The sampled objects.
+	 */
+	private function sampleObjectsToExplore(int $schemaId): array {
+		$objects = $this->catalog->tables()->findBySchema($schemaId, self::SCHEMA_EXPLORE_SAMPLE_SIZE);
 
 		$this->logger->info(
 			message: '[SchemaService] Analyzing a sample of ' . count($objects) . ' objects (cap ' . self::SCHEMA_EXPLORE_SAMPLE_SIZE . ')',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		if (empty($objects) === true) {
-			return [
-				'schema_id' => $schemaId,
-				'schema_title' => $schema->getTitle(),
-				'total_objects' => 0,
-				'discovered_properties' => [],
-				'existing_properties' => $schema->getProperties(),
-				'suggestions' => [],
-				'analysis_date' => (new DateTime('now'))->format(format: 'c'),
-				'message' => 'No objects found for analysis',
-			];
-		}
+		return $objects;
+	}//end sampleObjectsToExplore()
 
-		// Analyze all object data.
+	/**
+	 * The rest of the exploration result when the schema has no objects.
+	 *
+	 * @param Schema $schema The explored schema.
+	 *
+	 * @return array The result after its schema id, title and object count.
+	 */
+	private function emptyExploration(Schema $schema): array {
+		return [
+			'discovered_properties' => [],
+			'existing_properties' => $schema->getProperties(),
+			'suggestions' => [],
+			'analysis_date' => (new DateTime('now'))->format(format: 'c'),
+			'message' => 'No objects found for analysis',
+		];
+	}//end emptyExploration()
+
+	/**
+	 * Analyse the sampled objects and suggest changes for new and existing properties.
+	 *
+	 * @param Schema $schema  The explored schema.
+	 * @param array  $objects The sampled objects.
+	 *
+	 * @return array The rest of the exploration result after its schema id, title and object count.
+	 */
+	private function exploreSample(Schema $schema, array $objects): array {
 		$propertyAnalysis = $this->analyzeObjectProperties(objects: $objects, _existingProperties: $schema->getProperties());
-
-		// Generate suggestions for both new and existing properties.
-		$newPropSuggestions = $this->generateSuggestions(
-			discoveredProperties: $propertyAnalysis['discovered'],
-			existingProperties: $schema->getProperties()
-		);
-		$existPropSuggestions = $this->analyzeExistingProperties(
-			existingProperties: $schema->getProperties(),
-			discoveredProperties: $propertyAnalysis['discovered'],
-			_usageStats: $propertyAnalysis['usage_stats']
-		);
+		$suggestions = $this->explorationSuggestions(schema: $schema, discovered: $propertyAnalysis['discovered']);
 
 		return [
-			'schema_id' => $schemaId,
-			'schema_title' => $schema->getTitle(),
-			'total_objects' => count($objects),
 			'discovered_properties' => $propertyAnalysis['discovered'],
 			'existing_properties' => $schema->getProperties(),
 			'property_usage_stats' => $propertyAnalysis['usage_stats'],
-			'suggestions' => array_merge($newPropSuggestions, $existPropSuggestions),
+			'suggestions' => array_merge($suggestions['new'], $suggestions['existing']),
 			'analysis_date' => (new DateTime())->format('c'),
 			'data_types' => $propertyAnalysis['data_types'],
-			'analysis_summary' => [
-				'new_properties_count' => count($newPropSuggestions),
-				'existing_properties_improvements' => count($existPropSuggestions),
-				'total_recommendations' => count($newPropSuggestions) + count($existPropSuggestions),
-			],
+			'analysis_summary' => $this->explorationSummary(suggestions: $suggestions),
 		];
-	}//end exploreSchemaProperties()
+	}//end exploreSample()
+
+	/**
+	 * Suggestions for the discovered properties the schema lacks, then for the ones it has.
+	 *
+	 * @param Schema $schema     The explored schema.
+	 * @param array  $discovered The discovered properties.
+	 *
+	 * @return array{new: array, existing: array} The suggestions.
+	 */
+	private function explorationSuggestions(Schema $schema, array $discovered): array {
+		return [
+			'new' => $this->generateSuggestions(
+				discoveredProperties: $discovered,
+				existingProperties: $schema->getProperties()
+			),
+			'existing' => $this->analyzeExistingProperties(
+				existingProperties: $schema->getProperties(),
+				discoveredProperties: $discovered
+			),
+		];
+	}//end explorationSuggestions()
+
+	/**
+	 * Count the suggestions of an exploration.
+	 *
+	 * @param array{new: array, existing: array} $suggestions The suggestions.
+	 *
+	 * @return array The counts.
+	 */
+	private function explorationSummary(array $suggestions): array {
+		return [
+			'new_properties_count' => count($suggestions['new']),
+			'existing_properties_improvements' => count($suggestions['existing']),
+			'total_recommendations' => count($suggestions['new']) + count($suggestions['existing']),
+		];
+	}//end explorationSummary()
 
 	/**
 	 * Analyze object properties from a collection of objects
@@ -206,75 +433,105 @@ class SchemaService implements SchemaExplorationInterface {
 	 *     data_types: array<never, never>}
 	 */
 	private function analyzeObjectProperties(array $objects, array $_existingProperties = []): array {
-		$discoveredProperties = [];
-		$usageStats = [];
+		$run = new PropertyDiscoveryRun();
 		$dataTypes = [];
 
+		$this->recordAllObjects(run: $run, objects: $objects);
+		self::applyUsagePercentages(run: $run, totalObjects: count($objects));
+
+		return [
+			'discovered' => $run->discovered,
+			'usage_stats' => $run->usageStats,
+			'data_types' => $dataTypes,
+		];
+	}//end analyzeObjectProperties()
+
+	/**
+	 * Record the properties of every sampled object, leaving out its `@self` metadata.
+	 *
+	 * @param PropertyDiscoveryRun $run     The discovery so far.
+	 * @param array                $objects The sampled objects.
+	 *
+	 * @return void
+	 */
+	private function recordAllObjects(PropertyDiscoveryRun $run, array $objects): void {
 		foreach ($objects as $object) {
 			$objectData = $object->getObject();
 
 			// Skip the '@self' metadata field in analysis.
 			unset($objectData['@self']);
 
-			foreach ($objectData as $propertyName => $propertyValue) {
-				// Track usage count.
-				if (isset($usageStats['counts'][$propertyName]) === false) {
-					$usageStats['counts'][$propertyName] = 0;
-				}
-
-				$usageStats['counts'][$propertyName]++;
-
-				// Skip if null or empty.
-				if ($propertyValue === null || $propertyValue === '') {
-					continue;
-				}
-
-				// Analyze data type and characteristics.
-				$propertyAnalysis = $this->analyzePropertyValue(value: $propertyValue);
-
-				if (isset($discoveredProperties[$propertyName]) === false) {
-					$discoveredProperties[$propertyName] = [
-						'name' => $propertyName,
-						'types' => [],
-						'examples' => [],
-						'nullable' => true,
-						'enum_values' => [],
-						'max_length' => 0,
-						'min_length' => PHP_INT_MAX,
-						'object_structure' => null,
-						'array_structure' => null,
-						'detected_format' => null,
-						'string_patterns' => [],
-						'numeric_range' => null,
-						'usage_count' => 0,
-					];
-				}
-
-				// Merge type analysis.
-				$existingAnalysis = &$discoveredProperties[$propertyName];
-				$this->mergePropertyAnalysis(existingAnalysis: $existingAnalysis, newAnalysis: $propertyAnalysis);
-
-				// Track total usage for percentage calculation.
-				$discoveredProperties[$propertyName]['usage_count']++;
-			}//end foreach
+			$this->recordObjectProperties(run: $run, objectData: $objectData);
 		}//end foreach
+	}//end recordAllObjects()
 
-		// Calculate usage percentages.
-		$totalObjects = count($objects);
-		foreach ($usageStats['counts'] as $propertyName => $count) {
-			$usageStats['percentages'][$propertyName] = round(($count / $totalObjects) * 100, 2);
+	/**
+	 * Calculate the usage percentage of every discovered property.
+	 *
+	 * @param PropertyDiscoveryRun $run          The discovery so far.
+	 * @param int                  $totalObjects How many objects were sampled.
+	 *
+	 * @return void
+	 */
+	private static function applyUsagePercentages(PropertyDiscoveryRun $run, int $totalObjects): void {
+		foreach ($run->usageStats['counts'] as $propertyName => $count) {
+			$run->usageStats['percentages'][$propertyName] = round(($count / $totalObjects) * 100, 2);
 
-			if (($discoveredProperties[$propertyName] ?? null) !== null) {
-				$discoveredProperties[$propertyName]['usage_percentage'] = $usageStats['percentages'][$propertyName];
+			if (($run->discovered[$propertyName] ?? null) !== null) {
+				$run->discovered[$propertyName]['usage_percentage'] = $run->usageStats['percentages'][$propertyName];
 			}
 		}
+	}//end applyUsagePercentages()
 
-		return [
-			'discovered' => $discoveredProperties,
-			'usage_stats' => $usageStats,
-			'data_types' => $dataTypes,
-		];
-	}//end analyzeObjectProperties()
+	/**
+	 * Count and analyse the properties of one object's data.
+	 *
+	 * @param PropertyDiscoveryRun $run        The pass: discovered properties and usage counts, extended in place
+	 * @param array                $objectData The object's data, without '@self'
+	 *
+	 * @return void
+	 */
+	private function recordObjectProperties(PropertyDiscoveryRun $run, array $objectData): void {
+		foreach ($objectData as $propertyName => $propertyValue) {
+			// Track usage count.
+			$run->usageStats['counts'][$propertyName] = (($run->usageStats['counts'][$propertyName] ?? 0) + 1);
+
+			// Skip if null or empty.
+			if ($propertyValue === null || $propertyValue === '') {
+				continue;
+			}
+
+			$run->property = $propertyName;
+			$this->recordPropertyValue(run: $run, propertyValue: $propertyValue);
+		}
+	}//end recordObjectProperties()
+
+	/**
+	 * Analyse one non-empty property value and merge it into the discovered properties.
+	 *
+	 * @param PropertyDiscoveryRun $run           The pass, on the property being recorded; its discoveries are extended in place
+	 * @param mixed                $propertyValue The value
+	 *
+	 * @return void
+	 */
+	private function recordPropertyValue(PropertyDiscoveryRun $run, mixed $propertyValue): void {
+		$propertyName = $run->property;
+		$discoveredProperties = &$run->discovered;
+
+		// Analyze data type and characteristics.
+		$propertyAnalysis = $this->analyzePropertyValue(value: $propertyValue);
+
+		if (isset($discoveredProperties[$propertyName]) === false) {
+			$discoveredProperties[$propertyName] = ['name' => $propertyName] + self::UNDISCOVERED_PROPERTY;
+		}
+
+		// Merge type analysis.
+		$existingAnalysis = &$discoveredProperties[$propertyName];
+		$this->mergePropertyAnalysis(existingAnalysis: $existingAnalysis, newAnalysis: $propertyAnalysis);
+
+		// Track total usage for percentage calculation.
+		$discoveredProperties[$propertyName]['usage_count']++;
+	}//end recordPropertyValue()
 
 	/**
 	 * Analyze a single property value and extract comprehensive type information
@@ -284,76 +541,93 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return array Analysis results with type and structure info
 	 */
 	private function analyzePropertyValue($value): array {
-		$analysis = [
-			'types' => [],
-			'examples' => [$value],
-			'max_length' => 0,
-			'min_length' => PHP_INT_MAX,
-			'object_structure' => null,
-			'array_structure' => null,
-			'detected_format' => null,
-			'numeric_range' => null,
-			'string_patterns' => [],
-		];
+		$analysis = self::EMPTY_VALUE_ANALYSIS;
+		$analysis['examples'] = [$value];
 
 		// Determine data type.
 		$type = gettype($value);
 		$analysis['types'][] = $type;
 
 		// Type-specific analysis.
-		switch ($type) {
-			case 'string':
-				$length = strlen($value);
-				$analysis['max_length'] = $length;
-				$analysis['min_length'] = $length;
-
-				// Detect format based on string patterns.
-				$analysis['detected_format'] = $this->detectStringFormat(value: $value);
-				// AnalyzeStringPattern() returns a flat list of pattern-name
-				// strings. Merge it (rather than append the whole array) so
-				// string_patterns stays a flat string[] as every consumer
-				// expects — getTypeFromPatterns' in_array checks, the
-				// array_unique dedup, and the [0] "main pattern". Appending
-				// nested it, which broke those lookups and triggered
-				// array-to-string warnings.
-				$analysis['string_patterns'] = array_merge(
-					$analysis['string_patterns'],
-					$this->analyzeStringPattern(value: $value)
-				);
-				break;
-
-			case 'integer':
-				$analysis['numeric_range'] = ['min' => $value, 'max' => $value, 'type' => 'integer'];
-				break;
-
-			case 'double':
-				$analysis['numeric_range'] = ['min' => $value, 'max' => $value, 'type' => 'number'];
-				break;
-
-			case 'array':
-				if (empty($value) === true) {
-					break;
-				}
-
-				// Check if this is an associative array (object-like).
-				if (array_is_list($value) === true) {
-					// Analyze array structure for list arrays.
-					$analysis['array_structure'] = $this->analyzezArrayStructure(array: $value);
-					break;
-				}
-
-				// Treat associative arrays as objects.
-				$analysis['object_structure'] = $this->analyzeObjectStructure(object: $value);
-				break;
-
-			case 'object':
-				// Analyze object structure.
-				$analysis['object_structure'] = $this->analyzeObjectStructure(object: $value);
-				break;
-		}//end switch
-
-		return $analysis;
+		return array_replace($analysis, $this->typeSpecificAnalysis(type: $type, value: $value));
 	}//end analyzePropertyValue()
+
+	/**
+	 * The analysis fields a value's type adds to the base analysis.
+	 *
+	 * @param string $type  The value's gettype()
+	 * @param mixed  $value The property value
+	 *
+	 * @return array The fields to replace in the base analysis
+	 */
+	private function typeSpecificAnalysis(string $type, mixed $value): array {
+		if ($type === 'string') {
+			return $this->stringAnalysis(value: $value);
+		}
+
+		if (isset(self::NUMERIC_RANGE_TYPES[$type]) === true) {
+			return ['numeric_range' => ['min' => $value, 'max' => $value, 'type' => self::NUMERIC_RANGE_TYPES[$type]]];
+		}
+
+		if ($type === 'array') {
+			return $this->arrayAnalysis(value: $value);
+		}
+
+		if ($type === 'object') {
+			// Analyze object structure.
+			return ['object_structure' => $this->analyzeObjectStructure(object: $value)];
+		}
+
+		return [];
+	}//end typeSpecificAnalysis()
+
+	/**
+	 * The analysis fields of a string: its length, format and patterns.
+	 *
+	 * @param string $value The string
+	 *
+	 * @return array max_length, min_length, detected_format, string_patterns
+	 */
+	private function stringAnalysis(string $value): array {
+		$length = strlen($value);
+
+		return [
+			'max_length' => $length,
+			'min_length' => $length,
+			// Detect format based on string patterns.
+			'detected_format' => $this->detectStringFormat(value: $value),
+			// AnalyzeStringPattern() returns a flat list of pattern-name
+			// strings. Merge it (rather than append the whole array) so
+			// string_patterns stays a flat string[] as every consumer
+			// expects — getTypeFromPatterns' in_array checks, the
+			// array_unique dedup, and the [0] "main pattern". Appending
+			// nested it, which broke those lookups and triggered
+			// array-to-string warnings.
+			'string_patterns' => array_merge([], $this->analyzeStringPattern(value: $value)),
+		];
+	}//end stringAnalysis()
+
+	/**
+	 * The analysis field of an array: a list's structure, or an associative array as an object.
+	 *
+	 * @param array $value The array
+	 *
+	 * @return array array_structure or object_structure; nothing for an empty array
+	 */
+	private function arrayAnalysis(array $value): array {
+		if (empty($value) === true) {
+			return [];
+		}
+
+		// Check if this is an associative array (object-like).
+		if (array_is_list($value) === true) {
+			// Analyze array structure for list arrays.
+			return ['array_structure' => $this->analyzezArrayStructure(array: $value)];
+		}
+
+		// Treat associative arrays as objects.
+		return ['object_structure' => $this->analyzeObjectStructure(object: $value)];
+	}//end arrayAnalysis()
 
 	/**
 	 * Detect format based on string patterns (date, email, url, uuid, etc.)
@@ -361,26 +635,47 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @param string $value The string value to analyze
 	 *
 	 * @return null|string Detected format or null if none
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)         DateTime::createFromFormat is standard PHP date pattern
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Many format patterns require individual checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple format detection paths are necessary
 	 */
 	private function detectStringFormat(string $value): ?string {
-		// Date formats.
+		// Dates, then identifiers, then the simple patterns, then IP addresses: first match wins.
+		return ($this->detectDateFormat(value: $value)
+			?? $this->detectDateTimeFormat(value: $value)
+			?? $this->detectIdentifierFormat(value: $value)
+			?? $this->detectPatternFormat(value: $value)
+			?? $this->detectIpFormat(value: $value));
+	}//end detectStringFormat()
+
+	/**
+	 * 'date' for a real Y-m-d calendar date.
+	 *
+	 * @param string $value The string value to analyze
+	 *
+	 * @return string|null 'date' or null
+	 */
+	private function detectDateFormat(string $value): ?string {
 		if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
-			$parsed = \DateTime::createFromFormat('Y-m-d', $value);
+			$parsed = date_create_from_format('Y-m-d', $value);
 			if ($parsed !== false && $parsed->format('Y-m-d') === $value) {
 				return 'date';
 			}
 		}
 
+		return null;
+	}//end detectDateFormat()
+
+	/**
+	 * 'date-time' for an ISO 8601 date-time with an offset.
+	 *
+	 * @param string $value The string value to analyze
+	 *
+	 * @return string|null 'date-time' or null
+	 */
+	private function detectDateTimeFormat(string $value): ?string {
 		// Date-Time formats.
-		if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $value) === 1) {
-			$parsed = DateTime::createFromFormat(DATE_ISO8601, $value);
-			if ($parsed !== false) {
-				return 'date-time';
-			}
+		if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $value) === 1
+			&& date_create_from_format(DATE_ISO8601, $value) !== false
+		) {
+			return 'date-time';
 		}
 
 		// RFC3339 format.
@@ -388,6 +683,17 @@ class SchemaService implements SchemaExplorationInterface {
 			return 'date-time';
 		}
 
+		return null;
+	}//end detectDateTimeFormat()
+
+	/**
+	 * 'uuid', 'email' or 'url', in that order.
+	 *
+	 * @param string $value The string value to analyze
+	 *
+	 * @return string|null The format or null
+	 */
+	private function detectIdentifierFormat(string $value): ?string {
 		// UUID format.
 		if (UuidFormat::isCanonical(value: $value) === true) {
 			return 'uuid';
@@ -403,26 +709,34 @@ class SchemaService implements SchemaExplorationInterface {
 			return 'url';
 		}
 
-		// Time format (HH:MM:SS).
-		if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $value) === 1) {
-			return 'time';
+		return null;
+	}//end detectIdentifierFormat()
+
+	/**
+	 * The first of the time, duration, color and hostname patterns the string matches.
+	 *
+	 * @param string $value The string value to analyze
+	 *
+	 * @return string|null The format or null
+	 */
+	private function detectPatternFormat(string $value): ?string {
+		foreach (self::FORMAT_PATTERNS as $format => $pattern) {
+			if (preg_match($pattern, $value) === 1) {
+				return $format;
+			}
 		}
 
-		// Duration format (ISO 8601 duration like PT1H30M).
-		if (preg_match('/^P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/', $value) === 1) {
-			return 'duration';
-		}
+		return null;
+	}//end detectPatternFormat()
 
-		// Color format (hex, rgb, etc.).
-		if (preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1) {
-			return 'color';
-		}
-
-		// Hostname format.
-		if (preg_match('/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $value) === 1) {
-			return 'hostname';
-		}
-
+	/**
+	 * 'ipv4' or 'ipv6'.
+	 *
+	 * @param string $value The string value to analyze
+	 *
+	 * @return string|null The format or null
+	 */
+	private function detectIpFormat(string $value): ?string {
 		// IPv4 format.
 		if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
 			return 'ipv4';
@@ -434,7 +748,7 @@ class SchemaService implements SchemaExplorationInterface {
 		}
 
 		return null;
-	}//end detectStringFormat()
+	}//end detectIpFormat()
 
 	/**
 	 * Analyze string patterns for additional type hints
@@ -447,60 +761,60 @@ class SchemaService implements SchemaExplorationInterface {
 	 *     4?: string, 5?: 'SCREAMING_SNAKE_CASE'|'filename'|'path',
 	 *     6?: 'filename'|'path', 7?: 'path'}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple pattern checks are required for analysis
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Pattern detection requires many conditional paths
 	 */
 	private function analyzeStringPattern(string $value): array {
-		$patterns = [];
-
 		// Check for numeric strings (could be integers).
-		if (is_numeric($value) === true) {
-			if (ctype_digit($value) === false) {
-				$patterns[] = 'float_string';
-			}
-
-			if (ctype_digit($value) === true) {
-				$patterns[] = 'integer_string';
-			}
-		}
+		$patterns = $this->numericStringPatterns(value: $value);
 
 		// Check for boolean-like strings.
 		if (in_array(strtolower($value), ['true', 'false', 'yes', 'no', 'on', 'off', '1', '0']) === true) {
 			$patterns[] = 'boolean_string';
 		}
 
-		// Check for enum-like patterns (camelCase, PascalCase, etc.).
-		if (preg_match('/^[a-z]+[A-Z][a-zA-Z]*$/', $value) === 1) {
-			$patterns[] = 'camelCase';
-		}
-
-		if (preg_match('/^[A-Z][a-z]*([A-Z][a-z]*)*$/', $value) === 1) {
-			$patterns[] = 'PascalCase';
-		}
-
-		if (preg_match('/^[a-z]+(_[a-z]+)*$/', $value) === 1) {
-			$patterns[] = 'snake_case';
-		}
-
-		if (preg_match('/^[A-Z]+(_[A-Z]+)*$/', $value) === 1) {
-			$patterns[] = 'SCREAMING_SNAKE_CASE';
-		}
-
-		// Check for filename patterns. Use ~ as the delimiter: the class
-		// contains a literal "/", which would prematurely close a /…/ pattern
-		// (PCRE delimiter scanning is naive), making preg_match error with
-		// "Unknown modifier '\'" and silently never match.
-		if (preg_match('~^[^<>:"/\\|?*]+\.[a-zA-Z0-9]+$~', $value) === 1) {
-			$patterns[] = 'filename';
+		// Check for enum-like patterns (camelCase, PascalCase, etc.) and filenames.
+		foreach (self::STRING_PATTERNS as $name => $pattern) {
+			if (preg_match($pattern, $value) === 1) {
+				$patterns[] = $name;
+			}
 		}
 
 		// Check for directory patterns.
-		if (str_contains($value, '/') === true || str_contains($value, '\\') === true) {
+		if ($this->isPathLike(value: $value) === true) {
 			$patterns[] = 'path';
 		}
 
 		return $patterns;
 	}//end analyzeStringPattern()
+
+	/**
+	 * 'integer_string' or 'float_string' for a numeric string.
+	 *
+	 * @param string $value The string value to analyze
+	 *
+	 * @return string[] Zero or one pattern
+	 */
+	private function numericStringPatterns(string $value): array {
+		if (is_numeric($value) === false) {
+			return [];
+		}
+
+		if (ctype_digit($value) === true) {
+			return ['integer_string'];
+		}
+
+		return ['float_string'];
+	}//end numericStringPatterns()
+
+	/**
+	 * Whether a string contains a path separator.
+	 *
+	 * @param string $value The string value to analyze
+	 *
+	 * @return bool True for a / or \ anywhere
+	 */
+	private function isPathLike(string $value): bool {
+		return str_contains($value, '/') === true || str_contains($value, '\\') === true;
+	}//end isPathLike()
 
 	/**
 	 * Merge property analysis data from multiple objects
@@ -509,36 +823,99 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @param array $newAnalysis New analysis data to merge
 	 *
 	 * @return void Updates the existing analysis in place
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex merging logic for multiple analysis aspects
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Many merge scenarios require individual handling
 	 */
 	private function mergePropertyAnalysis(array &$existingAnalysis, array $newAnalysis): void {
 		// Merge types.
-		foreach ($newAnalysis['types'] as $type) {
-			if (in_array($type, $existingAnalysis['types']) === false) {
-				$existingAnalysis['types'][] = $type;
-			}
-		}
+		$existingAnalysis['types'] = $this->mergedTypes(existingTypes: $existingAnalysis['types'], newTypes: $newAnalysis['types']);
 
 		// Add unique examples (limit to avoid memory issues).
-		if (count($existingAnalysis['examples']) < 10) {
-			foreach ($newAnalysis['examples'] as $example) {
-				if (in_array($example, $existingAnalysis['examples'], true) === false) {
-					$existingAnalysis['examples'][] = $example;
-				}
-			}
-
-			$existingAnalysis['examples'] = array_slice($existingAnalysis['examples'], 0, 5);
-		}
-
-		if (count($existingAnalysis['examples']) >= 10) {
-			$existingAnalysis['examples'][] = $newAnalysis['examples'][0];
-			$existingAnalysis['examples'] = array_unique($existingAnalysis['examples'], SORT_REGULAR);
-			$existingAnalysis['examples'] = array_slice($existingAnalysis['examples'], 0, 5);
-		}
+		$existingAnalysis['examples'] = $this->mergedExamples(
+			existingExamples: $existingAnalysis['examples'],
+			newExamples: $newAnalysis['examples']
+		);
 
 		// Update length ranges.
+		$this->widenLengths(existingAnalysis: $existingAnalysis, newAnalysis: $newAnalysis);
+
+		// Merge detected formats, string patterns and numeric ranges.
+		$this->mergeValueHints(existingAnalysis: $existingAnalysis, newAnalysis: $newAnalysis);
+
+		// Merge object structure analysis.
+		$this->mergeObjectStructureAnalysis(existingAnalysis: $existingAnalysis, newStructure: $newAnalysis['object_structure']);
+
+		// Merge array structure analysis.
+		if ($newAnalysis['array_structure'] === true && $existingAnalysis['array_structure'] === false) {
+			$existingAnalysis['array_structure'] = $newAnalysis['array_structure'];
+		}
+	}//end mergePropertyAnalysis()
+
+	/**
+	 * The existing types plus any new ones, in order of first sight.
+	 *
+	 * @param array $existingTypes The types seen so far
+	 * @param array $newTypes      The new value's types
+	 *
+	 * @return array The merged types
+	 */
+	private function mergedTypes(array $existingTypes, array $newTypes): array {
+		foreach ($newTypes as $type) {
+			if (in_array($type, $existingTypes) === false) {
+				$existingTypes[] = $type;
+			}
+		}
+
+		return $existingTypes;
+	}//end mergedTypes()
+
+	/**
+	 * The examples kept after adding new ones: unique, at most five.
+	 *
+	 * @param array $existingExamples The examples kept so far
+	 * @param array $newExamples      The new value's examples
+	 *
+	 * @return array The examples to keep
+	 */
+	private function mergedExamples(array $existingExamples, array $newExamples): array {
+		if (count($existingExamples) < 10) {
+			$existingExamples = array_slice(self::withUnseenExamples(existingExamples: $existingExamples, newExamples: $newExamples), 0, 5);
+		}
+
+		if (count($existingExamples) >= 10) {
+			$existingExamples[] = $newExamples[0];
+			$existingExamples = array_unique($existingExamples, SORT_REGULAR);
+			$existingExamples = array_slice($existingExamples, 0, 5);
+		}
+
+		return $existingExamples;
+	}//end mergedExamples()
+
+	/**
+	 * The existing examples followed by the new ones not seen yet.
+	 *
+	 * @param array $existingExamples The examples so far.
+	 * @param array $newExamples      The examples of the new value.
+	 *
+	 * @return array
+	 */
+	private static function withUnseenExamples(array $existingExamples, array $newExamples): array {
+		foreach ($newExamples as $example) {
+			if (in_array($example, $existingExamples, true) === false) {
+				$existingExamples[] = $example;
+			}
+		}
+
+		return $existingExamples;
+	}//end withUnseenExamples()
+
+	/**
+	 * Widen the max and min length to include the new value's.
+	 *
+	 * @param array $existingAnalysis Existing analysis data; updated in place
+	 * @param array $newAnalysis      New analysis data
+	 *
+	 * @return void
+	 */
+	private function widenLengths(array &$existingAnalysis, array $newAnalysis): void {
 		if (($newAnalysis['max_length'] ?? null) !== null && $newAnalysis['max_length'] > $existingAnalysis['max_length']) {
 			$existingAnalysis['max_length'] = $newAnalysis['max_length'];
 		}
@@ -546,14 +923,18 @@ class SchemaService implements SchemaExplorationInterface {
 		if (($newAnalysis['min_length'] ?? null) !== null && $newAnalysis['min_length'] < $existingAnalysis['min_length']) {
 			$existingAnalysis['min_length'] = $newAnalysis['min_length'];
 		}
+	}//end widenLengths()
 
-		// Merge detected formats (if consistent patterns emerge).
-		if (($newAnalysis['detected_format'] ?? null) !== null) {
-			$existingAnalysis['detected_format'] = $this->consolidateFormatDetection(
-				existingFormat: $existingAnalysis['detected_format'] ?? null,
-				newFormat: $newAnalysis['detected_format']
-			);
-		}
+	/**
+	 * Merge the detected format, the string patterns and the numeric range the new value carries.
+	 *
+	 * @param array $existingAnalysis Existing analysis data; updated in place
+	 * @param array $newAnalysis      New analysis data
+	 *
+	 * @return void
+	 */
+	private function mergeValueHints(array &$existingAnalysis, array $newAnalysis): void {
+		$this->mergeFormatHint(existingAnalysis: $existingAnalysis, newAnalysis: $newAnalysis);
 
 		// Merge string patterns.
 		if (empty($newAnalysis['string_patterns']) === false) {
@@ -562,35 +943,67 @@ class SchemaService implements SchemaExplorationInterface {
 			);
 		}
 
-		// Merge numeric ranges.
+		$this->mergeRangeHint(existingAnalysis: $existingAnalysis, newAnalysis: $newAnalysis);
+	}//end mergeValueHints()
+
+	/**
+	 * Merge detected formats (if consistent patterns emerge).
+	 *
+	 * @param array $existingAnalysis The property analysis so far (updated in place).
+	 * @param array $newAnalysis      The analysis of the new value.
+	 *
+	 * @return void
+	 */
+	private function mergeFormatHint(array &$existingAnalysis, array $newAnalysis): void {
+		if (($newAnalysis['detected_format'] ?? null) !== null) {
+			$existingAnalysis['detected_format'] = $this->consolidateFormatDetection(
+				existingFormat: $existingAnalysis['detected_format'] ?? null,
+				newFormat: $newAnalysis['detected_format']
+			);
+		}
+	}//end mergeFormatHint()
+
+	/**
+	 * Merge numeric ranges.
+	 *
+	 * @param array $existingAnalysis The property analysis so far (updated in place).
+	 * @param array $newAnalysis      The analysis of the new value.
+	 *
+	 * @return void
+	 */
+	private function mergeRangeHint(array &$existingAnalysis, array $newAnalysis): void {
 		if (empty($newAnalysis['numeric_range']) === false) {
 			$existingAnalysis['numeric_range'] = $this->mergeNumericRanges(
 				existingRange: $existingAnalysis['numeric_range'] ?? null,
 				newRange: $newAnalysis['numeric_range']
 			);
 		}
+	}//end mergeRangeHint()
 
-		// Merge object structure analysis.
-		if ($newAnalysis['object_structure'] !== null) {
-			if ($existingAnalysis['object_structure'] !== null) {
-				$this->mergeObjectStructures(
-					existingStructure: $existingAnalysis['object_structure'],
-					newStructure: $newAnalysis['object_structure']
-				);
-			}
-
-			if ($existingAnalysis['object_structure'] === null) {
-				$existingAnalysis['object_structure'] = $newAnalysis['object_structure'];
-			}
+	/**
+	 * Merge a new object structure into the existing analysis, or take it when there is none yet.
+	 *
+	 * @param array      $existingAnalysis Existing analysis data; updated in place
+	 * @param array|null $newStructure     The new value's object structure
+	 *
+	 * @return void
+	 */
+	private function mergeObjectStructureAnalysis(array &$existingAnalysis, ?array $newStructure): void {
+		if ($newStructure === null) {
+			return;
 		}
 
-		// Merge array structure analysis.
-		if ($newAnalysis['array_structure'] === true) {
-			if (($existingAnalysis['array_structure'] === false)) {
-				$existingAnalysis['array_structure'] = $newAnalysis['array_structure'];
-			}
+		if ($existingAnalysis['object_structure'] !== null) {
+			$this->mergeObjectStructures(
+				existingStructure: $existingAnalysis['object_structure'],
+				newStructure: $newStructure
+			);
 		}
-	}//end mergePropertyAnalysis()
+
+		if ($existingAnalysis['object_structure'] === null) {
+			$existingAnalysis['object_structure'] = $newStructure;
+		}
+	}//end mergeObjectStructureAnalysis()
 
 	/**
 	 * Consolidate format detection across multiple values
@@ -612,22 +1025,8 @@ class SchemaService implements SchemaExplorationInterface {
 		}
 
 		// If formats differ, prioritize more specific formats.
-		$formatPriority = [
-			'date-time' => 10,
-			'date' => 9,
-			'time' => 8,
-			'uuid' => 7,
-			'email' => 6,
-			'url' => 5,
-			'hostname' => 4,
-			'ipv4' => 3,
-			'ipv6' => 3,
-			'color' => 2,
-			'duration' => 1,
-		];
-
-		$existingPriority = $formatPriority[$existingFormat] ?? 0;
-		$newPriority = $formatPriority[$newFormat] ?? 0;
+		$existingPriority = self::FORMAT_PRIORITY[$existingFormat] ?? 0;
+		$newPriority = self::FORMAT_PRIORITY[$newFormat] ?? 0;
 
 		if ($newPriority > $existingPriority) {
 			return $newFormat;
@@ -649,33 +1048,41 @@ class SchemaService implements SchemaExplorationInterface {
 			return $newRange;
 		}
 
-		// Ensure类型匹配.
-		if ($existingRange['type'] !== $newRange['type']) {
-			// Handle type promotion (integer -> number).
-			if ($existingRange['type'] === 'integer' && $newRange['type'] === 'number') {
-				$existingRange['type'] = 'number';
-			}
-
-			if ($existingRange['type'] === 'number' && $newRange['type'] === 'integer') {
-				// Keep as number.
-			}
-
-			if ($existingRange['type'] !== 'integer' && $existingRange['type'] !== 'number') {
-				// Incompatible types, default to number.
-				return [
-					'type' => 'number',
-					'min' => min($existingRange['min'], $newRange['min']),
-					'max' => max($existingRange['max'], $newRange['max']),
-				];
-			}
-		}
-
 		return [
-			'type' => $existingRange['type'],
+			'type' => $this->mergedRangeType(existingType: $existingRange['type'], newType: $newRange['type']),
 			'min' => min($existingRange['min'], $newRange['min']),
 			'max' => max($existingRange['max'], $newRange['max']),
 		];
 	}//end mergeNumericRanges()
+
+	/**
+	 * The type of two merged numeric ranges.
+	 *
+	 * The same type stays; an integer meeting a number is promoted to a number; a
+	 * number stays a number; an existing type that is neither defaults to a number.
+	 *
+	 * @param mixed $existingType The existing range's type
+	 * @param mixed $newType      The new range's type
+	 *
+	 * @return mixed The merged type
+	 */
+	private function mergedRangeType(mixed $existingType, mixed $newType): mixed {
+		if ($existingType === $newType) {
+			return $existingType;
+		}
+
+		// Incompatible types, default to number.
+		if (in_array($existingType, ['integer', 'number'], true) === false) {
+			return 'number';
+		}
+
+		// Handle type promotion (integer -> number).
+		if ($existingType === 'integer' && $newType === 'number') {
+			return 'number';
+		}
+
+		return $existingType;
+	}//end mergedRangeType()
 
 	/**
 	 * Analyze array structure for nested property analysis
@@ -687,8 +1094,8 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @psalm-return array{
 	 *     type: 'associative'|'empty'|'list',
 	 *     keys?: non-empty-list<array-key>,
-	 *     length?: int<1, max>,
-	 *     item_types?: array<string, 0|1|2>,
+	 *     length?: int,
+	 *     item_types?: array<string, int>,
 	 *     sample_item?: mixed|null
 	 * }
 	 */
@@ -698,26 +1105,8 @@ class SchemaService implements SchemaExplorationInterface {
 		}
 
 		// Check if it's a list (indexed array) or object (associative array).
-		$isList = array_is_list($array);
-
-		if ($isList === true) {
-			// Analyze item types in the list.
-			$itemTypes = [];
-			foreach ($array as $item) {
-				$type = gettype($item);
-				if (isset($itemTypes[$type]) === false) {
-					$itemTypes[$type] = 0;
-				}
-
-				$itemTypes[$type]++;
-			}
-
-			return [
-				'type' => 'list',
-				'length' => count($array),
-				'item_types' => $itemTypes,
-				'sample_item' => $array[0] ?? null,
-			];
+		if (array_is_list($array) === true) {
+			return self::listStructure(list: $array);
 		}
 
 		// It's an associative array, analyze as object.
@@ -727,6 +1116,43 @@ class SchemaService implements SchemaExplorationInterface {
 			'length' => count($array),
 		];
 	}//end analyzezArrayStructure()
+
+	/**
+	 * The structure of a list: its length, how many items of each type it holds, and its first item.
+	 *
+	 * @param array $list The list.
+	 *
+	 * @return array{type: 'list', length: int, item_types: array<string, int>, sample_item: mixed}
+	 */
+	private static function listStructure(array $list): array {
+		return [
+			'type' => 'list',
+			'length' => count($list),
+			'item_types' => self::itemTypeCounts(list: $list),
+			'sample_item' => $list[0] ?? null,
+		];
+	}//end listStructure()
+
+	/**
+	 * How many items of each gettype() type a list holds, in the order the types first appear.
+	 *
+	 * @param array $list The list.
+	 *
+	 * @return array<string, int>
+	 */
+	private static function itemTypeCounts(array $list): array {
+		$itemTypes = [];
+		foreach ($list as $item) {
+			$type = gettype($item);
+			if (isset($itemTypes[$type]) === false) {
+				$itemTypes[$type] = 0;
+			}
+
+			$itemTypes[$type]++;
+		}
+
+		return $itemTypes;
+	}//end itemTypeCounts()
 
 	/**
 	 * Analyze object structure for nested properties
@@ -802,21 +1228,29 @@ class SchemaService implements SchemaExplorationInterface {
 		$existPropNames = array_keys($existingProperties);
 
 		foreach ($discoveredProperties as $propertyName => $analysis) {
-			// Skip properties already in the schema, and internal/metadata properties.
-			if (in_array($propertyName, $existPropNames) === true
-				|| $this->isInternalProperty(propertyName: $propertyName) === true
-			) {
-				continue;
+			if ($this->isNewSchemaProperty(propertyName: $propertyName, existPropNames: $existPropNames) === true) {
+				$suggestions[] = $this->refineSuggestion(
+					suggestion: $this->baseSuggestion(propertyName: $propertyName, analysis: $analysis),
+					analysis: $analysis
+				);
 			}
-
-			$suggestions[] = $this->refineSuggestion(
-				suggestion: $this->baseSuggestion(propertyName: $propertyName, analysis: $analysis),
-				analysis: $analysis
-			);
 		}
 
 		return $this->sortByConfidence(suggestions: $suggestions);
 	}//end generateSuggestions()
+
+	/**
+	 * Whether a discovered property is worth suggesting: not already in the schema, and not internal or metadata.
+	 *
+	 * @param int|string $propertyName   The discovered property.
+	 * @param array      $existPropNames The schema's property names.
+	 *
+	 * @return bool
+	 */
+	private function isNewSchemaProperty(int|string $propertyName, array $existPropNames): bool {
+		return in_array($propertyName, $existPropNames) === false
+			&& $this->isInternalProperty(propertyName: $propertyName) === false;
+	}//end isNewSchemaProperty()
 
 	/**
 	 * The suggestion for one discovered property: confidence from usage, recommended type and
@@ -851,6 +1285,24 @@ class SchemaService implements SchemaExplorationInterface {
 	 */
 	private function suggestionHead(int|string $propertyName, array $analysis): array {
 		$usagePercentage = $analysis['usage_percentage'] ?? 0;
+
+		return [
+			'property_name' => $propertyName,
+			'confidence' => self::confidenceFor(usagePercentage: $usagePercentage),
+			'usage_percentage' => $usagePercentage,
+			'usage_count' => $analysis['usage_count'],
+			'recommended_type' => $this->recommendPropertyType(analysis: $analysis),
+		];
+	}//end suggestionHead()
+
+	/**
+	 * How confident a suggestion is, by how many sampled objects carry the property.
+	 *
+	 * @param int|float $usagePercentage The share of objects carrying it.
+	 *
+	 * @return string high, medium or low.
+	 */
+	private static function confidenceFor(int|float $usagePercentage): string {
 		$confidence = 'low';
 		if ($usagePercentage >= 80) {
 			$confidence = 'high';
@@ -858,14 +1310,8 @@ class SchemaService implements SchemaExplorationInterface {
 			$confidence = 'medium';
 		}
 
-		return [
-			'property_name' => $propertyName,
-			'confidence' => $confidence,
-			'usage_percentage' => $usagePercentage,
-			'usage_count' => $analysis['usage_count'],
-			'recommended_type' => $this->recommendPropertyType(analysis: $analysis),
-		];
-	}//end suggestionHead()
+		return $confidence;
+	}//end confidenceFor()
 
 	/**
 	 * What the analysis observed: examples, lengths, format, patterns, numeric range and the
@@ -876,31 +1322,64 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return array The fields.
 	 */
 	private function observedFields(array $analysis): array {
+		return [
+			'examples' => array_slice($analysis['examples'], 0, 3),
+			'max_length' => self::observedMaxLength(analysis: $analysis),
+			'min_length' => self::observedMinLength(analysis: $analysis),
+			'detected_format' => $analysis['detected_format'] ?? null,
+			'string_patterns' => $analysis['string_patterns'] ?? [],
+			'numeric_range' => $analysis['numeric_range'] ?? null,
+			'type_variations' => self::typeVariations(analysis: $analysis),
+		];
+	}//end observedFields()
+
+	/**
+	 * The longest value seen, or null when none had a length.
+	 *
+	 * @param array $analysis The property analysis.
+	 *
+	 * @return mixed
+	 */
+	private static function observedMaxLength(array $analysis): mixed {
 		$maxLengthValue = null;
 		if ($analysis['max_length'] > 0) {
 			$maxLengthValue = $analysis['max_length'];
 		}
 
+		return $maxLengthValue;
+	}//end observedMaxLength()
+
+	/**
+	 * The shortest value seen, or null when none had a length.
+	 *
+	 * @param array $analysis The property analysis.
+	 *
+	 * @return mixed
+	 */
+	private static function observedMinLength(array $analysis): mixed {
 		$minLengthValue = null;
 		if (isset($analysis['min_length']) === true && $analysis['min_length'] < PHP_INT_MAX) {
 			$minLengthValue = $analysis['min_length'];
 		}
 
+		return $minLengthValue;
+	}//end observedMinLength()
+
+	/**
+	 * The types seen, when there was more than one.
+	 *
+	 * @param array $analysis The property analysis.
+	 *
+	 * @return array|null
+	 */
+	private static function typeVariations(array $analysis): ?array {
 		$typeVariations = null;
 		if (count($analysis['types']) > 1) {
 			$typeVariations = $analysis['types'];
 		}
 
-		return [
-			'examples' => array_slice($analysis['examples'], 0, 3),
-			'max_length' => $maxLengthValue,
-			'min_length' => $minLengthValue,
-			'detected_format' => $analysis['detected_format'] ?? null,
-			'string_patterns' => $analysis['string_patterns'] ?? [],
-			'numeric_range' => $analysis['numeric_range'] ?? null,
-			'type_variations' => $typeVariations,
-		];
-	}//end observedFields()
+		return $typeVariations;
+	}//end typeVariations()
 
 	/**
 	 * Sort suggestions by confidence, then by usage percentage descending.
@@ -946,6 +1425,18 @@ class SchemaService implements SchemaExplorationInterface {
 			$suggestion['description'] = 'Enum-like property with predefined values';
 		}
 
+		return $this->withStructure(suggestion: $suggestion, analysis: $analysis);
+	}//end refineSuggestion()
+
+	/**
+	 * A suggestion typed as an object or array when the values had that structure.
+	 *
+	 * @param array $suggestion The suggestion.
+	 * @param array $analysis   The property analysis.
+	 *
+	 * @return array
+	 */
+	private function withStructure(array $suggestion, array $analysis): array {
 		if (empty($analysis['object_structure']) === false && $analysis['object_structure']['type'] === 'object') {
 			$suggestion['type'] = 'object';
 			$suggestion['properties'] = $this->generateNestedProperties(objectStructure: $analysis['object_structure']);
@@ -957,7 +1448,7 @@ class SchemaService implements SchemaExplorationInterface {
 		}
 
 		return $suggestion;
-	}//end refineSuggestion()
+	}//end withStructure()
 
 	/**
 	 * Analyze existing schema properties for potential improvements
@@ -967,15 +1458,10 @@ class SchemaService implements SchemaExplorationInterface {
 	 *
 	 * @param array $existingProperties Current schema properties
 	 * @param array $discoveredProperties Properties found in object analysis
-	 * @param array $_usageStats Usage statistics for all properties
 	 *
 	 * @return array List of property improvements
 	 */
-	private function analyzeExistingProperties(
-		array $existingProperties,
-		array $discoveredProperties,
-		array $_usageStats,
-	): array {
+	private function analyzeExistingProperties(array $existingProperties, array $discoveredProperties): array {
 		$improvements = [];
 		foreach ($existingProperties as $propertyName => $propertyConfig) {
 			// Skip if we don't have analysis data for this property.
@@ -1047,42 +1533,97 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return array Type comparison results
 	 */
 	private function compareType(array $currentConfig, string $recommendedType): array {
-		$issues = [];
-		$suggestions = [];
 		$currentType = $currentConfig['type'] ?? null;
-		$typeLabel = $currentType;
-		if (is_array($currentType) === true) {
-			$typeLabel = implode(', ', $currentType);
-		}
 
 		// Check if type is missing.
 		if ($currentType === null) {
-			$suggestions[] = [
-				'type' => 'type',
-				'field' => 'type',
-				'current' => null,
-				'recommended' => $recommendedType,
-				'description' => "Consider adding type '{$recommendedType}' based on analysis",
-			];
-		} elseif ($currentType !== $recommendedType
-			&& (is_array($currentType) === false || in_array($recommendedType, $currentType, true) === false)
-		) {
-			// Types don't match; a union type matches when it lists the recommended type.
-			$issues[] = "Type mismatch: current type is '{$typeLabel}', recommended type is '{$recommendedType}'";
-			$suggestions[] = [
-				'type' => 'type',
-				'field' => 'type',
-				'current' => $currentType,
-				'recommended' => $recommendedType,
-				'description' => "Analysis suggests type '{$recommendedType}' but schema defines '{$typeLabel}'",
+			return [
+				'issues' => [],
+				'suggestions' => [$this->missingTypeSuggestion(recommendedType: $recommendedType)],
 			];
 		}
 
-		return [
-			'issues' => $issues,
-			'suggestions' => $suggestions,
-		];
+		if ($this->typeAllows(currentType: $currentType, recommendedType: $recommendedType) === true) {
+			return ['issues' => [], 'suggestions' => []];
+		}
+
+		return $this->typeMismatch(currentType: $currentType, recommendedType: $recommendedType);
 	}//end compareType()
+
+
+	/**
+	 * The suggestion to add the recommended type to a property that has none.
+	 *
+	 * @param string $recommendedType Recommended type from analysis
+	 *
+	 * @return array The suggestion.
+	 */
+	private function missingTypeSuggestion(string $recommendedType): array {
+		return [
+			'type' => 'type',
+			'field' => 'type',
+			'current' => null,
+			'recommended' => $recommendedType,
+			'description' => "Consider adding type '{$recommendedType}' based on analysis",
+		];
+	}//end missingTypeSuggestion()
+
+	/**
+	 * Whether the current type is the recommended type, or a union type that lists it.
+	 *
+	 * @param mixed  $currentType     The current type, a name or a list of names.
+	 * @param string $recommendedType Recommended type from analysis
+	 *
+	 * @return bool True when the types match.
+	 */
+	private function typeAllows(mixed $currentType, string $recommendedType): bool {
+		if ($currentType === $recommendedType) {
+			return true;
+		}
+
+		return is_array($currentType) === true && in_array($recommendedType, $currentType, true) === true;
+	}//end typeAllows()
+
+	/**
+	 * The issue and suggestion for a type that does not match the recommended type.
+	 *
+	 * @param mixed  $currentType     The current type, a name or a list of names.
+	 * @param string $recommendedType Recommended type from analysis
+	 *
+	 * @return array Type comparison results
+	 */
+	private function typeMismatch(mixed $currentType, string $recommendedType): array {
+		$typeLabel = $this->typeLabel(currentType: $currentType);
+
+		return [
+			'issues' => ["Type mismatch: current type is '{$typeLabel}', recommended type is '{$recommendedType}'"],
+			'suggestions' => [
+				[
+					'type' => 'type',
+					'field' => 'type',
+					'current' => $currentType,
+					'recommended' => $recommendedType,
+					'description' => "Analysis suggests type '{$recommendedType}' but schema defines '{$typeLabel}'",
+				],
+			],
+		];
+	}//end typeMismatch()
+
+
+	/**
+	 * A type for display: a union type as its names joined by commas.
+	 *
+	 * @param mixed $currentType The current type, a name or a list of names.
+	 *
+	 * @return mixed The label.
+	 */
+	private function typeLabel(mixed $currentType): mixed {
+		if (is_array($currentType) === true) {
+			return implode(', ', $currentType);
+		}
+
+		return $currentType;
+	}//end typeLabel()
 
 	/**
 	 * Compare string constraints (maxLength, format, pattern).
@@ -1137,22 +1678,46 @@ class SchemaService implements SchemaExplorationInterface {
 		$observedMax = $analysis['max_length'];
 		$currentMaxLength = $currentConfig['maxLength'] ?? null;
 		if ($currentMaxLength === null || $currentMaxLength === 0) {
-			return [
-				'missing_max_length',
-				[
-					'type' => 'constraint',
-					'field' => 'maxLength',
-					'current' => 'unlimited',
-					'recommended' => min($observedMax * 2, 1000),
-					'description' => "Objects have max length of {$observedMax} characters",
-				],
-			];
+			return $this->missingMaxLengthFinding(observedMax: $observedMax);
 		}
 
 		if (($currentMaxLength < $observedMax) === false) {
 			return null;
 		}
 
+		return $this->maxLengthTooSmallFinding(currentMaxLength: $currentMaxLength, observedMax: $observedMax);
+	}//end maxLengthFinding()
+
+
+	/**
+	 * The finding for a property without a maxLength.
+	 *
+	 * @param mixed $observedMax The observed maximum length.
+	 *
+	 * @return array{0: string, 1: array} The issue and suggestion.
+	 */
+	private function missingMaxLengthFinding(mixed $observedMax): array {
+		return [
+			'missing_max_length',
+			[
+				'type' => 'constraint',
+				'field' => 'maxLength',
+				'current' => 'unlimited',
+				'recommended' => min($observedMax * 2, 1000),
+				'description' => "Objects have max length of {$observedMax} characters",
+			],
+		];
+	}//end missingMaxLengthFinding()
+
+	/**
+	 * The finding for a maxLength below the observed maximum length.
+	 *
+	 * @param mixed $currentMaxLength The schema's maxLength.
+	 * @param mixed $observedMax      The observed maximum length.
+	 *
+	 * @return array{0: string, 1: array} The issue and suggestion.
+	 */
+	private function maxLengthTooSmallFinding(mixed $currentMaxLength, mixed $observedMax): array {
 		return [
 			'max_length_too_small',
 			[
@@ -1163,7 +1728,7 @@ class SchemaService implements SchemaExplorationInterface {
 				'description' => "Schema maxLength ({$currentMaxLength}) is smaller than observed max ({$observedMax})",
 			],
 		];
-	}//end maxLengthFinding()
+	}//end maxLengthTooSmallFinding()
 
 	/**
 	 * A missing format when the analysis detected one.
@@ -1180,6 +1745,17 @@ class SchemaService implements SchemaExplorationInterface {
 			return null;
 		}
 
+		return self::missingFormat(detected: $detected);
+	}//end formatFinding()
+
+	/**
+	 * The finding of a schema without a format for values that follow one.
+	 *
+	 * @param mixed $detected The detected format.
+	 *
+	 * @return array
+	 */
+	private static function missingFormat(mixed $detected): array {
 		return [
 			'missing_format',
 			[
@@ -1190,7 +1766,7 @@ class SchemaService implements SchemaExplorationInterface {
 				'description' => "Objects appear to have '{$detected}' format pattern",
 			],
 		];
-	}//end formatFinding()
+	}//end missingFormat()
 
 	/**
 	 * A missing pattern when the strings follow one.
@@ -1211,6 +1787,17 @@ class SchemaService implements SchemaExplorationInterface {
 			return null;
 		}
 
+		return self::missingPattern(mainPattern: $mainPattern);
+	}//end patternFinding()
+
+	/**
+	 * The finding of a schema without a pattern for strings that follow one.
+	 *
+	 * @param mixed $mainPattern The pattern the strings follow.
+	 *
+	 * @return array
+	 */
+	private static function missingPattern(mixed $mainPattern): array {
 		return [
 			'missing_pattern',
 			[
@@ -1221,7 +1808,7 @@ class SchemaService implements SchemaExplorationInterface {
 				'description' => "Strings follow '{$mainPattern}' pattern",
 			],
 		];
-	}//end patternFinding()
+	}//end missingPattern()
 
 	/**
 	 * Compare numeric constraints (minimum, maximum) with the observed numeric range.
@@ -1255,22 +1842,45 @@ class SchemaService implements SchemaExplorationInterface {
 	 */
 	private function minimumFinding(mixed $currentMin, array $range): ?array {
 		if (($currentMin === null || $currentMin === false) && $range['min'] !== $range['max']) {
-			return [
-				'missing_minimum',
-				[
-					'type' => 'constraint',
-					'field' => 'minimum',
-					'current' => 'unlimited',
-					'recommended' => $range['min'],
-					'description' => "Observed range starts at {$range['min']}",
-				],
-			];
+			return self::missingMinimum(range: $range);
 		}
 
 		if ($currentMin === null || $currentMin === false || ($currentMin > $range['min']) === false) {
 			return null;
 		}
 
+		return self::minimumTooHigh(currentMin: $currentMin, range: $range);
+	}//end minimumFinding()
+
+	/**
+	 * The finding of a schema without a minimum for a range that varies.
+	 *
+	 * @param array $range The observed numeric range.
+	 *
+	 * @return array
+	 */
+	private static function missingMinimum(array $range): array {
+		return [
+			'missing_minimum',
+			[
+				'type' => 'constraint',
+				'field' => 'minimum',
+				'current' => 'unlimited',
+				'recommended' => $range['min'],
+				'description' => "Observed range starts at {$range['min']}",
+			],
+		];
+	}//end missingMinimum()
+
+	/**
+	 * The finding of a schema minimum above the lowest value observed.
+	 *
+	 * @param mixed $currentMin The schema's minimum.
+	 * @param array $range      The observed numeric range.
+	 *
+	 * @return array
+	 */
+	private static function minimumTooHigh(mixed $currentMin, array $range): array {
 		return [
 			'minimum_too_high',
 			[
@@ -1281,7 +1891,7 @@ class SchemaService implements SchemaExplorationInterface {
 				'description' => "Schema minimum ({$currentMin}) is higher than observed min ({$range['min']})",
 			],
 		];
-	}//end minimumFinding()
+	}//end minimumTooHigh()
 
 	/**
 	 * A missing or too low maximum, compared with the observed range.
@@ -1330,44 +1940,63 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return array Nullable constraint comparison results
 	 */
 	private function compareNullableConstraint(array $currentConfig, array $analysis): array {
-		$issues = [];
-		$suggestions = [];
-
 		// Check if property should be nullable based on analysis.
 		$isNullable = ($analysis['nullable'] ?? false) === true
 					 || (isset($analysis['nullable_variation']) && $analysis['nullable_variation'] === true);
 
-		if ($isNullable === true) {
-			$currentRequired = isset($currentConfig['required']) && $currentConfig['required'] === true;
-			if ($currentRequired === true) {
-				$issues[] = 'Property contains null values but is marked as required';
-				$suggestions[] = [
-					'type' => 'behavior',
-					'field' => 'required',
-					'current' => 'true',
-					'recommended' => 'false',
-					'description' => 'Some objects have null values for this property',
-				];
-			}
+		if ($isNullable === false) {
+			return [
+				'issues' => [],
+				'suggestions' => [],
+			];
+		}
 
-			// Check if schema doesn't allow null type.
-			$currentType = $currentConfig['type'] ?? null;
-			if ($currentType !== null && $currentType !== 'null') {
-				$suggestions[] = [
-					'type' => 'type',
-					'field' => 'type',
-					'current' => $currentType,
-					'recommended' => [$currentType, 'null'],
-					'description' => 'Consider making this property nullable since data contains null values',
-				];
-			}
-		}//end if
-
-		return [
-			'issues' => $issues,
-			'suggestions' => $suggestions,
-		];
+		return $this->nullableFindings(currentConfig: $currentConfig);
 	}//end compareNullableConstraint()
+
+
+	/**
+	 * The issues and suggestions for a property whose data contains null values.
+	 *
+	 * @param array $currentConfig Current property configuration
+	 *
+	 * @return array Nullable constraint comparison results
+	 */
+	private function nullableFindings(array $currentConfig): array {
+		$issues = [];
+		$suggestions = [];
+
+		$currentRequired = isset($currentConfig['required']) && $currentConfig['required'] === true;
+		if ($currentRequired === true) {
+			$issues[] = 'Property contains null values but is marked as required';
+			$suggestions[] = self::REQUIRED_WITH_NULLS_SUGGESTION;
+		}
+
+		// Check if schema doesn't allow null type.
+		$currentType = $currentConfig['type'] ?? null;
+		if ($currentType !== null && $currentType !== 'null') {
+			$suggestions[] = $this->nullableTypeSuggestion(currentType: $currentType);
+		}
+
+		return ['issues' => $issues, 'suggestions' => $suggestions];
+	}//end nullableFindings()
+
+	/**
+	 * The suggestion to add null to a property's type.
+	 *
+	 * @param mixed $currentType The current type.
+	 *
+	 * @return array The suggestion.
+	 */
+	private function nullableTypeSuggestion(mixed $currentType): array {
+		return [
+			'type' => 'type',
+			'field' => 'type',
+			'current' => $currentType,
+			'recommended' => [$currentType, 'null'],
+			'description' => 'Consider making this property nullable since data contains null values',
+		];
+	}//end nullableTypeSuggestion()
 
 	/**
 	 * Compare enum constraint.
@@ -1380,54 +2009,82 @@ class SchemaService implements SchemaExplorationInterface {
 	 * Enum comparison requires else for value difference detection
 	 */
 	private function compareEnumConstraint(array $currentConfig, array $analysis): array {
-		$issues = [];
-		$suggestions = [];
-
-		// Check if analysis suggests enum values.
+		// Check if analysis suggests enum values; limit enum suggestions to reasonable number (e.g., 20).
 		$enumValues = $analysis['enum_values'] ?? null;
+		if ($enumValues === null || is_array($enumValues) === false || count($enumValues) > 20) {
+			return ['issues' => [], 'suggestions' => []];
+		}
 
-		if ($enumValues !== null && is_array($enumValues) === true) {
-			$currentEnum = $currentConfig['enum'] ?? null;
+		$currentEnum = $currentConfig['enum'] ?? null;
+		if ($currentEnum === null || empty($currentEnum) === true) {
+			return [
+				'issues' => [],
+				'suggestions' => [$this->addEnumSuggestion(enumValues: $enumValues)],
+			];
+		}
 
-			// Limit enum suggestions to reasonable number (e.g., 20).
-			if (count($enumValues) <= 20) {
-				if ($currentEnum === null || empty($currentEnum) === true) {
-					// Suggest adding enum.
-					$suggestions[] = [
-						'type' => 'enum',
-						'field' => 'enum',
-						'current' => 'unlimited',
-						'recommended' => implode(', ', $enumValues),
-						'description' => 'Property appears to have predefined values: ' . implode(', ', $enumValues),
-					];
-				}
+		return $this->enumDifference(currentEnum: $currentEnum, enumValues: $enumValues);
+	}//end compareEnumConstraint()
 
-				if ($currentEnum !== null && empty($currentEnum) !== true) {
-					// Check if current enum differs from analysis.
-					$currentEnumSorted = $currentEnum;
-					$analysisEnumSorted = $enumValues;
-					sort($currentEnumSorted);
-					sort($analysisEnumSorted);
 
-					if ($currentEnumSorted !== $analysisEnumSorted) {
-						$issues[] = 'Enum values in schema differ from values found in data';
-						$suggestions[] = [
-							'type' => 'enum',
-							'field' => 'enum',
-							'current' => implode(', ', $currentEnum),
-							'recommended' => implode(', ', $enumValues),
-							'description' => 'Data contains enum values not defined in schema',
-						];
-					}
-				}//end if
-			}//end if
-		}//end if
+	/**
+	 * The suggestion to add the observed values as an enum.
+	 *
+	 * @param array $enumValues The observed values.
+	 *
+	 * @return array The suggestion.
+	 */
+	private function addEnumSuggestion(array $enumValues): array {
+		return [
+			'type' => 'enum',
+			'field' => 'enum',
+			'current' => 'unlimited',
+			'recommended' => implode(', ', $enumValues),
+			'description' => 'Property appears to have predefined values: ' . implode(', ', $enumValues),
+		];
+	}//end addEnumSuggestion()
+
+	/**
+	 * Compare the schema's enum with the observed values, ignoring order.
+	 *
+	 * @param mixed $currentEnum The schema's enum.
+	 * @param array $enumValues  The observed values.
+	 *
+	 * @return array Enum constraint comparison results
+	 */
+	private function enumDifference(mixed $currentEnum, array $enumValues): array {
+		$currentEnumSorted = $currentEnum;
+		$analysisEnumSorted = $enumValues;
+		sort($currentEnumSorted);
+		sort($analysisEnumSorted);
+
+		if ($currentEnumSorted === $analysisEnumSorted) {
+			return ['issues' => [], 'suggestions' => []];
+		}
 
 		return [
-			'issues' => $issues,
-			'suggestions' => $suggestions,
+			'issues' => ['Enum values in schema differ from values found in data'],
+			'suggestions' => [$this->changeEnumSuggestion(currentEnum: $currentEnum, enumValues: $enumValues)],
 		];
-	}//end compareEnumConstraint()
+	}//end enumDifference()
+
+	/**
+	 * The suggestion to replace the schema's enum with the observed values.
+	 *
+	 * @param mixed $currentEnum The schema's enum.
+	 * @param array $enumValues  The observed values.
+	 *
+	 * @return array The suggestion.
+	 */
+	private function changeEnumSuggestion(mixed $currentEnum, array $enumValues): array {
+		return [
+			'type' => 'enum',
+			'field' => 'enum',
+			'current' => implode(', ', $currentEnum),
+			'recommended' => implode(', ', $enumValues),
+			'description' => 'Data contains enum values not defined in schema',
+		];
+	}//end changeEnumSuggestion()
 
 	/**
 	 * Check if a property name should be treated as internal
@@ -1437,24 +2094,8 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return bool True if the property should be considered internal
 	 */
 	private function isInternalProperty(string $propertyName): bool {
-		$internalPatterns = [
-			'id',
-			'uuid',
-			'_id',
-			'_uuid',
-			'created',
-			'updated',
-			'created_at',
-			'updated_at',
-			'deleted',
-			'deleted_at',
-			'@self',
-			'$schema',
-			'$id',
-		];
-
 		$lowerPropertyName = strtolower($propertyName);
-		return in_array($lowerPropertyName, $internalPatterns, true);
+		return in_array($lowerPropertyName, self::INTERNAL_PROPERTY_NAMES, true);
 	}//end isInternalProperty()
 
 	/**
@@ -1506,22 +2147,7 @@ class SchemaService implements SchemaExplorationInterface {
 			return null;
 		}
 
-		// Most formats are string-based in JSON Schema.
-		$stringFormats = [
-			'date',
-			'date-time',
-			'time',
-			'email',
-			'url',
-			'hostname',
-			'ipv4',
-			'ipv6',
-			'uuid',
-			'color',
-			'duration',
-		];
-
-		if (in_array($format, $stringFormats, true) === true) {
+		if (in_array($format, self::STRING_FORMATS, true) === true) {
 			return 'string';
 		}
 
@@ -1563,50 +2189,45 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @param array $patterns String patterns if type is string
 	 *
 	 * @return string JSON Schema type
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type normalization requires handling many PHP types
 	 */
 	private function normalizeSingleType(string $phpType, array $patterns): string {
 		// Normalize type string to lowercase.
 		$phpType = strtolower($phpType);
 
-		switch ($phpType) {
-			case 'string':
-				// Check if it's a numeric string that should be a number.
-				if (in_array('integer_string', $patterns, true) === true) {
-					return 'integer';
-				}
+		if ($phpType === 'string') {
+			return $this->stringTypeFromPatterns(patterns: $patterns);
+		}
 
-				if (in_array('float_string', $patterns, true) === true) {
-					return 'number';
-				}
-
-				// Check if it's a boolean string.
-				if (in_array('boolean_string', $patterns, true) === true) {
-					return 'boolean';
-				}
-				return 'string';
-			case 'integer':
-				return 'integer';
-			case 'double':
-			case 'float':
-				return 'number';
-			case 'boolean':
-				return 'boolean';
-			case 'array':
-				return 'array';
-			case 'object':
-				return 'object';
-			case 'null':
-				return 'null';
-				// JSON Schema standard types - preserve as-is.
-			case 'number':
-				return 'number';
-			default:
-				return 'string';
-				// Safe fallback.
-		}//end switch
+		// Unknown types fall back to string.
+		return self::JSON_TYPE_OF_PHP_TYPE[$phpType] ?? 'string';
 	}//end normalizeSingleType()
+
+
+	/**
+	 * The JSON Schema type of a string property: a number, integer or boolean
+	 * when its values are numeric or boolean strings.
+	 *
+	 * @param array $patterns String patterns from analysis
+	 *
+	 * @return string JSON Schema type
+	 */
+	private function stringTypeFromPatterns(array $patterns): string {
+		// Check if it's a numeric string that should be a number.
+		if (in_array('integer_string', $patterns, true) === true) {
+			return 'integer';
+		}
+
+		if (in_array('float_string', $patterns, true) === true) {
+			return 'number';
+		}
+
+		// Check if it's a boolean string.
+		if (in_array('boolean_string', $patterns, true) === true) {
+			return 'boolean';
+		}
+
+		return 'string';
+	}//end stringTypeFromPatterns()
 
 	/**
 	 * Determine dominant type when multiple types are present.
@@ -1624,23 +2245,34 @@ class SchemaService implements SchemaExplorationInterface {
 
 		// Special handling for string-dominated fields.
 		if ($dominantType === 'string') {
-			// If most values are consistently numeric strings, recommend the numeric type.
-			if (in_array('integer_string', $patterns, true) === true
-				&& in_array('float_string', $patterns, true) === false
-			) {
-				return 'integer';
-			} elseif (in_array('float_string', $patterns, true) === true) {
-				return 'number';
-			} elseif (in_array('boolean_string', $patterns, true) === true) {
-				return 'boolean';
-			}
-
-			return 'string';
+			return self::stringPatternType(patterns: $patterns);
 		}
 
 		// For other dominant types, normalize them.
 		return $this->normalizeSingleType(phpType: $dominantType, patterns: $patterns);
 	}//end getDominantType()
+
+	/**
+	 * The type a string-dominated field is recommended: numeric or boolean when its values consistently are.
+	 *
+	 * @param array $patterns The string patterns seen.
+	 *
+	 * @return string
+	 */
+	private static function stringPatternType(array $patterns): string {
+		// If most values are consistently numeric strings, recommend the numeric type.
+		if (in_array('integer_string', $patterns, true) === true
+			&& in_array('float_string', $patterns, true) === false
+		) {
+			return 'integer';
+		} elseif (in_array('float_string', $patterns, true) === true) {
+			return 'number';
+		} elseif (in_array('boolean_string', $patterns, true) === true) {
+			return 'boolean';
+		}
+
+		return 'string';
+	}//end stringPatternType()
 
 	/**
 	 * Detect if a property appears to be enum-like
@@ -1739,21 +2371,7 @@ class SchemaService implements SchemaExplorationInterface {
 
 			$typeString = (string)$primaryType;
 
-			switch ($typeString) {
-				case 'string':
-					return ['type' => 'string'];
-				case 'integer':
-					return ['type' => 'integer'];
-				case 'double':
-				case 'float':
-					return ['type' => 'number'];
-				case 'boolean':
-					return ['type' => 'boolean'];
-				case 'array':
-					return ['type' => 'array'];
-				default:
-					return ['type' => 'string'];
-			}//end switch
+			return ['type' => (self::ITEM_SCHEMA_TYPES[$typeString] ?? 'string')];
 		}//end if
 
 		return ['type' => 'string'];
@@ -1781,30 +2399,7 @@ class SchemaService implements SchemaExplorationInterface {
 		);
 
 		try {
-			// Get existing schema.
-			$schema = $this->schemaMapper->find($schemaId);
-			$existingProperties = $schema->getProperties();
-
-			// Merge new properties with existing ones.
-			foreach ($propertyUpdates as $propertyName => $propertyDefinition) {
-				$existingProperties[$propertyName] = $propertyDefinition;
-			}
-
-			// Update schema properties.
-			$schema->setProperties($existingProperties);
-
-			// Regenerate facets if schema has facet generation enabled.
-			$schema->regenerateFacetsFromProperties();
-
-			// Save updated schema.
-			$updatedSchema = $this->schemaMapper->update($schema);
-
-			$this->logger->info(
-				message: '[SchemaService] Schema ' . $schemaId . ' successfully updated with exploration results',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $updatedSchema;
+			return $this->savedExploration(schemaId: $schemaId, propertyUpdates: $propertyUpdates);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[SchemaService] Failed to update schema ' . $schemaId . ': ' . $e->getMessage(),
@@ -1813,4 +2408,35 @@ class SchemaService implements SchemaExplorationInterface {
 			throw new Exception('Failed to update schema properties: ' . $e->getMessage());
 		}//end try
 	}//end updateSchemaFromExploration()
+
+	/**
+	 * Merge the explored properties into a schema, regenerate its facets and save it.
+	 *
+	 * @param int                  $schemaId        The schema id.
+	 * @param array<string, mixed> $propertyUpdates The property definitions by name.
+	 *
+	 * @return Schema The saved schema.
+	 */
+	private function savedExploration(int $schemaId, array $propertyUpdates): Schema {
+		$schema = $this->catalog->schemas()->find($schemaId);
+		$existingProperties = $schema->getProperties();
+
+		// Merge new properties with existing ones.
+		foreach ($propertyUpdates as $propertyName => $propertyDefinition) {
+			$existingProperties[$propertyName] = $propertyDefinition;
+		}
+
+		$schema->setProperties($existingProperties);
+
+		// Regenerate facets if schema has facet generation enabled.
+		$schema->regenerateFacetsFromProperties();
+		$updatedSchema = $this->catalog->schemas()->update($schema);
+
+		$this->logger->info(
+			message: '[SchemaService] Schema ' . $schemaId . ' successfully updated with exploration results',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return $updatedSchema;
+	}//end savedExploration()
 }//end class

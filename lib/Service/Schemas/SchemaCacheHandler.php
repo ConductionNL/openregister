@@ -67,7 +67,7 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  */
-class SchemaCacheHandler {
+class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 	/**
 	 * Cache table name for schema data
 	 *
@@ -136,53 +136,22 @@ class SchemaCacheHandler {
 	private static array $memoryCache = [];
 
 	/**
-	 * Database connection
-	 *
-	 * Used for persistent cache storage and retrieval.
-	 *
-	 * @var IDBConnection Database connection instance
-	 */
-	private readonly IDBConnection $db;
-
-	/**
-	 * Schema mapper for database operations
-	 *
-	 * Used to load schemas from database when cache misses occur.
-	 *
-	 * @var SchemaMapperInterface Schema mapper instance
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Logger for performance monitoring
-	 *
-	 * Used for logging cache hits, misses, and performance metrics.
-	 *
-	 * @var LoggerInterface Logger instance
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
 	 * Initializes handler with database connection, schema mapper, and logger
 	 * for schema caching operations.
 	 *
-	 * @param IDBConnection $db Database connection for persistent cache
+	 * @param IDBConnection         $db           Database connection for persistent cache storage and retrieval
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for loading schemas on cache miss
-	 * @param LoggerInterface $logger Logger for performance monitoring and debugging
+	 * @param LoggerInterface       $logger       Logger for cache hits, misses and performance metrics
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		IDBConnection $db,
-		SchemaMapperInterface $schemaMapper,
-		LoggerInterface $logger,
+		private readonly IDBConnection $db,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly LoggerInterface $logger,
 	) {
-		// Store dependencies for use in handler methods.
-		$this->db = $db;
-		$this->schemaMapper = $schemaMapper;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -205,42 +174,62 @@ class SchemaCacheHandler {
 
 		// Check in-memory cache first.
 		if ((self::$memoryCache[$cacheKey] ?? null) !== null) {
-			$this->logger->debug(
-				message: '[SchemaCacheHandler] Schema cache hit (memory)',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
-			);
+			$context = $this->schemaContext(line: __LINE__, schemaId: $schemaId);
+			$this->logger->debug(message: '[SchemaCacheHandler] Schema cache hit (memory)', context: $context);
 			return self::$memoryCache[$cacheKey];
 		}
 
-		// Check database cache.
+		return ($this->schemaFromDatabaseCache(schemaId: $schemaId, cacheKey: $cacheKey) ?? $this->loadAndCacheSchema(schemaId: $schemaId));
+	}//end getSchema()
+
+	/**
+	 * The schema the database cache holds, kept in memory once read.
+	 *
+	 * @param int    $schemaId The schema ID.
+	 * @param string $cacheKey The memory cache key of the schema.
+	 *
+	 * @return Schema|null The cached schema, or null on a miss or an unreadable row.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 */
+	private function schemaFromDatabaseCache(int $schemaId, string $cacheKey): ?Schema {
 		$cachedData = $this->getCachedData(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA);
-		if ($cachedData !== null) {
-			// Reconstruct schema object from cached data.
-			$schema = $this->reconstructSchemaFromCache(cachedData: $cachedData);
-			if ($schema !== null) {
-				// Store in memory cache for future requests.
-				self::$memoryCache[$cacheKey] = $schema;
-				$this->logger->debug(
-					message: '[SchemaCacheHandler] Schema cache hit (database)',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
-				);
-				return $schema;
-			}
+		if ($cachedData === null) {
+			return null;
 		}
 
-		// Load from database and cache.
+		$schema = $this->reconstructSchemaFromCache(cachedData: $cachedData);
+		if ($schema === null) {
+			return null;
+		}
+
+		// Store in memory cache for future requests.
+		self::$memoryCache[$cacheKey] = $schema;
+		$context = $this->schemaContext(line: __LINE__, schemaId: $schemaId);
+		$this->logger->debug(message: '[SchemaCacheHandler] Schema cache hit (database)', context: $context);
+		return $schema;
+	}//end schemaFromDatabaseCache()
+
+	/**
+	 * Load a schema from its table and cache it.
+	 *
+	 * @param int $schemaId The schema ID.
+	 *
+	 * @return Schema|null The schema, or null when it does not exist.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 */
+	private function loadAndCacheSchema(int $schemaId): ?Schema {
 		try {
 			$schema = $this->schemaMapper->find($schemaId);
 			$this->cacheSchema(schema: $schema);
-			$this->logger->debug(
-				message: '[SchemaCacheHandler] Schema loaded from database and cached',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
-			);
+			$context = $this->schemaContext(line: __LINE__, schemaId: $schemaId);
+			$this->logger->debug(message: '[SchemaCacheHandler] Schema loaded from database and cached', context: $context);
 			return $schema;
 		} catch (DoesNotExistException $e) {
 			return null;
 		}
-	}//end getSchema()
+	}//end loadAndCacheSchema()
 
 	/**
 	 * Clear cache for a specific schema
@@ -262,6 +251,17 @@ class SchemaCacheHandler {
 			}
 		}
 
+		$this->deleteSchemaRows(schemaId: $schemaId);
+	}//end clearSchemaCache()
+
+	/**
+	 * Delete the database cache rows of one schema; a failure is logged, not thrown.
+	 *
+	 * @param int $schemaId The schema ID.
+	 *
+	 * @return void
+	 */
+	private function deleteSchemaRows(int $schemaId): void {
 		// Clear from database cache.
 		//
 		// Built through the query builder, not raw SQL. The raw statement this
@@ -278,26 +278,17 @@ class SchemaCacheHandler {
 			$qb->delete(self::CACHE_TABLE)
 				->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
 			$qb->executeStatement();
-			$this->logger->debug(
-				message: '[SchemaCacheHandler] Cleared schema cache',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
-			);
+			$context = $this->schemaContext(line: __LINE__, schemaId: $schemaId);
+			$this->logger->debug(message: '[SchemaCacheHandler] Cleared schema cache', context: $context);
 		} catch (Exception $e) {
 			// `warning`, not `error`: this is the same cause as the catch in
 			// invalidateForSchemaChange() and the two used to disagree about
 			// severity for an identical failure. Neither fails the caller, so
 			// neither is an error; both are a degraded cache.
-			$this->logger->warning(
-				message: '[SchemaCacheHandler] Failed to clear schema cache',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $schemaId,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-	}//end clearSchemaCache()
+			$context = $this->context(line: __LINE__, values: ['schemaId' => $schemaId, 'error' => $e->getMessage()]);
+			$this->logger->warning(message: '[SchemaCacheHandler] Failed to clear schema cache', context: $context);
+		}
+	}//end deleteSchemaRows()
 
 	/**
 	 * Cache a schema object
@@ -315,7 +306,8 @@ class SchemaCacheHandler {
 		$schemaId = $schema->getId();
 		$schemaData = $this->serializeSchemaForCache(schema: $schema);
 
-		$this->setCachedData(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA, data: $schemaData, ttl: $ttl);
+		$slot = new SchemaCacheSlot(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA);
+		$this->setCachedData(row: $this->cacheRow(slot: $slot, data: $schemaData), ttl: $ttl);
 
 		// Store in memory cache.
 		$cacheKey = $this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA);
@@ -340,12 +332,8 @@ class SchemaCacheHandler {
 	 */
 	public function cacheSchemaConfiguration(Schema $schema, int $ttl = self::DEFAULT_TTL): void {
 		$configuration = $schema->getConfiguration();
-		$this->setCachedData(
-			schemaId: $schema->getId(),
-			cacheKey: self::CACHE_KEY_CONFIGURATION,
-			data: $configuration,
-			ttl: $ttl
-		);
+		$slot          = new SchemaCacheSlot(schemaId: $schema->getId(), cacheKey: self::CACHE_KEY_CONFIGURATION);
+		$this->setCachedData(row: $this->cacheRow(slot: $slot, data: $configuration), ttl: $ttl);
 	}//end cacheSchemaConfiguration()
 
 	/**
@@ -362,7 +350,8 @@ class SchemaCacheHandler {
 	 */
 	public function cacheSchemaProperties(Schema $schema, int $ttl = self::DEFAULT_TTL): void {
 		$properties = $schema->getProperties();
-		$this->setCachedData(schemaId: $schema->getId(), cacheKey: self::CACHE_KEY_PROPERTIES, data: $properties, ttl: $ttl);
+		$slot       = new SchemaCacheSlot(schemaId: $schema->getId(), cacheKey: self::CACHE_KEY_PROPERTIES);
+		$this->setCachedData(row: $this->cacheRow(slot: $slot, data: $properties), ttl: $ttl);
 	}//end cacheSchemaProperties()
 
 	/**
@@ -414,7 +403,27 @@ class SchemaCacheHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function invalidateForSchemaChange(int $schemaId, string $operation = 'update'): void {
-		$startTime = microtime(true);
+		$startTime      = microtime(true);
+		$deletedEntries = $this->deleteRowsForInvalidation(schemaId: $schemaId);
+
+		// Remove from memory cache (always safe to do).
+		foreach ($this->memoryKeysOf(schemaId: $schemaId) as $key) {
+			unset(self::$memoryCache[$key]);
+		}
+
+		$values = ['schemaId' => $schemaId, 'operation' => $operation, 'deletedEntries' => $deletedEntries];
+		$values['executionTime'] = $this->elapsedSince(startTime: $startTime);
+		$this->logger->info(message: '[SchemaCacheHandler] Schema cache invalidated', context: $this->context(line: __LINE__, values: $values));
+	}//end invalidateForSchemaChange()
+
+	/**
+	 * Delete the database cache rows of one schema for an invalidation.
+	 *
+	 * @param int $schemaId The schema ID.
+	 *
+	 * @return int The number of rows deleted, 0 when the delete failed.
+	 */
+	private function deleteRowsForInvalidation(int $schemaId): int {
 		$deletedEntries = 0;
 
 		// Remove from database cache (if table exists).
@@ -441,41 +450,28 @@ class SchemaCacheHandler {
 			// cause at `error`.
 			$this->logger->warning(
 				message: '[SchemaCacheHandler] Failed to invalidate the database schema cache; continuing on the memory cache only',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $schemaId,
-					'error' => $e->getMessage(),
-				]
+				context: $this->context(line: __LINE__, values: ['schemaId' => $schemaId, 'error' => $e->getMessage()])
 			);
 		}//end try
 
-		// Remove from memory cache (always safe to do).
-		$cacheKeys = [
+		return $deletedEntries;
+	}//end deleteRowsForInvalidation()
+
+	/**
+	 * The memory cache keys an invalidation drops for one schema.
+	 *
+	 * @param int $schemaId The schema ID.
+	 *
+	 * @return list<string> The keys.
+	 */
+	private function memoryKeysOf(int $schemaId): array {
+		return [
 			$this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA),
 			$this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_FACETABLE_FIELDS),
 			$this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_CONFIGURATION),
 			$this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_PROPERTIES),
 		];
-
-		foreach ($cacheKeys as $key) {
-			unset(self::$memoryCache[$key]);
-		}
-
-		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-		$this->logger->info(
-			message: '[SchemaCacheHandler] Schema cache invalidated',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schemaId' => $schemaId,
-				'operation' => $operation,
-				'deletedEntries' => $deletedEntries,
-				'executionTime' => $executionTime . 'ms',
-			]
-		);
-	}//end invalidateForSchemaChange()
+	}//end memoryKeysOf()
 
 	/**
 	 * Clear all schema caches (Administrative Operation)
@@ -498,21 +494,11 @@ class SchemaCacheHandler {
 		$deletedEntries = $qb->executeStatement();
 
 		// Clear memory cache.
-		$memoryCacheSize = count(self::$memoryCache);
+		$values = ['deletedDbEntries' => $deletedEntries, 'clearedMemoryEntries' => count(self::$memoryCache)];
 		self::$memoryCache = [];
 
-		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-		$this->logger->info(
-			message: '[SchemaCacheHandler] All schema caches cleared',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'deletedDbEntries' => $deletedEntries,
-				'clearedMemoryEntries' => $memoryCacheSize,
-				'executionTime' => $executionTime . 'ms',
-			]
-		);
+		$values['executionTime'] = $this->elapsedSince(startTime: $startTime);
+		$this->logger->info(message: '[SchemaCacheHandler] All schema caches cleared', context: $this->context(line: __LINE__, values: $values));
 	}//end clearAllCaches()
 
 	/**
@@ -537,20 +523,12 @@ class SchemaCacheHandler {
 			->where($qb->expr()->isNotNull('expires'))
 			->andWhere($qb->expr()->lt('expires', $qb->createNamedParameter(new DateTime(), 'datetime')));
 
-		$deletedCount = $qb->executeStatement();
-
-		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+		$deletedCount  = $qb->executeStatement();
+		$executionTime = $this->elapsedSince(startTime: $startTime);
 
 		if ($deletedCount > 0) {
-			$this->logger->info(
-				message: '[SchemaCacheHandler] Cleaned expired schema cache entries',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'count' => $deletedCount,
-					'executionTime' => $executionTime . 'ms',
-				]
-			);
+			$context = $this->context(line: __LINE__, values: ['count' => $deletedCount, 'executionTime' => $executionTime]);
+			$this->logger->info(message: '[SchemaCacheHandler] Cleaned expired schema cache entries', context: $context);
 		}
 
 		return $deletedCount;
@@ -567,25 +545,34 @@ class SchemaCacheHandler {
 	 */
 	public function getCacheStatistics(): array {
 		$startTime = microtime(true);
+		$result    = $this->countRows();
+		$queryTime = $this->elapsedSince(startTime: $startTime);
 
+		return [
+			'total_entries'     => (int)$result['total_entries'],
+			'entries_with_ttl'  => (int)$result['entries_with_ttl'],
+			'memory_cache_size' => count(self::$memoryCache),
+			'cache_table'       => self::CACHE_TABLE,
+			'query_time'        => $queryTime,
+			'timestamp'         => time(),
+		];
+	}//end getCacheStatistics()
+
+	/**
+	 * How many cache rows there are, and how many of them expire.
+	 *
+	 * @return mixed The `total_entries` and `entries_with_ttl` row.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs.
+	 */
+	private function countRows(): mixed {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('id', 'total_entries'))
 			->addSelect($qb->func()->count('expires', 'entries_with_ttl'))
 			->from(self::CACHE_TABLE);
 
-		$result = $qb->executeQuery()->fetch();
-
-		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-		return [
-			'total_entries' => (int)$result['total_entries'],
-			'entries_with_ttl' => (int)$result['entries_with_ttl'],
-			'memory_cache_size' => count(self::$memoryCache),
-			'cache_table' => self::CACHE_TABLE,
-			'query_time' => $executionTime . 'ms',
-			'timestamp' => time(),
-		];
-	}//end getCacheStatistics()
+		return $qb->executeQuery()->fetch();
+	}//end countRows()
 
 	/**
 	 * Build cache key for a schema and cache type
@@ -600,6 +587,41 @@ class SchemaCacheHandler {
 	}//end buildCacheKey()
 
 	/**
+	 * Milliseconds since a start time, as the `12.34ms` string the logs and statistics carry.
+	 *
+	 * @param float $startTime The microtime(true) the measurement started at.
+	 *
+	 * @return string The elapsed time.
+	 */
+	private function elapsedSince(float $startTime): string {
+		return round((microtime(true) - $startTime) * 1000, 2) . 'ms';
+	}//end elapsedSince()
+
+	/**
+	 * A log context: this file and the caller's line, then the given values.
+	 *
+	 * @param int                  $line   The caller's line.
+	 * @param array<string, mixed> $values The values after file and line.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private function context(int $line, array $values): array {
+		return array_merge(['file' => __FILE__, 'line' => $line], $values);
+	}//end context()
+
+	/**
+	 * A log context about one schema: this file, the caller's line and the schema ID.
+	 *
+	 * @param int $line     The caller's line.
+	 * @param int $schemaId The schema ID.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private function schemaContext(int $line, int $schemaId): array {
+		return $this->context(line: $line, values: ['schemaId' => $schemaId]);
+	}//end schemaContext()
+
+	/**
 	 * Get cached data from database
 	 *
 	 * @param int $schemaId The schema ID
@@ -610,37 +632,63 @@ class SchemaCacheHandler {
 	 * @throws \OCP\DB\Exception If a database error occurs
 	 */
 	private function getCachedData(int $schemaId, string $cacheKey): mixed {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('cache_data', 'expires')
-			->from(self::CACHE_TABLE)
-			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)))
-			->andWhere($qb->expr()->eq('cache_key', $qb->createNamedParameter($cacheKey)));
-
-		$result = $qb->executeQuery()->fetch();
+		$result = $this->fetchCacheRow(schemaId: $schemaId, cacheKey: $cacheKey);
 		if ($result === false || $result === null) {
 			return null;
 		}
 
 		// Check if expired.
-		if ($result['expires'] !== null) {
-			$expires = new DateTime($result['expires']);
-			if ($expires <= new DateTime()) {
-				// Cache expired, remove it.
-				$this->removeCachedData(schemaId: $schemaId, cacheKey: $cacheKey);
-				return null;
-			}
+		if ($result['expires'] !== null && new DateTime($result['expires']) <= new DateTime()) {
+			// Cache expired, remove it.
+			$this->removeCachedData(schemaId: $schemaId, cacheKey: $cacheKey);
+			return null;
 		}
 
 		return json_decode($result['cache_data'], true);
 	}//end getCachedData()
 
 	/**
+	 * The stored row of one schema and cache key.
+	 *
+	 * @param int    $schemaId The schema ID.
+	 * @param string $cacheKey The cache key type.
+	 *
+	 * @return mixed The `cache_data` and `expires` row, or false/null when there is none.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 */
+	private function fetchCacheRow(int $schemaId, string $cacheKey): mixed {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('cache_data', 'expires')
+			->from(self::CACHE_TABLE)
+			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)))
+			->andWhere($qb->expr()->eq('cache_key', $qb->createNamedParameter($cacheKey)));
+
+		return $qb->executeQuery()->fetch();
+	}//end fetchCacheRow()
+
+	/**
+	 * The row that holds one piece of cached data, stamped with the time of writing.
+	 *
+	 * @param SchemaCacheSlot $slot The schema and cache key the data is cached under.
+	 * @param mixed           $data The data to cache.
+	 *
+	 * @return array<string, mixed> The row: schema_id, cache_key, cache_data and now.
+	 */
+	private function cacheRow(SchemaCacheSlot $slot, mixed $data): array {
+		return [
+			'schema_id'  => $slot->schemaId,
+			'cache_key'  => $slot->cacheKey,
+			'cache_data' => json_encode($data),
+			'now'        => new DateTime(),
+		];
+	}//end cacheRow()
+
+	/**
 	 * Set cached data in database
 	 *
-	 * @param int $schemaId The schema ID
-	 * @param string $cacheKey The cache key type
-	 * @param mixed $data The data to cache
-	 * @param int $ttl Cache TTL in seconds
+	 * @param array<string, mixed> $row The row from cacheRow().
+	 * @param int                  $ttl Cache TTL in seconds
 	 *
 	 * @return void
 	 *
@@ -649,46 +697,77 @@ class SchemaCacheHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Database upsert logic with conditional insert/update
 	 * Insert alternative when update returns zero rows
 	 */
-	private function setCachedData(int $schemaId, string $cacheKey, mixed $data, int $ttl): void {
+	private function setCachedData(array $row, int $ttl): void {
 		// Enforce maximum cache TTL for office environments.
-		$ttl = min($ttl, self::MAX_CACHE_TTL);
+		$row['expires'] = $this->expiresAt(now: $row['now'], ttl: min($ttl, self::MAX_CACHE_TTL));
 
-		$now = new DateTime();
-		$expires = null;
-		if ($ttl > 0) {
-			$expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
-		}
-
-		// Use INSERT ... ON DUPLICATE KEY UPDATE for MySQL/MariaDB compatibility.
-		$qb = $this->db->getQueryBuilder();
-
-		// First, try to update existing record.
-		$qb->update(self::CACHE_TABLE)
-			->set('cache_data', $qb->createNamedParameter(json_encode($data)))
-			->set('updated', $qb->createNamedParameter($now, 'datetime'))
-			->set('expires', $qb->createNamedParameter($expires, 'datetime'))
-			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)))
-			->andWhere($qb->expr()->eq('cache_key', $qb->createNamedParameter($cacheKey)));
-
-		$updated = $qb->executeStatement();
-
-		// If no rows updated, insert new record.
-		if ($updated === 0) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->insert(self::CACHE_TABLE)
-				->values(
-					values: [
-						'schema_id' => $qb->createNamedParameter($schemaId),
-						'cache_key' => $qb->createNamedParameter($cacheKey),
-						'cache_data' => $qb->createNamedParameter(json_encode($data)),
-						'created' => $qb->createNamedParameter($now, 'datetime'),
-						'updated' => $qb->createNamedParameter($now, 'datetime'),
-						'expires' => $qb->createNamedParameter($expires, 'datetime'),
-					]
-				);
-			$qb->executeStatement();
+		// First, try to update existing record; if no rows updated, insert new record.
+		if ($this->updateCacheRow(row: $row) === 0) {
+			$this->insertCacheRow(row: $row);
 		}
 	}//end setCachedData()
+
+	/**
+	 * When an entry written now expires.
+	 *
+	 * @param DateTime $now The write time.
+	 * @param int      $ttl The TTL in seconds; 0 or less never expires.
+	 *
+	 * @return DateTime|null The expiry, or null for none.
+	 */
+	private function expiresAt(DateTime $now, int $ttl): ?DateTime {
+		if ($ttl <= 0) {
+			return null;
+		}
+
+		return (clone $now)->add(new DateInterval("PT{$ttl}S"));
+	}//end expiresAt()
+
+	/**
+	 * Update the cache row of one schema and key.
+	 *
+	 * @param array{schema_id: int, cache_key: string, cache_data: string|false, now: DateTime, expires: DateTime|null} $row The row.
+	 *
+	 * @return int The number of rows updated.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 */
+	private function updateCacheRow(array $row): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update(self::CACHE_TABLE)
+			->set('cache_data', $qb->createNamedParameter($row['cache_data']))
+			->set('updated', $qb->createNamedParameter($row['now'], 'datetime'))
+			->set('expires', $qb->createNamedParameter($row['expires'], 'datetime'))
+			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($row['schema_id'])))
+			->andWhere($qb->expr()->eq('cache_key', $qb->createNamedParameter($row['cache_key'])));
+
+		return $qb->executeStatement();
+	}//end updateCacheRow()
+
+	/**
+	 * Insert the cache row of one schema and key.
+	 *
+	 * @param array{schema_id: int, cache_key: string, cache_data: string|false, now: DateTime, expires: DateTime|null} $row The row.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 */
+	private function insertCacheRow(array $row): void {
+		$qb = $this->db->getQueryBuilder();
+		$qb->insert(self::CACHE_TABLE)
+			->values(
+				values: [
+					'schema_id'  => $qb->createNamedParameter($row['schema_id']),
+					'cache_key'  => $qb->createNamedParameter($row['cache_key']),
+					'cache_data' => $qb->createNamedParameter($row['cache_data']),
+					'created'    => $qb->createNamedParameter($row['now'], 'datetime'),
+					'updated'    => $qb->createNamedParameter($row['now'], 'datetime'),
+					'expires'    => $qb->createNamedParameter($row['expires'], 'datetime'),
+				]
+			);
+		$qb->executeStatement();
+	}//end insertCacheRow()
 
 	/**
 	 * Remove cached data from database
@@ -740,24 +819,39 @@ class SchemaCacheHandler {
 		// cache write threw. The test could not see it: its Schema double
 		// declared both with addMethods(), which invents the accessor on the
 		// mock instead of consulting the class.
-		return [
-			'id' => $schema->getId(),
-			'uuid' => $schema->getUuid(),
-			'title' => $schema->getTitle(),
-			'version' => $schema->getVersion(),
-			'description' => $schema->getDescription(),
-			'summary' => $schema->getSummary(),
-			'required' => $schema->getRequired(),
-			'properties' => $schema->getProperties(),
-			'archive' => $schema->getArchive(),
-			'configuration' => $schema->getConfiguration(),
-			'source' => $schema->getSource(),
-			'organisation' => $schema->getOrganisation(),
-			'owner' => $schema->getOwner(),
-			'created' => $schema->getCreated()?->format('Y-m-d H:i:s'),
-			'updated' => $schema->getUpdated()?->format('Y-m-d H:i:s'),
-		];
+		return array_merge(
+			[
+				'id'          => $schema->getId(),
+				'uuid'        => $schema->getUuid(),
+				'title'       => $schema->getTitle(),
+				'version'     => $schema->getVersion(),
+				'description' => $schema->getDescription(),
+				'summary'     => $schema->getSummary(),
+			],
+			$this->serializeSchemaBody(schema: $schema)
+		);
 	}//end serializeSchemaForCache()
+
+	/**
+	 * The cached fields of a schema after its identity and texts.
+	 *
+	 * @param Schema $schema The schema to serialize.
+	 *
+	 * @return array<string, mixed> The fields, in cache order.
+	 */
+	private function serializeSchemaBody(Schema $schema): array {
+		return [
+			'required'      => $schema->getRequired(),
+			'properties'    => $schema->getProperties(),
+			'archive'       => $schema->getArchive(),
+			'configuration' => $schema->getConfiguration(),
+			'source'        => $schema->getSource(),
+			'organisation'  => $schema->getOrganisation(),
+			'owner'         => $schema->getOwner(),
+			'created'       => $schema->getCreated()?->format('Y-m-d H:i:s'),
+			'updated'       => $schema->getUpdated()?->format('Y-m-d H:i:s'),
+		];
+	}//end serializeSchemaBody()
 
 	/**
 	 * Reconstruct schema object from cached data
@@ -772,7 +866,28 @@ class SchemaCacheHandler {
 	private function reconstructSchemaFromCache(array $cachedData): ?Schema {
 		try {
 			$schema = new Schema();
-			$schema->setId($cachedData['id']);
+			$this->applyCachedFields(schema: $schema, cachedData: $cachedData);
+			$this->applyCachedDates(schema: $schema, cachedData: $cachedData);
+			return $schema;
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[SchemaCacheHandler] Failed to reconstruct schema from cache',
+				context: $this->context(line: __LINE__, values: ['schemaId' => $cachedData['id'] ?? 'unknown', 'error' => $e->getMessage()])
+			);
+			return null;
+		}
+	}//end reconstructSchemaFromCache()
+
+	/**
+	 * Set the scalar and array fields of a cached schema.
+	 *
+	 * @param Schema               $schema     The schema being rebuilt.
+	 * @param array<string, mixed> $cachedData The cached schema data.
+	 *
+	 * @return void
+	 */
+	private function applyCachedFields(Schema $schema, array $cachedData): void {
+		$schema->setId($cachedData['id']);
 			$schema->setUuid($cachedData['uuid']);
 			$schema->setTitle($cachedData['title']);
 			$schema->setVersion($cachedData['version']);
@@ -785,29 +900,27 @@ class SchemaCacheHandler {
 			$schema->setSource($cachedData['source']);
 			$schema->setOrganisation($cachedData['organisation']);
 			$schema->setOwner($cachedData['owner']);
+	}//end applyCachedFields()
 
-			$createdValue = $cachedData['created'] ?? null;
-			if ($createdValue !== null && $createdValue !== '') {
-				$schema->setCreated(new DateTime($createdValue));
-			}
+	/**
+	 * Set the created and updated dates of a cached schema, when the cache holds them.
+	 *
+	 * @param Schema               $schema     The schema being rebuilt.
+	 * @param array<string, mixed> $cachedData The cached schema data.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When a cached date does not parse.
+	 */
+	private function applyCachedDates(Schema $schema, array $cachedData): void {
+		$createdValue = $cachedData['created'] ?? null;
+		if ($createdValue !== null && $createdValue !== '') {
+			$schema->setCreated(new DateTime($createdValue));
+		}
 
-			$updatedValue = $cachedData['updated'] ?? null;
-			if ($updatedValue !== null && $updatedValue !== '') {
-				$schema->setUpdated(new DateTime($cachedData['updated']));
-			}
-
-			return $schema;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[SchemaCacheHandler] Failed to reconstruct schema from cache',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $cachedData['id'] ?? 'unknown',
-					'error' => $e->getMessage(),
-				]
-			);
-			return null;
-		}//end try
-	}//end reconstructSchemaFromCache()
+		$updatedValue = $cachedData['updated'] ?? null;
+		if ($updatedValue !== null && $updatedValue !== '') {
+			$schema->setUpdated(new DateTime($cachedData['updated']));
+		}
+	}//end applyCachedDates()
 }//end class

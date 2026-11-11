@@ -28,7 +28,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\Yaml\Parser;
 
 /**
  * Class UploadHandler
@@ -40,31 +40,15 @@ use Symfony\Component\Yaml\Yaml;
 class UploadHandler {
 
 	/**
-	 * HTTP Client for making external requests.
-	 *
-	 * @var Client The HTTP client instance.
-	 */
-	private readonly Client $client;
-
-	/**
-	 * Logger instance for logging operations.
-	 *
-	 * @var LoggerInterface The logger instance.
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor for UploadHandler.
 	 *
-	 * @param Client $client The HTTP client.
+	 * @param Client          $client The HTTP client.
 	 * @param LoggerInterface $logger The logger interface.
 	 */
 	public function __construct(
-		Client $client,
-		LoggerInterface $logger,
+		private readonly Client $client,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->client = $client;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -88,35 +72,42 @@ class UploadHandler {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse {
-		// Define the allowed keys for input validation.
-		$allowedKeys = ['url', 'json'];
+		// An uploaded file wins over a url or a json blob in the post body.
+		if (empty($uploadedFiles) === false) {
+			return $this->getJSONfromFiles(uploadedFiles: $uploadedFiles);
+		}
 
-		// Find which of the allowed keys are in the array for processing.
-		$matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
-
-		// Check if there is no matching key or no input provided.
-		if (count($matchingKeys) === 0 && empty($uploadedFiles) === true) {
+		if (array_intersect_key($data, array_flip(['url', 'json'])) === []) {
 			$errorMessage = 'Missing required keys in POST body: url, json, or file in form-data.';
 			return new JSONResponse(data: ['error' => $errorMessage], statusCode: 400);
 		}
 
-		// Process uploaded files if present.
-		if (empty($uploadedFiles) === false) {
-			if (count($uploadedFiles) === 1) {
-				return $this->getJSONfromFile(uploadedFile: $uploadedFiles[array_key_first($uploadedFiles)]);
-			}
-
-			return new JSONResponse(data: ['message' => 'Expected only 1 file.'], statusCode: 400);
-		}
-
-		// Process URL if provided in the post body.
 		if (empty($data['url']) === false) {
 			return $this->getJSONfromURL(url: $data['url']);
 		}
 
-		// Process JSON blob from the post body.
 		return $this->getJSONfromBody(phpArray: $data['json']);
 	}//end getUploadedJson()
+
+	/**
+	 * Gets the content of the one uploaded file as PHP array.
+	 *
+	 * @param array $uploadedFiles The uploaded files array; holds at least one file.
+	 *
+	 * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
+	 *
+	 * @psalm-return JSONResponse<400, array{error?: string, 'MIME-type'?: string,
+	 *     message?: 'Expected only 1 file.'}, array<never, never>>|array
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function getJSONfromFiles(array $uploadedFiles): array|JSONResponse {
+		if (count($uploadedFiles) !== 1) {
+			return new JSONResponse(data: ['message' => 'Expected only 1 file.'], statusCode: 400);
+		}
+
+		return $this->getJSONfromFile(uploadedFile: $uploadedFiles[array_key_first($uploadedFiles)]);
+	}//end getJSONfromFiles()
 
 	/**
 	 * Decode file content or URL response.
@@ -128,100 +119,67 @@ class UploadHandler {
 	 *
 	 * @return array|null The decoded data or null.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
-	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	private function decode(string $data, ?string $type): ?array {
-		switch ($type) {
-			case 'application/json':
-				$phpArray = json_decode(json: $data, associative: true);
-				break;
-			case 'application/yaml':
-				$phpArray = Yaml::parse(input: $data);
-				break;
-			default:
-				// If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML.
-				$phpArray = json_decode(json: $data, associative: true);
-				if ($phpArray === null || $phpArray === false) {
-					try {
-						$phpArray = Yaml::parse(input: $data);
-					} catch (Exception $exception) {
-						$phpArray = null;
-					}
-				}
-				break;
-		}
+		$phpArray = match ($type) {
+			'application/json' => json_decode(json: $data, associative: true),
+			'application/yaml' => (new Parser())->parse(value: $data),
+			// If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML.
+			default            => $this->decodeJsonOrYaml(data: $data),
+		};
 
-		if ($phpArray === null || $phpArray === false) {
+		if (is_array($phpArray) === false) {
 			return null;
 		}
 
 		// Ensure all data is consistently arrays by converting any stdClass objects.
-		$phpArray = $this->ensureArrayStructure(data: $phpArray);
-
-		return $phpArray;
+		return (new ArrayStructure())->toArrays(data: $phpArray);
 	}//end decode()
 
 	/**
-	 * Recursively converts stdClass objects to arrays to ensure consistent data structure.
+	 * Decode data as JSON, or as YAML when it is not JSON.
 	 *
-	 * @param mixed $data The data to convert.
+	 * @param string $data The file content or response body content.
 	 *
-	 * @return array The converted array data.
+	 * @return mixed The decoded value, or null when it is neither.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	private function ensureArrayStructure(mixed $data): array {
-		if (is_object($data) === true) {
-			$data = (array)$data;
+	private function decodeJsonOrYaml(string $data): mixed {
+		$phpArray = json_decode(json: $data, associative: true);
+		if ($phpArray !== null && $phpArray !== false) {
+			return $phpArray;
 		}
 
-		if (is_array($data) === true) {
-			foreach ($data as $key => $value) {
-				if (is_object($value) === true) {
-					$data[$key] = $this->ensureArrayStructure(data: $value);
-				} elseif (is_array($value) === true) {
-					$data[$key] = $this->ensureArrayStructure(data: $value);
-				}
-			}
+		try {
+			return (new Parser())->parse(value: $data);
+		} catch (Exception $exception) {
+			return null;
 		}
-
-		return $data;
-	}//end ensureArrayStructure()
+	}//end decodeJsonOrYaml()
 
 	/**
 	 * Gets uploaded file content from a file in the api request as PHP array.
 	 *
 	 * @param array $uploadedFile The uploaded file.
-	 * @param string|null $_type If the uploaded file should be a specific type of object.
 	 *
 	 * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
 	 *
 	 * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	private function getJSONfromFile(array $uploadedFile, ?string $_type = null): array|JSONResponse {
-		// Check for upload errors.
+	private function getJSONfromFile(array $uploadedFile): array|JSONResponse {
 		if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
-			return new JSONResponse(
-				data: ['error' => 'File upload error: ' . $uploadedFile['error']],
-				statusCode: 400
-			);
+			return new JSONResponse(data: ['error' => 'File upload error: ' . $uploadedFile['error']], statusCode: 400);
 		}
 
 		$fileExtension = pathinfo(path: $uploadedFile['name'], flags: PATHINFO_EXTENSION);
-		$fileContent = file_get_contents(filename: $uploadedFile['tmp_name']);
-
-		$phpArray = $this->decode(data: $fileContent, type: $fileExtension);
+		$phpArray      = $this->decode(data: file_get_contents(filename: $uploadedFile['tmp_name']), type: $fileExtension);
 		if ($phpArray === null) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to decode file content as JSON or YAML', 'MIME-type' => $fileExtension],
-				statusCode: 400
-			);
+			$error = ['error' => 'Failed to decode file content as JSON or YAML', 'MIME-type' => $fileExtension];
+			return new JSONResponse(data: $error, statusCode: 400);
 		}
 
 		return $phpArray;
@@ -244,23 +202,15 @@ class UploadHandler {
 		try {
 			$response = $this->client->request('GET', $url);
 		} catch (GuzzleException $e) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to do a GET api-call on url: ' . $url . ' ' . $e->getMessage()],
-				statusCode: 400
-			);
+			$error = ['error' => 'Failed to do a GET api-call on url: ' . $url . ' ' . $e->getMessage()];
+			return new JSONResponse(data: $error, statusCode: 400);
 		}
 
-		$responseBody = $response->getBody()->getContents();
-
-		// Use Content-Type header to determine the format.
 		$contentType = $response->getHeaderLine('Content-Type');
-		$phpArray = $this->decode(data: $responseBody, type: $contentType);
-
+		$phpArray    = $this->decode(data: $response->getBody()->getContents(), type: $contentType);
 		if ($phpArray === null) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to parse response body as JSON or YAML', 'Content-Type' => $contentType],
-				statusCode: 400
-			);
+			$error = ['error' => 'Failed to parse response body as JSON or YAML', 'Content-Type' => $contentType];
+			return new JSONResponse(data: $error, statusCode: 400);
 		}
 
 		return $phpArray;
@@ -282,7 +232,7 @@ class UploadHandler {
 			$phpArray = json_decode($phpArray, associative: true);
 		}
 
-		if ($phpArray === null || $phpArray === false) {
+		if (is_array($phpArray) === false) {
 			return new JSONResponse(
 				data: ['error' => 'Failed to decode JSON input'],
 				statusCode: 400
@@ -290,7 +240,7 @@ class UploadHandler {
 		}
 
 		// Ensure all data is consistently arrays by converting any stdClass objects.
-		$phpArray = $this->ensureArrayStructure(data: $phpArray);
+		$phpArray = (new ArrayStructure())->toArrays(data: $phpArray);
 
 		return $phpArray;
 	}//end getJSONfromBody()

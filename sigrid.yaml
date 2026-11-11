@@ -3,12 +3,16 @@
 # Every key below is documented at
 # https://docs.sigrid-says.com/reference/analysis-scope-configuration.html
 # Sigrid's default excludes (node_modules, vendor, build output, docs, migrations,
-# mocks and stubs) still apply on top of this file. Components are left to
-# Sigrid's automatic detection. ARCHITECTURE.md describes the directory roles.
+# mocks and stubs) still apply on top of this file. ARCHITECTURE.md describes the
+# directory roles.
 
 # Pin the maintainability model, so a yearly recalibration never changes the
 # rating without a deliberate change to this file.
 model: "2026"
+
+# Every top-level directory is a component (lib/, src/, appinfo/, templates/ ...),
+# as SIG's guidance (section 2.2) defines top-level components. See ADR-014.
+component_base_dirs: [""]
 
 # Test-code patterns can only be set per language, and listing languages switches
 # off automatic technology detection. The list therefore names every technology
@@ -60,6 +64,9 @@ exclude:
   # Not part of the shipped app.
   - ".*/scripts/.*"
   - ".*/tools/.*"
+  # Local development containers (docker/): setup scripts for the dev and demo
+  # environments, not part of the shipped app.
+  - ".*/docker/.*"
   # Scripts kept inside OpenSpec change folders (openspec/changes/**, archive
   # included): one-off tooling for a change, not part of the shipped app.
   - ".*/openspec/changes/.*"
@@ -74,3 +81,36 @@ exclude:
   # its own Apache-2.0 licence and update script). Not part of the shipped app;
   # the skills stay in the repository for developers.
   - ".*/[.]claude/.*"
+
+# Open Source Health. These eight are the Nextcloud platform's own libraries,
+# which a Nextcloud app cannot avoid. Their AGPL and GPL licences are accepted, so
+# only the licence property is excluded: vulnerabilities, freshness, activity and
+# management are still scored. [:/] matches the scoped npm name in either form,
+# because the name Sigrid compares against is not documented.
+#
+# The path entry excludes the Newman test harness (tests/integration/package.json),
+# which runs the API tests against a dev instance and is not shipped with the app.
+# Its only findings are in newman's own dependencies, with no release of newman
+# that fixes them.
+dependencychecker:
+  exclude:
+    - path: ".*/tests/integration/.*"
+    - license: "^@nextcloud[:/]vue$"
+    - license: "^@nextcloud[:/]dialogs$"
+    - license: "^@nextcloud[:/]auth$"
+    - license: "^@nextcloud[:/]axios$"
+    - license: "^@nextcloud[:/]l10n$"
+    - license: "^@nextcloud[:/]router$"
+    - license: "^@nextcloud[:/]initial-state$"
+    - license: "^@nextcloud[:/]capabilities$"
+
+# Architecture Quality. Knowledge Awareness and Team Stability are computed from
+# commit authors. Most commits here are made by AI agents, recorded either as
+# "Claude" or under the name of the developer running them, so the author of a
+# commit does not represent who wrote the code.
+# Sigrid documents disabled_metrics for exactly that case ("Excluding
+# process-related metrics" in the reference above).
+architecture:
+  disabled_metrics:
+    - knowledge_awareness
+    - team_stability

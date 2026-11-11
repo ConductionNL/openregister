@@ -451,6 +451,15 @@ RBAC scopes MUST integrate with the multi-tenancy system so that organisation-ba
 - **THEN** `MagicRbacHandler::applyRbacFilters()` MUST return without filtering (admin bypass)
 - **AND** multi-tenancy filtering MUST also be bypassed for admin users
 
+#### Scenario: A search that names no table reads under each table's rules
+- **GIVEN** user `jan` has active organisation `org-1`
+- **AND** a search names no register or schema and selects by `_ids` or `_relations_contains`
+- **AND** the selected rows lie in several tables, some of them in `org-2`
+- **WHEN** `jan` runs the search
+- **THEN** each table MUST answer under the same organisation boundary and read rules as a listing of that table
+- **AND** the `org-2` rows MUST NOT appear in the results, the total, or the registers and schemas of the response
+- @e2e exclude {enforcement is a query boundary; covered by the PHPUnit tests on a real database in tests/Db}
+
 ### Requirement: Scope Audit (Who Has Access to What)
 The system MUST provide mechanisms to determine which groups/users have access to which schemas and properties, supporting compliance auditing and access reviews.
 

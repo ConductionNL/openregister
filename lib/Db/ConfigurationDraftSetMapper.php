@@ -35,7 +35,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ConfigurationDraftSet>
  */
-class ConfigurationDraftSetMapper extends QBMapper {
+class ConfigurationDraftSetMapper extends QBMapper implements ConfigurationDraftSetMapperInterface {
 
 	use SelectByColumnTrait;
 

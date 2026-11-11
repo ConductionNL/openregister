@@ -295,10 +295,15 @@ beforeEach(() => {
 		doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'],
 	})
 	global.fetch = jest.fn()
+	const toLocaleString = Date.prototype.toLocaleString
+	jest.spyOn(Date.prototype, 'toLocaleString').mockImplementation(function(locale, options) {
+		return toLocaleString.call(this, locale, { ...options, timeZone: 'UTC' })
+	})
 })
 
 afterEach(() => {
 	jest.useRealTimers()
+	jest.restoreAllMocks()
 })
 
 describe.each(Object.keys(DIALOGS))('confirm dialog %s', (name) => {

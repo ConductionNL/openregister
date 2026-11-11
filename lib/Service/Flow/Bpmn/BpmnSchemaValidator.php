@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Bpmn;
 
 use DOMDocument;
+use LibXMLError;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 
 /**
@@ -133,6 +134,17 @@ class BpmnSchemaValidator {
 			return null;
 		}
 
+		return $this->violationFrom(errors: $errors);
+	}//end firstViolation()
+
+	/**
+	 * The first violation libxml recorded, or a generic one when it recorded none.
+	 *
+	 * @param array<int, LibXMLError> $errors The errors libxml recorded for a failed validation.
+	 *
+	 * @return array{message: string, line: int, element: string} The violation.
+	 */
+	private function violationFrom(array $errors): array {
 		// `libxml_get_errors()` is typed `LibXMLError[]`, so the guard this
 		// loop used to carry could only ever be true and both analysers said
 		// so. An EMPTY list is the real case to answer: a validation that
@@ -152,7 +164,7 @@ class BpmnSchemaValidator {
 			'line'    => (int)$first->line,
 			'element' => $this->elementIn(message: (string)$first->message),
 		];
-	}//end firstViolation()
+	}//end violationFrom()
 
 	/**
 	 * Validate against the vendored set, with the schema files reachable.
@@ -215,12 +227,7 @@ class BpmnSchemaValidator {
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function resolveSchemaReference(string $systemId): ?string {
-		$path = $systemId;
-		if (str_starts_with($path, 'file://') === true) {
-			$path = substr($path, strlen('file://'));
-		}
-
-		$path = rawurldecode($path);
+		$path = $this->requestedPath(systemId: $systemId);
 		if ($path === '') {
 			return null;
 		}
@@ -230,21 +237,57 @@ class BpmnSchemaValidator {
 			return null;
 		}
 
+		return $this->vendoredFile(path: $path, directory: $directory);
+	}//end resolveSchemaReference()
+
+	/**
+	 * The path a system id asks for: without a `file://` scheme, url-decoded.
+	 *
+	 * @param string $systemId The system id libxml asks for.
+	 *
+	 * @return string The requested path, possibly ''.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function requestedPath(string $systemId): string {
+		$path = $systemId;
+		if (str_starts_with($path, 'file://') === true) {
+			$path = substr($path, strlen('file://'));
+		}
+
+		return rawurldecode($path);
+	}//end requestedPath()
+
+	/**
+	 * The vendored schema file a requested path lands on, or null.
+	 *
+	 * A relative path resolves against the vendored directory; the result
+	 * must sit directly in that directory, after `realpath()`, and be one of
+	 * the checksummed files.
+	 *
+	 * @param string $path      The requested path, not ''.
+	 * @param string $directory The real vendored directory.
+	 *
+	 * @return string|null The absolute path, or null when it is not ours.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function vendoredFile(string $path, string $directory): string|null {
 		if (str_starts_with($path, DIRECTORY_SEPARATOR) === false) {
 			$path = ($directory . DIRECTORY_SEPARATOR . $path);
 		}
 
 		$resolved = realpath($path);
-		if ($resolved === false || dirname($resolved) !== $directory) {
+		if ($resolved === false) {
 			return null;
 		}
 
-		if (array_key_exists(basename($resolved), self::CHECKSUMS) === false) {
+		if (dirname($resolved) !== $directory || array_key_exists(basename($resolved), self::CHECKSUMS) === false) {
 			return null;
 		}
 
 		return $resolved;
-	}//end resolveSchemaReference()
+	}//end vendoredFile()
 
 	/**
 	 * Install the scoped loader and answer how to put the previous one back.

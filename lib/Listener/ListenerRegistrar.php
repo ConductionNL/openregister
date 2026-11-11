@@ -20,10 +20,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
+use OCA\OpenRegister\Event\DraftCreatedEvent;
+use OCA\OpenRegister\Event\DraftDeletedEvent;
+use OCA\OpenRegister\Event\DraftUpdatedEvent;
+use OCA\OpenRegister\Event\FlowRunTerminalEvent;
+use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -33,16 +40,17 @@ use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
-use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
-use OCP\AppFramework\Bootstrap\IRegistrationContext;
-use OCA\OpenRegister\Search\Listener\AggregationThresholdListener;
-use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Event\TaskTransitionedEvent;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Notifications\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupeAnnotationSyncListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Notifications\Listener\SystemEntityNotificationListener;
-use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Search\Listener\AggregationThresholdListener;
+use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
+use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
+use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
  * Subscribes every OpenRegister listener to its events.
@@ -58,10 +66,20 @@ use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A registrar names every listener
  *   and every event it subscribes to; that coupling is what it is for.
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Each method is one ordered block of
- *   registrations; cutting it further would scatter the order across more methods.
  */
 final class ListenerRegistrar {
+
+	/**
+	 * The interfaces callers outside the component type against, bound to their class.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	public const BINDINGS = [
+		DecisionTableValidationListenerInterface::class => DecisionTableValidationListener::class,
+		NotifyPushBatchInterface::class => NotifyPushBatch::class,
+		SchemaFlowImportListenerInterface::class => SchemaFlowImportListener::class,
+		UniqueConstraintListenerInterface::class => UniqueConstraintListener::class,
+	];
 
 	/**
 	 * Register all event listeners for the application, in order.
@@ -70,17 +88,11 @@ final class ListenerRegistrar {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) The component registrars are static, like this one; there is no instance to inject at registration time.
-	 *
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	public static function register(IRegistrationContext $context): void {
-		Registrar\AccessListenerRegistrar::register(context: $context);
-		Registrar\ConfigurationListenerRegistrar::register(context: $context);
-		Registrar\FlowsListenerRegistrar::register(context: $context);
-		\OCA\OpenRegister\Mcp\Listener\Registrar\McpListenerRegistrar::register(context: $context);
-		\OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar::register(context: $context);
-		Registrar\WorkListenerRegistrar::register(context: $context);
+		self::registerBindings(context: $context);
+		self::registerComponentListeners(context: $context);
 		self::registerFileAndPlatformListeners(context: $context);
 		self::registerFlowAndTaskListeners(context: $context);
 		self::registerPublishListener(context: $context);
@@ -89,6 +101,39 @@ final class ListenerRegistrar {
 		self::registerDeliveryListeners(context: $context);
 		self::registerDraftListeners(context: $context);
 	}//end register()
+
+	/**
+	 * Let each component registrar subscribe its own listeners, in component order.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The component registrars are static, like this one; there is no instance to inject at registration time.
+	 */
+	private static function registerComponentListeners(IRegistrationContext $context): void {
+		Registrar\AccessListenerRegistrar::register(context: $context);
+		Registrar\ConfigurationListenerRegistrar::register(context: $context);
+		Registrar\FlowsListenerRegistrar::register(context: $context);
+		\OCA\OpenRegister\Mcp\Listener\Registrar\McpListenerRegistrar::register(context: $context);
+		\OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar::register(context: $context);
+		Registrar\WorkListenerRegistrar::register(context: $context);
+	}//end registerComponentListeners()
+
+	/**
+	 * Alias each interface in BINDINGS to its class.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; no behaviour of its own.
+	 */
+	private static function registerBindings(IRegistrationContext $context): void {
+		foreach (self::BINDINGS as $contract => $service) {
+			$context->registerServiceAlias($contract, $service);
+		}
+	}//end registerBindings()
 
 	/**
 	 * Hook the platform: file changes and writes, sign-in, discovery events, OCM and Context Chat.
@@ -102,14 +147,8 @@ final class ListenerRegistrar {
 		// not in whatever wrote the object: a check that lives in one caller is
 		// a check the next caller does not have, and a written cycle reaches
 		// every later reader as a parent chain with no end.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\ObjectCreatingEvent::class,
-			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
-		);
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\ObjectUpdatingEvent::class,
-			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
-		);
+		$context->registerEventListener(ObjectCreatingEvent::class, PartyTreeGuardListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, PartyTreeGuardListener::class);
 	}//end registerFileAndPlatformListeners()
 
 	/**
@@ -120,6 +159,19 @@ final class ListenerRegistrar {
 	 * @return void
 	 */
 	private static function registerFlowAndTaskListeners(IRegistrationContext $context): void {
+		self::registerExtractionAndTriggerListeners(context: $context);
+		self::registerTaskAndCaseListeners(context: $context);
+		self::registerCaseItemAndTimerListeners(context: $context);
+	}//end registerFlowAndTaskListeners()
+
+	/**
+	 * Text extraction, automatic transitions, object flow triggers, flow preflight and the run-terminal task and lock release.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerExtractionAndTriggerListeners(IRegistrationContext $context): void {
 		// ObjectChangeListener for automatic object text extraction.
 		$context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
@@ -138,10 +190,10 @@ final class ListenerRegistrar {
 		// state-change — the last four were declared in the event catalog but had
 		// no listener firing them until now, so a flow could select them and never
 		// run.
-		$context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
-		$context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+		$context->registerEventListener(ObjectCreatedEvent::class, FlowTriggerListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, FlowTriggerListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, FlowTriggerListener::class);
+		$context->registerEventListener(ObjectTransitionedEvent::class, FlowTriggerListener::class);
 
 		// Flow preflight — refuse a flow document naming a step type this
 		// instance cannot run. Registered FIRST on both events so an unrunnable
@@ -159,10 +211,7 @@ final class ListenerRegistrar {
 		// one choke point all terminal writes pass — and may fire repeatedly;
 		// the listener is idempotent, and a task with run_uuid null is
 		// structurally out of its reach.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
-			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
-		);
+		$context->registerEventListener(FlowRunTerminalEvent::class, TaskRunTerminalListener::class);
 
 		// Release layer 1 of run-scoped object locking: a run that holds object
 		// locks releases every one of them when it ends, on ANY of the four
@@ -171,34 +220,31 @@ final class ListenerRegistrar {
 		// exactly the run whose lock most needs releasing. Idempotent, and it
 		// never rethrows: the dispatch happens inside the run's own terminal
 		// write.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
-			\OCA\OpenRegister\Listener\FlowRunLockReleaseListener::class
-		);
+		$context->registerEventListener(FlowRunTerminalEvent::class, FlowRunLockReleaseListener::class);
+	}//end registerExtractionAndTriggerListeners()
 
+	/**
+	 * Task wake-up, timer cancellation, portal reminders, task projections and the case layer.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerTaskAndCaseListeners(IRegistrationContext $context): void {
 // The other direction (flow-user-task-node): a task the graph raised
 		// reached a terminal state, so its suspended run is woken and, per the
 		// node's `advance` budget, continued in-request. Fires AFTER the task's
 		// own transaction committed (the listener skips uncommitted dispatches);
 		// a failure here costs latency, never the completion.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
-			\OCA\OpenRegister\Listener\UserTaskTerminalListener::class
-		);
+		$context->registerEventListener(TaskTerminalEvent::class, UserTaskTerminalListener::class);
 
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): a terminal task (TaskMapper, both write paths) or a terminal run
 		// (FlowRunMapper) cancels its open timers INSIDE the write that made the
 		// subject terminal, so no escalation goes out about finished work. The
 		// listener is idempotent and never deletes.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
-			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
-		);
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
-			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
-		);
+		$context->registerEventListener(TaskTerminalEvent::class, FlowTimerSubjectTerminalListener::class);
+		$context->registerEventListener(FlowRunTerminalEvent::class, FlowTimerSubjectTerminalListener::class);
 
 		// The portal reminder (flow-portal-task, design D-8): a preBreach rung
 		// of flow-business-timers on an EXTERNAL task becomes a reminder
@@ -207,34 +253,22 @@ final class ListenerRegistrar {
 		// built in parallel and its event class may not be on this branch yet;
 		// the listener is duck-typed against the event's published surface, so
 		// the two merge in either order.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Listener\PortalTaskReminderListener::EVENT_CLASS,
-			\OCA\OpenRegister\Listener\PortalTaskReminderListener::class
-		);
+		$context->registerEventListener(PortalTaskReminderListener::EVENT_CLASS, PortalTaskReminderListener::class);
 
 		// Task projections (flow-task-inbox-projections): a committed
 		// transition becomes a declarative notification and a VTODO in the
 		// assignee's calendar. Both run AFTER the commit and neither can fail
 		// the transition (design D-8). Withdrawal runs before delivery, so the
 		// notification listener is registered first.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\TaskTransitionedEvent::class,
-			\OCA\OpenRegister\Listener\TaskNotificationListener::class
-		);
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\TaskTransitionedEvent::class,
-			\OCA\OpenRegister\Listener\TaskCalendarProjectionListener::class
-		);
+		$context->registerEventListener(TaskTransitionedEvent::class, TaskNotificationListener::class);
+		$context->registerEventListener(TaskTransitionedEvent::class, TaskCalendarProjectionListener::class);
 
 		// Dismiss-on-terminality, on the same terminal-task event the
 		// user-task node listens to: no approve button and no open VTODO
 		// survives a terminal task, however it became terminal. Idempotent
 		// beside the transition listeners above: a second withdrawal finds
 		// nothing to withdraw and a second render finds nothing changed.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
-			\OCA\OpenRegister\Listener\TaskTerminalProjectionListener::class
-		);
+		$context->registerEventListener(TaskTerminalEvent::class, TaskTerminalProjectionListener::class);
 
 		// The case layer (flow-cmmn-case-semantics). A realisation ending (a task
 		// or a run) drives its plan item; an object change may satisfy a sentry;
@@ -245,46 +279,39 @@ final class ListenerRegistrar {
 		// terminal transition commits (flow-user-task-node); the same
 		// reconciliation also runs on every case-plan evaluation, so a missed
 		// event costs latency, never correctness.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
-			\OCA\OpenRegister\Listener\CaseTaskTerminalListener::class
-		);
+		$context->registerEventListener(TaskTerminalEvent::class, CaseTaskTerminalListener::class);
 
 		// A closed task releases the tasks that waited on it
 		// (a-task-may-wait-on-another-task D-4): a `released` audit entry and a
 		// fresh announcement per open dependant. Post-event work on the
 		// committed dispatch; the blocked flag itself is derived on read.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
-			\OCA\OpenRegister\Listener\TaskBlockerReleaseListener::class
-		);
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
-			\OCA\OpenRegister\Listener\CaseRunTerminalListener::class
-		);
-		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
-		$context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
+		$context->registerEventListener(TaskTerminalEvent::class, TaskBlockerReleaseListener::class);
+		$context->registerEventListener(FlowRunTerminalEvent::class, CaseRunTerminalListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, CaseObjectEventListener::class);
+		$context->registerEventListener(ObjectTransitionedEvent::class, CaseObjectEventListener::class);
+	}//end registerTaskAndCaseListeners()
+
+	/**
+	 * Case item triggers and timers, and the second subscription of business-timer cancellation.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerCaseItemAndTimerListeners(IRegistrationContext $context): void {
 		// Routed through FlowTriggerListener, the ONE object-trigger path (the
 		// branch that retired EventCatalogListener as a duplicate). The case
 		// branch moved with the retirement, and gains what the one path has:
 		// the subject's register/schema resolved to the SLUGS the trigger
 		// index stores — CaseItemTransitionedEvent::getSubject() answers the
 		// item's numeric ids — and the acting user attributed to the run.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
-			\OCA\OpenRegister\Listener\FlowTriggerListener::class
-		);
+		$context->registerEventListener(CaseItemTransitionedEvent::class, FlowTriggerListener::class);
+
 		// Plan items on the shared clock (one-engine-bpmn-and-cmmn): entering
 		// active arms an item's timers, a terminal state cancels them, and an
 		// enforcing expiry terminates the item. The case layer keeps no clock.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
-			\OCA\OpenRegister\Listener\CaseItemTimerListener::class
-		);
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\FlowTimerFiredEvent::class,
-			\OCA\OpenRegister\Listener\CaseItemTimerListener::class
-		);
+		$context->registerEventListener(CaseItemTransitionedEvent::class, CaseItemTimerListener::class);
+		$context->registerEventListener(FlowTimerFiredEvent::class, CaseItemTimerListener::class);
 
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): the SAME terminal event, and the run-terminal one, also cancel
@@ -293,15 +320,9 @@ final class ListenerRegistrar {
 		// FlowRunTerminalEvent inside the run's own write; the listener is
 		// idempotent and never deletes, and the invariant repair step counts
 		// anything a crash window leaves behind.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
-			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
-		);
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
-			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
-		);
-	}//end registerFlowAndTaskListeners()
+		$context->registerEventListener(TaskTerminalEvent::class, FlowTimerSubjectTerminalListener::class);
+		$context->registerEventListener(FlowRunTerminalEvent::class, FlowTimerSubjectTerminalListener::class);
+	}//end registerCaseItemAndTimerListeners()
 
 	/**
 	 * Register the hook that applies a published manifest's schedules as scheduled flows.
@@ -327,6 +348,21 @@ final class ListenerRegistrar {
 	 * @return void
 	 */
 	private static function registerSaveRuleListeners(IRegistrationContext $context): void {
+		self::registerLifecycleAndFieldRuleListeners(context: $context);
+		self::registerSchemaAndCalculationListeners(context: $context);
+		self::registerScoringAndValidationListeners(context: $context);
+		self::registerGuardAndConstraintListeners(context: $context);
+		self::registerSchemaChangeListeners(context: $context);
+	}//end registerSaveRuleListeners()
+
+	/**
+	 * Lifecycle annotations, generated identifiers, field rules, administered validations and the recalculations that follow an update.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerLifecycleAndFieldRuleListeners(IRegistrationContext $context): void {
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
@@ -369,12 +405,21 @@ final class ListenerRegistrar {
 
 		// A materialised calculation that reads `@ref.<name>.<field>` is refreshed
 		// on the objects that point at an updated object when that field changed.
-		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\ReferencedCalculationListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, ReferencedCalculationListener::class);
 
 		// A changed date that other records' destruction date reads through a
 		// relation queues their recalculation, off the save.
 		$context->registerEventListener(ObjectUpdatedEvent::class, RelatedRetentionRecalculationListener::class);
+	}//end registerLifecycleAndFieldRuleListeners()
 
+	/**
+	 * Schema-shipped flows and annotations, the save gate and lifecycle actions, calculations and the consent envelope.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerSchemaAndCalculationListeners(IRegistrationContext $context): void {
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into
 		// a task template on demand and blocks any lifecycle transition it
@@ -397,16 +442,13 @@ final class ListenerRegistrar {
 		// A schema written by anything but the schema API (the configuration
 		// importer, the import endpoint, the AI and MCP tools) re-checks the
 		// published forms that submit into it, as the API does itself.
-		$context->registerEventListener(SchemaUpdatedEvent::class, \OCA\OpenRegister\Listener\FormDestinationSchemaListener::class);
+		$context->registerEventListener(SchemaUpdatedEvent::class, FormDestinationSchemaListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
 
 		// Sequence progression (flow-approval-consolidation): a committed
 		// terminal task that belongs to a sequence enables the next position,
 		// or closes the sequence, in the SAME request as the decision.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
-			\OCA\OpenRegister\Listener\TaskSequenceProgressListener::class
-		);
+		$context->registerEventListener(TaskTerminalEvent::class, TaskSequenceProgressListener::class);
 
 		// Lifecycle action executor — see x-openregister-lifecycle.transitions[*].actions[].
 		// Runs the declared actions of a matched transition on the save path, so
@@ -428,7 +470,16 @@ final class ListenerRegistrar {
 		// mutates or drops an already-persisted entry (see x-openregister-consent).
 		$context->registerEventListener(ObjectCreatingEvent::class, ConsentEnvelopeOnSaveListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, ConsentEnvelopeOnSaveListener::class);
+	}//end registerSchemaAndCalculationListeners()
 
+	/**
+	 * Quality scores, survivorship, calendar, decision table and coded value validation, and the calendar delete guard.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerScoringAndValidationListeners(IRegistrationContext $context): void {
 		// Quality annotation listener — materialises a per-object data-quality
 		// score (0-1) into the object payload before persistence
 		// (see x-openregister-quality). MDM foundation capability.
@@ -463,7 +514,16 @@ final class ListenerRegistrar {
 		// already holds it keeps reading correctly.
 		$context->registerEventListener(ObjectCreatingEvent::class, CodedValueValidationListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, CodedValueValidationListener::class);
+	}//end registerScoringAndValidationListeners()
 
+	/**
+	 * Dependent values, the delete and leaving guards, unique constraints, the quota and source record changes.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerGuardAndConstraintListeners(IRegistrationContext $context): void {
 		// The dependent value table (rules-engine-operability, REQ-REO-005).
 		// Subscribed to both write events, so the create and the update reach
 		// it identically and a write path added later cannot skip the table.
@@ -479,6 +539,8 @@ final class ListenerRegistrar {
 		// every path that dispatches the deleting event.
 		$context->registerEventListener(ObjectDeletingEvent::class, FrozenObjectDeleteGuardListener::class);
 		$context->registerEventListener(ObjectDeletingEvent::class, ObjectStateDeleteGuardListener::class);
+
+		self::registerLeavingGuards(context: $context);
 
 		// Named uniqueness constraints — a `refuse` constraint stops the write
 		// naming the combination and the conflicting object; a `report` one
@@ -500,6 +562,16 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatedEvent::class, SourceRecordChangeListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, SourceRecordChangeListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, SourceRecordChangeListener::class);
+	}//end registerGuardAndConstraintListeners()
+
+	/**
+	 * Source records and grantable rights on schema changes, and the object metrics.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerSchemaChangeListeners(IRegistrationContext $context): void {
 		// Schema lifecycle events invalidate the listener's cross-request
 		// reverse-FK index cache (reverse-FK declarations live on schemas).
 		$context->registerEventListener(SchemaCreatedEvent::class, SourceRecordChangeListener::class);
@@ -521,7 +593,19 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatedEvent::class, ObjectMetricsListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, ObjectMetricsListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, ObjectMetricsListener::class);
-	}//end registerSaveRuleListeners()
+	}//end registerSchemaChangeListeners()
+
+	/**
+	 * A move takes the row away without a delete: a calendar or a code-list value others hold is refused there as well.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerLeavingGuards(IRegistrationContext $context): void {
+		$context->registerEventListener(ObjectLeavingEvent::class, WorkingCalendarDeleteGuardListener::class);
+		$context->registerEventListener(ObjectLeavingEvent::class, ConceptDeleteGuardListener::class);
+	}//end registerLeavingGuards()
 
 	/**
 	 * What follows a write: reported content, notifications, cache eviction, projections, handoffs and pruning.
@@ -531,13 +615,24 @@ final class ListenerRegistrar {
 	 * @return void
 	 */
 	private static function registerSideEffectListeners(IRegistrationContext $context): void {
+		self::registerContentAndNotificationListeners(context: $context);
+		self::registerCacheEvictionListeners(context: $context);
+		self::registerProjectionAndHandoffListeners(context: $context);
+		self::registerPruneAndFollowListeners(context: $context);
+	}//end registerSideEffectListeners()
+
+	/**
+	 * Reported content removal, Context Chat submission, annotation and system entity notifications.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerContentAndNotificationListeners(IRegistrationContext $context): void {
 		// Reported content: a removal is noted on every report filed against the
 		// content, and the removal record names the copies taken at filing time.
 		// Fail-soft: never blocks the removal it observes.
-		$context->registerEventListener(
-			ObjectDeletedEvent::class,
-			\OCA\OpenRegister\Listener\ContentReportRemovalListener::class
-		);
+		$context->registerEventListener(ObjectDeletedEvent::class, ContentReportRemovalListener::class);
 
 		// Context Chat submission listener — submits/removes object content
 		// to OCP\ContextChat on create/update/delete for schemas opted in via
@@ -573,9 +668,18 @@ final class ListenerRegistrar {
 		$context->registerEventListener(RegisterUpdatedEvent::class, SystemEntityNotificationListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, SystemEntityNotificationListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, SystemEntityNotificationListener::class);
+	}//end registerContentAndNotificationListeners()
 
+	/**
+	 * Authorization, aggregation and facet cache eviction, and the state history projection.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerCacheEvictionListeners(IRegistrationContext $context): void {
 		// Authorization cache eviction when the POLICY behind a memoised verdict
-		// is rewritten. PermissionHandler::clearInheritFromPublicCache() has
+		// is rewritten. PermissionHandlerInterface::clearInheritFromPublicCache() has
 		// always documented that "any path that mutates authorization and then
 		// re-reads it within the same request must bust this cache"; until this
 		// registration, nothing in production called it or its sibling
@@ -603,7 +707,16 @@ final class ListenerRegistrar {
 		// listener never fails the move: the projection is derived and
 		// rebuildable, the transition is not.
 		$context->registerEventListener(ObjectTransitionedEvent::class, StateHistoryProjectionListener::class);
+	}//end registerCacheEvictionListeners()
 
+	/**
+	 * Translation projections, notification annotations, handoffs and archival nomination.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerProjectionAndHandoffListeners(IRegistrationContext $context): void {
 		// Translation sidecar projection — keeps oc_openregister_translations in sync with JSONB property data.
 		$context->registerEventListener(ObjectCreatedEvent::class, TranslationProjectionListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, TranslationProjectionListener::class);
@@ -612,8 +725,8 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectTransitionedEvent::class, AggregationCacheInvalidationListener::class);
 
 		// Webhook auto-create installer for x-openregister-notifications with webhook.persistent: true.
-		$context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstaller::class);
-		$context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstaller::class);
+		$context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstallListener::class);
+		$context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstallListener::class);
 
 		// Semantic-object handoff engine (ADR-051):
 		// - lifecycle-triggered handoffs run off ObjectTransitionedEvent (real actors only);
@@ -624,13 +737,19 @@ final class ListenerRegistrar {
 		// Nomination at closure: a record reaching a state its schema declares
 		// final gets its archiefnominatie and archiefactiedatum derived and
 		// written, with the rule that produced each.
-		$context->registerEventListener(
-			ObjectTransitionedEvent::class,
-			\OCA\OpenRegister\Listener\ArchivalNominationListener::class
-		);
+		$context->registerEventListener(ObjectTransitionedEvent::class, ArchivalNominationListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
+	}//end registerProjectionAndHandoffListeners()
 
+	/**
+	 * Dedupe, watcher and read-state pruning, assignee follow and aggregation thresholds.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerPruneAndFollowListeners(IRegistrationContext $context): void {
 		// Scheduled-notification per-object dedup pruning (Phase 3.4):
 		// - drop dedup rows on object purge so a re-created UUID re-arms cleanly;
 		// - drop dedup rows for rule keys removed/renamed in the schema annotation
@@ -662,7 +781,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectUpdatedEvent::class, AggregationThresholdListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, AggregationThresholdListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AggregationThresholdListener::class);
-	}//end registerSideEffectListeners()
+	}//end registerPruneAndFollowListeners()
 
 	/**
 	 * Delivery to the outside: webhooks, GraphQL, push, front-end scripts, comments and activity.
@@ -672,6 +791,19 @@ final class ListenerRegistrar {
 	 * @return void
 	 */
 	private static function registerDeliveryListeners(IRegistrationContext $context): void {
+		self::registerWebhookAndGraphQlListeners(context: $context);
+		self::registerPushAndCleanupListeners(context: $context);
+		self::registerActivityListeners(context: $context);
+	}//end registerDeliveryListeners()
+
+	/**
+	 * Webhook delivery on object, register and schema changes, and GraphQL subscriptions.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerWebhookAndGraphQlListeners(IRegistrationContext $context): void {
 		// WebhookEventListener for webhook delivery.
 		// OPS-2: register for EVERY event the listener's extractPayload() handles,
 		// not just create — otherwise update/delete/lock/revert/register/schema
@@ -690,7 +822,16 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, GraphQLSubscriptionListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, GraphQLSubscriptionListener::class);
+	}//end registerWebhookAndGraphQlListeners()
 
+	/**
+	 * Push notifications and the object cleanup on delete.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerPushAndCleanupListeners(IRegistrationContext $context): void {
 		// Notify_push real-time push listeners (soft-fail when notify_push not installed).
 		$context->registerEventListener(ObjectCreatedEvent::class, NotifyPushListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, NotifyPushListener::class);
@@ -698,7 +839,16 @@ final class ListenerRegistrar {
 
 		// ObjectCleanupListener cleans up notes and tasks when an object is deleted.
 		$context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
+	}//end registerPushAndCleanupListeners()
 
+	/**
+	 * The activity stream on object, register and schema changes.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 */
+	private static function registerActivityListeners(IRegistrationContext $context): void {
 		// ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
 		$activityListener = \OCA\OpenRegister\Notifications\Listener\ActivityEventListener::class;
 		$context->registerEventListener(ObjectCreatedEvent::class, $activityListener);
@@ -710,7 +860,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(SchemaCreatedEvent::class, $activityListener);
 		$context->registerEventListener(SchemaUpdatedEvent::class, $activityListener);
 		$context->registerEventListener(SchemaDeletedEvent::class, $activityListener);
-	}//end registerDeliveryListeners()
+	}//end registerActivityListeners()
 
 	/**
 	 * Register the listeners that must see a draft (decision 227).
@@ -735,8 +885,8 @@ final class ListenerRegistrar {
 	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-a-draft-must-have-events-of-its-own-on-a-separate-path
 	 */
 	private static function registerDraftListeners(IRegistrationContext $context): void {
-		$saved = [\OCA\OpenRegister\Event\DraftCreatedEvent::class, \OCA\OpenRegister\Event\DraftUpdatedEvent::class];
-		$removed = \OCA\OpenRegister\Event\DraftDeletedEvent::class;
+		$saved = [DraftCreatedEvent::class, DraftUpdatedEvent::class];
+		$removed = DraftDeletedEvent::class;
 
 		// The owner sees their own draft in lists, counts and facets, so those caches follow it.
 		// The translation sidecar holds the draft's own values per language.

@@ -37,11 +37,7 @@
 			@update:reason="reason = $event"
 			@update:confirmUsername="confirmUsername = $event" />
 
-		<p
-			v-if="message"
-			:class="{ section__error: isError, section__success: !isError }">
-			{{ message }}
-		</p>
+		<SectionStatus :message="message" :isError="isError" />
 	</div>
 </template>
 
@@ -50,11 +46,16 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
+import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import ConfirmDeactivationModal from '../../../modals/account/ConfirmDeactivationModal.vue'
+import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 export default {
 	name: 'AccountSection',
-	components: { NcButton, ConfirmDeactivationModal },
+	components: { NcButton, ConfirmDeactivationModal, SectionStatus },
+
+	mixins: [sectionStatus],
+
 	data() {
 		return {
 			status: 'active',
@@ -63,8 +64,6 @@ export default {
 			showConfirmModal: false,
 			reason: '',
 			confirmUsername: '',
-			message: '',
-			isError: false,
 		}
 	},
 
@@ -111,13 +110,12 @@ export default {
 				this.status = 'pending'
 				this.requestedAt = new Date().toISOString()
 				this.showConfirmModal = false
-				this.message = t('openregister', 'Deactivation request submitted')
-				this.isError = false
+				this.setStatus(t('openregister', 'Deactivation request submitted'))
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to request deactivation')
-				this.isError = true
+				this.setStatusError(
+					e,
+					t('openregister', 'Failed to request deactivation'),
+				)
 			}
 		},
 
@@ -134,13 +132,12 @@ export default {
 				)
 				this.status = 'active'
 				this.requestedAt = null
-				this.message = t('openregister', 'Deactivation request cancelled')
-				this.isError = false
+				this.setStatus(t('openregister', 'Deactivation request cancelled'))
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to cancel deactivation')
-				this.isError = true
+				this.setStatusError(
+					e,
+					t('openregister', 'Failed to cancel deactivation'),
+				)
 			}
 		},
 

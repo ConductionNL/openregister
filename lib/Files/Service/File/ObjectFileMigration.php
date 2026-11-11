@@ -88,27 +88,81 @@ class ObjectFileMigration {
 	private array $tally = ['foldersMoved' => 0, 'filesMoved' => 0, 'sharesReowned' => 0, 'foldersLeft' => 0, 'refused' => false];
 
 	/**
+	 * The file tree.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Walks the people whose homes may hold managed folders.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Resolves the openregister account.
+	 *
+	 * @var FileOwnershipHandlerInterface
+	 */
+	private readonly FileOwnershipHandlerInterface $ownership;
+
+	/**
+	 * Re-owns published link shares.
+	 *
+	 * @var ObjectFileShareReowner
+	 */
+	private readonly ObjectFileShareReowner $shareReowner;
+
+	/**
+	 * Keeps the refusal message for the admin.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Tells whether server-side encryption is on.
+	 *
+	 * @var IEncryptionManager
+	 */
+	private readonly IEncryptionManager $encryptionManager;
+
+	/**
+	 * Records every folder left behind.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Reads whether an admin set the account's quota.
+	 *
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRootFolder          $rootFolder        The file tree.
-	 * @param IUserManager         $userManager       Walks the people whose homes may hold managed folders.
-	 * @param FileOwnershipHandler $ownership         Resolves the openregister account.
-	 * @param ObjectFileShareReowner $shareReowner    Re-owns published link shares.
-	 * @param IAppConfig           $appConfig         Keeps the refusal message for the admin.
-	 * @param IEncryptionManager   $encryptionManager Tells whether server-side encryption is on.
-	 * @param LoggerInterface      $logger            Records every folder left behind.
-	 * @param IConfig              $config            Reads whether an admin set the account's quota.
+	 * @param ObjectFileMigrationFiles    $files    The file tree, the user manager, the openregister account and the share re-owner
+	 * @param ObjectFileMigrationSettings $settings The app config, the server config and the encryption manager
+	 * @param LoggerInterface             $logger   Records every folder left behind.
 	 */
 	public function __construct(
-		private readonly IRootFolder $rootFolder,
-		private readonly IUserManager $userManager,
-		private readonly FileOwnershipHandler $ownership,
-		private readonly ObjectFileShareReowner $shareReowner,
-		private readonly IAppConfig $appConfig,
-		private readonly IEncryptionManager $encryptionManager,
-		private readonly LoggerInterface $logger,
-		private readonly IConfig $config,
+		ObjectFileMigrationFiles $files,
+		ObjectFileMigrationSettings $settings,
+		LoggerInterface $logger,
 	) {
+		$this->rootFolder = $files->rootFolder;
+		$this->userManager = $files->userManager;
+		$this->ownership = $files->ownership;
+		$this->shareReowner = $files->shareReowner;
+		$this->appConfig = $settings->appConfig;
+		$this->encryptionManager = $settings->encryptionManager;
+		$this->logger = $logger;
+		$this->config = $settings->config;
 	}//end __construct()
 
 	/**
@@ -160,18 +214,8 @@ class ObjectFileMigration {
 	 * @return void
 	 */
 	private function moveHome(string $uid, Folder $systemHome): void {
-		try {
-			$home = $this->rootFolder->getUserFolder($uid);
-			if ($home->nodeExists(self::ROOT_FOLDER) === false) {
-				return;
-			}
-
-			$source = $home->get(self::ROOT_FOLDER);
-		} catch (Throwable $e) {
-			return;
-		}
-
-		if ($source instanceof Folder === false) {
+		$source = $this->managedTreeOf(uid: $uid);
+		if ($source === null) {
 			return;
 		}
 
@@ -187,6 +231,32 @@ class ObjectFileMigration {
 	}//end moveHome()
 
 	/**
+	 * One person's `Open Registers` folder; null when they have none, it is not a folder, or it cannot be read.
+	 *
+	 * @param string $uid The person.
+	 *
+	 * @return Folder|null
+	 */
+	private function managedTreeOf(string $uid): ?Folder {
+		try {
+			$home = $this->rootFolder->getUserFolder($uid);
+			if ($home->nodeExists(self::ROOT_FOLDER) === false) {
+				return null;
+			}
+
+			$source = $home->get(self::ROOT_FOLDER);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if ($source instanceof Folder === false) {
+			return null;
+		}
+
+		return $source;
+	}//end managedTreeOf()
+
+	/**
 	 * Move a folder into a target parent, merging with a folder of the same name.
 	 *
 	 * @param Folder $node         The folder to move.
@@ -199,11 +269,7 @@ class ObjectFileMigration {
 
 		try {
 			if ($targetParent->nodeExists($name) === false) {
-				$fileIds = $this->fileIdsIn(node: $node);
-				$node->move($targetParent->getPath() . '/' . $name);
-				$this->tally['foldersMoved']++;
-				$this->tally['filesMoved'] += count($fileIds);
-				$this->reownShares(fileIds: $fileIds);
+				$this->moveWhole(node: $node, targetParent: $targetParent);
 				return;
 			}
 
@@ -221,6 +287,22 @@ class ObjectFileMigration {
 		$this->mergeInto(source: $node, target: $existing);
 		$this->removeIfEmpty(folder: $node);
 	}//end moveFolder()
+
+	/**
+	 * Move a folder whose name is free in the target parent, with all it holds, and re-own its shares.
+	 *
+	 * @param Folder $node         The folder to move.
+	 * @param Folder $targetParent Where it goes.
+	 *
+	 * @return void
+	 */
+	private function moveWhole(Folder $node, Folder $targetParent): void {
+		$fileIds = $this->fileIdsIn(node: $node);
+		$node->move($targetParent->getPath() . '/' . $node->getName());
+		$this->tally['foldersMoved']++;
+		$this->tally['filesMoved'] += count($fileIds);
+		$this->reownShares(fileIds: $fileIds);
+	}//end moveWhole()
 
 	/**
 	 * Move every child of a folder into a target folder.

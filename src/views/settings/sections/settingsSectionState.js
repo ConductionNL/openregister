@@ -35,6 +35,23 @@ export const settingsSectionState = {
 		rebasing() {
 			return this.settingsStore.rebasing
 		},
+
+		/**
+		 * Props and listeners for SectionSaveActions: the busy states, the
+		 * rebase dialog and the section's own saveSettings.
+		 *
+		 * @spec exclude UI plumbing — binding object for the shared section actions
+		 * @return {object}
+		 */
+		saveActions() {
+			return {
+				loading: this.loading,
+				saving: this.saving,
+				rebasing: this.rebasing,
+				onRebase: this.showRebaseDialog,
+				onSave: this.saveSettings,
+			}
+		},
 	},
 
 	methods: {

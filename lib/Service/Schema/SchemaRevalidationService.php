@@ -42,17 +42,15 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
-use OCA\OpenRegister\Db\SchemaRunEntryMapper;
-use OCA\OpenRegister\Db\SchemaRunMapper;
-use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
-use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
+use OCA\OpenRegister\Db\SchemaRunMapperInterface;
+use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use Psr\Log\LoggerInterface;
 
 /**
  * Population revalidation orchestrator.
  */
-class SchemaRevalidationService {
+class SchemaRevalidationService implements SchemaRevalidatorInterface {
 
 	use SchemaRunPopulation;
 
@@ -71,62 +69,81 @@ class SchemaRevalidationService {
 	private const MAX_ERRORS_PER_OBJECT = 25;
 
 	/**
+	 * Run persistence.
+	 *
+	 * @var SchemaRunMapperInterface
+	 */
+	private readonly SchemaRunMapperInterface $runMapper;
+
+	/**
+	 * Per-object run entries.
+	 *
+	 * @var SchemaRunEntryMapperInterface
+	 */
+	private readonly SchemaRunEntryMapperInterface $runEntryMapper;
+
+	/**
+	 * Schema lookup.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Object read/save pipeline.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaRunMapper $runMapper Run persistence.
-	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param ObjectOperationsInterface $objectService Object read/save pipeline.
-	 * @param ValidateObjectInterface $validateObject Single write-path validator.
-	 * @param LoggerInterface $logger Logger.
+	 * @param SchemaPopulationRuns     $runs           The run ledger, the schema lookup and the object population.
+	 * @param ObjectValidatorInterface $validateObject Single write-path validator.
 	 */
 	public function __construct(
-		private readonly SchemaRunMapper $runMapper,
-		private readonly SchemaRunEntryMapper $runEntryMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly ValidateObjectInterface $validateObject,
-		private readonly LoggerInterface $logger,
+		SchemaPopulationRuns $runs,
+		private readonly ObjectValidatorInterface $validateObject,
 	) {
-
+		$this->runMapper      = $runs->runMapper;
+		$this->runEntryMapper = $runs->runEntryMapper;
+		$this->schemaMapper   = $runs->schemaMapper;
+		$this->objectService  = $runs->objectService;
 	}//end __construct()
 
 	/**
-	 * Start a revalidation run.
+	 * Start a revalidation run for a revalidation request.
 	 *
 	 * Creates the run record, refusing a second concurrent run on the same
-	 * schema, and returns it ready for the background job to process.
+	 * schema ({@see SchemaRunPopulation::assertNoActiveRun()} throws the
+	 * SchemaRunConcurrencyException), and returns it ready for the background
+	 * job to process.
 	 *
-	 * @param int $schemaId The schema id.
-	 * @param int $registerId The register the objects live in.
-	 * @param array<string, mixed>|null $proposedDefinition Optional proposed definition (dry-run).
-	 * @param string|null $startedBy The starting user.
+	 * @param RevalidationRequest $request   The schema, register and optional proposed definition.
+	 * @param string|null         $startedBy The starting user.
 	 *
 	 * @return SchemaRun The created run.
 	 *
-	 * @throws SchemaRunConcurrencyException When an active run already exists.
-	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function start(int $schemaId, int $registerId, ?array $proposedDefinition = null, ?string $startedBy = null): SchemaRun {
-		$this->assertNoActiveRun(schemaId: $schemaId);
-
-		$total = $this->countPopulation(schemaId: $schemaId, registerId: $registerId);
+	public function startRevalidation(RevalidationRequest $request, ?string $startedBy = null): SchemaRun {
+		$this->assertNoActiveRun(schemaId: $request->schemaId);
 
 		return $this->runMapper->createFromArray(
 			[
-				'schemaId' => $schemaId,
-				'registerId' => $registerId,
+				'schemaId' => $request->schemaId,
+				'registerId' => $request->registerId,
 				'type' => SchemaRun::TYPE_REVALIDATION,
 				'state' => SchemaRun::STATE_RUNNING,
-				'proposedDefinition' => $proposedDefinition,
-				'total' => $total,
+				'proposedDefinition' => $request->proposedDefinition,
+				'total' => $this->countPopulation(schemaId: $request->schemaId, registerId: $request->registerId),
 				'startedBy' => $startedBy,
 				'report' => ['valid' => 0, 'invalid' => 0],
 			]
 		);
 
-	}//end start()
+	}//end startRevalidation()
 
 	/**
 	 * Process one batch of a revalidation run, advancing its cursor.
@@ -144,50 +161,72 @@ class SchemaRevalidationService {
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function processBatch(SchemaRun $run, int $batchSize = self::DEFAULT_BATCH): bool {
-		$schema = $this->schemaMapper->find($run->getSchemaId());
-
-		$validationSchema = $schema;
-		$isDryRun = ($run->getProposedDefinition() !== null);
-		if ($isDryRun === true) {
-			$validationSchema = $this->transientSchema(base: $schema, proposed: $run->getProposedDefinition());
-		}
-
-		$objects = $this->loadBatch(run: $run, batchSize: $batchSize);
-		if (count($objects) === 0) {
-			$this->finish(run: $run, state: SchemaRun::STATE_COMPLETED);
+		$schema = $this->validationSchema(run: $run);
+		$objects = $this->nextBatch(run: $run, batchSize: $batchSize);
+		if ($objects === []) {
 			return false;
 		}
 
-		$report = ($run->getReport() ?? ['valid' => 0, 'invalid' => 0]);
-		$maxId = $run->getCursor();
-
+		$batch = new SchemaRunBatch(run: $run, schema: $schema, emptyReport: ['valid' => 0, 'invalid' => 0]);
 		foreach ($objects as $object) {
-			$maxId = max($maxId, (int)$object->getId());
+			$this->revalidateOne(batch: $batch, object: $object);
+		}
 
-			$errors = $this->validate(object: $object, schema: $validationSchema);
-			if (count($errors) === 0) {
-				$report['valid'] = (($report['valid'] ?? 0) + 1);
-			} else {
-				$report['invalid'] = (($report['invalid'] ?? 0) + 1);
-				$this->runEntryMapper->createFromArray(
-					[
-						'runId' => $run->getId(),
-						'objectUuid' => $object->getUuid(),
-						'outcome' => SchemaRunEntry::OUTCOME_INVALID,
-						'message' => implode('; ', array_slice($errors, 0, self::MAX_ERRORS_PER_OBJECT)),
-					]
-				);
-			}
-
-			$run->setProcessed(($run->getProcessed() + 1));
-		}//end foreach
-
-		$run->setCursor($maxId);
-		$run->setReport($report);
-		$this->runMapper->save($run);
-
-		return true;
+		return $this->saveBatch(batch: $batch);
 	}//end processBatch()
+
+	/**
+	 * The schema a run validates against: the stored one, or a transient proposed one for a dry run.
+	 *
+	 * @param SchemaRun $run The run.
+	 *
+	 * @return Schema The validation schema.
+	 */
+	private function validationSchema(SchemaRun $run): Schema {
+		$schema = $this->schemaMapper->find($run->getSchemaId());
+		if ($run->getProposedDefinition() === null) {
+			return $schema;
+		}
+
+		return $this->transientSchema(base: $schema, proposed: $run->getProposedDefinition());
+	}//end validationSchema()
+
+	/**
+	 * Validate one object of a batch, recording it when invalid.
+	 *
+	 * @param SchemaRunBatch $batch  The batch.
+	 * @param ObjectEntity   $object The object.
+	 *
+	 * @return void
+	 */
+	private function revalidateOne(SchemaRunBatch $batch, ObjectEntity $object): void {
+		$batch->reach(object: $object);
+		$errors = $this->validate(object: $object, schema: $batch->schema);
+		if (count($errors) === 0) {
+			$batch->tally(key: 'valid');
+		} else {
+			$batch->tally(key: 'invalid');
+			$this->recordEntry(run: $batch->run, entry: $this->invalidEntry(object: $object, errors: $errors));
+		}
+
+		$batch->markProcessed();
+	}//end revalidateOne()
+
+	/**
+	 * The run entry of an invalid object, carrying its first errors.
+	 *
+	 * @param ObjectEntity       $object The object.
+	 * @param array<int, string> $errors The validation errors.
+	 *
+	 * @return array<string, mixed> The entry.
+	 */
+	private function invalidEntry(ObjectEntity $object, array $errors): array {
+		return [
+			'objectUuid' => $object->getUuid(),
+			'outcome' => SchemaRunEntry::OUTCOME_INVALID,
+			'message' => implode('; ', array_slice($errors, 0, self::MAX_ERRORS_PER_OBJECT)),
+		];
+	}//end invalidEntry()
 
 	/**
 	 * Validate one object against a schema, returning a list of error strings.
@@ -199,21 +238,12 @@ class SchemaRevalidationService {
 	 */
 	private function validate(ObjectEntity $object, Schema $schema): array {
 		try {
-			$result = $this->validateObject->validateObject(
-				object: $object->getObject(),
-				schema: $schema
-			);
-
+			$result = $this->validateObject->validateObject(object: $object->getObject(), schema: $schema);
 			if ($result->isValid() === true) {
 				return [];
 			}
 
-			$error = $result->error();
-			if ($error === null) {
-				return ['Validation failed.'];
-			}
-
-			return [$error->message()];
+			return [($result->error()?->message() ?? 'Validation failed.')];
 		} catch (\Throwable $e) {
 			return [$e->getMessage()];
 		}

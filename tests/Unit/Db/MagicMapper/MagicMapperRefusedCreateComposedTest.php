@@ -16,6 +16,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -27,7 +30,9 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCP\DB\Exception as DbException;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -193,28 +198,33 @@ class MagicMapperRefusedCreateComposedTest extends TestCase {
 		$db->method('lastInsertId')->willReturn(9);
 
 		$services  = [
-			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
-			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
 		];
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): ?object => ($services[$id] ?? null));
 
 		$mapper = $this->getMockBuilder(MagicMapper::class)
 			->setConstructorArgs([
-				$db,
-				$this->createMock(SchemaMapper::class),
-				$this->createMock(RegisterMapper::class),
-				$this->createMock(IConfig::class),
-				$events,
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class),
-				$this->createMock(IUserManager::class),
-				$this->createMock(IAppConfig::class),
-				$this->createMock(LoggerInterface::class),
-				$this->createMock(AppSettingsInterface::class),
-				$container,
-			])
+					$db,
+					new MagicMapperLookups(
+						$this->createMock(SchemaMapper::class),
+						$this->createMock(RegisterMapper::class),
+						$container
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$this->createMock(IConfig::class),
+						$this->createMock(IAppConfig::class),
+						$events,
+						$this->createMock(LoggerInterface::class)
+					),
+				])
 			->onlyMethods(['ensureTableForRegisterSchema', 'getTableNameForRegisterSchema', 'findObjectInRegisterSchemaTable', 'convertRowToObjectEntity'])
 			->getMock();
 		$mapper->method('ensureTableForRegisterSchema')->willReturn(true);

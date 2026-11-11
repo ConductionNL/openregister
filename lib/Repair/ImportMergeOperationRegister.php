@@ -12,9 +12,13 @@
  * every merge straight into it:
  *
  *     $this->objectService->saveObject(
- *         object:   $mergeOperation,
- *         register: self::MERGE_REGISTER,   // 'merge-operation'
- *         schema:   self::MERGE_SCHEMA      // 'mergeOperation'
+ *         object:  $mergeOperation,
+ *         options: new ObjectSaveOptions(
+ *             target: new ObjectFindTarget(
+ *                 register: self::MERGE_REGISTER, // 'merge-operation'
+ *                 schema: self::MERGE_SCHEMA      // 'mergeOperation'
+ *             )
+ *         )
  *     );
  *
  * and `reverseMerge` reads the `preMergeSnapshot` back out of that row to undo
@@ -46,7 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 
 /**
  * Imports the merge-operation register descriptor idempotently.
@@ -91,7 +95,7 @@ class ImportMergeOperationRegister extends AbstractRegisterImportStep {
 	 *
 	 * @var string
 	 */
-	protected const CONFIG_APP_ID = DescriptorConfigIds::MERGE_OPERATION;
+	protected const CONFIG_APP_ID = DescriptorConfigIdsInterface::MERGE_OPERATION;
 
 	/**
 	 * Get the name of this repair step.

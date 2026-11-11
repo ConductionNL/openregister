@@ -18,7 +18,7 @@ final class BulkJobsControllerFactory {
 	/**
 	 * The constructor arguments of BulkJobsController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param BulkJobService $service Constructor argument.
 	 * @param BulkJobReversal $reversal Constructor argument.
@@ -40,7 +40,6 @@ final class BulkJobsControllerFactory {
 		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\BulkJobsControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\BulkJobsDomain(
@@ -49,7 +48,7 @@ final class BulkJobsControllerFactory {
 					reversal: $reversal,
 					registry: $registry,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\BulkJobsPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\AuditTrailPlatform(
 					userSession: $userSession,
 					groupManager: $groupManager,
 				),

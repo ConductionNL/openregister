@@ -91,15 +91,14 @@ interface FileMapperInterface {
 	 * publication date it belongs to, which reads as "published" to a careless
 	 * comparison and as nothing at all to a careful one.
 	 *
-	 * @param int            $fileId      The Nextcloud filecache fileid.
-	 * @param \DateTime|null $published   When the file becomes public, or null for never.
-	 * @param \DateTime|null $depublished When it stops, or null for no end date.
+	 * @param int               $fileId The Nextcloud filecache fileid.
+	 * @param PublicationWindow $window When the file becomes public and when it stops.
 	 *
 	 * @return File The updated entity.
 	 *
 	 * @spec openspec/changes/file-publication-window/specs/file-publication-window/spec.md#requirement-a-file-carries-its-own-publication-window-req-fpw-101
 	 */
-	public function setPublicationWindowForFile(int $fileId, ?\DateTime $published, ?\DateTime $depublished): File;
+	public function setPublicationWindowForFile(int $fileId, PublicationWindow $window): File;
 
 	/**
 	 * Increment the cached download count for a Nextcloud file.
@@ -248,7 +247,6 @@ interface FileMapperInterface {
 	 * @param int $fileId The file ID to publish
 	 * @param string $sharedBy The user who is sharing the file
 	 * @param string $shareOwner The owner of the file
-	 * @param int $permissions The permissions for the share (default: 1 = read)
 	 * @param \DateTime|null $depublished When the share stops working, or null for no end date
 	 *
 	 * @return (int|string)[]
@@ -260,13 +258,12 @@ interface FileMapperInterface {
 	 * @phpstan-param int $fileId
 	 * @phpstan-param string $sharedBy
 	 * @phpstan-param string $shareOwner
-	 * @phpstan-param int $permissions
 	 *
 	 * @phpstan-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
 	 *
 	 * @psalm-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
 	 */
-	public function publishFile(int $fileId, string $sharedBy, string $shareOwner, int $permissions = 1, ?\DateTime $depublished = null): array;
+	public function publishFile(int $fileId, string $sharedBy, string $shareOwner, ?\DateTime $depublished = null): array;
 
 	/**
 	 * Depublish a file by removing all public shares directly from the database.

@@ -26,13 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
+use OCA\OpenRegister\Files\Controller\Support\FileSidebarControllerServices;
 use OCA\OpenRegister\Files\Service\FileSidebarService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\Files\IRootFolder;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -55,34 +55,40 @@ class FileSidebarController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * The user session.
+	 * Whether the caller can open a file.
 	 *
-	 * @var IUserSession
+	 * @var CallerFileAccess
 	 */
-	private readonly IUserSession $userSession;
+	private readonly CallerFileAccess $fileAccess;
+
+	/**
+	 * File sidebar service.
+	 *
+	 * @var FileSidebarService
+	 */
+	private readonly FileSidebarService $fileSidebarService;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
-	 * @param IRequest $request HTTP request.
-	 * @param FileSidebarService $fileSidebarService File sidebar service.
-	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param IRootFolder $rootFolder Root folder for per-user file access checks.
+	 * @param IRequest                                                $request       HTTP request.
+	 * @param FileSidebarControllerServices                           $services      The sidebar service, the root folder, the session and the logger.
 	 * @param \OCA\OpenRegister\Files\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly FileSidebarService $fileSidebarService,
-		ControllerSession $session,
-		private readonly IRootFolder $rootFolder,
-		private readonly ?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
+		FileSidebarControllerServices $services,
+		?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
-		$this->logger = $session->logger;
-		$this->userSession = $session->userSession;
+		$this->fileSidebarService = $services->fileSidebarService;
+		$this->logger = $services->logger;
+		$this->fileAccess = new CallerFileAccess(
+			fileReadScope: $fileReadScope,
+			userSession: $services->userSession,
+			rootFolder: $services->rootFolder
+		);
 	}//end __construct()
 
 	/**
@@ -98,19 +104,7 @@ class FileSidebarController extends Controller {
 	 * @return bool True when the file is reachable in the caller's user folder.
 	 */
 	private function hasFileAccess(int $fileId): bool {
-		// An object's file sits in the openregister account's home, never in
-		// the caller's own tree: the object's read rule decides it.
-		if ($this->fileReadScope !== null) {
-			return $this->fileReadScope->mayReadFile(fileId: $fileId);
-		}
-
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		$userFolder = $this->rootFolder->getUserFolder($user->getUID());
-		return empty($userFolder->getById($fileId)) === false;
+		return $this->fileAccess->mayOpen(fileId: $fileId);
 	}//end hasFileAccess()
 
 	/**
@@ -129,34 +123,18 @@ class FileSidebarController extends Controller {
 		// IDOR guard: only reveal object links for files the caller can access.
 		// 404 (not 403) so a non-owner cannot probe which file IDs exist.
 		if ($this->hasFileAccess(fileId: $fileId) === false) {
-			return new JSONResponse(
-				data: ['success' => false, 'error' => 'File not found or access denied'],
-				statusCode: 404
-			);
+			return $this->fileNotFound();
 		}
 
 		try {
-			$objects = $this->fileSidebarService->getObjectsForFile($fileId);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'data' => $objects,
-				]
-			);
+			return $this->found(data: $this->fileSidebarService->getObjectsForFile($fileId));
 		} catch (\Exception $e) {
 			$this->logger->error(
 				'[FileSidebarController] Error fetching objects for file ' . $fileId . ': ' . $e->getMessage()
 			);
 
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Failed to retrieve objects for file.',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->failed(error: 'Failed to retrieve objects for file.');
+		}
 	}//end getObjectsForFile()
 
 	/**
@@ -176,33 +154,63 @@ class FileSidebarController extends Controller {
 		// PII risk level. Only expose it for files the caller can access; 404
 		// (not 403) so a non-owner cannot probe which file IDs exist.
 		if ($this->hasFileAccess(fileId: $fileId) === false) {
-			return new JSONResponse(
-				data: ['success' => false, 'error' => 'File not found or access denied'],
-				statusCode: 404
-			);
+			return $this->fileNotFound();
 		}
 
 		try {
-			$status = $this->fileSidebarService->getExtractionStatus($fileId);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'data' => $status,
-				]
-			);
+			return $this->found(data: $this->fileSidebarService->getExtractionStatus($fileId));
 		} catch (\Exception $e) {
 			$this->logger->error(
 				'[FileSidebarController] Error fetching extraction status for file ' . $fileId . ': ' . $e->getMessage()
 			);
 
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Failed to retrieve extraction status.',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->failed(error: 'Failed to retrieve extraction status.');
+		}
 	}//end getExtractionStatus()
+
+	/**
+	 * The refusal of a file the caller cannot reach: 404, not 403, so a non-owner
+	 * cannot probe which file IDs exist.
+	 *
+	 * @return JSONResponse
+	 */
+	private function fileNotFound(): JSONResponse {
+		return new JSONResponse(
+			data: ['success' => false, 'error' => 'File not found or access denied'],
+			statusCode: 404
+		);
+	}//end fileNotFound()
+
+	/**
+	 * A successful answer carrying the sidebar data.
+	 *
+	 * @param mixed $data The sidebar data.
+	 *
+	 * @return JSONResponse
+	 */
+	private function found(mixed $data): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'data' => $data,
+			]
+		);
+	}//end found()
+
+	/**
+	 * A 500 answer with a fixed message; the cause is logged, not served.
+	 *
+	 * @param string $error The message.
+	 *
+	 * @return JSONResponse
+	 */
+	private function failed(string $error): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'success' => false,
+				'error' => $error,
+			],
+			statusCode: 500
+		);
+	}//end failed()
 }//end class

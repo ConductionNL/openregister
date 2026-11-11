@@ -595,7 +595,82 @@ class ActiveOrganisationManagementTest extends TestCase {
 	 * @return void
 	 */
 	public function testActiveOrganisationAutoSelectionForUserWithNoOrganisations(): void {
-		$this->markTestSkipped('OrganisationMapper no longer has findDefault() method. Default organisation flow was refactored to use findByUuid() internally.');
+		$defaultOrg = $this->arrangeUserWithOrganisations('lonely-user', []);
+
+		$this->organisationMapper->expects($this->atLeastOnce())
+			->method('update')
+			->with($this->identicalTo($defaultOrg))
+			->willReturnArgument(0);
+
+		$active = $this->organisationService->getActiveOrganisation();
+
+		// The default organisation is chosen, and the user is now a member of it.
+		$this->assertSame('default-org-uuid', $active?->getUuid());
+		$this->assertTrue($defaultOrg->hasUser('lonely-user'));
+	}
+
+	/**
+	 * The pair of the test above: a user who already belongs to an
+	 * organisation gets that one, and is not added to the default.
+	 *
+	 * @return void
+	 */
+	public function testAUserWithAnOrganisationIsNotMovedToTheDefault(): void {
+		$own = new Organisation();
+		$own->setUuid('own-org-uuid');
+		$own->setName('Own');
+		$own->setUsers(['member-user']);
+		$defaultOrg = $this->arrangeUserWithOrganisations('member-user', [$own]);
+
+		$this->organisationMapper->expects($this->never())->method('update');
+
+		$active = $this->organisationService->getActiveOrganisation();
+
+		$this->assertSame('own-org-uuid', $active?->getUuid());
+		$this->assertFalse($defaultOrg->hasUser('member-user'));
+	}
+
+	/**
+	 * A signed-in user with no stored active organisation and the given memberships.
+	 *
+	 * @param string         $userId        The user.
+	 * @param Organisation[] $organisations What OrganisationMapper::findByUserId() answers.
+	 *
+	 * @return Organisation The default organisation the instance is configured with.
+	 */
+	private function arrangeUserWithOrganisations(string $userId, array $organisations): Organisation {
+		$this->mockUser->method('getUID')->willReturn($userId);
+		$this->userSession->method('getUser')->willReturn($this->mockUser);
+		$this->session->method('get')->willReturn(null);
+		$this->config->method('getUserValue')->willReturn('');
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			function (string $app, string $key, string $default = ''): string {
+				if ($key === 'defaultOrganisation') {
+					return 'default-org-uuid';
+				}
+
+				return $default;
+			}
+		);
+
+		$defaultOrg = new Organisation();
+		$defaultOrg->setUuid('default-org-uuid');
+		$defaultOrg->setName('Default Organisation');
+		$defaultOrg->setUsers([]);
+		$this->organisationMapper->method('findByUuid')->willReturnCallback(
+			function (string $uuid) use ($defaultOrg, $organisations): Organisation {
+				foreach ($organisations as $organisation) {
+					if ($organisation->getUuid() === $uuid) {
+						return $organisation;
+					}
+				}
+
+				return $defaultOrg;
+			}
+		);
+		$this->organisationMapper->method('findByUserId')->with($userId)->willReturn($organisations);
+
+		return $defaultOrg;
 	}
 
 	/**

@@ -35,24 +35,31 @@ use OCA\OpenRegister\Db\GdprEntity;
  */
 final class ManualEntityResult {
 	/**
+	 * Total positions found in the file's chunks: the inserted relation rows
+	 * plus the positions skipped because a row already covered them.
+	 *
+	 * @var integer
+	 */
+	public readonly int $matchCount;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param GdprEntity $entity The catalogue entry (newly inserted or reused).
 	 * @param bool $entityWasNew True when this call inserted the catalogue row;
 	 *                           false when an existing one was reused.
-	 * @param EntityRelation[] $relations Relation rows inserted by this call. Excludes rows
-	 *                                    that were skipped because they already existed.
-	 * @param int $matchCount Total positions found in the file's chunks.
-	 * @param int $matchesSkipped How many of those positions were skipped because
+	 * @param EntityRelation[] $relations Relation rows inserted by this call, one per
+	 *                                    match position not already covered.
+	 * @param int $matchesSkipped How many match positions were skipped because
 	 *                            a relation row already covered them.
 	 */
 	public function __construct(
 		public readonly GdprEntity $entity,
 		public readonly bool $entityWasNew,
 		public readonly array $relations,
-		public readonly int $matchCount,
 		public readonly int $matchesSkipped,
 	) {
+		$this->matchCount = (count($relations) + $matchesSkipped);
 
 	}//end __construct()
 }//end class

@@ -37,13 +37,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use DateTime;
-use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Db\FormLinkMapper;
+use OCA\OpenRegister\Db\FormLink;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
-use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCP\IL10N;
 use Throwable;
 use UnexpectedValueException;
@@ -53,7 +51,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
  */
-class TaskFormResolver {
+class TaskFormResolver implements TaskFormResolverInterface {
 
 	/**
 	 * Every declared field renders.
@@ -86,18 +84,12 @@ class TaskFormResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapperInterface $runs Reads the run for its flow and version pin.
-	 * @param FlowMapper $flows Reads the live flow, for an unpinned draft test run only.
-	 * @param FlowPublishedGraph $published Resolves the pinned graph of a run.
-	 * @param FormLinkMapper $formLinks Reads the subject's bound Forms form.
+	 * @param TaskFormResolverServices $services The run, flow, published-graph and form-link readers.
 	 * @param TaskFormReader $reader Normalises and inspects declarations.
 	 * @param IL10N $l10n Translations, for reasons a performer reads.
 	 */
 	public function __construct(
-		private readonly FlowRunMapperInterface $runs,
-		private readonly FlowMapper $flows,
-		private readonly FlowPublishedGraph $published,
-		private readonly FormLinkMapper $formLinks,
+		private readonly TaskFormResolverServices $services,
 		private readonly TaskFormReader $reader,
 		private readonly IL10N $l10n,
 	) {
@@ -121,33 +113,51 @@ class TaskFormResolver {
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
 	 */
 	public function describe(TaskInterface $task): array {
+		return $this->surfaceOf(task: $task) + ['behaviours' => $this->behavioursOf(task: $task)];
+	}//end describe()
+
+	/**
+	 * The form and checklist flag of the task's declaration; an unresolvable
+	 * declaration is a form with `state` unresolvable and the reason.
+	 *
+	 * @param TaskInterface $task The task.
+	 *
+	 * @return array{form: array<string, mixed>|null, requireChecklist: bool} The surface.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 */
+	private function surfaceOf(TaskInterface $task): array {
 		try {
 			$declaration = $this->declarationOf(task: $task);
 		} catch (UnexpectedValueException $unresolvable) {
-			return [
-				'form' => [
-					'kind' => null,
-					'state' => self::STATE_UNRESOLVABLE,
-					'error' => $unresolvable->getMessage(),
-				],
-				'requireChecklist' => false,
-				'behaviours' => $this->behavioursOf(task: $task),
-			];
+			$form = ['kind' => null, 'state' => self::STATE_UNRESOLVABLE, 'error' => $unresolvable->getMessage()];
+			return ['form' => $form, 'requireChecklist' => false];
 		}
 
-		$form = null;
+		return ['form' => $this->formOf(declaration: $declaration, task: $task), 'requireChecklist' => $declaration->requireChecklist];
+	}//end surfaceOf()
+
+	/**
+	 * The description of the declared form, by kind; null when none is declared.
+	 *
+	 * @param TaskForm $declaration The declaration.
+	 * @param TaskInterface $task The task, for its subject anchor.
+	 *
+	 * @return array<string, mixed>|null The description.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 */
+	private function formOf(TaskForm $declaration, TaskInterface $task): ?array {
 		if ($declaration->isNative() === true) {
-			$form = $this->describeNative(declaration: $declaration);
-		} elseif ($declaration->isExternal() === true) {
-			$form = $this->describeExternal(declaration: $declaration, task: $task);
+			return $this->describeNative(declaration: $declaration);
 		}
 
-		return [
-			'form' => $form,
-			'requireChecklist' => $declaration->requireChecklist,
-			'behaviours' => $this->behavioursOf(task: $task),
-		];
-	}//end describe()
+		if ($declaration->isExternal() === true) {
+			return $this->describeExternal(declaration: $declaration, task: $task);
+		}
+
+		return null;
+	}//end formOf()
 
 	/**
 	 * The task's declared deadline behaviours, so a surface rendering the
@@ -187,19 +197,48 @@ class TaskFormResolver {
 			return $this->reader->fromRecord(record: (array)(($task->getMetadata() ?? [])['form'] ?? []));
 		}
 
+		return $this->stepDeclaration(task: $task, run: $this->runOf(task: $task, runUuid: $runUuid));
+	}//end declarationOf()
+
+	/**
+	 * The run a task belongs to.
+	 *
+	 * @param TaskInterface $task The task, for the message.
+	 * @param string $runUuid The run's uuid.
+	 *
+	 * @return FlowRun The run.
+	 *
+	 * @throws UnexpectedValueException When the run no longer exists.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+	 */
+	private function runOf(TaskInterface $task, string $runUuid): FlowRun {
 		try {
-			$run = $this->runs->findByUuid(uuid: $runUuid);
+			return $this->services->runs->findByUuid(uuid: $runUuid);
 		} catch (Throwable) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Task %1$s belongs to run %2$s, which no longer exists.', [(string)$task->getUuid(), $runUuid])
 			);
 		}
+	}//end runOf()
 
+	/**
+	 * The declaration of the step the task was created by, in the run's graph.
+	 *
+	 * @param TaskInterface $task The task.
+	 * @param FlowRun $run Its run.
+	 *
+	 * @return TaskForm The declaration.
+	 *
+	 * @throws UnexpectedValueException When the graph cannot be resolved or has no such step.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+	 */
+	private function stepDeclaration(TaskInterface $task, FlowRun $run): TaskForm {
 		$nodeId = trim((string)$task->getNodeId());
-		foreach ($this->nodesOf(run: $run) as $node) {
-			if (is_array($node) === true && trim((string)($node['id'] ?? '')) === $nodeId) {
-				return $this->reader->fromConfig(config: (array)($node['config'] ?? []));
-			}
+		$config = self::configOf(nodes: $this->nodesOf(run: $run), nodeId: $nodeId);
+		if ($config !== null) {
+			return $this->reader->fromConfig(config: $config);
 		}
 
 		throw new UnexpectedValueException(
@@ -208,7 +247,40 @@ class TaskFormResolver {
 				[$this->versionLabel(run: $run), (string)$run->getFlowId(), $nodeId, (string)$task->getUuid()]
 			)
 		);
-	}//end declarationOf()
+	}//end stepDeclaration()
+
+	/**
+	 * The config of the first node carrying the step's id.
+	 *
+	 * @param array<int, mixed> $nodes The graph's node entries.
+	 * @param string $nodeId The step's id.
+	 *
+	 * @return array<string, mixed>|null The step's config, or null when no node carries the id.
+	 */
+	private static function configOf(array $nodes, string $nodeId): ?array {
+		foreach ($nodes as $node) {
+			if (self::isStep(node: $node, nodeId: $nodeId) === true) {
+				return (array)($node['config'] ?? []);
+			}
+		}
+
+		return null;
+	}//end configOf()
+
+	/**
+	 * Whether a node entry is the step with this id.
+	 *
+	 * @param mixed $node A node entry.
+	 * @param string $nodeId The step's id.
+	 *
+	 * @return bool True when the entry is a node whose trimmed id matches.
+	 *
+	 * @psalm-assert-if-true array $node
+	 * @phpstan-assert-if-true array<string, mixed> $node
+	 */
+	private static function isStep(mixed $node, string $nodeId): bool {
+		return is_array($node) === true && trim((string)($node['id'] ?? '')) === $nodeId;
+	}//end isStep()
 
 	/**
 	 * The nodes of the graph a run walks: its pinned version, or the live
@@ -224,16 +296,23 @@ class TaskFormResolver {
 	 */
 	private function nodesOf(FlowRun $run): array {
 		if ($run->getFlowVersion() === null) {
-			try {
-				return ($this->flows->findByUuid(uuid: (string)$run->getFlowId())->getNodes() ?? []);
-			} catch (Throwable) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('Flow %1$s no longer exists.', [(string)$run->getFlowId()])
-				);
-			}
+			return $this->liveNodesOf(run: $run);
 		}
 
-		$graph = $this->published->ofRun(run: $run);
+		return $this->pinnedNodesOf(run: $run);
+	}//end nodesOf()
+
+	/**
+	 * The nodes of the published version a run is pinned to.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return array<int, mixed> The node entries.
+	 *
+	 * @throws UnexpectedValueException When the pinned version cannot be resolved.
+	 */
+	private function pinnedNodesOf(FlowRun $run): array {
+		$graph = $this->services->published->ofRun(run: $run);
 		if ($graph === null) {
 			throw new UnexpectedValueException(
 				$this->l10n->t(
@@ -244,7 +323,26 @@ class TaskFormResolver {
 		}
 
 		return (array)($graph['nodes'] ?? []);
-	}//end nodesOf()
+	}//end pinnedNodesOf()
+
+	/**
+	 * The nodes of the live flow document an unpinned test run walks.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return array<int, mixed> The node entries.
+	 *
+	 * @throws UnexpectedValueException When the flow no longer exists.
+	 */
+	private function liveNodesOf(FlowRun $run): array {
+		try {
+			return ($this->services->flows->findByUuid(uuid: (string)$run->getFlowId())->getNodes() ?? []);
+		} catch (Throwable) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('Flow %1$s no longer exists.', [(string)$run->getFlowId()])
+			);
+		}
+	}//end liveNodesOf()
 
 	/**
 	 * The native form against the live schema: per field, render or broken-with-reason.
@@ -260,24 +358,50 @@ class TaskFormResolver {
 			$schema = $this->reader->schema(reference: $declaration->schema);
 			$declared = $this->reader->declaredFields(form: $declaration, schema: $schema);
 		} catch (UnexpectedValueException $broken) {
-			return [
-				'kind' => TaskForm::KIND_FIELDS,
-				'state' => self::STATE_BROKEN,
-				'error' => $broken->getMessage(),
-				'schema' => null,
-				'action' => $declaration->action,
-				'fields' => [],
-			];
+			return self::nativeShape(declaration: $declaration, values: ['error' => $broken->getMessage()]);
 		}
 
+		$fields = $this->fieldDescriptions(schema: $schema, declared: $declared);
+		$values = ['state' => self::stateOf(fields: $fields), 'schema' => self::schemaSummary(schema: $schema), 'fields' => $fields];
+		return self::nativeShape(declaration: $declaration, values: $values);
+	}//end describeNative()
+
+	/**
+	 * A native description: broken, unread and empty unless the values say otherwise.
+	 *
+	 * @param TaskForm $declaration The declaration.
+	 * @param array<string, mixed> $values The keys that differ from that default.
+	 *
+	 * @return array<string, mixed> The description, keys in their published order.
+	 */
+	private static function nativeShape(TaskForm $declaration, array $values): array {
+		$shape = [
+			'kind' => TaskForm::KIND_FIELDS,
+			'state' => self::STATE_BROKEN,
+			'error' => null,
+			'schema' => null,
+			'action' => $declaration->action,
+			'fields' => [],
+		];
+
+		return array_merge($shape, $values);
+	}//end nativeShape()
+
+	/**
+	 * Each declared field in declaration order: required flag, order, and
+	 * whether it renders against the live schema (with the reason when not).
+	 *
+	 * @param Schema $schema The live schema.
+	 * @param array<int, array{field: string, required: bool}> $declared The declared fields.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 */
+	private function fieldDescriptions(Schema $schema, array $declared): array {
 		$fields = [];
-		$state = self::STATE_READY;
 		foreach ($declared as $order => $field) {
 			$reason = $this->reader->unrenderableReason(schema: $schema, field: $field['field']);
-			if ($reason !== null) {
-				$state = self::STATE_BROKEN;
-			}
-
 			$fields[] = [
 				'field' => $field['field'],
 				'required' => $field['required'],
@@ -287,20 +411,41 @@ class TaskFormResolver {
 			];
 		}
 
+		return $fields;
+	}//end fieldDescriptions()
+
+	/**
+	 * Ready when every field renders, broken otherwise.
+	 *
+	 * @param array<int, array<string, mixed>> $fields The field descriptions.
+	 *
+	 * @return string The form state.
+	 */
+	private static function stateOf(array $fields): string {
+		foreach ($fields as $field) {
+			if ($field['renderable'] === false) {
+				return self::STATE_BROKEN;
+			}
+		}
+
+		return self::STATE_READY;
+	}//end stateOf()
+
+	/**
+	 * The subject schema as a description names it.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<string, mixed> Its id, uuid, slug and title.
+	 */
+	private static function schemaSummary(Schema $schema): array {
 		return [
-			'kind' => TaskForm::KIND_FIELDS,
-			'state' => $state,
-			'error' => null,
-			'schema' => [
-				'id' => $schema->getId(),
-				'uuid' => $schema->getUuid(),
-				'slug' => $schema->getSlug(),
-				'title' => $schema->getTitle(),
-			],
-			'action' => $declaration->action,
-			'fields' => $fields,
+			'id' => $schema->getId(),
+			'uuid' => $schema->getUuid(),
+			'slug' => $schema->getSlug(),
+			'title' => $schema->getTitle(),
 		];
-	}//end describeNative()
+	}//end schemaSummary()
 
 	/**
 	 * The external form through the subject's link, saying so when it is unusable.
@@ -317,7 +462,92 @@ class TaskFormResolver {
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
 	 */
 	private function describeExternal(TaskForm $declaration, TaskInterface $task): array {
-		$description = [
+		$link = $this->linkOf(declaration: $declaration, task: $task);
+		if ($link === null) {
+			$error = $this->l10n->t('The form is no longer linked to this task\'s subject, so it cannot be used to finish the work.');
+			return self::externalShape(declaration: $declaration, values: ['error' => $error]);
+		}
+
+		return self::externalShape(declaration: $declaration, values: $this->linkedValues(link: $link));
+	}//end describeExternal()
+
+	/**
+	 * What the link's cached snapshot says, and whether the form is usable.
+	 *
+	 * @param FormLink $link The subject's link to the form.
+	 *
+	 * @return array<string, mixed> The description keys the link decides.
+	 */
+	private function linkedValues(FormLink $link): array {
+		$status = (string)($link->getStatus() ?? 'open');
+		$expiresAt = $link->getExpiresAt();
+		$values = ['formHash' => $link->getFormHash(), 'title' => $link->getTitle(), 'status' => $status, 'expiresAt' => $expiresAt?->format('c')];
+		$values['error'] = $this->unusableReason(status: $status, expiresAt: $expiresAt);
+		if ($values['error'] === null) {
+			$values['state'] = self::STATE_READY;
+		}
+
+		return $values;
+	}//end linkedValues()
+
+	/**
+	 * The subject's link to the declared form, when there is a subject and a form id.
+	 *
+	 * @param TaskForm $declaration The declaration.
+	 * @param TaskInterface $task The task, for its subject anchor.
+	 *
+	 * @return FormLink|null The link, or null.
+	 */
+	private function linkOf(TaskForm $declaration, TaskInterface $task): ?FormLink {
+		$objectUuid = trim((string)$task->getObjectUuid());
+		if ($objectUuid === '' || $declaration->formId === null) {
+			return null;
+		}
+
+		return $this->services->formLinks->findFormLink(objectUuid: $objectUuid, formId: $declaration->formId);
+	}//end linkOf()
+
+	/**
+	 * Why a linked form cannot be filled in: its status, or its expiry.
+	 *
+	 * @param string $status The link's status.
+	 * @param DateTime|null $expiresAt The link's expiry.
+	 *
+	 * @return string|null The reason, or null when the form is usable.
+	 */
+	private function unusableReason(string $status, ?DateTime $expiresAt): ?string {
+		if (in_array($status, ['archived', 'closed', 'draft'], true) === true) {
+			return $this->l10n->t('The form is %1$s and cannot be filled in.', [$status]);
+		}
+
+		return $this->expiryReason(expiresAt: $expiresAt);
+	}//end unusableReason()
+
+	/**
+	 * Why an expired linked form cannot be filled in.
+	 *
+	 * @param DateTime|null $expiresAt The link's expiry.
+	 *
+	 * @return string|null The reason, or null when it has not expired.
+	 */
+	private function expiryReason(?DateTime $expiresAt): ?string {
+		if ($expiresAt !== null && $expiresAt < new DateTime()) {
+			return $this->l10n->t('The form expired on %1$s and cannot be filled in.', [$expiresAt->format('Y-m-d')]);
+		}
+
+		return null;
+	}//end expiryReason()
+
+	/**
+	 * An external description: unavailable and unlinked unless the values say otherwise.
+	 *
+	 * @param TaskForm $declaration The declaration.
+	 * @param array<string, mixed> $values The keys that differ from that default.
+	 *
+	 * @return array<string, mixed> The description, keys in their published order.
+	 */
+	private static function externalShape(TaskForm $declaration, array $values): array {
+		$shape = [
 			'kind' => TaskForm::KIND_EXTERNAL,
 			'state' => self::STATE_UNAVAILABLE,
 			'error' => null,
@@ -328,41 +558,8 @@ class TaskFormResolver {
 			'expiresAt' => null,
 		];
 
-		$objectUuid = trim((string)$task->getObjectUuid());
-		$link = null;
-		if ($objectUuid !== '' && $declaration->formId !== null) {
-			$link = $this->formLinks->findFormLink(objectUuid: $objectUuid, formId: $declaration->formId);
-		}
-
-		if ($link === null) {
-			$description['error'] = $this->l10n->t('The form is no longer linked to this task\'s subject, so it cannot be used to finish the work.');
-
-			return $description;
-		}
-
-		$status = (string)($link->getStatus() ?? 'open');
-		$expiresAt = $link->getExpiresAt();
-		$description['formHash'] = $link->getFormHash();
-		$description['title'] = $link->getTitle();
-		$description['status'] = $status;
-		$description['expiresAt'] = $expiresAt?->format('c');
-
-		if (in_array($status, ['archived', 'closed', 'draft'], true) === true) {
-			$description['error'] = $this->l10n->t('The form is %1$s and cannot be filled in.', [$status]);
-
-			return $description;
-		}
-
-		if ($expiresAt !== null && $expiresAt < new DateTime()) {
-			$description['error'] = $this->l10n->t('The form expired on %1$s and cannot be filled in.', [$expiresAt->format('Y-m-d')]);
-
-			return $description;
-		}
-
-		$description['state'] = self::STATE_READY;
-
-		return $description;
-	}//end describeExternal()
+		return array_merge($shape, $values);
+	}//end externalShape()
 
 	/**
 	 * A run's version for a message: its number, or "draft" for an unpinned test run.

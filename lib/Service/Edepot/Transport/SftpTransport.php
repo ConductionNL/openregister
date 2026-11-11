@@ -39,7 +39,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class SftpTransport implements TransportInterface {
+class SftpTransport implements SftpTransportInterface {
 
 	use SipTransportSteps;
 	/**

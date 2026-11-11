@@ -36,3 +36,11 @@
 	@include clear-dialog-content-h3-rules;
 	@include dialog-actions;
 }
+
+// A row of dialog buttons aligned to the end, under the form.
+@mixin end-aligned-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 8px;
+}

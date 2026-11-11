@@ -52,7 +52,7 @@ use Psr\Log\LoggerInterface;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
-class RiskLevelService {
+class RiskLevelService implements RiskLevelServiceInterface {
 	/**
 	 * Metadata key used to store the risk level on files.
 	 */

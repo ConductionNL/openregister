@@ -74,16 +74,24 @@ class ConfigurationServiceCheckRemoteVersionGoldenTest extends TestCase {
 		});
 
 		$given = ['logger' => $logger, 'container' => $container, 'configurationMapper' => $mapper, 'appDataPath' => '/tmp'];
-		$args = [];
-		foreach ((new ReflectionMethod(ConfigurationService::class, '__construct'))->getParameters() as $param) {
-			$name = $param->getName();
-			if (isset($given[$name]) === true) {
-				$args[$name] = $given[$name];
-				continue;
+		$build = function (string $class) use (&$build, $given): object {
+			$args = [];
+			foreach ((new ReflectionMethod($class, '__construct'))->getParameters() as $param) {
+				$name = $param->getName();
+				$type = $param->getType()->getName();
+				if (isset($given[$name]) === true) {
+					$args[$name] = $given[$name];
+					continue;
+				}
+				if ((new \ReflectionClass($type))->isFinal() === true) {
+					$args[$name] = $build($type);
+					continue;
+				}
+				$args[$name] = $this->createMock($type);
 			}
-			$args[$name] = $this->createMock($param->getType()->getName());
-		}
-		return new ConfigurationService(...$args);
+			return new $class(...$args);
+		};
+		return $build(ConfigurationService::class);
 	}
 
 	/**

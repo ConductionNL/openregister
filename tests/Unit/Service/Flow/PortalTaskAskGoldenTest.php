@@ -24,12 +24,15 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskServices;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
 use OCP\IL10N;
@@ -112,7 +115,7 @@ class PortalTaskAskGoldenTest extends TestCase {
 		$delivery->method('messageFor')->willReturn([]);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		$node = new PortalTaskNode($bridge, $parties, $delivery, $l10n, $this->createMock(IURLGenerator::class));
+		$node = new PortalTaskNode(new PortalTaskServices($bridge, $parties, $delivery), new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)));
 
 		$items = [
 			FlowItems::item(
@@ -130,7 +133,7 @@ class PortalTaskAskGoldenTest extends TestCase {
 			'runAs' => 'caseworker',
 		];
 		try {
-			$node->execute($items, self::CONFIG, $context);
+			$node->execute(new FlowNodeCall(items: $items, config: self::CONFIG, context: $context));
 			$this->fail('Expected the node to suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull($suspension->getResumeAt());

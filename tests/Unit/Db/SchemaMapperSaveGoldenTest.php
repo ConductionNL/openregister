@@ -34,6 +34,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
@@ -80,6 +82,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleGraphValidator
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleStateValidator
  * @uses \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator
+ * @uses \OCA\OpenRegister\Mcp\Service\Mcp\McpVerbAnnotation
  * @uses \OCA\OpenRegister\Service\Merge\MergeAnnotationValidator
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevation
@@ -113,6 +116,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Db\EntityChangeDetector
  * @uses \OCA\OpenRegister\Db\SchemaPropertyInheritance
@@ -520,14 +525,18 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 		}
 
 		return new SchemaMapper(
-			$db,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$logger
+			db: $db,
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $logger
+			)
 		);
 	}//end makeMapper()
 }//end class
