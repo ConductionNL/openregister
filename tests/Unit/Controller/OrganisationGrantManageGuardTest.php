@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -73,7 +74,7 @@ class OrganisationGrantManageGuardTest extends TestCase {
 		$this->organisationMapper->method('update')->willReturnArgument(0);
 		$this->auditor = $this->createMock(GrantChangeAuditor::class);
 
-		$this->controller = new OrganisationController(
+		$this->controller = OrganisationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->organisationService,
@@ -136,8 +137,7 @@ class OrganisationGrantManageGuardTest extends TestCase {
 		);
 		$this->auditor->expects($this->once())->method('recordSpecialRight')->with(
 			'org-1',
-			['records-service'],
-			['records-service', 'second-service']
+			$this->equalTo(new \OCA\OpenRegister\Service\Rbac\SpecialRightChange(['records-service'], ['records-service', 'second-service']))
 		);
 
 		$this->controller->update('org-1');

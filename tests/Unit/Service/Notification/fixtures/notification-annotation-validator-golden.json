@@ -1,0 +1,771 @@
+{
+    "no-annotation": [],
+    "empty-annotation": [
+        {
+            "code": "notifications-empty",
+            "message": "x-openregister-notifications must declare at least one notification."
+        }
+    ],
+    "annotation-not-array": [
+        {
+            "code": "notifications-empty",
+            "message": "x-openregister-notifications must declare at least one notification."
+        }
+    ],
+    "valid-minimal": [],
+    "properties-not-array": [
+        {
+            "code": "notification-recipient-field-unknown",
+            "message": "Notification \"r\" recipient[0] field \"status\" is not declared on the schema."
+        }
+    ],
+    "bad-name-and-malformed": [
+        {
+            "code": "notification-bad-name",
+            "message": "Notification names must be non-empty strings."
+        },
+        {
+            "code": "notification-malformed",
+            "message": "Notification \"m\" must be an object."
+        },
+        {
+            "code": "notification-bad-name",
+            "message": "Notification names must be non-empty strings."
+        }
+    ],
+    "app-event-string-ok": [],
+    "app-event-string-bad": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "r",
+            "field": "trigger",
+            "value": "Booking",
+            "message": "Notification \"r\" app event \"Booking\" must be namespaced with a dot and start lowercase (e.g. \"booking.confirmed\", \"lifecycle.optIn\"), so it can never collide with a reserved trigger type."
+        }
+    ],
+    "app-event-reserved": [
+        {
+            "code": "notification-app-event-reserved",
+            "ruleKey": "r",
+            "field": "trigger",
+            "value": "created",
+            "message": "Notification \"r\" names \"created\" as an app event, but that is a reserved trigger type; use the object form {\"type\": \"created\"} instead."
+        }
+    ],
+    "app-event-empty": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "r",
+            "field": "trigger",
+            "value": "",
+            "message": "Notification \"r\" declares an app event that is not a non-empty string."
+        }
+    ],
+    "app-event-in-object": [],
+    "bad-trigger-type": [
+        {
+            "code": "notification-bad-trigger",
+            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+        }
+    ],
+    "no-trigger": [
+        {
+            "code": "notification-bad-trigger",
+            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+        }
+    ],
+    "trigger-int": [
+        {
+            "code": "notification-bad-trigger",
+            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+        }
+    ],
+    "scheduled-no-interval": [
+        {
+            "code": "notification-scheduled-bad-interval",
+            "message": "Notification \"r\" trigger.type=scheduled requires trigger.intervalSec (integer >= 60)."
+        }
+    ],
+    "scheduled-low-interval": [
+        {
+            "code": "notification-scheduled-bad-interval",
+            "message": "Notification \"r\" trigger.type=scheduled requires trigger.intervalSec (integer >= 60)."
+        }
+    ],
+    "scheduled-filter-str": [
+        {
+            "code": "notification-scheduled-bad-filter",
+            "ruleKey": "r",
+            "field": "trigger.filter",
+            "value": "x",
+            "message": "Notification \"r\" trigger.filter must be an object/map."
+        }
+    ],
+    "scheduled-filter-ok": [],
+    "scheduled-filter-bad": [
+        {
+            "code": "notification-scheduled-bad-filter-shape",
+            "ruleKey": "r",
+            "field": "trigger.filter.status",
+            "value": {
+                "bogus": 1
+            },
+            "message": "Notification \"r\" trigger.filter.status is a map without an \"operator\" key; it is neither a scalar, a list, nor an operator object."
+        }
+    ],
+    "scheduled-dedupe-str": [
+        {
+            "code": "notification-scheduled-bad-dedupe-fields",
+            "ruleKey": "r",
+            "field": "trigger.dedupeFields",
+            "value": "x",
+            "message": "Notification \"r\" trigger.dedupeFields must be a non-empty array of strings."
+        }
+    ],
+    "scheduled-dedupe-empty": [
+        {
+            "code": "notification-scheduled-bad-dedupe-fields",
+            "ruleKey": "r",
+            "field": "trigger.dedupeFields",
+            "value": [],
+            "message": "Notification \"r\" trigger.dedupeFields must be a non-empty array of strings."
+        }
+    ],
+    "scheduled-dedupe-bad": [
+        {
+            "code": "notification-scheduled-bad-dedupe-fields",
+            "ruleKey": "r",
+            "field": "trigger.dedupeFields[1]",
+            "value": "",
+            "message": "Notification \"r\" trigger.dedupeFields entries must be non-empty strings."
+        }
+    ],
+    "scheduled-dedupe-ok": [],
+    "threshold-empty": [
+        {
+            "code": "notification-threshold-no-aggregation",
+            "message": "Notification \"r\" trigger.type=threshold requires trigger.aggregation referencing a declared aggregation."
+        },
+        {
+            "code": "notification-threshold-bad-op",
+            "message": "Notification \"r\" trigger.type=threshold trigger.op must be one of [gt, gte, lt, lte, eq, ne]; got \"\"."
+        },
+        {
+            "code": "notification-threshold-no-value",
+            "message": "Notification \"r\" trigger.type=threshold requires trigger.value."
+        }
+    ],
+    "threshold-bad-op": [
+        {
+            "code": "notification-threshold-bad-op",
+            "message": "Notification \"r\" trigger.type=threshold trigger.op must be one of [gt, gte, lt, lte, eq, ne]; got \"between\"."
+        }
+    ],
+    "threshold-ok": [],
+    "calc-empty": [
+        {
+            "code": "notification-calculated-change-no-field",
+            "message": "Notification \"r\" trigger.type=calculatedChange requires trigger.field (non-empty string)."
+        }
+    ],
+    "calc-bad-clauses": [
+        {
+            "code": "notification-calculated-change-bad-clause",
+            "message": "Notification \"r\" trigger.condition must be a non-empty operator map."
+        },
+        {
+            "code": "notification-calculated-change-bad-clause",
+            "message": "Notification \"r\" trigger.previously must be a non-empty operator map."
+        }
+    ],
+    "calc-bad-ops": [
+        {
+            "code": "notification-calculated-change-bad-op",
+            "message": "Notification \"r\" trigger.condition operator \"foo\" must be one of [lt, lte, gt, gte, eq, ne]."
+        },
+        {
+            "code": "notification-calculated-change-bad-op",
+            "message": "Notification \"r\" trigger.condition operator \"0\" must be one of [lt, lte, gt, gte, eq, ne]."
+        },
+        {
+            "code": "notification-calculated-change-bad-op",
+            "message": "Notification \"r\" trigger.previously operator \"bar\" must be one of [lt, lte, gt, gte, eq, ne]."
+        }
+    ],
+    "calc-ok": [],
+    "forced-no-reason": [
+        {
+            "code": "notification-forced-channel-without-reason",
+            "message": "Notification \"r\": A forced channel needs the reason it is forced: a user who cannot switch a notification off is owed the sentence that says why."
+        }
+    ],
+    "forced-internal-only": [
+        {
+            "code": "notification-internal-only-has-no-internal-channel",
+            "message": "Notification \"r\": An internal-only kind declares only channels that can leave the organisation, so it would never send at all."
+        }
+    ],
+    "channels-missing": [
+        {
+            "code": "notification-channels-empty",
+            "message": "Notification \"r\" must declare at least one channel."
+        }
+    ],
+    "channels-string": [
+        {
+            "code": "notification-channels-empty",
+            "message": "Notification \"r\" must declare at least one channel."
+        }
+    ],
+    "channels-bad": [
+        {
+            "code": "notification-bad-channel",
+            "message": "Notification \"r\" channel \"fax\" is not in [nc-notification, email, activity, webhook, talk, web-push]."
+        },
+        {
+            "code": "notification-bad-channel",
+            "message": "Notification \"r\" channel \"7\" is not in [nc-notification, email, activity, webhook, talk, web-push]."
+        }
+    ],
+    "webhook-missing": [
+        {
+            "code": "notification-webhook-no-url",
+            "message": "Notification \"r\" declares the `webhook` channel but webhook.url is missing or malformed."
+        }
+    ],
+    "webhook-bad-url": [
+        {
+            "code": "notification-webhook-no-url",
+            "message": "Notification \"r\" declares the `webhook` channel but webhook.url is missing or malformed."
+        }
+    ],
+    "webhook-empty-url": [
+        {
+            "code": "notification-webhook-no-url",
+            "message": "Notification \"r\" declares the `webhook` channel but webhook.url is missing or malformed."
+        }
+    ],
+    "webhook-ok": [],
+    "talk-missing": [
+        {
+            "code": "notification-talk-no-token",
+            "message": "Notification \"r\" declares the `talk` channel but talk.token is missing or not a string."
+        }
+    ],
+    "talk-int-token": [
+        {
+            "code": "notification-talk-no-token",
+            "message": "Notification \"r\" declares the `talk` channel but talk.token is missing or not a string."
+        }
+    ],
+    "talk-ok": [],
+    "opt-in-string": [
+        {
+            "code": "notification-bad-opt-in-channel",
+            "message": "Notification \"r\" opt-in channel \"NULL\" is not in [nc-notification, email, activity, web-push]."
+        }
+    ],
+    "opt-in-mixed": [
+        {
+            "code": "notification-bad-opt-in-channel",
+            "message": "Notification \"r\" opt-in channel \"webhook\" is not in [nc-notification, email, activity, web-push]."
+        },
+        {
+            "code": "notification-bad-opt-in-channel",
+            "message": "Notification \"r\" opt-in channel \"integer\" is not in [nc-notification, email, activity, web-push]."
+        },
+        {
+            "code": "notification-bad-opt-in-channel",
+            "message": "Notification \"r\" opt-in channel \"NULL\" is not in [nc-notification, email, activity, web-push]."
+        }
+    ],
+    "opt-in-ok": [],
+    "category-ok": [],
+    "category-bad": [
+        {
+            "code": "notification-bad-message-category",
+            "message": "Notification \"r\" messageCategory \"spam\" is not in [besluit, statutory, account, security, case-update, reminder, service, marketing]."
+        }
+    ],
+    "category-array": [
+        {
+            "code": "notification-bad-message-category",
+            "message": "Notification \"r\" messageCategory \"\" is not in [besluit, statutory, account, security, case-update, reminder, service, marketing]."
+        }
+    ],
+    "category-empty": [],
+    "origin-app-empty": [
+        {
+            "code": "notification-bad-origin-app",
+            "message": "Notification \"r\" originApp must be a non-empty string app id."
+        }
+    ],
+    "origin-app-int": [
+        {
+            "code": "notification-bad-origin-app",
+            "message": "Notification \"r\" originApp must be a non-empty string app id."
+        }
+    ],
+    "origin-app-ok": [],
+    "actions-not-array": [
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" actions must be an array."
+        }
+    ],
+    "actions-too-many": [
+        {
+            "code": "notification-too-many-actions",
+            "message": "Notification \"r\" declares 3 actions; the Web Notification API renders at most 2."
+        },
+        {
+            "code": "notification-action-bad-label",
+            "message": "Notification \"r\" action[1] label must be a per-locale map with at least one non-empty value."
+        },
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" action[1] target.kind \"\" is not in [object-detail, route, url, task-verb]."
+        },
+        {
+            "code": "notification-action-bad-label",
+            "message": "Notification \"r\" action[2] label must be a per-locale map with at least one non-empty value."
+        },
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" action[2] target.kind \"nope\" is not in [object-detail, route, url, task-verb]."
+        }
+    ],
+    "actions-task-verb": [
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" action[0] target.verb \"steal\" is not a task lifecycle verb in [claim, unclaim, complete, resolve, cancel]."
+        }
+    ],
+    "subject-missing": [
+        {
+            "code": "notification-no-subject",
+            "message": "Notification \"r\" requires a subject string or per-locale map."
+        }
+    ],
+    "subject-int": [
+        {
+            "code": "notification-no-subject",
+            "message": "Notification \"r\" requires a subject string or per-locale map."
+        }
+    ],
+    "subject-empty": [
+        {
+            "code": "notification-no-subject",
+            "message": "Notification \"r\" requires a non-empty subject string."
+        }
+    ],
+    "subject-map-empty": [
+        {
+            "code": "notification-no-subject",
+            "message": "Notification \"r\" subject map must declare at least one locale (e.g. nl, en)."
+        },
+        {
+            "code": "notification-bad-default-locale",
+            "message": "Notification \"r\" defaultLocale \"nl\" is not declared in the subject map."
+        }
+    ],
+    "subject-map-bad-locale": [
+        {
+            "code": "notification-bad-subject-locale",
+            "message": "Notification \"r\" subject for locale \"nl\" must be a non-empty string."
+        },
+        {
+            "code": "notification-bad-subject-locale",
+            "message": "Notification \"r\" subject for locale \"en\" must be a non-empty string."
+        }
+    ],
+    "subject-map-bad-dflt": [
+        {
+            "code": "notification-bad-default-locale",
+            "message": "Notification \"r\" defaultLocale \"en\" is not declared in the subject map."
+        }
+    ],
+    "subject-map-int-dflt": [
+        {
+            "code": "notification-bad-default-locale",
+            "message": "Notification \"r\" defaultLocale \"7\" is not declared in the subject map."
+        }
+    ],
+    "subject-map-ok": [],
+    "message-bad": [
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message must be a string or a per-locale map."
+        }
+    ],
+    "message-map-bad": [
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message for locale \"nl\" must be a non-empty string."
+        }
+    ],
+    "message-ok": [],
+    "organisation-int": [
+        {
+            "code": "notification-bad-organisation",
+            "message": "Notification \"r\" organisation must be a string or an array of strings."
+        }
+    ],
+    "organisation-list-bad": [
+        {
+            "code": "notification-bad-organisation",
+            "message": "Notification \"r\" organisation array entries must be non-empty strings."
+        }
+    ],
+    "organisation-ok": [],
+    "domain-empty": [
+        {
+            "code": "notification-domain-malformed",
+            "message": "Notification \"r\" domain must be a non-empty string."
+        }
+    ],
+    "domain-int": [
+        {
+            "code": "notification-domain-malformed",
+            "message": "Notification \"r\" domain must be a non-empty string."
+        }
+    ],
+    "domain-ok": [],
+    "transports-bad": [
+        {
+            "code": "notification-transports-malformed",
+            "message": "Notification \"r\" transports must be an array."
+        }
+    ],
+    "transports-bad-kind": [
+        {
+            "code": "notification-transport-bad-kind",
+            "message": "Notification \"r\" transports[0] kind \"inbound\" not in [outbound]."
+        }
+    ],
+    "critical-bad": [
+        {
+            "code": "notification-critical-not-boolean",
+            "message": "Notification \"r\" `critical` must be a boolean."
+        }
+    ],
+    "digest-bad": [
+        {
+            "code": "notification-digest-bad-schedule",
+            "message": "Notification \"r\" `digest.schedule` must be \"daily\" or \"weekly\"."
+        },
+        {
+            "code": "notification-digest-bad-time",
+            "message": "Notification \"r\" `digest.at` must be an \"HH:MM\" time string."
+        },
+        {
+            "code": "notification-digest-bad-timezone",
+            "message": "Notification \"r\" `digest.timezone` must be a valid IANA timezone name."
+        }
+    ],
+    "digest-not-object": [
+        {
+            "code": "notification-digest-malformed",
+            "message": "Notification \"r\" `digest` must be an object."
+        }
+    ],
+    "digest-weekly-ok": [],
+    "digest-weekly-bad-day": [
+        {
+            "code": "notification-digest-bad-time",
+            "message": "Notification \"r\" `digest.at` must be an \"HH:MM\" time string."
+        },
+        {
+            "code": "notification-digest-weekly-missing-weekday",
+            "message": "Notification \"r\" `digest.weekday` (0-6) is required when `schedule` is \"weekly\"."
+        }
+    ],
+    "digest-weekly-no-day": [
+        {
+            "code": "notification-digest-weekly-missing-weekday",
+            "message": "Notification \"r\" `digest.weekday` (0-6) is required when `schedule` is \"weekly\"."
+        }
+    ],
+    "digest-daily-weekday": [
+        {
+            "code": "notification-digest-weekday-not-allowed",
+            "message": "Notification \"r\" `digest.weekday` is only allowed when `schedule` is \"weekly\"."
+        },
+        {
+            "code": "notification-digest-bad-timezone",
+            "message": "Notification \"r\" `digest.timezone` must be a valid IANA timezone name."
+        },
+        {
+            "code": "notification-digest-and-coalesce-mutually-exclusive",
+            "message": "Notification \"r\" declares both a rolling `coalesce` window and a fixed-time `digest` schedule; a rule may declare at most one batching mechanism."
+        }
+    ],
+    "digest-timezone-int": [
+        {
+            "code": "notification-digest-bad-time",
+            "message": "Notification \"r\" `digest.at` must be an \"HH:MM\" time string."
+        },
+        {
+            "code": "notification-digest-bad-timezone",
+            "message": "Notification \"r\" `digest.timezone` must be a valid IANA timezone name."
+        }
+    ],
+    "actions-shapes": [
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" action[0] must be an object."
+        },
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" action[1] primary must be a boolean."
+        },
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" action[1] target.kind \"\" is not in [object-detail, route, url, task-verb]."
+        }
+    ],
+    "actions-label-empty": [
+        {
+            "code": "notification-action-bad-label",
+            "message": "Notification \"r\" action[0] label must be a per-locale map with at least one non-empty value."
+        },
+        {
+            "code": "notification-action-bad-label",
+            "message": "Notification \"r\" action[1] label must be a per-locale map with at least one non-empty value."
+        }
+    ],
+    "message-empty": [
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message must be a non-empty string when present."
+        }
+    ],
+    "message-map-no-locale": [
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message map must declare at least one locale (e.g. nl, en)."
+        },
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message defaultLocale \"nl\" is not declared in the message map."
+        }
+    ],
+    "message-map-default": [
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message for locale \"en\" must be a non-empty string."
+        },
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message defaultLocale \"de\" is not declared in the message map."
+        }
+    ],
+    "message-map-default-int": [
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message defaultLocale \"5\" is not declared in the message map."
+        }
+    ],
+    "message-map-ok": [],
+    "recipients-missing": [
+        {
+            "code": "notification-no-recipients",
+            "message": "Notification \"r\" must declare at least one recipient."
+        },
+        {
+            "code": "notification-no-subject",
+            "message": "Notification \"s\" requires a non-empty subject string."
+        }
+    ],
+    "recipients-string": [
+        {
+            "code": "notification-no-recipients",
+            "message": "Notification \"r\" must declare at least one recipient."
+        }
+    ],
+    "recipient-malformed": [
+        {
+            "code": "notification-recipient-malformed",
+            "message": "Notification \"r\" recipient[0] must be an object."
+        }
+    ],
+    "recipient-watchers": [
+        {
+            "code": "notification-recipient-watchers-not-true",
+            "message": "Notification \"r\" recipient[0] watchers must be boolean true."
+        }
+    ],
+    "recipient-bad-kind": [
+        {
+            "code": "notification-bad-recipient-kind",
+            "message": "Notification \"r\" recipient[0] kind \"robots\" not in [users, field, groups, role, relation, object-acl, expression, watchers, parties, email]."
+        },
+        {
+            "code": "notification-bad-recipient-kind",
+            "message": "Notification \"r\" recipient[1] kind \"\" not in [users, field, groups, role, relation, object-acl, expression, watchers, parties, email]."
+        }
+    ],
+    "recipient-names-nobody": [
+        {
+            "code": "notification-recipient-names-nobody",
+            "message": "Notification \"r\" recipient[0] is kind \"groups\" but names no groups, so it can never resolve to anybody. An unstaffed group is fine and is reported at dispatch; an empty list is a stub."
+        },
+        {
+            "code": "notification-recipient-names-nobody",
+            "message": "Notification \"r\" recipient[1] is kind \"users\" but names no users, so it can never resolve to anybody. An unstaffed group is fine and is reported at dispatch; an empty list is a stub."
+        }
+    ],
+    "recipient-field": [
+        {
+            "code": "notification-recipient-field-unknown",
+            "message": "Notification \"r\" recipient[0] field \"nope\" is not declared on the schema."
+        },
+        {
+            "code": "notification-recipient-field-unknown",
+            "message": "Notification \"r\" recipient[1] field \"\" is not declared on the schema."
+        }
+    ],
+    "recipient-email": [
+        {
+            "code": "notification-recipient-email-field-missing",
+            "message": "Notification \"r\" recipient[0] kind=email requires a `field` naming the address, e.g. \"supplierRef.contactEmail\"."
+        },
+        {
+            "code": "notification-recipient-field-unknown",
+            "message": "Notification \"r\" recipient[1] field \"nope\" is not declared on the schema."
+        },
+        {
+            "code": "notification-recipient-email-needs-email-channel",
+            "message": "Notification \"r\" recipient[1] is kind=email but the rule has no \"email\" channel, so it would reach nobody."
+        },
+        {
+            "code": "notification-recipient-email-reference-has-no-ref",
+            "message": "Notification \"r\" recipient[2] field \"status.x\" goes through \"status\", which declares no `$ref`: the referenced object cannot be checked against a schema, so the rule would never send."
+        },
+        {
+            "code": "notification-recipient-email-needs-email-channel",
+            "message": "Notification \"r\" recipient[2] is kind=email but the rule has no \"email\" channel, so it would reach nobody."
+        },
+        {
+            "code": "notification-recipient-email-needs-email-channel",
+            "message": "Notification \"r\" recipient[3] is kind=email but the rule has no \"email\" channel, so it would reach nobody."
+        }
+    ],
+    "recipient-email-ok": [],
+    "recipient-acl": [
+        {
+            "code": "notification-recipient-acl-bad-permission",
+            "message": "Notification \"r\" recipient[0] kind=object-acl requires permission in [read, manage]; got \"\"."
+        },
+        {
+            "code": "notification-recipient-acl-bad-permission",
+            "message": "Notification \"r\" recipient[1] kind=object-acl requires permission in [read, manage]; got \"write\"."
+        }
+    ],
+    "recipient-role-free": [
+        {
+            "code": "notification-recipient-role-missing",
+            "message": "Notification \"r\" recipient[0] kind=role requires a non-empty role name."
+        }
+    ],
+    "recipient-role-declared": [
+        {
+            "code": "notification-recipient-role-unknown",
+            "message": "Notification \"r\" recipient[1] role \"boss\" is not assigned by the schema authorization; declared: [clerk, manager]."
+        }
+    ],
+    "recipient-role-bad-auth": [],
+    "recipient-expression": [
+        {
+            "code": "notification-recipient-expression-no-resolver",
+            "message": "Notification \"r\" recipient[0] kind=expression requires a resolver string (DI tag or FQCN)."
+        }
+    ],
+    "everything-wrong": [
+        {
+            "code": "notification-scheduled-bad-interval",
+            "message": "Notification \"r\" trigger.type=scheduled requires trigger.intervalSec (integer >= 60)."
+        },
+        {
+            "code": "notification-scheduled-bad-filter",
+            "ruleKey": "r",
+            "field": "trigger.filter",
+            "value": "x",
+            "message": "Notification \"r\" trigger.filter must be an object/map."
+        },
+        {
+            "code": "notification-scheduled-bad-dedupe-fields",
+            "ruleKey": "r",
+            "field": "trigger.dedupeFields",
+            "value": [],
+            "message": "Notification \"r\" trigger.dedupeFields must be a non-empty array of strings."
+        },
+        {
+            "code": "notification-bad-channel",
+            "message": "Notification \"r\" channel \"fax\" is not in [nc-notification, email, activity, webhook, talk, web-push]."
+        },
+        {
+            "code": "notification-bad-opt-in-channel",
+            "message": "Notification \"r\" opt-in channel \"fax\" is not in [nc-notification, email, activity, web-push]."
+        },
+        {
+            "code": "notification-bad-message-category",
+            "message": "Notification \"r\" messageCategory \"spam\" is not in [besluit, statutory, account, security, case-update, reminder, service, marketing]."
+        },
+        {
+            "code": "notification-bad-origin-app",
+            "message": "Notification \"r\" originApp must be a non-empty string app id."
+        },
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" actions must be an array."
+        },
+        {
+            "code": "notification-no-subject",
+            "message": "Notification \"r\" requires a non-empty subject string."
+        },
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message must be a string or a per-locale map."
+        },
+        {
+            "code": "notification-webhook-no-url",
+            "message": "Notification \"r\" declares the `webhook` channel but webhook.url is missing or malformed."
+        },
+        {
+            "code": "notification-talk-no-token",
+            "message": "Notification \"r\" declares the `talk` channel but talk.token is missing or not a string."
+        },
+        {
+            "code": "notification-bad-organisation",
+            "message": "Notification \"r\" organisation must be a string or an array of strings."
+        },
+        {
+            "code": "notification-domain-malformed",
+            "message": "Notification \"r\" domain must be a non-empty string."
+        },
+        {
+            "code": "notification-transports-malformed",
+            "message": "Notification \"r\" transports must be an array."
+        },
+        {
+            "code": "notification-critical-not-boolean",
+            "message": "Notification \"r\" `critical` must be a boolean."
+        },
+        {
+            "code": "notification-bad-recipient-kind",
+            "message": "Notification \"r\" recipient[0] kind \"robots\" not in [users, field, groups, role, relation, object-acl, expression, watchers, parties, email]."
+        },
+        {
+            "code": "notification-recipient-role-missing",
+            "message": "Notification \"r\" recipient[1] kind=role requires a non-empty role name."
+        },
+        {
+            "code": "notification-app-event-reserved",
+            "ruleKey": "q",
+            "field": "trigger",
+            "value": "created",
+            "message": "Notification \"q\" names \"created\" as an app event, but that is a reserved trigger type; use the object form {\"type\": \"created\"} instead."
+        }
+    ]
+}

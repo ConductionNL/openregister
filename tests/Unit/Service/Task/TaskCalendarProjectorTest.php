@@ -33,7 +33,9 @@ use OCA\OpenRegister\Db\TaskProjectionState;
 use OCA\OpenRegister\Db\TaskProjectionStateMapper;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
+use OCA\OpenRegister\Service\Task\TaskCalendarProjectorServices;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskVtodoRenderer;
 use OCA\OpenRegister\Service\Task\VtodoCalendarLocator;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -98,7 +100,10 @@ class TaskCalendarProjectorTest extends TestCase {
 			static fn (string $route, array $params): string => 'https://cloud.example/index.php/apps/openregister/flow-tasks/' . $params['uuid']
 		);
 
-		return new TaskCalendarProjector($this->backend, $this->calendars, $this->states, $inbox, $urls, $this->logger);
+		return new TaskCalendarProjector(
+			new TaskCalendarProjectorServices($this->backend, $this->calendars, $this->states, $this->logger),
+			new TaskVtodoRenderer($inbox, $urls)
+		);
 	}
 
 	/**

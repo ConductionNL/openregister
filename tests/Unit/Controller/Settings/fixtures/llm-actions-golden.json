@@ -1,0 +1,833 @@
+{
+    "chat custom message": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testMessage",
+                    "Hello! Please respond with a brief greeting."
+                ]
+            },
+            {
+                "container.get": [
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\ChatServiceInterface"
+                ]
+            },
+            {
+                "chat.testChat": [
+                    "o",
+                    {
+                        "a": 1
+                    },
+                    "yo"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "reply": "hello"
+        }
+    },
+    "chat empty config": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testMessage",
+                    "Hello! Please respond with a brief greeting."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "Invalid config",
+            "message": "Config must be provided as an object"
+        }
+    },
+    "chat failure": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testMessage",
+                    "Hello! Please respond with a brief greeting."
+                ]
+            },
+            {
+                "container.get": [
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\ChatServiceInterface"
+                ]
+            },
+            {
+                "chat.testChat": [
+                    "openai",
+                    {
+                        "a": 1
+                    },
+                    "Hello! Please respond with a brief greeting."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "reply": "hello"
+        }
+    },
+    "chat missing provider": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testMessage",
+                    "Hello! Please respond with a brief greeting."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "Missing provider",
+            "message": "Provider is required for testing"
+        }
+    },
+    "chat string config": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testMessage",
+                    "Hello! Please respond with a brief greeting."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "Invalid config",
+            "message": "Config must be provided as an object"
+        }
+    },
+    "chat success": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testMessage",
+                    "Hello! Please respond with a brief greeting."
+                ]
+            },
+            {
+                "container.get": [
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\ChatServiceInterface"
+                ]
+            },
+            {
+                "chat.testChat": [
+                    "openai",
+                    {
+                        "a": 1
+                    },
+                    "Hello! Please respond with a brief greeting."
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "reply": "hello"
+        }
+    },
+    "chat throws": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testMessage",
+                    "Hello! Please respond with a brief greeting."
+                ]
+            },
+            {
+                "container.get": [
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\ChatServiceInterface"
+                ]
+            },
+            {
+                "chat.testChat": [
+                    "openai",
+                    {
+                        "a": 1
+                    },
+                    "Hello! Please respond with a brief greeting."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "backend down",
+            "message": "Failed to test chat: backend down"
+        }
+    },
+    "clear failure": {
+        "calls": [
+            {
+                "vectors.clearAllEmbeddings": []
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "deleted": 4
+        }
+    },
+    "clear success": {
+        "calls": [
+            {
+                "vectors.clearAllEmbeddings": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "deleted": 4
+        }
+    },
+    "clear throws": {
+        "calls": [
+            {
+                "vectors.clearAllEmbeddings": []
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "backend down"
+        }
+    },
+    "embedding custom text": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testText",
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            },
+            {
+                "vectors.testEmbedding": [
+                    "o",
+                    {
+                        "a": 1
+                    },
+                    "hi"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "dimensions": 3
+        }
+    },
+    "embedding empty config": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testText",
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "Invalid config",
+            "message": "Config must be provided as an object"
+        }
+    },
+    "embedding failure": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testText",
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            },
+            {
+                "vectors.testEmbedding": [
+                    "openai",
+                    {
+                        "a": 1
+                    },
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "dimensions": 3
+        }
+    },
+    "embedding missing provider": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testText",
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "Missing provider",
+            "message": "Provider is required for testing"
+        }
+    },
+    "embedding provider zero": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testText",
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "Missing provider",
+            "message": "Provider is required for testing"
+        }
+    },
+    "embedding string config": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testText",
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "Invalid config",
+            "message": "Config must be provided as an object"
+        }
+    },
+    "embedding success": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testText",
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            },
+            {
+                "vectors.testEmbedding": [
+                    "openai",
+                    {
+                        "a": 1
+                    },
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "dimensions": 3
+        }
+    },
+    "embedding throws": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "provider",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "config",
+                    []
+                ]
+            },
+            {
+                "request.getParam": [
+                    "testText",
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            },
+            {
+                "vectors.testEmbedding": [
+                    "openai",
+                    {
+                        "a": 1
+                    },
+                    "This is a test embedding to verify the LLM configuration."
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "backend down",
+            "message": "Failed to generate embedding: backend down"
+        }
+    },
+    "get settings": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "chatProvider": "openai",
+            "ollamaConfig": {
+                "url": "u"
+            }
+        }
+    },
+    "get settings throws": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "settings unavailable"
+        }
+    },
+    "mismatch": {
+        "calls": [
+            {
+                "vectors.checkEmbeddingModelMismatch": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "has_vectors": true,
+            "mismatch": true
+        }
+    },
+    "mismatch throws": {
+        "calls": [
+            {
+                "vectors.checkEmbeddingModelMismatch": []
+            }
+        ],
+        "status": 500,
+        "data": {
+            "has_vectors": false,
+            "mismatch": false,
+            "error": "backend down"
+        }
+    },
+    "patch with model objects": {
+        "calls": [
+            {
+                "settings.updateLLMSettingsOnly": [
+                    {
+                        "fireworksConfig": {
+                            "embeddingModel": "fw-e",
+                            "chatModel": "fw-c"
+                        },
+                        "openaiConfig": {
+                            "model": "oa-e",
+                            "chatModel": null,
+                            "apiKey": "k"
+                        },
+                        "ollamaConfig": {
+                            "model": "ol-e",
+                            "chatModel": "ol-c",
+                            "url": "u"
+                        },
+                        "chatProvider": "openai"
+                    }
+                ]
+            },
+            {
+                "reporter.reportLlmProviders": [
+                    "openai",
+                    "ollama"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "LLM settings updated successfully",
+            "data": {
+                "chatProvider": "openai",
+                "embeddingProvider": "ollama",
+                "saved": true
+            }
+        }
+    },
+    "update result without providers": {
+        "calls": [
+            {
+                "settings.updateLLMSettingsOnly": [
+                    {
+                        "fireworksConfig": {
+                            "embeddingModel": "fw-e",
+                            "chatModel": "fw-c"
+                        },
+                        "openaiConfig": {
+                            "model": "oa-e",
+                            "chatModel": null,
+                            "apiKey": "k"
+                        },
+                        "ollamaConfig": {
+                            "model": "ol-e",
+                            "chatModel": "ol-c",
+                            "url": "u"
+                        },
+                        "chatProvider": "openai"
+                    }
+                ]
+            },
+            {
+                "reporter.reportLlmProviders": [
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "LLM settings updated successfully",
+            "data": {
+                "saved": true
+            }
+        }
+    },
+    "update throws": {
+        "calls": [
+            {
+                "settings.updateLLMSettingsOnly": [
+                    {
+                        "fireworksConfig": {
+                            "embeddingModel": "fw-e",
+                            "chatModel": "fw-c"
+                        },
+                        "openaiConfig": {
+                            "model": "oa-e",
+                            "chatModel": null,
+                            "apiKey": "k"
+                        },
+                        "ollamaConfig": {
+                            "model": "ol-e",
+                            "chatModel": "ol-c",
+                            "url": "u"
+                        },
+                        "chatProvider": "openai"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "save failed"
+        }
+    },
+    "update with model objects": {
+        "calls": [
+            {
+                "settings.updateLLMSettingsOnly": [
+                    {
+                        "fireworksConfig": {
+                            "embeddingModel": "fw-e",
+                            "chatModel": "fw-c"
+                        },
+                        "openaiConfig": {
+                            "model": "oa-e",
+                            "chatModel": null,
+                            "apiKey": "k"
+                        },
+                        "ollamaConfig": {
+                            "model": "ol-e",
+                            "chatModel": "ol-c",
+                            "url": "u"
+                        },
+                        "chatProvider": "openai"
+                    }
+                ]
+            },
+            {
+                "reporter.reportLlmProviders": [
+                    "openai",
+                    "ollama"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "LLM settings updated successfully",
+            "data": {
+                "chatProvider": "openai",
+                "embeddingProvider": "ollama",
+                "saved": true
+            }
+        }
+    },
+    "update with nothing": {
+        "calls": [
+            {
+                "settings.updateLLMSettingsOnly": [
+                    []
+                ]
+            },
+            {
+                "reporter.reportLlmProviders": [
+                    "openai",
+                    "ollama"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "LLM settings updated successfully",
+            "data": {
+                "chatProvider": "openai",
+                "embeddingProvider": "ollama",
+                "saved": true
+            }
+        }
+    },
+    "update with plain ids": {
+        "calls": [
+            {
+                "settings.updateLLMSettingsOnly": [
+                    {
+                        "fireworksConfig": {
+                            "embeddingModel": "fw-e",
+                            "chatModel": null
+                        },
+                        "openaiConfig": {
+                            "model": "oa-e",
+                            "chatModel": "oa-c"
+                        },
+                        "ollamaConfig": {
+                            "model": 0,
+                            "chatModel": ""
+                        }
+                    }
+                ]
+            },
+            {
+                "reporter.reportLlmProviders": [
+                    "openai",
+                    "ollama"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "LLM settings updated successfully",
+            "data": {
+                "chatProvider": "openai",
+                "embeddingProvider": "ollama",
+                "saved": true
+            }
+        }
+    },
+    "vector stats": {
+        "calls": [
+            {
+                "vectors.getVectorStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": "overridden?",
+            "total": 7
+        }
+    },
+    "vector stats throws": {
+        "calls": [
+            {
+                "vectors.getVectorStats": []
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "backend down"
+        }
+    }
+}

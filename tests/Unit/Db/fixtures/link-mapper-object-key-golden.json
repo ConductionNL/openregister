@@ -1,0 +1,507 @@
+{
+    "AnalyticsLinkMapper findByObjectAndReport found": {
+        "result": "OCA\\OpenRegister\\Db\\AnalyticsLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_analytics_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 5, 1",
+            "#1 expr.eq(report_id, :p2, NULL)",
+            "#1 andWhere(eq(report_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "AnalyticsLinkMapper findByObjectAndReport missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_analytics_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 5, 1",
+            "#1 expr.eq(report_id, :p2, NULL)",
+            "#1 andWhere(eq(report_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "AnalyticsLinkMapper deleteByObjectAndReport": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_analytics_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 5, 1",
+            "#1 expr.eq(report_id, :p2, NULL)",
+            "#1 andWhere(eq(report_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "BookmarkLinkMapper findByObjectAndBookmark found": {
+        "result": "OCA\\OpenRegister\\Db\\BookmarkLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bookmark_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 6, 1",
+            "#1 expr.eq(bookmark_id, :p2, NULL)",
+            "#1 andWhere(eq(bookmark_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "BookmarkLinkMapper findByObjectAndBookmark missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bookmark_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 6, 1",
+            "#1 expr.eq(bookmark_id, :p2, NULL)",
+            "#1 andWhere(eq(bookmark_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "BookmarkLinkMapper deleteByObjectAndBookmark": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_bookmark_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 6, 1",
+            "#1 expr.eq(bookmark_id, :p2, NULL)",
+            "#1 andWhere(eq(bookmark_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "CollectiveLinkMapper findByObjectAndPage found": {
+        "result": "OCA\\OpenRegister\\Db\\CollectiveLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_collective_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 7, 1",
+            "#1 expr.eq(page_id, :p2, NULL)",
+            "#1 andWhere(eq(page_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "CollectiveLinkMapper findByObjectAndPage missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_collective_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 7, 1",
+            "#1 expr.eq(page_id, :p2, NULL)",
+            "#1 andWhere(eq(page_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "CollectiveLinkMapper deleteByObjectAndPage": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_collective_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 7, 1",
+            "#1 expr.eq(page_id, :p2, NULL)",
+            "#1 andWhere(eq(page_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "CospendLinkMapper deleteByObjectAndId": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_cospend_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 8, 1",
+            "#1 expr.eq(id, :p2, NULL)",
+            "#1 andWhere(eq(id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "DeckLinkMapper findByObjectAndCard found": {
+        "result": "OCA\\OpenRegister\\Db\\DeckLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_deck_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 9, 1",
+            "#1 expr.eq(card_id, :p2, NULL)",
+            "#1 andWhere(eq(card_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "DeckLinkMapper findByObjectAndCard missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_deck_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 9, 1",
+            "#1 expr.eq(card_id, :p2, NULL)",
+            "#1 andWhere(eq(card_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "DeckLinkMapper deleteByObjectAndCard": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_deck_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 9, 1",
+            "#1 expr.eq(card_id, :p2, NULL)",
+            "#1 andWhere(eq(card_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "EmailLinkMapper findByObjectAndMessage found": {
+        "result": "OCA\\OpenRegister\\Db\\EmailLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_email_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 10, 1",
+            "#1 expr.eq(mail_message_id, :p2, NULL)",
+            "#1 andWhere(eq(mail_message_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "EmailLinkMapper findByObjectAndMessage missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_email_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 10, 1",
+            "#1 expr.eq(mail_message_id, :p2, NULL)",
+            "#1 andWhere(eq(mail_message_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowLinkMapper findByObjectAndOperation found": {
+        "result": "OCA\\OpenRegister\\Db\\FlowLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 11, 1",
+            "#1 expr.eq(operation_id, :p2, NULL)",
+            "#1 andWhere(eq(operation_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowLinkMapper findByObjectAndOperation missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 11, 1",
+            "#1 expr.eq(operation_id, :p2, NULL)",
+            "#1 andWhere(eq(operation_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowLinkMapper deleteByObjectAndOperation": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_flow_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 11, 1",
+            "#1 expr.eq(operation_id, :p2, NULL)",
+            "#1 andWhere(eq(operation_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "FormLinkMapper deleteByObjectAndForm": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 12, 1",
+            "#1 expr.eq(form_id, :p2, NULL)",
+            "#1 andWhere(eq(form_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "MapLinkMapper findByObjectAndFavorite found": {
+        "result": "OCA\\OpenRegister\\Db\\MapLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_map_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 13, 1",
+            "#1 expr.eq(favorite_id, :p2, NULL)",
+            "#1 andWhere(eq(favorite_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "MapLinkMapper findByObjectAndFavorite missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_map_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 13, 1",
+            "#1 expr.eq(favorite_id, :p2, NULL)",
+            "#1 andWhere(eq(favorite_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "MapLinkMapper deleteByObjectAndFavorite": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_map_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 13, 1",
+            "#1 expr.eq(favorite_id, :p2, NULL)",
+            "#1 andWhere(eq(favorite_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "OpenProjectLinkMapper findByObjectAndWorkPackage found": {
+        "result": "OCA\\OpenRegister\\Db\\OpenProjectLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_openproject_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 14, 1",
+            "#1 expr.eq(work_package_id, :p2, NULL)",
+            "#1 andWhere(eq(work_package_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "OpenProjectLinkMapper findByObjectAndWorkPackage missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_openproject_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 14, 1",
+            "#1 expr.eq(work_package_id, :p2, NULL)",
+            "#1 andWhere(eq(work_package_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "OpenProjectLinkMapper deleteByObjectAndWorkPackage": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_openproject_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 14, 1",
+            "#1 expr.eq(work_package_id, :p2, NULL)",
+            "#1 andWhere(eq(work_package_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "PhotoLinkMapper findByObjectAndAlbum found": {
+        "result": "OCA\\OpenRegister\\Db\\PhotoLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_photo_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 15, 1",
+            "#1 expr.eq(album_id, :p2, NULL)",
+            "#1 andWhere(eq(album_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "PhotoLinkMapper findByObjectAndAlbum missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_photo_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 15, 1",
+            "#1 expr.eq(album_id, :p2, NULL)",
+            "#1 andWhere(eq(album_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "PhotoLinkMapper deleteByObjectAndAlbum": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_photo_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 15, 1",
+            "#1 expr.eq(album_id, :p2, NULL)",
+            "#1 andWhere(eq(album_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "PollLinkMapper findByObjectAndPoll found": {
+        "result": "OCA\\OpenRegister\\Db\\PollLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_poll_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 16, 1",
+            "#1 expr.eq(poll_id, :p2, NULL)",
+            "#1 andWhere(eq(poll_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "PollLinkMapper findByObjectAndPoll missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_poll_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 16, 1",
+            "#1 expr.eq(poll_id, :p2, NULL)",
+            "#1 andWhere(eq(poll_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "PollLinkMapper deleteByObjectAndPoll": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_poll_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 16, 1",
+            "#1 expr.eq(poll_id, :p2, NULL)",
+            "#1 andWhere(eq(poll_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "TalkLinkMapper findByObjectAndRoom found": {
+        "result": "OCA\\OpenRegister\\Db\\TalkLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_talk_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = room-tok, 2",
+            "#1 expr.eq(room_token, :p2, NULL)",
+            "#1 andWhere(eq(room_token, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "TalkLinkMapper findByObjectAndRoom missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_talk_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = room-tok, 2",
+            "#1 expr.eq(room_token, :p2, NULL)",
+            "#1 andWhere(eq(room_token, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "TalkLinkMapper deleteByObjectAndRoom": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_talk_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = room-tok, 2",
+            "#1 expr.eq(room_token, :p2, NULL)",
+            "#1 andWhere(eq(room_token, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "XwikiLinkMapper findByObjectAndPage found": {
+        "result": "OCA\\OpenRegister\\Db\\XwikiLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_xwiki_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = Main.Page, 2",
+            "#1 expr.eq(page_reference, :p2, NULL)",
+            "#1 andWhere(eq(page_reference, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "XwikiLinkMapper findByObjectAndPage missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_xwiki_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = Main.Page, 2",
+            "#1 expr.eq(page_reference, :p2, NULL)",
+            "#1 andWhere(eq(page_reference, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "XwikiLinkMapper deleteByObjectAndPage": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_xwiki_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = Main.Page, 2",
+            "#1 expr.eq(page_reference, :p2, NULL)",
+            "#1 andWhere(eq(page_reference, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    }
+}

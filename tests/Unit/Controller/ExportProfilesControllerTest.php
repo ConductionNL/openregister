@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ExportProfilesControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -67,7 +68,7 @@ final class ExportProfilesControllerTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn($isAdmin);
 
-		return new ExportProfilesController(
+		return ExportProfilesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
@@ -168,6 +169,46 @@ final class ExportProfilesControllerTest extends TestCase {
 		self::assertSame('rendered', $response->getData()['valueMode']);
 	}//end testUpdatingAProfileAnswersTheProfile()
 
+	public function testAnInvalidUpdateIs400WithTheReason(): void {
+		$this->request->method('getParams')->willReturn(['valueMode' => 'nonsense']);
+		$this->service->method('find')->willReturn($this->profile());
+		$this->service->method('update')->willThrowException(
+			new \InvalidArgumentException('Unknown value mode.')
+		);
+
+		$response = $this->controller()->update(1);
+
+		self::assertSame(400, $response->getStatus());
+		self::assertSame('Unknown value mode.', $response->getData()['error']);
+	}//end testAnInvalidUpdateIs400WithTheReason()
+
+	public function testSomebodyElsesProfileIsRefusedOnEveryOwnedEndpoint(): void {
+		$this->service->method('find')->willReturn($this->profile());
+		$this->service->method('assertOwnerOrAdmin')->willThrowException(
+			new ExportRefusedException('profile-not-yours', 'This export profile belongs to another user.', 403)
+		);
+		$this->service->expects(self::never())->method('update');
+		$this->service->expects(self::never())->method('delete');
+		$this->service->expects(self::never())->method('run');
+		$controller = $this->controller('andere-gebruiker');
+
+		foreach ([$controller->update(1), $controller->destroy(1), $controller->run(1)] as $response) {
+			self::assertInstanceOf(JSONResponse::class, $response);
+			self::assertSame(403, $response->getStatus());
+			self::assertSame('profile-not-yours', $response->getData()['rule']);
+		}
+	}//end testSomebodyElsesProfileIsRefusedOnEveryOwnedEndpoint()
+
+	public function testAMissingProfileIs404OnEveryOwnedEndpoint(): void {
+		$this->service->method('find')->willThrowException(new DoesNotExistException('gone'));
+		$controller = $this->controller();
+
+		foreach ([$controller->update(9), $controller->destroy(9), $controller->run(9)] as $response) {
+			self::assertInstanceOf(JSONResponse::class, $response);
+			self::assertSame(404, $response->getStatus());
+		}
+	}//end testAMissingProfileIs404OnEveryOwnedEndpoint()
+
 	public function testDeletingAProfileAnswersDeleted(): void {
 		$this->service->method('find')->willReturn($this->profile());
 
@@ -216,6 +257,23 @@ final class ExportProfilesControllerTest extends TestCase {
 		self::assertSame('1', $response->getHeaders()['X-OpenRegister-Export-Row-Count']);
 		self::assertSame('profile-uuid-1', $response->getHeaders()['X-OpenRegister-Export-Profile']);
 	}//end testAGrantedRunHandsBackTheFileWithItsModeOnTheHeaders()
+
+	public function testAJsonProfileIsServedAsJsonAndACsvOneAsCsv(): void {
+		$written = [
+			'bytes' => '[]',
+			'rowCount' => 0,
+			'metadata' => ['valueMode' => 'raw', 'profileUuid' => 'profile-uuid-1'],
+			'filename' => 'export.json',
+		];
+		$this->service->method('find')->willReturnOnConsecutiveCalls($this->profile('json'), $this->profile('csv'));
+		$this->service->method('run')->willReturn($written);
+
+		$json = $this->controller()->run(1);
+		$csv = $this->controller()->run(1);
+
+		self::assertSame('application/json', $json->getHeaders()['Content-Type']);
+		self::assertSame('text/csv', $csv->getHeaders()['Content-Type']);
+	}//end testAJsonProfileIsServedAsJsonAndACsvOneAsCsv()
 
 	public function testTheContractPublishesWhatAConsumerNeedsToReadTheFile(): void {
 		$data = $this->controller()->contract()->getData();

@@ -140,7 +140,7 @@ class UserFormatTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function testAPlannedUserPassesAndNoOtherUnknownIdDoes(): void {
 		$users = $this->createMock(IUserManager::class);

@@ -26,11 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
-use OCA\OpenRegister\Twig\MappingExtension;
-use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
 use Twig\Extension\SandboxExtension;
@@ -57,11 +56,79 @@ use Twig\Sandbox\SecurityPolicy;
  */
 class ComputedFieldHandler {
 	/**
-	 * Maximum depth for cross-reference resolution to prevent circular lookups.
+	 * Twig keywords and built-in helpers that are not dependencies of a computed expression.
 	 *
-	 * @var int
+	 * @var list<string>
 	 */
-	private const MAX_REF_DEPTH = 3;
+	private const TWIG_RESERVED_WORDS = [
+		'and',
+		'or',
+		'not',
+		'in',
+		'is',
+		'as',
+		'with',
+		'true',
+		'false',
+		'null',
+		'if',
+		'else',
+		'elseif',
+		'endif',
+		'for',
+		'endfor',
+		'set',
+		'do',
+		'block',
+		'endblock',
+		'date',
+		'now',
+		'min',
+		'max',
+		'range',
+		'random',
+		'length',
+		'count',
+	];
+
+	/**
+	 * The filters the Twig sandbox allows in computed expressions.
+	 */
+	private const SANDBOX_FILTERS = [
+		'date',
+		'date_modify',
+		'upper',
+		'lower',
+		'trim',
+		'length',
+		'default',
+		'number_format',
+		'round',
+		'abs',
+		'split',
+		'join',
+		'slice',
+		'first',
+		'last',
+		'replace',
+		'format',
+		'b64enc',
+		'b64dec',
+		'json_decode',
+		'zgw_enum',
+		'zgw_enum_reverse',
+		'zgw_extract_uuid',
+	];
+
+	/**
+	 * The functions the Twig sandbox allows in computed expressions.
+	 */
+	private const SANDBOX_FUNCTIONS = [
+		'max',
+		'min',
+		'range',
+		'generateUuid',
+	];
 
 	/**
 	 * Twig environment instance for expression evaluation.
@@ -71,20 +138,25 @@ class ComputedFieldHandler {
 	private ?Environment $twig = null;
 
 	/**
+	 * The fields in a dependency cycle, memoised per schema definition.
+	 *
+	 * @var array<string, array<string, true>>
+	 */
+	private array $cyclicBySchema = [];
+
+	/**
 	 * Constructor for ComputedFieldHandler.
 	 *
-	 * @param MagicMapper $objectMapper Mapper for fetching referenced objects.
-	 * @param MappingExtension $mappingExtension Twig extension with custom filters and functions.
-	 * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
+	 * @param MagicObjectFinderInterface $objectMapper Mapper for fetching referenced objects.
+	 * @param MappingTwigInstallerInterface $mappingTwig Adds the mapping filters, functions and their runtime.
 	 * @param LoggerInterface $logger Logger for error and debug messages.
 	 * @param CodedValueGuard|null $codedValues Rolls concept weights up into the declared score property.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
-		private readonly MappingExtension $mappingExtension,
-		private readonly MappingRuntimeLoader $mappingRuntimeLoader,
+		private readonly MagicObjectFinderInterface $objectMapper,
+		private readonly MappingTwigInstallerInterface $mappingTwig,
 		private readonly LoggerInterface $logger,
 		// The rolled-up concept score. Nullable with a null default so the
 		// unit tests that build this handler positionally keep working; the
@@ -101,6 +173,13 @@ class ComputedFieldHandler {
 	 * - MappingExtension for custom filters/functions
 	 * - SandboxExtension for security (restricts available tags, filters, functions)
 	 *
+	 * Autoescape is disabled. Twig's default autoescaping injects the `escape`
+	 * filter into every `{{ var }}` output, but our sandbox SecurityPolicy
+	 * doesn't allow that filter (and HTML escape isn't meaningful for computed
+	 * property values that return strings/numbers/dates back into the object
+	 * data). Without this flag, every Twig expression silently fails with
+	 * `Filter "escape" is not allowed`.
+	 *
 	 * @return Environment The configured Twig environment
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
@@ -110,111 +189,130 @@ class ComputedFieldHandler {
 			return $this->twig;
 		}
 
-		$loader = new ArrayLoader();
-		// Autoescape disabled — Twig's default autoescaping injects the
-		// `escape` filter into every `{{ var }}` output, but our
-		// sandbox SecurityPolicy doesn't allow that filter (and HTML
-		// escape isn't meaningful for computed property values that
-		// return strings/numbers/dates back into the object data).
-		// Without this flag, every Twig expression silently fails
-		// with `Filter "escape" is not allowed`.
-		$this->twig = new Environment($loader, ['autoescape' => false]);
+		// Autoescape disabled: see the docblock.
+		$this->twig = new Environment(new ArrayLoader(), ['autoescape' => false]);
 
 		// Add the mapping extension for custom filters and functions.
-		$this->twig->addExtension($this->mappingExtension);
-		$this->twig->addRuntimeLoader($this->mappingRuntimeLoader);
+		$this->mappingTwig->installOn(twig: $this->twig);
 
 		// Configure sandbox for security.
-		$policy = new SecurityPolicy(
-			allowedTags: [],
-			allowedFilters: [
-				'date',
-				'date_modify',
-				'upper',
-				'lower',
-				'trim',
-				'length',
-				'default',
-				'number_format',
-				'round',
-				'abs',
-				'split',
-				'join',
-				'slice',
-				'first',
-				'last',
-				'replace',
-				'format',
-				'b64enc',
-				'b64dec',
-				'json_decode',
-				'zgw_enum',
-				'zgw_enum_reverse',
-				'zgw_extract_uuid',
-			],
-			allowedMethods: [],
-			allowedProperties: [],
-			allowedFunctions: [
-				'max',
-				'min',
-				'range',
-				'generateUuid',
-			]
-		);
-
-		$sandbox = new SandboxExtension($policy, sandboxed: true);
-		$this->twig->addExtension($sandbox);
+		$this->twig->addExtension($this->sandbox());
 
 		return $this->twig;
 	}//end getTwig()
+
+	/**
+	 * The sandbox that restricts computed expressions to no tags, no methods
+	 * or properties, and the allowed filters and functions.
+	 *
+	 * @return SandboxExtension The sandbox, enabled for every template.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function sandbox(): SandboxExtension {
+		$policy = new SecurityPolicy(
+			allowedTags: [],
+			allowedFilters: self::SANDBOX_FILTERS,
+			allowedMethods: [],
+			allowedProperties: [],
+			allowedFunctions: self::SANDBOX_FUNCTIONS
+		);
+
+		return new SandboxExtension($policy, sandboxed: true);
+	}//end sandbox()
 
 	/**
 	 * Evaluate computed fields for the given evaluation mode.
 	 *
 	 * Iterates through schema properties, finds those with a `computed` attribute
 	 * matching the specified evaluateOn mode, and evaluates their Twig expressions.
+	 * A field that sits in a dependency cycle is not evaluated: it is set to null
+	 * and the cycle is logged.
 	 *
-	 * @param array $data The object data (used as Twig context).
-	 * @param Schema $schema The schema containing property definitions.
-	 * @param string $evaluateOn The evaluation mode: 'save' or 'read'.
+	 * @param array        $data The object data (used as Twig context).
+	 * @param ComputedPass $pass The schema containing the property definitions and the mode: 'save' or 'read'.
 	 *
 	 * @return array The object data with computed field values added/updated.
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-circular-dependency-detection
 	 */
-	public function evaluateComputedFields(array $data, Schema $schema, string $evaluateOn = 'save'): array {
-		$properties = $schema->getProperties() ?? [];
+	public function evaluateComputedFields(array $data, ComputedPass $pass): array {
+		$schema = $pass->schema;
+		$cyclic = $this->cyclicFields(schema: $schema);
 
-		foreach ($properties as $propertyName => $property) {
-			// Skip properties without a computed attribute.
-			if (isset($property['computed']) === false || is_array($property['computed']) === false) {
-				continue;
+		foreach ($this->expressionsFor(schema: $schema, evaluateOn: $pass->evaluateOn) as $propertyName => $expression) {
+			// A field in a cycle is not evaluated.
+			$value = null;
+			if (isset($cyclic[$propertyName]) === false) {
+				$computed = new ComputedExpression(schema: $schema, propertyName: $propertyName, expression: $expression);
+				$value = $this->evaluateExpression(computed: $computed, data: $data);
 			}
 
-			$computed = $property['computed'];
-
-			// Skip if no expression defined.
-			if (isset($computed['expression']) === false || empty($computed['expression']) === true) {
-				continue;
-			}
-
-			// Check evaluateOn mode (default: 'save').
-			$propertyEvaluateOn = $computed['evaluateOn'] ?? 'save';
-			if ($propertyEvaluateOn !== $evaluateOn) {
-				continue;
-			}
-
-			// Evaluate the expression.
-			$data[$propertyName] = $this->evaluateExpression(
-				expression: $computed['expression'],
-				data: $data,
-				schema: $schema,
-				propertyName: $propertyName
-			);
-		}//end foreach
+			$data[$propertyName] = $value;
+		}
 
 		return $this->applyConceptScores(data: $data, schema: $schema);
 	}//end evaluateComputedFields()
+
+	/**
+	 * The computed expressions a schema declares for one evaluation mode, by property name.
+	 *
+	 * @param Schema $schema The schema.
+	 * @param string $evaluateOn The evaluation mode: 'save' or 'read'.
+	 *
+	 * @return array<string, string> The expressions.
+	 */
+	private function expressionsFor(Schema $schema, string $evaluateOn): array {
+		$expressions = [];
+		foreach (($schema->getProperties() ?? []) as $propertyName => $property) {
+			if ($this->isComputedOn(property: $property, evaluateOn: $evaluateOn) === true && empty($property['computed']['expression']) === false) {
+				$expressions[(string)$propertyName] = $property['computed']['expression'];
+			}
+		}
+
+		return $expressions;
+	}//end expressionsFor()
+
+	/**
+	 * The computed fields that sit in a dependency cycle, each cycle logged once.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * Memoised per schema definition within the request, so a list read does
+	 * not re-analyse the expressions once per object.
+	 *
+	 * @return array<string, true> The fields in a cycle, by name.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-circular-dependency-detection
+	 */
+	private function cyclicFields(Schema $schema): array {
+		$key = $schema->getId() . ':' . hash(algo: 'xxh128', data: (string)json_encode($schema->getProperties()));
+		if (isset($this->cyclicBySchema[$key]) === false) {
+			$this->cyclicBySchema[$key] = $this->findCyclicFields(schema: $schema);
+		}
+
+		return $this->cyclicBySchema[$key];
+	}//end cyclicFields()
+
+	/**
+	 * Detect the cycles of a schema, log each, and name the fields in them.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<string, true> The fields in a cycle, by name.
+	 */
+	private function findCyclicFields(Schema $schema): array {
+		$cyclic = [];
+		foreach ($this->detectCircularDependencies(schema: $schema) as $cycle) {
+			$this->logger->warning(
+				message: '[ComputedFieldHandler] Circular dependency detected between computed fields; they are set to null: ' . implode(' -> ', $cycle),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schema->getId(), 'cycle' => $cycle]
+			);
+			$cyclic += array_fill_keys($cycle, true);
+		}
+
+		return $cyclic;
+	}//end findCyclicFields()
 
 	/**
 	 * Write the rolled-up scores a schema's coded properties declare.
@@ -234,15 +332,32 @@ class ComputedFieldHandler {
 	 *
 	 * @return array<string,mixed> The data with the scores written.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	private function applyConceptScores(array $data, Schema $schema): array {
+		foreach ($this->conceptScores(data: $data, schema: $schema) as $property => $score) {
+			$data[$property] = $score;
+		}
+
+		return $data;
+	}//end applyConceptScores()
+
+	/**
+	 * The rolled-up concept scores of an object; none without a coded-value guard or when the vocabulary
+	 * cannot be read.
+	 *
+	 * @param array<string,mixed> $data   The object data.
+	 * @param Schema              $schema The schema being evaluated.
+	 *
+	 * @return array<string,float> The scores, keyed by target property.
+	 */
+	private function conceptScores(array $data, Schema $schema): array {
 		if ($this->codedValues === null) {
-			return $data;
+			return [];
 		}
 
 		try {
-			$scores = $this->codedValues->rolledUpScores(object: $data, schema: $schema);
+			return $this->codedValues->rolledUpScores(object: $data, schema: $schema);
 		} catch (\Throwable $failure) {
 			// A vocabulary that cannot be read must not become the reason an
 			// object cannot be saved or rendered; the score is simply absent.
@@ -251,15 +366,9 @@ class ComputedFieldHandler {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schema->getId()]
 			);
 
-			return $data;
+			return [];
 		}
-
-		foreach ($scores as $property => $score) {
-			$data[$property] = $score;
-		}
-
-		return $data;
-	}//end applyConceptScores()
+	}//end conceptScores()
 
 	/**
 	 * Evaluate a single Twig expression with the given data context.
@@ -267,57 +376,65 @@ class ComputedFieldHandler {
 	 * Handles cross-reference resolution (via _ref prefix) and graceful error handling.
 	 * On error, returns null and logs a warning.
 	 *
-	 * @param string $expression The Twig expression to evaluate.
-	 * @param array $data The object data as Twig context.
-	 * @param Schema $schema The schema for cross-reference resolution.
-	 * @param string $propertyName The property name (for logging).
+	 * @param ComputedExpression $computed The property, its expression and the schema for cross-reference resolution.
+	 * @param array              $data     The object data as Twig context.
 	 *
 	 * @return mixed The computed value, or null on error.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function evaluateExpression(
-		string $expression,
-		array $data,
-		Schema $schema,
-		string $propertyName,
-	): mixed {
+	private function evaluateExpression(ComputedExpression $computed, array $data): mixed {
 		try {
 			// Build the Twig context: object data + resolved cross-references.
-			$context = $this->buildTwigContext(data: $data, schema: $schema);
-
-			// Create a template from the expression.
-			$twig = $this->getTwig();
-			$templateName = 'computed_' . $propertyName . '_' . md5($expression);
-
-			/*
-			 * @var \Twig\Loader\ArrayLoader $loader
-			 */
-
-			$loader = $twig->getLoader();
-			$loader->setTemplate($templateName, $expression);
-
-			// Render the expression.
-			$result = trim($twig->render($templateName, $context));
+			$context = $this->buildTwigContext(data: $data, schema: $computed->schema);
+			$result = $this->render(computed: $computed, context: $context);
 
 			// Attempt to cast numeric results to their appropriate types.
 			return $this->castResult(result: $result);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: 'Computed field evaluation error: ' . $e->getMessage(),
-				context: [
-					'app' => 'openregister',
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'propertyName' => $propertyName,
-					'expression' => $expression,
-					'error' => $e->getMessage(),
-				]
+				context: $this->failureContext(
+					details: ['propertyName' => $computed->propertyName, 'expression' => $computed->expression, 'error' => $e->getMessage()]
+				)
 			);
 
 			return null;
-		}//end try
+		}
 	}//end evaluateExpression()
+
+	/**
+	 * The log context of a failed evaluation or lookup: the app name and location, then the details.
+	 *
+	 * @param array<string, mixed> $details The details.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function failureContext(array $details): array {
+		return ['app' => 'openregister', 'file' => __FILE__, 'line' => __LINE__] + $details;
+	}//end failureContext()
+
+	/**
+	 * Render an expression as a named template in the sandboxed environment, trimmed.
+	 *
+	 * @param ComputedExpression $computed The expression and its template name.
+	 * @param array              $context  The Twig context.
+	 *
+	 * @return string The rendered, trimmed result.
+	 */
+	private function render(ComputedExpression $computed, array $context): string {
+		$name = $computed->templateName();
+		$twig = $this->getTwig();
+
+		/*
+		 * @var \Twig\Loader\ArrayLoader $loader
+		 */
+
+		$loader = $twig->getLoader();
+		$loader->setTemplate($name, $computed->expression);
+
+		return trim($twig->render($name, $context));
+	}//end render()
 
 	/**
 	 * Build the Twig context from object data, including cross-reference lookups.
@@ -325,23 +442,20 @@ class ComputedFieldHandler {
 	 * Resolves properties referenced via `_ref` by fetching related objects
 	 * and making their data available in the Twig context under the `_ref` key.
 	 *
+	 * References are resolved one level deep: a referenced object's own references are not followed.
+	 *
 	 * @param array $data The object data.
 	 * @param Schema $schema The schema for identifying reference properties.
-	 * @param int $depth Current resolution depth (for circular reference prevention).
 	 *
 	 * @return array The Twig context with data and resolved references.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function buildTwigContext(array $data, Schema $schema, int $depth = 0): array {
+	private function buildTwigContext(array $data, Schema $schema): array {
 		$context = $data;
-
-		// Resolve cross-references if within depth limit.
-		if ($depth < self::MAX_REF_DEPTH) {
-			$refs = $this->resolveReferences(data: $data, schema: $schema, depth: $depth);
-			if (empty($refs) === false) {
-				$context['_ref'] = $refs;
-			}
+		$refs = $this->resolveReferences(data: $data, schema: $schema);
+		if (empty($refs) === false) {
+			$context['_ref'] = $refs;
 		}
 
 		return $context;
@@ -355,77 +469,61 @@ class ComputedFieldHandler {
 	 *
 	 * @param array $data The object data containing reference UUIDs.
 	 * @param Schema $schema The schema with property definitions.
-	 * @param int $depth Current resolution depth.
 	 *
 	 * @return array Resolved reference data indexed by property name.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function resolveReferences(array $data, Schema $schema, int $depth): array {
-		// Guard against infinite recursion in nested reference resolution.
-		$maxDepth = 10;
-		if ($depth > $maxDepth) {
-			$this->logger->warning(
-				message: '[ComputedFieldHandler] Max reference resolution depth exceeded',
-				context: [
-					'app' => 'openregister',
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'depth' => $depth,
-					'maxDepth' => $maxDepth,
-					'schemaId' => $schema->getId(),
-				]
+	private function resolveReferences(array $data, Schema $schema): array {
+		$refs = [];
+		foreach (($schema->getProperties() ?? []) as $propertyName => $property) {
+			if ($this->isReferenceProperty(property: $property) === true) {
+				$refs[$propertyName] = $this->referencedData(propertyName: $propertyName, refValue: $data[$propertyName] ?? null);
+			}
+		}
+
+		return $refs;
+	}//end resolveReferences()
+
+	/**
+	 * Whether a property is a reference: it has a `$ref`, or is a string with format 'uuid'.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return bool
+	 */
+	private function isReferenceProperty(mixed $property): bool {
+		return isset($property['$ref']) === true
+			|| (($property['type'] ?? '') === 'string' && ($property['format'] ?? '') === 'uuid');
+	}//end isReferenceProperty()
+
+	/**
+	 * The data of the object a reference value names; [] for a value that is no non-blank string or names
+	 * no readable object.
+	 *
+	 * The object is read without RBAC and tenancy: it only feeds the computed value.
+	 *
+	 * @param int|string $propertyName The reference property (for logging).
+	 * @param mixed      $refValue     The reference value (a UUID).
+	 *
+	 * @return array
+	 */
+	private function referencedData(int|string $propertyName, mixed $refValue): array {
+		if (is_string($refValue) === false || trim($refValue) === '') {
+			return [];
+		}
+
+		try {
+			return $this->objectMapper->find(identifier: $refValue, _rbac: false, _multitenancy: false)->getObject() ?? [];
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[ComputedFieldHandler] Failed to resolve reference',
+				context: $this->failureContext(details: ['propertyName' => $propertyName, 'refValue' => $refValue, 'error' => $e->getMessage()])
 			);
 
 			return [];
 		}
-
-		$refs = [];
-		$properties = $schema->getProperties() ?? [];
-
-		foreach ($properties as $propertyName => $property) {
-			// Check if this property is a reference (has $ref or type 'string' with format 'uuid').
-			$isRef = isset($property['$ref'])
-				|| (($property['type'] ?? '') === 'string' && ($property['format'] ?? '') === 'uuid');
-
-			if ($isRef === false) {
-				continue;
-			}
-
-			// Get the reference value (UUID) from the data.
-			$refValue = $data[$propertyName] ?? null;
-			if ($refValue === null || is_string($refValue) === false || trim($refValue) === '') {
-				$refs[$propertyName] = [];
-				continue;
-			}
-
-			// Try to fetch the referenced object.
-			try {
-				$referencedObject = $this->objectMapper->find(
-					identifier: $refValue,
-					_rbac: false,
-					_multitenancy: false
-				);
-
-				$refs[$propertyName] = $referencedObject->getObject() ?? [];
-			} catch (\Exception $e) {
-				$this->logger->debug(
-					message: '[ComputedFieldHandler] Failed to resolve reference',
-					context: [
-						'app' => 'openregister',
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'propertyName' => $propertyName,
-						'refValue' => $refValue,
-						'error' => $e->getMessage(),
-					]
-				);
-				$refs[$propertyName] = [];
-			}//end try
-		}//end foreach
-
-		return $refs;
-	}//end resolveReferences()
+	}//end referencedData()
 
 	/**
 	 * Cast a string result to its appropriate PHP type.
@@ -440,22 +538,17 @@ class ComputedFieldHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function castResult(string $result): mixed {
-		// Empty result stays as empty string.
-		if ($result === '') {
-			return '';
+		// A non-numeric result, including '', stays the string it is.
+		if (is_numeric($result) === false) {
+			return $result;
 		}
 
-		// Try numeric casting.
-		if (is_numeric($result) === true) {
-			// Check if it's an integer (no decimal point).
-			if (str_contains($result, '.') === false) {
-				return (int)$result;
-			}
-
-			return (float)$result;
+		// An integer has no decimal point.
+		if (str_contains($result, '.') === false) {
+			return (int)$result;
 		}
 
-		return $result;
+		return (float)$result;
 	}//end castResult()
 
 	/**
@@ -471,16 +564,41 @@ class ComputedFieldHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function hasComputedProperties(Schema $schema): bool {
-		$properties = $schema->getProperties() ?? [];
-
-		foreach ($properties as $property) {
-			if (isset($property['computed']) === true && is_array($property['computed']) === true) {
+		foreach ($schema->getProperties() ?? [] as $property) {
+			if ($this->isComputed(property: $property) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end hasComputedProperties()
+
+	/**
+	 * Whether a property definition declares a computed block.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return bool True when `computed` is set and is an array.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function isComputed(mixed $property): bool {
+		return isset($property['computed']) === true && is_array($property['computed']) === true;
+	}//end isComputed()
+
+	/**
+	 * Whether a property is computed in an evaluation mode.
+	 *
+	 * @param mixed $property The property definition.
+	 * @param string $evaluateOn The evaluation mode: 'save' or 'read'.
+	 *
+	 * @return bool True when computed with that `evaluateOn` (default 'save').
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function isComputedOn(mixed $property, string $evaluateOn): bool {
+		return $this->isComputed(property: $property) === true && ($property['computed']['evaluateOn'] ?? 'save') === $evaluateOn;
+	}//end isComputedOn()
 
 	/**
 	 * Get the names of computed properties for a given evaluation mode.
@@ -494,15 +612,8 @@ class ComputedFieldHandler {
 	 */
 	public function getComputedPropertyNames(Schema $schema, string $evaluateOn = 'save'): array {
 		$names = [];
-		$properties = $schema->getProperties() ?? [];
-
-		foreach ($properties as $propertyName => $property) {
-			if (isset($property['computed']) === false || is_array($property['computed']) === false) {
-				continue;
-			}
-
-			$propertyEvaluateOn = $property['computed']['evaluateOn'] ?? 'save';
-			if ($propertyEvaluateOn === $evaluateOn) {
+		foreach ($schema->getProperties() ?? [] as $propertyName => $property) {
+			if ($this->isComputedOn(property: $property, evaluateOn: $evaluateOn) === true) {
 				$names[] = $propertyName;
 			}
 		}
@@ -533,77 +644,87 @@ class ComputedFieldHandler {
 	 *
 	 * @return array<int, array<int, string>> Detected cycles.
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-2
 	 */
 	public function detectCircularDependencies(Schema $schema): array {
 		$properties = $schema->getProperties() ?? [];
-		if ($properties === []) {
-			return [];
-		}
-
-		// Build the dependency graph for computed properties only.
-		$graph = [];
-		$computedNames = [];
-		foreach ($properties as $propertyName => $property) {
-			if (isset($property['computed']) === false || is_array($property['computed']) === false) {
-				continue;
-			}
-
-			$computedNames[$propertyName] = true;
-		}
-
+		$computedNames = $this->computedNames(properties: $properties);
 		if ($computedNames === []) {
 			return [];
 		}
 
+		$graph = $this->dependencyGraph(properties: $properties, computedNames: $computedNames);
+
+		return (new ComputedFieldCycleWalk(graph: $graph))->cycles();
+	}//end detectCircularDependencies()
+
+	/**
+	 * The names of the computed properties, in schema order.
+	 *
+	 * @param array $properties The schema properties.
+	 *
+	 * @return array<string, true> The computed property names, as keys.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-2
+	 */
+	private function computedNames(array $properties): array {
+		$computedNames = [];
 		foreach ($properties as $propertyName => $property) {
-			if (isset($computedNames[$propertyName]) === false) {
-				continue;
+			if ($this->isComputed(property: $property) === true) {
+				$computedNames[$propertyName] = true;
 			}
+		}
 
-			$expression = $property['computed']['expression'] ?? '';
-			if (is_string($expression) === false || $expression === '') {
-				$graph[$propertyName] = [];
-				continue;
-			}
+		return $computedNames;
+	}//end computedNames()
 
-			$referenced = $this->extractTwigVariables(expression: $expression);
-
-			// Only edges that point to other computed properties can
-			// close a cycle — non-computed inputs are inert leaves.
-			$edges = [];
-			foreach ($referenced as $name) {
-				if (isset($computedNames[$name]) === true) {
-					$edges[] = $name;
-				}
-			}
-
-			$graph[$propertyName] = array_values(array_unique($edges));
-		}//end foreach
-
-		// DFS over the graph, tracking the current traversal stack to
-		// detect back-edges. We collect distinct cycles (canonicalised
-		// by their starting node alphabetically) so two paths into the
-		// same cycle aren't double-reported.
-		$cycles = [];
-		$reported = [];
-		$visited = [];
-		foreach (array_keys($graph) as $start) {
-			$stack = [];
-			$this->dfsForCycles(
-				node: $start,
-				graph: $graph,
-				stack: $stack,
-				visited: $visited,
-				cycles: $cycles,
-				reported: $reported
+	/**
+	 * The dependency graph of the computed properties.
+	 *
+	 * @param array $properties The schema properties.
+	 * @param array<string, true> $computedNames The computed property names.
+	 *
+	 * @return array<string, array<string>> Computed property => the computed properties it references.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-2
+	 */
+	private function dependencyGraph(array $properties, array $computedNames): array {
+		$graph = [];
+		foreach (array_keys($computedNames) as $propertyName) {
+			$graph[$propertyName] = $this->computedEdges(
+				expression: $properties[$propertyName]['computed']['expression'] ?? '',
+				computedNames: $computedNames
 			);
 		}
 
-		return $cycles;
-	}//end detectCircularDependencies()
+		return $graph;
+	}//end dependencyGraph()
+
+	/**
+	 * The distinct computed properties an expression references.
+	 *
+	 * Only edges that point to other computed properties can close a cycle:
+	 * non-computed inputs are inert leaves.
+	 *
+	 * @param mixed $expression The Twig expression; a non-string or '' has no edges.
+	 * @param array<string, true> $computedNames The computed property names.
+	 *
+	 * @return array<int, string> The referenced computed properties, in first-reference order.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-2
+	 */
+	private function computedEdges(mixed $expression, array $computedNames): array {
+		if (is_string($expression) === false || $expression === '') {
+			return [];
+		}
+
+		$edges = array_filter(
+			$this->extractTwigVariables(expression: $expression),
+			static fn (string $name): bool => isset($computedNames[$name]) === true
+		);
+
+		return array_values(array_unique($edges));
+	}//end computedEdges()
 
 	/**
 	 * Extract candidate variable names from a Twig expression.
@@ -624,74 +745,12 @@ class ComputedFieldHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-1
 	 */
 	private function extractTwigVariables(string $expression): array {
-		$tokens = [];
-
-		// Pull out the body of every `{{ ... }}` or `{% ... %}` block
-		// so plain text in the template doesn't get scanned as code.
-		if (preg_match_all('/\{\{(.+?)\}\}|\{%(.+?)%\}/s', $expression, $blocks) > 0) {
-			foreach ($blocks[1] as $body) {
-				if ($body !== '') {
-					$tokens[] = $body;
-				}
-			}
-
-			foreach ($blocks[2] as $body) {
-				if ($body !== '') {
-					$tokens[] = $body;
-				}
-			}
-		}
-
-		if ($tokens === []) {
+		$body = $this->twigCodeBodies(expression: $expression);
+		if ($body === '') {
 			return [];
 		}
 
-		$body = implode(' ', $tokens);
-
-		// Identifiers MUST start with a letter or underscore. Filter
-		// out Twig keywords and built-in helpers we don't want to chase
-		// through the dependency graph.
-		$reserved = [
-			'and',
-			'or',
-			'not',
-			'in',
-			'is',
-			'as',
-			'with',
-			'true',
-			'false',
-			'null',
-			'if',
-			'else',
-			'elseif',
-			'endif',
-			'for',
-			'endfor',
-			'set',
-			'do',
-			'block',
-			'endblock',
-			'date',
-			'now',
-			'min',
-			'max',
-			'range',
-			'random',
-			'length',
-			'count',
-		];
-
-		$identifiers = [];
-		if (preg_match_all('/(?<![\\w.])([A-Za-z_][A-Za-z0-9_]*)/', $body, $matches) > 0) {
-			foreach ($matches[1] as $name) {
-				if (in_array($name, $reserved, true) === true) {
-					continue;
-				}
-
-				$identifiers[$name] = true;
-			}
-		}
+		$identifiers = $this->twigIdentifiers(body: $body);
 
 		// Strip cross-object reference prefix (`_ref.foo`) — those are
 		// foreign-object lookups and not in-schema dependencies.
@@ -701,110 +760,45 @@ class ComputedFieldHandler {
 	}//end extractTwigVariables()
 
 	/**
-	 * DFS helper that records cycles in the dependency graph.
+	 * The identifiers in Twig code that are not reserved words.
 	 *
-	 * @param string $node Current node being
-	 *                     visited.
-	 * @param array<string, array<string>> $graph Adjacency list.
-	 * @param array<int, string> $stack Traversal stack on
-	 *                                  the way to
-	 *                                  `$node`.
-	 * @param array<string, bool> $visited Globally-visited
-	 *                                     nodes (avoid
-	 *                                     re-walking
-	 *                                     shared
-	 *                                     subtrees).
-	 * @param array<int, array<int, string>> $cycles Output: detected
-	 *                                               cycles.
-	 * @param array<string, bool> $reported Cycle signatures
-	 *                                      already emitted.
+	 * Identifiers MUST start with a letter or underscore.
 	 *
-	 * @return void
+	 * @param string $body The Twig code.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-3
+	 * @return array<string, true> The identifiers, as keys, in first-seen order.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-1
 	 */
-	private function dfsForCycles(
-		string $node,
-		array $graph,
-		array $stack,
-		array &$visited,
-		array &$cycles,
-		array &$reported,
-	): void {
-		if (in_array($node, $stack, true) === true) {
-			// Found a back-edge — slice the cycle out of the stack.
-			$cycleStart = array_search($node, $stack, true);
-			$cyclePath = array_slice($stack, $cycleStart);
-			$cyclePath[] = $node;
-
-			// Canonicalise so two starts into the same cycle hash to
-			// the same key.
-			$signature = $this->canonicaliseCycle(cycle: $cyclePath);
-			if (isset($reported[$signature]) === false) {
-				$reported[$signature] = true;
-				$cycles[] = $cyclePath;
+	private function twigIdentifiers(string $body): array {
+		$identifiers = [];
+		if (preg_match_all('/(?<![\\w.])([A-Za-z_][A-Za-z0-9_]*)/', $body, $matches) > 0) {
+			foreach ($matches[1] as $name) {
+				if (in_array($name, self::TWIG_RESERVED_WORDS, true) === false) {
+					$identifiers[$name] = true;
+				}
 			}
-
-			return;
 		}
 
-		if (isset($visited[$node]) === true) {
-			return;
-		}
-
-		$stack[] = $node;
-		foreach ($graph[$node] ?? [] as $neighbour) {
-			$this->dfsForCycles(
-				node: $neighbour,
-				graph: $graph,
-				stack: $stack,
-				visited: $visited,
-				cycles: $cycles,
-				reported: $reported
-			);
-		}
-
-		$visited[$node] = true;
-
-	}//end dfsForCycles()
+		return $identifiers;
+	}//end twigIdentifiers()
 
 	/**
-	 * Canonicalise a cycle so duplicate starts produce one signature.
+	 * The bodies of every `{{ ... }}` block, then every `{% ... %}` block,
+	 * joined by spaces, so plain text in the template is not scanned as code.
 	 *
-	 * Rotates the cycle so the lexicographically smallest node leads.
+	 * @param string $expression The Twig expression
 	 *
-	 * @param array<int, string> $cycle The cycle path with the closing
-	 *                                  node duplicated.
-	 *
-	 * @return string Canonical cycle signature.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-4
+	 * @return string The joined block bodies, or '' without any
 	 */
-	private function canonicaliseCycle(array $cycle): string {
-		// Drop the duplicated closing node before rotating.
-		$body = $cycle;
-		if (count($body) > 1 && $body[0] === $body[count($body) - 1]) {
-			array_pop($body);
-		}
-
-		if ($body === []) {
+	private function twigCodeBodies(string $expression): string {
+		$found = preg_match_all('/\{\{(.+?)\}\}|\{%(.+?)%\}/s', $expression, $blocks);
+		if ($found === false || $found === 0) {
 			return '';
 		}
 
-		$minIndex = 0;
-		$minValue = $body[0];
-		foreach ($body as $idx => $name) {
-			if (strcmp($name, $minValue) < 0) {
-				$minValue = $name;
-				$minIndex = $idx;
-			}
-		}
+		$notEmpty = static fn (string $body): bool => $body !== '';
 
-		$rotated = array_merge(
-			array_slice($body, $minIndex),
-			array_slice($body, 0, $minIndex)
-		);
-
-		return implode('->', $rotated);
-	}//end canonicaliseCycle()
+		return implode(' ', array_merge(array_filter($blocks[1], $notEmpty), array_filter($blocks[2], $notEmpty)));
+	}//end twigCodeBodies()
 }//end class

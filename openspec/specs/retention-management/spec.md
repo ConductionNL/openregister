@@ -463,3 +463,25 @@ A `TimedJob` (`AvgRetentionJob`, 24-hour interval) MUST invoke `AvgRetentionServ
 - **GIVEN** the stored `retention` JSON blob contains `auditTrailsEnabled: "true"` and `searchTrailsEnabled: 1`
 - **WHEN** `getRetentionSettingsOnly()` decodes the blob
 - **THEN** both flags MUST be returned as PHP boolean `true` (via `convertToBoolean()`), not as the raw string/int — so downstream callers can rely on strict `=== true` checks
+
+### Requirement: A selectielijst URL resolves to its code and name
+
+`GET /api/archival/selectielijst/resolve?url=` SHALL answer the code (`volledigNummer`) and name (`naam`) of a VNG Selectielijst result or process type URL, read once and then from the cache. It SHALL fetch only https URLs on an allowed selectielijst host and SHALL answer 400 for any other URL without a request. When the row cannot be read it SHALL answer 404, so the caller can fall back.
+
+#### Scenario: a Woo result type's class
+- **GIVEN** the URL of selectielijst result 6.1 "Ingewilligd"
+- **WHEN** a page asks to resolve it twice
+- **THEN** both answers SHALL be `{code: "6.1", name: "Ingewilligd"}` and the list SHALL be read once
+
+#### Scenario: another host
+- **GIVEN** a URL on another host
+- **WHEN** a page asks to resolve it
+- **THEN** the answer SHALL be 400 and nothing SHALL be fetched
+
+### Requirement: OpenRegister ships a register for destruction lists
+
+OpenRegister SHALL ship a `destruction-lists` register with a `destructionList` schema whose status covers every state a destruction list passes (`in_review`, `awaiting_second_approval`, `approved`, `rejected`, `completed`) and whose entries carry the reviewer, assignment moment, disposal date, classification and decision the review reads. A repair step SHALL import it under its own configuration id, version-gated, so an administrator (or an example set) can name it in the `archival` setting.
+
+#### Scenario: The register is there after an upgrade
+- **WHEN** OpenRegister's repair steps run
+- **THEN** the `destruction-lists` register with the `destructionList` schema SHALL exist

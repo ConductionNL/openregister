@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -119,17 +119,20 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturnArgument(0);
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $mappingMapper,
-			client:              $this->createMock(Client::class),
-			appConfig:           $this->appConfig,
-			logger:              $this->createMock(LoggerInterface::class),
-			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
-			objectService:       $this->objectService
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $mappingMapper,
+				appConfig: $this->appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			objectService: $this->objectService
 		);
 	}//end setUp()
 
@@ -375,7 +378,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testASeedThatLacksAShippedFieldGainsIt(): void {
 		$this->instanceHoldsCaseType(storedVersion: '1.4.7');
@@ -393,7 +396,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testChangedShippedContentArrivesAtAnUnchangedVersion(): void {
 		$this->instanceHoldsCaseType(storedVersion: '1.4.7', asShipped: true);
@@ -411,7 +414,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testUnchangedShippedContentIsNotWrittenAgain(): void {
 		$this->instanceHoldsCaseType(storedVersion: '1.4.7', asShipped: true);
@@ -431,7 +434,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testAFailedWriteIsNotRememberedAsShipped(): void {
 		$this->instanceHoldsCaseType(storedVersion: '1.4.7');

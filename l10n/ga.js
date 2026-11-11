@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Críochnaigh: {outcome}",
         "Could not load the task": "Níorbh fhéidir an tasc a lódáil",
         "The task refused that action": "Dhiúltaigh an tasc don ghníomh sin",
-        "Store": "Siopa",
+        "Marketplace": "Siopa",
         "Install registers, schemas and flows that other organisations have published.": "Suiteáil cláir, scéimeanna agus sruthanna a d'fhoilsigh eagraíochtaí eile.",
         "No such run": "Níl a leithéid de rith ann",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Níl an rith ann, nó níl cead agat é a fheiceáil. Scriosann scriosadh srutha a chuid rití.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Cé a cheadaigh an liosta, agus cathain.",
         "Who made it.": "Cé a rinne é.",
         "Who rejected the list, and why.": "Cé a dhiúltaigh don liosta, agus cén fáth.",
-        "Woo published": "Foilsithe faoin Woo"
+        "Woo published": "Foilsithe faoin Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Teastaíonn freastalaí oifige (Collabora nó Euro-Office) le haghaidh PDF, agus níl ceann ar bith suiteáilte. Iarr ar do riarthóir ceann a shuiteáil, nó íoslódáil an tuarascáil i bhformáid eile.",
+        "The report could not be downloaded.": "Níorbh fhéidir an tuarascáil a íoslódáil."
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

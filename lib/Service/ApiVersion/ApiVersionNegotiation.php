@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\ApiVersion;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiVersion
  */
-class ApiVersionNegotiation {
+class ApiVersionNegotiation implements ApiVersionNegotiationInterface {
 
 	/**
 	 * The caller named no version and takes the current one.
@@ -103,11 +103,35 @@ class ApiVersionNegotiation {
 	}//end __construct()
 
 	/**
+	 * The identifier the caller named, or null when it named none.
+	 *
+	 * @return string|null The requested identifier.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	public function requestedIdentifier(): ?string {
+		return $this->requestedId;
+
+	}//end requestedIdentifier()
+
+	/**
+	 * The version that will answer, or null when nothing declares the request.
+	 *
+	 * @return ApiVersion|null The answering version.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	public function answeringVersion(): ?ApiVersion {
+		return $this->version;
+
+	}//end answeringVersion()
+
+	/**
 	 * Whether the caller named a version rather than taking the default.
 	 *
 	 * @return bool True when the request carried a version.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function isExplicit(): bool {
 		return ($this->source !== self::SOURCE_DEFAULT);
@@ -119,7 +143,7 @@ class ApiVersionNegotiation {
 	 *
 	 * @return bool True when the named version is unknown.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function isUnknown(): bool {
 		return ($this->requestedId !== null && $this->version === null);

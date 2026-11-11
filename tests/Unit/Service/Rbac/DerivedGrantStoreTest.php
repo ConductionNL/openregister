@@ -20,13 +20,14 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\DerivedGrantConfig;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCP\IAppConfig;
@@ -104,8 +105,7 @@ class DerivedGrantStoreTest extends TestCase {
 		);
 
 		return new DerivedGrantStore(
-			config: $config,
-			appConfig: $appConfig,
+			stores: new DerivedGrantConfig(config: $config, appConfig: $appConfig),
 			userManager: $userManager,
 			resolver: new DerivedGrantResolver(),
 			logger: new NullLogger()

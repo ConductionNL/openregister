@@ -1,0 +1,412 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Organisation.validate golden authorization 1`] = `
+{
+  "data": undefined,
+  "issues": [
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected string, received number",
+      "path": [
+        "authorization",
+        "schema",
+        "create",
+        0,
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected object, received string",
+      "path": [
+        "authorization",
+        "object",
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected array, received string",
+      "path": [
+        "authorization",
+        "agent",
+        "read",
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected array, received string",
+      "path": [
+        "authorization",
+        "agent_use",
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected string, received boolean",
+      "path": [
+        "authorization",
+        "dashboard_view",
+        0,
+      ],
+    },
+  ],
+  "success": false,
+}
+`;
+
+exports[`Organisation.validate golden emptyName 1`] = `
+{
+  "data": undefined,
+  "issues": [
+    {
+      "code": "too_small",
+      "message": "Organisation name is required",
+      "path": [
+        "name",
+      ],
+    },
+  ],
+  "success": false,
+}
+`;
+
+exports[`Organisation.validate golden mockFull 1`] = `
+{
+  "data": {
+    "active": true,
+    "authorization": {
+      "agent": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "agent_use": [],
+      "application": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configuration": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "dashboard_view": [],
+      "llm_use": [],
+      "object": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "object_publish": [],
+      "register": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "schema": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "view": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    },
+    "created": "2026-01-02T03:04:05.000Z",
+    "description": "Default organisation for users without specific organisation membership",
+    "groups": [],
+    "id": 1,
+    "isDefault": true,
+    "name": "Default Organisation",
+    "owner": "system",
+    "quota": {
+      "bandwidth": null,
+      "groups": null,
+      "requests": null,
+      "storage": null,
+      "users": null,
+    },
+    "slug": "",
+    "updated": "2026-01-02T03:04:05.000Z",
+    "usage": {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+    "users": [
+      "alice",
+      "bob",
+      "charlie",
+    ],
+    "uuid": "123e4567-e89b-12d3-a456-426614174000",
+  },
+  "issues": undefined,
+  "success": true,
+}
+`;
+
+exports[`Organisation.validate golden mockUsers 1`] = `
+{
+  "data": {
+    "active": true,
+    "authorization": {
+      "agent": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "agent_use": [],
+      "application": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configuration": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "dashboard_view": [],
+      "llm_use": [],
+      "object": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "object_publish": [],
+      "register": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "schema": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "view": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    },
+    "created": "2026-01-02T03:04:05.000Z",
+    "description": "Main corporate organisation for ACME Inc.",
+    "groups": [],
+    "id": 2,
+    "isDefault": false,
+    "name": "ACME Corporation",
+    "owner": "alice",
+    "quota": {
+      "bandwidth": null,
+      "groups": null,
+      "requests": null,
+      "storage": null,
+      "users": null,
+    },
+    "slug": "",
+    "updated": "2026-01-02T03:04:05.000Z",
+    "usage": {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+    "users": [
+      "alice",
+      "diana",
+    ],
+    "uuid": "456e7890-e89b-12d3-a456-426614174001",
+  },
+  "issues": undefined,
+  "success": true,
+}
+`;
+
+exports[`Organisation.validate golden nullQuota 1`] = `
+{
+  "data": undefined,
+  "issues": [
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected string, received number",
+      "path": [
+        "created",
+      ],
+    },
+  ],
+  "success": false,
+}
+`;
+
+exports[`Organisation.validate golden partial 1`] = `
+{
+  "data": {
+    "active": true,
+    "authorization": {
+      "agent": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "agent_use": [],
+      "application": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configuration": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "dashboard_view": [],
+      "llm_use": [],
+      "object": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "object_publish": [],
+      "register": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "schema": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "view": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    },
+    "created": "",
+    "description": "",
+    "groups": [],
+    "id": undefined,
+    "isDefault": false,
+    "name": "Test Organisation",
+    "owner": "",
+    "quota": {
+      "bandwidth": null,
+      "groups": null,
+      "requests": null,
+      "storage": null,
+      "users": null,
+    },
+    "slug": "",
+    "updated": "",
+    "usage": {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+    "users": [],
+    "uuid": "",
+  },
+  "issues": undefined,
+  "success": true,
+}
+`;
+
+exports[`Organisation.validate golden wrongTypes 1`] = `
+{
+  "data": undefined,
+  "issues": [
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected number, received string",
+      "path": [
+        "id",
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected string, received number",
+      "path": [
+        "uuid",
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected string, received number",
+      "path": [
+        "users",
+        1,
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected boolean, received string",
+      "path": [
+        "isDefault",
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected number, received string",
+      "path": [
+        "quota",
+        "storage",
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected number, received string",
+      "path": [
+        "quota",
+        "groups",
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected number, received null",
+      "path": [
+        "usage",
+        "storage",
+      ],
+    },
+    {
+      "code": "invalid_type",
+      "message": "Invalid input: expected number, received string",
+      "path": [
+        "usage",
+        "bandwidth",
+      ],
+    },
+  ],
+  "success": false,
+}
+`;

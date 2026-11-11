@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CalculationsControllerFactory;
 use OCA\OpenRegister\Controller\CalculationsController;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -34,7 +35,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogue;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -98,8 +99,7 @@ class CalculationsControllerTest extends TestCase {
 			$this->payloadBuilder,
 		);
 
-		return new CalculationsController(
-			'openregister',
+		return CalculationsControllerFactory::create(
 			$request,
 			new OperatorCatalogue(),
 			$trials,

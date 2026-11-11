@@ -1,0 +1,423 @@
+{
+    "filter: member, own org": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": []
+    },
+    "filter: member, own org, null allowed": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2) | isNull(organisation))"
+        ],
+        "log": []
+    },
+    "filter: member, own org, aliased": {
+        "where": [
+            "or(eq(t.org,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": []
+    },
+    "filter: member, org with parent": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2) | in(organisation,:{\"1\":\"aaaaaaaa-0000-0000-0000-000000000002\"}/102))"
+        ],
+        "log": []
+    },
+    "filter: hierarchy lookup throws": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": [
+            {
+                "level": "warning",
+                "message": "[MultiTenancyTrait] Failed to get organisation hierarchy: down",
+                "keys": [
+                    "activeOrgUuid",
+                    "file",
+                    "line"
+                ],
+                "type": null
+            }
+        ]
+    },
+    "filter: empty hierarchy": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": []
+    },
+    "filter: multitenancy off by parameter": {
+        "where": [],
+        "log": []
+    },
+    "filter: multitenancy off by config": {
+        "where": [],
+        "log": []
+    },
+    "filter: no app config": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": []
+    },
+    "filter: no active org, nothing allowed": {
+        "where": [
+            "1 = 0"
+        ],
+        "log": []
+    },
+    "filter: no active org, null allowed": {
+        "where": [
+            "isNull(organisation)"
+        ],
+        "log": []
+    },
+    "filter: anonymous, default org": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": []
+    },
+    "filter: anonymous, no default org": {
+        "where": [
+            "1 = 0"
+        ],
+        "log": []
+    },
+    "filter: admin without override": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": []
+    },
+    "filter: admin with override": {
+        "where": [],
+        "log": [
+            {
+                "level": "info",
+                "message": "[MultiTenancyTrait] Admin override: cross-organisation access granted",
+                "keys": [
+                    "actor",
+                    "type"
+                ],
+                "type": "cross_tenant_access_admin_override"
+            }
+        ]
+    },
+    "filter: admin with override, no org": {
+        "where": [],
+        "log": []
+    },
+    "filter: admin in saas mode": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": []
+    },
+    "filter: non-admin with override config": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": []
+    },
+    "filter: registers, shared to me": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2) | in(id,:[7]/101))"
+        ],
+        "log": []
+    },
+    "filter: registers, shared, aliased": {
+        "where": [
+            "or(eq(r.organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2) | in(r.id,:[7]/101))"
+        ],
+        "log": []
+    },
+    "filter: schemas, shared to someone else": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": []
+    },
+    "filter: webhooks ignore shares": {
+        "where": [
+            "or(eq(organisation,:\"aaaaaaaa-0000-0000-0000-000000000001\"/2))"
+        ],
+        "log": []
+    },
+    "guard: same org": {
+        "verdict": "allowed",
+        "log": []
+    },
+    "guard: other org": {
+        "verdict": {
+            "refused": "Exception",
+            "code": 403,
+            "message": "Security violation: You do not have permission to access this resource from a different organisation."
+        },
+        "log": [
+            {
+                "level": "warning",
+                "message": "[MultiTenancyTrait] Cross-tenant access denied",
+                "keys": [
+                    "actor",
+                    "entityId",
+                    "entityType",
+                    "sourceOrganisation",
+                    "targetOrganisation",
+                    "type"
+                ],
+                "type": "cross_tenant_access_denied"
+            }
+        ]
+    },
+    "guard: no org on entity": {
+        "verdict": "allowed",
+        "log": []
+    },
+    "guard: admin, other org": {
+        "verdict": {
+            "refused": "Exception",
+            "code": 403,
+            "message": "Security violation: You do not have permission to access this resource from a different organisation."
+        },
+        "log": [
+            {
+                "level": "warning",
+                "message": "[MultiTenancyTrait] Cross-tenant access denied",
+                "keys": [
+                    "actor",
+                    "entityId",
+                    "entityType",
+                    "sourceOrganisation",
+                    "targetOrganisation",
+                    "type"
+                ],
+                "type": "cross_tenant_access_denied"
+            }
+        ]
+    },
+    "guard: no active org, entity has one": {
+        "verdict": {
+            "refused": "Exception",
+            "code": 403,
+            "message": "Security violation: You do not have permission to access this resource from a different organisation."
+        },
+        "log": [
+            {
+                "level": "warning",
+                "message": "[MultiTenancyTrait] Cross-tenant access denied",
+                "keys": [
+                    "actor",
+                    "entityId",
+                    "entityType",
+                    "sourceOrganisation",
+                    "targetOrganisation",
+                    "type"
+                ],
+                "type": "cross_tenant_access_denied"
+            }
+        ]
+    },
+    "guard: bare entity": {
+        "verdict": "allowed",
+        "log": []
+    },
+    "guard: registers, consumer writes shared row": {
+        "verdict": {
+            "refused": "OCA\\OpenRegister\\Exception\\SharedMasterDataWriteException",
+            "code": 403,
+            "message": "This register \"Codes\" is shared master data held by Holder Org. Your organisation reads it and cannot change it. Ask Holder Org to make the change."
+        },
+        "log": [
+            {
+                "level": "warning",
+                "message": "[MultiTenancyTrait] Shared master data is read-only to a consumer",
+                "keys": [
+                    "actor",
+                    "entityId",
+                    "file",
+                    "holderOrganisation",
+                    "line",
+                    "resourceType",
+                    "sourceOrganisation",
+                    "type"
+                ],
+                "type": "shared_master_data_write_denied"
+            }
+        ]
+    },
+    "guard: registers, consumer writes unshared row": {
+        "verdict": {
+            "refused": "Exception",
+            "code": 403,
+            "message": "Security violation: You do not have permission to access this resource from a different organisation."
+        },
+        "log": [
+            {
+                "level": "warning",
+                "message": "[MultiTenancyTrait] Cross-tenant access denied",
+                "keys": [
+                    "actor",
+                    "entityId",
+                    "entityType",
+                    "sourceOrganisation",
+                    "targetOrganisation",
+                    "type"
+                ],
+                "type": "cross_tenant_access_denied"
+            }
+        ]
+    },
+    "guard: schemas, consumer writes shared row": {
+        "verdict": {
+            "refused": "Exception",
+            "code": 403,
+            "message": "Security violation: You do not have permission to access this resource from a different organisation."
+        },
+        "log": [
+            {
+                "level": "warning",
+                "message": "[MultiTenancyTrait] Cross-tenant access denied",
+                "keys": [
+                    "actor",
+                    "entityId",
+                    "entityType",
+                    "sourceOrganisation",
+                    "targetOrganisation",
+                    "type"
+                ],
+                "type": "cross_tenant_access_denied"
+            }
+        ]
+    },
+    "guard: registers, row without id": {
+        "verdict": {
+            "refused": "Exception",
+            "code": 403,
+            "message": "Security violation: You do not have permission to access this resource from a different organisation."
+        },
+        "log": [
+            {
+                "level": "warning",
+                "message": "[MultiTenancyTrait] Cross-tenant access denied",
+                "keys": [
+                    "actor",
+                    "entityId",
+                    "entityType",
+                    "sourceOrganisation",
+                    "targetOrganisation",
+                    "type"
+                ],
+                "type": "cross_tenant_access_denied"
+            }
+        ]
+    },
+    "rbac: admin": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: cli without user": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: cli without user, anonymous evaluation": {
+        "has": false,
+        "verify": {
+            "code": 403,
+            "message": "Access denied: You do not have permission to create register entities."
+        }
+    },
+    "rbac: cli without user, system operation, anonymous evaluation": {
+        "has": false,
+        "verify": {
+            "code": 403,
+            "message": "Access denied: You do not have permission to create register entities."
+        }
+    },
+    "rbac: enforcement off": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: no active org": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: org lookup throws": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: no authorization": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: empty authorization": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: entity type not configured": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: action not configured": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: empty group list": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: in allowed group": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: not in allowed group": {
+        "has": false,
+        "verify": {
+            "code": 403,
+            "message": "Access denied: You do not have permission to create register entities."
+        }
+    },
+    "rbac: wildcard": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "rbac: admin-only action, non-admin in admin-named group": {
+        "has": true,
+        "verify": "allowed"
+    },
+    "create: active org, no owner": {
+        "organisation": "aaaaaaaa-0000-0000-0000-000000000001",
+        "owner": "alice"
+    },
+    "create: active org overrides supplied org": {
+        "organisation": "aaaaaaaa-0000-0000-0000-000000000001",
+        "owner": "alice"
+    },
+    "create: no active org, default org config": {
+        "organisation": "aaaaaaaa-0000-0000-0000-000000000002",
+        "owner": "alice"
+    },
+    "create: no active org, supplied org kept": {
+        "organisation": "bbbbbbbb-0000-0000-0000-000000000001",
+        "owner": "alice"
+    },
+    "create: no active org, no app config": {
+        "organisation": null,
+        "owner": "alice"
+    },
+    "create: owner already set": {
+        "organisation": "aaaaaaaa-0000-0000-0000-000000000001",
+        "owner": "bob"
+    },
+    "create: empty owner": {
+        "organisation": "aaaaaaaa-0000-0000-0000-000000000001",
+        "owner": "alice"
+    },
+    "create: anonymous": {
+        "organisation": null,
+        "owner": null
+    },
+    "create: bare entity": {
+        "bare": []
+    }
+}

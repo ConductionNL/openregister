@@ -28,7 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -41,7 +43,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IL10N;
@@ -49,6 +51,7 @@ use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices;
 
 /**
  * Unit tests for the built-in providers' contract metadata.
@@ -87,7 +90,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			$this->buildL10n(),
 		);
 		$this->expectException(NotImplementedException::class);
-		$provider->create('r', 's', 'o', []);
+		$provider->create(new ObjectRef(register: 'r', schema: 's', id: 'o'), []);
 	}//end testFilesProviderCreateThrowsNotImplemented()
 
 	public function testNotesProviderMetadata(): void {
@@ -110,7 +113,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			->willReturn([['id' => 1, 'message' => 'hello']]);
 
 		$provider = new NotesProvider($noteService, $this->buildL10n());
-		$result = $provider->list('reg', 'sch', 'object-uuid');
+		$result = $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'object-uuid'));
 
 		$this->assertSame([['id' => 1, 'message' => 'hello']], $result);
 	}//end testNotesProviderListDelegatesToService()
@@ -127,7 +130,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 	public function testTasksProviderUpdateRejectsBadEntityId(): void {
 		$provider = $this->buildTasksProvider($this->createMock(TaskService::class));
 		$this->expectException(NotImplementedException::class);
-		$provider->update('r', 's', 'o', 'not-a-composite', []);
+		$provider->update(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'not-a-composite', []);
 	}//end testTasksProviderUpdateRejectsBadEntityId()
 
 	public function testTasksProviderCreateResolvesRegisterSchemaAndObjectTitle(): void {
@@ -151,31 +154,33 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			->willReturn($object);
 
 		$taskService->expects($this->once())
-			->method('createTask')
+			->method('createObjectTask')
 			->with(
-				42,
-				7,
-				'obj-uuid-1',
-				'My Object',
-				[
-					'summary' => 'Do the thing',
-					'description' => 'Details here',
-					'priority' => 5,
-					'status' => 'NEEDS-ACTION',
-					'due' => '2026-06-01T12:00:00Z',
-				]
+				new ObjectRef(register: 42, schema: 7, id: 'obj-uuid-1'),
+				new LinkedTaskDraft(
+					objectTitle: 'My Object',
+					data: [
+						'summary' => 'Do the thing',
+						'description' => 'Details here',
+						'priority' => 5,
+						'status' => 'NEEDS-ACTION',
+						'due' => '2026-06-01T12:00:00Z',
+					]
+				)
 			)
 			->willReturn(['id' => 'cal/task.ics', 'summary' => 'Do the thing']);
 
 		$provider = new TasksProvider(
-			taskService: $taskService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			objectService: $objectService,
-			l10n: $this->buildL10n()
+			services: new TasksProviderServices(
+				taskService: $taskService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				objectService: $objectService,
+			),
+			l10n: $this->buildL10n(),
 		);
 
-		$result = $provider->create('my-register', 'my-schema', 'obj-uuid-1', [
+		$result = $provider->create(new ObjectRef(register: 'my-register', schema: 'my-schema', id: 'obj-uuid-1'), [
 			'summary' => 'Do the thing',
 			'description' => 'Details here',
 			'priority' => 5,
@@ -203,35 +208,36 @@ class BuiltinProvidersMetadataTest extends TestCase {
 		$objectService->method('find')->willReturn(null);
 
 		$taskService->expects($this->once())
-			->method('createTask')
+			->method('createObjectTask')
 			->with(
-				1,
-				2,
-				'missing-uuid',
-				'missing-uuid',
-				$this->callback(static fn (array $d): bool => $d['summary'] === 'x')
+				new ObjectRef(register: 1, schema: 2, id: 'missing-uuid'),
+				$this->callback(static fn (LinkedTaskDraft $d): bool => $d->objectTitle === 'missing-uuid' && $d->data['summary'] === 'x')
 			)
 			->willReturn(['id' => 'cal/task.ics']);
 
 		$provider = new TasksProvider(
-			taskService: $taskService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			objectService: $objectService,
-			l10n: $this->buildL10n()
+			services: new TasksProviderServices(
+				taskService: $taskService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				objectService: $objectService,
+			),
+			l10n: $this->buildL10n(),
 		);
 
-		$result = $provider->create('r', 's', 'missing-uuid', ['summary' => 'x']);
+		$result = $provider->create(new ObjectRef(register: 'r', schema: 's', id: 'missing-uuid'), ['summary' => 'x']);
 		$this->assertSame(['id' => 'cal/task.ics'], $result);
 	}//end testTasksProviderCreateFallsBackToObjectIdWhenObjectMissing()
 
 	private function buildTasksProvider(TaskService $taskService): TasksProvider {
 		return new TasksProvider(
-			taskService: $taskService,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			objectService: $this->createMock(ObjectService::class),
-			l10n: $this->buildL10n()
+			services: new TasksProviderServices(
+				taskService: $taskService,
+				registerMapper: $this->createMock(RegisterMapper::class),
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				objectService: $this->createMock(ObjectService::class),
+			),
+			l10n: $this->buildL10n(),
 		);
 	}//end buildTasksProvider()
 
@@ -256,12 +262,12 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			$this->buildL10n(),
 		);
 		$this->expectException(NotImplementedException::class);
-		$provider->create('r', 's', 'o', []);
+		$provider->create(new ObjectRef(register: 'r', schema: 's', id: 'o'), []);
 	}//end testTagsProviderCreateThrowsNotImplemented()
 
 	public function testAuditTrailProviderMetadata(): void {
 		$provider = new AuditTrailProvider(
-			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(ObjectHistoryForReaders::class),
 			$this->buildL10n(),
 		);
 
@@ -273,21 +279,21 @@ class BuiltinProvidersMetadataTest extends TestCase {
 	}//end testAuditTrailProviderMetadata()
 
 	public function testAuditTrailProviderListSurfacesEmptyOnError(): void {
-		$mapper = $this->createMock(AuditTrailMapper::class);
-		// No method exists / no findAllByObject on mock — Should return [].
-		$provider = new AuditTrailProvider($mapper, $this->buildL10n());
+		$history = $this->createMock(ObjectHistoryForReaders::class);
+		$history->method('page')->willThrowException(new \RuntimeException('trail unreadable'));
+		$provider = new AuditTrailProvider($history, $this->buildL10n());
 
-		$this->assertSame([], $provider->list('r', 's', 'o'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'o')));
 	}//end testAuditTrailProviderListSurfacesEmptyOnError()
 
 	public function testAuditTrailProviderMutationsThrowNotImplemented(): void {
 		$provider = new AuditTrailProvider(
-			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(ObjectHistoryForReaders::class),
 			$this->buildL10n(),
 		);
 
 		$this->expectException(NotImplementedException::class);
-		$provider->create('r', 's', 'o', []);
+		$provider->create(new ObjectRef(register: 'r', schema: 's', id: 'o'), []);
 	}//end testAuditTrailProviderMutationsThrowNotImplemented()
 
 }//end class

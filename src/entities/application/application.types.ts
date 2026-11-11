@@ -1,3 +1,5 @@
+import type { TQuota, TUsage } from '../quotaUsage.types'
+
 export type TApplication = {
 	id?: number
 	uuid?: string
@@ -9,20 +11,8 @@ export type TApplication = {
 	registers?: number[]
 	schemas?: number[]
 	groups?: string[]
-	quota?: {
-		storage?: number | null
-		bandwidth?: number | null
-		requests?: number | null
-		users?: number | null
-		groups?: number | null
-	}
-	usage?: {
-		storage?: number
-		bandwidth?: number
-		requests?: number
-		users?: number
-		groups?: number
-	}
+	quota?: TQuota
+	usage?: TUsage
 	authorization?: {
 		create?: string[]
 		read?: string[]

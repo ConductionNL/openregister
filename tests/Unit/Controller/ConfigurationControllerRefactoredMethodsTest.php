@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationControllerFactory;
 use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
@@ -87,7 +88,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Create ConfigurationController instance.
-		$this->configurationController = new ConfigurationController(
+		$this->configurationController = ConfigurationControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			configurationMapper: $this->configurationMapper,
@@ -281,6 +282,9 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase {
 		$this->assertIsString($config->getTitle(), 'Title should be string.');
 		$this->assertIsBool($config->getAutoUpdate(), 'AutoUpdate should be boolean.');
 		$this->assertIsArray($config->getRegisters(), 'Registers should be array.');
+		$this->assertSame('new_value', $config->getTitle());
+		$this->assertFalse($config->getAutoUpdate());
+		$this->assertSame([1, 2, 3], $config->getRegisters());
 	}
 
 	/**

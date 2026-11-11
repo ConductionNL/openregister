@@ -4,7 +4,7 @@
 		:name="t('openregister', 'Text Extraction')"
 		description="Configure extraction pipelines for files, objects, and detected entities"
 		:loading="settingsStore.loadingFileSettings"
-		:loadingMessage="t('openregister', 'Loading text extraction settings...')">
+		:loadingMessage="t('openregister', 'Loading text extraction settings…')">
 		<template #actions>
 			<!-- File Actions Menu -->
 			<NcActions
@@ -81,21 +81,12 @@
 			<div class="settings-group compact">
 				<div class="setting-item">
 					<label for="extraction-scope">Extract Text From</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.extractionScope"
 						inputId="extraction-scope"
 						:inputLabel="t('openregister', 'Extraction Scope')"
 						:options="extractionScopes"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description }">
-							<div class="option-item">
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
-						</template>
-					</NcSelect>
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Choose which files should have text extracted for search and
 						AI features.
@@ -104,23 +95,14 @@
 
 				<div class="setting-item">
 					<label for="text-extractor">Text Extractor</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.textExtractor"
 						inputId="text-extractor"
 						:inputLabel="t('openregister', 'Text Extraction Engine')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="textExtractors"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description, icon }">
-							<div class="option-item">
-								<span class="option-icon">{{ icon }}</span>
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
-						</template>
-					</NcSelect>
+						withIcon
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Choose the text extraction engine for processing documents.
 					</p>
@@ -170,13 +152,7 @@
 
 						<NcButton variant="secondary" @click="testDolphinConnection">
 							<template #icon>
-								<CheckIcon
-									v-if="dolphinConnectionTested === 'success'"
-									:size="20" />
-								<AlertCircleIcon
-									v-else-if="dolphinConnectionTested === 'error'"
-									:size="20" />
-								<RefreshIcon v-else :size="20" />
+								<ConnectionTestIcon :result="dolphinConnectionTested" />
 							</template>
 							Test Connection
 						</NcButton>
@@ -185,22 +161,13 @@
 
 				<div class="setting-item">
 					<label for="extraction-mode">Extraction Mode</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.extractionMode"
 						inputId="extraction-mode"
 						:inputLabel="t('openregister', 'Extraction Mode')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="extractionModes"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description }">
-							<div class="option-item">
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
-						</template>
-					</NcSelect>
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Control when extraction happens relative to file upload.
 					</p>
@@ -317,21 +284,12 @@
 			<div class="settings-group compact">
 				<div class="setting-item">
 					<label for="object-extraction-mode">Extraction Mode</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="objectSettings.extractionMode"
 						inputId="object-extraction-mode"
 						:inputLabel="t('openregister', 'Object Extraction Mode')"
 						:options="extractionModes"
-						@update:modelValue="saveObjectSettings">
-						<template #option="{ label, description }">
-							<div class="option-item">
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
-						</template>
-					</NcSelect>
+						@update:modelValue="saveObjectSettings" />
 					<p class="setting-description">
 						Control when text extraction happens for OpenRegister
 						objects. Objects contain structured data that is converted to
@@ -367,22 +325,13 @@
 					v-if="fileSettings.entityRecognitionEnabled"
 					class="setting-item">
 					<label for="entity-recognition-method">Detection Method</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.entityRecognitionMethod"
 						inputId="entity-recognition-method"
 						:inputLabel="t('openregister', 'Entity Recognition Method')"
 						:options="entityRecognitionMethods"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description, icon }">
-							<div class="option-item">
-								<span class="option-icon">{{ icon }}</span>
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
-						</template>
-					</NcSelect>
+						withIcon
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Choose how entities are detected. Regex is fast and local;
 						external services provide better accuracy for names and
@@ -482,40 +431,19 @@
 								"
 								@click="testBackend(backend.name)">
 								<template #icon>
-									<NcLoadingIcon
-										v-if="testingBackendMethod === backend.name"
-										:size="20" />
-									<CheckIcon
-										v-else-if="
-											backendTestResults[backend.name]
-											=== 'success'
-										"
-										:size="20" />
-									<AlertCircleIcon
-										v-else-if="
-											backendTestResults[backend.name]
-											=== 'error'
-										"
-										:size="20" />
-									<RefreshIcon v-else :size="20" />
+									<ConnectionTestIcon
+										:result="backendTestResults[backend.name]"
+										:testing="testingBackendMethod === backend.name"
+										testingFirst />
 								</template>
 								{{ t('openregister', 'Test connection') }}
 							</NcButton>
 						</li>
 					</ul>
-					<p
+					<OpenAnonymiserHint
 						v-if="openAnonymiserHint"
-						class="setting-description backend-hint"
-						role="status">
-						{{ openAnonymiserHint }}
-						<a
-							:href="openAnonymiserInstallLink"
-							target="_blank"
-							rel="noopener noreferrer"
-							class="backend-install-link">
-							{{ t('openregister', 'Install OpenAnonymiser') }}
-						</a>
-					</p>
+						:hint="openAnonymiserHint"
+						:installLink="openAnonymiserInstallLink" />
 				</div>
 
 				<!-- Presidio API Configuration -->
@@ -547,16 +475,9 @@
 							variant="secondary"
 							@click="testPresidioConnection">
 							<template #icon>
-								<CheckIcon
-									v-if="presidioConnectionTested === 'success'"
-									:size="20" />
-								<AlertCircleIcon
-									v-else-if="presidioConnectionTested === 'error'"
-									:size="20" />
-								<NcLoadingIcon
-									v-else-if="testingPresidio"
-									:size="20" />
-								<RefreshIcon v-else :size="20" />
+								<ConnectionTestIcon
+									:result="presidioConnectionTested"
+									:testing="testingPresidio" />
 							</template>
 							Test Connection
 						</NcButton>
@@ -601,42 +522,19 @@
 									)
 								}}
 							</p>
-							<p
+							<OpenAnonymiserHint
 								v-if="openAnonymiserHint"
-								class="setting-description backend-hint"
-								role="status">
-								{{ openAnonymiserHint }}
-								<a
-									:href="openAnonymiserInstallLink"
-									target="_blank"
-									rel="noopener noreferrer"
-									class="backend-install-link">
-									{{ t('openregister', 'Install OpenAnonymiser') }}
-								</a>
-							</p>
+								:hint="openAnonymiserHint"
+								:installLink="openAnonymiserInstallLink" />
 							<NcButton
 								variant="secondary"
 								:disabled="testingBackendMethod === 'openanonymiser'"
 								@click="testBackend('openanonymiser')">
 								<template #icon>
-									<NcLoadingIcon
-										v-if="
-											testingBackendMethod === 'openanonymiser'
-										"
-										:size="20" />
-									<CheckIcon
-										v-else-if="
-											backendTestResults.openanonymiser
-											=== 'success'
-										"
-										:size="20" />
-									<AlertCircleIcon
-										v-else-if="
-											backendTestResults.openanonymiser
-											=== 'error'
-										"
-										:size="20" />
-									<RefreshIcon v-else :size="20" />
+									<ConnectionTestIcon
+										:result="backendTestResults.openanonymiser"
+										:testing="testingBackendMethod === 'openanonymiser'"
+										testingFirst />
 								</template>
 								{{ t('openregister', 'Test connection') }}
 							</NcButton>
@@ -741,22 +639,9 @@
 								variant="secondary"
 								@click="testOpenAnonymiserConnection">
 								<template #icon>
-									<CheckIcon
-										v-if="
-											openAnonymiserConnectionTested
-											=== 'success'
-										"
-										:size="20" />
-									<AlertCircleIcon
-										v-else-if="
-											openAnonymiserConnectionTested
-											=== 'error'
-										"
-										:size="20" />
-									<NcLoadingIcon
-										v-else-if="testingOpenAnonymiser"
-										:size="20" />
-									<RefreshIcon v-else :size="20" />
+									<ConnectionTestIcon
+										:result="openAnonymiserConnectionTested"
+										:testing="testingOpenAnonymiser" />
 								</template>
 								{{ t('openregister', 'Test connection') }}
 							</NcButton>
@@ -906,7 +791,6 @@ import {
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcLoadingIcon,
-	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
@@ -920,12 +804,430 @@ import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import ConnectionTestIcon from './ConnectionTestIcon.vue'
+import LabeledSelect from './LabeledSelect.vue'
+import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
+import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
+import { saveMessageMethods } from './saveMessage.js'
 
 /**
  * File configuration settings component for managing file upload and text extraction.
  * Allows users to control when and how text extraction occurs.
  */
+// The hint shown for each OpenAnonymiser probe error code.
+const OPEN_ANONYMISER_HINTS = new Map([
+	[
+		'appapi_missing',
+		() =>
+			t(
+				'openregister',
+				'AppAPI is not installed. Install AppAPI and the OpenAnonymiser ExApp to enable Dutch-focused PII detection.',
+			),
+	],
+	[
+		'exapp_not_installed',
+		() =>
+			t(
+				'openregister',
+				'The OpenAnonymiser ExApp is not installed. Install it to enable Dutch-focused PII detection.',
+			),
+	],
+	[
+		'exapp_disabled',
+		() =>
+			t(
+				'openregister',
+				'The OpenAnonymiser ExApp is installed but disabled. Enable it to use it for entity recognition.',
+			),
+	],
+])
+
+// The display name of each entity recognition backend, by its id.
+const BACKEND_LABELS = {
+	regex: 'Regex',
+	presidio: 'Presidio',
+	openanonymiser: 'OpenAnonymiser',
+	llm: 'LLM',
+	hybrid: 'Hybrid',
+}
+
+// The select fields of the file settings: the option list each picks from,
+// and the option it falls back to when the stored id is not in the list.
+const SELECT_SETTINGS = [
+	['extractionScope', 'extractionScopes', 3],
+	['textExtractor', 'textExtractors', 0],
+	['extractionMode', 'extractionModes', 0],
+	['entityRecognitionMethod', 'entityRecognitionMethods', 0],
+]
+
+// The plain file settings and the value each takes when the stored one is empty.
+const PLAIN_SETTING_DEFAULTS = [
+	['maxFileSize', 100],
+	['chunkSize', 1000],
+	['chunkOverlap', 200],
+	['chunkingStrategy', 'RECURSIVE_CHARACTER'],
+	['batchSize', 10],
+	['dolphinApiEndpoint', ''],
+	['dolphinApiKey', ''],
+	['entityRecognitionEnabled', false],
+	['presidioApiEndpoint', ''],
+	['openAnonymiserApiEndpoint', ''],
+	['openAnonymiserSource', 'internal'],
+	['openAnonymiserUsername', ''],
+]
+
+/**
+ * The option a stored select value (an id, or an option object) stands for.
+ *
+ * @param {Array<object>} options The options.
+ * @param {string|object} value The stored value.
+ * @return {object|undefined} The option, if the list has it.
+ */
+function optionFor(options, value) {
+	const id = typeof value === 'string' ? value : value.id
+	return options.find((option) => option.id === id)
+}
+
+/**
+ * Turn the stored select values into the options the selects show.
+ *
+ * @param {object} vm The file configuration section.
+ * @param {object} settings The stored file settings.
+ * @return {void}
+ */
+function applySelectedOptions(vm, settings) {
+	for (const [field, list, fallback] of SELECT_SETTINGS) {
+		if (settings[field]) {
+			vm.fileSettings[field] =
+				optionFor(vm[list], settings[field]) || vm[list][fallback]
+		}
+	}
+}
+
+/**
+ * Copy the plain stored settings into the form, with their defaults.
+ *
+ * @param {object} fileSettings The form's settings.
+ * @param {object} settings The stored file settings.
+ * @return {void}
+ */
+function applyPlainSettings(fileSettings, settings) {
+	fileSettings.includeInSearch =
+		settings.includeInSearch !== undefined ? settings.includeInSearch : true
+	for (const [field, fallback] of PLAIN_SETTING_DEFAULTS) {
+		fileSettings[field] = settings[field] || fallback
+	}
+	fileSettings.openAnonymiserPasswordSet =
+		settings.openAnonymiserPasswordSet === true
+}
+
+/**
+ * Mark the file types the stored settings enable.
+ *
+ * @param {Array<object>} fileTypes The file types.
+ * @param {object} settings The stored file settings.
+ * @return {void}
+ */
+function applyEnabledFileTypes(fileTypes, settings) {
+	if (!settings.enabledFileTypes) {
+		return
+	}
+	fileTypes.forEach((ft) => {
+		ft.enabled = settings.enabledFileTypes.includes(ft.extension)
+	})
+}
+
+/**
+ * The extraction settings to save.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function extractionFields(settings) {
+	return {
+		extractionScope: settings.extractionScope?.id || 'objects',
+		textExtractor: settings.textExtractor?.id || 'llphant',
+		extractionMode: settings.extractionMode?.id || 'background',
+		includeInSearch: settings.includeInSearch,
+		maxFileSize: settings.maxFileSize,
+		chunkSize: settings.chunkSize,
+		chunkOverlap: settings.chunkOverlap,
+		chunkingStrategy: settings.chunkingStrategy,
+		batchSize: settings.batchSize,
+	}
+}
+
+/**
+ * The text recognition settings to save.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function recognitionFields(settings) {
+	return {
+		dolphinApiEndpoint: settings.dolphinApiEndpoint || '',
+		dolphinApiKey: settings.dolphinApiKey || '',
+		entityRecognitionEnabled: settings.entityRecognitionEnabled,
+		entityRecognitionMethod: settings.entityRecognitionMethod?.id || 'regex',
+		presidioApiEndpoint: settings.presidioApiEndpoint || '',
+	}
+}
+
+/**
+ * The OpenAnonymiser settings to save, without the password.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function openAnonymiserFields(settings) {
+	return {
+		openAnonymiserApiEndpoint: settings.openAnonymiserApiEndpoint || '',
+		openAnonymiserSource: settings.openAnonymiserSource || 'internal',
+		openAnonymiserUsername: settings.openAnonymiserUsername || '',
+	}
+}
+
+const FILE_COUNTS = [
+	'totalFiles',
+	'untrackedFiles',
+	'pendingFiles',
+	'processedFiles',
+	'failedFiles',
+	'totalChunks',
+]
+
+/**
+ * The extraction statistics to show, zero where the server gave none.
+ *
+ * @param {object} stats The server's statistics
+ * @return {object} The statistics
+ */
+function extractionStatsOf(stats) {
+	return {
+		...Object.fromEntries(FILE_COUNTS.map((key) => [key, stats[key] || 0])),
+		totalObjects: stats.totalObjects || stats.total_objects || 0,
+		totalEntities: stats.totalEntities || stats.total_entities || 0,
+	}
+}
+
+/**
+ * The file types text can be extracted from, one row each: extension, label,
+ * icon, whether it is enabled by default, LLPhant support and whether Dolphin
+ * reads it with OCR.
+ */
+const FILE_TYPE_ROWS = [
+	// Text formats (LLPhant supported)
+	['txt', 'Text Files', '📝', true, 'yes', false],
+	['md', 'Markdown', '📋', true, 'yes', false],
+	['html', 'HTML Files', '🌐', true, 'yes', false],
+	['json', 'JSON Files', '📦', true, 'yes', false],
+	['xml', 'XML Files', '📰', true, 'yes', false],
+	['csv', 'CSV Files', '📊', true, 'yes', false],
+	// Document formats (LLPhant supported)
+	['pdf', 'PDF Documents', '📄', true, 'yes', true],
+	['docx', 'Word Documents', '📘', true, 'yes', false],
+	['doc', 'Word (Legacy)', '📘', true, 'yes', false],
+	['xlsx', 'Excel Spreadsheets', '📊', true, 'yes', false],
+	['xls', 'Excel (Legacy)', '📊', true, 'yes', false],
+	['pptx', 'PowerPoint', '📽️', false, 'yes', false],
+	// Image formats (Dolphin required for OCR)
+	['jpg', 'JPEG Images', '🖼️', false, 'none', true],
+	['jpeg', 'JPEG Images', '🖼️', false, 'none', true],
+	['png', 'PNG Images', '🖼️', false, 'none', true],
+	['gif', 'GIF Images', '🖼️', false, 'none', true],
+	['webp', 'WebP Images', '🖼️', false, 'none', true],
+	// Other formats
+	['odt', 'OpenDocument Text', '📄', false, 'yes', false],
+	['rtf', 'Rich Text Format', '📝', false, 'yes', false],
+]
+
+/**
+ * One row of FILE_TYPE_ROWS as the form edits it.
+ *
+ * @param {Array} row The row
+ * @return {object} The file type
+ */
+function toFileType(row) {
+	return {
+		extension: row[0],
+		label: row[1],
+		icon: row[2],
+		enabled: row[3],
+		llphantSupport: row[4],
+		dolphinOcr: row[5],
+	}
+}
+
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	fileSettings: {
+		extractionScope: {
+			id: 'objects',
+			label: 'Files Attached to Objects',
+		},
+
+		textExtractor: { id: 'llphant', label: 'LLPhant' },
+		extractionMode: { id: 'background', label: 'Background Job' },
+		includeInSearch: true,
+		maxFileSize: 100,
+		chunkSize: 1000,
+		chunkOverlap: 200,
+		chunkingStrategy: 'RECURSIVE_CHARACTER',
+		batchSize: 10,
+		dolphinApiEndpoint: '',
+		dolphinApiKey: '',
+		entityRecognitionEnabled: false,
+		entityRecognitionMethod: { id: 'regex', label: 'Regex' },
+		presidioApiEndpoint: '',
+		openAnonymiserApiEndpoint: '',
+		// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (URL).
+		openAnonymiserSource: 'internal',
+		// HTTP Basic user for the external endpoint; the password is write-only.
+		openAnonymiserUsername: '',
+		openAnonymiserPasswordSet: false,
+	},
+
+	// A newly typed OpenAnonymiser password, sent once and then cleared.
+	openAnonymiserPassword: '',
+	openAnonymiserPasswordChanged: false,
+
+	// Resolved backend state from GET /api/admin/anonymisation/backend-state.
+	backendState: null,
+	// Last probe error code for the openanonymiser backend (drives the install hint).
+	openAnonymiserError: null,
+	// Method name currently being probed via the test-connection endpoint.
+	testingBackendMethod: '',
+	// Persistent per-backend test outcomes: { [method]: 'success' | 'error' }.
+	backendTestResults: {},
+	objectSettings: {
+		extractionMode: { id: 'background', label: 'Background Job' },
+	},
+
+	fileTypes: FILE_TYPE_ROWS.map(toFileType),
+
+	textExtractors: [
+		{
+			id: 'llphant',
+			label: 'LLPhant',
+			icon: '🐘',
+			description:
+				'Local PHP library - Best for: TXT, MD, HTML, JSON, XML, CSV, simple PDFs',
+		},
+		{
+			id: 'dolphin',
+			label: 'Dolphin',
+			icon: '🐬',
+			description:
+				'ByteDance AI - Best for: Complex PDFs, tables, formulas, DOCX, XLSX, PPT',
+		},
+	],
+
+	extractionScopes: [
+		{
+			id: 'none',
+			label: 'None (Disabled)',
+			description: 'Do not extract text automatically',
+		},
+		{
+			id: 'all',
+			label: 'All Files',
+			description: 'Extract text from all uploaded files in Nextcloud',
+		},
+		{
+			id: 'folders',
+			label: 'Files in Specific Folders',
+			description: 'Extract text from files in designated folders only',
+		},
+		{
+			id: 'objects',
+			label: 'Files Attached to Objects',
+			description:
+				'Extract text only from files attached to OpenRegister objects (recommended)',
+		},
+	],
+
+	extractionModes: [
+		{
+			id: 'immediate',
+			label: 'Immediate',
+			description:
+				'Process during upload - direct link between file upload and parsing logic',
+		},
+		{
+			id: 'background',
+			label: 'Background Job',
+			description:
+				'Delayed extraction action on the job stack - process files asynchronously after upload',
+		},
+		{
+			id: 'cron',
+			label: 'Cron Job',
+			description:
+				'Repeating action handling files - periodic batch processing via scheduled jobs',
+		},
+		{
+			id: 'manual',
+			label: 'Manual Only',
+			description: 'Only extract when manually triggered via Actions menu',
+		},
+	],
+
+	extractionStats: {
+		totalFiles: 0,
+		untrackedFiles: 0,
+		pendingFiles: 0,
+		processedFiles: 0,
+		failedFiles: 0,
+		totalChunks: 0,
+		totalObjects: 0,
+		totalEntities: 0,
+	},
+
+	discoveringFiles: false,
+	extractingFiles: false,
+	retryingFiles: false,
+	saveMessage: '',
+	saveMessageType: 'success',
+	dolphinConnectionTested: null, // null, 'success', 'error'
+	presidioConnectionTested: null,
+	openAnonymiserConnectionTested: null,
+	testingPresidio: false,
+	testingOpenAnonymiser: false,
+	entityRecognitionMethods: [
+		{
+			id: 'regex',
+			label: 'Regex',
+			icon: '🔤',
+			description:
+				'Local pattern matching - Fast, privacy-friendly, detects emails, phones, IBANs',
+		},
+		{
+			id: 'presidio',
+			label: 'Presidio',
+			icon: '🛡️',
+			description:
+				'Microsoft Presidio - Accurate NER for names, organizations, locations (English)',
+		},
+		{
+			id: 'openanonymiser',
+			label: 'OpenAnonymiser',
+			icon: '🇳🇱',
+			description:
+				'Dutch-focused PII detection - Best for Dutch names, BSN, addresses',
+		},
+		{
+			id: 'hybrid',
+			label: 'Hybrid',
+			icon: '⚡',
+			description:
+				'Combines regex with external services for maximum coverage',
+		},
+	],
+}
+
 export default {
 	name: 'FileConfiguration',
 
@@ -934,7 +1236,6 @@ export default {
 		SettingsCard,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
-		NcSelect,
 		NcButton,
 		NcTextField,
 		NcActions,
@@ -946,337 +1247,14 @@ export default {
 		KeyIcon,
 		CheckIcon,
 		AlertCircleIcon,
+		ConnectionTestIcon,
 		DotsVertical,
+		LabeledSelect,
+		OpenAnonymiserHint,
 	},
 
 	data() {
-		return {
-			fileSettings: {
-				extractionScope: {
-					id: 'objects',
-					label: 'Files Attached to Objects',
-				},
-
-				textExtractor: { id: 'llphant', label: 'LLPhant' },
-				extractionMode: { id: 'background', label: 'Background Job' },
-				includeInSearch: true,
-				maxFileSize: 100,
-				chunkSize: 1000,
-				chunkOverlap: 200,
-				chunkingStrategy: 'RECURSIVE_CHARACTER',
-				batchSize: 10,
-				dolphinApiEndpoint: '',
-				dolphinApiKey: '',
-				entityRecognitionEnabled: false,
-				entityRecognitionMethod: { id: 'regex', label: 'Regex' },
-				presidioApiEndpoint: '',
-				openAnonymiserApiEndpoint: '',
-				// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (URL).
-				openAnonymiserSource: 'internal',
-				// HTTP Basic user for the external endpoint; the password is write-only.
-				openAnonymiserUsername: '',
-				openAnonymiserPasswordSet: false,
-			},
-
-			// A newly typed OpenAnonymiser password, sent once and then cleared.
-			openAnonymiserPassword: '',
-			openAnonymiserPasswordChanged: false,
-
-			// Resolved backend state from GET /api/admin/anonymisation/backend-state.
-			backendState: null,
-			// Last probe error code for the openanonymiser backend (drives the install hint).
-			openAnonymiserError: null,
-			// Method name currently being probed via the test-connection endpoint.
-			testingBackendMethod: '',
-			// Persistent per-backend test outcomes: { [method]: 'success' | 'error' }.
-			backendTestResults: {},
-			objectSettings: {
-				extractionMode: { id: 'background', label: 'Background Job' },
-			},
-
-			fileTypes: [
-				// Text formats (LLPhant supported)
-				{
-					extension: 'txt',
-					label: 'Text Files',
-					icon: '📝',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'md',
-					label: 'Markdown',
-					icon: '📋',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'html',
-					label: 'HTML Files',
-					icon: '🌐',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'json',
-					label: 'JSON Files',
-					icon: '📦',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'xml',
-					label: 'XML Files',
-					icon: '📰',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'csv',
-					label: 'CSV Files',
-					icon: '📊',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-
-				// Document formats (LLPhant supported)
-				{
-					extension: 'pdf',
-					label: 'PDF Documents',
-					icon: '📄',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'docx',
-					label: 'Word Documents',
-					icon: '📘',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'doc',
-					label: 'Word (Legacy)',
-					icon: '📘',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'xlsx',
-					label: 'Excel Spreadsheets',
-					icon: '📊',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'xls',
-					label: 'Excel (Legacy)',
-					icon: '📊',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'pptx',
-					label: 'PowerPoint',
-					icon: '📽️',
-					enabled: false,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-
-				// Image formats (Dolphin required for OCR)
-				{
-					extension: 'jpg',
-					label: 'JPEG Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'jpeg',
-					label: 'JPEG Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'png',
-					label: 'PNG Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'gif',
-					label: 'GIF Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'webp',
-					label: 'WebP Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-
-				// Other formats
-				{
-					extension: 'odt',
-					label: 'OpenDocument Text',
-					icon: '📄',
-					enabled: false,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'rtf',
-					label: 'Rich Text Format',
-					icon: '📝',
-					enabled: false,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-			],
-
-			textExtractors: [
-				{
-					id: 'llphant',
-					label: 'LLPhant',
-					icon: '🐘',
-					description:
-						'Local PHP library - Best for: TXT, MD, HTML, JSON, XML, CSV, simple PDFs',
-				},
-				{
-					id: 'dolphin',
-					label: 'Dolphin',
-					icon: '🐬',
-					description:
-						'ByteDance AI - Best for: Complex PDFs, tables, formulas, DOCX, XLSX, PPT',
-				},
-			],
-
-			extractionScopes: [
-				{
-					id: 'none',
-					label: 'None (Disabled)',
-					description: 'Do not extract text automatically',
-				},
-				{
-					id: 'all',
-					label: 'All Files',
-					description: 'Extract text from all uploaded files in Nextcloud',
-				},
-				{
-					id: 'folders',
-					label: 'Files in Specific Folders',
-					description:
-						'Extract text from files in designated folders only',
-				},
-				{
-					id: 'objects',
-					label: 'Files Attached to Objects',
-					description:
-						'Extract text only from files attached to OpenRegister objects (recommended)',
-				},
-			],
-
-			extractionModes: [
-				{
-					id: 'immediate',
-					label: 'Immediate',
-					description:
-						'Process during upload - direct link between file upload and parsing logic',
-				},
-				{
-					id: 'background',
-					label: 'Background Job',
-					description:
-						'Delayed extraction action on the job stack - process files asynchronously after upload',
-				},
-				{
-					id: 'cron',
-					label: 'Cron Job',
-					description:
-						'Repeating action handling files - periodic batch processing via scheduled jobs',
-				},
-				{
-					id: 'manual',
-					label: 'Manual Only',
-					description:
-						'Only extract when manually triggered via Actions menu',
-				},
-			],
-
-			extractionStats: {
-				totalFiles: 0,
-				untrackedFiles: 0,
-				pendingFiles: 0,
-				processedFiles: 0,
-				failedFiles: 0,
-				totalChunks: 0,
-				totalObjects: 0,
-				totalEntities: 0,
-			},
-
-			discoveringFiles: false,
-			extractingFiles: false,
-			retryingFiles: false,
-			saveMessage: '',
-			saveMessageType: 'success',
-			dolphinConnectionTested: null, // null, 'success', 'error'
-			presidioConnectionTested: null,
-			openAnonymiserConnectionTested: null,
-			testingPresidio: false,
-			testingOpenAnonymiser: false,
-			entityRecognitionMethods: [
-				{
-					id: 'regex',
-					label: 'Regex',
-					icon: '🔤',
-					description:
-						'Local pattern matching - Fast, privacy-friendly, detects emails, phones, IBANs',
-				},
-				{
-					id: 'presidio',
-					label: 'Presidio',
-					icon: '🛡️',
-					description:
-						'Microsoft Presidio - Accurate NER for names, organizations, locations (English)',
-				},
-				{
-					id: 'openanonymiser',
-					label: 'OpenAnonymiser',
-					icon: '🇳🇱',
-					description:
-						'Dutch-focused PII detection - Best for Dutch names, BSN, addresses',
-				},
-				{
-					id: 'hybrid',
-					label: 'Hybrid',
-					icon: '⚡',
-					description:
-						'Combines regex with external services for maximum coverage',
-				},
-			],
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {
@@ -1326,13 +1304,7 @@ export default {
 			if (!this.backendState || !this.backendState.backends) {
 				return []
 			}
-			const labels = {
-				regex: 'Regex',
-				presidio: 'Presidio',
-				openanonymiser: 'OpenAnonymiser',
-				llm: 'LLM',
-				hybrid: 'Hybrid',
-			}
+			const labels = BACKEND_LABELS
 			return Object.values(this.backendState.backends).map((backend) => ({
 				name: backend.name,
 				label: labels[backend.name] || backend.name,
@@ -1350,25 +1322,8 @@ export default {
 		 * @return {string|null} The hint text, or null when no hint applies.
 		 */
 		openAnonymiserHint() {
-			switch (this.openAnonymiserError) {
-				case 'appapi_missing':
-					return t(
-						'openregister',
-						'AppAPI is not installed. Install AppAPI and the OpenAnonymiser ExApp to enable Dutch-focused PII detection.',
-					)
-				case 'exapp_not_installed':
-					return t(
-						'openregister',
-						'The OpenAnonymiser ExApp is not installed. Install it to enable Dutch-focused PII detection.',
-					)
-				case 'exapp_disabled':
-					return t(
-						'openregister',
-						'The OpenAnonymiser ExApp is installed but disabled. Enable it to use it for entity recognition.',
-					)
-				default:
-					return null
-			}
+			const hint = OPEN_ANONYMISER_HINTS.get(this.openAnonymiserError)
+			return hint ? hint() : null
 		},
 
 		/**
@@ -1388,14 +1343,7 @@ export default {
 		 * @return {object} Map of method id to label.
 		 */
 		methodLabels() {
-			return {
-				auto: 'Auto',
-				regex: 'Regex',
-				presidio: 'Presidio',
-				openanonymiser: 'OpenAnonymiser',
-				llm: 'LLM',
-				hybrid: 'Hybrid',
-			}
+			return { auto: 'Auto', ...BACKEND_LABELS }
 		},
 
 		/**
@@ -1448,6 +1396,8 @@ export default {
 	},
 
 	methods: {
+		...saveMessageMethods,
+
 		/**
 		 * Load file configuration settings
 		 *
@@ -1457,87 +1407,10 @@ export default {
 			try {
 				const settings = await this.settingsStore.getFileSettings()
 				if (settings) {
-					// Convert scope and mode IDs to objects for NcSelect
-					if (settings.extractionScope) {
-						const scopeId =
-							typeof settings.extractionScope === 'string'
-								? settings.extractionScope
-								: settings.extractionScope.id
-						this.fileSettings.extractionScope =
-							this.extractionScopes.find((s) => s.id === scopeId)
-							|| this.extractionScopes[3] // default to 'objects'
-					}
-
-					// Load text extractor
-					if (settings.textExtractor) {
-						const extractorId =
-							typeof settings.textExtractor === 'string'
-								? settings.textExtractor
-								: settings.textExtractor.id
-						this.fileSettings.textExtractor =
-							this.textExtractors.find((e) => e.id === extractorId)
-							|| this.textExtractors[0] // default to 'llphant'
-					}
-
-					if (settings.extractionMode) {
-						const modeId =
-							typeof settings.extractionMode === 'string'
-								? settings.extractionMode
-								: settings.extractionMode.id
-						this.fileSettings.extractionMode =
-							this.extractionModes.find((m) => m.id === modeId)
-							|| this.extractionModes[0] // default to 'background'
-					}
-
-					// Load other settings
-					this.fileSettings.includeInSearch =
-						settings.includeInSearch !== undefined
-							? settings.includeInSearch
-							: true
-					this.fileSettings.maxFileSize = settings.maxFileSize || 100
-					this.fileSettings.chunkSize = settings.chunkSize || 1000
-					this.fileSettings.chunkOverlap = settings.chunkOverlap || 200
-					this.fileSettings.chunkingStrategy =
-						settings.chunkingStrategy || 'RECURSIVE_CHARACTER'
-					this.fileSettings.batchSize = settings.batchSize || 10
-					this.fileSettings.dolphinApiEndpoint =
-						settings.dolphinApiEndpoint || ''
-					this.fileSettings.dolphinApiKey = settings.dolphinApiKey || ''
-
-					// Load entity recognition settings
-					this.fileSettings.entityRecognitionEnabled =
-						settings.entityRecognitionEnabled || false
-					if (settings.entityRecognitionMethod) {
-						const methodId =
-							typeof settings.entityRecognitionMethod === 'string'
-								? settings.entityRecognitionMethod
-								: settings.entityRecognitionMethod.id
-						this.fileSettings.entityRecognitionMethod =
-							this.entityRecognitionMethods.find(
-								(m) => m.id === methodId,
-							) || this.entityRecognitionMethods[0]
-					}
-					this.fileSettings.presidioApiEndpoint =
-						settings.presidioApiEndpoint || ''
-					this.fileSettings.openAnonymiserApiEndpoint =
-						settings.openAnonymiserApiEndpoint || ''
-					this.fileSettings.openAnonymiserSource =
-						settings.openAnonymiserSource || 'internal'
-					this.fileSettings.openAnonymiserUsername =
-						settings.openAnonymiserUsername || ''
-					this.fileSettings.openAnonymiserPasswordSet =
-						settings.openAnonymiserPasswordSet === true
-
-					// Load file types
-					if (settings.enabledFileTypes) {
-						this.fileTypes.forEach((ft) => {
-							ft.enabled = settings.enabledFileTypes.includes(
-								ft.extension,
-							)
-						})
-					}
+					applySelectedOptions(this, settings)
+					applyPlainSettings(this.fileSettings, settings)
+					applyEnabledFileTypes(this.fileTypes, settings)
 				}
-
 				// Load object settings
 				await this.loadObjectSettings()
 			} catch (error) {
@@ -1578,40 +1451,49 @@ export default {
 				const state = await this.settingsStore.getAnonymisationBackendState()
 				this.backendState = state
 				this.openAnonymiserError = null
-
-				// Resolve the invisible 'auto' (not-yet-configured) marker to the concrete
-				// recommended method so the dropdown shows a real choice; persisted on save.
-				const currentId = this.fileSettings.entityRecognitionMethod?.id
-				if (
-					state
-					&& (currentId === 'auto'
-						|| !this.entityRecognitionMethods.some(
-							(m) => m.id === currentId,
-						))
-				) {
-					const resolved = state.activeMethod || 'regex'
-					this.fileSettings.entityRecognitionMethod =
-						this.entityRecognitionMethods.find((m) => m.id === resolved)
-						|| this.entityRecognitionMethods[0]
-				}
-
-				// When the ExApp is not available, probe once to capture the precise reason
-				// (appapi_missing / exapp_not_installed / exapp_disabled) for the install hint.
-				if (
-					state
-					&& state.backends
-					&& state.backends.openanonymiser
-					&& state.backends.openanonymiser.available === false
-				) {
-					const probe =
-						await this.settingsStore.testAnonymisationBackend(
-							'openanonymiser',
-						)
-					this.openAnonymiserError = probe?.error || null
+				if (state) {
+					this.resolveRecognitionMethod(state)
+					await this.probeUnavailableOpenAnonymiser(state)
 				}
 			} catch (error) {
 				console.error('Failed to load anonymisation backend state:', error)
 			}
+		},
+
+		/**
+		 * Resolve the invisible 'auto' (not-yet-configured) marker, or a method
+		 * that is no longer offered, to the backend's active method so the
+		 * dropdown shows a real choice; persisted on save.
+		 *
+		 * @param {object} state The resolved backend state
+		 * @spec exclude UI plumbing — picks the recognition method shown in the dropdown.
+		 */
+		resolveRecognitionMethod(state) {
+			const currentId = this.fileSettings.entityRecognitionMethod?.id
+			const methods = this.entityRecognitionMethods
+			if (currentId !== 'auto' && methods.some((m) => m.id === currentId)) {
+				return
+			}
+			const resolved = state.activeMethod || 'regex'
+			this.fileSettings.entityRecognitionMethod =
+				methods.find((m) => m.id === resolved) || methods[0]
+		},
+
+		/**
+		 * When the ExApp is not available, probe once to capture the precise reason
+		 * (appapi_missing / exapp_not_installed / exapp_disabled) for the install hint.
+		 *
+		 * @param {object} state The resolved backend state
+		 * @spec exclude UI plumbing — store-delegated probe for the install hint.
+		 * @return {Promise<void>}
+		 */
+		async probeUnavailableOpenAnonymiser(state) {
+			if (state.backends?.openanonymiser?.available !== false) {
+				return
+			}
+			const probe =
+				await this.settingsStore.testAnonymisationBackend('openanonymiser')
+			this.openAnonymiserError = probe?.error || null
 		},
 
 		/**
@@ -1626,32 +1508,10 @@ export default {
 				this.testingBackendMethod = method
 				const probe =
 					await this.settingsStore.testAnonymisationBackend(method)
-
 				if (method === 'openanonymiser') {
 					this.openAnonymiserError = probe?.error || null
 				}
-
-				const reachable = Boolean(probe && probe.reachable)
-				// Persist a per-backend result so the row/button keep showing the outcome.
-				this.backendTestResults = {
-					...this.backendTestResults,
-					[method]: reachable ? 'success' : 'error',
-				}
-
-				if (reachable) {
-					this.showSaveMessage(
-						t('openregister', 'Connection successful'),
-						'success',
-					)
-				} else {
-					this.showSaveMessage(
-						t('openregister', 'Connection failed: {error}', {
-							error: probe?.error || 'unknown',
-						}),
-						'error',
-					)
-				}
-
+				this.reportProbe(method, probe)
 				// Refresh the resolved state so availability indicators reflect the probe.
 				const state = await this.settingsStore.getAnonymisationBackendState()
 				if (state) {
@@ -1659,16 +1519,52 @@ export default {
 				}
 			} catch (error) {
 				console.error('Failed to probe backend:', error)
-				this.backendTestResults = {
-					...this.backendTestResults,
-					[method]: 'error',
-				}
+				this.recordBackendTest(method, 'error')
 				this.showSaveMessage(
 					t('openregister', 'Connection test failed'),
 					'error',
 				)
 			} finally {
 				this.testingBackendMethod = ''
+			}
+		},
+
+		/**
+		 * Record and announce the outcome of a backend probe.
+		 *
+		 * @param {string} method The probed backend method
+		 * @param {object|null} probe The probe result
+		 * @spec exclude UI plumbing — formats a probe outcome message.
+		 */
+		reportProbe(method, probe) {
+			const reachable = Boolean(probe && probe.reachable)
+			this.recordBackendTest(method, reachable ? 'success' : 'error')
+			if (reachable) {
+				this.showSaveMessage(
+					t('openregister', 'Connection successful'),
+					'success',
+				)
+				return
+			}
+			this.showSaveMessage(
+				t('openregister', 'Connection failed: {error}', {
+					error: probe?.error || 'unknown',
+				}),
+				'error',
+			)
+		},
+
+		/**
+		 * Persist a per-backend result so the row/button keep showing the outcome.
+		 *
+		 * @param {string} method The backend method
+		 * @param {string} outcome 'success' or 'error'
+		 * @spec exclude UI plumbing — per-backend test outcome state.
+		 */
+		recordBackendTest(method, outcome) {
+			this.backendTestResults = {
+				...this.backendTestResults,
+				[method]: outcome,
 			}
 		},
 
@@ -1708,58 +1604,54 @@ export default {
 		 */
 		async saveSettings() {
 			try {
-				// The password is only sent when it was typed: a save without the
-				// key keeps the stored one, an empty string clears it.
-				const passwordField = this.openAnonymiserPasswordChanged
-					? { openAnonymiserPassword: this.openAnonymiserPassword }
-					: {}
-				const saved = await this.settingsStore.saveFileSettings({
-					...passwordField,
-					extractionScope:
-						this.fileSettings.extractionScope?.id || 'objects',
-					textExtractor: this.fileSettings.textExtractor?.id || 'llphant',
-					extractionMode:
-						this.fileSettings.extractionMode?.id || 'background',
-					includeInSearch: this.fileSettings.includeInSearch,
-					maxFileSize: this.fileSettings.maxFileSize,
-					chunkSize: this.fileSettings.chunkSize,
-					chunkOverlap: this.fileSettings.chunkOverlap,
-					chunkingStrategy: this.fileSettings.chunkingStrategy,
-					batchSize: this.fileSettings.batchSize,
-					dolphinApiEndpoint: this.fileSettings.dolphinApiEndpoint || '',
-					dolphinApiKey: this.fileSettings.dolphinApiKey || '',
-					entityRecognitionEnabled:
-						this.fileSettings.entityRecognitionEnabled,
-					entityRecognitionMethod:
-						this.fileSettings.entityRecognitionMethod?.id || 'regex',
-					presidioApiEndpoint: this.fileSettings.presidioApiEndpoint || '',
-					openAnonymiserApiEndpoint:
-						this.fileSettings.openAnonymiserApiEndpoint || '',
-					openAnonymiserSource:
-						this.fileSettings.openAnonymiserSource || 'internal',
-					openAnonymiserUsername:
-						this.fileSettings.openAnonymiserUsername || '',
-					enabledFileTypes: this.fileTypes
-						.filter((ft) => ft.enabled)
-						.map((ft) => ft.extension),
-				})
-
-				if (this.openAnonymiserPasswordChanged) {
-					this.openAnonymiserPassword = ''
-					this.openAnonymiserPasswordChanged = false
-				}
-				if (saved && typeof saved.openAnonymiserPasswordSet === 'boolean') {
-					this.fileSettings.openAnonymiserPasswordSet =
-						saved.openAnonymiserPasswordSet
-				}
-
+				const saved = await this.settingsStore.saveFileSettings(
+					this.fileSettingsPayload(),
+				)
+				this.applySavedSettings(saved)
 				// Refresh resolved backend state so the active/recommended indicators stay in sync.
 				await this.loadBackendState()
-
-				// Settings saved silently - no success message
 			} catch (error) {
 				console.error('Failed to save file settings:', error)
 				this.showSaveMessage('Failed to save settings', 'error')
+			}
+		},
+
+		/**
+		 * The file settings to save. The password is only sent when it was typed:
+		 * a save without the key keeps the stored one, an empty string clears it.
+		 *
+		 * @return {object} The settings
+		 * @spec exclude UI plumbing — builds the file settings payload.
+		 */
+		fileSettingsPayload() {
+			const passwordField = this.openAnonymiserPasswordChanged
+				? { openAnonymiserPassword: this.openAnonymiserPassword }
+				: {}
+			return {
+				...passwordField,
+				...extractionFields(this.fileSettings),
+				...recognitionFields(this.fileSettings),
+				...openAnonymiserFields(this.fileSettings),
+				enabledFileTypes: this.fileTypes
+					.filter((ft) => ft.enabled)
+					.map((ft) => ft.extension),
+			}
+		},
+
+		/**
+		 * Clear a sent password and take over whether the server now holds one.
+		 *
+		 * @param {object|null} saved The saved settings
+		 * @spec exclude UI plumbing — write-only credential field state after a save.
+		 */
+		applySavedSettings(saved) {
+			if (this.openAnonymiserPasswordChanged) {
+				this.openAnonymiserPassword = ''
+				this.openAnonymiserPasswordChanged = false
+			}
+			if (saved && typeof saved.openAnonymiserPasswordSet === 'boolean') {
+				this.fileSettings.openAnonymiserPasswordSet =
+					saved.openAnonymiserPasswordSet
 			}
 		},
 
@@ -1800,42 +1692,20 @@ export default {
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testDolphinConnection() {
-			try {
-				this.dolphinConnectionTested = null
-
-				if (
-					!this.fileSettings.dolphinApiEndpoint
-					|| !this.fileSettings.dolphinApiKey
-				) {
-					this.showSaveMessage(
-						'Please provide both API endpoint and API key',
-						'error',
-					)
-					this.dolphinConnectionTested = 'error'
-					return
-				}
-
-				// Test connection via backend
-				const response = await this.settingsStore.testDolphinConnection({
-					apiEndpoint: this.fileSettings.dolphinApiEndpoint,
-					apiKey: this.fileSettings.dolphinApiKey,
-				})
-
-				if (response.success) {
-					this.showSaveMessage('Dolphin connection successful!', 'success')
-					this.dolphinConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(
-						`Connection failed: ${response.error}`,
-						'error',
-					)
-					this.dolphinConnectionTested = 'error'
-				}
-			} catch (error) {
-				console.error('Failed to test Dolphin connection:', error)
-				this.showSaveMessage('Connection test failed', 'error')
-				this.dolphinConnectionTested = 'error'
-			}
+			this.dolphinConnectionTested = null
+			const { dolphinApiEndpoint, dolphinApiKey } = this.fileSettings
+			// Test connection via backend
+			this.dolphinConnectionTested =
+				dolphinApiEndpoint && dolphinApiKey
+					? await this.runConnectionTest('Dolphin', () =>
+							this.settingsStore.testDolphinConnection({
+								apiEndpoint: dolphinApiEndpoint,
+								apiKey: dolphinApiKey,
+							}),
+						)
+					: this.missingConnectionInput(
+							'Please provide both API endpoint and API key',
+						)
 		},
 
 		/**
@@ -1844,43 +1714,15 @@ export default {
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testPresidioConnection() {
-			try {
-				this.presidioConnectionTested = null
-				this.testingPresidio = true
-
-				if (!this.fileSettings.presidioApiEndpoint) {
-					this.showSaveMessage(
-						'Please provide the Presidio API endpoint',
-						'error',
+			this.presidioConnectionTested = null
+			this.testingPresidio = true
+			const apiEndpoint = this.fileSettings.presidioApiEndpoint
+			this.presidioConnectionTested = apiEndpoint
+				? await this.runConnectionTest('Presidio', () =>
+						this.settingsStore.testPresidioConnection({ apiEndpoint }),
 					)
-					this.presidioConnectionTested = 'error'
-					return
-				}
-
-				const response = await this.settingsStore.testPresidioConnection({
-					apiEndpoint: this.fileSettings.presidioApiEndpoint,
-				})
-
-				if (response.success) {
-					this.showSaveMessage(
-						'Presidio connection successful!',
-						'success',
-					)
-					this.presidioConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(
-						`Connection failed: ${response.error}`,
-						'error',
-					)
-					this.presidioConnectionTested = 'error'
-				}
-			} catch (error) {
-				console.error('Failed to test Presidio connection:', error)
-				this.showSaveMessage('Connection test failed', 'error')
-				this.presidioConnectionTested = 'error'
-			} finally {
-				this.testingPresidio = false
-			}
+				: this.missingConnectionInput('Please provide the Presidio API endpoint')
+			this.testingPresidio = false
 		},
 
 		/**
@@ -1889,43 +1731,52 @@ export default {
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testOpenAnonymiserConnection() {
-			try {
-				this.openAnonymiserConnectionTested = null
-				this.testingOpenAnonymiser = true
-
-				if (!this.fileSettings.openAnonymiserApiEndpoint) {
-					this.showSaveMessage(
+			this.openAnonymiserConnectionTested = null
+			this.testingOpenAnonymiser = true
+			const apiEndpoint = this.fileSettings.openAnonymiserApiEndpoint
+			this.openAnonymiserConnectionTested = apiEndpoint
+				? await this.runConnectionTest('OpenAnonymiser', () =>
+						this.settingsStore.testOpenAnonymiserConnection({ apiEndpoint }),
+					)
+				: this.missingConnectionInput(
 						'Please provide the OpenAnonymiser API endpoint',
-						'error',
 					)
-					this.openAnonymiserConnectionTested = 'error'
-					return
-				}
+			this.testingOpenAnonymiser = false
+		},
 
-				const response =
-					await this.settingsStore.testOpenAnonymiserConnection({
-						apiEndpoint: this.fileSettings.openAnonymiserApiEndpoint,
-					})
+		/**
+		 * Say a connection test lacks input.
+		 *
+		 * @spec exclude UI plumbing — connection test message.
+		 * @param {string} message What is missing
+		 * @return {string} The test state: 'error'
+		 */
+		missingConnectionInput(message) {
+			this.showSaveMessage(message, 'error')
+			return 'error'
+		},
 
+		/**
+		 * Run one service's connection test and say how it went.
+		 *
+		 * @spec exclude UI plumbing — connection test message.
+		 * @param {string} service The service name shown in the messages
+		 * @param {() => Promise<object>} request The store call that tests it
+		 * @return {Promise<string>} The test state: 'success' or 'error'
+		 */
+		async runConnectionTest(service, request) {
+			try {
+				const response = await request()
 				if (response.success) {
-					this.showSaveMessage(
-						'OpenAnonymiser connection successful!',
-						'success',
-					)
-					this.openAnonymiserConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(
-						`Connection failed: ${response.error}`,
-						'error',
-					)
-					this.openAnonymiserConnectionTested = 'error'
+					this.showSaveMessage(`${service} connection successful!`, 'success')
+					return 'success'
 				}
+				this.showSaveMessage(`Connection failed: ${response.error}`, 'error')
+				return 'error'
 			} catch (error) {
-				console.error('Failed to test OpenAnonymiser connection:', error)
+				console.error(`Failed to test ${service} connection:`, error)
 				this.showSaveMessage('Connection test failed', 'error')
-				this.openAnonymiserConnectionTested = 'error'
-			} finally {
-				this.testingOpenAnonymiser = false
+				return 'error'
 			}
 		},
 
@@ -1938,17 +1789,7 @@ export default {
 			try {
 				const stats = await this.settingsStore.getExtractionStats()
 				if (stats) {
-					this.extractionStats = {
-						totalFiles: stats.totalFiles || 0,
-						untrackedFiles: stats.untrackedFiles || 0,
-						pendingFiles: stats.pendingFiles || 0,
-						processedFiles: stats.processedFiles || 0,
-						failedFiles: stats.failedFiles || 0,
-						totalChunks: stats.totalChunks || 0,
-						totalObjects: stats.totalObjects || stats.total_objects || 0,
-						totalEntities:
-							stats.totalEntities || stats.total_entities || 0,
-					}
+					this.extractionStats = extractionStatsOf(stats)
 				}
 			} catch (error) {
 				console.error('Failed to load extraction stats:', error)
@@ -2048,21 +1889,6 @@ export default {
 		},
 
 		/**
-		 * Show save message
-		 *
-		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
-		 * @param {string} message - The message to show
-		 * @param {string} type - The type of message to show
-		 */
-		showSaveMessage(message, type = 'success') {
-			this.saveMessage = message
-			this.saveMessageType = type
-			setTimeout(() => {
-				this.saveMessage = ''
-			}, 3000)
-		},
-
-		/**
 		 * Format number with thousands separator
 		 *
 		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
@@ -2075,7 +1901,10 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/common.scss' as *;
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
 /* Fix for action menu icon wrapper to prevent layout shifts when showing loading icons */
@@ -2087,28 +1916,7 @@ export default {
 	height: 20px;
 }
 
-.section-description-full {
-	background: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	padding: 20px;
-	margin-bottom: 20px;
-}
-
-.main-description {
-	color: var(--color-text-light);
-	font-size: 14px;
-	line-height: 1.6;
-	margin: 0 0 16px 0;
-}
-
-.main-description.info-note {
-	background: var(--color-background-dark);
-	border-left: 4px solid var(--color-primary-element);
-	padding: 12px 16px;
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-}
+@include section-description-full-rules-2;
 
 .main-description.info-note strong {
 	color: var(--color-primary-element);
@@ -2258,26 +2066,6 @@ export default {
 	margin: 4px 0;
 }
 
-.option-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.option-icon {
-	font-size: 18px;
-	margin-right: 8px;
-}
-
-.option-label {
-	font-weight: 500;
-}
-
-.option-description {
-	font-size: 12px;
-	color: var(--color-text-maxcontrast);
-}
-
 .api-config {
 	background: var(--color-background-dark);
 	border: 1px solid var(--color-border-dark);
@@ -2292,11 +2080,7 @@ export default {
 	gap: 16px;
 }
 
-.field-group {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
+@include field-group;
 
 .field-hint {
 	font-size: 12px;
@@ -2304,41 +2088,11 @@ export default {
 	margin: 0;
 }
 
-.save-message {
-	padding: 12px 16px;
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-	text-align: center;
-	font-weight: 500;
-}
+@include save-message-rules;
 
-.save-message.success {
-	background: var(--color-success);
-	color: white;
-}
-
-.save-message.error {
-	background: var(--color-error);
-	color: white;
-}
-
-.loading-icon {
-	margin: 40px auto;
-	display: block;
-}
+@include loading-icon;
 
 @media (max-width: 768px) {
-	.section-header-inline {
-		position: static;
-		margin-bottom: 1rem;
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.button-group {
-		justify-content: center;
-	}
-
 	.file-types-grid {
 		grid-template-columns: 1fr;
 	}
@@ -2557,11 +2311,6 @@ export default {
 
 .backend-hint {
 	margin-top: 8px;
-}
-
-.backend-install-link {
-	color: var(--color-primary-element);
-	text-decoration: underline;
 }
 
 @media (prefers-reduced-motion: reduce) {

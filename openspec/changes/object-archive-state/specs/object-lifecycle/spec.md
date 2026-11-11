@@ -45,8 +45,9 @@ both with HTTP 422.
 ### Requirement: An archived object refuses writes to its data (REQ-OAS-002)
 
 A write to the data of an archived object SHALL be refused with a message
-naming the archive, the archiving user and the time. Restoring SHALL be
-accepted. The retention machinery SHALL keep working on an archived
+naming the archive, the archiving user and the time. A delete of an archived
+object SHALL be refused the same way, on the single and the bulk path and for
+a cascade that reaches it. Restoring SHALL be accepted. The retention machinery SHALL keep working on an archived
 object: setting a destruction date, placing a legal hold and destroying on
 the date SHALL behave exactly as on an open object.
 
@@ -56,6 +57,13 @@ the date SHALL behave exactly as on an open object.
 - **WHEN** a user saves a change to one of its fields
 - **THEN** the write is refused and the message names the archive, Anna and that date
 - **AND** the object is unchanged
+
+#### Scenario: an archived object is not deleted
+
+- **GIVEN** an object archived by Anna on 12 September
+- **WHEN** a user deletes it, alone, in a bulk delete, or through a cascade from its parent
+- **THEN** the delete is refused and the message names the archive, Anna and that date
+- @e2e exclude {guard-internal, covered by ObjectStateDeleteGuardListenerTest}
 
 #### Scenario: a flow writing to an object archived under it is refused the same way
 

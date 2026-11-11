@@ -1,0 +1,61 @@
+{
+    "file": {
+        "file disabled": [
+            "config.get openregister fileManagement default=\"\"",
+            "config.has openregister fileManagement",
+            "log.info [FileTextExtractionJob] File extraction is disabled. Not extracting text from files. {\"file\":\"FileTextExtractionJob.php\"}"
+        ],
+        "file unset": [
+            "config.get openregister fileManagement default=\"\"",
+            "config.has openregister fileManagement",
+            "log.info [FileTextExtractionJob] File extraction is disabled. Not extracting text from files. {\"file\":\"FileTextExtractionJob.php\"}"
+        ],
+        "missing": [
+            "config.get openregister fileManagement default=\"\"",
+            "config.has openregister fileManagement",
+            "log.error [FileTextExtractionJob] Missing file_id in job arguments {\"file\":\"FileTextExtractionJob.php\",\"argument\":{\"other\":1}}"
+        ],
+        "good": [
+            "config.get openregister fileManagement default=\"\"",
+            "config.has openregister fileManagement",
+            "log.info [FileTextExtractionJob] Starting text extraction {\"file\":\"FileTextExtractionJob.php\",\"file_id\":12,\"job_id\":\"0\"}",
+            "extractor.extractFile [12,false,null]",
+            "log.info [FileTextExtractionJob] Text extraction completed successfully {\"file\":\"FileTextExtractionJob.php\",\"file_id\":12,\"processing_time_ms\":\"float\"}"
+        ],
+        "failing": [
+            "config.get openregister fileManagement default=\"\"",
+            "config.has openregister fileManagement",
+            "log.info [FileTextExtractionJob] Starting text extraction {\"file\":\"FileTextExtractionJob.php\",\"file_id\":12,\"job_id\":\"0\"}",
+            "extractor.extractFile [12,false,null]",
+            "log.error [FileTextExtractionJob] Exception during text extraction {\"file\":\"FileTextExtractionJob.php\",\"file_id\":12,\"error\":\"cannot read\",\"processing_time_ms\":\"float\"}"
+        ]
+    },
+    "object": {
+        "object disabled": [
+            "config.get openregister objectManagement default=\"{}\"",
+            "log.info [ObjectTextExtractionJob] Object extraction is disabled. Not extracting text from objects. {\"file\":\"ObjectTextExtractionJob.php\"}"
+        ],
+        "object unset": [
+            "config.get openregister objectManagement default=\"{}\"",
+            "log.info [ObjectTextExtractionJob] Starting text extraction {\"file\":\"ObjectTextExtractionJob.php\",\"object_id\":34,\"job_id\":\"0\"}",
+            "extractor.extractObject [34,false]",
+            "log.info [ObjectTextExtractionJob] Text extraction completed successfully {\"file\":\"ObjectTextExtractionJob.php\",\"object_id\":34,\"processing_time_ms\":\"float\"}"
+        ],
+        "missing": [
+            "config.get openregister objectManagement default=\"{}\"",
+            "log.error [ObjectTextExtractionJob] Missing object_id in job arguments {\"file\":\"ObjectTextExtractionJob.php\",\"argument\":{\"other\":1}}"
+        ],
+        "good": [
+            "config.get openregister objectManagement default=\"{}\"",
+            "log.info [ObjectTextExtractionJob] Starting text extraction {\"file\":\"ObjectTextExtractionJob.php\",\"object_id\":34,\"job_id\":\"0\"}",
+            "extractor.extractObject [34,false]",
+            "log.info [ObjectTextExtractionJob] Text extraction completed successfully {\"file\":\"ObjectTextExtractionJob.php\",\"object_id\":34,\"processing_time_ms\":\"float\"}"
+        ],
+        "failing": [
+            "config.get openregister objectManagement default=\"{}\"",
+            "log.info [ObjectTextExtractionJob] Starting text extraction {\"file\":\"ObjectTextExtractionJob.php\",\"object_id\":34,\"job_id\":\"0\"}",
+            "extractor.extractObject [34,false]",
+            "log.error [ObjectTextExtractionJob] Exception during text extraction {\"file\":\"ObjectTextExtractionJob.php\",\"object_id\":34,\"error\":\"cannot read\",\"processing_time_ms\":\"float\"}"
+        ]
+    }
+}

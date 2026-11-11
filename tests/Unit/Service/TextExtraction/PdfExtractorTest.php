@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
 use Exception;
-use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
+use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -112,5 +112,32 @@ class PdfExtractorTest extends TestCase {
 		$this->expectExceptionMessageMatches('/PDF extraction failed/');
 
 		$this->extractor->extract(file: $this->mockFile(content: ''));
+	}
+
+	/**
+	 * Raw PDF bytes yield the same text as the File-based entry point.
+	 *
+	 * @return void
+	 */
+	public function testExtractTextReturnsTextLayerOfBytes(): void {
+		$bytes = (string)file_get_contents(dirname(__DIR__, 3) . '/fixtures/pdf/testdoc.pdf');
+
+		$text = $this->extractor->extractText(pdfBytes: $bytes);
+
+		$this->assertStringContainsString('SAPP', $text);
+		$this->assertSame($text, $this->extractor->extract(file: $this->mockFile(content: $bytes)));
+	}
+
+	/**
+	 * Bytes that are not a PDF surface the parser's exception unwrapped, so
+	 * callers can map it to their own error.
+	 *
+	 * @return void
+	 */
+	public function testExtractTextThrowsOnUnparsableBytes(): void {
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessageMatches('/^(?!PDF extraction failed)/');
+
+		$this->extractor->extractText(pdfBytes: 'this is definitely not a pdf file');
 	}
 }//end class

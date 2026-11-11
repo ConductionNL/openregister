@@ -31,6 +31,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
+use OCA\OpenRegister\Service\File\FileTransfer;
 
 /**
  * @covers \OCA\OpenRegister\Service\FileService::moveFile
@@ -46,7 +47,7 @@ class FileServiceMoveFileTest extends TestCase {
 	private function service(): FileService&MockObject {
 		$service = $this->getMockBuilder(FileService::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['copyFile', 'deleteFile'])
+			->onlyMethods(['copyAttachedFile', 'deleteFile'])
 			->getMock();
 
 		foreach (['fileLockHandler' => $this->createMock(FileLockHandler::class), 'logger' => $this->createMock(LoggerInterface::class)] as $name => $value) {
@@ -68,7 +69,7 @@ class FileServiceMoveFileTest extends TestCase {
 		$target = new ObjectEntity();
 
 		$service = $this->service();
-		$service->method('copyFile')->willReturn($copy);
+		$service->method('copyAttachedFile')->willReturn($copy);
 		$deleted = [];
 		$service->method('deleteFile')->willReturnCallback(
 			function ($file) use (&$deleted, $copy): bool {
@@ -79,7 +80,7 @@ class FileServiceMoveFileTest extends TestCase {
 		);
 
 		try {
-			$service->moveFile(sourceObject: $source, fileId: 7, targetObject: $target);
+			$service->moveAttachedFile(transfer: new FileTransfer(source: $source, fileId: 7, target: $target));
 			$this->fail('Expected the move to fail');
 		} catch (Exception $e) {
 			$this->assertStringContainsString('could not be removed from the source object', $e->getMessage());
@@ -97,9 +98,9 @@ class FileServiceMoveFileTest extends TestCase {
 		$copy = $this->createMock(File::class);
 
 		$service = $this->service();
-		$service->method('copyFile')->willReturn($copy);
+		$service->method('copyAttachedFile')->willReturn($copy);
 		$service->expects($this->once())->method('deleteFile')->with(7)->willReturn(true);
 
-		$this->assertSame($copy, $service->moveFile(sourceObject: new ObjectEntity(), fileId: 7, targetObject: new ObjectEntity()));
+		$this->assertSame($copy, $service->moveAttachedFile(transfer: new FileTransfer(source: new ObjectEntity(), fileId: 7, target: new ObjectEntity())));
 	}//end testADeletedSourceIsAMove()
 }//end class

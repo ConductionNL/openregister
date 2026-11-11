@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -28,7 +28,10 @@ namespace Unit\Service\Operations;
 
 use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Service\Operations\OperatorAct;
+use OCA\OpenRegister\Service\Operations\JobRunStart;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
+use OCA\OpenRegister\Service\Operations\JobRunContext;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -100,12 +103,12 @@ final class JobRunRecorderTest extends TestCase {
 	 * A run that ends leaves a row saying when it started, when it ended and
 	 * that it completed.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 *
 	 * @return void
 	 */
 	public function testACompletedRunIsARowWithBothMomentsAndADuration(): void {
-		$this->recorder()->around('Acme\\NightlyJob', static fn (): string => 'done');
+		$this->recorder()->around(new JobRunStart('Acme\\NightlyJob'), static fn (): string => 'done');
 
 		$this->assertCount(1, $this->inserted);
 		$this->assertCount(1, $this->updated);
@@ -127,7 +130,7 @@ final class JobRunRecorderTest extends TestCase {
 	 * change what the cron worker sees, and a recorder must observe an
 	 * execution without altering it.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 *
 	 * @return void
 	 */
@@ -136,12 +139,9 @@ final class JobRunRecorderTest extends TestCase {
 		$thrown = null;
 
 		try {
-			$recorder->around(
-				'Acme\\NightlyJob',
-				static function (): void {
+			$recorder->around(new JobRunStart('Acme\\NightlyJob'), static function (): void {
 					throw new RuntimeException('the source refused the connection');
-				}
-			);
+				});
 		} catch (RuntimeException $failure) {
 			$thrown = $failure;
 		}
@@ -157,7 +157,7 @@ final class JobRunRecorderTest extends TestCase {
 	/**
 	 * A failure is offered to the alert threshold; a completed run is not.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -172,12 +172,12 @@ final class JobRunRecorderTest extends TestCase {
 		);
 
 		$recorder = $this->recorder();
-		$recorder->around('Acme\\QuietJob', static fn (): bool => true);
+		$recorder->around(new JobRunStart('Acme\\QuietJob'), static fn (): bool => true);
 
 		$this->assertSame([], $seen);
 
 		try {
-			$recorder->around('Acme\\NoisyJob', static fn (): never => throw new RuntimeException('boom'));
+			$recorder->around(new JobRunStart('Acme\\NoisyJob'), static fn (): never => throw new RuntimeException('boom'));
 		} catch (RuntimeException) {
 			// Expected: the recorder re-throws.
 		}
@@ -193,21 +193,16 @@ final class JobRunRecorderTest extends TestCase {
 	 * rows, and the second one, the job's own, carries no actor. A reader then
 	 * sees an unexplained run beside the explained one.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
 	public function testANestedRecordDoesNotWriteASecondRow(): void {
 		$recorder = $this->recorder();
 
-		$recorder->around(
-			'Acme\\NightlyJob',
-			static function () use ($recorder): void {
-				$recorder->around('Acme\\NightlyJob', static fn (): bool => true);
-			},
-			JobRun::CAUSE_MANUAL,
-			'fatima'
-		);
+		$recorder->around(new JobRunStart('Acme\\NightlyJob', new JobRunContext(JobRun::CAUSE_MANUAL, 'fatima')), static function () use ($recorder): void {
+				$recorder->around(new JobRunStart('Acme\\NightlyJob'), static fn (): bool => true);
+			});
 
 		$this->assertCount(1, $this->inserted);
 		$this->assertSame('fatima', $this->inserted[0]->getActor());
@@ -218,19 +213,16 @@ final class JobRunRecorderTest extends TestCase {
 	 * The row is open BEFORE the work runs, so "what is running now" is a
 	 * question the log can answer.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
 	public function testTheRowExistsWhileTheWorkIsStillRunning(): void {
 		$outcomeDuringWork = null;
 
-		$this->recorder()->around(
-			'Acme\\NightlyJob',
-			function () use (&$outcomeDuringWork): void {
+		$this->recorder()->around(new JobRunStart('Acme\\NightlyJob'), function () use (&$outcomeDuringWork): void {
 				$outcomeDuringWork = $this->inserted[0]->getOutcome();
-			}
-		);
+			});
 
 		$this->assertSame(JobRun::OUTCOME_RUNNING, $outcomeDuringWork);
 	}
@@ -238,17 +230,12 @@ final class JobRunRecorderTest extends TestCase {
 	/**
 	 * A separate act is one completed row naming the actor and what it touched.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */
 	public function testAnActIsRecordedWithItsActorAndItsObjects(): void {
-		$row = $this->recorder()->recordAct(
-			'OperationsConsole::repair',
-			'noor',
-			['check' => 'orphan-relations', 'objects' => [['id' => 7]]],
-			'Repaired 1 row(s).'
-		);
+		$row = $this->recorder()->recordAct(new OperatorAct('OperationsConsole::repair', 'noor', ['check' => 'orphan-relations', 'objects' => [['id' => 7]]], 'Repaired 1 row(s).'));
 
 		$this->assertNotNull($row);
 		$this->assertSame('noor', $row->getActor());

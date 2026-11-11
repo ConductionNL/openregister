@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace Unit\Service\Lifecycle;
 
 use DateTime;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\BackgroundJob\AutoTransitionJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -33,11 +35,14 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecider;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecision;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSubject;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionQueue;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\IGroupManager;
 use OCP\IL10N;
@@ -62,12 +67,12 @@ class AutoTransitionRunnerTest extends TestCase {
 	 *
 	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
 		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 			ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
-				placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+				placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(
 					userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
 				)
 			)
@@ -123,18 +128,11 @@ class AutoTransitionRunnerTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 
 		$this->runner = new AutoTransitionRunner(
+			new AutoTransitionDecider($this->container, new SchemaReading($this->schemaMapper, $this->logger), new AutoTransitionSelector(
+					new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(IUserSession::class), $groupManager))),
+					$this->logger
+				)),
 			$this->container,
-			$this->schemaMapper,
-			new AutoTransitionSelector(
-				new LifecycleConditionEvaluator(
-					$this->createMock(IUserSession::class),
-					$groupManager,
-					$l10n,
-					$this->logger,
-					$this->realConditionDialect()
-				),
-				$this->logger
-			),
 			// A REAL queue around the mocked deferral service, not a mocked queue:
 			// the dedupe key, the entry shape and the kill-switch rule are the
 			// behaviour these tests assert, and a double would assert nothing.
@@ -201,10 +199,7 @@ class AutoTransitionRunnerTest extends TestCase {
 	 */
 	private function decision(string $mode = 'sync'): AutoTransitionDecision {
 		return new AutoTransitionDecision(
-			uuid: 'obj-1',
-			register: '1',
-			schema: '2',
-			schemaSlug: 'bezwaar',
+			subject: new AutoTransitionSubject(uuid: 'obj-1', register: '1', schema: '2', schemaSlug: 'bezwaar'),
 			candidate: new AutoTransitionCandidate('beslissen', 'open', 'besloten', $mode),
 			version: '3',
 			updated: '2026-09-11T09:00:00+00:00'
@@ -217,7 +212,7 @@ class AutoTransitionRunnerTest extends TestCase {
 	public function testAnUnresolvableObjectDecidesNothing(): void {
 		$this->resolver->method('resolve')->willReturn(null);
 
-		$this->assertNull($this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []));
+		$this->assertNull($this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []));
 	}//end testAnUnresolvableObjectDecidesNothing()
 
 	/**
@@ -227,7 +222,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->storedObject(['status' => 'open', 'motivering' => 'ja']);
 		$this->schemaMapper->method('find')->willReturn(new Schema());
 
-		$this->assertNull($this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []));
+		$this->assertNull($this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []));
 	}//end testASchemaWithoutALifecycleDecidesNothing()
 
 	/**
@@ -239,7 +234,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->storedObject(['status' => 'open', 'motivering' => 'Ongegrond.']);
 		$this->schemaWithAutoWhen();
 
-		$decision = $this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []);
+		$decision = $this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []);
 
 		$this->assertNotNull($decision);
 		$this->assertSame('beslissen', $decision->candidate->action);
@@ -257,7 +252,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->storedObject(['status' => 'open', 'motivering' => '']);
 		$this->schemaWithAutoWhen();
 
-		$this->assertNull($this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []));
+		$this->assertNull($this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []));
 	}//end testTheDecisionIsMadeAgainstTheObjectAsStored()
 
 	/**
@@ -275,7 +270,7 @@ class AutoTransitionRunnerTest extends TestCase {
 
 		$this->assertSame(
 			$moved,
-			$this->runner->fire(decision: $this->decision(), lineage: [], queueOnly: false)
+			$this->runner->fire(decision: $this->decision(), lineage: [])
 		);
 	}//end testASyncMoveIsAppliedThroughTheEngine()
 
@@ -302,7 +297,7 @@ class AutoTransitionRunnerTest extends TestCase {
 				)
 			);
 
-		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: [], queueOnly: false));
+		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: []));
 	}//end testARefusalIsLoggedWithItsCodeAndDoesNotPropagate()
 
 	/**
@@ -311,7 +306,7 @@ class AutoTransitionRunnerTest extends TestCase {
 	public function testAnArbitraryThrowableDoesNotPropagateEither(): void {
 		$this->engine->method('transition')->willThrowException(new RuntimeException('anything at all'));
 
-		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: [], queueOnly: false));
+		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: []));
 	}//end testAnArbitraryThrowableDoesNotPropagateEither()
 
 	/**
@@ -345,8 +340,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->assertNull(
 			$this->runner->fire(
 				decision: $this->decision(mode: 'async'),
-				lineage: ['moves' => 2, 'visited' => ['open' => true, 'besloten' => true], 'applied' => []],
-				queueOnly: false
+				lineage: ['moves' => 2, 'visited' => ['open' => true, 'besloten' => true], 'applied' => []]
 			)
 		);
 	}//end testAnAsyncMoveIsQueuedWithItsLineageAndDedupeKey()
@@ -363,7 +357,7 @@ class AutoTransitionRunnerTest extends TestCase {
 
 		$this->assertSame(
 			$moved,
-			$this->runner->fire(decision: $this->decision(mode: 'async'), lineage: [], queueOnly: false)
+			$this->runner->fire(decision: $this->decision(mode: 'async'), lineage: [])
 		);
 	}//end testTheKillSwitchAppliesAnAsyncMoveInline()
 
@@ -376,9 +370,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->engine->expects($this->never())->method('transition');
 		$this->deferral->expects($this->once())->method('defer');
 
-		$this->assertNull(
-			$this->runner->fire(decision: $this->decision(mode: 'sync'), lineage: [], queueOnly: true)
-		);
+		$this->runner->queueOutsideBoundary(decision: $this->decision(mode: 'sync'), lineage: []);
 	}//end testAMoveDecidedOutsideABoundaryIsQueuedEvenWhenSync()
 
 	/**
@@ -389,8 +381,6 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->engine->expects($this->never())->method('transition');
 		$this->deferral->expects($this->once())->method('defer');
 
-		$this->assertNull(
-			$this->runner->fire(decision: $this->decision(mode: 'async'), lineage: [], queueOnly: true)
-		);
+		$this->runner->queueOutsideBoundary(decision: $this->decision(mode: 'async'), lineage: []);
 	}//end testTheKillSwitchDoesNotPullAnOutsideMoveInline()
 }//end class

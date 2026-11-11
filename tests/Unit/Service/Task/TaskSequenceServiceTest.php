@@ -26,8 +26,14 @@ use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
+use OCA\OpenRegister\Event\TaskSequenceUndecidedEvent;
+use OCA\OpenRegister\Service\Task\ResolvedChain;
+use OCA\OpenRegister\Service\Task\SequenceAnchor;
+use OCA\OpenRegister\Service\Task\SequenceProvenance;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
+use OCA\OpenRegister\Service\Task\TaskSequenceServices;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -37,8 +43,10 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Task\TaskSequenceService
  * @covers \OCA\OpenRegister\Db\TaskSequence
  * @covers \OCA\OpenRegister\Event\TaskSequenceCompletedEvent
+ * @covers \OCA\OpenRegister\Event\TaskSequenceUndecidedEvent
  * @uses \OCA\OpenRegister\Db\Task
- * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @covers \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
  */
 class TaskSequenceServiceTest extends TestCase {
 
@@ -71,10 +79,12 @@ class TaskSequenceServiceTest extends TestCase {
 		);
 		$this->dispatcher = $this->createMock(IEventDispatcher::class);
 		$this->service = new TaskSequenceService(
-			sequences: $this->sequences,
-			taskReader: $this->taskReader,
-			tasks: $this->tasks,
-			dispatcher: $this->dispatcher,
+			services: new TaskSequenceServices(
+				sequences: $this->sequences,
+				taskReader: $this->taskReader,
+				tasks: $this->tasks,
+				dispatcher: $this->dispatcher
+			),
 			logger: new NullLogger()
 		);
 	}//end setUp()
@@ -124,13 +134,15 @@ class TaskSequenceServiceTest extends TestCase {
 	/**
 	 * A running sequence provisioned from the template above.
 	 *
+	 * @param array<string, mixed>|null $template The frozen template, or the default one.
+	 *
 	 * @return TaskSequence The sequence.
 	 */
-	private function runningSequence(): TaskSequence {
+	private function runningSequence(?array $template = null): TaskSequence {
 		$sequence = new TaskSequence();
 		$sequence->setUuid('seq-1');
 		$sequence->setTemplateId('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$sequence->setTemplateSnapshot($this->template());
+		$sequence->setTemplateSnapshot($template ?? $this->template());
 		$sequence->setStatus(TaskSequence::STATUS_RUNNING);
 		$sequence->setPositionCursor(1);
 		$this->sequences->method('findByUuid')->with(uuid: 'seq-1')->willReturn($sequence);
@@ -139,13 +151,11 @@ class TaskSequenceServiceTest extends TestCase {
 	}//end runningSequence()
 
 	public function testProvisioningCreatesEveryPositionAndEnablesOnlyTheFirst(): void {
-		$sequence = $this->service->provision(
-			template: $this->template(),
-			anchorObjectUuid: 'obj-1',
-			requesterId: 'alice'
-		);
+		$sequence = $this->service->provision(chain: new ResolvedChain(template: $this->template()), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
 
 		self::assertSame(TaskSequence::STATUS_RUNNING, $sequence->getStatus());
+		self::assertNotNull($sequence->getOpenedAt());
+		self::assertNull($sequence->getClosedAt());
 		self::assertSame('submit-approval', $sequence->getChainKey());
 		self::assertSame($this->template(), $sequence->getTemplateSnapshot());
 		self::assertNull($sequence->getRunUuid(), 'a gate-opened sequence has no run and is first-class');
@@ -163,17 +173,31 @@ class TaskSequenceServiceTest extends TestCase {
 
 	public function testAResolvedTierIsFrozenOntoTheSequence(): void {
 		$tier = [['order' => 1, 'role' => 'directors', 'minAmount' => 100000]];
-		$sequence = $this->service->provision(
-			template: $this->template(),
-			anchorObjectUuid: 'obj-1',
-			requesterId: 'alice',
-			tierPositions: $tier
-		);
+		$sequence = $this->service->provision(chain: new ResolvedChain(template: $this->template(), tierPositions: $tier), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
 
 		self::assertSame(['positions' => $tier], $sequence->getResolvedTier());
 		self::assertCount(1, $this->imported, 'the tier replaces the declared positions');
 		self::assertSame(['directors'], $this->imported[0]['candidateGroups']);
 	}//end testAResolvedTierIsFrozenOntoTheSequence()
+
+	public function testADeclaredApprovingSetIsCopiedOntoEveryPositionTask(): void {
+		$template = $this->template();
+		$template['approvingOutcomes'] = ['approved'];
+
+		$this->service->provision(chain: new ResolvedChain(template: $template), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
+
+		self::assertCount(3, $this->imported);
+		foreach ($this->imported as $payload) {
+			self::assertSame(['approved'], $payload['templateSnapshot']['approvingOutcomes']);
+		}
+		self::assertSame('managers', $this->imported[1]['templateSnapshot']['role']);
+	}//end testADeclaredApprovingSetIsCopiedOntoEveryPositionTask()
+
+	public function testAPositionTaskWithoutADeclaredSetCarriesThePositionUnchanged(): void {
+		$this->service->provision(chain: new ResolvedChain(template: $this->template()), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
+
+		self::assertSame(['order' => 1, 'role' => 'clerks'], $this->imported[0]['templateSnapshot']);
+	}//end testAPositionTaskWithoutADeclaredSetCarriesThePositionUnchanged()
 
 	public function testAnApprovingDecisionEnablesTheNextPositionInTheSameCall(): void {
 		$sequence = $this->runningSequence();
@@ -186,7 +210,7 @@ class TaskSequenceServiceTest extends TestCase {
 		);
 
 		$this->tasks->expects(self::once())->method('enable')
-			->with('task-2', 'task-sequence:seq-1', self::stringContains('position 2'));
+			->with('task-2', self::callback(static fn (TaskTrigger $trigger): bool => $trigger->source === 'task-sequence:seq-1' && str_contains($trigger->reason, 'position 2')));
 		$this->dispatcher->expects(self::never())->method('dispatchTyped');
 
 		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, 'approved'));
@@ -253,7 +277,9 @@ class TaskSequenceServiceTest extends TestCase {
 
 		$terminated = [];
 		$this->tasks->method('terminateAsMoot')->willReturnCallback(
-			function (string $uuid, string $reason, string $source) use (&$terminated): Task {
+			function (string $uuid, TaskTrigger $trigger) use (&$terminated): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				$terminated[] = [$uuid, $reason, $source];
 
 				return new Task();
@@ -297,6 +323,192 @@ class TaskSequenceServiceTest extends TestCase {
 
 		$this->service->onTaskTerminal(task: $this->positionTask(2, Task::STATE_TERMINATED, 'terminated'));
 	}//end testATerminalSequenceAbsorbsFurtherReports()
+
+	/**
+	 * The three positions, the first completed with the given outcome.
+	 *
+	 * @param string|null $outcome The first position's outcome.
+	 *
+	 * @return void
+	 */
+	private function firstPositionCompletedWith(?string $outcome): void {
+		$this->taskReader->method('findBySequence')->willReturn(
+			[
+				$this->positionTask(1, Task::STATE_COMPLETED, $outcome),
+				$this->positionTask(2, Task::STATE_AVAILABLE),
+				$this->positionTask(3, Task::STATE_AVAILABLE),
+			]
+		);
+	}//end firstPositionCompletedWith()
+
+	/**
+	 * Record every terminateAsMoot call as [uuid, reason].
+	 *
+	 * @return \ArrayObject<int, array{0: string, 1: string}> The recorded calls.
+	 */
+	private function recordTerminations(): \ArrayObject {
+		$terminated = new \ArrayObject();
+		$this->tasks->method('terminateAsMoot')->willReturnCallback(
+			static function (string $uuid, TaskTrigger $trigger) use ($terminated): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
+				$terminated[] = [$uuid, $reason];
+
+				return new Task();
+			}
+		);
+
+		return $terminated;
+	}//end recordTerminations()
+
+	/**
+	 * Outcomes that neither approve nor reject.
+	 *
+	 * @return array<string, array{0: string|null}>
+	 */
+	public static function undecidedOutcomes(): array {
+		return [
+			'null' => [null],
+			'empty' => [''],
+			'blank' => ['   '],
+			'resolved' => ['resolved'],
+			'unknown' => ['looks-fine'],
+		];
+	}//end undecidedOutcomes()
+
+	/**
+	 * @dataProvider undecidedOutcomes
+	 */
+	public function testAnOutcomeThatNeitherApprovesNorRejectsDoesNotEnableTheNextPosition(?string $outcome): void {
+		$sequence = $this->runningSequence();
+		$this->firstPositionCompletedWith($outcome);
+		$terminated = $this->recordTerminations();
+
+		$this->tasks->expects(self::never())->method('enable');
+		$this->dispatcher->expects(self::once())->method('dispatchTyped')->with(
+			self::callback(
+				static fn (object $event): bool => $event instanceof TaskSequenceUndecidedEvent
+					&& $event->getSequence()->getStatus() === TaskSequence::STATUS_UNDECIDED
+					&& $event->getTask()->getUuid() === 'task-1'
+			)
+		);
+
+		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, $outcome));
+
+		self::assertSame(TaskSequence::STATUS_UNDECIDED, $sequence->getStatus());
+		self::assertSame('undecided', $sequence->getOutcome());
+		self::assertNotNull($sequence->getClosedAt());
+		self::assertTrue($sequence->isTerminal());
+		self::assertSame(1, $sequence->getPositionCursor());
+		self::assertSame(['task-2', 'task-3'], array_column($terminated->getArrayCopy(), 0));
+		self::assertStringContainsString('Position 1', $terminated[0][1]);
+	}//end testAnOutcomeThatNeitherApprovesNorRejectsDoesNotEnableTheNextPosition()
+
+	public function testAnUnknownOutcomeOnTheLastPositionDoesNotCompleteTheSequence(): void {
+		$sequence = $this->runningSequence();
+		$this->taskReader->method('findBySequence')->willReturn(
+			[
+				$this->positionTask(1, Task::STATE_COMPLETED, 'approved'),
+				$this->positionTask(2, Task::STATE_COMPLETED, 'approved'),
+				$this->positionTask(3, Task::STATE_COMPLETED, 'resolved'),
+			]
+		);
+
+		$this->dispatcher->expects(self::once())->method('dispatchTyped')->with(
+			self::logicalNot(self::isInstanceOf(TaskSequenceCompletedEvent::class))
+		);
+
+		$this->service->onTaskTerminal(task: $this->positionTask(3, Task::STATE_COMPLETED, 'resolved'));
+
+		self::assertSame(TaskSequence::STATUS_UNDECIDED, $sequence->getStatus());
+		self::assertNotSame(TaskSequence::STATUS_COMPLETED, $sequence->getStatus());
+	}//end testAnUnknownOutcomeOnTheLastPositionDoesNotCompleteTheSequence()
+
+	/**
+	 * Outcomes the default set approves, as the task screens send them.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function defaultApprovingOutcomes(): array {
+		return [
+			'done' => ['done'],
+			'approved' => ['approved'],
+			'padded upper case' => [' Done '],
+		];
+	}//end defaultApprovingOutcomes()
+
+	/**
+	 * @dataProvider defaultApprovingOutcomes
+	 */
+	public function testTheDefaultSetApprovesDoneAndApproved(string $outcome): void {
+		$sequence = $this->runningSequence();
+		$this->firstPositionCompletedWith($outcome);
+
+		$this->tasks->expects(self::once())->method('enable')
+			->with('task-2', self::callback(static fn (TaskTrigger $trigger): bool => $trigger->source === 'task-sequence:seq-1' && str_contains($trigger->reason, 'position 2')));
+		$this->tasks->expects(self::never())->method('terminateAsMoot');
+		$this->dispatcher->expects(self::never())->method('dispatchTyped');
+
+		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, $outcome));
+
+		self::assertSame(TaskSequence::STATUS_RUNNING, $sequence->getStatus());
+		self::assertSame(2, $sequence->getPositionCursor());
+	}//end testTheDefaultSetApprovesDoneAndApproved()
+
+	public function testADeclaredSetReplacesTheDefault(): void {
+		$template = $this->template();
+		$template['approvingOutcomes'] = ['approved'];
+		$sequence = $this->runningSequence(template: $template);
+		$this->firstPositionCompletedWith('done');
+		$this->recordTerminations();
+
+		$this->tasks->expects(self::never())->method('enable');
+
+		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, 'done'));
+
+		self::assertSame(TaskSequence::STATUS_UNDECIDED, $sequence->getStatus());
+	}//end testADeclaredSetReplacesTheDefault()
+
+	public function testADeclaredSetIsComparedTrimmedAndCaseInsensitive(): void {
+		$template = $this->template();
+		$template['approvingOutcomes'] = [' Signed '];
+		$sequence = $this->runningSequence(template: $template);
+		$this->firstPositionCompletedWith('SIGNED');
+
+		$this->tasks->expects(self::once())->method('enable');
+
+		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, ' signed'));
+
+		self::assertSame(TaskSequence::STATUS_RUNNING, $sequence->getStatus());
+	}//end testADeclaredSetIsComparedTrimmedAndCaseInsensitive()
+
+	public function testADeclaredSetWithoutUsableEntriesFallsBackToTheDefault(): void {
+		$template = $this->template();
+		$template['approvingOutcomes'] = ['', '  ', 7];
+		$sequence = $this->runningSequence(template: $template);
+		$this->firstPositionCompletedWith('done');
+
+		$this->tasks->expects(self::once())->method('enable');
+
+		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, 'done'));
+
+		self::assertSame(TaskSequence::STATUS_RUNNING, $sequence->getStatus());
+	}//end testADeclaredSetWithoutUsableEntriesFallsBackToTheDefault()
+
+	public function testARejectingOutcomeInADeclaredSetStillRejects(): void {
+		$template = $this->template();
+		$template['approvingOutcomes'] = ['approved', 'rejected'];
+		$sequence = $this->runningSequence(template: $template);
+		$this->firstPositionCompletedWith('rejected');
+		$this->recordTerminations();
+
+		$this->tasks->expects(self::never())->method('enable');
+		$this->dispatcher->expects(self::never())->method('dispatchTyped');
+
+		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, 'rejected'));
+
+		self::assertSame(TaskSequence::STATUS_REJECTED, $sequence->getStatus());
+	}//end testARejectingOutcomeInADeclaredSetStillRejects()
 
 	public function testATaskOutsideAnySequenceIsIgnored(): void {
 		$task = new Task();

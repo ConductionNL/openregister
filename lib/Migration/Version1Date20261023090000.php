@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+ * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds the user and object quota columns to the organisations table.
  *
- * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+ * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
  */
 class Version1Date20261023090000 extends SimpleMigrationStep {
 
@@ -54,7 +54,7 @@ class Version1Date20261023090000 extends SimpleMigrationStep {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
-	 * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*

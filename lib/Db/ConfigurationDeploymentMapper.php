@@ -38,7 +38,9 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ConfigurationDeployment>
  */
-class ConfigurationDeploymentMapper extends QBMapper {
+class ConfigurationDeploymentMapper extends QBMapper implements ConfigurationDeploymentMapperInterface {
+
+	use SelectByColumnTrait;
 
 	/**
 	 * Constructor.
@@ -66,12 +68,7 @@ class ConfigurationDeploymentMapper extends QBMapper {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function findByUuid(string $uuid): ConfigurationDeployment {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'uuid', value: $uuid)));
 
 	}//end findByUuid()
 
@@ -96,26 +93,6 @@ class ConfigurationDeploymentMapper extends QBMapper {
 	}//end findHistory()
 
 	/**
-	 * The rollbacks that already restore one deployment.
-	 *
-	 * @param string $uuid The deployment uuid they would restore.
-	 *
-	 * @return ConfigurationDeployment[] The rollbacks.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
-	 */
-	public function findRestoring(string $uuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('restores_uuid', $qb->createNamedParameter($uuid)))
-			->orderBy('id', 'DESC');
-
-		return $this->findEntities(query: $qb);
-
-	}//end findRestoring()
-
-	/**
 	 * Append a deployment to the history.
 	 *
 	 * @param array<string, mixed> $data The deployment values.
@@ -128,13 +105,7 @@ class ConfigurationDeploymentMapper extends QBMapper {
 		$deployment = new ConfigurationDeployment();
 		$deployment->hydrate($data);
 
-		if ($deployment->getUuid() === null) {
-			$deployment->setUuid(Uuid::v4()->toRfc4122());
-		}
-
-		if ($deployment->getState() === null) {
-			$deployment->setState(ConfigurationDeployment::STATE_APPLIED);
-		}
+		$this->fillIdentity(deployment: $deployment);
 
 		$now = new DateTime();
 		if ($deployment->getDeployedAt() === null) {
@@ -147,4 +118,21 @@ class ConfigurationDeploymentMapper extends QBMapper {
 		return $this->insert(entity: $deployment);
 
 	}//end createFromArray()
+
+	/**
+	 * Give a new deployment a uuid and the applied state unless it has them.
+	 *
+	 * @param ConfigurationDeployment $deployment The deployment.
+	 *
+	 * @return void
+	 */
+	private function fillIdentity(ConfigurationDeployment $deployment): void {
+		if ($deployment->getUuid() === null) {
+			$deployment->setUuid(Uuid::v4()->toRfc4122());
+		}
+
+		if ($deployment->getState() === null) {
+			$deployment->setState(ConfigurationDeployment::STATE_APPLIED);
+		}
+	}//end fillIdentity()
 }//end class

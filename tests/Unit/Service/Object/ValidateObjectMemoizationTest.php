@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use Opis\JsonSchema\Validator;
@@ -52,12 +54,9 @@ class ValidateObjectMemoizationTest extends TestCase {
 		$urlGenerator->method('getBaseUrl')->willReturn('http://localhost');
 
 		$this->handler = new ValidateObject(
-			$config,
-			$objectMapper,
-			$this->schemaMapper,
-			$urlGenerator,
-			$logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $config, schemaMapper: $this->schemaMapper, urlGenerator: $urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $logger
 		);
 	}//end setUp()
 

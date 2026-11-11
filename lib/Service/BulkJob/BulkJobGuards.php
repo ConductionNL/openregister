@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -26,7 +26,6 @@ use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 
 /**
@@ -43,7 +42,7 @@ use OCA\OpenRegister\Exception\BulkJobRefusedException;
  * one class rather than four private methods on the service that also does
  * the writing.
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 class BulkJobGuards {
 
@@ -52,7 +51,7 @@ class BulkJobGuards {
 	 *
 	 * @param integer $undoCeiling How much undo data one job may store, in bytes.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function __construct(
 		private readonly int $undoCeiling,
@@ -76,7 +75,7 @@ class BulkJobGuards {
 	 *
 	 * @throws InvalidArgumentException When either is missing.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertScope(?int $registerId, ?int $schemaId): void {
 		if ($registerId !== null && $schemaId !== null) {
@@ -99,7 +98,7 @@ class BulkJobGuards {
 	 *
 	 * @throws BulkJobRefusedException When the selection is too large.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertCeiling(int $count, int $ceiling): void {
 		if ($count <= $ceiling) {
@@ -123,9 +122,7 @@ class BulkJobGuards {
 	 * stops recording what it would take to go back, and the second is the
 	 * failure this change exists to prevent.
 	 *
-	 * @param BulkActionInterface           $action     The action.
-	 * @param array<string, ObjectEntity>   $objects    The hydrated selection.
-	 * @param array<string, mixed>          $parameters The job's parameters.
+	 * @param RehearsedJob $job The action, its parameters and the hydrated selection.
 	 *
 	 * @return void
 	 *
@@ -133,37 +130,74 @@ class BulkJobGuards {
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function assertUndoCeiling(BulkActionInterface $action, array $objects, array $parameters): void {
+	public function assertUndoCeiling(RehearsedJob $job): void {
+		$action = $job->action;
 		if (($action instanceof ReversibleBulkActionInterface) === false) {
 			return;
 		}
 
-		$ceiling = $this->undoCeiling;
-		$bytes = 0;
-
-		foreach ($objects as $object) {
-			$plan = $action->reversalPlanFor(object: $object, parameters: $parameters);
-			$encoded = json_encode($plan);
-
-			if ($encoded === false) {
-				continue;
-			}
-
-			$bytes += strlen($encoded);
-
-			if ($bytes <= $ceiling) {
-				continue;
-			}
-
-			throw new BulkJobRefusedException(
-				message: 'This instance stores at most '.$ceiling.' bytes of undo data per bulk job, and this one '
-					.'would store more. Narrow the selection, write fewer properties, or ask an administrator to '
-					.'raise the ceiling.',
-				reason: 'undo-ceiling',
-				details: ['ceiling' => $ceiling, 'objects' => count($objects)]
-			);
-		}//end foreach
+		if ($this->exceedsUndoCeiling(job: $job, action: $action) === true) {
+			throw $this->undoCeilingRefusal(objectCount: count($job->objects));
+		}
 	}//end assertUndoCeiling()
+
+	/**
+	 * Whether the job's reversal plans, summed in object order, outgrow the undo ceiling.
+	 *
+	 * @param RehearsedJob                  $job    The rehearsed job.
+	 * @param ReversibleBulkActionInterface $action The job's reversible action.
+	 *
+	 * @return bool True as soon as the running total passes the ceiling.
+	 */
+	private function exceedsUndoCeiling(RehearsedJob $job, ReversibleBulkActionInterface $action): bool {
+		$bytes = 0;
+		foreach ($job->objects as $object) {
+			$size = $this->encodedSize(plan: $action->reversalPlanFor(object: $object, parameters: $job->parameters));
+			if ($size === null) {
+				continue;
+			}
+
+			$bytes += $size;
+			if ($bytes > $this->undoCeiling) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end exceedsUndoCeiling()
+
+	/**
+	 * The size of one reversal plan as stored, or null when it cannot be encoded.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 *
+	 * @return int|null The encoded byte count.
+	 */
+	private function encodedSize(array $plan): ?int {
+		$encoded = json_encode($plan);
+		if ($encoded === false) {
+			return null;
+		}
+
+		return strlen($encoded);
+	}//end encodedSize()
+
+	/**
+	 * The refusal for a job that would store more undo data than the ceiling.
+	 *
+	 * @param int $objectCount How many objects the selection holds.
+	 *
+	 * @return BulkJobRefusedException The refusal.
+	 */
+	private function undoCeilingRefusal(int $objectCount): BulkJobRefusedException {
+		return new BulkJobRefusedException(
+			message: 'This instance stores at most '.$this->undoCeiling.' bytes of undo data per bulk job, and this one '
+				.'would store more. Narrow the selection, write fewer properties, or ask an administrator to '
+				.'raise the ceiling.',
+			reason: 'undo-ceiling',
+			details: ['ceiling' => $this->undoCeiling, 'objects' => $objectCount]
+		);
+	}//end undoCeilingRefusal()
 
 	/**
 	 * Refuse a commit with no reason where the action requires one.
@@ -175,7 +209,7 @@ class BulkJobGuards {
 	 *
 	 * @throws BulkJobRefusedException When the reason is missing.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertJustification(BulkActionInterface $action, BulkJob $job): void {
 		if ($action->requiresJustification() === false) {

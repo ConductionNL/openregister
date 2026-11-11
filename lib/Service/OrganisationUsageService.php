@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+ * @spec openspec/specs/organisation-usage-measured/spec.md
  */
 
 declare(strict_types=1);
@@ -27,10 +27,9 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -38,21 +37,22 @@ use Psr\Log\LoggerInterface;
  *
  * A figure that cannot be measured is null, never 0: a 0 reads as "nothing
  * used", which is a claim this service only makes when it counted.
+ *
+ * @spec openspec/specs/organisation-usage-measured/spec.md
  */
-class OrganisationUsageService {
+class OrganisationUsageService implements OrganisationUsageServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper     $magicMapper  Reads the folders of the organisation's objects.
-	 * @param FileMapper      $fileMapper   Sums file cache sizes.
-	 * @param LoggerInterface $logger       Logger.
-	 * @param SchemaMapper    $schemaMapper Resolves the schema slug an object quota counts.
+	 * @param SchemaCatalogInterface $catalog    Reads the folders and counts the objects of the organisation
+	 *                                           (tables), and resolves the schema slug an object quota counts (schemas).
+	 * @param FileMapperInterface    $fileMapper Sums file cache sizes.
+	 * @param LoggerInterface        $logger     Logger.
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		private readonly FileMapper $fileMapper,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly FileMapperInterface $fileMapper,
 		private readonly LoggerInterface $logger,
-		private readonly SchemaMapper $schemaMapper,
 	) {
 	}//end __construct()
 
@@ -76,8 +76,8 @@ class OrganisationUsageService {
 	 *
 	 * @return array{storage: int|null, bandwidth: null, requests: int|null, objects: int|null, users: int, groups: int}
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
-	 * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
 	public function measure(Organisation $organisation): array {
 		return [
@@ -97,22 +97,19 @@ class OrganisationUsageService {
 	 *
 	 * @return int|null The bytes, or null when they could not be read.
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	private function measureStorage(Organisation $organisation): ?int {
-		$uuid = $organisation->getUuid();
-		if ($uuid === null || $uuid === '') {
+		$uuid = $this->measurableUuid(organisation: $organisation);
+		if ($uuid === null) {
 			return null;
 		}
 
 		try {
-			$folderIds = $this->magicMapper->findFolderIdsByOrganisation(organisationUuid: $uuid);
+			$folderIds = $this->catalog->tables()->findFolderIdsByOrganisation(organisationUuid: $uuid);
 			return $this->fileMapper->sumSizesByFileIds(fileIds: $folderIds);
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[OrganisationUsageService] Could not measure storage',
-				context: ['uuid' => $uuid, 'error' => $e->getMessage()]
-			);
+			$this->logger->warning(message: '[OrganisationUsageService] Could not measure storage', context: self::failure(uuid: $uuid, error: $e));
 			return null;
 		}
 	}//end measureStorage()
@@ -124,35 +121,79 @@ class OrganisationUsageService {
 	 *
 	 * @return int|null The count, or null without an object quota or when it could not be counted.
 	 *
-	 * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
 	private function measureObjects(Organisation $organisation): ?int {
-		$uuid = $organisation->getUuid();
-		if ($uuid === null || $uuid === '' || $organisation->getObjectQuota() === null) {
+		$uuid = $this->measurableUuid(organisation: $organisation);
+		if ($uuid === null || $organisation->getObjectQuota() === null) {
 			return null;
 		}
 
 		try {
-			$schemaIds = [];
-			$slug      = (string) ($organisation->getObjectQuotaSchema() ?? '');
-			if ($slug !== '') {
-				$ids = ($this->schemaMapper->findIdsBySlugs(slugs: [$slug])[strtolower($slug)] ?? []);
-				if ($ids === []) {
-					return 0;
-				}
-
-				$schemaIds = array_map('intval', $ids);
-			}
-
-			return $this->magicMapper->countObjectsByOrganisation(organisationUuid: $uuid, schemaIds: $schemaIds);
+			return $this->countQuotaObjects(organisation: $organisation, uuid: $uuid);
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[OrganisationUsageService] Could not count objects',
-				context: ['uuid' => $uuid, 'error' => $e->getMessage()]
-			);
+			$this->logger->warning(message: '[OrganisationUsageService] Could not count objects', context: self::failure(uuid: $uuid, error: $e));
 			return null;
 		}
 	}//end measureObjects()
+
+	/**
+	 * Count the organisation's live objects of the schema its object quota names.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 * @param string       $uuid         Its uuid.
+	 *
+	 * @return int The count; 0 when the named schema is unknown.
+	 *
+	 * @throws Exception When the objects cannot be counted.
+	 *
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 */
+	private function countQuotaObjects(Organisation $organisation, string $uuid): int {
+		$schemaIds = $this->quotaSchemaIds(organisation: $organisation);
+		if ($schemaIds === null) {
+			return 0;
+		}
+
+		return $this->catalog->tables()->countObjectsByOrganisation(organisationUuid: $uuid, schemaIds: $schemaIds);
+	}//end countQuotaObjects()
+
+	/**
+	 * The log context of a figure that could not be measured; the figure is null, never 0.
+	 *
+	 * @param string    $uuid  The organisation uuid.
+	 * @param Exception $error Why.
+	 *
+	 * @return array{uuid: string, error: string}
+	 *
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
+	 */
+	private static function failure(string $uuid, Exception $error): array {
+		return ['uuid' => $uuid, 'error' => $error->getMessage()];
+	}//end failure()
+
+	/**
+	 * The schema ids the object quota counts.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 *
+	 * @return list<int>|null Empty for every schema (the quota names none), null when the named schema is unknown.
+	 *
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 */
+	private function quotaSchemaIds(Organisation $organisation): ?array {
+		$slug = (string) ($organisation->getObjectQuotaSchema() ?? '');
+		if ($slug === '') {
+			return [];
+		}
+
+		$ids = ($this->catalog->schemas()->findIdsBySlugs(slugs: [$slug])[strtolower($slug)] ?? []);
+		if ($ids === []) {
+			return null;
+		}
+
+		return array_map('intval', $ids);
+	}//end quotaSchemaIds()
 
 	/**
 	 * The requests counted for the organisation this hour.
@@ -161,13 +202,11 @@ class OrganisationUsageService {
 	 *
 	 * @return int|null The count, or null when nothing counts them.
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	private function measureRequests(Organisation $organisation): ?int {
-		$uuid = $organisation->getUuid();
-		if ($uuid === null || $uuid === '' || $organisation->getRequestQuota() === null
-			|| $this->apcuAvailable() === false
-		) {
+		$uuid = $this->measurableUuid(organisation: $organisation);
+		if ($uuid === null || $organisation->getRequestQuota() === null || $this->apcuAvailable() === false) {
 			return null;
 		}
 
@@ -176,11 +215,29 @@ class OrganisationUsageService {
 	}//end measureRequests()
 
 	/**
+	 * The organisation's uuid, or null when it has none to measure by.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 *
+	 * @return string|null The non-empty uuid, or null.
+	 *
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
+	 */
+	private function measurableUuid(Organisation $organisation): ?string {
+		$uuid = $organisation->getUuid();
+		if ($uuid === null || $uuid === '') {
+			return null;
+		}
+
+		return $uuid;
+	}//end measurableUuid()
+
+	/**
 	 * Whether APCu is enabled.
 	 *
 	 * @return bool True when APCu can be read.
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	protected function apcuAvailable(): bool {
 		return function_exists('apcu_enabled') === true && apcu_enabled() === true;
@@ -193,7 +250,7 @@ class OrganisationUsageService {
 	 *
 	 * @return int|null The value, or null when the key is not set.
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	protected function apcuFetchInt(string $key): ?int {
 		$success = false;

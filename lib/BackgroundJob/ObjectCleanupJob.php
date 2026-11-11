@@ -42,14 +42,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
+use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\ObjectRelationCleanupService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\ObjectRelationCleanupServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\IUserManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 
 /**
  * Deferred deleted-object relation cleanup under the forwarded actor.
@@ -61,30 +58,24 @@ class ObjectCleanupJob extends ActorForwardedJob {
 	 * Wire the cleanup collaborators on top of the actor plumbing.
 	 *
 	 * @param ITimeFactory $time Time factory for the parent job class.
-	 * @param IUserSession $userSession Session to impersonate on / restore.
-	 * @param IUserManager $userManager Resolver for the captured user id.
-	 * @param OrganisationService $organisation Active-organisation resolver.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param DeferredEntryObjectResolver $resolver Re-create guard lookup.
-	 * @param ObjectRelationCleanupService $cleanup Shared cleanup implementation.
+	 * @param ActorForwardingServices $actor The identity plumbing the parent job runs the work as.
+	 * @param DeferredEntryObjectResolverInterface $resolver Re-create guard lookup.
+	 * @param ObjectRelationCleanupServiceInterface $cleanup Shared cleanup implementation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		IUserSession $userSession,
-		IUserManager $userManager,
-		OrganisationService $organisation,
-		LoggerInterface $logger,
-		private readonly DeferredEntryObjectResolver $resolver,
-		private readonly ObjectRelationCleanupService $cleanup,
+		ActorForwardingServices $actor,
+		private readonly DeferredEntryObjectResolverInterface $resolver,
+		private readonly ObjectRelationCleanupServiceInterface $cleanup,
 	) {
 		parent::__construct(
 			time: $time,
-			userSession: $userSession,
-			userManager: $userManager,
-			organisation: $organisation,
-			logger: $logger
+			userSession: $actor->userSession,
+			userManager: $actor->userManager,
+			organisation: $actor->organisation,
+			logger: $actor->logger
 		);
 	}//end __construct()
 
@@ -106,34 +97,63 @@ class ObjectCleanupJob extends ActorForwardedJob {
 				continue;
 			}
 
-			// Re-create guard: a live object under this UUID means the id came
-			// back between the delete and this job. Its relations belong to
-			// the NEW object; wiping them would be data loss.
-			if ($this->resolver->resolve(entry: $entry) !== null) {
-				$this->logger->info(
-					message: '[ObjectCleanupJob] UUID resolves to a live object again — skipping deferred cleanup',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-					]
-				);
-				continue;
-			}
-
-			try {
-				$this->cleanup->cleanup(objectUuid: $uuid);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ObjectCleanupJob] Cleanup failed for entry',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
+			$this->cleanUpEntry(entry: $entry, uuid: $uuid);
+		}
 	}//end runDeferred()
+
+	/**
+	 * Clean up after one deleted object, unless its UUID is live again.
+	 *
+	 * @param array<string, mixed> $entry The deferred entry.
+	 * @param string               $uuid  The deleted object's UUID.
+	 *
+	 * @return void
+	 */
+	private function cleanUpEntry(array $entry, string $uuid): void {
+		if ($this->isLiveAgain(entry: $entry, uuid: $uuid) === true) {
+			return;
+		}
+
+		try {
+			$this->cleanup->cleanup(objectUuid: $uuid);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ObjectCleanupJob] Cleanup failed for entry',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $uuid,
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+	}//end cleanUpEntry()
+
+	/**
+	 * Whether a live object holds this UUID again, logged when it does.
+	 *
+	 * Re-create guard: a live object under this UUID means the id came back
+	 * between the delete and this job. Its relations belong to the NEW object;
+	 * wiping them would be data loss.
+	 *
+	 * @param array<string, mixed> $entry The deferred entry.
+	 * @param string               $uuid  The deleted object's UUID.
+	 *
+	 * @return bool
+	 */
+	private function isLiveAgain(array $entry, string $uuid): bool {
+		if ($this->resolver->resolve(entry: $entry) === null) {
+			return false;
+		}
+
+		$this->logger->info(
+			message: '[ObjectCleanupJob] UUID resolves to a live object again — skipping deferred cleanup',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+			]
+		);
+		return true;
+	}//end isLiveAgain()
 }//end class

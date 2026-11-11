@@ -105,6 +105,35 @@ final class WritePhaseProbe {
 	}//end arm()
 
 	/**
+	 * Whether tracing is on, resolved from the flag file once per process.
+	 *
+	 * @return bool
+	 */
+	private static function enabled(): bool {
+		if (self::$enabled === null) {
+			self::$enabled = @file_exists('/tmp/or-trace-write-phases');
+		}
+
+		return self::$enabled;
+
+	}//end enabled()
+
+	/**
+	 * Milliseconds since the request began, or null when the start is unknown.
+	 *
+	 * @return float|null
+	 */
+	private static function elapsedMs(): ?float {
+		$start = (float)($_SERVER['REQUEST_TIME_FLOAT'] ?? 0);
+		if ($start <= 0.0) {
+			return null;
+		}
+
+		return ((microtime(true) - $start) * 1000);
+
+	}//end elapsedMs()
+
+	/**
 	 * Count one occurrence of a named event in THIS request.
 	 *
 	 * Exists because counting from the PostgreSQL statement log is not
@@ -124,21 +153,12 @@ final class WritePhaseProbe {
 	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
 	 */
 	public static function count(string $event): void {
-		if (self::$enabled === null) {
-			self::$enabled = @file_exists('/tmp/or-trace-write-phases');
-		}
-
-		if (self::$enabled === false) {
+		if (self::enabled() === false) {
 			return;
 		}
 
 		self::arm();
-
-		if (isset(self::$counts[$event]) === false) {
-			self::$counts[$event] = 0;
-		}
-
-		self::$counts[$event]++;
+		self::$counts[$event] = ((self::$counts[$event] ?? 0) + 1);
 
 	}//end count()
 
@@ -156,23 +176,14 @@ final class WritePhaseProbe {
 	 * @return void
 	 */
 	public static function stamp(string $label): void {
-		if (self::$enabled === null) {
-			self::$enabled = @file_exists('/tmp/or-trace-write-phases');
-		}
-
-		if (self::$enabled === false) {
+		if (self::enabled() === false) {
 			return;
 		}
 
 		self::arm();
-
-		$start = (float)($_SERVER['REQUEST_TIME_FLOAT'] ?? 0);
-		if ($start <= 0.0) {
-			return;
-		}
-
-		if (isset(self::$stamps[$label]) === false) {
-			self::$stamps[$label] = ((microtime(true) - $start) * 1000);
+		$elapsed = self::elapsedMs();
+		if ($elapsed !== null && isset(self::$stamps[$label]) === false) {
+			self::$stamps[$label] = $elapsed;
 		}
 
 	}//end stamp()
@@ -191,21 +202,13 @@ final class WritePhaseProbe {
 	 * @return void
 	 */
 	public static function mark(string $phase): void {
-		if (self::$enabled === null) {
-			self::$enabled = @file_exists('/tmp/or-trace-write-phases');
-		}
-
-		if (self::$enabled === false) {
+		if (self::enabled() === false) {
 			return;
 		}
 
 		$now = microtime(true);
 		if (self::$last !== null && $phase !== 'start') {
-			if (isset(self::$phases[$phase]) === false) {
-				self::$phases[$phase] = 0.0;
-			}
-
-			self::$phases[$phase] += (($now - self::$last) * 1000);
+			self::$phases[$phase] = ((self::$phases[$phase] ?? 0.0) + (($now - self::$last) * 1000));
 		}
 
 		self::$last = $now;
@@ -215,72 +218,19 @@ final class WritePhaseProbe {
 	/**
 	 * Write the accumulated timeline out and reset it.
 	 *
+	 * Emits when there is ANYTHING to say. Requiring phases meant read paths
+	 * — which produce stamps and counts but no phase marks — flushed
+	 * nothing, which is exactly why search and single-read looked
+	 * unmeasurable.
+	 *
 	 * @return void
 	 */
 	public static function flush(): void {
-		// Emit when there is ANYTHING to say. Requiring phases meant read paths
-		// — which produce stamps and counts but no phase marks — flushed
-		// nothing, which is exactly why search and single-read looked
-		// unmeasurable.
-		if (self::$enabled !== true) {
+		if (self::$enabled !== true || self::isEmpty() === true) {
 			return;
 		}
 
-		if (empty(self::$phases) === true
-			&& empty(self::$counts) === true
-			&& empty(self::$stamps) === true
-		) {
-			return;
-		}
-
-		$total = array_sum(self::$phases);
-		$line = sprintf('total=%.0fms', $total);
-		arsort(self::$phases);
-		foreach (self::$phases as $name => $ms) {
-			$line .= sprintf('  %s=%.0fms', $name, $ms);
-		}
-
-		$start = (float)($_SERVER['REQUEST_TIME_FLOAT'] ?? 0);
-		if ($start > 0.0) {
-			self::$stamps['flush'] = ((microtime(true) - $start) * 1000);
-		}
-
-		if (empty(self::$stamps) === false) {
-			asort(self::$stamps);
-			$line .= '  [at';
-			foreach (self::$stamps as $label => $ms) {
-				$line .= sprintf(' %s=%.0fms', $label, $ms);
-			}
-
-			$line .= ']';
-		}
-
-		if (function_exists('opcache_get_status') === true) {
-			$oc = @opcache_get_status(false);
-			if (is_array($oc) === true) {
-				$line .= sprintf(
-					'  [opcache cached=%s/%s hits=%s misses=%s oom_restarts=%s hash_restarts=%s wasted=%.1f%%]',
-					($oc['opcache_statistics']['num_cached_scripts'] ?? '?'),
-					($oc['opcache_statistics']['max_cached_keys'] ?? '?'),
-					($oc['opcache_statistics']['hits'] ?? '?'),
-					($oc['opcache_statistics']['misses'] ?? '?'),
-					($oc['opcache_statistics']['oom_restarts'] ?? '?'),
-					($oc['opcache_statistics']['hash_restarts'] ?? '?'),
-					($oc['memory_usage']['current_wasted_percentage'] ?? 0)
-				);
-			}
-		}
-
-		if (empty(self::$counts) === false) {
-			arsort(self::$counts);
-			$line .= '  [counts';
-			foreach (self::$counts as $event => $n) {
-				$line .= sprintf(' %s=%d', $event, $n);
-			}
-
-			$line .= ']';
-		}
-
+		$line = self::phaseSegment() . self::stampSegment() . self::opcacheSegment() . self::countSegment();
 		@file_put_contents('/tmp/or-write-phases.log', $line . PHP_EOL, (FILE_APPEND | LOCK_EX));
 
 		self::$phases = [];
@@ -288,4 +238,122 @@ final class WritePhaseProbe {
 		self::$last = null;
 
 	}//end flush()
+
+	/**
+	 * Whether nothing has been recorded: no phases, counts or stamps.
+	 *
+	 * @return bool
+	 */
+	private static function isEmpty(): bool {
+		return empty(self::$phases) === true
+			&& empty(self::$counts) === true
+			&& empty(self::$stamps) === true;
+
+	}//end isEmpty()
+
+	/**
+	 * The total, then every phase, longest first.
+	 *
+	 * @return string
+	 */
+	private static function phaseSegment(): string {
+		$total = array_sum(self::$phases);
+		arsort(self::$phases);
+
+		return sprintf('total=%.0fms', $total) . self::pairs(values: self::$phases, format: '  %s=%.0fms');
+
+	}//end phaseSegment()
+
+	/**
+	 * The absolute stamps, earliest first, including the offset of this flush when known.
+	 *
+	 * @return string Empty when there are no stamps.
+	 */
+	private static function stampSegment(): string {
+		$elapsed = self::elapsedMs();
+		if ($elapsed !== null) {
+			self::$stamps['flush'] = $elapsed;
+		}
+
+		if (empty(self::$stamps) === true) {
+			return '';
+		}
+
+		asort(self::$stamps);
+
+		return '  [at' . self::pairs(values: self::$stamps, format: ' %s=%.0fms') . ']';
+
+	}//end stampSegment()
+
+	/**
+	 * The opcache statistics, when opcache reports them.
+	 *
+	 * @return string Empty when opcache is absent or reports nothing.
+	 */
+	private static function opcacheSegment(): string {
+		if (function_exists('opcache_get_status') === false) {
+			return '';
+		}
+
+		$status = @opcache_get_status(false);
+		if (is_array($status) === false) {
+			return '';
+		}
+
+		return self::formatOpcache(status: $status);
+
+	}//end opcacheSegment()
+
+	/**
+	 * Format an opcache status; a missing statistic reads `?`, a missing waste figure 0.
+	 *
+	 * @param array $status The result of opcache_get_status().
+	 *
+	 * @return string
+	 */
+	private static function formatOpcache(array $status): string {
+		$keys = ['num_cached_scripts', 'max_cached_keys', 'hits', 'misses', 'oom_restarts', 'hash_restarts'];
+		$values = array_map(static fn (string $key): mixed => ($status['opcache_statistics'][$key] ?? '?'), $keys);
+		$values[] = ($status['memory_usage']['current_wasted_percentage'] ?? 0);
+
+		return sprintf(
+			'  [opcache cached=%s/%s hits=%s misses=%s oom_restarts=%s hash_restarts=%s wasted=%.1f%%]',
+			...$values
+		);
+
+	}//end formatOpcache()
+
+	/**
+	 * The event counts, most frequent first.
+	 *
+	 * @return string Empty when nothing was counted.
+	 */
+	private static function countSegment(): string {
+		if (empty(self::$counts) === true) {
+			return '';
+		}
+
+		arsort(self::$counts);
+
+		return '  [counts' . self::pairs(values: self::$counts, format: ' %s=%d') . ']';
+
+	}//end countSegment()
+
+	/**
+	 * Format every name/value pair with one sprintf format and join them.
+	 *
+	 * @param array<string,int|float> $values The pairs, in output order.
+	 * @param string                  $format A format taking the name, then the value.
+	 *
+	 * @return string
+	 */
+	private static function pairs(array $values, string $format): string {
+		$out = '';
+		foreach ($values as $name => $value) {
+			$out .= sprintf($format, $name, $value);
+		}
+
+		return $out;
+
+	}//end pairs()
 }//end class

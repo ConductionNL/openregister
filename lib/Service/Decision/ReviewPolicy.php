@@ -29,12 +29,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Decision;
 
+use OCA\OpenRegister\Kernel\Contracts\ReviewPolicyInterface;
+
 /**
  * The review policy of one schema, or of the instance for files without one.
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
  */
-final class ReviewPolicy {
+final class ReviewPolicy implements ReviewPolicyInterface {
 
 	/**
 	 * The schema configuration key.
@@ -95,19 +97,30 @@ final class ReviewPolicy {
 
 		$ownership = ($declaration['ownership'] ?? self::OWNERSHIP_OPEN);
 
+		return new self(
+			deciderOwned: $ownership !== self::OWNERSHIP_OPEN,
+			supervisors: self::supervisorsOf(declared: ($declaration['supervisors'] ?? [])),
+			hideOthers: (($declaration['hideOthers'] ?? false) === true)
+		);
+	}//end fromDeclaration()
+
+	/**
+	 * The declared supervisor groups, trimmed, without blanks or repeats, in order.
+	 *
+	 * @param mixed $declared The declared supervisors.
+	 *
+	 * @return array<int, string> The group ids.
+	 */
+	private static function supervisorsOf(mixed $declared): array {
 		$supervisors = [];
-		foreach ((array)($declaration['supervisors'] ?? []) as $group) {
+		foreach ((array)$declared as $group) {
 			if (is_string($group) === true && trim($group) !== '') {
 				$supervisors[trim($group)] = true;
 			}
 		}
 
-		return new self(
-			deciderOwned: $ownership !== self::OWNERSHIP_OPEN,
-			supervisors: array_keys($supervisors),
-			hideOthers: (($declaration['hideOthers'] ?? false) === true)
-		);
-	}//end fromDeclaration()
+		return array_keys($supervisors);
+	}//end supervisorsOf()
 
 	/**
 	 * Whether a decision belongs to the person who took it.

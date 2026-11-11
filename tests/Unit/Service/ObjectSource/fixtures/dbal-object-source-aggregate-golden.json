@@ -1,0 +1,423 @@
+{
+    "count all": {
+        "answer": {
+            "value": 5
+        },
+        "logs": []
+    },
+    "count, field ignored": {
+        "answer": {
+            "value": 5
+        },
+        "logs": []
+    },
+    "count, empty field": {
+        "answer": {
+            "value": 5
+        },
+        "logs": []
+    },
+    "sum": {
+        "answer": {
+            "value": 42.0
+        },
+        "logs": []
+    },
+    "avg": {
+        "answer": {
+            "value": 2.125
+        },
+        "logs": []
+    },
+    "min": {
+        "answer": {
+            "value": 5.0
+        },
+        "logs": []
+    },
+    "max": {
+        "answer": {
+            "value": 4.0
+        },
+        "logs": []
+    },
+    "max of text is null": {
+        "answer": {
+            "value": null
+        },
+        "logs": []
+    },
+    "sum of empty set is null": {
+        "answer": {
+            "value": null
+        },
+        "logs": []
+    },
+    "count of empty set": {
+        "answer": {
+            "value": 0
+        },
+        "logs": []
+    },
+    "unknown metric": {
+        "answer": null,
+        "logs": []
+    },
+    "metric case matters": {
+        "answer": null,
+        "logs": []
+    },
+    "metric case matters, sum": {
+        "answer": null,
+        "logs": []
+    },
+    "value metric without field": {
+        "answer": null,
+        "logs": []
+    },
+    "value metric, empty field": {
+        "answer": null,
+        "logs": []
+    },
+    "value metric, unknown field": {
+        "answer": null,
+        "logs": []
+    },
+    "no source id": {
+        "answer": null,
+        "logs": [
+            "warning: [ObjectSource:dbal-source] no source resolved for schema facts"
+        ]
+    },
+    "source lookup fails": {
+        "answer": null,
+        "logs": [
+            "warning: [ObjectSource:dbal-source] could not load source \"9\": source table gone",
+            "warning: [ObjectSource:dbal-source] no source resolved for schema facts"
+        ]
+    },
+    "not a database source": {
+        "answer": null,
+        "logs": [
+            "warning: [ObjectSource:dbal-source] no source resolved for schema facts"
+        ]
+    },
+    "unreachable database": {
+        "answer": {
+            "exception": [
+                "OCA\\OpenRegister\\Service\\ObjectSource\\DbalObjectSourceException",
+                "The external database is unreachable.",
+                503,
+                "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionException"
+            ]
+        },
+        "logs": []
+    },
+    "unreachable, driver missing": {
+        "answer": null,
+        "logs": []
+    },
+    "driver missing, connects": {
+        "answer": {
+            "value": 5
+        },
+        "logs": []
+    },
+    "lazy connect error": {
+        "answer": {
+            "exception": [
+                "OCA\\OpenRegister\\Service\\ObjectSource\\DbalObjectSourceException",
+                "The external database returned an error.",
+                502,
+                "Doctrine\\DBAL\\Exception\\ConnectionException"
+            ]
+        },
+        "logs": [
+            "warning: [ObjectSource:dbal-source] aggregation query failed: <driver message>"
+        ]
+    },
+    "driver missing": {
+        "answer": null,
+        "logs": []
+    },
+    "scalar filter": {
+        "answer": {
+            "value": 2
+        },
+        "logs": []
+    },
+    "operator filter": {
+        "answer": {
+            "value": 37.0
+        },
+        "logs": []
+    },
+    "in filter": {
+        "answer": {
+            "value": 4
+        },
+        "logs": []
+    },
+    "unknown filter column": {
+        "answer": {
+            "value": 2
+        },
+        "logs": []
+    },
+    "int filter key skipped": {
+        "answer": {
+            "value": 5
+        },
+        "logs": []
+    },
+    "group by status": {
+        "answer": {
+            "groups": [
+                {
+                    "key": null,
+                    "value": 1
+                },
+                {
+                    "key": "closed",
+                    "value": 2
+                },
+                {
+                    "key": "open",
+                    "value": 2
+                }
+            ]
+        },
+        "logs": []
+    },
+    "group by with sum": {
+        "answer": {
+            "groups": [
+                {
+                    "key": null,
+                    "value": 7.0
+                },
+                {
+                    "key": "closed",
+                    "value": 5.0
+                },
+                {
+                    "key": "open",
+                    "value": 30.0
+                }
+            ]
+        },
+        "logs": []
+    },
+    "group by with avg and filter": {
+        "answer": {
+            "groups": [
+                {
+                    "key": null,
+                    "value": 0.5
+                },
+                {
+                    "key": "open",
+                    "value": 1.5
+                }
+            ]
+        },
+        "logs": []
+    },
+    "group by unknown column": {
+        "answer": null,
+        "logs": []
+    },
+    "group by empty field": {
+        "answer": {
+            "value": 5
+        },
+        "logs": []
+    },
+    "group by no field": {
+        "answer": {
+            "value": 5
+        },
+        "logs": []
+    },
+    "group by int field": {
+        "answer": null,
+        "logs": []
+    },
+    "date bucket (sqlite: none)": {
+        "answer": null,
+        "logs": []
+    },
+    "date bucket wins over group": {
+        "answer": null,
+        "logs": []
+    },
+    "date bucket unknown field": {
+        "answer": null,
+        "logs": []
+    },
+    "date bucket bad gap": {
+        "answer": null,
+        "logs": []
+    },
+    "mysql: date bucket by day": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-03T00:00:00Z",
+                    "value": 1
+                },
+                {
+                    "key": "2026-01-04T00:00:00Z",
+                    "value": 1
+                },
+                {
+                    "key": "2026-02-01T00:00:00Z",
+                    "value": 1
+                },
+                {
+                    "key": "2026-02-11T00:00:00Z",
+                    "value": 1
+                },
+                {
+                    "key": "2026-03-01T00:00:00Z",
+                    "value": 1
+                }
+            ]
+        },
+        "logs": []
+    },
+    "mysql: date bucket, month sum": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-01T00:00:00Z",
+                    "value": 30.0
+                },
+                {
+                    "key": "2026-02-01T00:00:00Z",
+                    "value": 5.0
+                },
+                {
+                    "key": "2026-03-01T00:00:00Z",
+                    "value": 7.0
+                }
+            ]
+        },
+        "logs": []
+    },
+    "mysql: date bucket, filtered": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-02-01T00:00:00Z",
+                    "value": 3.25
+                }
+            ]
+        },
+        "logs": []
+    },
+    "mysql: date bucket bounds": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-04T00:00:00Z",
+                    "value": 1
+                },
+                {
+                    "key": "2026-02-01T00:00:00Z",
+                    "value": 1
+                }
+            ]
+        },
+        "logs": []
+    },
+    "mysql: date bucket wins": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-01T00:00:00Z",
+                    "value": 5
+                }
+            ]
+        },
+        "logs": []
+    },
+    "mysql: date bucket unknown field": {
+        "answer": null,
+        "logs": []
+    },
+    "mysql: week falls back": {
+        "answer": null,
+        "logs": []
+    },
+    "mysql: date bucket, no bounds": {
+        "answer": {
+            "groups": []
+        },
+        "logs": []
+    },
+    "mysql: date bucket query error": {
+        "answer": {
+            "exception": [
+                "OCA\\OpenRegister\\Service\\ObjectSource\\DbalObjectSourceException",
+                "The external database returned an error.",
+                502,
+                "Doctrine\\DBAL\\Exception\\TableNotFoundException"
+            ]
+        },
+        "logs": [
+            "warning: [ObjectSource:dbal-source] aggregation query failed: <driver message>"
+        ]
+    },
+    "mysql: grouped and scalar": {
+        "answer": {
+            "groups": [
+                {
+                    "key": null,
+                    "value": 7.0
+                },
+                {
+                    "key": "closed",
+                    "value": 5.0
+                },
+                {
+                    "key": "open",
+                    "value": 20.0
+                }
+            ]
+        },
+        "logs": []
+    },
+    "query-backed source": {
+        "answer": {
+            "value": 20.0
+        },
+        "logs": []
+    },
+    "query error, scalar": {
+        "answer": {
+            "exception": [
+                "OCA\\OpenRegister\\Service\\ObjectSource\\DbalObjectSourceException",
+                "The external database returned an error.",
+                502,
+                "Doctrine\\DBAL\\Exception\\TableNotFoundException"
+            ]
+        },
+        "logs": [
+            "warning: [ObjectSource:dbal-source] aggregation query failed: <driver message>"
+        ]
+    },
+    "query error, grouped": {
+        "answer": {
+            "exception": [
+                "OCA\\OpenRegister\\Service\\ObjectSource\\DbalObjectSourceException",
+                "The external database returned an error.",
+                502,
+                "Doctrine\\DBAL\\Exception\\TableNotFoundException"
+            ]
+        },
+        "logs": [
+            "warning: [ObjectSource:dbal-source] aggregation query failed: <driver message>"
+        ]
+    }
+}

@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * engine would declare on one instance and the listeners would read an empty
  * one, and every named call would silently fall back to value matching.
  */
-class LifecycleActionContext {
+class LifecycleActionContext implements LifecycleActionContextInterface {
 
 	/**
 	 * Declared actions, a stack per object uuid.
@@ -198,7 +198,7 @@ class LifecycleActionContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
 	 */
 	public function enterDeclaredState(string $uuid): void {
 		$this->declaredState[$uuid] = (($this->declaredState[$uuid] ?? 0) + 1);
@@ -211,7 +211,7 @@ class LifecycleActionContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
 	 */
 	public function leaveDeclaredState(string $uuid): void {
 		if (isset($this->declaredState[$uuid]) === false) {
@@ -231,7 +231,7 @@ class LifecycleActionContext {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
 	 */
 	public function writesDeclaredState(string $uuid): bool {
 		return isset($this->declaredState[$uuid]);

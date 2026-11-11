@@ -1,0 +1,144 @@
+[
+    [
+        "info",
+        "[TransferListService] Objects excluded from transfer list",
+        {
+            "uuid": "l1",
+            "excludedCount": 2,
+            "reason": "legal hold"
+        }
+    ],
+    [
+        "save",
+        {
+            "uuid": "l1",
+            "status": "in_review",
+            "objectReferences": [
+                {
+                    "uuid": "a"
+                },
+                {
+                    "uuid": "c"
+                }
+            ],
+            "exclusions": [
+                {
+                    "uuid": "z",
+                    "reason": "earlier",
+                    "excludedAt": "then"
+                },
+                {
+                    "uuid": "b",
+                    "reason": "legal hold",
+                    "excludedAt": "<now>"
+                },
+                {
+                    "uuid": "x",
+                    "reason": "legal hold",
+                    "excludedAt": "<now>"
+                }
+            ],
+            "objectCount": 2
+        }
+    ],
+    [
+        "returned",
+        {
+            "uuid": "l1",
+            "status": "in_review",
+            "objectReferences": [
+                {
+                    "uuid": "a"
+                },
+                {
+                    "uuid": "c"
+                }
+            ],
+            "exclusions": [
+                {
+                    "uuid": "z",
+                    "reason": "earlier",
+                    "excludedAt": "then"
+                },
+                {
+                    "uuid": "b",
+                    "reason": "legal hold",
+                    "excludedAt": "<now>"
+                },
+                {
+                    "uuid": "x",
+                    "reason": "legal hold",
+                    "excludedAt": "<now>"
+                }
+            ],
+            "objectCount": 2,
+            "saved": true
+        }
+    ],
+    [
+        "refused",
+        "Cannot modify transfer list with status 'approved'"
+    ],
+    [
+        "refused",
+        "Cannot modify transfer list with status 'rejected'"
+    ],
+    [
+        "refused",
+        "Cannot modify transfer list with status 'in_progress'"
+    ],
+    [
+        "refused",
+        "Cannot modify transfer list with status 'completed'"
+    ],
+    [
+        "refused",
+        "Cannot modify transfer list with status 'partially_failed'"
+    ],
+    [
+        "refused",
+        "Cannot modify transfer list with status 'failed'"
+    ],
+    [
+        "refused",
+        "Cannot modify transfer list with status 'bogus'"
+    ],
+    [
+        "info",
+        "[TransferListService] Objects excluded from transfer list",
+        {
+            "uuid": "l2",
+            "excludedCount": 0,
+            "reason": "nothing"
+        }
+    ],
+    [
+        "save",
+        {
+            "uuid": "l2",
+            "status": "in_review",
+            "objectReferences": [
+                {
+                    "uuid": "a"
+                }
+            ],
+            "exclusions": [],
+            "objectCount": 1
+        }
+    ],
+    [
+        "returned",
+        {
+            "uuid": "l2",
+            "status": "in_review",
+            "objectReferences": [
+                {
+                    "uuid": "a"
+                }
+            ],
+            "exclusions": [],
+            "objectCount": 1,
+            "saved": true
+        }
+    ]
+]

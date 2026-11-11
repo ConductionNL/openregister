@@ -1,0 +1,913 @@
+<?php
+
+/**
+ * ViewsController
+ *
+ * Controller for managing saved search views across multiple registers and schemas.
+ * Provides CRUD operations for views that store search configurations.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Controller
+ * @package   OCA\OpenRegister\Controller
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://github.com/ConductionNL/openregister
+ */
+
+namespace OCA\OpenRegister\Search\Controller;
+
+use OCA\OpenRegister\Service\Rbac\ReachedView;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
+use OCA\OpenRegister\Search\Db\View;
+use InvalidArgumentException;
+use OCA\OpenRegister\Search\Service\CalendarRange;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewService;
+use OCA\OpenRegister\Service\View\ViewAlert;
+use OCA\OpenRegister\Exception\InvalidViewAlertException;
+use OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IRequest;
+use OCA\OpenRegister\Service\Rbac\ViewerReachCheckInterface;
+use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\ViewEdit;
+
+/**
+ * Controller for managing saved search views
+ *
+ * This controller handles operations for creating, reading, updating, and deleting
+ * saved search views. Views allow users to save complex search configurations
+ * including multiple registers, schemas, filters, and display settings.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ *
+ * @spec openspec/specs/faceting-configuration/spec.md
+ * @spec openspec/specs/faceting-configuration/spec.md
+ */
+class ViewsController extends Controller {
+
+	/**
+	 * The view service for managing views
+	 *
+	 * @var ViewService
+	 */
+	private ViewService $viewService;
+
+	/**
+	 * The view presentation service for kanban/calendar board data
+	 *
+	 * @var ViewPresentationService
+	 */
+	private ViewPresentationService $viewPresentationService;
+
+	/**
+	 * The logger interface
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * Who is asking, and how far they reach over views.
+	 *
+	 * @var ViewerReachCheckInterface
+	 */
+	private ViewerReachCheckInterface $viewers;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest                $request  The current request.
+	 * @param ViewsControllerServices $services The saved-views API services.
+	 */
+	public function __construct(IRequest $request, ViewsControllerServices $services) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->viewService             = $services->viewService;
+		$this->viewPresentationService = $services->viewPresentationService;
+		$this->logger                  = $services->logger;
+		$this->viewers                 = $services->viewers;
+	}//end __construct()
+
+	/**
+	 * The view behind an id, resolved as the caller's own.
+	 *
+	 * `ViewService::find()` takes the owner and refuses anything else with a
+	 * `DoesNotExistException`, which every endpoint here answers as a 404.
+	 * That is the per-object predicate for a view: a caller who does not own
+	 * it gets the same answer as one asking for a view that does not exist,
+	 * so no endpoint can be used to discover which view ids exist.
+	 *
+	 * Named rather than inlined at five call sites, so the predicate is one
+	 * thing a reader can find and one thing a change has to go through.
+	 *
+	 * @param string $id     The view id.
+	 * @param string $userId The caller.
+	 *
+	 * @return View The view.
+	 *
+	 * @throws DoesNotExistException When the view is not this caller's.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function requireOwnedView(string $id, string $userId): View {
+		return $this->viewService->find(id: $id, owner: $userId);
+	}//end requireOwnedView()
+
+	/**
+	 * The view behind an id when it reaches this caller (owned, shared with a
+	 * group, public, or admin); anything else is the 404 of a missing view.
+	 *
+	 * @param string $id     The view id.
+	 * @param string $userId The caller.
+	 *
+	 * @return View The view.
+	 *
+	 * @throws DoesNotExistException When the view does not reach this caller.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function requireReachableView(string $id, string $userId): View {
+		$view = $this->viewService->findById(id: $id);
+		if ($this->viewers->reaches(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)) === false) {
+			throw new DoesNotExistException('View not found or access denied');
+		}
+
+		return $view;
+	}//end requireReachableView()
+
+	/**
+	 * Refuse a share list that names a group that does not exist, or is malformed.
+	 *
+	 * Absent `sharedWith` is not refused: it leaves the shares as they are.
+	 *
+	 * @param array $data The request body.
+	 *
+	 * @return JSONResponse|null A 400 naming the findings, or null when the shares may be stored.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function refuseInvalidShares(array $data): ?JSONResponse {
+		if (array_key_exists('sharedWith', $data) === false) {
+			return null;
+		}
+
+		$findings = $this->viewers->shareFindings(sharedWith: $data['sharedWith']);
+		if ($findings === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'The view cannot be shared this way: '.implode(' ', array_column($findings, 'message')),
+				'findings' => $findings,
+			],
+			statusCode: 400
+		);
+	}//end refuseInvalidShares()
+
+	/**
+	 * The answer to a refused save: the alert's own status naming its field, 400 otherwise.
+	 *
+	 * @param InvalidArgumentException $e The refusal.
+	 *
+	 * @return JSONResponse
+	 */
+	private function refusalFor(InvalidArgumentException $e): JSONResponse {
+		if ($e instanceof InvalidViewAlertException) {
+			return new JSONResponse(data: ['error' => $e->getMessage(), 'field' => $e->getField()] + $e->getDetails(), statusCode: $e->getStatus());
+		}
+
+		return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+	}//end refusalFor()
+
+	/**
+	 * Refuse an update that changes fields this caller does not own.
+	 *
+	 * Answers a response to RETURN, or null when the update may proceed. The refusal
+	 * NAMES the fields, because a member needs to know which field was refused.
+	 *
+	 * Only fields whose VALUE changes are judged: the edit screen sends the
+	 * whole view. The caller resolves the view with requireReachableView(),
+	 * and when this answers null it asks assertMayNameRecipients() next, with
+	 * the body as the save will write it.
+	 *
+	 * @param ViewPatch $write  The stored view and the request body.
+	 * @param string    $userId The caller.
+	 *
+	 * @return JSONResponse|null The refusal, or null when allowed.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function refuseForbiddenViewFields(ViewPatch $write, string $userId): ?JSONResponse {
+		$view = $write->view;
+		// Only keys that name a view property are judged, so a `_limit` or
+		// routing key on the body cannot refuse an update a member may make.
+		$fields = array_intersect_key(
+			$write->data,
+			array_flip(
+				[
+					'name',
+					'description',
+					'owner',
+					'isPublic',
+					'isDefault',
+					'query',
+					'presentation',
+					'alert',
+					'sharedWith',
+				]
+			)
+		);
+
+		$refused = $this->viewers->refusedFields(
+			reached: new ReachedView(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
+			update: $fields
+		);
+
+		if ($refused === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'You may not change these fields on this view: ' . implode(', ', $refused),
+				'fields' => $refused,
+			],
+			statusCode: 403
+		);
+	}//end refuseForbiddenViewFields()
+
+	/**
+	 * Get all views for the current user
+	 *
+	 * This method retrieves all saved views that belong to the current user,
+	 * as well as any public views shared by other users.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with views or error
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
+	 */
+	public function index(): JSONResponse {
+		try {
+			return $this->listViews();
+		} catch (\Exception $e) {
+			return $this->failed(action: 'fetching views', error: 'Failed to fetch views', e: $e);
+		}//end try
+	}//end index()
+
+	/**
+	 * The views listing of {@see index()} for a signed-in caller.
+	 *
+	 * @return JSONResponse The page of views and the total, or 401 when not signed in.
+	 */
+	private function listViews(): JSONResponse {
+		$userId = $this->viewers->currentUid();
+
+		if (empty($userId) === true) {
+			return $this->unauthenticated();
+		}
+
+		$params = $this->request->getParams();
+
+		// Ledger row 9.4: the caller's own views, the ones shared with a
+		// group they are in, and the public ones, each carrying the access
+		// they hold on it.
+		$views = $this->viewService->findAllFor(reach: $this->viewers->reachOf(userId: $userId));
+
+		return new JSONResponse(
+			data: [
+				'results' => array_map(fn ($view) => $view->jsonSerialize(), $this->pageOfViews(views: $views, params: $params)),
+				'total' => count($views),
+			]
+		);
+	}//end listViews()
+
+	/**
+	 * Apply client-side pagination when a `_limit` is given; without one every view is returned.
+	 *
+	 * @param array<int, View>     $views  The reachable views.
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<int, View> The page of views.
+	 */
+	private function pageOfViews(array $views, array $params): array {
+		$limit = self::intParam(params: $params, key: '_limit');
+		if ($limit === null) {
+			return $views;
+		}
+
+		return array_slice(array: $views, offset: self::sliceOffset(params: $params, limit: $limit), length: $limit);
+	}//end pageOfViews()
+
+	/**
+	 * Where a page starts: derived from `_page` when given, else `_offset`, else the first view.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 * @param int                  $limit  The page size.
+	 *
+	 * @return int The slice offset.
+	 */
+	private static function sliceOffset(array $params, int $limit): int {
+		$page = self::intParam(params: $params, key: '_page');
+		if ($page !== null) {
+			return ($page - 1) * $limit;
+		}
+
+		$offset = self::intParam(params: $params, key: '_offset');
+		if ($offset === null) {
+			return 0;
+		}
+
+		return $offset;
+	}//end sliceOffset()
+
+	/**
+	 * A request parameter as an integer, or null when it is absent or null.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 * @param string               $key    The parameter name.
+	 *
+	 * @return int|null The value.
+	 */
+	private static function intParam(array $params, string $key): ?int {
+		if (($params[$key] ?? null) === null) {
+			return null;
+		}
+
+		return (int)$params[$key];
+	}//end intParam()
+
+	/**
+	 * A 500 response naming what failed and the exception's message.
+	 *
+	 * @param string     $error What failed.
+	 * @param \Exception $e     The failure.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function serverError(string $error, \Exception $e): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $error,
+				'message' => $e->getMessage(),
+			],
+			statusCode: 500
+		);
+	}//end serverError()
+
+	/**
+	 * Get a specific view by ID
+	 *
+	 * @param string $id The view ID (UUID or numeric ID)
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with view or error
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
+	 */
+	public function show(string $id): JSONResponse {
+		try {
+			$userId = $this->viewers->currentUid();
+
+			if (empty($userId) === true) {
+				return $this->unauthenticated();
+			}
+
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
+
+			return new JSONResponse(
+				data: [
+					'view' => $view->jsonSerialize(),
+				]
+			);
+		} catch (DoesNotExistException $e) {
+			return $this->viewNotFound();
+		} catch (\Exception $e) {
+			return $this->failed(action: 'fetching view', error: 'Failed to fetch view', e: $e, id: $id);
+		}//end try
+	}//end show()
+
+	/**
+	 * Create a new view
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with created view or error
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
+	 */
+	public function create(): JSONResponse {
+		try {
+			return $this->createView();
+		} catch (InvalidArgumentException $e) {
+			return $this->refusalFor(e: $e);
+		} catch (\Exception $e) {
+			return $this->failed(action: 'creating view', error: 'Failed to create view', e: $e);
+		}
+	}//end create()
+
+	/**
+	 * Create a view owned by the caller, after the body checks.
+	 *
+	 * @return JSONResponse The created view, or the refusal.
+	 */
+	private function createView(): JSONResponse {
+		$userId = $this->viewers->currentUid();
+		if (empty($userId) === true) {
+			return $this->unauthenticated();
+		}
+
+		$write       = new ViewPatch();
+		$write->data = $this->request->getParams();
+		return $this->refuseInvalidWrite(write: $write) ?? $this->saveNew(userId: $userId, write: $write);
+	}//end createView()
+
+	/**
+	 * Save a new view for its owner, once the owner may name its recipients.
+	 *
+	 * @param string    $userId The owner.
+	 * @param ViewPatch $write  The request body.
+	 *
+	 * @return JSONResponse The created view (201).
+	 */
+	private function saveNew(string $userId, ViewPatch $write): JSONResponse {
+		$data = $write->data;
+		$this->viewers->assertMayNameRecipients(
+			reached: new ReachedView(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId)),
+			data: $data
+		);
+		$view = $this->viewService->create(
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: $data['name'],
+					description: $data['description'] ?? '',
+					query: $write->query(),
+					presentation: $write->presentation()
+				),
+				audience: new ViewAudience(
+					owner: $userId,
+					isPublic: $data['isPublic'] ?? false,
+					isDefault: $data['isDefault'] ?? false,
+					sharedWith: $write->shares()
+				),
+				alert: ViewAlert::declaredIn(body: $data)
+			)
+		);
+		return new JSONResponse(data: ['view' => $view->jsonSerialize()], statusCode: 201);
+	}//end saveNew()
+
+	/**
+	 * Refuse a create or full update without a name, without a query, or with invalid shares.
+	 *
+	 * @param ViewPatch $write The request body.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the body may be saved.
+	 */
+	private function refuseInvalidWrite(ViewPatch $write): ?JSONResponse {
+		$missing = $write->missingField();
+		if ($missing !== null) {
+			return new JSONResponse(data: ['error' => $missing], statusCode: 400);
+		}
+
+		return $this->refuseInvalidShares(data: $write->data);
+	}//end refuseInvalidWrite()
+
+	/**
+	 * Update an existing view
+	 *
+	 * @param string $id The view ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with updated view or error
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
+	 */
+	public function update(string $id): JSONResponse {
+		try {
+			return $this->updateView(id: $id);
+		} catch (DoesNotExistException $e) {
+			return $this->viewNotFound();
+		} catch (InvalidArgumentException $e) {
+			return $this->refusalFor(e: $e);
+		} catch (\Exception $e) {
+			return $this->failed(action: 'updating view', error: 'Failed to update view', e: $e, id: $id);
+		}
+	}//end update()
+
+	/**
+	 * Replace a view the caller reaches, after the field guard and the body checks.
+	 *
+	 * The field guard runs before anything is saved: without it any caller reaching a
+	 * public view could rename it, rewrite its query or un-publish it. The owner and an
+	 * administrator pass it.
+	 *
+	 * @param string $id View ID.
+	 *
+	 * @return JSONResponse The updated view, or the refusal.
+	 */
+	private function updateView(string $id): JSONResponse {
+		$userId = $this->viewers->currentUid();
+		if (empty($userId) === true) {
+			return $this->unauthenticated();
+		}
+
+		$update       = new ViewPatch();
+		$update->id   = $id;
+		$update->data = $this->request->getParams();
+		$update->view = $this->requireReachableView(id: $id, userId: $userId);
+		$refusal      = $this->refuseForbiddenViewFields(write: $update, userId: $userId);
+		if ($refusal === null) {
+			// PUT writes `isPublic` false when omitted, so the recipients are judged on that body.
+			$this->viewers->assertMayNameRecipients(
+				reached: new ReachedView(view: $update->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
+				data: ($update->data + ['isPublic' => false])
+			);
+		}
+
+		return $refusal ?? $this->refuseInvalidWrite(write: $update) ?? $this->saveUpdate(update: $update);
+	}//end updateView()
+
+	/**
+	 * Save a full update; a write member saves the owner's view.
+	 *
+	 * @param ViewPatch $update The route id, stored view and request body.
+	 *
+	 * @return JSONResponse The updated view.
+	 */
+	private function saveUpdate(ViewPatch $update): JSONResponse {
+		$data = $update->data;
+		$view = $this->viewService->revise(
+			id: $update->id,
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: $data['name'],
+					description: $data['description'] ?? '',
+					query: $update->query(),
+					presentation: $update->presentation()
+				),
+				audience: new ViewAudience(
+					owner: $update->view->getOwner(),
+					isPublic: $data['isPublic'] ?? false,
+					isDefault: $data['isDefault'] ?? false,
+					sharedWith: $update->shares()
+				),
+				alert: ViewAlert::declaredIn(body: $data)
+			)
+		);
+		return new JSONResponse(data: ['view' => $view->jsonSerialize()]);
+	}//end saveUpdate()
+
+	/**
+	 * The 401 answer for a request without a session user.
+	 *
+	 * @return JSONResponse The 401 response.
+	 */
+	private function unauthenticated(): JSONResponse {
+		return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
+	}//end unauthenticated()
+
+	/**
+	 * Patch view details (partial update)
+	 *
+	 * Updates only the fields provided in the request.
+	 * This is different from PUT (update) which requires all fields.
+	 *
+	 * @param string $id View ID.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with patched view or error
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
+	 */
+	public function patch(string $id): JSONResponse {
+		try {
+			return $this->patchView(id: $id);
+		} catch (DoesNotExistException $e) {
+			return $this->viewNotFound();
+		} catch (InvalidArgumentException $e) {
+			return $this->refusalFor(e: $e);
+		} catch (\Exception $e) {
+			return $this->failed(action: 'patching view', error: 'Failed to patch view', e: $e, id: $id);
+		}//end try
+	}//end patch()
+
+	/**
+	 * Patch a view the caller reaches, after the field guard.
+	 *
+	 * @param string $id View ID.
+	 *
+	 * @return JSONResponse The patched view, or the refusal.
+	 */
+	private function patchView(string $id): JSONResponse {
+		$userId = $this->viewers->currentUid();
+		if (empty($userId) === true) {
+			return $this->unauthenticated();
+		}
+
+		$patch       = new ViewPatch();
+		$patch->id   = $id;
+		$patch->view = $this->requireReachableView(id: $id, userId: $userId);
+		$patch->data = $this->request->getParams();
+
+		// The same guard as `update()`. Leaving it off here would have
+		// left the hole open behind a different verb, and this method
+		// additionally carries `@NoCSRFRequired`.
+		$refusal = $this->refuseForbiddenViewFields(write: $patch, userId: $userId);
+		if ($refusal === null) {
+			$this->viewers->assertMayNameRecipients(
+				reached: new ReachedView(view: $patch->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
+				data: $patch->data
+			);
+		}
+
+		return $refusal ?? $this->savePatch(patch: $patch);
+	}//end patchView()
+
+	/**
+	 * Save the patch, keeping the stored value of every field the request leaves out.
+	 *
+	 * @param ViewPatch $patch The route id, stored view and request body.
+	 *
+	 * @return JSONResponse The patched view, or the share refusal.
+	 */
+	private function savePatch(ViewPatch $patch): JSONResponse {
+		$view         = $patch->view;
+		$data         = $patch->data;
+		$query        = $patch->query() ?? ($view->getQuery() ?? []);
+		$presentation = $patch->presentation() ?? $view->getPresentation();
+		$shareRefusal = $this->refuseInvalidShares(data: $data);
+		if ($shareRefusal !== null) {
+			return $shareRefusal;
+		}
+
+		$updatedView = $this->viewService->revise(
+			id: $patch->id,
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: $data['name'] ?? $view->getName() ?? '',
+					description: $data['description'] ?? $view->getDescription() ?? '',
+					query: $query,
+					presentation: $presentation
+				),
+				audience: new ViewAudience(
+					owner: $view->getOwner(),
+					isPublic: $data['isPublic'] ?? $view->getIsPublic(),
+					isDefault: $data['isDefault'] ?? $view->getIsDefault(),
+					sharedWith: $patch->shares()
+				),
+				favoredBy: $data['favoredBy'] ?? $view->getFavoredBy(),
+				alert: ViewAlert::declaredIn(body: $data)
+			)
+		);
+		return new JSONResponse(data: ['view' => $updatedView->jsonSerialize()]);
+	}//end savePatch()
+
+	/**
+	 * Delete a view
+	 *
+	 * @param string $id The view ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with delete confirmation or error
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
+	 */
+	public function destroy(string $id): JSONResponse {
+		try {
+			$userId = $this->viewers->currentUid();
+
+			if (empty($userId) === true) {
+				return $this->unauthenticated();
+			}
+
+			// The service refuses everybody who neither owns the view nor administers the instance.
+			$reach = $this->viewers->reachOf(userId: $userId);
+			$this->viewService->delete(id: $id, reach: $reach);
+
+			return new JSONResponse(
+				data: [
+					'message' => 'View deleted successfully',
+				],
+				statusCode: 204
+			);
+		} catch (DoesNotExistException $e) {
+			return $this->viewNotFound();
+		} catch (\Exception $e) {
+			return $this->failed(action: 'deleting view', error: 'Failed to delete view', e: $e, id: $id);
+		}//end try
+	}//end destroy()
+
+	/**
+	 * Get the kanban board (columns + paginated cards) for a kanban view
+	 *
+	 * Read-only: this endpoint only derives columns and fetches cards. There
+	 * is deliberately NO "move card" write here — moving a card between
+	 * columns MUST go through the existing guarded object PATCH/PUT API
+	 * (RBAC + `x-openregister-lifecycle`), never a bespoke endpoint
+	 * (REQ-VIEW-KANBAN-03).
+	 *
+	 * @param string $id The view ID (UUID or numeric ID)
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with kanban board data or error
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
+	 */
+	public function kanban(string $id): JSONResponse {
+		try {
+			$userId = $this->viewers->currentUid();
+
+			if (empty($userId) === true) {
+				return $this->unauthenticated();
+			}
+
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
+			$board = $this->viewPresentationService->getKanbanBoard(
+				view: $view,
+				requestParams: $this->request->getParams()
+			);
+
+			return new JSONResponse(data: $board);
+		} catch (DoesNotExistException $e) {
+			return $this->viewNotFound();
+		} catch (InvalidArgumentException $e) {
+			return $this->refusalFor(e: $e);
+		} catch (\Exception $e) {
+			return $this->failed(action: 'building kanban board', error: 'Failed to build kanban board', e: $e, id: $id);
+		}//end try
+	}//end kanban()
+
+	/**
+	 * Get the objects for a calendar view within a visible date range
+	 *
+	 * @param string $id The view ID (UUID or numeric ID)
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with calendar range data or error
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
+	 */
+	public function calendar(string $id): JSONResponse {
+		try {
+			return $this->calendarRange(id: $id);
+		} catch (DoesNotExistException $e) {
+			return $this->viewNotFound();
+		} catch (InvalidArgumentException $e) {
+			return $this->refusalFor(e: $e);
+		} catch (\Exception $e) {
+			return $this->failed(action: 'querying calendar range', error: 'Failed to query calendar range', e: $e, id: $id);
+		}//end try
+	}//end calendar()
+
+	/**
+	 * The calendar range query of {@see calendar()} for a signed-in caller.
+	 *
+	 * @param string $id View ID.
+	 *
+	 * @return JSONResponse The objects in range, 401 when not signed in, or 400 without a full range.
+	 */
+	private function calendarRange(string $id): JSONResponse {
+		$userId = $this->viewers->currentUid();
+
+		if (empty($userId) === true) {
+			return $this->unauthenticated();
+		}
+
+		return $this->calendarRangeFor(id: $id, userId: $userId);
+	}//end calendarRange()
+
+	/**
+	 * The calendar range query of a signed-in caller: the range must name both ends.
+	 *
+	 * @param string $id     View ID.
+	 * @param string $userId The caller.
+	 *
+	 * @return JSONResponse The objects in range, or 400 without a full range.
+	 */
+	private function calendarRangeFor(string $id, string $userId): JSONResponse {
+		$params     = $this->request->getParams();
+		$rangeStart = $params['start'] ?? $params['rangeStart'] ?? null;
+		$rangeEnd   = $params['end'] ?? $params['rangeEnd'] ?? null;
+
+		if (empty($rangeStart) === true || empty($rangeEnd) === true) {
+			return $this->rangeRequired();
+		}
+
+		return $this->calendarObjectsOf(
+			view: $this->requireOwnedView(id: $id, userId: $userId),
+			range: new CalendarRange(start: $rangeStart, end: $rangeEnd)
+		);
+	}//end calendarRangeFor()
+
+	/**
+	 * The objects of an owned view that fall in the visible date range.
+	 *
+	 * @param View          $view  The owned view.
+	 * @param CalendarRange $range The visible date range.
+	 *
+	 * @return JSONResponse The calendar range data.
+	 */
+	private function calendarObjectsOf(View $view, CalendarRange $range): JSONResponse {
+		// The whole request is deliberately NOT handed on. The service
+		// took a `$requestParams` array it `unset()` on its first line,
+		// reserved for a filter passthrough nobody wrote, and an argument
+		// that is thrown away is an argument a reader has to check before
+		// they can rule it out.
+		$result = $this->viewPresentationService->getCalendarObjects(view: $view, range: $range);
+
+		return new JSONResponse(data: $result);
+	}//end calendarObjectsOf()
+
+	/**
+	 * The 400 for a calendar query without both ends of the visible range.
+	 *
+	 * @return JSONResponse
+	 */
+	private function rangeRequired(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'Both start and end (the visible date range) are required',
+			],
+			statusCode: 400
+		);
+	}//end rangeRequired()
+
+	/**
+	 * The 404 for a view that does not exist or that the caller cannot reach.
+	 *
+	 * @return JSONResponse
+	 */
+	private function viewNotFound(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'View not found',
+			],
+			statusCode: 404
+		);
+	}//end viewNotFound()
+
+	/**
+	 * Log a failed view action and answer 500.
+	 *
+	 * @param string      $action What was being done, as the log names it.
+	 * @param string      $error  What failed, as the response names it.
+	 * @param \Exception  $e      The failure.
+	 * @param string|null $id     The view ID, when the action had one.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function failed(string $action, string $error, \Exception $e, ?string $id=null): JSONResponse {
+		$context = ['file' => __FILE__, 'line' => __LINE__];
+		if ($id !== null) {
+			$context['id'] = $id;
+		}
+
+		$context['exception'] = $e->getMessage();
+		$this->logger->error(message: '[ViewsController] Error '.$action, context: $context);
+
+		return $this->serverError(error: $error, e: $e);
+	}//end failed()
+}//end class

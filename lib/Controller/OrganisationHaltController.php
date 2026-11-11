@@ -22,8 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Closure;
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Flow\Oversight\HaltRequest;
+use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -40,16 +43,14 @@ class OrganisationHaltController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                  $appName The app name.
-	 * @param IRequest                $request The request.
-	 * @param OrganisationHaltService $halts   The halts.
+	 * @param IRequest                         $request The request.
+	 * @param OrganisationHaltServiceInterface $halts   The halts.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly OrganisationHaltService $halts,
+		private readonly OrganisationHaltServiceInterface $halts,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -83,14 +84,28 @@ class OrganisationHaltController extends Controller {
 	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
 	 */
 	public function create(string $uuid, string $app='', string $reason='', ?string $nodeTypePrefix=null): JSONResponse {
+		$request = new HaltRequest(organisation: $uuid, app: $app, reason: $reason, nodeTypePrefix: (string)$nodeTypePrefix);
+		$engage = fn (): array => $this->halts->engage(request: $request);
+
+		return $this->engaged(engage: $engage);
+	}//end create()
+
+	/**
+	 * Engage a halt: 201 with it, or 400 with the reason it was refused.
+	 *
+	 * @param Closure(): array<string, mixed> $engage Engages the halt and returns it.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function engaged(Closure $engage): JSONResponse {
 		try {
-			$halt = $this->halts->engage(organisation: $uuid, app: $app, reason: $reason, nodeTypePrefix: $nodeTypePrefix);
+			$halt = $engage();
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
 		}
 
 		return new JSONResponse(data: $halt, statusCode: Http::STATUS_CREATED);
-	}//end create()
+	}//end engaged()
 
 	/**
 	 * Release a halt, as the signed-in administrator.

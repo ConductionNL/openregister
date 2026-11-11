@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace Unit\Service\Archival;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -27,10 +28,14 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 
 class SelectionListSeederTest extends TestCase {
 
@@ -51,10 +56,11 @@ class SelectionListSeederTest extends TestCase {
 
 		$objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findAll'])
+			->onlyMethods(['findAllListed'])
 			->getMock();
-		$objectMapper->method('findAll')->willReturnCallback(
-			function (?int $limit = null, ?int $offset = null, ?array $filters = null): array {
+		$objectMapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request): array {
+				$filters = $request->query->filters;
 				$category = ($filters['object->categorie'] ?? null);
 				return array_values(
 					array_filter(
@@ -85,22 +91,9 @@ class SelectionListSeederTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		$this->seeder = new SelectionListSeeder(
-			settingsHandler: $settings,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			objectMapper: $objectMapper,
-			saveObject: $saveObject,
-			logger: $this->createMock(LoggerInterface::class)
-		);
+		$this->seeder = new SelectionListSeeder(storage: new SelectielijstStorage(settings: $settings, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), writer: $saveObject), logger: $this->createMock(LoggerInterface::class));
 
-		$this->resolver = new SelectielijstResolver(
-			$objectMapper,
-			$schemaMapper,
-			$registerMapper,
-			$settings,
-			$this->createMock(LoggerInterface::class)
-		);
+		$this->resolver = new SelectielijstResolver(new SelectielijstStorage(settings: $settings, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), writer: $this->createMock(SaveObjectWriterInterface::class)), $this->createMock(LoggerInterface::class));
 	}//end setUp()
 
 	/**

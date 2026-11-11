@@ -29,6 +29,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjects;
+use OCA\OpenRegister\Service\Flow\FlowSubjectClaim;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
@@ -98,7 +99,7 @@ final class FlowRunSubjectsTest extends TestCase {
 	 */
 	public function testRecordingPutsTheObjectUnderItsRole(): void {
 		$run = $this->newRun();
-		$this->subjects()->record(run: $run, role: 'case', uuid: 'obj-1', register: 'cases', schema: 'case');
+		$this->subjects()->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1', register: 'cases', schema: 'case'));
 
 		$recorded = $this->subjects()->all(run: $run)['case'];
 		$this->assertSame('obj-1', $recorded['uuid']);
@@ -120,7 +121,7 @@ final class FlowRunSubjectsTest extends TestCase {
 		$subjects = $this->subjects();
 
 		for ($i = 0; $i < 40; $i++) {
-			$subjects->record(run: $run, role: 'case', uuid: 'obj-1', register: 'cases', schema: 'case');
+			$subjects->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1', register: 'cases', schema: 'case'));
 		}
 
 		$this->assertSame(['case'], $subjects->roles(run: $run));
@@ -142,8 +143,8 @@ final class FlowRunSubjectsTest extends TestCase {
 		$run = $this->newRun();
 		$subjects = $this->subjects();
 
-		$subjects->record(run: $run, role: 'decision', uuid: 'draft-1');
-		$subjects->record(run: $run, role: 'decision', uuid: 'final-1');
+		$subjects->record(run: $run, claim: new FlowSubjectClaim(role: 'decision', uuid: 'draft-1'));
+		$subjects->record(run: $run, claim: new FlowSubjectClaim(role: 'decision', uuid: 'final-1'));
 
 		$this->assertSame('final-1', $subjects->all(run: $run)['decision']['uuid']);
 
@@ -161,7 +162,7 @@ final class FlowRunSubjectsTest extends TestCase {
 	public function testARoleAddressesItsObject(): void {
 		$run = $this->newRun();
 		$subjects = $this->subjects();
-		$subjects->record(run: $run, role: 'case', uuid: 'obj-1', register: 'cases', schema: 'case');
+		$subjects->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1', register: 'cases', schema: 'case'));
 
 		$this->assertSame('obj-1', $subjects->addressed(run: $run, role: 'case')['uuid']);
 	}//end testARoleAddressesItsObject()
@@ -178,8 +179,8 @@ final class FlowRunSubjectsTest extends TestCase {
 	public function testAnUnheldRoleFailsNamingWhatIsHeld(): void {
 		$run = $this->newRun();
 		$subjects = $this->subjects();
-		$subjects->record(run: $run, role: 'case', uuid: 'obj-1');
-		$subjects->record(run: $run, role: 'besluit', uuid: 'obj-2');
+		$subjects->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1'));
+		$subjects->record(run: $run, claim: new FlowSubjectClaim(role: 'besluit', uuid: 'obj-2'));
 
 		try {
 			$subjects->addressed(run: $run, role: 'csae');
@@ -217,7 +218,7 @@ final class FlowRunSubjectsTest extends TestCase {
 		$subjects = $this->subjects();
 
 		$this->expectException(UnexpectedValueException::class);
-		$subjects->record(run: $this->newRun(), role: 'case', uuid: '   ');
+		$subjects->record(run: $this->newRun(), claim: new FlowSubjectClaim(role: 'case', uuid: '   '));
 	}//end testAnEmptyRoleOrObjectIsRefused()
 
 	/**
@@ -229,11 +230,41 @@ final class FlowRunSubjectsTest extends TestCase {
 		$run = $this->newRun();
 		$subjects = $this->subjects();
 
-		$subjects->record(run: $run, role: 'case', uuid: 'obj-1');
-		$subjects->record(run: $run, role: 'besluit', uuid: 'obj-2');
-		$subjects->record(run: $run, role: 'aanvraag', uuid: 'obj-3');
+		$subjects->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1'));
+		$subjects->record(run: $run, claim: new FlowSubjectClaim(role: 'besluit', uuid: 'obj-2'));
+		$subjects->record(run: $run, claim: new FlowSubjectClaim(role: 'aanvraag', uuid: 'obj-3'));
 
 		$this->assertSame(['aanvraag', 'besluit', 'case'], $subjects->roles(run: $run));
 		$this->assertSame('obj-2', $subjects->addressed(run: $run, role: 'besluit')['uuid']);
 	}//end testSeveralRolesCoexist()
+
+	/**
+	 * The trigger subject is the run's own subject columns, trimmed, under the `trigger` role.
+	 *
+	 * @return void
+	 */
+	public function testTheTriggerSubjectComesFromTheRunsSubjectColumns(): void {
+		$run = $this->newRun();
+		$run->setSubjectUuid(' obj-9 ');
+		$run->setSubjectRegister('3');
+		$run->setSubjectSchema('7');
+
+		$this->subjects()->recordTrigger(run: $run);
+
+		$recorded = $this->subjects()->all(run: $run)['trigger'];
+		$this->assertSame('obj-9', $recorded['uuid']);
+		$this->assertSame('3', $recorded['register']);
+		$this->assertSame('7', $recorded['schema']);
+	}//end testTheTriggerSubjectComesFromTheRunsSubjectColumns()
+
+	/**
+	 * A run without a subject uuid has no trigger subject to record.
+	 *
+	 * @return void
+	 */
+	public function testARunWithoutASubjectHasNoTriggerToRecord(): void {
+		$this->expectException(UnexpectedValueException::class);
+
+		$this->subjects()->recordTrigger(run: $this->newRun());
+	}//end testARunWithoutASubjectHasNoTriggerToRecord()
 }//end class

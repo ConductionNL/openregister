@@ -4,7 +4,9 @@ namespace Unit\Service;
 
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IConfig;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -55,9 +57,8 @@ class CalendarEventServiceTest extends TestCase {
 
 		$this->service = new CalendarEventService(
 			$this->calDavBackend,
-			$this->userSession,
+			new LinkSessionRuntime($this->userSession, $this->logger),
 			$this->config,
-			$this->logger,
 			$this->urlGenerator
 		);
 	}
@@ -102,6 +103,57 @@ class CalendarEventServiceTest extends TestCase {
 		$this->assertSame('abc-123', $events[0]['objectUuid']);
 		$this->assertSame('Test Event', $events[0]['summary']);
 		$this->assertSame(5, $events[0]['registerId']);
+	}
+
+	public function testDeleteEventRefusesACalendarOfSomebodyElse(): void {
+		$this->setupUser();
+		$this->calDavBackend->method('getCalendarById')->willReturn(['principaluri' => 'principals/users/somebody-else']);
+		$this->calDavBackend->expects($this->never())->method('deleteCalendarObject');
+
+		$this->expectExceptionCode(404);
+		$this->service->deleteEvent('7', 'event.ics');
+	}
+
+	public function testDeleteEventRefusesAnUnknownCalendar(): void {
+		$this->setupUser();
+		$this->calDavBackend->method('getCalendarById')->willReturn(null);
+		$this->calDavBackend->expects($this->never())->method('deleteCalendarObject');
+
+		$this->expectExceptionCode(404);
+		$this->service->deleteEvent('7', 'event.ics');
+	}
+
+	/**
+	 * A user with calendar 1 holding one event linked to `abc-123`.
+	 *
+	 * @return void
+	 */
+	private function setupOneLinkedEvent(): void {
+		$this->setupUser();
+		$this->setupCalendar();
+		$this->calDavBackend->method('getCalendarObjects')->willReturn([['uri' => 'event1.ics']]);
+		$this->calDavBackend->method('getCalendarObject')->willReturn(['calendardata' => $this->buildVevent('abc-123')]);
+	}
+
+	public function testRequireEventOfAcceptsAnEventLinkedToTheObject(): void {
+		$this->setupOneLinkedEvent();
+
+		$this->service->requireEventOf('abc-123', new CalendarObjectAddress('1', 'event1.ics'));
+		$this->addToAssertionCount(1);
+	}
+
+	public function testRequireEventOfRefusesAnEventOfAnotherObject(): void {
+		$this->setupOneLinkedEvent();
+
+		$this->expectExceptionCode(404);
+		$this->service->requireEventOf('other', new CalendarObjectAddress('1', 'event1.ics'));
+	}
+
+	public function testRequireEventOfRefusesACalendarThatIsNotTheCallers(): void {
+		$this->setupOneLinkedEvent();
+
+		$this->expectExceptionCode(404);
+		$this->service->requireEventOf('abc-123', new CalendarObjectAddress('99', 'event1.ics'));
 	}
 
 	public function testGetEventsForObjectSkipsNonMatching(): void {
@@ -212,6 +264,8 @@ class CalendarEventServiceTest extends TestCase {
 	 */
 	public function testDeleteEventRemovesTheCalendarObject(): void {
 		$this->setupUser();
+		$this->calDavBackend->method('getCalendarById')->willReturn(['principaluri' => 'principals/users/admin']);
+		$this->setupUser();
 
 		$this->calDavBackend->method('getCalendarObject')
 			->with(1, 'event1.ics')
@@ -227,6 +281,8 @@ class CalendarEventServiceTest extends TestCase {
 	}
 
 	public function testDeleteEventThrowsWhenNotFound(): void {
+		$this->setupUser();
+		$this->calDavBackend->method('getCalendarById')->willReturn(['principaluri' => 'principals/users/admin']);
 		$this->setupUser();
 
 		$this->calDavBackend->method('getCalendarObject')->willReturn(null);

@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
-use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Form\FormIdempotencyStoreInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -43,15 +43,15 @@ class FormUploadPurgeJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory         $time    The clock.
-	 * @param FormUploadStore      $uploads The upload tokens.
-	 * @param FormIdempotencyStore $keys    The remembered submit answers.
-	 * @param LoggerInterface      $logger  Where the counts go.
+	 * @param ITimeFactory                  $time    The clock.
+	 * @param FormUploadStoreInterface      $uploads The upload tokens.
+	 * @param FormIdempotencyStoreInterface $keys    The remembered submit answers.
+	 * @param LoggerInterface               $logger  Where the counts go.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FormUploadStore $uploads,
-		private readonly FormIdempotencyStore $keys,
+		private readonly FormUploadStoreInterface $uploads,
+		private readonly FormIdempotencyStoreInterface $keys,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -72,9 +72,25 @@ class FormUploadPurgeJob extends TimedJob {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	protected function run(mixed $argument): void {
+		[$tokens, $keys] = $this->purgeExpired();
+
+		$this->logger->info(
+			message: '[FormUploadPurgeJob] purged expired form uploads and submit keys',
+			context: ['uploadTokens' => $tokens, 'idempotencyKeys' => $keys]
+		);
+	}//end run()
+
+	/**
+	 * Purge the expired upload tokens and submit keys, logging and re-raising a failure.
+	 *
+	 * @return array{0: mixed, 1: mixed} The upload tokens and idempotency keys purged.
+	 *
+	 * @throws Throwable When either purge fails.
+	 */
+	private function purgeExpired(): array {
 		try {
 			$tokens = $this->uploads->purge();
-			$keys = $this->keys->purge();
+			$keys   = $this->keys->purge();
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				message: '[FormUploadPurgeJob] Purge failed',
@@ -83,9 +99,6 @@ class FormUploadPurgeJob extends TimedJob {
 			throw $exception;
 		}
 
-		$this->logger->info(
-			message: '[FormUploadPurgeJob] purged expired form uploads and submit keys',
-			context: ['uploadTokens' => $tokens, 'idempotencyKeys' => $keys]
-		);
-	}//end run()
+		return [$tokens, $keys];
+	}//end purgeExpired()
 }//end class

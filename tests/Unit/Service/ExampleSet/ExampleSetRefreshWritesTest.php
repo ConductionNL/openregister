@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -16,11 +16,55 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	/**
@@ -56,7 +100,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
 	 */
 	public function testARewriteMovesTheReferencesRecordAlong(): void {
 		$this->incidentWith();
@@ -73,7 +117,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$incident = $this->store->get(register: 'pub', schema: 'incident', id: $this->store->ids(register: 'pub', schema: 'incident')[0]);
+		$incident = $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'incident', id: $this->store->ids(register: 'pub', schema: 'incident')[0]));
 		$this->assertSame('2026-10-14', $incident['history'][0]['at']);
 		$set = $this->record->read(set: 'demo')['changes']['alpha/incident-1#references']['set'];
 		$this->assertSame('2026-10-14', array_column($set, 'new', 'path')['history'][0]['at']);
@@ -85,7 +129,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
 	 */
 	public function testAKeptFieldKeepsItsValueAndALensIsNotSent(): void {
 		$this->incidentWith(incident: ['since' => '{{date:-1}}', 'reported' => '{{date:-1}}']);
@@ -97,7 +141,8 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$this->assertSame(2, $report['types']['pub incident']['refreshed'] + $report['types']['pub theme']['refreshed']);
+		$this->assertSame(1, $report['types']['pub incident']['refreshed']);
+		$this->assertSame(1, $report['types']['pub theme']['unchanged']);
 		$stored = $this->store->rows['pub incident'][$this->store->ids(register: 'pub', schema: 'incident')[0]];
 		$this->assertSame('2026-10-12', $stored['since'], 'kept as written');
 		$this->assertSame('2026-10-15', $stored['reported'], 'refreshed');
@@ -109,7 +154,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
 	 */
 	public function testAnAppendOnlyRowIsKept(): void {
 		$this->incidentWith();
@@ -122,7 +167,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertArrayNotHasKey('refreshed', $report['types']['pub incident']);
-		$this->assertSame($updates + 1, $this->store->updates, 'only the theme is written');
+		$this->assertSame($updates, $this->store->updates, 'the incident is append-only and the theme is unchanged');
 	}//end testAnAppendOnlyRowIsKept()
 
 	/**
@@ -131,7 +176,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
 	 */
 	public function testJsonTextHoldsWhenTheStoreAnswersItDecoded(): void {
 		$proof = new ExampleSetProof();
@@ -149,7 +194,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-leaves-unset-fields/specs/example-sets/spec.md#requirement-a-refresh-does-not-send-fields-the-declaration-leaves-unset
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-does-not-send-fields-the-declaration-leaves-unset
 	 */
 	public function testARefreshLeavesAFieldTheDeclarationDoesNotNameUnset(): void {
 		$this->incidentWith();

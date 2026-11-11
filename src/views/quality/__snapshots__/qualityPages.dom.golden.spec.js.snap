@@ -1,0 +1,799 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`quality pages golden duplicates: reloads on a new selection and pages 1`] = `
+{
+  "button0": [
+    [
+      "fetchDuplicates",
+      1,
+      3,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+  "button1": [
+    [
+      "fetchDuplicates",
+      1,
+      3,
+      {
+        "limit": 20,
+        "offset": 40,
+      },
+    ],
+  ],
+  "mounted": [
+    [
+      "fetchDuplicates",
+      1,
+      2,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+  "pager": true,
+  "selection": [
+    [
+      "fetchDuplicates",
+      1,
+      3,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden duplicates: reloads on a new selection and pages 2`] = `
+[
+  "click",
+]
+`;
+
+exports[`quality pages golden duplicates: renders empty 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Duplicate Candidates</h1>
+        <p>t:Candidate duplicate pairs detected for a register and schema. Launch the merge wizard on a pair to review and execute a reversible merge.</p>
+      </div>
+      <x-registerschemaselector></x-registerschemaselector>
+      <x-ncemptycontent name="t:No duplicate candidates found" description="t:No candidate pairs were detected for this register and schema.">
+        <slot-icon>
+          <x-contentduplicate size="64"></x-contentduplicate>
+        </slot-icon>
+      </x-ncemptycontent>
+    </div>
+    
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchDuplicates",
+      1,
+      2,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden duplicates: renders loading 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Duplicate Candidates</h1>
+        <p>t:Candidate duplicate pairs detected for a register and schema. Launch the merge wizard on a pair to review and execute a reversible merge.</p>
+      </div>
+      <x-registerschemaselector></x-registerschemaselector>
+      <x-ncloadingicon size="32"></x-ncloadingicon>
+    </div>
+    
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchDuplicates",
+      1,
+      2,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden duplicates: renders middlePage 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Duplicate Candidates</h1>
+        <p>t:Candidate duplicate pairs detected for a register and schema. Launch the merge wizard on a pair to review and execute a reversible merge.</p>
+      </div>
+      <x-registerschemaselector></x-registerschemaselector>
+      <table class="duplicatesTable">
+        <thead>
+          <tr>
+            <th scope="col">t:Object A</th>
+            <th scope="col">t:Object B</th>
+            <th scope="col">t:Score</th>
+            <th scope="col">t:Matched on</th>
+            <th scope="col">t:Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-testid="mdm-duplicate-row">
+            <td>a1</td>
+            <td>b1</td>
+            <td>0.9</td>
+            <td>name, email</td>
+            <td>
+              <x-ncbutton variant="tertiary" data-testid="mdm-merge-launch">
+                <slot-default>t:Merge</slot-default>
+              </x-ncbutton>
+            </td>
+          </tr>
+          <tr data-testid="mdm-duplicate-row">
+            <td>a2</td>
+            <td>b2</td>
+            <td>0.7</td>
+            <td></td>
+            <td>
+              <x-ncbutton variant="tertiary" data-testid="mdm-merge-launch">
+                <slot-default>t:Merge</slot-default>
+              </x-ncbutton>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pagination">
+        <x-ncbutton disabled="false">
+          <slot-default>t:Previous</slot-default>
+        </x-ncbutton><span class="paginationInfo">t:Showing {from}-{to} of {total}{"from":21,"to":40,"total":45}</span>
+        <x-ncbutton disabled="false">
+          <slot-default>t:Next</slot-default>
+        </x-ncbutton>
+      </div>
+    </div>
+    
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchDuplicates",
+      1,
+      2,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden duplicates: renders noSelection 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Duplicate Candidates</h1>
+        <p>t:Candidate duplicate pairs detected for a register and schema. Launch the merge wizard on a pair to review and execute a reversible merge.</p>
+      </div>
+      <x-registerschemaselector></x-registerschemaselector>
+      <x-ncemptycontent name="t:Select a register and schema" description="t:Choose a register and schema above to see its duplicate candidates.">
+        <slot-icon>
+          <x-contentduplicate size="64"></x-contentduplicate>
+        </slot-icon>
+      </x-ncemptycontent>
+    </div>
+    
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [],
+}
+`;
+
+exports[`quality pages golden masterEntities: reloads on a new selection and pages 1`] = `
+{
+  "mounted": [
+    [
+      "fetchMasterEntities",
+      1,
+      2,
+      {
+        "_order": "asc",
+        "_sort": "qualityScore",
+      },
+    ],
+  ],
+  "pager": false,
+  "selectedObject": null,
+  "selection": [
+    [
+      "fetchMasterEntities",
+      1,
+      3,
+      {
+        "_order": "asc",
+        "_sort": "qualityScore",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden masterEntities: reloads on a new selection and pages 2`] = `[]`;
+
+exports[`quality pages golden masterEntities: renders empty 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewMain">
+        <div class="viewHeader">
+          <h1>t:Master entities</h1>
+          <p>t:Survivorship-enabled objects for a register and schema, with their materialised quality columns.</p>
+        </div>
+        <x-registerschemaselector></x-registerschemaselector>
+        <x-ncemptycontent name="t:No master entities found" description="t:This schema has no objects yet.">
+          <slot-icon>
+            <x-accountmultipleoutline size="64"></x-accountmultipleoutline>
+          </slot-icon>
+        </x-ncemptycontent>
+      </div>
+      
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchMasterEntities",
+      1,
+      2,
+      {
+        "_order": "asc",
+        "_sort": "qualityScore",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden masterEntities: renders loading 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewMain">
+        <div class="viewHeader">
+          <h1>t:Master entities</h1>
+          <p>t:Survivorship-enabled objects for a register and schema, with their materialised quality columns.</p>
+        </div>
+        <x-registerschemaselector></x-registerschemaselector>
+        <x-ncloadingicon size="32"></x-ncloadingicon>
+      </div>
+      
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchMasterEntities",
+      1,
+      2,
+      {
+        "_order": "asc",
+        "_sort": "qualityScore",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden masterEntities: renders middlePage 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewMain">
+        <div class="viewHeader">
+          <h1>t:Master entities</h1>
+          <p>t:Survivorship-enabled objects for a register and schema, with their materialised quality columns.</p>
+        </div>
+        <x-registerschemaselector></x-registerschemaselector>
+        <div class="sortBar">
+          <x-ncselect modelvalue="{&quot;id&quot;:&quot;qualityScore-asc&quot;,&quot;label&quot;:&quot;t:Quality score (worst first)&quot;}" class="sortSelect" options="[{&quot;id&quot;:&quot;qualityScore-asc&quot;,&quot;label&quot;:&quot;t:Quality score (worst first)&quot;},{&quot;id&quot;:&quot;qualityScore-desc&quot;,&quot;label&quot;:&quot;t:Quality score (best first)&quot;}]" inputlabel="t:Sort by" clearable="false" label="label"></x-ncselect>
+        </div>
+        <table class="masterEntitiesTable">
+          <thead>
+            <tr>
+              <th scope="col">t:Id</th>
+              <th scope="col">t:Quality score</th>
+              <th scope="col">t:Quality status</th>
+              <th scope="col">t:Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-testid="mdm-master-entity-row" class="">
+              <td>m1</td>
+              <td>80</td>
+              <td><span class="badge badge-status-undefined">—</span></td>
+              <td>
+                <x-ncbutton variant="tertiary" data-testid="mdm-view-golden-record">
+                  <slot-default>t:View golden record</slot-default>
+                </x-ncbutton>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchMasterEntities",
+      1,
+      2,
+      {
+        "_order": "asc",
+        "_sort": "qualityScore",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden masterEntities: renders noSelection 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewMain">
+        <div class="viewHeader">
+          <h1>t:Master entities</h1>
+          <p>t:Survivorship-enabled objects for a register and schema, with their materialised quality columns.</p>
+        </div>
+        <x-registerschemaselector></x-registerschemaselector>
+        <x-ncemptycontent name="t:Select a register and schema" description="t:Choose a survivorship-enabled register and schema above to list its master entities.">
+          <slot-icon>
+            <x-accountmultipleoutline size="64"></x-accountmultipleoutline>
+          </slot-icon>
+        </x-ncemptycontent>
+      </div>
+      
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [],
+}
+`;
+
+exports[`quality pages golden mergeOperations: reloads on a new selection and pages 1`] = `
+{
+  "button0": [
+    [
+      "fetchMergeOperations",
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+  "button1": [
+    [
+      "fetchMergeOperations",
+      {
+        "limit": 20,
+        "offset": 40,
+      },
+    ],
+  ],
+  "mounted": [
+    [
+      "fetchMergeOperations",
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+  "pager": true,
+  "selection": [],
+}
+`;
+
+exports[`quality pages golden mergeOperations: reloads on a new selection and pages 2`] = `
+[
+  "click",
+]
+`;
+
+exports[`quality pages golden mergeOperations: renders empty 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Merge Operations</h1>
+        <p>t:Audit trail of recent reversible merges. Reverse an operation while it is still within its reversal window.</p>
+      </div>
+      <x-ncemptycontent name="t:No merge operations found" description="t:Merges executed from the Duplicate Candidates view will show up here.">
+        <slot-icon>
+          <x-merge size="64"></x-merge>
+        </slot-icon>
+      </x-ncemptycontent>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchMergeOperations",
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden mergeOperations: renders loading 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Merge Operations</h1>
+        <p>t:Audit trail of recent reversible merges. Reverse an operation while it is still within its reversal window.</p>
+      </div>
+      <x-ncloadingicon size="32"></x-ncloadingicon>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchMergeOperations",
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden mergeOperations: renders middlePage 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Merge Operations</h1>
+        <p>t:Audit trail of recent reversible merges. Reverse an operation while it is still within its reversal window.</p>
+      </div>
+      <table class="mergeOperationsTable">
+        <thead>
+          <tr>
+            <th scope="col">t:Survivor</th>
+            <th scope="col">t:Merged from</th>
+            <th scope="col">t:Reason</th>
+            <th scope="col">t:Merged at</th>
+            <th scope="col">t:Status</th>
+            <th scope="col">t:Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-testid="mdm-merge-operation-row">
+            <td>y</td>
+            <td>x</td>
+            <td>—</td>
+            <td>2026-01-01</td>
+            <td><span class="badge badge-status-final">t:Reversed / final</span></td>
+            <td>
+              
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pagination">
+        <x-ncbutton disabled="false">
+          <slot-default>t:Previous</slot-default>
+        </x-ncbutton><span class="paginationInfo">t:Showing {from}-{to} of {total}{"from":21,"to":40,"total":45}</span>
+        <x-ncbutton disabled="false">
+          <slot-default>t:Next</slot-default>
+        </x-ncbutton>
+      </div>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchMergeOperations",
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden mergeOperations: renders noSelection 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Merge Operations</h1>
+        <p>t:Audit trail of recent reversible merges. Reverse an operation while it is still within its reversal window.</p>
+      </div>
+      <x-ncemptycontent name="t:No merge operations found" description="t:Merges executed from the Duplicate Candidates view will show up here.">
+        <slot-icon>
+          <x-merge size="64"></x-merge>
+        </slot-icon>
+      </x-ncemptycontent>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchMergeOperations",
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden quality: reloads on a new selection and pages 1`] = `
+{
+  "button0": [
+    [
+      "fetchLowQualityObjects",
+      1,
+      3,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+  "button1": [
+    [
+      "fetchLowQualityObjects",
+      1,
+      3,
+      {
+        "limit": 20,
+        "offset": 40,
+      },
+    ],
+  ],
+  "mounted": [
+    [
+      "fetchQualityStats",
+      1,
+      2,
+    ],
+    [
+      "fetchLowQualityObjects",
+      1,
+      2,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+  "pager": true,
+  "selection": [
+    [
+      "fetchQualityStats",
+      1,
+      3,
+    ],
+    [
+      "fetchLowQualityObjects",
+      1,
+      3,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden quality: reloads on a new selection and pages 2`] = `
+[
+  "click",
+]
+`;
+
+exports[`quality pages golden quality: renders empty 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Data Quality</h1>
+        <p>t:Review score distribution and the lowest-quality objects for a register and schema.</p>
+      </div>
+      <x-registerschemaselector></x-registerschemaselector>
+      <x-ncemptycontent name="t:No scored objects for this schema" description="t:This schema has no objects with a materialised quality score yet.">
+        <slot-icon>
+          <x-chartboxoutline size="64"></x-chartboxoutline>
+        </slot-icon>
+      </x-ncemptycontent>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchQualityStats",
+      1,
+      2,
+    ],
+    [
+      "fetchLowQualityObjects",
+      1,
+      2,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden quality: renders loading 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Data Quality</h1>
+        <p>t:Review score distribution and the lowest-quality objects for a register and schema.</p>
+      </div>
+      <x-registerschemaselector></x-registerschemaselector>
+      <x-ncloadingicon size="32"></x-ncloadingicon>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchQualityStats",
+      1,
+      2,
+    ],
+    [
+      "fetchLowQualityObjects",
+      1,
+      2,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden quality: renders middlePage 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Data Quality</h1>
+        <p>t:Review score distribution and the lowest-quality objects for a register and schema.</p>
+      </div>
+      <x-registerschemaselector></x-registerschemaselector>
+      <div class="kpiRow">
+        <div class="kpiCard"><span class="kpiLabel">t:Average score</span><span class="kpiValue">61.26</span></div>
+        <div class="kpiCard kpiGood"><span class="kpiLabel">t:Good</span><span class="kpiValue">1</span></div>
+        <div class="kpiCard kpiFair"><span class="kpiLabel">t:Fair</span><span class="kpiValue">2</span></div>
+        <div class="kpiCard kpiPoor"><span class="kpiLabel">t:Poor</span><span class="kpiValue">2</span></div>
+      </div>
+      <section class="histogramSection">
+        <h2>t:Score histogram</h2>
+        <x-cnchartwidget type="bar" series="[{&quot;name&quot;:&quot;t:Objects&quot;,&quot;data&quot;:[0,1,2,0,2]}]" categories="[&quot;0-10&quot;,&quot;10-20&quot;,&quot;20-30&quot;,&quot;30-40&quot;,&quot;40-50&quot;]"></x-cnchartwidget>
+      </section>
+      <section class="lowestQualitySection">
+        <h2>t:Lowest-quality objects</h2>
+        <x-cndatatable rowkey="id">
+          <x-thead>
+            <x-th>t:Id</x-th>
+            <x-th>t:Quality score</x-th>
+            <x-th>t:Quality status</x-th>
+          </x-thead>
+          <x-tbody>
+            <x-tr>
+              <x-td>q1</x-td>
+              <x-td>12</x-td>
+              <x-td><span class="badge badge-status-undefined"></span></x-td>
+            </x-tr>
+            <x-tr>
+              <x-td>q2</x-td>
+              <x-td>30</x-td>
+              <x-td><span class="badge badge-status-undefined"></span></x-td>
+            </x-tr>
+          </x-tbody>
+        </x-cndatatable>
+        <div class="pagination">
+          <x-ncbutton disabled="false">
+            <slot-default>t:Previous</slot-default>
+          </x-ncbutton><span class="paginationInfo">t:Showing {from}-{to} of {total}{"from":21,"to":40,"total":45}</span>
+          <x-ncbutton disabled="false">
+            <slot-default>t:Next</slot-default>
+          </x-ncbutton>
+        </div>
+      </section>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchQualityStats",
+      1,
+      2,
+    ],
+    [
+      "fetchLowQualityObjects",
+      1,
+      2,
+      {
+        "limit": 20,
+        "offset": 0,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`quality pages golden quality: renders noSelection 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Data Quality</h1>
+        <p>t:Review score distribution and the lowest-quality objects for a register and schema.</p>
+      </div>
+      <x-registerschemaselector></x-registerschemaselector>
+      <x-ncemptycontent name="t:Select a register and schema" description="t:Choose a register and schema above to see its quality statistics.">
+        <slot-icon>
+          <x-chartboxoutline size="64"></x-chartboxoutline>
+        </slot-icon>
+      </x-ncemptycontent>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [],
+}
+`;
