@@ -3062,9 +3062,42 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         try {
             return $this->assertMayUpdateStored(request: $request);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return $this->assertMayWriteUnseen(request: $request);
+            $stored = $this->assertMayWriteUnseen(request: $request);
+            if ($stored === null) {
+                $this->refuseANumericUuidForANewObject(uuid: $request->uuid, _rbac: $request->rbac);
+            }
+
+            return $stored;
         }
     }//end authoriseSave()
+
+    /**
+     * Refuse a new object whose caller-chosen uuid is only digits.
+     *
+     * An identifier of digits also names a row by its id, and a uuid wins over
+     * an id when an identifier is resolved. A new object stored under such a uuid
+     * would later answer for the object that gets that id. Skipped with RBAC off:
+     * an administrator, a job or an import is judged by its caller.
+     *
+     * @param string $uuid  The uuid the save names, which no stored row holds.
+     * @param bool   $_rbac Whether the write is judged for the signed-in caller.
+     *
+     * @return void
+     *
+     * @throws ValidationException When the uuid is only digits.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function refuseANumericUuidForANewObject(string $uuid, bool $_rbac): void
+    {
+        if ($_rbac === false || ctype_digit(trim($uuid)) === false) {
+            return;
+        }
+
+        throw new ValidationException(
+            message: 'An identifier of only digits names a stored object by its id and cannot be the uuid of a new object.'
+        );
+    }//end refuseANumericUuidForANewObject()
 
     /**
      * Ask the create permission, about the incoming data.
