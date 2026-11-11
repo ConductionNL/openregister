@@ -2475,3 +2475,21 @@ larpinq	979	a37f77de5458ce16d5c108ab1feaab8c254c91e6	GREEN	vm2:2	unit 672 OK (ba
 stackiq	1555	8990dc07f85b4f31560a6b33a237d4a48960fa91	RED	vm1:18168	unit tests fail beyond development: OCA\Stackiq\Tests\Unit\Controller\SettingsControllerConfigEndpointsGoldenTest::testConfigActionsForEveryCaller, OCA\Stackiq\Tests\Unit\Controller\SettingsControllerErrorResponsesGoldenTest::testAnswersAndFailuresForAnAdmin
 versioniq	639	f94fa5098d76e63c9fffa7f7807ddf382eef931e	GREEN	vm2:3	unit 1301 OK (unit-only bootstrap, baseline 0 fails); floor holds
 versioniq	640	2754626fe5c6366baeed2d99f3a2a9898508b065	GREEN	vm2:3	unit 1301 OK (unit-only bootstrap, baseline 0 fails); floor holds; validation order and messages kept
+stackiq	1534	a781142aedb812e5cd49619ce1b071a088a4705a	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1535	ada21db2597763f7b3ad7a200e6c1fb79cc3c0cf	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1536	f49ba1a43e24906f3acfde979c8b3556360cc65e	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1537	20c4f4e5ab5186ff1a70269d036487013bf23b96	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1538	cf78c25e12d0168a97994eb9191d9902cf186c28	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1541	ffb7b4ca52c26b07c0dafd46148db27a6628667a	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1543	57cee79bd920c3204fed190c87ab1939def5a601	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1544	0fccd8632cdeeedae1e14ce26929dfd15983b83c	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1547	f022d916399154801ed4e1d0211318c97e73c82d	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1551	7f364c54fd3155e91f5ee9dda53543615a398d26	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1558	d8269ebc4a7b89642fdd564331c49bff577ab91d	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1560	80119c198ff22a407db2a32c5f632d4f205f7019	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1561	2bfd16dda4be3ab0a93f8740abae07badc0ddcd4	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1562	2688ccd5a8a2e6ff898e3c27c3c91b55fd222025	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1563	b5e635f12bbd23a2b26cb99f60a7b51ac375b828	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1564	cb210390fd077d2b19d04ddd5db72e03c1e20911	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1565	af55c569d42659ac6aa8f844bfb954481d7a456a	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+stackiq	1566	5ab13f5f94e07f7055777c2fc0e65bc1bb71e1eb	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
