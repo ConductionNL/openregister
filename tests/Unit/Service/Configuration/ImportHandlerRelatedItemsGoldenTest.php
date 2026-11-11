@@ -28,6 +28,8 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\SeedRelatedTarget;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
@@ -217,8 +219,9 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 				}
 			);
 			$taskService = $this->createMock(TaskService::class);
-			$taskService->method('createTask')->willReturnCallback(
-				function (...$args): array {
+			$taskService->method('createObjectTask')->willReturnCallback(
+				function (ObjectRef $ref, LinkedTaskDraft $draft): array {
+					$args = [$ref->register, $ref->schema, $ref->id, $draft->objectTitle, $draft->data];
 					$this->calls[] = ['createTask', $args];
 					if ($args[4]['summary'] === 'fail') {
 						throw new \RuntimeException('task failed');

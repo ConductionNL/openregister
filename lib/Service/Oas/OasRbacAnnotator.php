@@ -54,6 +54,20 @@ use Psr\Log\LoggerInterface;
 class OasRbacAnnotator {
 
 	/**
+	 * The response an operation answers when the caller lacks the required group.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const FORBIDDEN_RESPONSE = [
+		'description' => 'Forbidden — user does not have the required group membership for this action',
+		'content' => [
+			'application/json' => [
+				'schema' => ['$ref' => '#/components/schemas/Error'],
+			],
+		],
+	];
+
+	/**
 	 * The block a schema is actually governed by.
 	 *
 	 * @var EffectiveAuthorization
@@ -99,6 +113,20 @@ class OasRbacAnnotator {
 
 		// Step 2: the property-level authorization, which can name groups the
 		// schema-level block does not.
+		$this->collectPropertyGroups(schema: $schema, into: $perAction);
+
+		return $this->groupsByAction(perAction: $perAction);
+	}//end extractSchemaGroups()
+
+	/**
+	 * Collect the groups the schema's property-level authorization blocks name.
+	 *
+	 * @param object                            $schema The schema.
+	 * @param array<string, array<int, string>> $into   Groups per action, added to in place.
+	 *
+	 * @return void
+	 */
+	private function collectPropertyGroups(object $schema, array &$into): void {
 		foreach (($schema->getProperties() ?? []) as $propertyDefinition) {
 			if (is_array($propertyDefinition) === false) {
 				continue;
@@ -109,16 +137,25 @@ class OasRbacAnnotator {
 				continue;
 			}
 
-			$this->collectGroups(block: $auth, into: $perAction);
-		}//end foreach
+			$this->collectGroups(block: $auth, into: $into);
+		}
+	}//end collectPropertyGroups()
 
+	/**
+	 * The collected groups per action, each once, keyed as the OAS builder reads them.
+	 *
+	 * @param array<string, array<int, string>> $perAction Groups per action.
+	 *
+	 * @return array<string, array<int, string>> The create, read, update and delete groups.
+	 */
+	private function groupsByAction(array $perAction): array {
 		return [
 			'createGroups' => array_values(array_unique($perAction['create'])),
 			'readGroups' => array_values(array_unique($perAction['read'])),
 			'updateGroups' => array_values(array_unique($perAction['update'])),
 			'deleteGroups' => array_values(array_unique($perAction['delete'])),
 		];
-	}//end extractSchemaGroups()
+	}//end groupsByAction()
 
 	/**
 	 * Add one authorization block's groups to the per-action lists.
@@ -211,36 +248,12 @@ class OasRbacAnnotator {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	public function applyRbacToOperation(array &$operation, array $groups): void {
-		// Admin always has access to every endpoint.
-		if (in_array('admin', $groups, true) === false) {
-			array_unshift($groups, 'admin');
-		}
+		$groups = $this->adminFirst(groups: $groups);
 
-		// Deduplicate while preserving order — admin first, then schema groups.
-		$groups = array_values(array_unique($groups));
-
-		// Build scope list as inline code fragments.
-		$scopeList = implode(
-			', ',
-			array_map(
-				static function (string $group): string {
-					return '`' . $group . '`';
-				},
-				$groups
-			)
-		);
-
-		$operation['description'] .= "\n\n**Required scopes:** " . $scopeList;
+		$operation['description'] .= "\n\n**Required scopes:** " . $this->scopeList(groups: $groups);
 
 		// Add 403 response.
-		$operation['responses']['403'] = [
-			'description' => 'Forbidden — user does not have the required group membership for this action',
-			'content' => [
-				'application/json' => [
-					'schema' => ['$ref' => '#/components/schemas/Error'],
-				],
-			],
-		];
+		$operation['responses']['403'] = self::FORBIDDEN_RESPONSE;
 
 		// Emit per-operation security requirement: oauth2 with the resolved
 		// scope set, OR basicAuth fallback. Two array entries = OR semantics
@@ -250,6 +263,42 @@ class OasRbacAnnotator {
 			['basicAuth' => []],
 		];
 	}//end applyRbacToOperation()
+
+	/**
+	 * The groups with admin first, each once.
+	 *
+	 * Admin always has access to every endpoint.
+	 *
+	 * @param array<int, string> $groups The schema's groups.
+	 *
+	 * @return array<int, string> Admin, then the schema groups, deduplicated in order.
+	 */
+	private function adminFirst(array $groups): array {
+		if (in_array('admin', $groups, true) === false) {
+			array_unshift($groups, 'admin');
+		}
+
+		return array_values(array_unique($groups));
+	}//end adminFirst()
+
+	/**
+	 * The groups as a list of inline code fragments.
+	 *
+	 * @param array<int, string> $groups The groups.
+	 *
+	 * @return string The list.
+	 */
+	private function scopeList(array $groups): string {
+		return implode(
+			', ',
+			array_map(
+				static function (string $group): string {
+					return '`' . $group . '`';
+				},
+				$groups
+			)
+		);
+	}//end scopeList()
 
 	/**
 	 * Whether this caller may be told that a property exists.

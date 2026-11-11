@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\ProcessingPurpose\ProcessingPurposeFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -158,16 +159,9 @@ class ProcessingPurpose extends Entity implements JsonSerializable {
 	 * Register the entity's typed columns.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'code', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'activity', type: 'string');
-		$this->addType(fieldName: 'activityUuid', type: 'string');
-		$this->addType(fieldName: 'organisationId', type: 'string');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		foreach (ProcessingPurposeFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -204,19 +198,9 @@ class ProcessingPurpose extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'code' => $this->code,
-			'name' => $this->name,
-			'description' => $this->description,
-			'activity' => $this->activity,
-			'activityUuid' => $this->activityUuid,
-			'bound' => $this->isBound(),
-			'organisationId' => $this->organisationId,
-			'status' => $this->status,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-		];
+		$typed = new TypedFieldsJson();
+		$json = $typed->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
+
+		return $typed->inserted(json: $json, entriesAfter: ['activityUuid' => ['bound' => $this->isBound()]]);
 	}//end jsonSerialize()
 }//end class

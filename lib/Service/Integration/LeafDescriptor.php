@@ -173,52 +173,39 @@ final class LeafDescriptor {
 	];
 
 	/**
+	 * The leaf's availability; always available when none was given.
+	 *
+	 * @var LeafAvailability
+	 */
+	private readonly LeafAvailability $availability;
+
+	/**
+	 * The leaf's render-surface face; the defaults when none was given.
+	 *
+	 * @var LeafRendering
+	 */
+	private readonly LeafRendering $rendering;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $id Stable kebab-case id, unique across the registry and
-	 *                   equal to the JS registration id.
-	 * @param string $label Human-readable label (already translated by the app).
-	 * @param string $icon Material Design Icons name (no `mdi-` prefix).
-	 * @param array<int,string> $kinds Non-empty subset of VALID_KINDS.
-	 * @param string|null $requiredApp NC app id that must be installed/enabled, or null when
-	 *                                 always-available.
-	 * @param string|null $group Optional group used to cluster leaves in admin UI.
-	 * @param array<int,string> $surfaces Render surfaces the leaf targets (subset of VALID_SURFACES);
-	 *                                    empty when the leaf offers no render surface.
-	 * @param string|null $referenceType Optional marker so a schema reference property can target
-	 *                                   this leaf's single-entity widget (ADR-019 / AD-18).
-	 * @param string|null $requiresPermission Optional permission string gating visibility.
-	 * @param string $renderMode How a render-surface leaf renders: `component` (default —
-	 *                           an SFC tab/widget interpreted by the host's Vue runtime)
-	 *                           or `mount` (a `mount`/`unmount` pair the host invokes
-	 *                           against a bare DOM element, crossing a Vue major). One of
-	 *                           VALID_RENDER_MODES; validated at registration.
-	 * @param string|null $loadStrategy How the render bundle reaches the page: one of VALID_LOAD_STRATEGIES,
-	 *                                  or null when the descriptor has not said. Null is silence, not a claim,
-	 *                                  so a descriptor written before this existed is not refused for it.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A flat immutable value object: each parameter is one
-	 * independent, optional piece of leaf discovery metadata, not a collaborator to bundle into an object.
+	 * @param LeafIdentity          $identity     The id, label, icon and group of the leaf.
+	 * @param array<int,string>     $kinds        Non-empty subset of VALID_KINDS.
+	 * @param LeafAvailability|null $availability The app and permission the leaf depends on, or null
+	 *                                            when always available.
+	 * @param LeafRendering|null    $rendering    Surfaces, reference type, render mode and load strategy of
+	 *                                            the render surface, or null for the defaults.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private string $id,
-		private string $label,
-		private string $icon,
-		private array $kinds,
-		private ?string $requiredApp = null,
-		private ?string $group = null,
-		private array $surfaces = [],
-		private ?string $referenceType = null,
-		private ?string $requiresPermission = null,
-		private string $renderMode = self::RENDER_MODE_COMPONENT,
-		// 🔑 NULL MEANS "HAS NOT SAID", AND IS NOT THE SAME AS ANY OF THE THREE.
-		// A descriptor written before this existed declares nothing, and must
-		// not be refused for that: it is silence, not a claim. Only a
-		// descriptor that CLAIMS the shared entry can be checked against it.
-		private ?string $loadStrategy = null,
+		private readonly LeafIdentity $identity,
+		private readonly array $kinds,
+		?LeafAvailability $availability = null,
+		?LeafRendering $rendering = null,
 	) {
+		$this->availability = $availability ?? new LeafAvailability();
+		$this->rendering = $rendering ?? new LeafRendering();
 	}//end __construct()
 
 	/**
@@ -227,7 +214,7 @@ final class LeafDescriptor {
 	 * @return string|null One of VALID_LOAD_STRATEGIES, or null when unstated.
 	 */
 	public function getLoadStrategy(): ?string {
-		return $this->loadStrategy;
+		return $this->rendering->loadStrategy;
 	}//end getLoadStrategy()
 
 	/**
@@ -238,7 +225,7 @@ final class LeafDescriptor {
 	 * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
 	 */
 	public function claimsSharedEntry(): bool {
-		return ($this->loadStrategy === self::LOADS_VIA_SHARED_ENTRY);
+		return ($this->rendering->loadStrategy === self::LOADS_VIA_SHARED_ENTRY);
 	}//end claimsSharedEntry()
 
 	/**
@@ -247,7 +234,7 @@ final class LeafDescriptor {
 	 * @return string The leaf id.
 	 */
 	public function getId(): string {
-		return $this->id;
+		return $this->identity->id;
 	}//end getId()
 
 	/**
@@ -256,7 +243,7 @@ final class LeafDescriptor {
 	 * @return string The label.
 	 */
 	public function getLabel(): string {
-		return $this->label;
+		return $this->identity->label;
 	}//end getLabel()
 
 	/**
@@ -265,7 +252,7 @@ final class LeafDescriptor {
 	 * @return string The icon name.
 	 */
 	public function getIcon(): string {
-		return $this->icon;
+		return $this->identity->icon;
 	}//end getIcon()
 
 	/**
@@ -294,7 +281,7 @@ final class LeafDescriptor {
 	 * @return string|null The required app id.
 	 */
 	public function getRequiredApp(): ?string {
-		return $this->requiredApp;
+		return $this->availability->requiredApp;
 	}//end getRequiredApp()
 
 	/**
@@ -303,7 +290,7 @@ final class LeafDescriptor {
 	 * @return string|null The group, or null.
 	 */
 	public function getGroup(): ?string {
-		return $this->group;
+		return $this->identity->group;
 	}//end getGroup()
 
 	/**
@@ -312,7 +299,7 @@ final class LeafDescriptor {
 	 * @return array<int,string> A subset of VALID_SURFACES.
 	 */
 	public function getSurfaces(): array {
-		return $this->surfaces;
+		return $this->rendering->surfaces;
 	}//end getSurfaces()
 
 	/**
@@ -321,7 +308,7 @@ final class LeafDescriptor {
 	 * @return string|null The reference type, or null.
 	 */
 	public function getReferenceType(): ?string {
-		return $this->referenceType;
+		return $this->rendering->referenceType;
 	}//end getReferenceType()
 
 	/**
@@ -330,7 +317,7 @@ final class LeafDescriptor {
 	 * @return string|null The permission, or null.
 	 */
 	public function requiresPermission(): ?string {
-		return $this->requiresPermission;
+		return $this->availability->requiresPermission;
 	}//end requiresPermission()
 
 	/**
@@ -344,7 +331,7 @@ final class LeafDescriptor {
 	 * @return string One of the RENDER_MODE_* constants.
 	 */
 	public function getRenderMode(): string {
-		return $this->renderMode;
+		return $this->rendering->renderMode;
 	}//end getRenderMode()
 
 	/**
@@ -360,14 +347,14 @@ final class LeafDescriptor {
 	 */
 	public function toArray(): array {
 		return [
-			'id' => $this->id,
-			'label' => $this->label,
-			'icon' => $this->icon,
-			'requiredApp' => $this->requiredApp,
-			'group' => $this->group,
-			'surfaces' => $this->surfaces,
+			'id' => $this->identity->id,
+			'label' => $this->identity->label,
+			'icon' => $this->identity->icon,
+			'requiredApp' => $this->availability->requiredApp,
+			'group' => $this->identity->group,
+			'surfaces' => $this->rendering->surfaces,
 			'kinds' => $this->kinds,
-			'renderMode' => $this->renderMode,
+			'renderMode' => $this->rendering->renderMode,
 		];
 
 	}//end toArray()

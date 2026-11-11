@@ -115,6 +115,28 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 			);
 		}
 
+		$identity = new RegistryIdentity(
+			registry: $annotation['registry'],
+			identityValue: self::identityValueOf(object: $object, annotation: $annotation)
+		);
+		$row = $this->saveRequestedRow(object: $object, identity: $identity);
+
+		$this->notifier->requested(object: $object, identity: $identity);
+
+		return $row;
+	}//end requestSubscription()
+
+	/**
+	 * The object's value for the annotation's identity property.
+	 *
+	 * @param ObjectEntity                                                       $object     The object to subscribe.
+	 * @param array{registry: string, identity: string, owned: array<int, string>} $annotation The schema's annotation.
+	 *
+	 * @return string The identity value.
+	 *
+	 * @throws InvalidArgumentException When the object has no value for it.
+	 */
+	private static function identityValueOf(ObjectEntity $object, array $annotation): string {
 		$identityValue = (string)($object->getObject()[$annotation['identity']] ?? '');
 		if ($identityValue === '') {
 			throw new InvalidArgumentException(
@@ -122,31 +144,50 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 			);
 		}
 
-		$uuid = (string)$object->getUuid();
-		$row = $this->subscriptionMapper->findForObject(objectUuid: $uuid);
+		return $identityValue;
+	}//end identityValueOf()
+
+	/**
+	 * Save the object's subscription row in the requested state, reusing an existing row.
+	 *
+	 * @param ObjectEntity     $object   The object to subscribe.
+	 * @param RegistryIdentity $identity The registry and the object's identity value there.
+	 *
+	 * @return RegistrySubscription The saved row.
+	 */
+	private function saveRequestedRow(ObjectEntity $object, RegistryIdentity $identity): RegistrySubscription {
 		$now = new DateTime();
-		if ($row === null) {
-			$row = new RegistrySubscription();
-			$row->setObjectUuid($uuid);
-			$row->setCreatedAt($now);
-		}
+		$row = $this->rowFor(objectUuid: (string)$object->getUuid(), now: $now);
 
 		$row->setRegister((string)$object->getRegister());
 		$row->setSchema((string)$object->getSchema());
-		$row->setRegistry($annotation['registry']);
-		$row->setIdentityValue($identityValue);
+		$row->setRegistry($identity->registry);
+		$row->setIdentityValue($identity->identityValue);
 		$row->setState(RegistrySubscription::STATE_REQUESTED);
 		$row->setRefusalReason(null);
 		$row->setUpdatedAt($now);
-		$row = $this->subscriptionMapper->save(subscription: $row);
 
-		$this->notifier->requested(
-			object: $object,
-			identity: new RegistryIdentity(registry: $annotation['registry'], identityValue: $identityValue),
-		);
+		return $this->subscriptionMapper->save(subscription: $row);
+	}//end saveRequestedRow()
+
+	/**
+	 * The object's existing subscription row, or a new one created now.
+	 *
+	 * @param string   $objectUuid The object's uuid.
+	 * @param DateTime $now        The time of the request.
+	 *
+	 * @return RegistrySubscription The row.
+	 */
+	private function rowFor(string $objectUuid, DateTime $now): RegistrySubscription {
+		$row = $this->subscriptionMapper->findForObject(objectUuid: $objectUuid);
+		if ($row === null) {
+			$row = new RegistrySubscription();
+			$row->setObjectUuid($objectUuid);
+			$row->setCreatedAt($now);
+		}
 
 		return $row;
-	}//end requestSubscription()
+	}//end rowFor()
 
 	/**
 	 * End a subscription on an object. Caller MUST have already checked the

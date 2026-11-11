@@ -316,43 +316,64 @@ class AgentTool extends AbstractTool implements ToolInterface {
 	 */
 	private function patchAgent(string $uuid, array $fields): array {
 		try {
-			$this->logger->info(
-				message: '[AgentTool] Updating agent',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
-			);
-
-			// Find agent (RBAC enforced in mapper).
-			$agent = $this->agentMapper->findByUuid(uuid: $uuid);
-
-			// Update fields.
-			foreach ($fields as $setter => $value) {
-				if ($value !== null) {
-					$agent->$setter($value);
-				}
-			}
-
-			// Save changes (RBAC enforced in mapper).
-			$agent = $this->agentMapper->update($agent);
-
-			return $this->formatSuccess(
-				data: $agent->jsonSerialize(),
-				message: 'Agent updated successfully.'
-			);
+			return $this->saveAgentPatch(uuid: $uuid, fields: $fields);
 		} catch (DoesNotExistException $e) {
 			return $this->formatError(message: "Agent with UUID '{$uuid}' not found.");
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[AgentTool] Failed to update agent',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logUpdateFailure(uuid: $uuid, error: $e);
 			return $this->formatError(message: 'Failed to update agent: ' . $e->getMessage());
 		}//end try
 	}//end patchAgent()
+
+	/**
+	 * Log a failed agent update.
+	 *
+	 * @param string     $uuid  The agent UUID.
+	 * @param \Exception $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logUpdateFailure(string $uuid, \Exception $error): void {
+		$this->logger->error(
+			message: '[AgentTool] Failed to update agent',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUpdateFailure()
+
+	/**
+	 * Load, patch and save one agent.
+	 *
+	 * @param string               $uuid   The agent UUID.
+	 * @param array<string, mixed> $fields Setter name → value; null values are left alone.
+	 *
+	 * @return array The formatted success response.
+	 *
+	 * @throws DoesNotExistException When no agent has that UUID.
+	 * @throws \Exception When loading or saving fails.
+	 */
+	private function saveAgentPatch(string $uuid, array $fields): array {
+		$this->logger->info(
+			message: '[AgentTool] Updating agent',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+		);
+
+		// Find agent (RBAC enforced in mapper).
+		$agent = $this->agentMapper->findByUuid(uuid: $uuid);
+		self::applySetters(entity: $agent, fields: $fields);
+
+		// Save changes (RBAC enforced in mapper).
+		$agent = $this->agentMapper->update($agent);
+
+		return $this->formatSuccess(
+			data: $agent->jsonSerialize(),
+			message: 'Agent updated successfully.'
+		);
+	}//end saveAgentPatch()
 
 	/**
 	 * Delete agent

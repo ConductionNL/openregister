@@ -155,11 +155,7 @@ class CaseTokenServiceTest extends TestCase {
 
 			public function renderEntity(
 				object $entity,
-				?array $_extend = [],
-				?int $depth = 0,
-				?array $filter = [],
-				?array $fields = [],
-				?array $unset = [],
+				?object $selection = null,
 				bool $_rbac = true,
 				bool $_multitenancy = true,
 			): array {

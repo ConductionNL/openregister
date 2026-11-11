@@ -253,17 +253,29 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 			$this->hookShutdown();
 			$this->flushWhenFull(jobClass: $jobClass);
 		} catch (\Throwable $e) {
-			$this->queue->logger->error(
-				message: '[ListenerDeferralService] Failed to buffer deferred listener entry',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'jobClass' => $jobClass,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logBufferFailure(jobClass: $jobClass, error: $e);
 		}//end try
 	}//end deferEntry()
+
+	/**
+	 * Log an entry that could not be buffered; deferring never throws into the listener.
+	 *
+	 * @param string     $jobClass The job class the entry was for.
+	 * @param \Throwable $error    Why buffering failed.
+	 *
+	 * @return void
+	 */
+	private function logBufferFailure(string $jobClass, \Throwable $error): void {
+		$this->queue->logger->error(
+			message: '[ListenerDeferralService] Failed to buffer deferred listener entry',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'jobClass' => $jobClass,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logBufferFailure()
 
 	/**
 	 * Open the buffer of a job class on its first entry; its chunk size is fixed then.
@@ -413,6 +425,19 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 			return $fitted;
 		}
 
+		$this->logOversizedEntry(fitted: $fitted, budget: $budget);
+		return null;
+	}//end fitEntry()
+
+	/**
+	 * Log an entry that does not fit a background job's arguments even without its old data.
+	 *
+	 * @param array{entry: array<string, mixed>, length: int} $fitted The entry as trimmed, with its encoded length.
+	 * @param JobArgumentBudget                               $budget The job class and the room left.
+	 *
+	 * @return void
+	 */
+	private function logOversizedEntry(array $fitted, JobArgumentBudget $budget): void {
 		$this->queue->logger->error(
 			message: '[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued',
 			context: [
@@ -424,8 +449,7 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 				'limit' => $this->getArgumentLimit(),
 			]
 		);
-		return null;
-	}//end fitEntry()
+	}//end logOversizedEntry()
 
 	/**
 	 * An entry with its encoded length; an oversized entry whose previous data
@@ -441,20 +465,45 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 	 * @return array{entry: array<string, mixed>, length: int}
 	 */
 	private function withoutOldDataWhenTooLarge(array $entry, JobArgumentBudget $budget): array {
-		// Measured the way the job list measures: plain json_encode, plus the
-		// comma that joins the entry to the next.
-		$length = (strlen((string)json_encode($entry)) + 1);
+		$length = $this->jobArgumentLength(entry: $entry);
 		if ($length <= $budget->room || array_key_exists('oldData', $entry) === false) {
 			return ['entry' => $entry, 'length' => $length];
 		}
 
 		$reduced = $entry;
 		unset($reduced['oldData']);
-		$reducedLength = (strlen((string)json_encode($reduced)) + 1);
+		$reducedLength = $this->jobArgumentLength(entry: $reduced);
 		if ($reducedLength > $budget->room) {
 			return ['entry' => $entry, 'length' => $length];
 		}
 
+		$this->logOldDataDropped(entry: $entry, budget: $budget);
+		return ['entry' => $reduced, 'length' => $reducedLength];
+	}//end withoutOldDataWhenTooLarge()
+
+	/**
+	 * The length an entry adds to a job's arguments.
+	 *
+	 * Measured the way the job list measures: plain json_encode, plus the
+	 * comma that joins the entry to the next.
+	 *
+	 * @param array<string, mixed> $entry The entry.
+	 *
+	 * @return int The length.
+	 */
+	private function jobArgumentLength(array $entry): int {
+		return (strlen((string)json_encode($entry)) + 1);
+	}//end jobArgumentLength()
+
+	/**
+	 * Warn that an entry was enqueued without its previous data, because with it the job would not fit.
+	 *
+	 * @param array<string, mixed> $entry  The entry as it was deferred, with its previous data.
+	 * @param JobArgumentBudget    $budget The job class and the room left in its arguments.
+	 *
+	 * @return void
+	 */
+	private function logOldDataDropped(array $entry, JobArgumentBudget $budget): void {
 		$this->queue->logger->warning(
 			message: '[ListenerDeferralService] A deferred listener entry was too large for a background job; '
 				. 'it was enqueued without its previous data; conditioned updated rules and '
@@ -464,12 +513,11 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 				'line' => __LINE__,
 				'jobClass' => $budget->jobClass,
 				'uuid' => (string)($entry['uuid'] ?? ''),
-				'length' => $length,
+				'length' => $this->jobArgumentLength(entry: $entry),
 				'limit' => $this->getArgumentLimit(),
 			]
 		);
-		return ['entry' => $reduced, 'length' => $reducedLength];
-	}//end withoutOldDataWhenTooLarge()
+	}//end logOldDataDropped()
 
 	/**
 	 * Enqueue one chunk job.
@@ -491,16 +539,27 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 		} catch (\Throwable $e) {
 			$this->queue->logger->error(
 				message: '[ListenerDeferralService] Failed to enqueue deferred listener job',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'jobClass' => $jobClass,
-					'entries' => count($entries),
-					'error' => $e->getMessage(),
-				]
+				context: [...$this->enqueueContext(jobClass: $jobClass, entries: $entries), 'error' => $e->getMessage()]
 			);
 		}
 	}//end enqueue()
+
+	/**
+	 * The log context of one enqueue attempt: the job class and how many entries it carried.
+	 *
+	 * @param string                           $jobClass The background job class.
+	 * @param array<int, array<string, mixed>> $entries  The entries of the attempt.
+	 *
+	 * @return array{file: string, line: int, jobClass: string, entries: int}
+	 */
+	private function enqueueContext(string $jobClass, array $entries): array {
+		return [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'jobClass' => $jobClass,
+			'entries' => count($entries),
+		];
+	}//end enqueueContext()
 
 	/**
 	 * Capture the acting context once per request.

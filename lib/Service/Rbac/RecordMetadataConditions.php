@@ -213,20 +213,32 @@ class RecordMetadataConditions {
 
 		$schema = $this->schemaOf(object: $object);
 		foreach ($unknown as $key) {
-			if (isset($this->logged[$schema.'|'.$key]) === true) {
-				continue;
-			}
-
-			$this->logged[$schema.'|'.$key] = true;
-			$this->logger?->error(
-				message: '[RecordMetadataConditions] A stored rule has a condition on '.$key
-					.', which no record carries; the rule fails closed (an allow grants nothing, a deny denies)',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schema, 'key' => $key]
-			);
+			$this->logOnce(schema: $schema, key: (string)$key);
 		}
 
 		return true;
 	}//end refuses()
+
+	/**
+	 * Log a condition on unknown metadata, once per schema and key.
+	 *
+	 * @param string $schema The schema id the object names, or ''.
+	 * @param string $key    The unknown key.
+	 *
+	 * @return void
+	 */
+	private function logOnce(string $schema, string $key): void {
+		if (isset($this->logged[$schema.'|'.$key]) === true) {
+			return;
+		}
+
+		$this->logged[$schema.'|'.$key] = true;
+		$this->logger?->error(
+			message: '[RecordMetadataConditions] A stored rule has a condition on '.$key
+				.', which no record carries; the rule fails closed (an allow grants nothing, a deny denies)',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schema, 'key' => $key]
+		);
+	}//end logOnce()
 
 	/**
 	 * The schema id an object's `@self` names, or an empty string.

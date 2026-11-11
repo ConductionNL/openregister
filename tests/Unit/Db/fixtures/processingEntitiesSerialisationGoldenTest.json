@@ -1,0 +1,193 @@
+{
+    "OCA\\OpenRegister\\Db\\ProcessingLogEntry": {
+        "types": {
+            "id": "integer",
+            "uuid": "string",
+            "activityId": "string",
+            "action": "string",
+            "actor": "string",
+            "channel": "string",
+            "registerId": "string",
+            "schemaId": "string",
+            "objectUuid": "string",
+            "subjectIdType": "string",
+            "subjectIdValue": "string",
+            "objectCount": "integer",
+            "objectUuids": "json",
+            "subjectIds": "json",
+            "queryParams": "json",
+            "confidential": "boolean",
+            "organisationId": "string",
+            "created": "datetime"
+        },
+        "empty": {
+            "id": null,
+            "uuid": null,
+            "activityId": null,
+            "action": "read",
+            "actor": null,
+            "channel": "ui",
+            "registerId": null,
+            "schemaId": null,
+            "objectUuid": null,
+            "subjectIdType": null,
+            "subjectIdValue": null,
+            "objectCount": 1,
+            "objectUuids": null,
+            "subjectIds": null,
+            "queryParams": null,
+            "confidential": false,
+            "organisationId": null,
+            "created": null
+        },
+        "filled": {
+            "id": 7,
+            "uuid": "s1",
+            "activityId": "s2",
+            "action": "s3",
+            "actor": "s4",
+            "channel": "s5",
+            "registerId": "s6",
+            "schemaId": "s7",
+            "objectUuid": "s8",
+            "subjectIdType": "s9",
+            "subjectIdValue": "s10",
+            "objectCount": 111,
+            "objectUuids": {
+                "k12": "v12"
+            },
+            "subjectIds": {
+                "k13": "v13"
+            },
+            "queryParams": {
+                "k14": "v14"
+            },
+            "confidential": false,
+            "organisationId": "s16",
+            "created": "2026-09-17T07:04:05+02:00"
+        }
+    },
+    "OCA\\OpenRegister\\Db\\Verwerkingsactiviteit": {
+        "types": {
+            "id": "integer",
+            "uuid": "string",
+            "code": "string",
+            "name": "string",
+            "description": "string",
+            "purpose": "string",
+            "legalBasis": "string",
+            "dataSubjectCategories": "json",
+            "personalDataCategories": "json",
+            "retentionPeriod": "string",
+            "recipients": "json",
+            "internationalTransfers": "json",
+            "technicalMeasures": "string",
+            "organisationalMeasures": "string",
+            "controller": "json",
+            "dpoContactDetails": "json",
+            "organisationId": "string",
+            "status": "string",
+            "created": "datetime",
+            "updated": "datetime"
+        },
+        "empty": {
+            "id": null,
+            "uuid": null,
+            "code": null,
+            "name": null,
+            "description": null,
+            "purpose": null,
+            "legalBasis": null,
+            "dataSubjectCategories": null,
+            "personalDataCategories": null,
+            "retentionPeriod": null,
+            "recipients": null,
+            "internationalTransfers": null,
+            "technicalMeasures": null,
+            "organisationalMeasures": null,
+            "controller": null,
+            "dpoContactDetails": null,
+            "organisationId": null,
+            "status": "concept",
+            "created": null,
+            "updated": null
+        },
+        "filled": {
+            "id": 7,
+            "uuid": "s1",
+            "code": "s2",
+            "name": "s3",
+            "description": "s4",
+            "purpose": "s5",
+            "legalBasis": "s6",
+            "dataSubjectCategories": {
+                "k7": "v7"
+            },
+            "personalDataCategories": {
+                "k8": "v8"
+            },
+            "retentionPeriod": "s9",
+            "recipients": {
+                "k10": "v10"
+            },
+            "internationalTransfers": {
+                "k11": "v11"
+            },
+            "technicalMeasures": "s12",
+            "organisationalMeasures": "s13",
+            "controller": {
+                "k14": "v14"
+            },
+            "dpoContactDetails": {
+                "k15": "v15"
+            },
+            "organisationId": "s16",
+            "status": "s17",
+            "created": "2026-01-18T08:04:05+00:00",
+            "updated": "2026-02-19T09:04:05+01:00"
+        }
+    },
+    "OCA\\OpenRegister\\Db\\ProcessingPurpose": {
+        "types": {
+            "id": "integer",
+            "uuid": "string",
+            "code": "string",
+            "name": "string",
+            "description": "string",
+            "activity": "string",
+            "activityUuid": "string",
+            "organisationId": "string",
+            "status": "string",
+            "created": "datetime",
+            "updated": "datetime"
+        },
+        "empty": {
+            "id": null,
+            "uuid": null,
+            "code": null,
+            "name": null,
+            "description": null,
+            "activity": null,
+            "activityUuid": null,
+            "bound": false,
+            "organisationId": null,
+            "status": "active",
+            "created": null,
+            "updated": null
+        },
+        "filled": {
+            "id": 7,
+            "uuid": "s1",
+            "code": "s2",
+            "name": "s3",
+            "description": "s4",
+            "activity": "s5",
+            "activityUuid": "s6",
+            "bound": true,
+            "organisationId": "s7",
+            "status": "s8",
+            "created": "2026-01-19T09:04:05+00:00",
+            "updated": "2026-02-10T00:04:05+01:00"
+        }
+    }
+}

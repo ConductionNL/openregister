@@ -2,6 +2,23 @@ import { defineStore } from 'pinia'
 import { Source } from '../../entities/index.js'
 import { getJson, objectAnswer, sendJson } from '../../services/listPage.js'
 
+/**
+ * Where a source is saved: POST to the list for a new source, PUT to the
+ * source itself otherwise.
+ *
+ * @param {object} sourceItem The source.
+ * @return {{endpoint: string, method: string}} The URL and the HTTP method.
+ */
+function sourceSaveTarget(sourceItem) {
+	const isNewSource = !sourceItem.id
+	return {
+		endpoint: isNewSource
+			? '/index.php/apps/openregister/api/sources'
+			: `/index.php/apps/openregister/api/sources/${sourceItem.id}`,
+		method: isNewSource ? 'POST' : 'PUT',
+	}
+}
+
 export const useSourceStore = defineStore('source', {
 	state: () => ({
 		sourceItem: false,
@@ -108,11 +125,7 @@ export const useSourceStore = defineStore('source', {
 				throw new Error('No source item to save')
 			}
 
-			const isNewSource = !sourceItem.id
-			const endpoint = isNewSource
-				? '/index.php/apps/openregister/api/sources'
-				: `/index.php/apps/openregister/api/sources/${sourceItem.id}`
-			const method = isNewSource ? 'POST' : 'PUT'
+			const { endpoint, method } = sourceSaveTarget(sourceItem)
 
 			sourceItem.updated = new Date().toISOString()
 

@@ -89,19 +89,10 @@ final class QueryLimit {
 		}
 
 		if (is_string($limit) === true) {
-			$word = strtolower(trim($limit));
-			if (in_array($word, self::UNLIMITED_WORDS, true) === true) {
+			$limit = self::numericWord(limit: $limit);
+			if ($limit === null) {
 				return null;
 			}
-
-			// A non-numeric string is not a row count. Reading it as `(int)`
-			// would turn "abc" into 0 and, before this class existed, into a
-			// silently empty page.
-			if (is_numeric($word) === false) {
-				return null;
-			}
-
-			$limit = $word;
 		}
 
 		if (is_bool($limit) === true) {
@@ -110,13 +101,46 @@ final class QueryLimit {
 			return null;
 		}
 
-		$value = (int)$limit;
+		return self::positive(value: (int)$limit);
+	}//end normalise()
+
+	/**
+	 * A string `_limit` as its trimmed numeric spelling, or null when it spells "no limit" or is no number.
+	 *
+	 * @param string $limit The raw string.
+	 *
+	 * @return string|null The numeric spelling.
+	 */
+	private static function numericWord(string $limit): ?string {
+		$word = strtolower(trim($limit));
+		if (in_array($word, self::UNLIMITED_WORDS, true) === true) {
+			return null;
+		}
+
+		// A non-numeric string is not a row count. Reading it as `(int)`
+		// would turn "abc" into 0 and, before this class existed, into a
+		// silently empty page.
+		if (is_numeric($word) === false) {
+			return null;
+		}
+
+		return $word;
+	}//end numericWord()
+
+	/**
+	 * A positive row count, or null for zero and below.
+	 *
+	 * @param int $value The row count.
+	 *
+	 * @return int|null The row count.
+	 */
+	private static function positive(int $value): ?int {
 		if ($value <= 0) {
 			return null;
 		}
 
 		return $value;
-	}//end normalise()
+	}//end positive()
 
 	/**
 	 * Whether a raw `_limit` value asks for every row.

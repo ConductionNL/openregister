@@ -51,6 +51,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices;
 use OCA\OpenRegister\Controller\Support\OAuth2StartRequest;
+use OCA\OpenRegister\Controller\Support\OAuth2StartRun;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord;
@@ -303,34 +304,14 @@ class CredentialOauth2Controller extends Controller {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	private function authorise(OAuth2StartRequest $start, array $prepared): JSONResponse {
-		$provider = $prepared['provider'];
-		$claims = $prepared['claims'];
+		$run = new OAuth2StartRun(start: $start, prepared: $prepared);
 
 		// This server's own setup and the provider's: nothing here is the caller's
 		// fault, so anything but the two named states is a 500.
-		$minted = '';
-		$nonce = '';
 		try {
-			// A per-instance provider has no application to bring, so one is created at
-			// the account's own server HERE, before the URL that names its client id is
-			// built. The client secret it issues goes straight to the broker as its own
-			// credential; only the non-secret client id travels on in the claims.
-			$claims = $this->connect->ensureInstanceClient(
-				registration: new OAuth2ClientRegistration(provider: $provider, claims: $claims, redirectUri: $this->endpoints->callbackUrl())
-			);
-			$minted = (string)($claims[OAuth2InstanceClientInterface::MINTED_KEY] ?? '');
-			unset($claims[OAuth2InstanceClientInterface::MINTED_KEY]);
-
-			$issued = $this->states->issue(claims: $claims);
-			$nonce = $issued['nonce'];
-			$url = $this->connect->authorizationUrl(
-				provider: $provider,
-				claims: $claims,
-				request: $this->connect->authorizationRequest(redirectUri: $this->endpoints->callbackUrl(), issued: $issued)
-			);
+			$url = $this->authorizationUrlFor(run: $run);
 		} catch (OAuth2ClientNotConfiguredException $notConfigured) {
-			$this->withdrawState(nonce: $nonce);
-			$this->discardMintedClient(credentialId: $minted, scope: $start->scope);
+			$this->abandonStart(run: $run);
 
 			return new JSONResponse(['message' => 'This provider is not configured on this server'], Http::STATUS_CONFLICT);
 		} catch (OAuth2RegistrationFailedException $upstream) {
@@ -338,14 +319,66 @@ class CredentialOauth2Controller extends Controller {
 
 			return new JSONResponse(['message' => 'The provider server did not accept the connection'], Http::STATUS_BAD_GATEWAY);
 		} catch (Throwable $failure) {
-			$this->withdrawState(nonce: $nonce);
-			$this->discardMintedClient(credentialId: $minted, scope: $start->scope);
+			$this->abandonStart(run: $run);
 
 			return $this->startFailed(failure: $failure);
 		}
 
 		return new JSONResponse(['authorizationUrl' => $url, 'expiresIn' => OAuth2StateServiceInterface::STATE_TTL_SECONDS]);
 	}//end authorise()
+
+	/**
+	 * Ensure the provider client, store the state and build the authorization URL.
+	 *
+	 * @param OAuth2StartRun $run The start; records the minted client and the stored nonce.
+	 *
+	 * @return string The authorization URL.
+	 */
+	private function authorizationUrlFor(OAuth2StartRun $run): string {
+		$this->mintInstanceClient(run: $run);
+
+		$issued = $this->states->issue(claims: $run->claims);
+		$run->nonce = $issued['nonce'];
+
+		return $this->connect->authorizationUrl(
+			provider: $run->provider,
+			claims: $run->claims,
+			request: $this->connect->authorizationRequest(redirectUri: $this->endpoints->callbackUrl(), issued: $issued)
+		);
+	}//end authorizationUrlFor()
+
+	/**
+	 * Create the per-instance client a provider needs, before the URL that names it is built.
+	 *
+	 * A per-instance provider has no application to bring, so one is created at
+	 * the account's own server HERE, before the URL that names its client id is
+	 * built. The client secret it issues goes straight to the broker as its own
+	 * credential; only the non-secret client id travels on in the claims.
+	 *
+	 * @param OAuth2StartRun $run The start; its claims gain the client id, its minted id is recorded.
+	 *
+	 * @return void
+	 */
+	private function mintInstanceClient(OAuth2StartRun $run): void {
+		$claims = $this->connect->ensureInstanceClient(
+			registration: new OAuth2ClientRegistration(provider: $run->provider, claims: $run->claims, redirectUri: $this->endpoints->callbackUrl())
+		);
+		$run->minted = (string)($claims[OAuth2InstanceClientInterface::MINTED_KEY] ?? '');
+		unset($claims[OAuth2InstanceClientInterface::MINTED_KEY]);
+		$run->claims = $claims;
+	}//end mintInstanceClient()
+
+	/**
+	 * Undo what a failed start set up: the stored state and the minted client.
+	 *
+	 * @param OAuth2StartRun $run The failed start.
+	 *
+	 * @return void
+	 */
+	private function abandonStart(OAuth2StartRun $run): void {
+		$this->withdrawState(nonce: $run->nonce);
+		$this->discardMintedClient(credentialId: $run->minted, scope: $run->start->scope);
+	}//end abandonStart()
 
 	/**
 	 * Answer a genuine fault: log it and return a static 500.
@@ -525,28 +558,53 @@ class CredentialOauth2Controller extends Controller {
 		$data = $entity->jsonSerialize();
 		unset($data['@self']);
 
-		$lastError = '';
-		try {
-			$lastError = $this->connect->revokeUpstream(
-				revocation: new OAuth2Revocation(
-					provider: $this->connect->oauth2Provider(providerId: (string)($data['provider'] ?? '')),
-					credential: $data,
-					address: new TokenSetAddress(credentialId: $uuid, scope: (string)($data['scope'] ?? 'personal'))
-				)
-			);
-		} catch (Throwable $failure) {
-			// An unreachable or unknown provider must not keep a tenant connected.
-			$lastError = 'revoke_failed';
-		}
+		return $this->disconnected(connection: new OAuth2ConnectionRecord(credentialId: $uuid, data: $data));
+	}//end disconnect()
+
+	/**
+	 * Revoke the connection at the provider, then disable it here whatever the provider said.
+	 *
+	 * @param OAuth2ConnectionRecord $connection The guarded row, by its uuid
+	 *
+	 * @return JSONResponse Disabled, with whether the provider revoked it; or a 500 when disabling failed
+	 */
+	private function disconnected(OAuth2ConnectionRecord $connection): JSONResponse {
+		$lastError = $this->upstreamRevocationError(connection: $connection);
 
 		try {
-			$this->connections->disable(connection: new OAuth2ConnectionRecord(credentialId: $uuid, data: $data), lastError: $lastError);
+			$this->connections->disable(connection: $connection, lastError: $lastError);
 		} catch (Throwable $failure) {
 			return new JSONResponse(['message' => 'Unable to disconnect'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
 		return new JSONResponse(['status' => 'disabled', 'revoked' => ($lastError === '')]);
-	}//end disconnect()
+	}//end disconnected()
+
+	/**
+	 * Revoke the connection's tokens at the provider.
+	 *
+	 * An unreachable or unknown provider must not keep a tenant connected: its
+	 * failure is reported as `revoke_failed` and the local disable still happens.
+	 *
+	 * @param OAuth2ConnectionRecord $connection The guarded row, by its uuid
+	 *
+	 * @return string The provider's last error, empty when it revoked
+	 */
+	private function upstreamRevocationError(OAuth2ConnectionRecord $connection): string {
+		$data = $connection->data;
+
+		try {
+			return $this->connect->revokeUpstream(
+				revocation: new OAuth2Revocation(
+					provider: $this->connect->oauth2Provider(providerId: (string)($data['provider'] ?? '')),
+					credential: $data,
+					address: new TokenSetAddress(credentialId: $connection->credentialId, scope: (string)($data['scope'] ?? 'personal'))
+				)
+			);
+		} catch (Throwable $failure) {
+			return 'revoke_failed';
+		}
+	}//end upstreamRevocationError()
 
 	/**
 	 * GET /oauth2/client-metadata.json — this instance's own AT Protocol client metadata.

@@ -42,7 +42,9 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRecords;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentValues;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -135,12 +137,8 @@ final class DeploymentServiceTest extends TestCase {
 		}
 
 		$service = new DeploymentService(
-			$drafts,
-			$previews,
-			$store,
-			$mapper,
-			$this->createMock(ConfigurationDraftSetMapper::class),
-			$this->createMock(IDBConnection::class),
+			new DeploymentValues($drafts, $previews, $store),
+			new DeploymentRecords($mapper, $this->createMock(ConfigurationDraftSetMapper::class), $this->createMock(IDBConnection::class)),
 			$this->session(),
 			new NullLogger()
 		);
@@ -420,12 +418,8 @@ final class DeploymentServiceTest extends TestCase {
 		);
 
 		$service = new DeploymentService(
-			$drafts,
-			$previews,
-			$store,
-			$this->createMock(ConfigurationDeploymentMapper::class),
-			$this->createMock(ConfigurationDraftSetMapper::class),
-			$db,
+			new DeploymentValues($drafts, $previews, $store),
+			new DeploymentRecords($this->createMock(ConfigurationDeploymentMapper::class), $this->createMock(ConfigurationDraftSetMapper::class), $db),
 			$this->session(),
 			new NullLogger()
 		);

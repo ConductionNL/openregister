@@ -53,6 +53,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
@@ -291,13 +294,9 @@ class MagicRbacHandlerGoldenTest extends TestCase {
 		}
 
 		$args = [
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->appConfig(),
-			$this->matcher($uid, $groups),
-			$this->container($uid, $platform),
-			$this->logger(),
+			new MagicMapperIdentity($userSession, $groupManager, $this->createMock(IUserManager::class)),
+			new MagicRbacSettings($this->appConfig()),
+			new MagicRbacSupport($this->matcher($uid, $groups), $this->container($uid, $platform), $this->logger()),
 		];
 
 		if ($mode === 'cli') {

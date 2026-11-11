@@ -233,6 +233,54 @@ const ICON_MAP = {
 	DatabaseOutline,
 }
 
+/**
+ * Ask the server to render a report in a format, as a blob.
+ *
+ * @param {string} id The report id
+ * @param {string} format The export format (e.g. pdf, xlsx)
+ * @return {Promise<object>} The response; its data is the file
+ */
+function requestRender(id, format) {
+	return axios.post(
+		generateUrl(
+			`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`,
+		),
+		null,
+		{ params: { format }, responseType: 'blob' },
+	)
+}
+
+/**
+ * Let the browser save a blob under a file name.
+ *
+ * @param {Blob} blob The file
+ * @param {string} filename The name to offer
+ * @return {void}
+ */
+function saveBlob(blob, filename) {
+	const url = URL.createObjectURL(blob)
+	const a = document.createElement('a')
+	a.href = url
+	a.download = filename
+	a.click()
+	URL.revokeObjectURL(url)
+}
+
+/**
+ * The JSON body of a failed blob request, or null when it has none.
+ *
+ * @param {object} error The axios error
+ * @return {Promise<object|null>} The parsed body
+ */
+async function jsonErrorBody(error) {
+	try {
+		return JSON.parse(await error.response?.data?.text())
+	} catch {
+		// Not a JSON error body; fall back to the generic message.
+		return null
+	}
+}
+
 export default {
 	name: 'ReportView',
 
@@ -401,22 +449,11 @@ export default {
 			const id = this.$route.params.id
 			if (!id) return
 			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`,
-					),
-					null,
-					{ params: { format }, responseType: 'blob' },
-				)
+				const response = await requestRender(id, format)
 				const filename =
 					this._extractFilename(response)
 					|| `${this.dashboard?.titel || 'dashboard'}.${format}`
-				const url = URL.createObjectURL(response.data)
-				const a = document.createElement('a')
-				a.href = url
-				a.download = filename
-				a.click()
-				URL.revokeObjectURL(url)
+				saveBlob(response.data, filename)
 			} catch (e) {
 				showError(await this._downloadErrorMessage(e))
 			}
@@ -430,12 +467,7 @@ export default {
 		 * @return {Promise<string>}
 		 */
 		async _downloadErrorMessage(error) {
-			let body = null
-			try {
-				body = JSON.parse(await error.response?.data?.text())
-			} catch {
-				// Not a JSON error body; fall back to the generic message.
-			}
+			const body = await jsonErrorBody(error)
 
 			if (body?.error === 'office_server_required') {
 				return t(

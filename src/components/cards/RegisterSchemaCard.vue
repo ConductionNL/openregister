@@ -670,16 +670,7 @@ function conversionNotice(schema, configurationType) {
  */
 function hardDeletionPrompt(counts) {
 	if (counts.active > 0 && counts.deleted > 0) {
-		return t(
-			'openregister',
-			'⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete ALL objects for schema "{schema}":\n\n• Active objects: {active}\n• Soft-deleted objects: {deleted}\n• Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?',
-			{
-				active: counts.active,
-				deleted: counts.deleted,
-				total: counts.total,
-				schema: counts.schema,
-			},
-		)
+		return allObjectsDeletionPrompt(counts)
 	}
 	return t(
 		'openregister',
@@ -1244,12 +1235,7 @@ export default {
 		 * @spec exclude UI plumbing: confirmation text for a bulk delete
 		 */
 		deletionPrompt(schema, hardDelete) {
-			const counts = {
-				total: schema.stats?.objects?.total || 0,
-				active: this.getSchemaObjectCount(schema),
-				deleted: this.deletedCount(schema),
-				schema: schema.title,
-			}
+			const counts = this.objectCounts(schema)
 			if (counts.total === 0) {
 				showError(
 					t('openregister', 'No objects to delete for schema {schema}', {
@@ -1261,6 +1247,22 @@ export default {
 			return hardDelete
 				? hardDeletionPrompt(counts)
 				: softDeletionPrompt(counts)
+		},
+
+		/**
+		 * How many objects a schema holds in this register: in total, active
+		 * and soft-deleted.
+		 *
+		 * @param {object} schema The schema
+		 * @return {{total: number, active: number, deleted: number, schema: string}} The counts
+		 */
+		objectCounts(schema) {
+			return {
+				total: schema.stats?.objects?.total || 0,
+				active: this.getSchemaObjectCount(schema),
+				deleted: this.deletedCount(schema),
+				schema: schema.title,
+			}
 		},
 
 		/**
@@ -1346,6 +1348,26 @@ export default {
 			)
 		},
 	},
+}
+
+/**
+ * The warning before permanently deleting both the active and the
+ * soft-deleted objects of a schema.
+ *
+ * @param {{total: number, active: number, deleted: number, schema: string}} counts The counts
+ * @return {string} The warning
+ */
+function allObjectsDeletionPrompt(counts) {
+	return t(
+		'openregister',
+		'⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete ALL objects for schema "{schema}":\n\n• Active objects: {active}\n• Soft-deleted objects: {deleted}\n• Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?',
+		{
+			active: counts.active,
+			deleted: counts.deleted,
+			total: counts.total,
+			schema: counts.schema,
+		},
+	)
 }
 </script>
 

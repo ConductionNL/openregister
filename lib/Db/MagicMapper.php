@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\TableSearch;
 use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
@@ -77,6 +78,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
@@ -722,14 +725,20 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		);
 
 		$this->rbacHandler = new MagicRbacHandler(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
-			userManager: $this->userManager,
-			appConfig: $this->appConfig,
-			conditionMatcher: $this->container->get(\OCA\OpenRegister\Service\ConditionMatcher::class),
-			container: $this->container,
-			logger: $this->logger,
-			metadataColumns: $this->metadataColumnHealer
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $this->userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->appConfig,
+				metadataColumns: $this->metadataColumnHealer
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->container->get(\OCA\OpenRegister\Service\ConditionMatcher::class),
+				container: $this->container,
+				logger: $this->logger
+			)
 		);
 
 		$this->organizationHandler = new MagicOrganizationHandler(
@@ -3419,6 +3428,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			],
 		];
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		$version = md5(json_encode($combinedData));
 
 		// Cache for future calls within this request.
