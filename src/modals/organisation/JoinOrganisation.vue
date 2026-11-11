@@ -356,27 +356,37 @@ export default {
 				if (query.trim().length < 2) {
 					return
 				}
-
-				this.searchLoading = true
-				this.error = null
-
-				try {
-					// Search with limit of 20 results
-					const results = await organisationStore.searchOrganisations(
-						query.trim(),
-						20,
-						0,
-					)
-
-					this.organisationOptions = results.map(organisationOption)
-				} catch (error) {
-					console.error('Error searching organisations:', error)
-					this.error = 'Failed to search organisations: ' + error.message
-					this.organisationOptions = []
-				} finally {
-					this.searchLoading = false
-				}
+				await this.searchOrganisations(query.trim())
 			}, 500)
+		},
+
+		/**
+		 * Offer the organisations matching a search (at most 20).
+		 *
+		 * @param {string} query The trimmed query
+		 * @return {Promise<void>}
+		 * @spec exclude debounced organisation-search UI handler
+		 */
+		async searchOrganisations(query) {
+			this.searchLoading = true
+			this.error = null
+
+			try {
+				// Search with limit of 20 results
+				const results = await organisationStore.searchOrganisations(
+					query,
+					20,
+					0,
+				)
+
+				this.organisationOptions = results.map(organisationOption)
+			} catch (error) {
+				console.error('Error searching organisations:', error)
+				this.error = 'Failed to search organisations: ' + error.message
+				this.organisationOptions = []
+			} finally {
+				this.searchLoading = false
+			}
 		},
 
 		/**
@@ -396,20 +406,7 @@ export default {
 				)
 
 				// Ensure current user is in the list and selected
-				const currentUser = this.getCurrentUser()
-				if (currentUser) {
-					const currentUserOption = {
-						...currentUser,
-						label: currentUser.displayName,
-					}
-
-					if (!this.userOptions.some((u) => u.id === currentUser.id)) {
-						this.userOptions.unshift(currentUserOption)
-					}
-
-					// Keep current user as selected
-					this.selectedUser = currentUserOption
-				}
+				this.selectCurrentUser()
 			} catch (error) {
 				console.error('Error loading initial users:', error)
 				this.setDefaultUser() // Fallback to current user only
@@ -441,34 +438,91 @@ export default {
 				if (query.trim().length < 2) {
 					return
 				}
-
-				this.loadingUsers = true
-
-				try {
-					// Search for users via Nextcloud API with limit
-					this.userOptions = await fetchUserOptions(
-						`/ocs/v2.php/cloud/users?search=${encodeURIComponent(query.trim())}&limit=20`,
-						'Failed to search users',
-					)
-
-					// Always include current user in options
-					const currentUser = this.getCurrentUser()
-					if (
-						currentUser
-						&& !this.userOptions.some((u) => u.id === currentUser.id)
-					) {
-						this.userOptions.unshift({
-							...currentUser,
-							label: currentUser.displayName,
-						})
-					}
-				} catch (error) {
-					console.error('Error searching users:', error)
-					// Don't clear existing options on error
-				} finally {
-					this.loadingUsers = false
-				}
+				await this.searchUsers(query.trim())
 			}, 500)
+		},
+
+		/**
+		 * Offer the users matching a search (at most 20), always with the
+		 * current user among them.
+		 *
+		 * @param {string} query The trimmed query
+		 * @return {Promise<void>}
+		 * @spec exclude debounced user-search UI handler via OCS API
+		 */
+		async searchUsers(query) {
+			this.loadingUsers = true
+
+			try {
+				// Search for users via Nextcloud API with limit
+				this.userOptions = await fetchUserOptions(
+					`/ocs/v2.php/cloud/users?search=${encodeURIComponent(query)}&limit=20`,
+					'Failed to search users',
+				)
+
+				// Always include current user in options
+				this.offerCurrentUser()
+			} catch (error) {
+				console.error('Error searching users:', error)
+				// Don't clear existing options on error
+			} finally {
+				this.loadingUsers = false
+			}
+		},
+
+		/**
+		 * The current user as a user option, if anyone is signed in.
+		 *
+		 * @return {object|null} The option
+		 * @spec exclude form-state helper for the user select
+		 */
+		currentUserOption() {
+			const currentUser = this.getCurrentUser()
+			if (!currentUser) {
+				return null
+			}
+			return { ...currentUser, label: currentUser.displayName }
+		},
+
+		/**
+		 * Offer the current user among the user options, and select them.
+		 *
+		 * @return {void}
+		 * @spec exclude form-state helper for the user select
+		 */
+		selectCurrentUser() {
+			const currentUserOption = this.offerCurrentUser()
+			if (currentUserOption) {
+				// Keep current user as selected
+				this.selectedUser = currentUserOption
+			}
+		},
+
+		/**
+		 * Offer the current user among the user options, if anyone is signed in.
+		 *
+		 * @return {object|null} The current user's option
+		 * @spec exclude form-state helper for the user select
+		 */
+		offerCurrentUser() {
+			const currentUserOption = this.currentUserOption()
+			if (currentUserOption) {
+				this.offerUser(currentUserOption)
+			}
+			return currentUserOption
+		},
+
+		/**
+		 * Put a user first among the user options, unless it is offered already.
+		 *
+		 * @param {object} option The user option
+		 * @return {void}
+		 * @spec exclude form-state helper for the user select
+		 */
+		offerUser(option) {
+			if (!this.userOptions.some((u) => u.id === option.id)) {
+				this.userOptions.unshift(option)
+			}
 		},
 
 		/**
@@ -492,13 +546,7 @@ export default {
 		 * @spec exclude modal submit handler delegating to organisationStore.joinOrganisation
 		 */
 		async joinSelectedOrganisation() {
-			if (!this.selectedOrganisation) {
-				this.error = t('openregister', 'Please select an organisation')
-				return
-			}
-
-			if (!this.selectedUser) {
-				this.error = t('openregister', 'Please select a user')
+			if (this.refusedIncompleteJoin()) {
 				return
 			}
 
@@ -506,30 +554,71 @@ export default {
 			this.error = null
 
 			try {
-				// Get userId - use selected user or default to current user
-				const userId = this.selectedUser?.id || null
-
-				// Check if the SELECTED USER (not logged-in user) is already a member
-				// We can't easily check this client-side, so we'll rely on the backend to validate
-				// and return an appropriate error message
-
-				await organisationStore.joinOrganisation(
-					this.selectedOrganisation.uuid,
-					userId,
-				)
-
-				this.success = true
-				this.joinedOrganisationName = this.selectedOrganisation.name
-
-				this.closeModalTimeout = setTimeout(this.closeModal, 3000)
+				await this.joinOrganisation()
 			} catch (error) {
-				console.error('Error joining organisation:', error)
-				this.error =
-					error.message
-					|| t('openregister', 'Failed to add user to organisation')
+				this.showJoinFailure(error)
 			} finally {
 				this.joining = false
 			}
+		},
+
+		/**
+		 * Log a failed join and say why it failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 * @spec exclude modal submit failure display
+		 */
+		showJoinFailure(error) {
+			console.error('Error joining organisation:', error)
+			this.error =
+				error.message
+				|| t('openregister', 'Failed to add user to organisation')
+		},
+
+		/**
+		 * Refuse to join without an organisation or a user, saying which.
+		 *
+		 * @return {boolean} True when one is missing
+		 * @spec exclude modal submit guard
+		 */
+		refusedIncompleteJoin() {
+			if (!this.selectedOrganisation) {
+				this.error = t('openregister', 'Please select an organisation')
+				return true
+			}
+
+			if (!this.selectedUser) {
+				this.error = t('openregister', 'Please select a user')
+				return true
+			}
+			return false
+		},
+
+		/**
+		 * Add the selected user to the selected organisation, say so and close
+		 * after three seconds.
+		 *
+		 * @return {Promise<void>}
+		 * @spec exclude modal submit handler delegating to organisationStore.joinOrganisation
+		 */
+		async joinOrganisation() {
+			// Get userId - use selected user or default to current user
+			const userId = this.selectedUser?.id || null
+
+			// Check if the SELECTED USER (not logged-in user) is already a member
+			// We can't easily check this client-side, so we'll rely on the backend to validate
+			// and return an appropriate error message
+
+			await organisationStore.joinOrganisation(
+				this.selectedOrganisation.uuid,
+				userId,
+			)
+
+			this.success = true
+			this.joinedOrganisationName = this.selectedOrganisation.name
+
+			this.closeModalTimeout = setTimeout(this.closeModal, 3000)
 		},
 
 		/**

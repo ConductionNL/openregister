@@ -259,6 +259,18 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 			],
 		];
 
+		return self::withPasswordCredentials(callConfig: $callConfig, configuration: $configuration);
+	}//end createPasswordConfig()
+
+	/**
+	 * Add the username and password where the configuration says they go: the body, or basic auth.
+	 *
+	 * @param array $callConfig    The token request so far.
+	 * @param array $configuration The authentication configuration.
+	 *
+	 * @return array
+	 */
+	private static function withPasswordCredentials(array $callConfig, array $configuration): array {
 		if ($configuration['authentication'] === 'body') {
 			$callConfig['form_params']['username'] = $configuration['username'];
 			$callConfig['form_params']['password'] = $configuration['password'];
@@ -270,7 +282,7 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 		}
 
 		return $callConfig;
-	}//end createPasswordConfig()
+	}//end withPasswordCredentials()
 
 	/**
 	 * Request an OAuth Access Token with the given configuration.
@@ -394,6 +406,28 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	}//end getHSJWK()
 
 	/**
+	 * The configuration keys that carry secret material and never reach a payload template.
+	 *
+	 * @var list<string>
+	 */
+	private const PAYLOAD_SECRET_KEYS = [
+		'secret',
+		'clientSecret',
+		'client_secret',
+		'password',
+		'privateKey',
+		'private_key',
+		'apiKey',
+		'api_key',
+		'token',
+		'accessToken',
+		'access_token',
+		'refreshToken',
+		'refresh_token',
+		'authorization',
+	];
+
+	/**
 	 * Generate the JWT Payload by rendering the Twig template.
 	 *
 	 * @param array $configuration The source auth configuration.
@@ -410,25 +444,8 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 		// SEC-SVC-4: never expose secret material to the payload template
 		// context. Strip credential-bearing keys so a crafted payload template
 		// cannot echo adjacent secrets into the rendered claim set.
-		$secretKeys = [
-			'secret',
-			'clientSecret',
-			'client_secret',
-			'password',
-			'privateKey',
-			'private_key',
-			'apiKey',
-			'api_key',
-			'token',
-			'accessToken',
-			'access_token',
-			'refreshToken',
-			'refresh_token',
-			'authorization',
-		];
-
 		$context = $configuration;
-		foreach ($secretKeys as $secretKey) {
+		foreach (self::PAYLOAD_SECRET_KEYS as $secretKey) {
 			unset($context[$secretKey]);
 		}
 

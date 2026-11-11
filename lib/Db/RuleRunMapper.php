@@ -28,6 +28,7 @@ use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -265,13 +266,7 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 				break;
 			}
 
-			$del = $this->db->getQueryBuilder();
-			$del->delete($this->getTableName())
-				->where(
-					$del->expr()->in('id', $del->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
-				);
-
-			$deleted += (int)$del->executeStatement();
+			$deleted += $this->deleteIds(ids: $ids);
 			if (count($ids) < self::PRUNE_BATCH) {
 				break;
 			}
@@ -307,7 +302,18 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 			->orderBy('created', 'ASC')
 			->setMaxResults($limit);
 
-		$result = $qb->executeQuery();
+		return $this->intIdsOf(result: $qb->executeQuery());
+
+	}//end idsBefore()
+
+	/**
+	 * The ids a result holds, as integers; the result is closed after.
+	 *
+	 * @param IResult $result The result.
+	 *
+	 * @return array<int, int> The ids.
+	 */
+	private function intIdsOf(IResult $result): array {
 		$ids = [];
 		while (($row = $result->fetch()) !== false) {
 			$ids[] = (int)$row['id'];
@@ -316,6 +322,22 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 		$result->closeCursor();
 
 		return $ids;
+	}//end intIdsOf()
 
-	}//end idsBefore()
+	/**
+	 * Delete runs by id.
+	 *
+	 * @param array<int, int> $ids The run ids.
+	 *
+	 * @return int How many rows were deleted.
+	 */
+	private function deleteIds(array $ids): int {
+		$del = $this->db->getQueryBuilder();
+		$del->delete($this->getTableName())
+			->where(
+				$del->expr()->in('id', $del->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
+			);
+
+		return (int)$del->executeStatement();
+	}//end deleteIds()
 }//end class

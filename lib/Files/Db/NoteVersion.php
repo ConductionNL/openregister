@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Files\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\TypedFieldsJson;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -55,6 +56,23 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class NoteVersion extends Entity implements JsonSerializable {
+
+	/**
+	 * The serialised fields, in response order; the comment id is served as noteId
+	 * and the creation time is not served.
+	 *
+	 * @var list<string>
+	 */
+	private const JSON_FIELDS = [
+		'id',
+		'uuid',
+		'commentId',
+		'message',
+		'author',
+		'authorType',
+		'editedBy',
+		'editedAt',
+	];
 
 	/**
 	 * Stable identifier for the version row.
@@ -134,20 +152,9 @@ class NoteVersion extends Entity implements JsonSerializable {
 	 * @return array<string, mixed> The version in JSON-friendly format.
 	 */
 	public function jsonSerialize(): array {
-		$editedAt = null;
-		if ($this->editedAt !== null) {
-			$editedAt = $this->editedAt->format('c');
-		}
+		$typed = new TypedFieldsJson();
+		$json = $typed->pick(values: get_object_vars($this), names: self::JSON_FIELDS);
 
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'noteId' => $this->commentId,
-			'message' => $this->message,
-			'author' => $this->author,
-			'authorType' => $this->authorType,
-			'editedBy' => $this->editedBy,
-			'editedAt' => $editedAt,
-		];
+		return $typed->renamed(json: $json, names: ['commentId' => 'noteId']);
 	}//end jsonSerialize()
 }//end class

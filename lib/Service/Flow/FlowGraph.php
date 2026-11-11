@@ -173,13 +173,8 @@ class FlowGraph {
 			return [];
 		}
 
-		$list = [$value];
-		if (is_array($value) === true) {
-			$list = $value;
-		}
-
 		$names = [];
-		foreach ($list as $item) {
+		foreach (self::asList(value: $value) as $item) {
 			$name = trim((string)$item);
 			if ($name !== '') {
 				$names[] = $name;
@@ -188,4 +183,19 @@ class FlowGraph {
 
 		return $names;
 	}//end normaliseEndpoints()
+
+	/**
+	 * The value as a list: itself when it is an array, else a list of one.
+	 *
+	 * @param mixed $value The declared endpoint or endpoints.
+	 *
+	 * @return array The list.
+	 */
+	private static function asList(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [$value];
+	}//end asList()
 }//end class

@@ -88,16 +88,28 @@ class OAuth2AccountIdentity {
 		}
 
 		try {
-			$decoded = $this->answer(connection: $connection, credentialId: $address->credentialId);
-			if ($decoded !== null) {
-				$this->refresh->persist(address: $address, set: $this->withAccount(connection: $connection, decoded: $decoded));
-			}
+			$this->persistAccount(connection: $connection, address: $address);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[OAuth2AccountIdentity] could not read the connected account for ' . $address->credentialId . ': ' . $failure->getMessage()
 			);
 		}
 	}//end record()
+
+	/**
+	 * Ask the provider who the connected account is and store it on the token set.
+	 *
+	 * @param RedeemedConnection $connection The redeemed connection and its provider.
+	 * @param TokenSetAddress    $address    Where the token set is stored.
+	 *
+	 * @return void
+	 */
+	private function persistAccount(RedeemedConnection $connection, TokenSetAddress $address): void {
+		$decoded = $this->answer(connection: $connection, credentialId: $address->credentialId);
+		if ($decoded !== null) {
+			$this->refresh->persist(address: $address, set: $this->withAccount(connection: $connection, decoded: $decoded));
+		}
+	}//end persistAccount()
 
 	/**
 	 * Make the one bounded identity call and decode its answer.

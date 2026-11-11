@@ -322,24 +322,31 @@ class ConnectionReporter implements ConnectionReporterInterface {
 
 		$refreshed = [];
 		foreach (self::REFRESH_KEYS as $key => $configKeys) {
-			if (array_intersect($configKeys, $savedKeys) === []) {
-				continue;
-			}
-
-			$sent = $this->send(
-				key: $key,
-				build: static fn (): object => new $eventClass(
-					app: self::APP_ID,
-					key: $key,
-				)
-			);
-			if ($sent === true) {
+			if (array_intersect($configKeys, $savedKeys) !== [] && $this->requestRefresh(key: $key, eventClass: $eventClass) === true) {
 				$refreshed[] = $key;
 			}
 		}
 
 		return $refreshed;
 	}//end refreshFromSave()
+
+	/**
+	 * Ask integriq to resolve one connection again.
+	 *
+	 * @param string $key        The connection key.
+	 * @param string $eventClass The resolved integriq refresh event class.
+	 *
+	 * @return bool True when the request was sent.
+	 */
+	private function requestRefresh(string $key, string $eventClass): bool {
+		return $this->send(
+			key: $key,
+			build: static fn (): object => new $eventClass(
+				app: self::APP_ID,
+				key: $key,
+			)
+		);
+	}//end requestRefresh()
 
 	/**
 	 * The event class to instantiate, or null when integriq does not ship it.
@@ -397,11 +404,23 @@ class ConnectionReporter implements ConnectionReporterInterface {
 			$this->eventDispatcher->dispatchTyped($event);
 			return true;
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[ConnectionReporter] Could not send a connection event to integriq',
-				context: ['key' => $key, 'exception' => $e->getMessage()]
-			);
+			$this->logSendFailure(key: $key, failure: $e);
 			return false;
 		}
 	}//end send()
+
+	/**
+	 * Log a connection event that could not be built or dispatched.
+	 *
+	 * @param string    $key     The connection key.
+	 * @param Throwable $failure What went wrong.
+	 *
+	 * @return void
+	 */
+	private function logSendFailure(string $key, Throwable $failure): void {
+		$this->logger->warning(
+			message: '[ConnectionReporter] Could not send a connection event to integriq',
+			context: ['key' => $key, 'exception' => $failure->getMessage()]
+		);
+	}//end logSendFailure()
 }//end class

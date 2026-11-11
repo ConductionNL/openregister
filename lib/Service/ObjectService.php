@@ -7416,7 +7416,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function createObject(array $data, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
     {
         // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() instead.
-        return $this->saveObject(object: $data);
+        return $this->saveObject(object: $data, _rbac: $_rbac, _multitenancy: $_multitenancy);
     }//end createObject()
 
     /**
@@ -7424,8 +7424,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * PUT semantics, inherited from `saveObject()`: `$data` becomes the object's
      * data in full, so a stored property absent from `$data` is written away
-     * rather than left alone. There is no read of the existing object here — the
-     * commented-out `find()` below is the whole history of that idea — so a
+     * rather than left alone. There is no read of the existing object here, so a
      * one-key payload stores a one-key object and reports success.
      *
      * Callers holding a PARTIAL payload want `patchObject()`, which reads,
@@ -7439,8 +7438,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $data          The object's COMPLETE new data. Anything omitted is dropped.
-     * @param bool   $_rbac         Apply RBAC checks
-     * @param bool   $_multitenancy Apply multitenancy filtering
+     * @param bool   $_rbac         Apply RBAC checks; passed to the save as saveObject() takes it
+     * @param bool   $_multitenancy Apply multitenancy filtering; passed to the save as saveObject() takes it
      *
      * @return ObjectEntity Replaced object entity
      *
@@ -7456,11 +7455,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() with ID.
-        // Get existing object and merge with new data (currently unused but kept for reference).
-        // $existing = $this->objectMapper->find((int) $objectId);.
         $data['id'] = $objectId;
-        return $this->saveObject(object: $data);
+        return $this->saveObject(object: $data, _rbac: $_rbac, _multitenancy: $_multitenancy);
     }//end updateObject()
 
     /**

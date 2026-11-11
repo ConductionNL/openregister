@@ -58,25 +58,13 @@ class TenantUsageMapper extends QBMapper implements TenantUsageMapperInterface {
 	 * @return TenantUsage|null The usage record or null
 	 */
 	public function findByOrgAndPeriod(string $organisationUuid, DateTime $period): ?TenantUsage {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'organisation_uuid',
-					$qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)
-				)
+		$qb = $this->organisationRowsQuery(organisationUuid: $organisationUuid);
+		$qb->andWhere(
+			$qb->expr()->eq(
+				'period',
+				$qb->createNamedParameter($period->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
 			)
-			->andWhere(
-				$qb->expr()->eq(
-					'period',
-					$qb->createNamedParameter(
-						$period->format('Y-m-d H:i:s'),
-						IQueryBuilder::PARAM_STR
-					)
-				)
-			);
+		);
 
 		try {
 			return $this->findEntity(query: $qb);

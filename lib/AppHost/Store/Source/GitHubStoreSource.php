@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Store\Source;
 
+use Generator;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\Http\Client\IClientService;
@@ -219,15 +220,37 @@ class GitHubStoreSource implements StoreSourceInterface {
 	 */
 	private function fetchTopics(array $topics, string $query): array {
 		$run = new GitHubSearchRun(client: $this->clientService->newClient(), query: $query);
-		$cards = [];
-		$outcome = GenericStoreService::OUTCOME_OK;
 
+		return self::combine(answers: $this->answersFor(run: $run, topics: $topics));
+	}//end fetchTopics()
+
+	/**
+	 * Search each non-empty topic in turn.
+	 *
+	 * @param GitHubSearchRun $run    The client and the free-text query of this search.
+	 * @param string[]        $topics The topics searched.
+	 *
+	 * @return Generator<int, array{outcome: string, cards: array}> One answer per topic.
+	 */
+	private function answersFor(GitHubSearchRun $run, array $topics): Generator {
 		foreach ($topics as $topic) {
-			if ($topic === '') {
-				continue;
+			if ($topic !== '') {
+				yield $this->fetchTopic(run: $run, topic: $topic);
 			}
+		}
+	}//end answersFor()
 
-			$one = $this->fetchTopic(run: $run, topic: $topic);
+	/**
+	 * Combine the answers of several topics into one capped answer.
+	 *
+	 * @param iterable<array{outcome: string, cards: array}> $answers One answer per topic.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 */
+	private static function combine(iterable $answers): array {
+		$cards   = [];
+		$outcome = GenericStoreService::OUTCOME_OK;
+		foreach ($answers as $one) {
 			if ($one['outcome'] !== GenericStoreService::OUTCOME_OK) {
 				// Worst outcome wins across topics: one reachable topic does
 				// not make a half-answer look complete.
@@ -235,18 +258,32 @@ class GitHubStoreSource implements StoreSourceInterface {
 				continue;
 			}
 
-			foreach ($one['cards'] as $card) {
-				// De-duplicate by full name: a repository carrying two of the
-				// declared topics is one item, not two.
-				$cards[$card['slug']] = $card;
-			}
+			$cards = self::withCards(cards: $cards, more: $one['cards']);
 		}
 
 		return [
 			'outcome' => $outcome,
 			'cards' => array_slice(array_values($cards), 0, self::MAX_HITS),
 		];
-	}//end fetchTopics()
+	}//end combine()
+
+	/**
+	 * Add cards to those found so far, one per repository.
+	 *
+	 * @param array<string, array<string, mixed>> $cards The cards so far, by slug.
+	 * @param array<int, array<string, mixed>>    $more  The cards of one topic.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	private static function withCards(array $cards, array $more): array {
+		foreach ($more as $card) {
+			// De-duplicate by full name: a repository carrying two of the
+			// declared topics is one item, not two.
+			$cards[$card['slug']] = $card;
+		}
+
+		return $cards;
+	}//end withCards()
 
 	/**
 	 * Search a single topic.

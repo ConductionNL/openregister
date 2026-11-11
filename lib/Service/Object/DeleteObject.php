@@ -1467,57 +1467,97 @@ class DeleteObject {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Fail-closed writable checks require explicit branching
 	 */
 	private function delegateObjectSourceDelete(Schema $schema, DeletionRequest $request): bool {
-		$objectSource = $schema->getObjectSource();
-		$uuid         = $request->uuid;
-		$provider     = null;
-		if ($this->objectSourceRegistry !== null) {
-			$provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
+		$objectSource   = $schema->getObjectSource();
+		$provider       = $this->objectSourceProvider(objectSource: $objectSource);
+		$registerEntity = $this->objectSourceRegister(register: $request->register);
+		if (self::isWritableSource(objectSource: $objectSource, provider: $provider) === false || $registerEntity === null) {
+			throw self::readOnlySourceRefusal(schema: $schema, objectSource: $objectSource);
 		}
 
-		$registerEntity = $this->objectSourceRegister(register: $request->register);
+		$source = new SourcedTable(table: new RegisterSchema(register: $registerEntity, schema: $schema), config: ($objectSource['config'] ?? []));
 
+		// Pre-read for the audit record (best effort).
+		$old = $provider->find(source: $source, id: $request->uuid);
+		if ($provider->remove(source: $source, id: $request->uuid) === false) {
+			throw new DoesNotExistException('No external row matches id ' . $request->uuid);
+		}
+
+		$this->auditExternalDelete(old: $old, uuid: $request->uuid);
+		return true;
+	}//end delegateObjectSourceDelete()
+
+	/**
+	 * The provider an object-source block names, or null without a registry.
+	 *
+	 * @param array<string, mixed> $objectSource The schema's object-source block.
+	 *
+	 * @return \OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider|null The provider.
+	 */
+	private function objectSourceProvider(array $objectSource): ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider {
+		if ($this->objectSourceRegistry === null) {
+			return null;
+		}
+
+		return $this->objectSourceRegistry->get((string)$objectSource['provider']);
+	}//end objectSourceProvider()
+
+	/**
+	 * Whether the schema opted in to writes AND its provider can write.
+	 *
+	 * @param array<string, mixed> $objectSource The schema's object-source block.
+	 * @param mixed                $provider     The provider, or null.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-true \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider $provider
+	 */
+	private static function isWritableSource(array $objectSource, mixed $provider): bool {
 		$writableOptIn = (($objectSource['readOnly'] ?? true) === false);
 		$writable = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
 
-		if ($writableOptIn === false || $writable === false || $registerEntity === null) {
-			throw new RuntimeException(
-				sprintf(
-					'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
-					(string)$schema->getSlug(),
-					$objectSource['provider']
-				)
+		return $writableOptIn === true && $writable === true;
+	}//end isWritableSource()
+
+	/**
+	 * The refusal of a delete on a source that is (for this delete) a read-only projection.
+	 *
+	 * @param Schema               $schema       The schema.
+	 * @param array<string, mixed> $objectSource The schema's object-source block.
+	 *
+	 * @return RuntimeException The refusal.
+	 */
+	private static function readOnlySourceRefusal(Schema $schema, array $objectSource): RuntimeException {
+		return new RuntimeException(
+			sprintf(
+				'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
+				(string)$schema->getSlug(),
+				$objectSource['provider']
+			)
+		);
+	}//end readOnlySourceRefusal()
+
+	/**
+	 * Record the audit row of an external delete, best effort: a failure is logged, never thrown.
+	 *
+	 * @param ObjectEntity|null $old  The row as it was, or null when the pre-read found none.
+	 * @param string            $uuid The id deleted.
+	 *
+	 * @return void
+	 */
+	private function auditExternalDelete(?ObjectEntity $old, string $uuid): void {
+		if ($old === null) {
+			return;
+		}
+
+		try {
+			$this->auditTrailMapper->createAuditTrail(old: $old, new: null, action: 'delete');
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[DeleteObject] audit trail for external delete on uuid ' . $uuid . ' could not be recorded: ' . $e->getMessage(),
+				['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
-
-		$config = ($objectSource['config'] ?? []);
-
-		// Pre-read for the audit record (best effort).
-		$old = $provider->find(
-			source: new SourcedTable(table: new RegisterSchema(register: $registerEntity, schema: $schema), config: $config),
-			id: $uuid
-		);
-
-		$deleted = $provider->remove(
-			source: new SourcedTable(table: new RegisterSchema(register: $registerEntity, schema: $schema), config: $config),
-			id: $uuid
-		);
-		if ($deleted === false) {
-			throw new DoesNotExistException('No external row matches id ' . $uuid);
-		}
-
-		if ($old !== null) {
-			try {
-				$this->auditTrailMapper->createAuditTrail(old: $old, new: null, action: 'delete');
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					'[DeleteObject] audit trail for external delete on uuid ' . $uuid . ' could not be recorded: ' . $e->getMessage(),
-					['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-		}
-
-		return true;
-	}//end delegateObjectSourceDelete()
+	}//end auditExternalDelete()
 
 	/**
 	 * The register of an object-source delete as an entity, or null when it does not resolve.
@@ -1537,10 +1577,22 @@ class DeleteObject {
 			return null;
 		}
 
+		return self::findRegister(registers: $this->registerMapper, register: $register);
+	}//end objectSourceRegister()
+
+	/**
+	 * Look a register up by id; one that cannot be found resolves to null.
+	 *
+	 * @param \OCA\OpenRegister\Db\RegisterMapperInterface $registers The register mapper.
+	 * @param int|string                                    $register  The register id.
+	 *
+	 * @return Register|null The register entity.
+	 */
+	private static function findRegister(\OCA\OpenRegister\Db\RegisterMapperInterface $registers, int|string $register): ?Register {
 		try {
-			return $this->registerMapper->find($register);
+			return $registers->find($register);
 		} catch (\Throwable $e) {
 			return null;
 		}
-	}//end objectSourceRegister()
+	}//end findRegister()
 }//end class

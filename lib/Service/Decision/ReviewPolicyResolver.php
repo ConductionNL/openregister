@@ -70,8 +70,6 @@ class ReviewPolicyResolver {
 	 *
 	 * @return array{policy: ReviewPolicy, subject: array<string, mixed>}
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ReviewPolicy::fromDeclaration is its named constructor.
-	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
 	public function forRelation(EntityRelation $relation): array {
@@ -91,6 +89,19 @@ class ReviewPolicyResolver {
 			return ['policy' => $this->instanceDefault(), 'subject' => $subject];
 		}
 
+		return ['policy' => $this->schemaPolicy(schema: $schema), 'subject' => $subject];
+	}//end forRelation()
+
+	/**
+	 * The policy a schema declares: its review annotation, else the instance default; closed when it cannot be read.
+	 *
+	 * @param string $schema The schema id.
+	 *
+	 * @return ReviewPolicy The policy.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ReviewPolicy::fromDeclaration is its named constructor.
+	 */
+	private function schemaPolicy(string $schema): ReviewPolicy {
 		try {
 			$configuration = ($this->schemaMapper->find(id: $schema, _rbac: false, _multitenancy: false)->getConfiguration() ?? []);
 		} catch (Throwable $error) {
@@ -101,15 +112,15 @@ class ReviewPolicyResolver {
 				message: '[ReviewPolicyResolver] The schema could not be read; the decision stays with its decider.',
 				context: ['schema' => $schema, 'error' => $error->getMessage()]
 			);
-			return ['policy' => $this->closedPolicy(), 'subject' => $subject];
+			return $this->closedPolicy();
 		}
 
 		if (array_key_exists(ReviewPolicy::ANNOTATION, $configuration) === false) {
-			return ['policy' => $this->instanceDefault(), 'subject' => $subject];
+			return $this->instanceDefault();
 		}
 
-		return ['policy' => ReviewPolicy::fromDeclaration(declaration: $configuration[ReviewPolicy::ANNOTATION]), 'subject' => $subject];
-	}//end forRelation()
+		return ReviewPolicy::fromDeclaration(declaration: $configuration[ReviewPolicy::ANNOTATION]);
+	}//end schemaPolicy()
 
 	/**
 	 * What the relation is on: its own object, or the object its file belongs to.

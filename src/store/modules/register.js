@@ -131,7 +131,21 @@ function heartbeatFailed(state, error) {
 		`RegisterStore: Heartbeat #${state.count} failed (failure ${state.failures}):`,
 		error.message,
 	)
-	if (state.notify && !wasHealthy !== !state.healthy) {
+	if (!wasHealthy !== !state.healthy) {
+		notifyHealthChange(state, error)
+	}
+}
+
+/**
+ * Tell the heartbeat's listener, if any, that the health flipped.
+ *
+ * @param {object} state The heartbeat state.
+ * @param {Error} error The failure that flipped it.
+ * @return {void}
+ * @spec exclude Client-side heartbeat bookkeeping.
+ */
+function notifyHealthChange(state, error) {
+	if (state.notify) {
 		state.notify({
 			healthy: state.healthy,
 			failures: state.failures,
@@ -156,6 +170,23 @@ async function beat(state) {
 	} catch (error) {
 		heartbeatFailed(state, error)
 	}
+}
+
+/**
+ * The register list URL, with schemas and stats, narrowed by a search when
+ * one is given.
+ *
+ * @param {string|null} search The search text.
+ * @return {string} The URL.
+ * @spec exclude Client-side URL of the registers API passthrough.
+ */
+function registerListUrl(search) {
+	const endpoint =
+		'/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
+	if (search !== null && search !== '') {
+		return endpoint + '&_search=' + encodeURIComponent(search)
+	}
+	return endpoint
 }
 
 /**
@@ -296,11 +327,7 @@ export const useRegisterStore = defineStore('register', {
 			if (search === null && inFlightRefresh) {
 				return inFlightRefresh
 			}
-			let endpoint =
-				'/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
-			if (search !== null && search !== '') {
-				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
-			}
+			const endpoint = registerListUrl(search)
 			const work = (async () => {
 				const response = await fetch(endpoint, { method: 'GET' })
 				const data = (await response.json()).results

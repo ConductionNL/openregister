@@ -1,0 +1,34 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditView form (golden) loads a bare view into the form 1`] = `"{"activeTab":"settings","nameTouched":false,"loading":false,"loadingGroups":false,"loadingUsers":false,"success":false,"error":null,"viewData":{"name":"","description":"","isPublic":false,"isDefault":false,"query":{}},"selectedGroups":[],"selectedUsers":[],"availableGroups":[],"availableUsers":[],"groupSearchDebounce":null,"userSearchDebounce":null}"`;
+
+exports[`EditView form (golden) loads a shared view into the form 1`] = `"{"activeTab":"settings","nameTouched":false,"loading":false,"loadingGroups":false,"loadingUsers":false,"success":false,"error":null,"viewData":{"name":"Mine","description":"D","isPublic":true,"isDefault":true,"query":{"a":1}},"selectedGroups":[{"id":"staff","name":"staff","mode":"write"},{"id":"all","name":"all","mode":"read"}],"selectedUsers":[{"id":"ann","name":"ann"},{"id":"bob","name":"bob"}],"availableGroups":[{"id":"staff","name":"staff","mode":"write"},{"id":"all","name":"all","mode":"read"}],"availableUsers":[{"id":"ann","name":"ann"},{"id":"bob","name":"bob"}],"groupSearchDebounce":null,"userSearchDebounce":null}"`;
+
+exports[`EditView form (golden) loads a view with only a configuration into the form 1`] = `"{"activeTab":"settings","nameTouched":false,"loading":false,"loadingGroups":false,"loadingUsers":false,"success":false,"error":null,"viewData":{"name":"C","description":"","isPublic":false,"isDefault":false,"query":{"b":2}},"selectedGroups":[],"selectedUsers":[],"availableGroups":[],"availableUsers":[],"groupSearchDebounce":null,"userSearchDebounce":null}"`;
+
+exports[`EditView form (golden) loads nothing into the form 1`] = `"{"activeTab":"sharing","nameTouched":true,"loading":false,"loadingGroups":false,"loadingUsers":false,"success":true,"error":"old","viewData":{"name":"","description":"","isPublic":false,"isDefault":false,"query":{}},"selectedGroups":[],"selectedUsers":[],"availableGroups":[],"availableUsers":[],"groupSearchDebounce":null,"userSearchDebounce":null}"`;
+
+exports[`EditView form (golden) starts with an empty, private view 1`] = `
+{
+  "activeTab": "settings",
+  "availableGroups": [],
+  "availableUsers": [],
+  "error": null,
+  "groupSearchDebounce": null,
+  "loading": false,
+  "loadingGroups": false,
+  "loadingUsers": false,
+  "nameTouched": false,
+  "selectedGroups": [],
+  "selectedUsers": [],
+  "success": false,
+  "userSearchDebounce": null,
+  "viewData": {
+    "description": "",
+    "isDefault": false,
+    "isPublic": false,
+    "name": "",
+    "query": {},
+  },
+}
+`;
