@@ -2218,7 +2218,8 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end handleValidationException()
 
 	/**
-	 * Check of the value of a parameter, or a combination of parameters, is unique
+	 * Check of the value of a parameter, or a combination of parameters, is unique within the organisation
+	 * the write lands in (see UniqueFieldScope)
 	 *
 	 * @param array $object The object to check
 	 * @param Schema $schema The schema of the object
@@ -2234,9 +2235,11 @@ class ValidateObject implements ValidateObjectInterface {
 			return;
 		}
 
-		$filters = self::uniqueFilters(object: $object, uniqueFields: $uniqueFields);
-		// A unique check counts every existing value in the schema, including values the caller may not read:
-		// a read rule that refused the filter would otherwise count 0 and let a duplicate through.
+		$filters = (new UniqueFieldScope(organisations: $this->lookups->organisations()))->countFilters(
+			object: $object,
+			uniqueFilters: self::uniqueFilters(object: $object, uniqueFields: $uniqueFields)
+		);
+		// Counted as a system operation, so a property read or reveal rule cannot refuse the filter and count 0.
 		$existing = SystemOperationContext::run(
 			fn (): int => $this->lookups->objectMapper->countAll(_filters: $filters, schema: $schema)
 		);
