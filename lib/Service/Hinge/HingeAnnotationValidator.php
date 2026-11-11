@@ -326,6 +326,18 @@ class HingeAnnotationValidator implements HingeAnnotationValidatorInterface {
 			];
 		}
 
+		return $this->geoSourceFindings(sources: $sources, propertyNames: $propertyNames);
+	}//end validateGeoInheritance()
+
+	/**
+	 * The findings for each declared geo-inheritance source.
+	 *
+	 * @param array<int, mixed>  $sources       The declared `from` sources.
+	 * @param array<int, string> $propertyNames The schema's property names.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function geoSourceFindings(array $sources, array $propertyNames): array {
 		$errors = [];
 		foreach ($sources as $source) {
 			$finding = $this->geoSourceFinding(source: $source, propertyNames: $propertyNames);
@@ -335,7 +347,7 @@ class HingeAnnotationValidator implements HingeAnnotationValidatorInterface {
 		}
 
 		return $errors;
-	}//end validateGeoInheritance()
+	}//end geoSourceFindings()
 
 	/**
 	 * Check one inherited-geography source: a bare reference property or an object naming one.

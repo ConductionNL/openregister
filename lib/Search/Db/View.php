@@ -355,6 +355,29 @@ class View extends Entity implements JsonSerializable, ViewInterface {
 	public function jsonSerialize(): array {
 		$favoredBy = $this->favoredBy ?? [];
 
+		return array_merge(
+			$this->identityJson(),
+			$this->definitionJson(),
+			[
+				// `@self.access` is what this CALLER may do, and it is absent
+				// rather than guessed when nobody resolved it: a serialiser that
+				// answered `read` by default would tell a client the view is
+				// read-only on every path that forgot to ask.
+				'@self' => ['access' => $this->access],
+				'favoredBy' => $favoredBy,
+				'quota' => $this->quotaJson(),
+				'usage' => $this->usageJson(favoredBy: $favoredBy),
+			],
+			$this->timestampsJson()
+		);
+	}//end jsonSerialize()
+
+	/**
+	 * Who the view is and who holds it.
+	 *
+	 * @return array<string, mixed> The identity part of the serialised view.
+	 */
+	private function identityJson(): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -364,46 +387,69 @@ class View extends Entity implements JsonSerializable, ViewInterface {
 			'organisation' => $this->organisation,
 			'isPublic' => $this->isPublic,
 			'isDefault' => $this->isDefault,
+		];
+	}//end identityJson()
+
+	/**
+	 * What the view searches and shows, its alert and its shares.
+	 *
+	 * @return array<string, mixed> The definition part of the serialised view.
+	 */
+	private function definitionJson(): array {
+		return [
 			'query' => $this->query,
 			'presentation' => $this->getPresentationFormatted(),
 			'alert' => $this->alert,
 			'alertState' => $this->alertState,
 			'sharedWith' => ($this->sharedWith ?? []),
-			// `@self.access` is what this CALLER may do, and it is absent
-			// rather than guessed when nobody resolved it: a serialiser that
-			// answered `read` by default would tell a client the view is
-			// read-only on every path that forgot to ask.
-			'@self' => ['access' => $this->access],
-			'favoredBy' => $favoredBy,
-			'quota' => [
-				'storage' => null,
-				// To be set via admin configuration.
-				'bandwidth' => null,
-				// To be set via admin configuration.
-				'requests' => null,
-				// To be set via admin configuration.
-				'users' => null,
-				// To be set via admin configuration.
-				'groups' => null,
-				// To be set via admin configuration.
-			],
-			'usage' => [
-				'storage' => 0,
-				// To be calculated from actual usage.
-				'bandwidth' => 0,
-				// To be calculated from actual usage.
-				'requests' => 0,
-				// To be calculated from actual usage (query executions).
-				'users' => count($favoredBy),
-				// Number of users who favorited this view.
-				'groups' => 0,
-				// Views don't have groups.
-			],
+		];
+	}//end definitionJson()
+
+	/**
+	 * The quota block; every limit is set via admin configuration, so all are null here.
+	 *
+	 * @return array<string, null> The quota block.
+	 */
+	private function quotaJson(): array {
+		return [
+			'storage' => null,
+			'bandwidth' => null,
+			'requests' => null,
+			'users' => null,
+			'groups' => null,
+		];
+	}//end quotaJson()
+
+	/**
+	 * The usage block: users is the number of users who favorited this view;
+	 * storage, bandwidth and requests are not calculated yet, and views have no groups.
+	 *
+	 * @param array $favoredBy The user ids who favorited this view.
+	 *
+	 * @return array<string, int> The usage block.
+	 */
+	private function usageJson(array $favoredBy): array {
+		return [
+			'storage' => 0,
+			'bandwidth' => 0,
+			'requests' => 0,
+			'users' => count($favoredBy),
+			'groups' => 0,
+		];
+	}//end usageJson()
+
+	/**
+	 * The timestamps and the managing configuration, formatted for the API.
+	 *
+	 * @return array<string, mixed> The timestamp part of the serialised view.
+	 */
+	private function timestampsJson(): array {
+		return [
 			'created' => $this->getCreatedFormatted(),
 			'updated' => $this->getUpdatedFormatted(),
 			'managedByConfiguration' => $this->getManagedByConfigurationFormatted(),
 		];
-	}//end jsonSerialize()
+	}//end timestampsJson()
 
 	/**
 	 * Get the presentation configuration, defaulted to the `table` view.

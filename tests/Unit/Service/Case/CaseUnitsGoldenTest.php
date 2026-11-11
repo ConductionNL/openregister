@@ -34,6 +34,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Service\Case\AppPlanWrite;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Db\Task;
@@ -747,20 +748,20 @@ class CaseUnitsGoldenTest extends TestCase {
 		$out['complete'] = self::attempt(static fn (): array => $service->completeCase(completion: new CaseCompletion(objectUuid: $obj, result: 'verleend', actor: 'boss')));
 		$out['system bad app'] = self::attempt(
 			static fn (): array => $service->createPlanAsSystem(
-				objectUuid: self::OTHER,
-				registerId: 1,
-				schemaId: 2,
-				definition: CasePlanDefinitionTest::permitDefinition(),
-				app: 'Bad App'
+				write: new AppPlanWrite(
+					anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2),
+					definition: CasePlanDefinitionTest::permitDefinition(),
+					app: 'Bad App'
+				)
 			)
 		);
 		$out['system'] = self::attempt(
 			static fn (): array => $service->createPlanAsSystem(
-				objectUuid: self::OTHER,
-				registerId: 1,
-				schemaId: 2,
-				definition: CasePlanDefinitionTest::permitDefinition(),
-				app: 'dossiq'
+				write: new AppPlanWrite(
+					anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2),
+					definition: CasePlanDefinitionTest::permitDefinition(),
+					app: 'dossiq'
+				)
 			)
 		);
 		$out['system read'] = self::attempt(static fn (): array => $service->getPlanAsSystem(objectUuid: self::OTHER, app: 'dossiq'));

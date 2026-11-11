@@ -161,22 +161,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	public function reportStatus(ConnectionStatusReport $report): bool {
-		$key = $report->key;
-		$status = $report->status;
-		$message = $report->message;
-		if (in_array($key, self::KEYS, true) === false) {
-			$this->logger->warning(
-				message: '[ConnectionReporter] Refusing to report an unknown connection key',
-				context: ['key' => $key]
-			);
-			return false;
-		}
-
-		if (in_array($status, self::STATUSES, true) === false) {
-			$this->logger->warning(
-				message: '[ConnectionReporter] Refusing to report an unknown connection status',
-				context: ['key' => $key, 'status' => $status]
-			);
+		if ($this->hasKnownKey(report: $report) === false || $this->hasKnownStatus(report: $report) === false) {
 			return false;
 		}
 
@@ -185,16 +170,67 @@ class ConnectionReporter implements ConnectionReporterInterface {
 			return false;
 		}
 
-		return $this->send(
-			key: $key,
-			build: static fn (): object => new $eventClass(
-				app: self::APP_ID,
-				key: $key,
-				status: $status,
-				message: $message,
-			)
-		);
+		return $this->send(key: $report->key, build: $this->statusEventBuilder(eventClass: $eventClass, report: $report));
 	}//end reportStatus()
+
+	/**
+	 * Whether a report names one of the connection keys; an unknown key is refused with a warning.
+	 *
+	 * @param ConnectionStatusReport $report The report.
+	 *
+	 * @return bool True when the key is known.
+	 */
+	private function hasKnownKey(ConnectionStatusReport $report): bool {
+		if (in_array($report->key, self::KEYS, true) === true) {
+			return true;
+		}
+
+		$this->logger->warning(
+			message: '[ConnectionReporter] Refusing to report an unknown connection key',
+			context: ['key' => $report->key]
+		);
+		return false;
+	}//end hasKnownKey()
+
+	/**
+	 * Whether a report carries one of the six statuses; an unknown status is refused with a warning.
+	 *
+	 * @param ConnectionStatusReport $report The report.
+	 *
+	 * @return bool True when the status is known.
+	 */
+	private function hasKnownStatus(ConnectionStatusReport $report): bool {
+		if (in_array($report->status, self::STATUSES, true) === true) {
+			return true;
+		}
+
+		$this->logger->warning(
+			message: '[ConnectionReporter] Refusing to report an unknown connection status',
+			context: ['key' => $report->key, 'status' => $report->status]
+		);
+		return false;
+	}//end hasKnownStatus()
+
+	/**
+	 * The builder of a status event for a report.
+	 *
+	 * @param string                 $eventClass The resolved integriq status event class.
+	 * @param ConnectionStatusReport $report     The report.
+	 *
+	 * @return callable(): object The builder.
+	 */
+	private function statusEventBuilder(string $eventClass, ConnectionStatusReport $report): callable {
+		$key     = $report->key;
+		$status  = $report->status;
+		$message = $report->message;
+
+		return static fn (): object => new $eventClass(
+			app: self::APP_ID,
+			key: $key,
+			status: $status,
+			message: $message,
+		);
+	}//end statusEventBuilder()
 
 	/**
 	 * Report which LLM providers a settings save left chosen.
@@ -212,39 +248,59 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	public function reportLlmProviders(mixed $chatProvider, mixed $embeddingProvider): bool {
-		$chat = $this->chosenProvider(value: $chatProvider);
+		$chat      = $this->chosenProvider(value: $chatProvider);
 		$embedding = $this->chosenProvider(value: $embeddingProvider);
-
-		if ($chat === '' && $embedding === '') {
-			return $this->report(
-				key: 'llm',
-				status: 'unconfigured',
-				message: 'No chat or embedding provider is chosen. Chat answers 503 until one is.'
-			);
-		}
-
-		if ($chat === '') {
-			return $this->report(
-				key: 'llm',
-				status: 'limited',
-				message: 'Embeddings use ' . $embedding . '. No chat provider is chosen, so chat answers 503. Saved, not tested.'
-			);
-		}
-
-		if ($embedding === '') {
-			return $this->report(
-				key: 'llm',
-				status: 'limited',
-				message: 'Chat uses ' . $chat . '. No embedding provider is chosen. Saved, not tested.'
-			);
-		}
 
 		return $this->report(
 			key: 'llm',
-			status: 'configured',
-			message: 'Chat uses ' . $chat . ' and embeddings use ' . $embedding . '. Saved, not tested.'
+			status: $this->llmStatus(chat: $chat, embedding: $embedding),
+			message: $this->llmMessage(chat: $chat, embedding: $embedding)
 		);
 	}//end reportLlmProviders()
+
+	/**
+	 * The status of the chosen LLM providers: none is unconfigured, one is limited, both is configured.
+	 *
+	 * @param string $chat      The chosen chat provider, or ''.
+	 * @param string $embedding The chosen embedding provider, or ''.
+	 *
+	 * @return string The connection status.
+	 */
+	private function llmStatus(string $chat, string $embedding): string {
+		if ($chat === '' && $embedding === '') {
+			return 'unconfigured';
+		}
+
+		if ($chat === '' || $embedding === '') {
+			return 'limited';
+		}
+
+		return 'configured';
+	}//end llmStatus()
+
+	/**
+	 * What the chosen LLM providers mean for chat and embeddings; a save tests nothing, and says so.
+	 *
+	 * @param string $chat      The chosen chat provider, or ''.
+	 * @param string $embedding The chosen embedding provider, or ''.
+	 *
+	 * @return string The message.
+	 */
+	private function llmMessage(string $chat, string $embedding): string {
+		if ($chat === '' && $embedding === '') {
+			return 'No chat or embedding provider is chosen. Chat answers 503 until one is.';
+		}
+
+		if ($chat === '') {
+			return 'Embeddings use ' . $embedding . '. No chat provider is chosen, so chat answers 503. Saved, not tested.';
+		}
+
+		if ($embedding === '') {
+			return 'Chat uses ' . $chat . '. No embedding provider is chosen. Saved, not tested.';
+		}
+
+		return 'Chat uses ' . $chat . ' and embeddings use ' . $embedding . '. Saved, not tested.';
+	}//end llmMessage()
 
 	/**
 	 * Ask integriq to resolve every connection whose config keys a save wrote.

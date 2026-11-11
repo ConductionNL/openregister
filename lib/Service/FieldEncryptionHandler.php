@@ -121,8 +121,19 @@ class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 			);
 		}
 
-		$ciphertext = substr($envelope, strlen(self::ENVELOPE_PREFIX));
+		return $this->decryptCiphertext(ciphertext: substr($envelope, strlen(self::ENVELOPE_PREFIX)));
+	}//end decryptValue()
 
+	/**
+	 * Decrypt the ciphertext of an envelope.
+	 *
+	 * @param string $ciphertext The envelope without its prefix.
+	 *
+	 * @return string The plaintext.
+	 *
+	 * @throws FieldDecryptionException When the crypto layer refuses it.
+	 */
+	private function decryptCiphertext(string $ciphertext): string {
 		try {
 			return $this->crypto->decrypt($ciphertext);
 		} catch (\Throwable $e) {
@@ -131,7 +142,7 @@ class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 				previous: $e
 			);
 		}
-	}//end decryptValue()
+	}//end decryptCiphertext()
 
 	/**
 	 * Encrypt every schema-flagged property present in the given data.
@@ -201,20 +212,32 @@ class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 		}
 
 		if (is_string($value) === false) {
-			$this->logger->warning(
-				message: '[FieldEncryptionHandler] Skipped non-string value for encrypted property',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $property,
-					'type' => gettype($value),
-				]
-			);
+			$this->logSkippedNonString(value: $value, property: $property);
 			return false;
 		}
 
 		return $this->isEnvelope(value: $value) === false;
 	}//end needsEncryption()
+
+	/**
+	 * Warn that a non-string value of an encrypted property was left as it is.
+	 *
+	 * @param mixed  $value    The value.
+	 * @param string $property The property.
+	 *
+	 * @return void
+	 */
+	private function logSkippedNonString(mixed $value, string $property): void {
+		$this->logger->warning(
+			message: '[FieldEncryptionHandler] Skipped non-string value for encrypted property',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'property' => $property,
+				'type' => gettype($value),
+			]
+		);
+	}//end logSkippedNonString()
 
 	/**
 	 * Decrypt every schema-flagged property present in the given data.
@@ -298,16 +321,7 @@ class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 		try {
 			return $this->decryptValue(envelope: $envelope);
 		} catch (FieldDecryptionException $e) {
-			$this->logger->error(
-				message: '[FieldEncryptionHandler] Decryption failed for property',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $scope->property(),
-					'schema' => $scope->schema->getId(),
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logDecryptionFailure(scope: $scope, error: $e);
 
 			if ($scope->throwOnFailure === true) {
 				throw $e;
@@ -319,4 +333,25 @@ class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 			];
 		}//end try
 	}//end decryptedOrMarker()
+
+	/**
+	 * Log a property that could not be decrypted.
+	 *
+	 * @param FieldDecryptionScope     $scope The schema and property.
+	 * @param FieldDecryptionException $error Why it could not be decrypted.
+	 *
+	 * @return void
+	 */
+	private function logDecryptionFailure(FieldDecryptionScope $scope, FieldDecryptionException $error): void {
+		$this->logger->error(
+			message: '[FieldEncryptionHandler] Decryption failed for property',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'property' => $scope->property(),
+				'schema' => $scope->schema->getId(),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logDecryptionFailure()
 }//end class

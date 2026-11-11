@@ -95,34 +95,7 @@ class MapsOverviewController extends Controller {
 			// map overview is a write — it requires an authenticated user.
 			$this->overviewService->ensureCanRegister();
 
-			$title = null;
-			if (isset($params['title']) === true) {
-				$title = (string)$params['title'];
-			}
-
-			$geoProperty = null;
-			if (isset($params['geoProperty']) === true) {
-				$geoProperty = (string)$params['geoProperty'];
-			}
-
-			$baseLayer = null;
-			if (isset($params['baseLayer']) === true) {
-				$baseLayer = (array)$params['baseLayer'];
-			}
-
-			$stored = $this->overviewService->declareOverview(
-				overview: new MapOverview(
-					key: (string)($params['overviewKey'] ?? ''),
-					source: new MapMarkerSource(
-						register: (string)($params['register'] ?? ''),
-						schema: (string)($params['schema'] ?? ''),
-						geoProperty: $geoProperty,
-						filters: (array)($params['filters'] ?? [])
-					),
-					title: $title,
-					baseLayer: $baseLayer
-				)
-			);
+			$stored = $this->overviewService->declareOverview(overview: $this->overviewFrom(params: $params));
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}//end try
@@ -158,10 +131,7 @@ class MapsOverviewController extends Controller {
 			// query is RBAC-scoped inside the service — it runs the
 			// canonical OR read path with _rbac:true for non-admins, so a
 			// caller only ever sees objects they may read (fail-closed).
-			$geoProperty = null;
-			if (isset($params['geoProperty']) === true) {
-				$geoProperty = (string)$params['geoProperty'];
-			}
+			$geoProperty = $this->stringOrNull(params: $params, key: 'geoProperty');
 
 			$filters = (array)($params['filters'] ?? $this->nonReservedParams(params: $params));
 			$limit = $this->intOrNull(value: ($params['limit'] ?? null));
@@ -200,6 +170,61 @@ class MapsOverviewController extends Controller {
 
 		return $filters;
 	}//end nonReservedParams()
+
+	/**
+	 * The map overview a register request body declares.
+	 *
+	 * @param array<string,mixed> $params The raw request params.
+	 *
+	 * @return MapOverview The key, marker source, title and base layer.
+	 */
+	private function overviewFrom(array $params): MapOverview {
+		$title = $this->stringOrNull(params: $params, key: 'title');
+
+		$baseLayer = null;
+		if (isset($params['baseLayer']) === true) {
+			$baseLayer = (array)$params['baseLayer'];
+		}
+
+		return new MapOverview(
+			key: (string)($params['overviewKey'] ?? ''),
+			source: $this->markerSourceFrom(params: $params),
+			title: $title,
+			baseLayer: $baseLayer
+		);
+	}//end overviewFrom()
+
+	/**
+	 * The marker source a register request body declares.
+	 *
+	 * @param array<string,mixed> $params The raw request params.
+	 *
+	 * @return MapMarkerSource The register, schema, geo property and filters.
+	 */
+	private function markerSourceFrom(array $params): MapMarkerSource {
+		return new MapMarkerSource(
+			register: (string)($params['register'] ?? ''),
+			schema: (string)($params['schema'] ?? ''),
+			geoProperty: $this->stringOrNull(params: $params, key: 'geoProperty'),
+			filters: (array)($params['filters'] ?? [])
+		);
+	}//end markerSourceFrom()
+
+	/**
+	 * A request param as a string, or null when it is not set.
+	 *
+	 * @param array<string,mixed> $params The raw request params.
+	 * @param string              $key    The param name.
+	 *
+	 * @return string|null
+	 */
+	private function stringOrNull(array $params, string $key): ?string {
+		if (isset($params[$key]) === true) {
+			return (string)$params[$key];
+		}
+
+		return null;
+	}//end stringOrNull()
 
 	/**
 	 * Coerce a request param to an int, or null when absent / non-numeric.

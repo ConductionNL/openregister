@@ -158,12 +158,25 @@ class FlowPlaceClaims {
 
 		// CAPS, before the first insert. A run may hold at most `runCap`
 		// claims; a pass at most `passCap()` across every run it advances.
-		if ($this->runFull(runUuid: $firing->runUuid, runCap: $pass->runCap) === true || $this->passFull(owner: $pass->owner) === true) {
+		if ($this->atCap(firing: $firing, pass: $pass) === true) {
 			return null;
 		}
 
 		return $this->claimEach(template: self::template(firing: $firing, owner: $pass->owner), places: $places);
 	}//end claim()
+
+	/**
+	 * Whether the run, or the pass across every run it advances, already holds as many claims as it may.
+	 *
+	 * @param FiringClaim $firing The run asking.
+	 * @param ClaimPass   $pass   The pass token and its per-run cap.
+	 *
+	 * @return bool True when a cap is reached.
+	 */
+	private function atCap(FiringClaim $firing, ClaimPass $pass): bool {
+		return $this->runFull(runUuid: $firing->runUuid, runCap: $pass->runCap) === true
+			|| $this->passFull(owner: $pass->owner) === true;
+	}//end atCap()
 
 	/**
 	 * The row every place of one firing shares: run, owner, stream,

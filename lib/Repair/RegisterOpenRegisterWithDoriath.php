@@ -136,15 +136,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			if ($this->isDoriathAvailable() === false) {
-				$output->warning(
-					'Doriath is not installed or enabled — credential broker stays on the Nextcloud-vault leaf.'
-				);
-				return;
-			}
-
-			if ($this->isRegistrationLive() === true) {
-				$output->info('OpenRegister is already registered with Doriath — nothing to do.');
+			if ($this->nothingToDo(output: $output) === true) {
 				return;
 			}
 
@@ -154,6 +146,31 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 			$output->warning('Doriath self-registration skipped: ' . $e->getMessage());
 		}
 	}//end run()
+
+	/**
+	 * Say why no registration is needed, when Doriath is unavailable or the registration is live.
+	 *
+	 * @param IOutput $output Output interface for status messages.
+	 *
+	 * @return bool True when the step has nothing to do.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function nothingToDo(IOutput $output): bool {
+		if ($this->isDoriathAvailable() === false) {
+			$output->warning(
+				'Doriath is not installed or enabled — credential broker stays on the Nextcloud-vault leaf.'
+			);
+			return true;
+		}
+
+		if ($this->isRegistrationLive() === true) {
+			$output->info('OpenRegister is already registered with Doriath — nothing to do.');
+			return true;
+		}
+
+		return false;
+	}//end nothingToDo()
 
 	/**
 	 * Whether the doriath app is enabled and its registration seam is loadable.
@@ -206,6 +223,20 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 			return false;
 		}
 
+		return $this->applicationExists(applicationService: $applicationService, applicationId: $applicationId);
+	}//end isRegistrationLive()
+
+	/**
+	 * Whether Doriath still has the persisted application row; a stale UUID is logged.
+	 *
+	 * @param object $applicationService Doriath's ApplicationService.
+	 * @param string $applicationId      The persisted application UUID.
+	 *
+	 * @return bool True when the row exists.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function applicationExists(object $applicationService, string $applicationId): bool {
 		try {
 			// Admin-scoped in-process read; throws when the row no longer exists.
 			$applicationService->get($applicationId, '', true);
@@ -217,7 +248,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 			);
 			return false;
 		}
-	}//end isRegistrationLive()
+	}//end applicationExists()
 
 	/**
 	 * Perform the actual keypair + CSR + register + persist sequence (D-B).
@@ -239,14 +270,33 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 
 		$csrPem = $this->generateCsr(keyResource: $keyResource);
 
+		$applicationId = $this->registerApplication(csrPem: $csrPem);
+		$this->persistRegistration(applicationId: $applicationId, publicPem: $publicPem);
+
+		$output->info('OpenRegister registered with Doriath (application ' . $applicationId . ', EncryptionSuite provisioned).');
+	}//end register()
+
+	/**
+	 * Register OpenRegister as a Doriath application from its CSR.
+	 *
+	 * Admin registration auto-approves the row and provisions the
+	 * EncryptionSuite from the CSR in the same call. userId is null: the
+	 * repair step runs without a session; Doriath audits a system actor.
+	 *
+	 * @param string $csrPem The certificate signing request.
+	 *
+	 * @return string The application row UUID Doriath generated.
+	 *
+	 * @throws RuntimeException When Doriath's ApplicationService is unavailable.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function registerApplication(string $csrPem): string {
 		$applicationService = $this->resolveApplicationService();
 		if ($applicationService === null) {
 			throw new RuntimeException('Doriath ApplicationService unavailable');
 		}
 
-		// Admin registration auto-approves the row and provisions the
-		// EncryptionSuite from the CSR in the same call. userId is null: the
-		// repair step runs without a session; Doriath audits a system actor.
 		$application = $applicationService->register(
 			self::APPLICATION_NAME,
 			'OpenRegister credential-broker custody vault (self-registered)',
@@ -256,8 +306,20 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 			true
 		);
 
-		// Doriath generates the application row UUID — persist it + our public PEM.
-		$applicationId = (string)$application->getId();
+		return (string)$application->getId();
+	}//end registerApplication()
+
+	/**
+	 * Persist the application UUID and the PUBLIC key PEM; the private key never goes here.
+	 *
+	 * @param string $applicationId The application row UUID.
+	 * @param string $publicPem     The public key PEM.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function persistRegistration(string $applicationId, string $publicPem): void {
 		$this->appConfig->setValueString(
 			'openregister',
 			DoriathCredentialKeys::APP_CONFIG_APPLICATION_ID,
@@ -268,9 +330,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 			DoriathCredentialKeys::APP_CONFIG_PUBLIC_KEY_PEM,
 			$publicPem
 		);
-
-		$output->info('OpenRegister registered with Doriath (application ' . $applicationId . ', EncryptionSuite provisioned).');
-	}//end register()
+	}//end persistRegistration()
 
 	/**
 	 * Generate the RSA-4096 keypair, returning both PEMs and the key resource.
@@ -292,18 +352,51 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 			throw new RuntimeException('RSA keypair generation failed');
 		}
 
+		$privatePem = self::exportPrivateKey(keyResource: $keyResource);
+		$publicPem = self::exportPublicKey(keyResource: $keyResource);
+
+		return [$privatePem, $publicPem, $keyResource];
+	}//end generateKeypair()
+
+	/**
+	 * The private key as PEM.
+	 *
+	 * @param OpenSSLAsymmetricKey $keyResource The generated key.
+	 *
+	 * @return string The PEM.
+	 *
+	 * @throws RuntimeException When the export fails.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private static function exportPrivateKey(OpenSSLAsymmetricKey $keyResource): string {
 		$privatePem = '';
 		if (openssl_pkey_export($keyResource, $privatePem) === false || is_string($privatePem) === false) {
 			throw new RuntimeException('RSA private key export failed');
 		}
 
+		return $privatePem;
+	}//end exportPrivateKey()
+
+	/**
+	 * The public key as PEM.
+	 *
+	 * @param OpenSSLAsymmetricKey $keyResource The generated key.
+	 *
+	 * @return string The PEM.
+	 *
+	 * @throws RuntimeException When the export fails.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private static function exportPublicKey(OpenSSLAsymmetricKey $keyResource): string {
 		$details = openssl_pkey_get_details($keyResource);
 		if (is_array($details) === false || is_string(($details['key'] ?? null)) === false) {
 			throw new RuntimeException('RSA public key export failed');
 		}
 
-		return [$privatePem, $details['key'], $keyResource];
-	}//end generateKeypair()
+		return $details['key'];
+	}//end exportPublicKey()
 
 	/**
 	 * Self-generate a PKCS#10 CSR (CN `openregister`) from the keypair.

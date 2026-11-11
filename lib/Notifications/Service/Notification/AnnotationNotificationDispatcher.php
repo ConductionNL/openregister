@@ -397,6 +397,21 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return false;
 		}
 
+		return $this->idempotencyAllows(firing: $firing);
+	}//end ruleApplies()
+
+	/**
+	 * Whether the rule's idempotency claim lets this firing through.
+	 *
+	 * A rule without an idempotency key always passes. A rule with one passes
+	 * only when this firing wins the claim on its resolved key; a lost claim is
+	 * logged as a deduplication.
+	 *
+	 * @param RuleFiring $firing The rule and the event.
+	 *
+	 * @return bool
+	 */
+	private function idempotencyAllows(RuleFiring $firing): bool {
 		$template = ($firing->spec['idempotencyKey'] ?? null);
 		if (is_string($template) === false || $template === '') {
 			return true;
@@ -412,7 +427,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		);
 		return false;
 
-	}//end ruleApplies()
+	}//end idempotencyAllows()
 
 	/**
 	 * Resolve the rule's account recipients, record what did not resolve, and
@@ -745,15 +760,33 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			$scopes[] = 'domain:' . $domain;
 		}
 
-		$register = $firing->object->getRegister();
-		if (is_string($register) === true && $register !== '') {
-			$scopes[] = 'register:' . $register;
-		} elseif (is_int($register) === true) {
-			$scopes[] = 'register:' . (string)$register;
+		$register = $this->registerScope(object: $firing->object);
+		if ($register !== null) {
+			$scopes[] = $register;
 		}
 
 		return $scopes;
 	}//end dispatchScopes()
+
+	/**
+	 * The register preference scope of the object, when it names a register.
+	 *
+	 * @param ObjectEntity $object The triggering object.
+	 *
+	 * @return string|null The `register:` scope, or null when the object has no register.
+	 */
+	private function registerScope(ObjectEntity $object): ?string {
+		$register = $object->getRegister();
+		if (is_string($register) === true && $register !== '') {
+			return 'register:' . $register;
+		}
+
+		if (is_int($register) === true) {
+			return 'register:' . (string)$register;
+		}
+
+		return null;
+	}//end registerScope()
 
 	/**
 	 * Run the rule's declared outbound transports, once per firing.
@@ -1365,27 +1398,49 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return true;
 		}
 
-		$objectOrg = (string)($object->getOrganisation() ?? '');
+		return $this->organisationPinMatches(pinned: $pinned, objectOrg: (string)($object->getOrganisation() ?? ''));
+	}//end organisationGateAllows()
 
+	/**
+	 * Whether a declared organisation pin matches the object's organisation.
+	 *
+	 * @param mixed  $pinned    The rule's `organisation` value: a string, a list of strings, or anything else.
+	 * @param string $objectOrg The object's organisation, '' when it has none.
+	 *
+	 * @return bool True only on an exact match; a malformed pin never matches.
+	 */
+	private function organisationPinMatches(mixed $pinned, string $objectOrg): bool {
 		if (is_string($pinned) === true) {
 			return $pinned === $objectOrg;
 		}
 
 		if (is_array($pinned) === true) {
-			foreach ($pinned as $candidate) {
-				if (is_string($candidate) === true && $candidate === $objectOrg) {
-					return true;
-				}
-			}
-
-			return false;
+			return $this->anyOrganisationPinMatches(pins: $pinned, objectOrg: $objectOrg);
 		}
 
 		// Malformed gate (not string / array) — fail closed so an
 		// accidental misconfiguration doesn't silently leak the
 		// notification cross-tenant.
 		return false;
-	}//end organisationGateAllows()
+	}//end organisationPinMatches()
+
+	/**
+	 * Whether any string in an any-of organisation pin equals the object's organisation.
+	 *
+	 * @param array<int|string, mixed> $pins      The pinned organisations.
+	 * @param string                   $objectOrg The object's organisation, '' when it has none.
+	 *
+	 * @return bool
+	 */
+	private function anyOrganisationPinMatches(array $pins, string $objectOrg): bool {
+		foreach ($pins as $candidate) {
+			if (is_string($candidate) === true && $candidate === $objectOrg) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyOrganisationPinMatches()
 
 	/**
 	 * Post a chat message into a Talk room.
@@ -1516,8 +1571,19 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return [];
 		}
 
+		return $this->roleGroupMap(roles: $authorization['roles']);
+	}//end roleGroupsFor()
+
+	/**
+	 * The named roles of an `authorization.roles` block, each with its string group ids.
+	 *
+	 * @param array<mixed, mixed> $roles Role name to assigned groups, as declared.
+	 *
+	 * @return array<string, array<int, string>> Role name to assigned Nextcloud group ids.
+	 */
+	private function roleGroupMap(array $roles): array {
 		$map = [];
-		foreach ($authorization['roles'] as $roleName => $groups) {
+		foreach ($roles as $roleName => $groups) {
 			if (is_string($roleName) === false || $roleName === '') {
 				continue;
 			}
@@ -1526,7 +1592,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		return $map;
-	}//end roleGroupsFor()
+	}//end roleGroupMap()
 
 	/**
 	 * Record a recipient entry that named something the server does not have.
@@ -1610,6 +1676,17 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return null;
 		}
 
+		return $this->bareLanguage(raw: $raw);
+	}//end resolveUserLocale()
+
+	/**
+	 * The bare language of a stored `core.lang` value.
+	 *
+	 * @param mixed $raw The stored value.
+	 *
+	 * @return string|null The lower-case 2-letter language code, or null when nothing is stored.
+	 */
+	private function bareLanguage(mixed $raw): ?string {
 		if (is_string($raw) === false || $raw === '') {
 			return null;
 		}
@@ -1617,7 +1694,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		// NC stores values like `nl`, `en_GB`, `de_DE`: the region suffix goes,
 		// so the lookup matches the ISO 639-1 keys of the per-locale subject map.
 		return strtolower(explode('_', $raw, 2)[0]);
-	}//end resolveUserLocale()
+	}//end bareLanguage()
 
 	/**
 	 * The register's default language, then its other languages.
@@ -1695,6 +1772,17 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		// Default: the app that owns the schema's register.
+		return $this->owningAppOf(object: $object);
+	}//end resolveOriginApp()
+
+	/**
+	 * The app that owns the object's register, else 'openregister'.
+	 *
+	 * @param ObjectEntity $object The triggering object.
+	 *
+	 * @return string The owning app id.
+	 */
+	private function owningAppOf(ObjectEntity $object): string {
 		try {
 			$owningApp = $this->objectRegister(object: $object)?->getApplication();
 		} catch (\Throwable $e) {
@@ -1709,7 +1797,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		return 'openregister';
-	}//end resolveOriginApp()
+	}//end owningAppOf()
 
 	/**
 	 * Resolve declared `actions[]` to concrete, server-side deeplinks.
@@ -2416,12 +2504,24 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return true;
 		}
 
-		$kind = ($recipient['kind'] ?? null);
-		$uid  = ($recipient['uid'] ?? null);
+		return $this->keepsSubscribedEntry(entry: $recipient, subscribedSet: $subscribedSet);
+	}//end keepsSubscribedRecipient()
+
+	/**
+	 * Whether a recipient entry survives the subscription filter: only a user entry is filtered.
+	 *
+	 * @param array<string, mixed> $entry         A recipient entry.
+	 * @param array<string, int>   $subscribedSet The subscribed uids, as keys.
+	 *
+	 * @return bool
+	 */
+	private function keepsSubscribedEntry(array $entry, array $subscribedSet): bool {
+		$kind = ($entry['kind'] ?? null);
+		$uid  = ($entry['uid'] ?? null);
 		if ($kind !== 'user' || is_string($uid) === false || $uid === '') {
 			return true;
 		}
 
 		return isset($subscribedSet[$uid]);
-	}//end keepsSubscribedRecipient()
+	}//end keepsSubscribedEntry()
 }//end class
