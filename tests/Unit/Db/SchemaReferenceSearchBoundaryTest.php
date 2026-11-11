@@ -29,6 +29,8 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch
@@ -81,13 +83,17 @@ class SchemaReferenceSearchBoundaryTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$this->createMock(IEventDispatcher::class),
-					$this->createMock(PropertyValidatorHandler::class),
-					$this->createMock(OrganisationMapper::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
+					new TenancyServices(
+						$this->createMock(OrganisationMapper::class),
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class)
+					),
 					$this->createMock(IAppConfig::class),
-					$this->createMock(LoggerInterface::class),
+					new SchemaMapperServices(
+						$this->createMock(IEventDispatcher::class),
+						$this->createMock(PropertyValidatorHandler::class),
+						$this->createMock(LoggerInterface::class)
+					),
 				]
 			)
 			->onlyMethods(['findAll'])
