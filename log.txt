@@ -3097,3 +3097,4 @@
 2026-11-11T12:35:15Z integrator-20261111T115842-a749432d MERGED-TREE 2d08ce0912: 3 PRs in one push, main now 2d08ce0912 = tested tree
 2026-11-11T12:38:04Z session-20261111T063715-804d2803 fixer slot 1: merged main (2d08ce09) into #9095 b1aa1afc, #9099 73494cac, #9123 020faf74 (import-block conflicts, both sides kept); php -l clean; unit tests not run (no vendor)
 2026-11-11T12:39:53Z session-20261111T063412-9f7228a4 FX5-0 merged main into #9108 (1836f76e) #9116 (95b2179e) #9764 (again, 02d77664): import-block conflicts, stale moved-class imports dropped; php -l clean; tests not run (composer dist 403)
+2026-11-11T12:54:33Z precheck-20261111T064432-9e69200d GREEN tree 27b5ce02cc on dev 2d08ce0912 prs 1 front=skip: Tests: 56684, Assertions: 187795, Errors: 6, Failures: 11, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 24.
