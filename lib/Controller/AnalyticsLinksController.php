@@ -35,10 +35,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\AnalyticsReportDraft;
+use Closure;
 use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\AnalyticsLinksControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\AnalyticsLinkServiceInterface;
@@ -112,13 +115,11 @@ class AnalyticsLinksController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function indexFor(ObjectRef $ref): JSONResponse {
-		if ($this->analyticsLinkService->isAnalyticsAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Analytics');
-		}
-
-		return $this->listLinkedObject(
-			route: $this->routeOf(ref: $ref),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->analyticsLinkService->getLinkedReports($object->getUuid()))
+		return $this->whenAnalyticsInstalled(
+			answer: fn (): JSONResponse => $this->listLinkedObject(
+				route: $this->routeOf(ref: $ref),
+				action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->analyticsLinkService->getLinkedReports($object->getUuid()))
+			)
 		);
 	}//end indexFor()
 
@@ -150,25 +151,14 @@ class AnalyticsLinksController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function linkFor(ObjectRef $ref): JSONResponse {
-		if ($this->analyticsLinkService->isAnalyticsAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Analytics');
-		}
-
-		return $this->onLinkedObject(
-			route: $this->routeOf(ref: $ref),
-			action: function (ObjectEntity $object): JSONResponse {
-				$reportId = (int)$this->request->getParam('reportId', 0);
-				if ($reportId === 0) {
-					return new JSONResponse(['error' => 'reportId is required'], 400);
-				}
-
-				$link = $this->analyticsLinkService->linkReport(
-					$this->linkTargetOf(object: $object),
-					$reportId
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+		return $this->whenAnalyticsInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: $this->routeOf(ref: $ref),
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
+					param: 'reportId',
+					link: fn (ObjectEntity $object, int $reportId) => $this->analyticsLinkService->linkReport($this->linkTargetOf(object: $object), $reportId)
+				)
+			)
 		);
 	}//end linkFor()
 
@@ -200,33 +190,48 @@ class AnalyticsLinksController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function createAndLinkFor(ObjectRef $ref): JSONResponse {
-		if ($this->analyticsLinkService->isAnalyticsAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Analytics');
-		}
-
-		return $this->onLinkedObject(
-			route: $this->routeOf(ref: $ref),
-			action: function (ObjectEntity $object): JSONResponse {
-				$name = (string)$this->request->getParam('name', '');
-				if (trim($name) === '') {
-					return new JSONResponse(['error' => 'name is required'], 400);
-				}
-
-				$type = $this->request->getParam('type');
-				$typeInt = null;
-				if ($type !== null && $type !== '') {
-					$typeInt = (int)$type;
-				}
-
-				$link = $this->analyticsLinkService->createAndLinkReport(
-					target: $this->linkTargetOf(object: $object),
-					draft: new AnalyticsReportDraft(name: $name, type: $typeInt)
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+		return $this->whenAnalyticsInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: $this->routeOf(ref: $ref),
+				action: fn (ObjectEntity $object): JSONResponse => $this->createReportFor(object: $object)
+			)
 		);
 	}//end createAndLinkFor()
+
+	/**
+	 * Create the requested report and link it to the object.
+	 *
+	 * @param ObjectEntity $object The object the report is linked to.
+	 *
+	 * @return JSONResponse 201 with the link, or 400 when the name is missing.
+	 */
+	private function createReportFor(ObjectEntity $object): JSONResponse {
+		$name = (string)$this->request->getParam('name', '');
+		if (trim($name) === '') {
+			return LinkedSourceResponses::required(param: 'name');
+		}
+
+		$link = $this->analyticsLinkService->createAndLinkReport(
+			target: $this->linkTargetOf(object: $object),
+			draft: new AnalyticsReportDraft(name: $name, type: $this->requestedReportType())
+		);
+
+		return LinkedSourceResponses::created(link: $link);
+	}//end createReportFor()
+
+	/**
+	 * The report type the request asks for: null when absent or empty.
+	 *
+	 * @return int|null The type.
+	 */
+	private function requestedReportType(): ?int {
+		$type = $this->request->getParam('type');
+		if ($type === null || $type === '') {
+			return null;
+		}
+
+		return (int)$type;
+	}//end requestedReportType()
 
 	/**
 	 * Unlink an Analytics report.
@@ -256,17 +261,11 @@ class AnalyticsLinksController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function destroyFor(ObjectRef $ref, string $reportId): JSONResponse {
-		if ($this->analyticsLinkService->isAnalyticsAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Analytics');
-		}
-
-		return $this->onLinkedObject(
-			route: $this->routeOf(ref: $ref),
-			action: function (ObjectEntity $object) use ($reportId): JSONResponse {
-				$this->analyticsLinkService->unlinkReport($object->getUuid(), (int)$reportId);
-
-				return new JSONResponse(['success' => true]);
-			}
+		return $this->whenAnalyticsInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: $this->routeOf(ref: $ref),
+				action: LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->analyticsLinkService->unlinkReport($uuid, (int)$reportId))
+			)
 		);
 	}//end destroyFor()
 
@@ -285,18 +284,27 @@ class AnalyticsLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function available(): JSONResponse {
+		return $this->whenAnalyticsInstalled(
+			answer: fn (): JSONResponse => LinkedSourceResponses::listed(
+				items: $this->analyticsLinkService->getAvailableReports(LinkedSourceActions::search(request: $this->request))
+			)
+		);
+	}//end available()
+
+	/**
+	 * Answer only when NC Analytics is installed; 501 otherwise.
+	 *
+	 * @param Closure $answer Produces the answer when the app is installed.
+	 *
+	 * @return JSONResponse The answer, or the 501.
+	 */
+	private function whenAnalyticsInstalled(Closure $answer): JSONResponse {
 		if ($this->analyticsLinkService->isAnalyticsAvailable() === false) {
 			return $this->appNotInstalled(appName: 'NC Analytics');
 		}
 
-		$search = $this->request->getParam('search');
-		if ($search !== null) {
-			$search = (string)$search;
-		}
-
-		$reports = $this->analyticsLinkService->getAvailableReports($search);
-		return new JSONResponse(['results' => $reports, 'total' => count($reports)]);
-	}//end available()
+		return $answer();
+	}//end whenAnalyticsInstalled()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -317,12 +325,7 @@ class AnalyticsLinksController extends Controller {
 	 *              the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if (in_array($code, [400, 401, 404, 409, 503], true) === true) {
-			return new JSONResponse(['error' => $exception->getMessage()], $code);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [400, 401, 404, 409, 503]);
 	}//end mapException()
 
 	/**

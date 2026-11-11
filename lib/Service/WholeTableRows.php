@@ -147,13 +147,24 @@ final class WholeTableRows {
 
 		$kept = 0;
 		foreach ($this->all(register: $register, schema: $schema) as $object) {
-			if ($object->isArchived() === true || $object->isFrozen() === true || $object->isLocked() === true) {
+			if ($this->isKept(object: $object) === true) {
 				$kept++;
 			}
 		}
 
 		return $kept;
 	}//end countKept()
+
+	/**
+	 * Whether a whole-table delete must not take this row unasked: it is archived, frozen or locked.
+	 *
+	 * @param ObjectEntity $object The row.
+	 *
+	 * @return bool True when the row is kept.
+	 */
+	private function isKept(ObjectEntity $object): bool {
+		return $object->isArchived() === true || $object->isFrozen() === true || $object->isLocked() === true;
+	}//end isKept()
 
 	/**
 	 * Every row of one table, soft-deleted ones included, chunk by chunk.

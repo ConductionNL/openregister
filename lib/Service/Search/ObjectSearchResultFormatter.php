@@ -243,25 +243,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	private function buildSubline(ObjectSearchHit $hit, ?string $term): string {
-		$appLabel = $hit->appLabel();
-		$registerId = $hit->registerId();
-		$schemaId = $hit->schemaId();
-
-		$owner = 'Open Register';
-		if ($appLabel !== null && $appLabel !== '') {
-			$owner = $appLabel;
-		}
-
-		$parts = [$owner];
-		if ($registerId > 0) {
-			$parts[] = $this->formatter->resolveRegisterName(registerId: $registerId);
-		}
-
-		if ($schemaId > 0) {
-			$parts[] = $this->formatter->resolveSchemaName(schemaId: $schemaId);
-		}
-
-		$subline = implode(' · ', $parts);
+		$subline = implode(' · ', $this->sublineParts(hit: $hit));
 
 		$excerpt = $this->buildExcerpt(object: $hit->object(), term: (string)$term);
 		if ($excerpt !== '') {
@@ -270,6 +252,41 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 
 		return $subline;
 	}//end buildSubline()
+
+	/**
+	 * The owner, register and schema names a hit's subline names.
+	 *
+	 * @param ObjectSearchHit $hit The hit.
+	 *
+	 * @return array<int, string> The owning app (or Open Register), then the register and schema names when known.
+	 */
+	private function sublineParts(ObjectSearchHit $hit): array {
+		$parts = [self::ownerOf(appLabel: $hit->appLabel())];
+		if ($hit->registerId() > 0) {
+			$parts[] = $this->formatter->resolveRegisterName(registerId: $hit->registerId());
+		}
+
+		if ($hit->schemaId() > 0) {
+			$parts[] = $this->formatter->resolveSchemaName(schemaId: $hit->schemaId());
+		}
+
+		return $parts;
+	}//end sublineParts()
+
+	/**
+	 * The owner a subline names: the hit's app, or Open Register.
+	 *
+	 * @param string|null $appLabel The app label the hit carries.
+	 *
+	 * @return string The owner.
+	 */
+	private static function ownerOf(?string $appLabel): string {
+		if ($appLabel !== null && $appLabel !== '') {
+			return $appLabel;
+		}
+
+		return 'Open Register';
+	}//end ownerOf()
 
 	/**
 	 * Build an excerpt around the first occurrence of the term.
@@ -295,31 +312,55 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 */
 	private function buildExcerpt(array $object, string $term): string {
 		if ($term !== '') {
-			foreach ($object as $key => $value) {
-				// Only the object's OWN properties are excerpt material.
-				// `@self` is metadata, and an `_`-prefixed key is reserved:
-				// it is something the pipeline attached, not something the
-				// schema declares and field-level security rendered. Now that
-				// file text is in scope, that distinction is load-bearing. A
-				// chunk carries the text of a whole FILE, which can hold
-				// values the reader is redacted out of on the object, so an
-				// excerpt drawn from an attached key would leak past a
-				// redaction that the object itself still honours.
-				if ($key === '@self' || str_starts_with((string)$key, '_') === true) {
-					continue;
-				}
-
-				if (is_string($value) === false) {
-					continue;
-				}
-
-				$excerpt = $this->excerptAround(value: $value, term: $term);
-				if ($excerpt !== null) {
-					return $excerpt;
-				}
+			$excerpt = $this->termExcerpt(object: $object, term: $term);
+			if ($excerpt !== null) {
+				return $excerpt;
 			}
 		}
 
+		return self::fallbackExcerpt(object: $object);
+	}//end buildExcerpt()
+
+	/**
+	 * The excerpt around the term in the first of the object's own string values that holds it.
+	 *
+	 * @param array  $object The rendered object data.
+	 * @param string $term   The (non-empty) search term.
+	 *
+	 * @return string|null The excerpt, or null when no own string value holds the term.
+	 */
+	private function termExcerpt(array $object, string $term): ?string {
+		foreach ($object as $key => $value) {
+			// Only the object's OWN properties are excerpt material.
+			// `@self` is metadata, and an `_`-prefixed key is reserved:
+			// it is something the pipeline attached, not something the
+			// schema declares and field-level security rendered. Now that
+			// file text is in scope, that distinction is load-bearing. A
+			// chunk carries the text of a whole FILE, which can hold
+			// values the reader is redacted out of on the object, so an
+			// excerpt drawn from an attached key would leak past a
+			// redaction that the object itself still honours.
+			if ($key === '@self' || str_starts_with((string)$key, '_') === true || is_string($value) === false) {
+				continue;
+			}
+
+			$excerpt = $this->excerptAround(value: $value, term: $term);
+			if ($excerpt !== null) {
+				return $excerpt;
+			}
+		}
+
+		return null;
+	}//end termExcerpt()
+
+	/**
+	 * The excerpt without a term match: the summary, else the description truncated to 100 characters, else ''.
+	 *
+	 * @param array $object The rendered object data.
+	 *
+	 * @return string The excerpt, or an empty string.
+	 */
+	private static function fallbackExcerpt(array $object): string {
 		// Fallback chain: summary → truncated description → empty.
 		if (isset($object['summary']) === true && is_string($object['summary']) === true && $object['summary'] !== '') {
 			return $object['summary'];
@@ -335,7 +376,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 		}
 
 		return '';
-	}//end buildExcerpt()
+	}//end fallbackExcerpt()
 
 	/**
 	 * Cut a ±context window around the first case-insensitive match of the

@@ -78,10 +78,7 @@ final class VeventCodec {
 	 */
 	public function requiredStart(array $data): DateTime {
 		if (empty($data['dtstart']) === true) {
-			throw new Exception(
-				'Event start time (dtstart) is required: a calendar event without '
-				. 'DTSTART cannot be displayed or deleted by any client.'
-			);
+			throw $this->missingStart();
 		}
 
 		try {
@@ -93,6 +90,18 @@ final class VeventCodec {
 			);
 		}
 	}//end requiredStart()
+
+	/**
+	 * The refusal for an event without a start.
+	 *
+	 * @return Exception The refusal.
+	 */
+	private function missingStart(): Exception {
+		return new Exception(
+			'Event start time (dtstart) is required: a calendar event without '
+			. 'DTSTART cannot be displayed or deleted by any client.'
+		);
+	}//end missingStart()
 
 	/**
 	 * The opening lines of a new event, up to and including DTSTAMP.

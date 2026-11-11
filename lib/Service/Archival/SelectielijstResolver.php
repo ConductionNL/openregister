@@ -137,23 +137,35 @@ class SelectielijstResolver {
 		$settings = $this->storage->settings->getArchivalSettingsOnly();
 
 		$registerId = $settings['selectielijstRegister'] ?? null;
-		$schemaId = $settings['selectielijstSchema'] ?? null;
+		$schemaId   = $settings['selectielijstSchema'] ?? null;
 
 		if ($registerId === null || $schemaId === null) {
 			return null;
 		}
 
 		try {
-			$catalog = $this->storage->catalog;
-			$table = new RegisterSchema(register: $catalog->registers()->find((int)$registerId), schema: $catalog->schemas()->find((int)$schemaId));
-			$results = $this->rowsFor(category: $category, table: $table);
+			$table = $this->selectielijstTable(registerId: (int)$registerId, schemaId: (int)$schemaId);
 
-			return $this->pickApplicableRow(results: $results);
+			return $this->pickApplicableRow(results: $this->rowsFor(category: $category, table: $table));
 		} catch (Exception $e) {
 			$this->logger->warning('[RetentionService] Failed to lookup selectielijst entry for ' . $category, ['exception' => $e]);
 			return null;
 		}
 	}//end findSelectielijstEntry()
+
+	/**
+	 * The configured selectielijst register and schema.
+	 *
+	 * @param int $registerId The configured register id.
+	 * @param int $schemaId   The configured schema id.
+	 *
+	 * @return RegisterSchema The table the selectielijst rows live in.
+	 */
+	private function selectielijstTable(int $registerId, int $schemaId): RegisterSchema {
+		$catalog = $this->storage->catalog;
+
+		return new RegisterSchema(register: $catalog->registers()->find($registerId), schema: $catalog->schemas()->find($schemaId));
+	}//end selectielijstTable()
 
 	/**
 	 * Every stored row of a category, up to the cap.

@@ -43,6 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Survey;
 
 use DateTimeImmutable;
+use DateTimeInterface;
 
 /**
  * The survey vocabulary and the refusals that go with it.
@@ -165,27 +166,14 @@ class SurveyRules {
 	 */
 	public function refuseInvitation(InvitationVisit $visit): ?string {
 		$invitation = $visit->invitation;
-		$moment = ($visit->now ?? new DateTimeImmutable());
 		$state = (string)($invitation['state'] ?? self::SENT);
 
 		if ($state === self::BLOCKED) {
-			$reason = trim((string)($invitation['blockedReason'] ?? ''));
-			if ($reason === '') {
-				return 'This invitation was never sent.';
-			}
-
-			return 'This invitation was never sent: '.$reason;
+			return self::blockedRefusal(invitation: $invitation);
 		}
 
-		$expiresAt = trim((string)($invitation['expiresAt'] ?? ''));
-		if ($expiresAt !== '') {
-			$expiry = strtotime($expiresAt);
-			// 🔴 AN EXPIRY THAT WILL NOT PARSE IS NOT AN OPEN INVITATION. Reading
-			// it as "no expiry" turns one malformed timestamp into a link that
-			// works forever, which is the failure nobody would notice.
-			if ($expiry === false || $expiry < $moment->getTimestamp()) {
-				return 'This invitation has expired, so the survey can no longer be answered from this link.';
-			}
+		if (self::hasExpired(invitation: $invitation, moment: ($visit->now ?? new DateTimeImmutable())) === true) {
+			return 'This invitation has expired, so the survey can no longer be answered from this link.';
 		}
 
 		if ($state === self::ANSWERED && ($visit->survey['allowReopening'] ?? false) !== true) {
@@ -194,6 +182,44 @@ class SurveyRules {
 
 		return null;
 	}//end refuseInvitation()
+
+	/**
+	 * The refusal of a blocked invitation, with its reason when it has one.
+	 *
+	 * @param array<string, mixed> $invitation The invitation.
+	 *
+	 * @return string The refusal.
+	 */
+	private static function blockedRefusal(array $invitation): string {
+		$reason = trim((string)($invitation['blockedReason'] ?? ''));
+		if ($reason === '') {
+			return 'This invitation was never sent.';
+		}
+
+		return 'This invitation was never sent: '.$reason;
+	}//end blockedRefusal()
+
+	/**
+	 * Whether the invitation's expiry has passed, or will not parse.
+	 *
+	 * @param array<string, mixed> $invitation The invitation.
+	 * @param DateTimeInterface    $moment     The moment it is followed.
+	 *
+	 * @return bool True when the link no longer works.
+	 */
+	private static function hasExpired(array $invitation, DateTimeInterface $moment): bool {
+		$expiresAt = trim((string)($invitation['expiresAt'] ?? ''));
+		if ($expiresAt === '') {
+			return false;
+		}
+
+		$expiry = strtotime($expiresAt);
+
+		// 🔴 AN EXPIRY THAT WILL NOT PARSE IS NOT AN OPEN INVITATION. Reading
+		// it as "no expiry" turns one malformed timestamp into a link that
+		// works forever, which is the failure nobody would notice.
+		return ($expiry === false || $expiry < $moment->getTimestamp());
+	}//end hasExpired()
 
 	/**
 	 * The required questions a submission left out, by name.
@@ -206,6 +232,28 @@ class SurveyRules {
 	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function refuseSubmission(array $questions, array $answers): array {
+		$answered = self::answeredQuestions(answers: $answers);
+
+		$refusals = [];
+		foreach ($questions as $question) {
+			if (($question['required'] ?? false) !== true || isset($answered[self::slugOf(question: $question)]) === true) {
+				continue;
+			}
+
+			$refusals[] = self::missingAnswer(question: $question);
+		}
+
+		return $refusals;
+	}//end refuseSubmission()
+
+	/**
+	 * The questions a submission answered with a non-blank value, as a set.
+	 *
+	 * @param array<int, array<string, mixed>> $answers What was submitted.
+	 *
+	 * @return array<string, true> Question slug => true.
+	 */
+	private static function answeredQuestions(array $answers): array {
 		$answered = [];
 		foreach ($answers as $answer) {
 			$question = (string)($answer['question'] ?? '');
@@ -217,28 +265,37 @@ class SurveyRules {
 			$answered[$question] = true;
 		}
 
-		$refusals = [];
-		foreach ($questions as $question) {
-			if (($question['required'] ?? false) !== true) {
-				continue;
-			}
+		return $answered;
+	}//end answeredQuestions()
 
-			$slug = (string)($question['slug'] ?? $question['id'] ?? '');
-			if (isset($answered[$slug]) === true) {
-				continue;
-			}
+	/**
+	 * The question's slug, else its id.
+	 *
+	 * @param array<string, mixed> $question The question.
+	 *
+	 * @return string The slug.
+	 */
+	private static function slugOf(array $question): string {
+		return (string)($question['slug'] ?? $question['id'] ?? '');
+	}//end slugOf()
 
-			// 🔴 THE QUESTION IS NAMED. "Submission failed" sends somebody back
-			// to a form of twenty questions to find the one, and most of them
-			// close the tab instead.
-			$refusals[] = sprintf(
-				'This question still needs an answer: "%s".',
-				(string)($question['text'] ?? $slug)
-			);
-		}
-
-		return $refusals;
-	}//end refuseSubmission()
+	/**
+	 * The refusal naming a required question that was left out.
+	 *
+	 * 🔴 THE QUESTION IS NAMED. "Submission failed" sends somebody back
+	 * to a form of twenty questions to find the one, and most of them
+	 * close the tab instead.
+	 *
+	 * @param array<string, mixed> $question The question.
+	 *
+	 * @return string The refusal.
+	 */
+	private static function missingAnswer(array $question): string {
+		return sprintf(
+			'This question still needs an answer: "%s".',
+			(string)($question['text'] ?? self::slugOf(question: $question))
+		);
+	}//end missingAnswer()
 
 	/**
 	 * What a reader may see of an anonymous survey's answers.

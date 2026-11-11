@@ -57,6 +57,20 @@ use Throwable;
  */
 class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterface {
 	/**
+	 * The engine namespaces whose objects are never user tables.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SYSTEM_NAMESPACES = [
+		'pg_catalog.',
+		'information_schema.',
+		'pg_toast.',
+		'mysql.',
+		'performance_schema.',
+		'sys.',
+	];
+
+	/**
 	 * The object-source provider id every introspected schema is bound to.
 	 *
 	 * @var string
@@ -116,15 +130,29 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 		}
 
 		return [
-			'register' => [
-				'title' => (string)($source->getTitle() ?? ('Database ' . $sourceId)),
-				'slug' => $this->slugify(value: 'db-' . $sourceId),
-				'source' => $sourceId,
-				'description' => 'Virtual register introspected from database source ' . $sourceId . '.',
-			],
+			'register' => $this->registerBlueprint(source: $source, sourceId: $sourceId),
 			'schemas' => $schemas,
 		];
 	}//end buildBlueprint()
+
+	/**
+	 * The virtual register a database source is introspected into.
+	 *
+	 * @param Source $source   The database source.
+	 * @param string $sourceId The owning source id.
+	 *
+	 * @return array<string, string> title, slug, source and description.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function registerBlueprint(Source $source, string $sourceId): array {
+		return [
+			'title' => (string)($source->getTitle() ?? ('Database ' . $sourceId)),
+			'slug' => $this->slugify(value: 'db-' . $sourceId),
+			'source' => $sourceId,
+			'description' => 'Virtual register introspected from database source ' . $sourceId . '.',
+		];
+	}//end registerBlueprint()
 
 	/**
 	 * Introspect every user table and view of a source into working records, foreign keys applied.
@@ -143,12 +171,31 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 			connection: $this->tools->connectionFactory->getConnection(source: $source),
 			sourceId: $sourceId
 		);
-		$schemaManager = $pass->schemaManager;
-		$tableNames    = $this->userTableNames(schemaManager: $schemaManager);
-		$viewNames     = $this->userViewNames(schemaManager: $schemaManager);
 
 		// First pass: introspect every table/view into a working record so the
 		// second pass can resolve foreign-key targets and add inverse sides.
+		$tables = $this->workingRecords(pass: $pass);
+
+		// Second pass: map single-column foreign keys onto the relation dialect
+		// and add the inverse side on the referenced schema.
+		$this->applyForeignKeys(schemaManager: $pass->schemaManager, tables: $tables);
+
+		return $tables;
+	}//end introspectSource()
+
+	/**
+	 * The working record of every user table, then of every user view not already a table.
+	 *
+	 * @param SourceIntrospection $pass The schema manager and the owning source id.
+	 *
+	 * @return array<string, array<string, mixed>> The records, keyed by table name.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function workingRecords(SourceIntrospection $pass): array {
+		$tableNames = $this->userTableNames(schemaManager: $pass->schemaManager);
+		$viewNames  = $this->userViewNames(schemaManager: $pass->schemaManager);
+
 		$tables = [];
 		foreach ($tableNames as $tableName) {
 			$tables[$tableName] = $this->introspectTable(pass: $pass, table: new TableRef(name: $tableName, isView: false));
@@ -160,12 +207,8 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 			}
 		}
 
-		// Second pass: map single-column foreign keys onto the relation dialect
-		// and add the inverse side on the referenced schema.
-		$this->applyForeignKeys(schemaManager: $schemaManager, tables: $tables);
-
 		return $tables;
-	}//end introspectSource()
+	}//end workingRecords()
 
 	/**
 	 * The source's table names, system objects left out, sorted.
@@ -995,15 +1038,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 		$lower = strtolower($name);
 		$short = strtolower($this->shortName(name: $name));
 
-		$systemNamespaces = [
-			'pg_catalog.',
-			'information_schema.',
-			'pg_toast.',
-			'mysql.',
-			'performance_schema.',
-			'sys.',
-		];
-		foreach ($systemNamespaces as $prefix) {
+		foreach (self::SYSTEM_NAMESPACES as $prefix) {
 			if (str_starts_with($lower, $prefix) === true) {
 				return true;
 			}

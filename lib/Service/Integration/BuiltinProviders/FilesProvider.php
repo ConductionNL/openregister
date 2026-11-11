@@ -38,7 +38,7 @@ use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
-use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCP\IL10N;
 use Psr\Container\ContainerInterface;
 
@@ -46,7 +46,7 @@ use Psr\Container\ContainerInterface;
  * Files integration provider — magic-column read path, mutation
  * deferred to controller refactor.
  */
-class FilesProvider extends AbstractIntegrationProvider {
+class FilesProvider extends CoreIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
@@ -97,24 +97,6 @@ class FilesProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Group identifier for UI grouping (or null).
-	 *
-	 * @return string|null Group identifier for UI grouping.
-	 */
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	/**
-	 * Required NC app id (null = built-in).
-	 *
-	 * @return string|null Required app id (null = built-in).
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Storage strategy hint for the registry.
 	 *
 	 * @return string Storage strategy hint for the registry.
@@ -122,15 +104,6 @@ class FilesProvider extends AbstractIntegrationProvider {
 	public function getStorageStrategy(): string {
 		return 'magic-column';
 	}//end getStorageStrategy()
-
-	/**
-	 * True when the provider is available for use.
-	 *
-	 * @return bool True when the provider is available for use.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
 
 	/**
 	 * List files linked to the given OR object.

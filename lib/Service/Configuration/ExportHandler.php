@@ -29,6 +29,7 @@ use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -431,30 +432,53 @@ class ExportHandler {
 		foreach ($configuration->getMappings() ?? [] as $mappingId) {
 			try {
 				$mapping = $this->mappingMapper->find($mappingId);
-				$mappingArray = $mapping->jsonSerialize();
-				unset(
-					$mappingArray['id'],
-					$mappingArray['uuid'],
-					$mappingArray['organisation'],
-					$mappingArray['configurations'],
-					$mappingArray['created'],
-					$mappingArray['updated']
-				);
-
-				$mappings[$mapping->getSlug()] = $mappingArray;
+				$mappings[$mapping->getSlug()] = $this->portableMapping(mapping: $mapping);
 			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[ExportHandler] Failed to export mapping',
-					context: [
-						'mappingId' => $mappingId,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
+				$this->logMappingFailure(mappingId: $mappingId, error: $e);
+			}
+		}
 
 		return $mappings;
 	}//end exportMappings()
+
+	/**
+	 * A mapping without its instance fields (id, uuid, organisation, configurations, timestamps).
+	 *
+	 * @param Mapping $mapping The mapping.
+	 *
+	 * @return array<string, mixed> The portable mapping.
+	 */
+	private function portableMapping(Mapping $mapping): array {
+		$mappingArray = $mapping->jsonSerialize();
+		unset(
+			$mappingArray['id'],
+			$mappingArray['uuid'],
+			$mappingArray['organisation'],
+			$mappingArray['configurations'],
+			$mappingArray['created'],
+			$mappingArray['updated']
+		);
+
+		return $mappingArray;
+	}//end portableMapping()
+
+	/**
+	 * Log a mapping that could not be exported; the export goes on without it.
+	 *
+	 * @param mixed     $mappingId The mapping id.
+	 * @param Exception $error     Why it failed.
+	 *
+	 * @return void
+	 */
+	private function logMappingFailure(mixed $mappingId, Exception $error): void {
+		$this->logger->warning(
+			message: '[ExportHandler] Failed to export mapping',
+			context: [
+				'mappingId' => $mappingId,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logMappingFailure()
 
 	/**
 	 * Attach the declared-group scope map to an exported configuration document.
@@ -627,25 +651,13 @@ class ExportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function withReferenceSlugs(mixed $node, ExportSlugMaps $slugs): mixed {
-		if (is_object($node) === true) {
-			$node = (array)$node;
-		}
-
-		if (is_object($node['objectConfiguration'] ?? null) === true) {
-			$node['objectConfiguration'] = (array)$node['objectConfiguration'];
-		}
+		$node = $this->asArrayNode(node: $node);
 
 		if (($node['$ref'] ?? null) !== null) {
 			$node['$ref'] = $slugs->schemaSlug(schemaId: $this->getLastNumericSegment(url: $node['$ref'])) ?? $node['$ref'];
 		}
 
-		if (($node['objectConfiguration']['register'] ?? null) !== null) {
-			$node['objectConfiguration']['register'] = $slugs->registerSlugOrValue(registerId: $node['objectConfiguration']['register']);
-		}
-
-		if (($node['objectConfiguration']['schema'] ?? null) !== null) {
-			$node['objectConfiguration']['schema'] = $slugs->schemaSlugOrValue(schemaId: $node['objectConfiguration']['schema']);
-		}
+		$node = $this->withObjectConfigurationSlugs(node: $node, slugs: $slugs);
 
 		// Legacy structure: the register as a URL.
 		if (is_string($node['register'] ?? null) === true) {
@@ -654,6 +666,45 @@ class ExportHandler {
 
 		return $node;
 	}//end withReferenceSlugs()
+
+	/**
+	 * A property node, and its objectConfiguration, as arrays.
+	 *
+	 * @param mixed $node The property node.
+	 *
+	 * @return mixed The node.
+	 */
+	private function asArrayNode(mixed $node): mixed {
+		if (is_object($node) === true) {
+			$node = (array)$node;
+		}
+
+		if (is_object($node['objectConfiguration'] ?? null) === true) {
+			$node['objectConfiguration'] = (array)$node['objectConfiguration'];
+		}
+
+		return $node;
+	}//end asArrayNode()
+
+	/**
+	 * A node whose objectConfiguration names its register and schema by slug.
+	 *
+	 * @param mixed          $node  The property node, as an array.
+	 * @param ExportSlugMaps $slugs The register and schema slugs by id.
+	 *
+	 * @return mixed The node.
+	 */
+	private function withObjectConfigurationSlugs(mixed $node, ExportSlugMaps $slugs): mixed {
+		if (($node['objectConfiguration']['register'] ?? null) !== null) {
+			$node['objectConfiguration']['register'] = $slugs->registerSlugOrValue(registerId: $node['objectConfiguration']['register']);
+		}
+
+		if (($node['objectConfiguration']['schema'] ?? null) !== null) {
+			$node['objectConfiguration']['schema'] = $slugs->schemaSlugOrValue(schemaId: $node['objectConfiguration']['schema']);
+		}
+
+		return $node;
+	}//end withObjectConfigurationSlugs()
 
 	/**
 	 * Get the last segment of a URL if it is numeric.

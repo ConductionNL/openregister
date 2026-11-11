@@ -228,30 +228,57 @@ class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLogin
 	public function reapply(): array {
 		$accounts = $this->accountsWithClaims();
 
-		$changed = [];
-		$before = 0;
-		$after = 0;
-
+		$moves = [];
 		foreach ($accounts as $userId) {
-			$held = $this->grantsFor(userId: $userId);
-			$holds = $this->apply(userId: $userId, claims: $this->claimsFor(userId: $userId));
+			$moves[] = $this->reapplyFor(userId: $userId);
+		}
 
-			$before += count($held);
-			$after += count($holds);
+		return self::reapplySummary(accounts: $accounts, moves: $moves);
+	}//end reapply()
 
-			if (json_encode($held) !== json_encode($holds)) {
-				$changed[] = $userId;
+	/**
+	 * Re-run the derivation for one account: how many grants it held and holds, and whether they moved.
+	 *
+	 * @param string $userId The account.
+	 *
+	 * @return array{user: string, before: int, after: int, changed: bool} The move.
+	 */
+	private function reapplyFor(string $userId): array {
+		$held = $this->grantsFor(userId: $userId);
+		$holds = $this->apply(userId: $userId, claims: $this->claimsFor(userId: $userId));
+
+		return [
+			'user' => $userId,
+			'before' => count($held),
+			'after' => count($holds),
+			'changed' => (json_encode($held) !== json_encode($holds)),
+		];
+	}//end reapplyFor()
+
+	/**
+	 * What a re-run did, over every account's move.
+	 *
+	 * @param array<int, string>                                                   $accounts The accounts re-run.
+	 * @param array<int, array{user: string, before: int, after: int, changed: bool}> $moves    One move per account.
+	 *
+	 * @return array{users: integer, changed: integer, grantsBefore: integer, grantsAfter: integer, accounts: array<int, string>}
+	 */
+	private static function reapplySummary(array $accounts, array $moves): array {
+		$changed = [];
+		foreach ($moves as $move) {
+			if ($move['changed'] === true) {
+				$changed[] = $move['user'];
 			}
 		}
 
 		return [
 			'users' => count($accounts),
 			'changed' => count($changed),
-			'grantsBefore' => $before,
-			'grantsAfter' => $after,
+			'grantsBefore' => array_sum(array_column($moves, 'before')),
+			'grantsAfter' => array_sum(array_column($moves, 'after')),
 			'accounts' => $changed,
 		];
-	}//end reapply()
+	}//end reapplySummary()
 
 	/**
 	 * Every account that has claims stored.

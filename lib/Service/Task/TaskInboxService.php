@@ -372,6 +372,22 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function subjectContexts(array $tasks): array {
+		$uuids = self::subjectUuids(tasks: $tasks);
+		if ($uuids === [] || $this->objects === null) {
+			return [];
+		}
+
+		return $this->contextsOf(objects: $this->subjectObjects(tasks: $tasks, uuids: $uuids));
+	}//end subjectContexts()
+
+	/**
+	 * The distinct subject uuids of a page, in first-seen order.
+	 *
+	 * @param array<int, TaskInterface> $tasks The page.
+	 *
+	 * @return array<int, int|string> The uuids.
+	 */
+	private static function subjectUuids(array $tasks): array {
 		$uuids = [];
 		foreach ($tasks as $task) {
 			$objectUuid = trim((string)$task->getObjectUuid());
@@ -380,12 +396,19 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			}
 		}
 
-		if ($uuids === [] || $this->objects === null) {
-			return [];
-		}
+		return array_keys($uuids);
+	}//end subjectUuids()
 
+	/**
+	 * The context of every subject object that yields one, by uuid.
+	 *
+	 * @param array<array-key, mixed> $objects The subject objects.
+	 *
+	 * @return array<string, array<string, mixed>> Context by object uuid.
+	 */
+	private function contextsOf(array $objects): array {
 		$contexts = [];
-		foreach ($this->subjectObjects(tasks: $tasks, uuids: array_keys($uuids)) as $object) {
+		foreach ($objects as $object) {
 			$serialised = [];
 			if (method_exists($object, 'jsonSerialize') === true) {
 				$serialised = $object->jsonSerialize();
@@ -398,7 +421,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		}
 
 		return $contexts;
-	}//end subjectContexts()
+	}//end contextsOf()
 
 	/**
 	 * The subject objects of a page: located ones from their own tables, the

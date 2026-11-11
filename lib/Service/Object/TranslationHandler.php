@@ -186,6 +186,17 @@ class TranslationHandler implements TranslationHandlerInterface {
 			}
 		}
 
+		return $this->anyLanguageValue(value: $value);
+	}//end translatedValue()
+
+	/**
+	 * The first language's value when none of the chain has one; the map itself when it is empty.
+	 *
+	 * @param array $value The language map.
+	 *
+	 * @return mixed
+	 */
+	private function anyLanguageValue(array $value): mixed {
 		$firstValue = reset($value);
 		if ($firstValue === false) {
 			return $value;
@@ -193,7 +204,7 @@ class TranslationHandler implements TranslationHandlerInterface {
 
 		$this->languageService->setFallbackUsed(true);
 		return $firstValue;
-	}//end translatedValue()
+	}//end anyLanguageValue()
 
 	/**
 	 * Normalize translatable properties in object data for saving.
@@ -224,10 +235,7 @@ class TranslationHandler implements TranslationHandlerInterface {
 			return $objectData;
 		}
 
-		$target = new TranslationSaveTarget(
-			defaultLanguage: ($scope->register?->getDefaultLanguage() ?? 'nl'),
-			targetLanguage: $this->languageService->getTargetLanguage()
-		);
+		$target = $this->saveTarget(scope: $scope);
 		foreach ($translatableProps as $propName) {
 			if (isset($objectData[$propName]) === true) {
 				$objectData[$propName] = $this->valueForSave(value: $objectData[$propName], target: $target->forProperty(property: (string)$propName));
@@ -236,6 +244,20 @@ class TranslationHandler implements TranslationHandlerInterface {
 
 		return $objectData;
 	}//end normalizeTranslationsForSave()
+
+	/**
+	 * The default and target language a save is normalised for.
+	 *
+	 * @param TranslationScope $scope The register and schema of the save.
+	 *
+	 * @return TranslationSaveTarget
+	 */
+	private function saveTarget(TranslationScope $scope): TranslationSaveTarget {
+		return new TranslationSaveTarget(
+			defaultLanguage: ($scope->register?->getDefaultLanguage() ?? 'nl'),
+			targetLanguage: $this->languageService->getTargetLanguage()
+		);
+	}//end saveTarget()
 
 	/**
 	 * A language-keyed value after its check, or a simple value wrapped under its language.

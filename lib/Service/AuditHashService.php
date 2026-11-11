@@ -178,6 +178,20 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	private const STALE_SEAL_LOCK_SECONDS = 900;
 
 	/**
+	 * A chain walk before its first window; `from` and `to` go in front.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const FRESH_CHAIN_WALK = [
+		'afterId' => 0,
+		'previousHash' => null,
+		'brokenAt' => null,
+		'entriesVerified' => 0,
+		'skippedNullHashes' => 0,
+		'purgedTombstones' => 0,
+	];
+
+	/**
 	 * Whether THIS service instance currently holds the seal lock.
 	 *
 	 * The seal lock is not re-entrant: acquiring it twice without releasing
@@ -293,23 +307,14 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	public function sealRows(array $ids): int {
-		$ids = array_values(
-			array_filter(
-				array_map('intval', $ids),
-				static function (int $id): bool {
-					return $id > 0;
-				}
-			)
-		);
+		$ids = self::positiveIds(ids: $ids);
 
 		if ($ids === []) {
 			return 0;
 		}
 
 		if ($this->acquireSealLock() === false) {
-			$this->logger->warning(
-				'[AuditHashService] seal lock unavailable, leaving ' . count($ids) . ' audit rows unsealed (a later seal pass will chain them)'
-			);
+			$this->logRowsLeftUnsealed(count: count($ids));
 
 			return 0;
 		}
@@ -320,6 +325,37 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			$this->releaseSealLock();
 		}
 	}//end sealRows()
+
+	/**
+	 * The ids as integers, without the ones that are not positive.
+	 *
+	 * @param array $ids The ids as given.
+	 *
+	 * @return list<int>
+	 */
+	private static function positiveIds(array $ids): array {
+		return array_values(
+			array_filter(
+				array_map('intval', $ids),
+				static function (int $id): bool {
+					return $id > 0;
+				}
+			)
+		);
+	}//end positiveIds()
+
+	/**
+	 * Warn that rows were left unsealed because the seal lock was unavailable.
+	 *
+	 * @param int $count How many rows were left unsealed.
+	 *
+	 * @return void
+	 */
+	private function logRowsLeftUnsealed(int $count): void {
+		$this->logger->warning(
+			'[AuditHashService] seal lock unavailable, leaving ' . $count . ' audit rows unsealed (a later seal pass will chain them)'
+		);
+	}//end logRowsLeftUnsealed()
 
 	/**
 	 * Seal rows that were left unsealed, oldest first.
@@ -349,10 +385,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}
 
 		if ($this->acquireSealLock() === false) {
-			$this->logger->warning(
-				message: '[AuditHashService] Seal sweep skipped: seal lock unavailable.',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
-			);
+			$this->logSweepSkipped();
 
 			return 0;
 		}
@@ -364,6 +397,18 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}
 
 	}//end sealUnsealed()
+
+	/**
+	 * Warn that a seal sweep stood down because another holds the seal lock.
+	 *
+	 * @return void
+	 */
+	private function logSweepSkipped(): void {
+		$this->logger->warning(
+			message: '[AuditHashService] Seal sweep skipped: seal lock unavailable.',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+		);
+	}//end logSweepSkipped()
 
 	/**
 	 * The id a sweep starts from, or null when the sweep has nothing it may do.
@@ -406,6 +451,20 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			return false;
 		}
 
+		$this->logTailTooLong(fromId: $fromId, tail: $tail);
+
+		return true;
+	}//end tailTooLong()
+
+	/**
+	 * Warn that the sweep stands down because sealing would rewrite too long a tail.
+	 *
+	 * @param int $fromId The oldest unsealed row.
+	 * @param int $tail   How many rows follow it.
+	 *
+	 * @return void
+	 */
+	private function logTailTooLong(int $fromId, int $tail): void {
 		$this->logger->warning(
 			message: sprintf(
 				'[AuditHashService] Oldest unsealed audit row is id %d, with %d row(s) after it — '
@@ -417,9 +476,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			),
 			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
 		);
-
-		return true;
-	}//end tailTooLong()
+	}//end logTailTooLong()
 
 	/**
 	 * Re-chain every row from the oldest gap forward, window by window.
@@ -865,21 +922,30 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 				continue;
 			}
 
-			$entry = new AuditTrail();
-			$entry->hydrate(object: $this->mapRowToEntity(row: $row));
-
-			$hash = $this->computeHash(entry: $entry, previousHash: $previousHash);
-
-			$updates[(int)$row['id']] = [
-				'hash' => $hash,
-				'previousHash' => $previousHash,
-			];
-
-			$previousHash = $hash;
+			$updates[(int)$row['id']] = $this->sealOf(row: $row, previousHash: $previousHash);
+			$previousHash = $updates[(int)$row['id']]['hash'];
 		}
 
 		return $updates;
 	}//end chainUnsealed()
+
+	/**
+	 * The seal of one unsealed row: its hash, chained to the hash before it.
+	 *
+	 * @param array  $row          The audit row.
+	 * @param string $previousHash The hash of the row before it.
+	 *
+	 * @return array{hash: string, previousHash: string}
+	 */
+	private function sealOf(array $row, string $previousHash): array {
+		$entry = new AuditTrail();
+		$entry->hydrate(object: $this->mapRowToEntity(row: $row));
+
+		return [
+			'hash' => $this->computeHash(entry: $entry, previousHash: $previousHash),
+			'previousHash' => $previousHash,
+		];
+	}//end sealOf()
 
 	/**
 	 * Write a batch of seals as a single CASE-based UPDATE.
@@ -890,18 +956,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 */
 	private function writeSeals(array $updates): void {
 		$tableName = $this->db->getQueryBuilder()->getTableName('openregister_audit_trails');
-		$hashCases = [];
-		$prevCases = [];
-		$parameters = [];
-		foreach ($updates as $id => $values) {
-			$hashCases[] = 'WHEN ' . ((int)$id) . ' THEN ?';
-			$parameters[] = $values['hash'];
-		}
-
-		foreach ($updates as $id => $values) {
-			$prevCases[] = 'WHEN ' . ((int)$id) . ' THEN ?';
-			$parameters[] = $values['previousHash'];
-		}
+		[$hashCases, $hashParameters] = self::caseClauses(updates: $updates, field: 'hash');
+		[$prevCases, $prevParameters] = self::caseClauses(updates: $updates, field: 'previousHash');
 
 		$idList = implode(',', array_map('intval', array_keys($updates)));
 
@@ -910,8 +966,27 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			. ' previous_hash = CASE id ' . implode(' ', $prevCases) . ' ELSE previous_hash END'
 			. ' WHERE id IN (' . $idList . ')';
 
-		$this->db->executeStatement($sql, $parameters);
+		$this->db->executeStatement($sql, array_merge($hashParameters, $prevParameters));
 	}//end writeSeals()
+
+	/**
+	 * The `WHEN id THEN ?` clauses of one column, with their parameters in the same order.
+	 *
+	 * @param array<int, array{hash: string, previousHash: string}> $updates The seals by row id.
+	 * @param string                                                 $field   The seal field to write.
+	 *
+	 * @return array{0: list<string>, 1: list<string>}
+	 */
+	private static function caseClauses(array $updates, string $field): array {
+		$cases = [];
+		$parameters = [];
+		foreach ($updates as $id => $values) {
+			$cases[] = 'WHEN ' . ((int)$id) . ' THEN ?';
+			$parameters[] = $values[$field];
+		}
+
+		return [$cases, $parameters];
+	}//end caseClauses()
 
 	/**
 	 * Try to acquire the exclusive advisory lock serializing seal passes.
@@ -945,6 +1020,19 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			return false;
 		}
 
+		if ($this->tryAcquireSealLock() === true) {
+			return true;
+		}
+
+		return $this->breakStaleSealLock();
+	}//end acquireSealLock()
+
+	/**
+	 * Try to take the seal lock a few times, waiting between attempts for another holder to finish.
+	 *
+	 * @return bool True when the lock was taken.
+	 */
+	private function tryAcquireSealLock(): bool {
 		for ($attempt = 1; $attempt <= self::SEAL_LOCK_ATTEMPTS; $attempt++) {
 			try {
 				$this->lockingProvider->acquireLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
@@ -961,8 +1049,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			}
 		}
 
-		return $this->breakStaleSealLock();
-	}//end acquireSealLock()
+		return false;
+	}//end tryAcquireSealLock()
 
 	/**
 	 * Release a seal lock whose holder died, and take it.
@@ -1129,16 +1217,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	private function startChainWalk(?int $from, ?int $to): array {
-		$walk = [
-			'from' => $from,
-			'to' => $to,
-			'afterId' => 0,
-			'previousHash' => null,
-			'brokenAt' => null,
-			'entriesVerified' => 0,
-			'skippedNullHashes' => 0,
-			'purgedTombstones' => 0,
-		];
+		$walk = ['from' => $from, 'to' => $to] + self::FRESH_CHAIN_WALK;
 
 		if ($from !== null) {
 			$walk['previousHash'] = $this->getHashBefore(id: $from);
@@ -1249,6 +1328,22 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	private function readChainWindow(int $afterId, ?int $to): array {
+		$result = $this->chainWindowQuery(afterId: $afterId, to: $to)->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return $rows;
+	}//end readChainWindow()
+
+	/**
+	 * The query for the next window of audit rows, in id order, up to an optional last id.
+	 *
+	 * @param int      $afterId The id the window starts after.
+	 * @param int|null $to      The last id to read, or null for no end.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function chainWindowQuery(int $afterId, ?int $to): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_audit_trails')
@@ -1262,12 +1357,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			);
 		}
 
-		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
-		$result->closeCursor();
-
-		return $rows;
-	}//end readChainWindow()
+		return $qb;
+	}//end chainWindowQuery()
 
 	/**
 	 * Assemble the verifyChain() result.
@@ -1300,15 +1391,27 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			'purgedTombstones' => $walk['purgedTombstones'],
 		];
 
+		return self::withRange(response: $response, walk: $walk);
+	}//end buildChainReport()
+
+	/**
+	 * A chain report with the range it covered, when the walk was bounded.
+	 *
+	 * @param array<string, mixed> $response The report.
+	 * @param array<string, mixed> $walk     The finished walk.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withRange(array $response, array $walk): array {
 		if ($walk['from'] !== null || $walk['to'] !== null) {
 			$response['range'] = [
-				'from' => ($walk['from'] ?? $brokenAt),
-				'to' => ($walk['to'] ?? $brokenAt),
+				'from' => ($walk['from'] ?? $walk['brokenAt']),
+				'to' => ($walk['to'] ?? $walk['brokenAt']),
 			];
 		}
 
 		return $response;
-	}//end buildChainReport()
+	}//end withRange()
 
 	/**
 	 * Get the hash of the nearest SEALED entry before the given ID.
@@ -1328,6 +1431,25 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	private function getHashBefore(int $id): ?string {
+		$result = $this->hashBeforeQuery(id: $id)->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row === false || $row['hash'] === null || $row['hash'] === '') {
+			return null;
+		}
+
+		return $row['hash'];
+	}//end getHashBefore()
+
+	/**
+	 * The query for the hash of the last sealed row before an id.
+	 *
+	 * @param int $id The id.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function hashBeforeQuery(int $id): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('hash')
@@ -1342,16 +1464,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			->orderBy('id', 'DESC')
 			->setMaxResults(1);
 
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		if ($row === false || $row['hash'] === null || $row['hash'] === '') {
-			return null;
-		}
-
-		return $row['hash'];
-	}//end getHashBefore()
+		return $qb;
+	}//end hashBeforeQuery()
 
 	/**
 	 * Map a database row to entity-compatible array with camelCase keys.

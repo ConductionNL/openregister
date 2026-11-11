@@ -86,11 +86,7 @@ class ApiVersionNegotiator implements ApiVersionNegotiatorInterface {
 	public function negotiate(IRequest $request): ApiVersionNegotiation {
 		$named = $this->readRequestedIdentifier(request: $request);
 		if ($named === null) {
-			return new ApiVersionNegotiation(
-				requestedId: null,
-				version: $this->catalogue->current(),
-				source: ApiVersionNegotiation::SOURCE_DEFAULT,
-			);
+			return $this->defaultNegotiation();
 		}
 
 		[$identifier, $source] = $named;
@@ -102,6 +98,20 @@ class ApiVersionNegotiator implements ApiVersionNegotiatorInterface {
 		);
 
 	}//end negotiate()
+
+	/**
+	 * The negotiation of a request that names no version: the current one.
+	 *
+	 * @return ApiVersionNegotiation The negotiation.
+	 */
+	private function defaultNegotiation(): ApiVersionNegotiation {
+		return new ApiVersionNegotiation(
+			requestedId: null,
+			version: $this->catalogue->current(),
+			source: ApiVersionNegotiation::SOURCE_DEFAULT,
+		);
+
+	}//end defaultNegotiation()
 
 	/**
 	 * The identifiers this instance would accept, for a refusal message.

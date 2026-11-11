@@ -112,6 +112,30 @@ class PermissionCatalogue implements PermissionCatalogueInterface {
 			return $this->resolved;
 		}
 
+		$catalogue = self::canonicalEntries();
+		foreach ($this->collectDeclarations() as $verb => $declaration) {
+			// A canonical verb is never redeclarable. An app that shadowed
+			// `delete` with its own meaning would change what an existing grant
+			// does without any block being edited.
+			if (isset($catalogue[$verb]) === true) {
+				$this->rejectRedeclaration(verb: $verb, declaration: $declaration);
+				continue;
+			}
+
+			$catalogue[$verb] = array_merge($declaration, ['canonical' => false]);
+		}
+
+		$this->resolved = $catalogue;
+
+		return $catalogue;
+	}//end all()
+
+	/**
+	 * The canonical verbs as catalogue entries, owned by this app at every level.
+	 *
+	 * @return array<string, array{verb: string, app: string, description: string, levels: array<int, string>, canonical: bool}>
+	 */
+	private static function canonicalEntries(): array {
 		$catalogue = [];
 		foreach (self::CANONICAL as $verb => $description) {
 			$catalogue[$verb] = [
@@ -123,27 +147,24 @@ class PermissionCatalogue implements PermissionCatalogueInterface {
 			];
 		}
 
-		$declared = $this->collectDeclarations();
-		foreach ($declared as $verb => $declaration) {
-			// A canonical verb is never redeclarable. An app that shadowed
-			// `delete` with its own meaning would change what an existing grant
-			// does without any block being edited.
-			if (isset($catalogue[$verb]) === true) {
-				$this->rejected[$verb] = sprintf(
-					'The app "%s" declared "%s", which is a canonical verb and cannot be redefined.',
-					$declaration['app'],
-					$verb
-				);
-				continue;
-			}
-
-			$catalogue[$verb] = array_merge($declaration, ['canonical' => false]);
-		}
-
-		$this->resolved = $catalogue;
-
 		return $catalogue;
-	}//end all()
+	}//end canonicalEntries()
+
+	/**
+	 * Record why an app's declaration of a canonical verb was refused.
+	 *
+	 * @param string               $verb        The canonical verb.
+	 * @param array<string, mixed> $declaration The refused declaration.
+	 *
+	 * @return void
+	 */
+	private function rejectRedeclaration(string $verb, array $declaration): void {
+		$this->rejected[$verb] = sprintf(
+			'The app "%s" declared "%s", which is a canonical verb and cannot be redefined.',
+			$declaration['app'],
+			$verb
+		);
+	}//end rejectRedeclaration()
 
 	/**
 	 * The declarations refused while the catalogue was built.

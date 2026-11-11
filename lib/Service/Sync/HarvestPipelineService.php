@@ -154,19 +154,31 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 				$this->syncRecordMapper->transitionStatus(record: $record, newStatus: SyncRecordStatus::FETCHED);
 				$fetched[] = $record;
 			} catch (Throwable $e) {
-				$record->setAttempts((int)$record->getAttempts() + 1);
-				$this->syncRecordMapper->recordFailure(
-					record: $record,
-					failure: SyncRecordInputs::failure(status: SyncRecordStatus::FETCH_ERROR, message: $e->getMessage())
-				);
-				$this->logger->warning(
-					message: sprintf('[HarvestPipeline] Fetch failed for %s: %s', $record->getExternalId(), $e->getMessage())
-				);
-			}//end try
+				$this->markFetchFailed(record: $record, error: $e);
+			}
 		}//end foreach
 
 		return $fetched;
 	}//end fetchAll()
+
+	/**
+	 * Count a failed fetch as an attempt, record it as fetch_error, and say so.
+	 *
+	 * @param SyncRecord $record The record whose fetch failed.
+	 * @param Throwable  $error  Why it failed.
+	 *
+	 * @return void
+	 */
+	private function markFetchFailed(SyncRecord $record, Throwable $error): void {
+		$record->setAttempts((int)$record->getAttempts() + 1);
+		$this->syncRecordMapper->recordFailure(
+			record: $record,
+			failure: SyncRecordInputs::failure(status: SyncRecordStatus::FETCH_ERROR, message: $error->getMessage())
+		);
+		$this->logger->warning(
+			message: sprintf('[HarvestPipeline] Fetch failed for %s: %s', $record->getExternalId(), $error->getMessage())
+		);
+	}//end markFetchFailed()
 
 	/**
 	 * Import stage: map, validate, resolve conflicts and persist.

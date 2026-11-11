@@ -109,18 +109,11 @@ final class HardeningControl implements JsonSerializable {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function jsonSerialize(): array {
-		$row = [
-			'id' => $this->label->id,
-			'title' => $this->label->title,
-			'category' => $this->label->category,
-			'source' => $this->label->source,
-			'unit' => $this->reading->unit,
-			'value' => $this->reading->value,
-			'floor' => $this->reading->floor,
-			'comparator' => $this->reading->comparator,
-			'state' => $this->state(),
-			'meetsFloor' => $this->meetsFloor(),
-		];
+		$row = array_merge(
+			$this->labelFields(),
+			$this->readingFields(),
+			['state' => $this->state(), 'meetsFloor' => $this->meetsFloor()]
+		);
 
 		if ($this->note !== '') {
 			$row['note'] = $this->note;
@@ -129,4 +122,32 @@ final class HardeningControl implements JsonSerializable {
 		return $row;
 
 	}//end jsonSerialize()
+
+	/**
+	 * What the control is: its id, title, category and source.
+	 *
+	 * @return array<string, string> The label fields.
+	 */
+	private function labelFields(): array {
+		return [
+			'id' => $this->label->id,
+			'title' => $this->label->title,
+			'category' => $this->label->category,
+			'source' => $this->label->source,
+		];
+	}//end labelFields()
+
+	/**
+	 * What the control reads: its unit, value, floor and comparator.
+	 *
+	 * @return array<string, mixed> The reading fields.
+	 */
+	private function readingFields(): array {
+		return [
+			'unit' => $this->reading->unit,
+			'value' => $this->reading->value,
+			'floor' => $this->reading->floor,
+			'comparator' => $this->reading->comparator,
+		];
+	}//end readingFields()
 }//end class

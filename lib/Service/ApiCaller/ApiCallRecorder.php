@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ApiCaller;
 
 use DateTime;
+use OCA\OpenRegister\Db\ApiCallKey;
 use OCA\OpenRegister\Db\ApiCallKeys;
 use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
 use OCP\IAppConfig;
@@ -154,18 +155,29 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 		}
 
 		try {
-			$key = ApiCallKeys::of(
-				principal: $this->principal(),
-				route: self::routeOf(path: $call->path),
-				method: strtoupper(substr($call->method, 0, 10)),
-				apiVersion: $call->apiVersion,
-			);
-			$this->mapper->count(key: $key, moment: ($call->moment ?? new DateTime()));
+			$this->mapper->count(key: $this->callKey(call: $call), moment: ($call->moment ?? new DateTime()));
 		} catch (Throwable $e) {
 			$this->logger->debug('OpenRegister: could not record an API call.', ['exception' => $e]);
 		}
 
 	}//end recordCall()
+
+	/**
+	 * The counter key of a call: who, which route, which method, which API version.
+	 *
+	 * @param ApiCallObservation $call The observed call.
+	 *
+	 * @return ApiCallKey The key.
+	 */
+	private function callKey(ApiCallObservation $call): ApiCallKey {
+		return ApiCallKeys::of(
+			principal: $this->principal(),
+			route: self::routeOf(path: $call->path),
+			method: strtoupper(substr($call->method, 0, 10)),
+			apiVersion: $call->apiVersion,
+		);
+
+	}//end callKey()
 
 	/**
 	 * Collapse an expanded path back to the route it came from.
@@ -177,6 +189,21 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public static function routeOf(string $path): string {
+		$segments = explode('/', trim(self::endpointPath(path: $path), '/'));
+		$route    = ('/' . implode('/', self::collapseIdentifiers(segments: $segments)));
+
+		return substr($route, 0, 255);
+
+	}//end routeOf()
+
+	/**
+	 * A request path without its query string and without the `/index.php` prefix.
+	 *
+	 * @param string $path The request path.
+	 *
+	 * @return string The endpoint path.
+	 */
+	private static function endpointPath(string $path): string {
 		$withoutQuery = strtok($path, '?');
 		if ($withoutQuery === false) {
 			$withoutQuery = $path;
@@ -187,10 +214,21 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 		// a report an administrator has to add up by hand.
 		$normalised = preg_replace('#^/index\.php#', '', $withoutQuery);
 		if (is_string($normalised) === false) {
-			$normalised = $withoutQuery;
+			return $withoutQuery;
 		}
 
-		$segments = explode('/', trim($normalised, '/'));
+		return $normalised;
+
+	}//end endpointPath()
+
+	/**
+	 * The path segments with every identifier replaced by `{id}`.
+	 *
+	 * @param array<int, string> $segments The path segments.
+	 *
+	 * @return array<int, string> The route segments.
+	 */
+	private static function collapseIdentifiers(array $segments): array {
 		$collapsed = [];
 		foreach ($segments as $segment) {
 			if ($segment !== '' && preg_match(self::IDENTIFIER_PATTERN, $segment) === 1) {
@@ -201,9 +239,7 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 			$collapsed[] = $segment;
 		}
 
-		$route = ('/' . implode('/', $collapsed));
+		return $collapsed;
 
-		return substr($route, 0, 255);
-
-	}//end routeOf()
+	}//end collapseIdentifiers()
 }//end class

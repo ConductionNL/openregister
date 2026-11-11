@@ -249,6 +249,18 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 			return ['status' => self::STATUS_NOT_APPLICABLE, 'unnominatableReason' => self::NOTHING_DECLARES_ARCHIVING];
 		}
 
+		return $this->nominateDeclared(run: $run, cause: $cause);
+	}//end nominateFor()
+
+	/**
+	 * Derive and record the nomination of an object whose schema declares archiving.
+	 *
+	 * @param NominationRun   $run   The run, with the object's archive declaration read.
+	 * @param NominationCause $cause Why the nomination is (re)computed.
+	 *
+	 * @return array<string, mixed> The written nomination block.
+	 */
+	private function nominateDeclared(NominationRun $run, NominationCause $cause): array {
 		$derived = $this->derive(run: $run);
 		$block = $this->openBlock(status: $derived['status'], cause: $cause);
 		if ($derived['status'] === self::STATUS_UNNOMINATABLE) {
@@ -261,7 +273,7 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 		$this->write(run: $run, block: $block);
 
 		return $block;
-	}//end nominateFor()
+	}//end nominateDeclared()
 
 	/**
 	 * Name the rule that decided, and the selectielijst row when one did.

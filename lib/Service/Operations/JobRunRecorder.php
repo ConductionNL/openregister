@@ -229,17 +229,7 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	 * @return JobRun|null The open row, or null when the log is unwritable.
 	 */
 	private function open(string $jobClass, JobRunContext $context): ?JobRun {
-		$run = new JobRun();
-		$run->setJobClass($jobClass);
-		$run->setStarted(new DateTime());
-		$run->setOutcome(JobRun::OUTCOME_RUNNING);
-		$run->setCause($context->cause);
-		$run->setActor($context->actor);
-		$run->setArgumentDigest($this->digest(argument: $context->argument));
-
-		if ($context->details !== null) {
-			$run->setDetails($this->encodedDetails(details: $context->details));
-		}
+		$run = $this->runningRow(jobClass: $jobClass, context: $context);
 
 		try {
 			return $this->runs->insert($run);
@@ -257,6 +247,30 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	}//end open()
 
 	/**
+	 * A row for a run that starts now, with its cause, actor, argument digest and details.
+	 *
+	 * @param string        $jobClass The job class.
+	 * @param JobRunContext $context  The cause, actor, argument and details.
+	 *
+	 * @return JobRun The unsaved row.
+	 */
+	private function runningRow(string $jobClass, JobRunContext $context): JobRun {
+		$run = new JobRun();
+		$run->setJobClass($jobClass);
+		$run->setStarted(new DateTime());
+		$run->setOutcome(JobRun::OUTCOME_RUNNING);
+		$run->setCause($context->cause);
+		$run->setActor($context->actor);
+		$run->setArgumentDigest($this->digest(argument: $context->argument));
+
+		if ($context->details !== null) {
+			$run->setDetails($this->encodedDetails(details: $context->details));
+		}
+
+		return $run;
+	}//end runningRow()
+
+	/**
 	 * Close the row with its outcome and duration.
 	 *
 	 * @param RecordingRun $run     The run; its row is null when opening failed.
@@ -271,15 +285,7 @@ class JobRunRecorder implements JobRunRecorderInterface {
 			return;
 		}
 
-		$row->setEnded(new DateTime());
-		$row->setDurationMs((int)round(((microtime(true) - $run->startedAt) * 1000)));
-		$row->setOutcome(JobRun::OUTCOME_FAILED);
-
-		if ($failure === null) {
-			$row->setOutcome(JobRun::OUTCOME_COMPLETED);
-		}
-
-		$row->setMessage($failure);
+		$this->markEnded(run: $run, failure: $failure);
 
 		try {
 			$this->runs->update($row);
@@ -291,6 +297,27 @@ class JobRunRecorder implements JobRunRecorderInterface {
 		}
 
 	}//end close()
+
+	/**
+	 * Stamp the run's row with its end, duration, outcome and failure message.
+	 *
+	 * @param RecordingRun $run     The run, its row open.
+	 * @param string|null  $failure The failure message when it failed, null when it completed.
+	 *
+	 * @return void
+	 */
+	private function markEnded(RecordingRun $run, ?string $failure): void {
+		$row = $run->row;
+		$row->setEnded(new DateTime());
+		$row->setDurationMs((int)round(((microtime(true) - $run->startedAt) * 1000)));
+		$row->setOutcome(JobRun::OUTCOME_FAILED);
+
+		if ($failure === null) {
+			$row->setOutcome(JobRun::OUTCOME_COMPLETED);
+		}
+
+		$row->setMessage($failure);
+	}//end markEnded()
 
 	/**
 	 * The failure, as the row keeps it.

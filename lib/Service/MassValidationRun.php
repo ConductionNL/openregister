@@ -34,7 +34,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Re-saves objects in batches, serially or in chunks of batches, and collects the counts,
- * errors, timings and memory use of the run in the shape SettingsService::massValidateObjects()
+ * errors, timings and memory use of the run in the shape SettingsService::massValidate()
  * returns.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
