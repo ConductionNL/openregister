@@ -3129,3 +3129,4 @@
 2026-11-11T17:11:48Z integrator-20261111T115842-a749432d RED tree 84539c57b6 prs 1 front=skip: Tests: 56754, Assertions: 188005, Errors: 3, Failures: 6, Warnings: 2, Deprecations: 4, PH; first failures: OCA\OpenRegister\Tests\Unit\AppInfo\ClassAliasMapTest::testTheShippedMapNamesExistingClassesAndNoShims
 2026-11-11T17:12:28Z integrator-20261111T115842-a749432d PARK openregister#9066 f373d88f ClassAliasMapTest (1-PR tree 84539c57b6 red, main green)
 2026-11-11T17:19:01Z integrator-20261111T115842-a749432d GREEN tree 996bfaf616 on dev 071cd168ad prs 1 front=skip: Tests: 56754, Assertions: 188003, Errors: 3, Failures: 3, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-11T17:19:38Z integrator-20261111T115842-a749432d MERGED-TREE 996bfaf616: 1 PRs in one push, main now 996bfaf616 = tested tree
