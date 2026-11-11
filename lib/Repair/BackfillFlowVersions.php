@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Repair\Support\EveryFlow;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -103,7 +104,7 @@ class BackfillFlowVersions implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$flows = $this->everyFlow();
+			$flows = (new EveryFlow(flows: $this->container->get(FlowMapperInterface::class)))->read();
 		} catch (Throwable $e) {
 			$output->info('Flow version backfill skipped: ' . $e->getMessage());
 			return;
@@ -191,43 +192,6 @@ class BackfillFlowVersions implements IRepairStep {
 		}
 
 	}//end sweepOrphanedVersions()
-
-	/**
-	 * Every flow, paged.
-	 *
-	 * 🔴 `findAllFlows()` DEFAULTS TO 100. Calling it bare versioned only the
-	 * first page and reported success — measured on a dev instance: 219 flows,
-	 * 100 versioned, 119 left with no published version and therefore
-	 * unrunnable. That is exactly the outage this repair step exists to
-	 * prevent, produced by the repair step itself.
-	 *
-	 * Paged rather than called with a huge limit: a limit large enough to be
-	 * "obviously safe" today is a limit that silently truncates once an
-	 * instance grows past it, and the failure would look identical.
-	 *
-	 * @return array<int, \OCA\OpenRegister\Db\Flow> Every flow on the instance.
-	 *
-	 * @spec openspec/specs/flow-definition-versioning/spec.md
-	 */
-	private function everyFlow(): array {
-		$mapper = $this->container->get(FlowMapperInterface::class);
-		$page = 500;
-		$offset = 0;
-		$all = [];
-
-		while (true) {
-			$batch = $mapper->findAllFlows(query: new ListQuery(limit: $page, offset: $offset));
-			$all = array_merge($all, $batch);
-
-			if (count($batch) < $page) {
-				return $all;
-			}
-
-			$offset += $page;
-		}
-
-	}//end everyFlow()
-
 
 	/**
 	 * Version one flow and pin its in-flight runs.

@@ -37,6 +37,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Tests the system-row visibility carve-out added to
@@ -110,13 +113,19 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 			);
 
 		$this->handler = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(ConditionMatcher::class),
-			$this->container,
-			$this->createMock(LoggerInterface::class)
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->createMock(ConditionMatcher::class),
+				container: $this->container,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 

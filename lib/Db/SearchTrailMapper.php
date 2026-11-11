@@ -68,6 +68,15 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Search trail tracking requires integration with many components
  */
 class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, SearchTrailCleanupInterface {
+	use TrailRetentionTrait;
+
+	/**
+	 * The trail this mapper holds, as its retention log messages name it.
+	 *
+	 * @var string
+	 */
+	private const TRAIL_NOUN = 'search trail';
+
 	/**
 	 * The search trail columns a filter may name.
 	 *
@@ -477,56 +486,9 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 			// Return true if any rows were affected (i.e., any logs were deleted).
 			return $result > 0;
 		} catch (\Exception $e) {
-			// Log the error for debugging purposes.
-			$this->logger->error(
-				message: '[SearchTrailMapper] Failed to clear expired search trail logs: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'exception' => $e,
-				]
-			);
-
-			// Re-throw the exception so the caller knows something went wrong.
-			throw $e;
+			$this->rethrowLogged(failure: 'clear expired ' . self::TRAIL_NOUN . ' logs', exception: $e);
 		}//end try
 	}//end clearLogs()
-
-	/**
-	 * Clear all search trail logs, expired or not.
-	 *
-	 * The admin clear-all endpoint deletes every row; {@see clearLogs()} only
-	 * removes the expired ones.
-	 *
-	 * @return bool True if any logs were deleted, false otherwise
-	 *
-	 * @throws \Exception Database operation exceptions
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
-	 */
-	public function clearAllLogs(): bool {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->delete($this->getTableName());
-
-			$result = $qb->executeStatement();
-
-			return $result > 0;
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[SearchTrailMapper] Failed to clear all search trail logs: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'exception' => $e,
-				]
-			);
-
-			throw $e;
-		}//end try
-	}//end clearAllLogs()
 
 	/**
 	 * Match a search term against the search term, request uri and user agent.
@@ -807,58 +769,6 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 
 		$searchTrail->setSession($sessionId);
 	}//end setUserInformation()
-
-	/**
-	 * Set expiry dates for search trails based on retention period in milliseconds
-	 *
-	 * Updates the expires column for search trails based on their creation date plus the retention period.
-	 * Only affects search trails that don't already have an expiry date set.
-	 *
-	 * @param int $retentionMs Retention period in milliseconds
-	 *
-	 * @return int Number of search trails updated
-	 *
-	 * @throws \Exception Database operation exceptions
-	 */
-	public function setExpiryDate(int $retentionMs): int {
-		try {
-			// Convert milliseconds to seconds for DateTime calculation.
-			$retentionSeconds = intval($retentionMs / 1000);
-
-			// Get the query builder.
-			$qb = $this->db->getQueryBuilder();
-
-			// DATE_ADD is MySQL/MariaDB only. Now that the hourly LogCleanUpTask
-			// calls this, a MySQL-only expression would fail every hour on a
-			// PostgreSQL install, so the interval is spelled per platform.
-			$expiresExpression = sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds);
-			if ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
-				$expiresExpression = sprintf("created + INTERVAL '%d seconds'", $retentionSeconds);
-			}
-
-			// Update search trails that don't have an expiry date set.
-			$qb->update($this->getTableName())
-				->set('expires', $qb->createFunction($expiresExpression))
-				->where($qb->expr()->isNull('expires'));
-
-			// Execute the update and return number of affected rows.
-			return $qb->executeStatement();
-		} catch (\Exception $e) {
-			// Log the error for debugging purposes.
-			$this->logger->error(
-				message: '[SearchTrailMapper] Failed to set expiry dates for search trails: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'exception' => $e,
-				]
-			);
-
-			// Re-throw the exception so the caller knows something went wrong.
-			throw $e;
-		}//end try
-	}//end setExpiryDate()
 
 	/**
 	 * Normalise a caller-supplied sort direction to 'ASC' or 'DESC'.

@@ -43,4 +43,16 @@ final class FlowTimerAct {
 		public readonly ?DateTimeInterface $when = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The act of one identity at a moment; null is the real clock.
+	 *
+	 * @param string|null            $actor The acting identity.
+	 * @param DateTimeInterface|null $now   The clock; null means the real clock.
+	 *
+	 * @return self The act.
+	 */
+	public static function of(?string $actor, ?DateTimeInterface $now = null): self {
+		return new self(actor: $actor, now: (new FlowTimerValues())->instant(now: $now));
+	}//end of()
 }//end class

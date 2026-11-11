@@ -934,11 +934,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/modals.scss' as *;
 
-.llm-config-content {
-	padding: 20px;
-	max-height: 70vh;
-	overflow-y: auto;
-}
+@include config-content('llm-config');
 
 .info-box {
 	display: flex;

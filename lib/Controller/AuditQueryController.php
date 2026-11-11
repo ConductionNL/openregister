@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\AuditQueryControllerServices;
 use OCA\OpenRegister\Service\AuditQueryServiceInterface;
 use OCP\AppFramework\Controller;
@@ -99,22 +100,9 @@ class AuditQueryController extends Controller {
 	 * @return JSONResponse|null 401 when anonymous, 403 when non-admin, null when allowed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Authentication required'],
-				statusCode: 401
-			);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: this endpoint is admin-only'],
-				statusCode: 403
-			);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: this endpoint is admin-only');
 	}//end requireAdmin()
 
 	/**

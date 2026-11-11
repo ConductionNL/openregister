@@ -45,6 +45,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use ReflectionParameter;
 use ReflectionNamedType;
 use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
 use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
@@ -164,19 +165,20 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 	private function realQueryHandler(): QueryHandler {
 		$resolver = new SearchReferenceResolver(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapperInterface::class), tables: $this->createMock(MagicMapperInterface::class)), new NullLogger());
 
-		$args = [];
-		foreach ((new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters() as $param) {
+		// A final class is a constructor bundle: build it from its own parameters.
+		$argument = function (ReflectionParameter $param) use (&$argument, $resolver): mixed {
 			$type = $param->getType();
 			$this->assertInstanceOf(ReflectionNamedType::class, $type);
-			$args[] = match (true) {
+			return match (true) {
 				$type->getName() === MagicMapperInterface::class => $this->mapper,
 				$type->getName() === SearchReferenceResolver::class => $resolver,
+				(new ReflectionClass($type->getName()))->isFinal() === true => new ($type->getName())(...array_map($argument, (new ReflectionClass($type->getName()))->getConstructor()->getParameters())),
 				$param->isOptional() === true => $param->getDefaultValue(),
 				default => $this->createMock($type->getName()),
 			};
-		}
+		};
 
-		return new QueryHandler(...$args);
+		return new QueryHandler(...array_map($argument, (new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters()));
 	}//end realQueryHandler()
 
 	/**
