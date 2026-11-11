@@ -462,26 +462,6 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	/**
 	 * Link an existing calendar event to an object by adding X-OPENREGISTER-* properties.
 	 *
-	 * @param int $calendarId The calendar ID
-	 * @param string $eventUri The event URI
-	 * @param int $registerId The register ID
-	 * @param int $schemaId The schema ID
-	 * @param string $objectUuid The object UUID
-	 *
-	 * @return array|null The updated event
-	 *
-	 * @throws Exception If the event is not found
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function linkEvent(int $calendarId, string $eventUri, int $registerId, int $schemaId, string $objectUuid): ?array {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->linkEventTo(event: new CalendarObjectRef(calendarId: $calendarId, uri: $eventUri), target: $target);
-	}//end linkEvent()
-
-	/**
-	 * Tag a stored VEVENT with the register, schema and object it is linked to, as {@see linkEvent()} describes.
-	 *
 	 * @param CalendarObjectRef $event  The stored event.
 	 * @param LinkTarget        $target The object, register and schema.
 	 *

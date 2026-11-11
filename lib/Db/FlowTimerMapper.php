@@ -223,12 +223,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 					)
 				)
 			)
-			->andWhere(
-				$qb->expr()->in(
-					'state',
-					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
+			->andWhere($this->isOpen(qb: $qb))
 			->orderBy('id', 'ASC');
 
 		return $this->findEntities(query: $qb);
@@ -299,12 +294,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('calendar_slug', $qb->createNamedParameter($calendarSlug)))
-			->andWhere(
-				$qb->expr()->in(
-					'state',
-					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
+			->andWhere($this->isOpen(qb: $qb))
 			->orderBy('id', 'ASC')
 			->setMaxResults($limit);
 
@@ -330,12 +320,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 		$qb->select($qb->func()->count('*', 'open_timers'))
 			->from($this->getTableName())
 			->where($qb->expr()->eq('calendar_slug', $qb->createNamedParameter($calendarSlug)))
-			->andWhere(
-				$qb->expr()->in(
-					'state',
-					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
+			->andWhere($this->isOpen(qb: $qb));
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -343,4 +328,18 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 
 		return $count;
 	}//end countOpenByCalendarSlug()
+
+	/**
+	 * The condition that a timer is still open: armed or suspended.
+	 *
+	 * @param IQueryBuilder $qb The query the condition is for.
+	 *
+	 * @return string
+	 */
+	private function isOpen(IQueryBuilder $qb): string {
+		return $qb->expr()->in(
+			'state',
+			$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
+		);
+	}//end isOpen()
 }//end class

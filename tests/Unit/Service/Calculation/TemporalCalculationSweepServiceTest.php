@@ -89,7 +89,7 @@ class TemporalCalculationSweepServiceTest extends TestCase {
 
 		// The pack reference resolves to the seeded default tiers (-7 / -2 / 0).
 		$references = $this->createMock(ReferenceResolver::class);
-		$references->method('resolveAllWithOutcome')->willReturn(
+		$references->method('resolveReferences')->willReturn(
 			[
 				'refs' => [
 					'pack' => [

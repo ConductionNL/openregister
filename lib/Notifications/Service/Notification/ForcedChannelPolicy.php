@@ -124,7 +124,7 @@ class ForcedChannelPolicy {
 	 * that forgot the argument got the permissive half of the pair and the
 	 * `internalOnly` refusal below never fired. See {@see RecipientAudience}.
 	 *
-	 * @param KindPreference    $preference What `NotificationPreferenceService::resolveEffective()` returned,
+	 * @param KindPreference    $preference What `NotificationPreferenceService::resolve()` returned,
 	 *                                      with the notification's own declaration from the schema.
 	 * @param RecipientAudience $audience   Which side of the organisation this recipient is on.
 	 *
