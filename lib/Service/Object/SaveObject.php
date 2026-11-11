@@ -2716,6 +2716,35 @@ class SaveObject implements SaveObjectInterface {
 	}//end assertMayCascadeCreate()
 
 	/**
+	 * Refuse a write to a related object the caller may not update.
+	 *
+	 * @param ObjectEntity $target The stored object about to be written.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not update it.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function assertMayUpdateRelated(ObjectEntity $target): void {
+		$register = $target->getRegister();
+		if ($register !== null) {
+			$register = (string)$register;
+		}
+
+		$this->permissionHandler->checkPermission(
+			schema: $this->getCachedSchema(schemaId: (string)$target->getSchema()),
+			action: 'update',
+			options: new PermissionCheckOptions(
+				objectOwner: $target->getOwner(),
+				object: $target,
+				register: $register
+			),
+			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
+		);
+	}//end assertMayUpdateRelated()
+
+	/**
 	 * Resolve the soft-uniqueness checker from the app container, or null when
 	 * there is none.
 	 *

@@ -69,4 +69,20 @@ interface SaveObjectWriterInterface {
 		?array $uploadedFiles = null, ?IUser $currentUser = null, bool $failIfExists = false, bool $_unowned = false,
 		bool $_dedupOverride = false, ?string $_owner = null
 	): ObjectEntity;
+
+	/**
+	 * Refuse a write to a related object the caller may not update.
+	 *
+	 * A save that writes into another, already stored object needs the right to
+	 * update that object. Skipped only when an enclosing save runs with RBAC off.
+	 *
+	 * @param ObjectEntity $target The stored object about to be written.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller may not update it.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function assertMayUpdateRelated(ObjectEntity $target): void;
 }//end interface

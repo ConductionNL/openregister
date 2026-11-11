@@ -3390,7 +3390,7 @@ class SaveObjectTest extends TestCase {
 
 		$handler = $this->getMockBuilder(SaveObject::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['saveObject'])
+			->onlyMethods(['saveObject', 'assertMayUpdateRelated'])
 			->getMock();
 		$saved = [];
 		$handler->method('saveObject')->willReturnCallback(

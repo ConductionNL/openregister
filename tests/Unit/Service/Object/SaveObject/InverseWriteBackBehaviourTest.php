@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
@@ -182,6 +183,27 @@ class InverseWriteBackBehaviourTest extends TestCase {
 		$this->assertSame(['notes' => [self::TARGET_1]], $data);
 
 	}//end testAnUnknownTargetSchemaWritesNothing()
+
+	/**
+	 * A target the caller may not update is left as it is; the source data still loses the property.
+	 *
+	 * @return void
+	 */
+	public function testATargetTheCallerMayNotUpdateIsNotWritten(): void {
+		$target = $this->target(self::TARGET_1, ['cases' => []]);
+		$this->objects->method('find')->willReturn($target);
+		$this->saver->expects($this->once())
+			->method('assertMayUpdateRelated')
+			->with($this->identicalTo($target))
+			->willThrowException(new NotAuthorizedException('no update right'));
+		$this->saver->expects($this->never())->method('saveObject');
+
+		$this->writeBack(
+			['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'cases', 'writeBack' => true, 'removeAfterWriteBack' => true]],
+			['notes' => [self::TARGET_1]]
+		);
+
+	}//end testATargetTheCallerMayNotUpdateIsNotWritten()
 
 	/**
 	 * A target that cannot be read is skipped; the next target is still written.

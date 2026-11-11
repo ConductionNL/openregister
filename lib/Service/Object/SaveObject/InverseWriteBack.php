@@ -285,8 +285,9 @@ final class InverseWriteBack {
 	 * Add the parent to one target's inverse property and save the target.
 	 *
 	 * The target is saved by the uuid of the row found: the reference may be its
-	 * id, which as a uuid would name another row. A target that cannot be read or
-	 * saved does not stop the other targets.
+	 * id, which as a uuid would name another row. A target the caller may not
+	 * update is left as it is. A target that cannot be read, updated or saved
+	 * does not stop the other targets.
 	 *
 	 * @param string $reference The target's uuid or id, as the parent holds it.
 	 * @param array  $link      The inverse relation.
@@ -301,6 +302,7 @@ final class InverseWriteBack {
 				return;
 			}
 
+			$this->saver->assertMayUpdateRelated(target: $target);
 			$this->saveTarget(target: $target, link: $link);
 		} catch (Exception $e) {
 			return;
