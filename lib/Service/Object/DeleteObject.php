@@ -936,10 +936,14 @@ class DeleteObject {
 		$contextSchema = $context['schema'] ?? null;
 
 		if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
-			$this->cascadeDeleteObjects(
-				root: new DeletionTarget(object: $object, register: $contextRegister, schema: $contextSchema),
-				originalObjectId: $uuid
-			);
+			try {
+				$this->cascadeDeleteObjects(
+					root: new DeletionTarget(object: $object, register: $contextRegister, schema: $contextSchema),
+					originalObjectId: $uuid
+				);
+			} catch (HookStoppedException $refusal) {
+				throw HookStoppedException::forDependent(refusal: $refusal);
+			}
 		}
 
 	}//end runLegacyCascade()

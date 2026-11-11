@@ -304,7 +304,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->objectMapper->expects($this->never())->method('update');
 
 		$this->expectException(HookStoppedException::class);
-		$this->expectExceptionMessage('kept');
+		$this->expectExceptionMessage('an object that depends on it cannot be deleted now');
 
 		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-uuid'));
 	}//end testARefusedChildStopsTheBatchedCascade()

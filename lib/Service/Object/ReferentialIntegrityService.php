@@ -238,7 +238,11 @@ class ReferentialIntegrityService {
 
 		[$cascadeTargets, $retained] = $this->partitionRetainedTargets(cascadeTargets: array_reverse($analysis->cascadeTargets));
 		if (empty($cascadeTargets) === false) {
-			$this->applyBatchCascadeDelete(cascadeTargets: $cascadeTargets, origin: $origin);
+			try {
+				$this->applyBatchCascadeDelete(cascadeTargets: $cascadeTargets, origin: $origin);
+			} catch (HookStoppedException $refusal) {
+				throw HookStoppedException::forDependent(refusal: $refusal);
+			}
 		}
 
 		return $retained;
