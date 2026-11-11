@@ -80,12 +80,13 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\ObjectSaveRun;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\BulkSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderRequest;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
@@ -118,7 +119,6 @@ use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\ObjectListRequest;
 use OCA\OpenRegister\Service\Object\ObjectSelection;
-use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\LockRequest;
@@ -163,6 +163,7 @@ use OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices;
+use TypeError;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -1785,21 +1786,17 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @return ObjectEntity The object.
      *
      * @throws OcpDoesNotExistException When the object is not found in that scope.
+     * @throws TypeError                When the id is not a string: the get handler reads by string id only.
      *
      * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
      */
     private function getForFind(ObjectFindRequest $request, ObjectFindScope $scope): ObjectEntity
     {
-        return $this->getHandler->find(
-            id: $request->id,
-            register: $scope->register,
-            schema: $scope->schema,
-            _extend: $request->extend,
-            files: $request->files,
-            _rbac: $request->rbac,
-            _multitenancy: $request->multitenancy,
-            _audit: $request->audit
-        );
+        if (is_string($request->id) === false) {
+            throw new TypeError('GetObject::find(): Argument #1 ($id) must be of type string, '.get_debug_type($request->id).' given');
+        }
+
+        return $this->getHandler->find(request: $request, scope: new ReadScope(register: $scope->register, schema: $scope->schema));
     }//end getForFind()
 
     /**
@@ -2025,13 +2022,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 $this->applyScope(register: $target->register, schema: $target->schema);
 
                 return $this->getHandler->findSilent(
-                    id: (string) $request->id,
-                    register: $this->currentRegister,
-                    schema: $this->currentSchema,
-                    _extend: $request->extend,
-                    files: $request->files,
-                    _rbac: $request->rbac,
-                    _multitenancy: $request->multitenancy
+                    request: new ObjectFindRequest(
+                        id: (string) $request->id,
+                        extend: $request->extend,
+                        files: $request->files,
+                        rbac: $request->rbac,
+                        multitenancy: $request->multitenancy,
+                        audit: false
+                    ),
+                    scope: new ReadScope(register: $this->currentRegister, schema: $this->currentSchema)
                 );
             }
         );
@@ -7699,22 +7698,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *    merge corrupts any reordered list.
      *
      * The identifier is NOT cast to int. It is resolved as a uuid, a slug or a
-     * numeric id, scoped to exactly one magic table when both `$register` and
-     * `$schema` are supplied (the #1638 defect class).
+     * numeric id, scoped to exactly one magic table when both the register and
+     * the schema of the patch target are supplied (the #1638 defect class).
      *
      * The merged result goes through `saveObject()`, so schema validation, the
      * audit trail and event dispatch all apply — a patch is a save of a
      * different shape, not a privileged shortcut around one.
      *
-     * @param string                   $objectId      Object id, uuid or slug.
-     * @param array                    $data          Partial object data to merge.
-     * @param Register|string|int|null $register      Optional register scope (object, id, uuid or slug).
-     * @param Schema|string|int|null   $schema        Optional schema scope (object, id, uuid or slug).
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param IUser|null               $currentUser   Explicit acting user, forwarded to `saveObject()`.
-     *                                                Non-HTTP callers (cron, flow runs, import pipelines)
-     *                                                MUST pass one to avoid the default-deny fall-through.
+     * @param ObjectPatch $patch         The object id, uuid or slug, the partial data to merge, the
+     *                                   optional register and schema scope, and the explicit acting
+     *                                   user forwarded to `saveObject()`. Non-HTTP callers (cron, flow
+     *                                   runs, import pipelines) MUST set one to avoid the default-deny
+     *                                   fall-through.
+     * @param bool        $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity Patched object entity
      *
@@ -7722,17 +7719,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
-    public function patchObject(
-        string $objectId,
-        array $data,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        ?IUser $currentUser=null
-    ): ObjectEntity {
-        $target = new ObjectFindTarget(register: $register, schema: $schema);
-        $patch  = new ObjectPatch(objectId: $objectId, data: $data, target: $target, currentUser: $currentUser);
+    public function patchObject(ObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
+    {
         $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
         return $this->preservingScope(operation: fn (): ObjectEntity => $this->patchWithinScope(patch: $patch, access: $access));
     }//end patchObject()
