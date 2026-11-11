@@ -70,34 +70,7 @@ class LifecycleConditionEvaluatorValueObjectTest extends TestCase {
 		);
 	}//end attempt()
 
-	/**
-	 * @return array<string, array{0: array<string, mixed>, 1: array<string, mixed>}>
-	 */
-	public static function specs(): array {
-		$reasoned = ['!!' => ['var' => 'object.reason']];
-		return [
-			'no condition' => [['message' => 'x'], []],
-			'holds' => [['condition' => $reasoned], ['reason' => 'yes']],
-			'unmet' => [['condition' => $reasoned], []],
-			'scalar refuses' => [['condition' => 'scalar'], ['reason' => 'yes']],
-			'author message' => [['condition' => $reasoned, 'message' => 'Eerst een reden.'], []],
-		];
-	}//end specs()
-
-	/**
-	 * @dataProvider specs
-	 *
-	 * @param array<string, mixed> $spec
-	 * @param array<string, mixed> $object
-	 */
-	public function testRefusalOfAnswersAsRefusal(array $spec, array $object): void {
-		$evaluator = $this->evaluator(null);
-		$expected  = $evaluator->refusal($spec, $object, ['reason' => 'old'], 'decide', 'open', 'closed', 'case', 'status');
-
-		$this->assertSame($expected, $evaluator->refusalOf($spec, $this->attempt($object)));
-	}//end testRefusalOfAnswersAsRefusal()
-
-	public function testDocumentOfNamesTheCallerAndMatchesDocument(): void {
+	public function testDocumentOfNamesTheCaller(): void {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('alice');
 		$evaluator = $this->evaluator($user);
@@ -113,8 +86,7 @@ class LifecycleConditionEvaluatorValueObjectTest extends TestCase {
 			],
 			$document
 		);
-		$this->assertSame($document, $evaluator->document(['reason' => 'yes'], ['reason' => 'old'], 'decide', 'open', 'closed'));
-	}//end testDocumentOfNamesTheCallerAndMatchesDocument()
+	}//end testDocumentOfNamesTheCaller()
 
 	public function testNoSessionGivesAnEmptyCaller(): void {
 		$document = $this->evaluator(null)->documentOf($this->attempt([]));

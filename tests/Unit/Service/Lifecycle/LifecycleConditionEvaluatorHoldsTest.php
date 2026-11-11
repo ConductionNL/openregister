@@ -193,32 +193,26 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 	 * @return void
 	 */
 	public function testRefusalStillAnswersThroughHolds(): void {
-		// refusal() is now a caller of holds(); a condition that holds lets the
+		// refusalOf() is a caller of holds(); a condition that holds lets the
 		// transition through and one that does not refuses, unchanged.
 		$spec = ['condition' => ['!!' => ['var' => 'object.motivering']]];
 
 		$this->assertNull(
-			$this->evaluator->refusal(
+			$this->evaluator->refusalOf(
 				spec: $spec,
-				newData: ['motivering' => 'Ongegrond.'],
-				oldData: [],
-				action: 'beslissen',
-				from: 'in-behandeling',
-				to: 'besloten',
-				schemaSlug: 'bezwaar',
-				field: 'status'
+				attempt: new \OCA\OpenRegister\Service\Lifecycle\TransitionAttempt(
+					write: new \OCA\OpenRegister\Service\Lifecycle\LifecycleWrite(newData: ['motivering' => 'Ongegrond.'], oldData: [], schemaSlug: 'bezwaar', field: 'status'),
+					move: new \OCA\OpenRegister\Service\Lifecycle\TransitionMove(action: 'beslissen', from: 'in-behandeling', to: 'besloten')
+				)
 			)
 		);
 
-		$refusal = $this->evaluator->refusal(
+		$refusal = $this->evaluator->refusalOf(
 			spec: $spec,
-			newData: ['motivering' => ''],
-			oldData: [],
-			action: 'beslissen',
-			from: 'in-behandeling',
-			to: 'besloten',
-			schemaSlug: 'bezwaar',
-			field: 'status'
+			attempt: new \OCA\OpenRegister\Service\Lifecycle\TransitionAttempt(
+				write: new \OCA\OpenRegister\Service\Lifecycle\LifecycleWrite(newData: ['motivering' => ''], oldData: [], schemaSlug: 'bezwaar', field: 'status'),
+				move: new \OCA\OpenRegister\Service\Lifecycle\TransitionMove(action: 'beslissen', from: 'in-behandeling', to: 'besloten')
+			)
 		);
 		$this->assertSame('lifecycle-condition-unmet', $refusal['code']);
 	}//end testRefusalStillAnswersThroughHolds()
