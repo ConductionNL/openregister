@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
