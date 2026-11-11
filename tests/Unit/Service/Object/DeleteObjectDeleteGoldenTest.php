@@ -333,16 +333,11 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 		$handler = new DeleteObject(
 			$mapper,
 			$cache,
-			$session,
 			new \OCA\OpenRegister\Service\Object\AuditRecording($auditMapper, $logger),
 			$settings,
-			$this->createMock(ReferentialIntegrityService::class),
-			$this->createMock(IDBConnection::class),
-			$organisations,
-			$fileService,
-			null,
-			null,
-			$windowService
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->createMock(ReferentialIntegrityService::class), $this->createMock(IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($session, $organisations, $logger, $windowService),
+			$fileService
 		);
 
 		$object = $input === 'entity' ? $stored : $input;
