@@ -30,6 +30,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
@@ -218,22 +219,16 @@ interface ObjectOperationsInterface {
     /**
      * Finds an object by ID or UUID and renders it.
      *
-     * @param int|string               $id            The object ID or UUID.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Whether to include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $_render       Whether to render the entity before returning (default: true).
-     *                                                Pass false when the caller performs its own single render
-     *                                                (e.g. ObjectsController::show()) so the object is not
-     *                                                rendered twice; permission checks and read logging still run.
-     * @param bool                     $_audit        Whether this read is worth an audit-trail row (default: true).
-     *                                                Pass false for machine-to-machine reads inside one
-     *                                                operation; the instance setting is all-or-nothing.
+     * @param int|string             $id            The object ID or UUID.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files, plus `render`
+     *                                              (false when the caller performs its own single render,
+     *                                              e.g. ObjectsController::show(); permission checks and
+     *                                              read logging still run) and `audit` (false for
+     *                                              machine-to-machine reads inside one operation).
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
-     * @return ObjectEntity|null The rendered object (or the raw entity when $_render is false) or null.
+     * @return ObjectEntity|null The rendered object (or the raw entity when `render` is false) or null.
      *
      * @throws Exception If the object is not found.
      *
@@ -245,8 +240,7 @@ interface ObjectOperationsInterface {
      *   read/RBAC/render behavior owned by object-interactions / rbac-scopes / files-render-extension.
      */
     public function find(
-    	int | string $id, ?array $_extend=[], bool $files=false, Register | string | int | null $register=null,
-    	Schema | string | int | null $schema=null, bool $_rbac=true, bool $_multitenancy=true, bool $_render=true, bool $_audit=true
+    	int | string $id, ?ObjectFindOptions $options=null, bool $_rbac=true, bool $_multitenancy=true
     ): ?ObjectEntity;
 
     /**
@@ -255,13 +249,10 @@ interface ObjectOperationsInterface {
      * This method is used internally by other operations (like UPDATE) that need to
      * retrieve an object without logging the read action.
      *
-     * @param string                   $id            The ID of the object to get.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param string                 $id            The ID of the object to get.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -272,8 +263,7 @@ interface ObjectOperationsInterface {
      * @spec exclude Facade variant of find() that skips audit logging; read behavior owned by object-interactions / audit-trail-immutable.
      */
     public function findSilent(
-    	string $id, ?array $_extend=[], bool $files=false, Register | string | int | null $register=null,
-    	Schema | string | int | null $schema=null, bool $_rbac=true, bool $_multitenancy=true
+    	string $id, ?ObjectFindOptions $options=null, bool $_rbac=true, bool $_multitenancy=true
     ): ObjectEntity;
 
     /**

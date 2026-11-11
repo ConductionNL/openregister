@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidatorInterface;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidators;
-use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;

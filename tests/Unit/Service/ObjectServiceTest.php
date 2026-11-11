@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use DateTime;
 use Exception;
@@ -561,7 +562,7 @@ class ObjectServiceTest extends TestCase {
 
 		$result = $this->service->find(
 			id: '550e8400-e29b-41d4-a716-446655440000',
-			schema: $this->schema
+			options: new ObjectFindOptions(schema: $this->schema)
 		);
 
 		$this->assertSame($entity, $result);
@@ -603,7 +604,7 @@ class ObjectServiceTest extends TestCase {
 		$registerBefore = $this->getProperty('currentRegister');
 		$schemaBefore = $this->getProperty('currentSchema');
 
-		$this->service->find(id: 'test', register: $this->register);
+		$this->service->find(id: 'test', options: new ObjectFindOptions(register: $this->register));
 
 		// Context is restored to exactly what it was before find() ran.
 		$this->assertSame($registerBefore, $this->getProperty('currentRegister'));
@@ -1696,8 +1697,7 @@ class ObjectServiceTest extends TestCase {
 
 		$result = $this->service->findSilent(
 			id: 'test-uuid',
-			_extend: ['owner'],
-			files: true,
+			options: new ObjectFindOptions(extend: ['owner'], files: true),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -1727,8 +1727,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->service->findSilent(
 			id: 'test-uuid',
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectFindOptions(register: $this->register, schema: $this->schema)
 		);
 
 		$this->assertNotNull($handlerScope, 'The read never reached the handler.');
@@ -2737,7 +2736,7 @@ class ObjectServiceTest extends TestCase {
 		// Rendering echoes the resolved object back.
 		$this->renderHandler->method('renderEntity')->willReturn($object);
 
-		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$result = $this->service->find(id: $uuid, options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
 
 		$this->assertSame($object, $result);
 		$this->assertSame(2, $callCount, 'find() should retry across all magic tables');
@@ -2760,7 +2759,7 @@ class ObjectServiceTest extends TestCase {
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
 
 		try {
-			$this->service->find(id: 'employee-jansen', register: $this->register, schema: $this->schema);
+			$this->service->find(id: 'employee-jansen', options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
 		} finally {
 			$this->assertSame(1, $callCount, 'slug lookups must not trigger a cross-schema retry');
 		}
@@ -2831,8 +2830,7 @@ class ObjectServiceTest extends TestCase {
 
 		$result = $this->service->find(
 			id: '550e8400-e29b-41d4-a716-446655440000',
-			schema: $this->schema,
-			_render: false
+			options: new ObjectFindOptions(schema: $this->schema, render: false)
 		);
 
 		$this->assertSame($entity, $result);
@@ -2882,11 +2880,11 @@ class ObjectServiceTest extends TestCase {
 		$this->renderHandler->method('renderEntity')->willReturn($object);
 
 		// First read: scoped miss + cross-table fallback (2 handler calls).
-		$this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$this->service->find(id: $uuid, options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
 		$this->assertSame(2, $callCount);
 
 		// Second read with the SAME stale scope: exactly ONE more handler call…
-		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$result = $this->service->find(id: $uuid, options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
 
 		$this->assertSame($object, $result);
 		$this->assertSame(3, $callCount, 'a repeated uuid lookup must not re-run the cross-table fallback');
@@ -2934,8 +2932,8 @@ class ObjectServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($trueSchema);
 		$this->renderHandler->method('renderEntity')->willReturn($object);
 
-		$this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
-		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$this->service->find(id: $uuid, options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
+		$result = $this->service->find(id: $uuid, options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
 
 		$this->assertSame($object, $result, 'the cross-table fallback must still resolve the object');
 		$this->assertSame(4, $callCount, 'stale cache entry must fall back to the cross-table lookup');

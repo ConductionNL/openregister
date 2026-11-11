@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
@@ -60,9 +61,7 @@ class ObjectServiceMapperAdapter {
 	public function find(int|string $identifier, ?array $extend = null): ?ObjectEntity {
 		return $this->objectService->find(
 			id: $identifier,
-			_extend: $extend ?? [],
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectFindOptions(register: $this->register, schema: $this->schema, extend: $extend ?? [])
 		);
 	}//end find()
 
@@ -224,8 +223,7 @@ class ObjectServiceMapperAdapter {
 	private function existingObject(int|string $id): ObjectEntity {
 		$existing = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: (string)$id,
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectFindOptions(register: $this->register, schema: $this->schema)
 		));
 		if ($existing === null) {
 			throw new ValidationException(

@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -284,8 +285,7 @@ class TransferRecordService implements TransferRecordServiceInterface, TransferR
 		try {
 			return WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER_SLUG,
-				schema: self::TRANSFER_SCHEMA_SLUG
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::TRANSFER_SCHEMA_SLUG)
 			));
 		} catch (\Throwable $e) {
 			return null;
