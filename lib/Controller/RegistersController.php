@@ -25,6 +25,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\RegisterAccessAudit;
 use OCA\OpenRegister\Controller\Support\RegisterDownloads;
@@ -236,29 +237,26 @@ class RegistersController extends Controller {
 	 * Initializes controller with required dependencies for register operations.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param RegistersControllerServices $services The registers controller services.
+	 * @param RegistersControllerServices $services The registers controller services, with the session, group manager and logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		ControllerSession $session,
 		RegistersControllerServices $services,
 	) {
+		$session      = $services->session;
 		$this->logger = $session->logger;
 		$this->logger->debug(
 			message: '[RegistersController] Constructor started.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
-		$this->downloads = new RegisterDownloads(session: $session, services: $services);
+		$this->downloads = new RegisterDownloads(services: $services);
 		$this->statistics = new RegisterStatistics(services: $services);
-		$this->gitHub = new RegisterGitHubPublisher(request: $request, session: $session, services: $services);
+		$this->gitHub = new RegisterGitHubPublisher(request: $request, services: $services);
 		$this->registerService = $services->registers->registerService;
 		$this->userSession = $session->userSession;
 		$this->session = $session;

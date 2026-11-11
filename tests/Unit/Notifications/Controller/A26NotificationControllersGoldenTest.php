@@ -37,6 +37,7 @@ use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Notifications\Controller\NotificationBroadcastController;
+use OCA\OpenRegister\Notifications\Controller\Support\GroupAdministration;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationBroadcastControllerServices;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationDeliveryWindowControllerServices;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationGroupPreferencesControllerServices;
@@ -203,9 +204,7 @@ class A26NotificationControllersGoldenTest extends TestCase {
 			'prefs'     => new NotificationPreferencesController($request, new NotificationPreferencesControllerServices($this->preferences(), $session)),
 			'group'     => new NotificationGroupPreferencesController(
 				$request,
-				new NotificationGroupPreferencesControllerServices($this->preferences(), $this->schemas(), $session),
-				$groups,
-				$subAdmin
+				new NotificationGroupPreferencesControllerServices($this->preferences(), $this->schemas(), $session, new GroupAdministration($groups, $subAdmin))
 			),
 			'broadcast' => new NotificationBroadcastController($request, new NotificationBroadcastControllerServices($this->broadcasts(), $this->controllerSession(session: $session, groups: $groups))),
 			'templates' => new NotificationTemplatesController($request, new NotificationTemplatesControllerServices($this->templates(), $this->controllerSession(session: $session, groups: $groups))),

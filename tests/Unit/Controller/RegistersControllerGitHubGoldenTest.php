@@ -116,7 +116,6 @@ class RegistersControllerGitHubGoldenTest extends TestCase {
 		$oas = $this->createMock(OasService::class);
 		$oas->method('createOas')->willReturn(['openapi' => '3.0.0', 'url' => 'a/b']);
 		return [
-			'openregister',
 			$request,
 			$this->createMock(RegisterService::class),
 			$this->createMock(MagicMapper::class),

@@ -18,7 +18,6 @@ final class ObjectGrantsControllerFactory {
 	/**
 	 * The constructor arguments of ObjectGrantsController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectOperationsInterface $objectService Constructor argument.
 	 * @param AccessReviewGateInterface $gate Constructor argument.
@@ -28,7 +27,6 @@ final class ObjectGrantsControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService,
 		\OCA\OpenRegister\Service\Rbac\AccessReviewGateInterface $gate,
@@ -36,14 +34,13 @@ final class ObjectGrantsControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ObjectGrantsControllerServices(
 				objectService: $objectService,
 				gate: $gate,
 				report: $report,
+				logger: $logger,
 			),
-			$logger,
 		];
 	}
 

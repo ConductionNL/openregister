@@ -30,6 +30,7 @@ use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Controller\NotificationGroupPreferencesController;
+use OCA\OpenRegister\Notifications\Controller\Support\GroupAdministration;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationGroupPreferencesControllerServices;
 use OCP\Group\ISubAdmin;
 use OCP\IGroup;
@@ -85,9 +86,7 @@ class NotificationGroupPreferencesControllerBehaviourTest extends TestCase {
 
 		return new NotificationGroupPreferencesController(
 			$request,
-			new NotificationGroupPreferencesControllerServices($this->prefs, $this->schemas, $session),
-			$this->groups,
-			$this->subAdmin
+			new NotificationGroupPreferencesControllerServices($this->prefs, $this->schemas, $session, new GroupAdministration($this->groups, $this->subAdmin))
 		);
 	}
 

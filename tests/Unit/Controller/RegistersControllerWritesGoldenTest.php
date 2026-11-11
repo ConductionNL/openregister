@@ -250,7 +250,6 @@ class RegistersControllerWritesGoldenTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		return RegistersControllerFactory::create(
-			'openregister',
 			$request,
 			$this->registerService(case: $case),
 			$this->createMock(MagicMapper::class),

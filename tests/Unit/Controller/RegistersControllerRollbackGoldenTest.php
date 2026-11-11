@@ -177,7 +177,6 @@ class RegistersControllerRollbackGoldenTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		return RegistersControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(RegisterService::class),
 			$this->createMock(MagicMapper::class),

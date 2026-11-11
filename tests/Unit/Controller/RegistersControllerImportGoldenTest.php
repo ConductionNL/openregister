@@ -382,7 +382,6 @@ class RegistersControllerImportGoldenTest extends TestCase {
 		}
 
 		return RegistersControllerFactory::create(
-			'openregister',
 			$request,
 			$registerService,
 			$this->createMock(MagicMapper::class),
