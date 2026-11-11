@@ -1620,3 +1620,4 @@ shillinq	2547	b3db787279f3c449be2dc37553faf5c7241b07d5	GREEN	FV04:5	tree green (
 shillinq	2549	5863c6af2eeeee42b5193df6b271a692e295b38e	GREEN	FV04:5	tree green (phpunit 7294 ok, vitest 1075 ok), diff review clean
 shillinq	2551	e823b5818686ebbbd31a52f751e5d2df3a0e0f9b	GREEN	FV04:5	tree green (phpunit 7294 ok, vitest 1075 ok), diff review clean
 shillinq	2553	4d5a0d00b82dcbba5d3eb60dfbbdaa199aefa0ae	GREEN	FV04:5	tree green (phpunit 7294 ok, vitest 1075 ok), diff review clean
+dossiq	5645	507a3deb165802fe1bd9f7303446556e426853f5	RED	FV02:8	phpunit ComplaintAnalyticsGoldenTest::testAnalyticsAcrossWorlds (new golden snapshot hard-codes the run date 2026-11-10 in the default period, fails on any other day)
