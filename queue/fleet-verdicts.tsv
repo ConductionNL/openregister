@@ -2830,6 +2830,30 @@ buildiq	1399	58c50d5c4f9edc749e2dcef5470e294299638f6e	GREEN	FV9-06:3	unit + vite
 buildiq	1400	b10096edc1c1cb54790d320088853a0483effcb8	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
 buildiq	1401	c682bd7ede91759644102e3b63610bc04f788747	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
 buildiq	1402	972af7a636b89edd131369878b2a1d2d3f40c511	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+integriq	3317	810b5ed3bb94f52c324e1779a3c469a615b02392	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3318	eef2d22f5eacc9ecfe2f69e4d7b4fc1348aa2b0c	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3319	14b517a959a62f527a8473c9bd9692527ebf0436	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3320	33fa99f798cfcb67aeb79d641452ad657d7a746f	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3321	e843da287a3eba3683316fa4caceafe0144fa4f2	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3322	573aa38be0fba0de18a064c702c42037d6382be0	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3323	dafc4889e13bb191287928be2d974919c4655ebd	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3324	aaaa27544bc4b9bfacbfd957dbb381b6d310e0a7	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3325	ce2f8a8b7aa5b0c82467b69638e4762e135f3455	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3326	c1a1d7e0cc56c212dc8645588f02b2916d77bd09	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3327	3fd476f5e4637a234256cec7f90d0d1879864af7	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3328	161fb1971f92fe1b12a00e2f8830236523ea549f	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3329	06772031229cc54fa85c60a1e309d948addc8027	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3330	a843f264284d61bb7d20191f67ac9707afb202c3	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3331	49ba865742476eb7b52513d81459d4e46f0af57b	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3332	ee1fe6005049b05731a1ff3f03f286106e5eff13	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3333	eb9d2203ae6ce17f89117dd3f8005b1f18f0955a	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3334	090b1a1ad8ae68e599ed0113afcdec6bb8aa961e	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3335	81d5e4f170d43a4e12cf3bb8764663c10521b759	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3336	24abbbf5c36d7f9718fcf249fe9590e7fcdbef5d	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3337	ba5c42eabe99fb2a65fc0ac34144a0873ee138bf	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3338	a73eef9fea04af270ae828f7d6ad803d853296a3	CONFLICT	FV9-03:2	merge conflict with the verify tree
+integriq	3339	f68d39b56c7f0603772520ae35184af814a58e4c	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3340	21f4926852909121572758e4cdc6565ff7ac20a4	GREEN	FV9-03:2	phpunit green beyond 3 baseline failures; floor not measured
 filinq	1892	7d13384d6f8f6dee2d8258c447e61822cfa9cb3d	GREEN	FV9-09:2	phpunit 5214 ok, baseline 0 failures, no frontend change; floor not measured (floor_check run not permitted in this session)
 filinq	1893	70160c5db81e53ed7a27032f55f54221de921024	GREEN	FV9-09:2	phpunit 5214 ok, baseline 0 failures, no frontend change; floor not measured (floor_check run not permitted in this session)
 filinq	1894	800c14de99d7e5ffcbecccaecedd643a2cdf51ad	GREEN	FV9-09:2	phpunit 5214 ok, baseline 0 failures, no frontend change; floor not measured (floor_check run not permitted in this session)
