@@ -3381,3 +3381,14 @@ learniq	2203	5c12b073b83c23eb0878d88ded254e6d438aed87	GREEN	vm1:26446	tree of 25
 learniq	2204	f28e08371f29779501c5e5b8ef09005a1bde583c	GREEN	vm1:26446	tree of 25 green on 42e9479e30; unit failures only inherited (0); floor held; unit suite run with a harness autoload shim for OCA\Learniq\Tests (development's bootstrap lacks it)
 portaliq	2276	56e2fbd47ffff52c39b9f79846de2abaeb10aedf	GREEN	vm2:p1	unit 4460 OK (baseline 0), floor holds; rollup split keeps sums
 portaliq	2277	8642f56397eb50083d386bcfe6e407c0c2ef71bd	GREEN	vm2:p1	unit 4460 OK (baseline 0), floor holds; call golden pins dispatch, log strings kept
+dossiq	5884	683b80665e6f2eb80691ebabfe3731b90ac6c599	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
+dossiq	5885	2929b1aaa0aff91628144d8321959471ae1dddf4	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
+dossiq	5886	7cf437e1f9d084de47e8c051690b76102c7f63db	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
+dossiq	5888	026db655fa746d7f6ef008e7c81835688f571f24	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
+dossiq	5889	5cec3a6564cfd242202123d37254578b59b4186f	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
+dossiq	5890	e138392702324bde96c7f6608a75bb81e91135f5	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
+dossiq	5891	6b896285a67861a4a659dc8ad44bcdf2bcc974a7	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
+dossiq	5892	c96e2bbd424c2d29bcb512a6a7db62ceb65ea0bd	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
+dossiq	5893	67e5e0fa5c5cd8d635674a8e6608a1785135c584	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
+dossiq	5895	e3dcdc5f433ea40b4ade44fb35eae073e8805e4f	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
+dossiq	5896	198b248253bcf7c6b28401da8a675289b34c0062	GREEN	vm1:29049	tree of 11 green on 4aab4b01af; unit failures only inherited (13); floor held
