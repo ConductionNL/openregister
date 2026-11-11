@@ -1,5 +1,5 @@
-import { dashboardStore, registerStore } from '../../store/store.js'
 import { findRegisterByIdentifier } from '../../services/matchRegister.js'
+import { dashboardStore, registerStore } from '../../store/store.js'
 
 /**
  * The active register in the dashboard store: the register store's item,
