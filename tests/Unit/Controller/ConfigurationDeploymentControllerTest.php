@@ -32,6 +32,7 @@ namespace Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationDeploymentControllerFactory;
 use OCA\OpenRegister\Controller\ConfigurationDeploymentController;
 use OCA\OpenRegister\Db\ConfigurationDeployment;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
@@ -47,6 +48,7 @@ use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationScope;
 
 final class ConfigurationDeploymentControllerTest extends TestCase {
 
@@ -108,7 +110,7 @@ final class ConfigurationDeploymentControllerTest extends TestCase {
 		?ConfigurationExplainer $explainer = null,
 		?DeploymentPreviewService $previews = null
 	): ConfigurationDeploymentController {
-		return new ConfigurationDeploymentController(
+		return ConfigurationDeploymentControllerFactory::create(
 			'openregister',
 			$request,
 			($drafts ?? $this->createMock(ConfigurationDraftService::class)),
@@ -257,7 +259,7 @@ final class ConfigurationDeploymentControllerTest extends TestCase {
 		$explainer = $this->createMock(ConfigurationExplainer::class);
 		$explainer->expects($this->once())
 			->method('explain')
-			->with('integration.mail', 'zaken', 'standaard', 'zaak')
+			->with('integration.mail', new ConfigurationScope('zaken', 'standaard', 'zaak'))
 			->willReturn(['key' => 'integration.mail', 'found' => true]);
 
 		$request = $this->request(

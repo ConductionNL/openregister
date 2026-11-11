@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileSearchController;
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Files\Controller\FileSearchController;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
+use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * Unit tests for FileSearchController.
@@ -38,12 +42,13 @@ class FileSearchControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new FileSearchController(
-			'openregister',
-			$this->request,
-			$this->vectorService,
-			$this->chunkMapper,
-			$this->logger,
-			$this->passThroughScope()
+			request: $this->request,
+			services: new FileSearchControllerServices(
+				vectorService: $this->vectorService,
+				chunkMapper: $this->chunkMapper,
+				readScope: $this->passThroughScope(),
+				logger: $this->logger
+			)
 		);
 	}
 
@@ -126,12 +131,11 @@ class FileSearchControllerTest extends TestCase {
 		$this->vectorService->expects($this->once())
 			->method('semanticSearch')
 			->with(
-				'scoped query',
-				10,
 				$this->callback(
-					function (array $filters): bool {
-						return ($filters['entity_type'] ?? null) === 'file'
-							&& array_key_exists('entityType', $filters) === false;
+					function (SemanticSearchRequest $request): bool {
+						return $request->query === 'scoped query' && $request->limit === 10
+							&& ($request->filters['entity_type'] ?? null) === 'file'
+							&& array_key_exists('entityType', $request->filters) === false;
 					}
 				)
 			)
@@ -239,10 +243,11 @@ class FileSearchControllerTest extends TestCase {
 		$this->chunkMapper->expects($this->once())
 			->method('searchByKeyword')
 			->with(
-				'quarterly report',
-				20,
 				$this->callback(
-					fn (array $filters): bool => ($filters['source_type'] ?? null) === 'file'
+					fn (KeywordChunkSearch $search): bool => $search->query === 'quarterly report'
+						&& $search->limit === 20
+						&& ($search->filters['source_type'] ?? null) === 'file'
+						&& $search->allowUnrankedFallback === false
 				)
 			)
 			->willReturn($keywordResults);
@@ -250,10 +255,12 @@ class FileSearchControllerTest extends TestCase {
 		$this->vectorService->expects($this->once())
 			->method('hybridSearch')
 			->with(
-				'quarterly report',
-				$keywordResults,
-				10,
-				['keyword' => 0.5, 'vector' => 0.5]
+				new HybridSearchRequest(
+					query: 'quarterly report',
+					keywordResults: $keywordResults,
+					limit: 10,
+					weights: ['keyword' => 0.5, 'vector' => 0.5]
+				)
 			)
 			->willReturn($this->makeHybridServiceResponse(1));
 
@@ -325,10 +332,10 @@ class FileSearchControllerTest extends TestCase {
 	/**
 	 * A read scope that keeps every hit: these tests are about the response shape, not the scope.
 	 *
-	 * @return \OCA\OpenRegister\Service\File\FileReadScope
+	 * @return \OCA\OpenRegister\Files\Service\File\FileReadScope
 	 */
-	private function passThroughScope(): \OCA\OpenRegister\Service\File\FileReadScope {
-		$scope = $this->createMock(\OCA\OpenRegister\Service\File\FileReadScope::class);
+	private function passThroughScope(): \OCA\OpenRegister\Files\Service\File\FileReadScope {
+		$scope = $this->createMock(\OCA\OpenRegister\Files\Service\File\FileReadScope::class);
 		$scope->method('readableResults')->willReturnArgument(0);
 
 		return $scope;

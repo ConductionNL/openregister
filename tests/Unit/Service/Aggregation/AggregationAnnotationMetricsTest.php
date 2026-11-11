@@ -40,7 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Aggregation;
 
-use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
 /**

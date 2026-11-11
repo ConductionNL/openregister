@@ -37,7 +37,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ShippedBaseline;
 
 use DateTime;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationWrite;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -111,6 +114,17 @@ class ShippedBaselineStore {
 			return null;
 		}
 
+		return self::baselineIn(snapshot: $snapshot);
+	}//end read()
+
+	/**
+	 * The baseline a snapshot holds, or null when it holds none or a malformed one.
+	 *
+	 * @param ConfigurationSnapshot $snapshot What the subject address holds.
+	 *
+	 * @return array{definition: array<string, mixed>, app: string, appVersion: string, recordedAt: string}|null The baseline.
+	 */
+	private static function baselineIn(ConfigurationSnapshot $snapshot): ?array {
 		if ($snapshot->present === false) {
 			return null;
 		}
@@ -126,7 +140,7 @@ class ShippedBaselineStore {
 			'appVersion' => (string)($stored['appVersion'] ?? ''),
 			'recordedAt' => (string)($stored['recordedAt'] ?? ''),
 		];
-	}//end read()
+	}//end baselineIn()
 
 	/**
 	 * Record what an app shipped for one subject.
@@ -136,46 +150,50 @@ class ShippedBaselineStore {
 	 * fail an upgrade. A missing baseline degrades to today's behaviour, which
 	 * is the state every instance is in before this ships.
 	 *
-	 * @param string               $subject    The subject reference.
-	 * @param array<string, mixed> $definition What the app ships.
-	 * @param string               $app        The app.
-	 * @param string               $appVersion The app version.
-	 * @param string               $configKey  Which baseline.
+	 * @param string            $subject The subject reference.
+	 * @param ShippedDefinition $shipped What the app ships, and which release.
 	 *
 	 * @return bool True when it was recorded.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	public function record(
-		string $subject,
-		array $definition,
-		string $app,
-		string $appVersion,
-		string $configKey = self::KEY_SCHEMA
-	): bool {
+	public function record(string $subject, ShippedDefinition $shipped): bool {
+		$address = new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: $subject, configKey: self::KEY_SCHEMA);
+
+		return $this->recordAt(address: $address, shipped: $shipped);
+	}//end record()
+
+	/**
+	 * Record what an app shipped at one subject address.
+	 *
+	 * Returns whether it was written. NEVER THROWS, for the reason
+	 * {@see self::record()} gives.
+	 *
+	 * @param ConfigurationAddress $address The subject-layer address of the baseline.
+	 * @param ShippedDefinition    $shipped What the app ships, and which release.
+	 *
+	 * @return bool True when it was recorded.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function recordAt(ConfigurationAddress $address, ShippedDefinition $shipped): bool {
+		$value = [
+			'definition' => $shipped->definition,
+			'app' => $shipped->app,
+			'appVersion' => $shipped->appVersion,
+			'recordedAt' => (new DateTime())->format(DATE_ATOM),
+		];
 		try {
-			$this->values->write(
-				layer: ConfigurationLayer::SUBJECT,
-				layerRef: $subject,
-				configKey: $configKey,
-				value: [
-					'definition' => $definition,
-					'app' => $app,
-					'appVersion' => $appVersion,
-					'recordedAt' => (new DateTime())->format(DATE_ATOM),
-				],
-				deploymentUuid: null,
-				actor: null
-			);
+			$this->values->write(address: $address, write: new ConfigurationWrite(value: $value, deploymentUuid: null, actor: null));
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'[ShippedBaselineStore] baseline not recorded for ' . $subject . ': ' . $e->getMessage()
+				'[ShippedBaselineStore] baseline not recorded for ' . $address->layerRef . ': ' . $e->getMessage()
 			);
 			return false;
 		}
 
 		return true;
-	}//end record()
+	}//end recordAt()
 
 	/**
 	 * The subject reference of a schema slug.

@@ -1,0 +1,115 @@
+{
+    "empty": {
+        "types": {
+            "id": "integer",
+            "runUuid": "string",
+            "flowId": "string",
+            "nodeId": "string",
+            "nodeType": "string",
+            "sequence": "integer",
+            "streamId": "string",
+            "ordinalPath": "string",
+            "status": "string",
+            "started": "datetime",
+            "finished": "datetime",
+            "durationMs": "integer",
+            "output": "json",
+            "error": "string",
+            "created": "datetime"
+        },
+        "json": {
+            "id": "null:NULL",
+            "runUuid": "null:NULL",
+            "flowId": "null:NULL",
+            "nodeId": "null:NULL",
+            "nodeType": "null:NULL",
+            "sequence": "int:0",
+            "streamId": "null:NULL",
+            "ordinalPath": "null:NULL",
+            "status": "null:NULL",
+            "started": "null:NULL",
+            "finished": "null:NULL",
+            "durationMs": "null:NULL",
+            "output": "null:NULL",
+            "error": "null:NULL",
+            "created": "null:NULL"
+        }
+    },
+    "full": {
+        "types": {
+            "id": "integer",
+            "runUuid": "string",
+            "flowId": "string",
+            "nodeId": "string",
+            "nodeType": "string",
+            "sequence": "integer",
+            "streamId": "string",
+            "ordinalPath": "string",
+            "status": "string",
+            "started": "datetime",
+            "finished": "datetime",
+            "durationMs": "integer",
+            "output": "json",
+            "error": "string",
+            "created": "datetime"
+        },
+        "json": {
+            "id": "int:11",
+            "runUuid": "string:'run-1'",
+            "flowId": "string:'flow-1'",
+            "nodeId": "string:'n1'",
+            "nodeType": "string:'http'",
+            "sequence": "int:3",
+            "streamId": "string:'s-1'",
+            "ordinalPath": "string:'0.2'",
+            "status": "string:'ok'",
+            "started": "string:'2001-02-03T04:05:06+00:00'",
+            "finished": "string:'2001-02-03T04:05:07+00:00'",
+            "durationMs": "int:1000",
+            "output": {
+                "status": "int:200",
+                "body": [
+                    "string:'a'"
+                ]
+            },
+            "error": "string:'none'",
+            "created": "string:'2001-02-03T04:05:00+00:00'"
+        }
+    },
+    "null sequence, started only": {
+        "types": {
+            "id": "integer",
+            "runUuid": "string",
+            "flowId": "string",
+            "nodeId": "string",
+            "nodeType": "string",
+            "sequence": "integer",
+            "streamId": "string",
+            "ordinalPath": "string",
+            "status": "string",
+            "started": "datetime",
+            "finished": "datetime",
+            "durationMs": "integer",
+            "output": "json",
+            "error": "string",
+            "created": "datetime"
+        },
+        "json": {
+            "id": "null:NULL",
+            "runUuid": "null:NULL",
+            "flowId": "null:NULL",
+            "nodeId": "null:NULL",
+            "nodeType": "null:NULL",
+            "sequence": "int:0",
+            "streamId": "null:NULL",
+            "ordinalPath": "null:NULL",
+            "status": "string:'suspended'",
+            "started": "string:'2001-02-03T04:05:06+02:00'",
+            "finished": "null:NULL",
+            "durationMs": "null:NULL",
+            "output": [],
+            "error": "null:NULL",
+            "created": "null:NULL"
+        }
+    }
+}

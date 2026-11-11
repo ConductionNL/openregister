@@ -1,0 +1,313 @@
+{
+    "both properties legacy and keyed": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "fr",
+                "Titre",
+                null,
+                "bob",
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "en",
+                "B",
+                null,
+                "bob",
+                "de"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "nl",
+                "C",
+                null,
+                "bob",
+                "de"
+            ]
+        },
+        {
+            "delete": "body|de"
+        }
+    ],
+    "delete failure is swallowed": [
+        {
+            "delete": "title|nl"
+        },
+        {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
+        },
+        {
+            "delete": "body|en"
+        },
+        {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
+        }
+    ],
+    "empty string skipped": [],
+    "language keyed": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "nl",
+                "Hallo",
+                null,
+                null,
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "en",
+                "Hello",
+                null,
+                null,
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "es",
+                "5",
+                null,
+                null,
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "it",
+                "{\"a\":1}",
+                null,
+                null,
+                "fr"
+            ]
+        }
+    ],
+    "legacy string uses register default": [
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "de",
+                "Tekst",
+                null,
+                null,
+                "de"
+            ]
+        }
+    ],
+    "legacy string uses schema source language": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "fr",
+                "Bonjour",
+                null,
+                null,
+                "fr"
+            ]
+        }
+    ],
+    "legacy string without register": [
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "nl",
+                "Tekst",
+                null,
+                null,
+                "nl"
+            ]
+        }
+    ],
+    "list value has no languages": [
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "nl",
+                "B",
+                null,
+                null,
+                "de"
+            ]
+        }
+    ],
+    "no schema ref": [],
+    "no translatable properties purges stale rows": [
+        {
+            "delete": "title|nl"
+        },
+        {
+            "delete": "body|en"
+        }
+    ],
+    "no translatable properties, delete failure swallowed": [
+        {
+            "delete": "title|nl"
+        },
+        {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
+        },
+        {
+            "delete": "body|en"
+        },
+        {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
+        }
+    ],
+    "no uuid": [],
+    "non-translatable property ignored": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "nl",
+                "T",
+                null,
+                null,
+                "fr"
+            ]
+        }
+    ],
+    "object override of source language": [
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "en",
+                "Text",
+                null,
+                null,
+                "en"
+            ]
+        }
+    ],
+    "register lookup fails falls back to nl": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "fr",
+                "Titre",
+                null,
+                null,
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "nl",
+                "Tekst",
+                null,
+                null,
+                "nl"
+            ]
+        }
+    ],
+    "register without languages": [
+        {
+            "upsert": [
+                "u-1",
+                "body",
+                "nl",
+                "Tekst",
+                null,
+                null,
+                "nl"
+            ]
+        }
+    ],
+    "scalar language values": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "nl",
+                "1",
+                null,
+                null,
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "de",
+                "1.5",
+                null,
+                null,
+                "fr"
+            ]
+        },
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "fr",
+                "0",
+                null,
+                null,
+                "fr"
+            ]
+        }
+    ],
+    "schema not found": [],
+    "signed-in translator": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "en",
+                "Hi",
+                null,
+                "alice",
+                "fr"
+            ]
+        }
+    ],
+    "stale rows deleted, kept rows kept": [
+        {
+            "upsert": [
+                "u-1",
+                "title",
+                "nl",
+                "T",
+                null,
+                null,
+                "fr"
+            ]
+        },
+        {
+            "delete": "title|en"
+        },
+        {
+            "delete": "body|nl"
+        }
+    ],
+    "upsert failure is logged": [
+        {
+            "warning": "[TranslationProjection] failed for object u-1: db down"
+        }
+    ]
+}

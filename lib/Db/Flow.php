@@ -39,6 +39,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Flow\FlowFieldTypes;
+use OCA\OpenRegister\Db\Flow\FlowJson;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -86,8 +88,6 @@ use OCP\AppFramework\Db\Entity;
  * @method void setRetentionDays(?int $retentionDays)
  * @method boolean|null getAuditEnabled()
  * @method void setAuditEnabled(?bool $auditEnabled)
- * @method boolean|null getOversightEnabled()
- * @method void setOversightEnabled(?bool $oversightEnabled)
  * @method string|null getOwner()
  * @method void setOwner(?string $owner)
  * @method string|null getOrganisation()
@@ -151,6 +151,13 @@ class Flow extends Entity implements JsonSerializable {
 	 * @var string
 	 */
 	public const TRIGGER_SCHEDULE = 'schedule';
+
+	/**
+	 * The `app` of a flow compiled from a manifest schedule.
+	 *
+	 * @var string
+	 */
+	public const APP_MANIFEST_SCHEDULE = 'apphost-schedule';
 
 	/**
 	 * The flow is runnable as far as anything has judged.
@@ -364,15 +371,6 @@ class Flow extends Entity implements JsonSerializable {
 	protected ?bool $auditEnabled = null;
 
 	/**
-	 * Whether the oversight gate runs before each hop.
-	 *
-	 * NULL means "follow the administrator setting".
-	 *
-	 * @var boolean|null
-	 */
-	protected ?bool $oversightEnabled = null;
-
-	/**
 	 * Nextcloud UID of the person who authored and activated this flow.
 	 *
 	 * @var string|null
@@ -479,41 +477,9 @@ class Flow extends Entity implements JsonSerializable {
 	 * Constructor: declare field types so the mapper hydrates them correctly.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'app', type: 'string');
-		$this->addType(fieldName: 'applicationSlug', type: 'string');
-		$this->addType(fieldName: 'enabled', type: 'boolean');
-		$this->addType(fieldName: 'version', type: 'integer');
-		$this->addType(fieldName: 'semver', type: 'string');
-		$this->addType(fieldName: 'semverSource', type: 'string');
-		$this->addType(fieldName: 'lifecycleStatus', type: 'string');
-		$this->addType(fieldName: 'trigger', type: 'string');
-		$this->addType(fieldName: 'triggerRegister', type: 'string');
-		$this->addType(fieldName: 'triggerSchema', type: 'string');
-		$this->addType(fieldName: 'cron', type: 'string');
-		$this->addType(fieldName: 'executionMode', type: 'string');
-		$this->addType(fieldName: 'nodes', type: 'json');
-		$this->addType(fieldName: 'edges', type: 'json');
-		$this->addType(fieldName: 'annotations', type: 'json');
-		$this->addType(fieldName: 'limits', type: 'json');
-		$this->addType(fieldName: 'retentionDays', type: 'integer');
-		$this->addType(fieldName: 'auditEnabled', type: 'boolean');
-		$this->addType(fieldName: 'oversightEnabled', type: 'boolean');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'notes', type: 'string');
-		$this->addType(fieldName: 'comment', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'statusMessage', type: 'string');
-		$this->addType(fieldName: 'lastRunUuid', type: 'string');
-		$this->addType(fieldName: 'lastRunStatus', type: 'string');
-		$this->addType(fieldName: 'lastRunMessage', type: 'string');
-		$this->addType(fieldName: 'lastRunAt', type: 'datetime');
-
+		foreach (FlowFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -547,6 +513,23 @@ class Flow extends Entity implements JsonSerializable {
 	}//end canDispatch()
 
 	/**
+	 * The identity this flow's schedule trigger declares.
+	 *
+	 * @return string|null The `runAs`, or null when no schedule trigger names one.
+	 *
+	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 */
+	public function scheduledRunAs(): ?string {
+		foreach (($this->nodes ?? []) as $node) {
+			if (($node['type'] ?? null) === 'openregister.trigger-schedule') {
+				return ($node['config']['runAs'] ?? null);
+			}
+		}
+
+		return null;
+	}//end scheduledRunAs()
+
+	/**
 	 * Whether this flow belongs to the given organisation.
 	 *
 	 * The per-flow authorisation predicate. `findByUuid()` deliberately does
@@ -563,7 +546,7 @@ class Flow extends Entity implements JsonSerializable {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function belongsTo(?string $organisation): bool {
+	public function belongsTo(string|null $organisation): bool {
 		if ($this->organisation === null || trim($this->organisation) === '') {
 			return false;
 		}
@@ -621,31 +604,6 @@ class Flow extends Entity implements JsonSerializable {
 	}//end auditsEachHop()
 
 	/**
-	 * Whether the oversight gate runs before each hop of this flow.
-	 *
-	 * On by default, and deliberately the opposite default to auditing: this is
-	 * the check that stops a running flow when the kill switch is thrown or a
-	 * registered budget is exhausted. A safety rail that defaults to off
-	 * protects only the flows someone remembered to configure.
-	 *
-	 * An explicit `false` is a real opt-out and is honoured — a flow may be
-	 * exempted — but it has to be chosen, not inherited from an unset column.
-	 *
-	 * @param boolean $instanceDefault The administrator-configured default.
-	 *
-	 * @return boolean True when oversight checks should gate each hop.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-	 */
-	public function gatesEachHop(bool $instanceDefault): bool {
-		if ($this->oversightEnabled !== null) {
-			return $this->oversightEnabled;
-		}
-
-		return $instanceDefault;
-	}//end gatesEachHop()
-
-	/**
 	 * Serialise for the API.
 	 *
 	 * @return array<string, mixed> The flow as plain data.
@@ -653,63 +611,6 @@ class Flow extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function jsonSerialize(): array {
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
-
-		$updated = null;
-		if ($this->updated !== null) {
-			$updated = $this->updated->format('c');
-		}
-
-		// Null stays null rather than becoming an empty string: the API
-		// distinguishes "never run" from "ran and said nothing", and an empty
-		// string would collapse the two for every consumer.
-		$lastRunAt = null;
-		if ($this->lastRunAt !== null) {
-			$lastRunAt = $this->lastRunAt->format('c');
-		}
-
-		return [
-			'id' => $this->uuid,
-			'uuid' => $this->uuid,
-			'name' => $this->name,
-			'description' => $this->description,
-			'app' => $this->app,
-			'applicationSlug' => $this->applicationSlug,
-			'enabled' => (bool)$this->enabled,
-			'version' => (int)($this->version ?? 1),
-			// Null until the flow has been published: a draft has not been
-			// compared with anything yet, and a number would be a claim.
-			'semver' => $this->semver,
-			'semverSource' => $this->semverSource,
-			'lifecycleStatus' => ($this->lifecycleStatus ?? FlowVersion::STATUS_DRAFT),
-			'trigger' => $this->trigger,
-			'triggerRegister' => $this->triggerRegister,
-			'triggerSchema' => $this->triggerSchema,
-			'cron' => $this->cron,
-			'executionMode' => ($this->executionMode ?? self::MODE_ASYNC),
-			'nodes' => ($this->nodes ?? []),
-			'edges' => ($this->edges ?? []),
-			'annotations' => ($this->annotations ?? []),
-			'limits' => ($this->limits ?? []),
-			'retentionDays' => $this->retentionDays,
-			'auditEnabled' => $this->auditEnabled,
-			'oversightEnabled' => $this->oversightEnabled,
-			'owner' => $this->owner,
-			'organisation' => $this->organisation,
-			'notes' => $this->notes,
-			'comment' => $this->comment,
-			'created' => $created,
-			'updated' => $updated,
-			'status' => $this->status,
-			'statusMessage' => $this->statusMessage,
-			'lastRunUuid' => $this->lastRunUuid,
-			'lastRunStatus' => $this->lastRunStatus,
-			'lastRunMessage' => $this->lastRunMessage,
-			'lastRunAt' => $lastRunAt,
-		];
-
+		return (new FlowJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
 	}//end jsonSerialize()
 }//end class

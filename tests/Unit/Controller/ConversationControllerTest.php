@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
 use OCA\OpenRegister\Controller\ConversationController;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\Message;
-use OCA\OpenRegister\Db\MessageMapper;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
+use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -42,8 +43,7 @@ class ConversationControllerTest extends TestCase {
 		$this->chatService = $this->createMock(ChatService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new ConversationController(
-			'openregister',
+		$this->controller = ConversationControllerFactory::create(
 			$this->request,
 			$this->conversationMapper,
 			$this->messageMapper,
@@ -266,6 +266,42 @@ class ConversationControllerTest extends TestCase {
 		$this->assertEquals(200, $result->getStatus());
 	}
 
+	public function testDestroyPermanentDeletesFeedbackMessagesAndConversation(): void {
+		$conv = new Conversation();
+		$conv->setId(42);
+		$this->conversationMapper->method('findByUuid')->willReturn($conv);
+		$this->conversationMapper->method('canUserModifyConversation')->willReturn(true);
+
+		$this->feedbackMapper->expects($this->once())
+			->method('deleteByConversation')
+			->with(42);
+		$this->messageMapper->expects($this->once())
+			->method('deleteByConversation')
+			->with(42);
+		$this->conversationMapper->expects($this->once())
+			->method('delete')
+			->with($conv);
+
+		$result = $this->controller->destroyPermanent('uuid-123');
+
+		$this->assertEquals(200, $result->getStatus());
+	}
+
+	public function testDestroyPermanentAccessDeniedDeletesNothing(): void {
+		$conv = new Conversation();
+		$conv->setId(42);
+		$this->conversationMapper->method('findByUuid')->willReturn($conv);
+		$this->conversationMapper->method('canUserModifyConversation')->willReturn(false);
+
+		$this->feedbackMapper->expects($this->never())->method('deleteByConversation');
+		$this->messageMapper->expects($this->never())->method('deleteByConversation');
+		$this->conversationMapper->expects($this->never())->method('delete');
+
+		$result = $this->controller->destroyPermanent('uuid-123');
+
+		$this->assertEquals(403, $result->getStatus());
+	}
+
 	public function testDestroyPermanentAccessDenied(): void {
 		$conv = new Conversation();
 		$this->conversationMapper->method('findByUuid')->willReturn($conv);
@@ -363,7 +399,7 @@ class ConversationControllerTest extends TestCase {
 	// ── Create with agentUuid ──
 
 	public function testCreateWithAgentUuid(): void {
-		$agent = new \OCA\OpenRegister\Db\Agent();
+		$agent = new \OCA\OpenRegister\Mcp\Db\Agent();
 		$agent->setId(42);
 
 		$this->request->method('getParams')->willReturn(['agentUuid' => 'agent-uuid-1']);

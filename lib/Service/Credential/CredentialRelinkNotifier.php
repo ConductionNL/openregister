@@ -67,55 +67,79 @@ class CredentialRelinkNotifier {
 	/**
 	 * Announce a lost grant, once.
 	 *
-	 * @param string $credentialId The credential UUID, which is the credentialRef apps hold.
-	 * @param string $provider The catalogue provider identifier.
-	 * @param string $owner The owning user id, or an empty string when there is none to tell.
-	 * @param string $reason The provider's OAuth2 error code (secret-free by construction).
+	 * @param CredentialRelinkRequiredEvent $event The lost grant: the credential, its provider, its owner (empty
+	 *                                             when there is none to tell) and the secret-free OAuth2 error code.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
-	public function announce(string $credentialId, string $provider, string $owner, string $reason): void {
-		try {
-			$this->eventDispatcher->dispatchTyped(
-				new CredentialRelinkRequiredEvent(
-					credentialId: $credentialId,
-					provider: $provider,
-					owner: $owner,
-					reason: $reason
-				)
-			);
-		} catch (Throwable $dispatchFailure) {
-			$this->logger->warning('[CredentialRelinkNotifier] event dispatch failed: ' . $dispatchFailure->getMessage());
-		}
+	public function announce(CredentialRelinkRequiredEvent $event): void {
+		$this->announceEvent(event: $event);
+	}//end announce()
 
-		if ($owner === '') {
+	/**
+	 * Dispatch the lost-grant event, then tell its owner when there is one.
+	 *
+	 * @param CredentialRelinkRequiredEvent $event The lost grant.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 */
+	private function announceEvent(CredentialRelinkRequiredEvent $event): void {
+		$this->dispatch(event: $event);
+
+		if ($event->getOwner() === '') {
 			return;
 		}
 
 		try {
-			$notification = $this->notifications->createNotification();
-			$notification->setApp('openregister')
-				->setUser($owner)
-				->setDateTime(new DateTime())
-				->setObject('brokered_credential', $credentialId)
-				->setSubject(
-					'credential_relink_needed',
-					[
-						'provider' => $provider,
-						// The shipped template says `{{connection}}`, which is
-						// the word an administrator reads. Supplied ALONGSIDE
-						// `provider` rather than instead of it: the default
-						// (unedited) rendering in Notifier reads `provider`,
-						// and renaming it would fix the edited path by breaking
-						// the one everybody gets.
-						'connection' => $provider,
-					]
-				);
-			$this->notifications->notify($notification);
+			$this->notifyOwner(event: $event);
 		} catch (Throwable $notifyFailure) {
 			$this->logger->warning('[CredentialRelinkNotifier] notification failed: ' . $notifyFailure->getMessage());
 		}
-	}//end announce()
+	}//end announceEvent()
+
+	/**
+	 * Announce the lost grant to the rest of the instance, best effort.
+	 *
+	 * @param CredentialRelinkRequiredEvent $event The event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 */
+	private function dispatch(CredentialRelinkRequiredEvent $event): void {
+		try {
+			$this->eventDispatcher->dispatchTyped($event);
+		} catch (Throwable $dispatchFailure) {
+			$this->logger->warning('[CredentialRelinkNotifier] event dispatch failed: ' . $dispatchFailure->getMessage());
+		}
+	}//end dispatch()
+
+	/**
+	 * Tell the owner their connection needs repairing.
+	 *
+	 * @param CredentialRelinkRequiredEvent $event The lost grant, naming the credential, provider and owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 */
+	private function notifyOwner(CredentialRelinkRequiredEvent $event): void {
+		$provider = $event->getProvider();
+		$notification = $this->notifications->createNotification();
+		$notification->setApp('openregister')
+			->setUser($event->getOwner())
+			->setDateTime(new DateTime())
+			->setObject('brokered_credential', $event->getCredentialId())
+			// The shipped template says `{{connection}}`, which is the word an
+			// administrator reads. Supplied ALONGSIDE `provider` rather than instead
+			// of it: the default (unedited) rendering in Notifier reads `provider`,
+			// and renaming it would fix the edited path by breaking the one
+			// everybody gets.
+			->setSubject('credential_relink_needed', ['provider' => $provider, 'connection' => $provider]);
+		$this->notifications->notify($notification);
+	}//end notifyOwner()
 }//end class

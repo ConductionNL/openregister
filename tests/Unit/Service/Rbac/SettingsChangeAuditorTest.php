@@ -43,7 +43,9 @@ namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Rbac\SettingsChange;
 use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
+use OCA\OpenRegister\Service\Rbac\SettingsImport;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -171,11 +173,11 @@ class SettingsChangeAuditorTest extends TestCase {
 	public function testAnIntroducedSecretReadsDifferentlyFromARemovedOne(): void {
 		$auditor = $this->auditor();
 
-		$introduced = $auditor->diff([], ['apiToken' => 'x'], ['apiToken']);
+		$introduced = $auditor->diff(new SettingsChange([], ['apiToken' => 'x'], ['apiToken']));
 		$this->assertNull($introduced[0]['old']);
 		$this->assertSame(SettingsChangeAuditor::MASK, $introduced[0]['new']);
 
-		$removed = $auditor->diff(['apiToken' => 'x'], [], ['apiToken']);
+		$removed = $auditor->diff(new SettingsChange(['apiToken' => 'x'], [], ['apiToken']));
 		$this->assertSame(SettingsChangeAuditor::MASK, $removed[0]['old']);
 		$this->assertNull($removed[0]['new']);
 	}//end testAnIntroducedSecretReadsDifferentlyFromARemovedOne()
@@ -221,8 +223,8 @@ class SettingsChangeAuditorTest extends TestCase {
 	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
 	 */
 	public function testTypeJugglingIsNotAChange(): void {
-		$this->assertSame([], $this->auditor()->diff(['limit' => 1], ['limit' => '1']));
-		$this->assertSame([], $this->auditor()->diff(['on' => true], ['on' => '1']));
+		$this->assertSame([], $this->auditor()->diff(new SettingsChange(['limit' => 1], ['limit' => '1'])));
+		$this->assertSame([], $this->auditor()->diff(new SettingsChange(['on' => true], ['on' => '1'])));
 	}//end testTypeJugglingIsNotAChange()
 
 	/**
@@ -233,12 +235,12 @@ class SettingsChangeAuditorTest extends TestCase {
 	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
 	 */
 	public function testAddingAndRemovingBothCount(): void {
-		$added = $this->auditor()->diff([], ['register' => 'r']);
+		$added = $this->auditor()->diff(new SettingsChange([], ['register' => 'r']));
 		$this->assertCount(1, $added);
 		$this->assertNull($added[0]['old']);
 		$this->assertSame('r', $added[0]['new']);
 
-		$removed = $this->auditor()->diff(['register' => 'r'], []);
+		$removed = $this->auditor()->diff(new SettingsChange(['register' => 'r'], []));
 		$this->assertCount(1, $removed);
 		$this->assertSame('r', $removed[0]['old']);
 		$this->assertNull($removed[0]['new']);
@@ -280,7 +282,7 @@ class SettingsChangeAuditorTest extends TestCase {
 	public function testAnImportIsOneRow(): void {
 		$this->assertSame(
 			1,
-			$this->auditor()->recordImport(app: 'dossiq', forced: true, keysOverwritten: 40)
+			$this->auditor()->recordImport(app: 'dossiq', import: new SettingsImport(forced: true, keysOverwritten: 40))
 		);
 
 		$changed = $this->written[0]->getChanged();

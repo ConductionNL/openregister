@@ -9,16 +9,16 @@ import type { APIRequestContext } from '@playwright/test'
  * THE SCENARIOS THIS FILE ANCHORS, now that the run log, run now and
  * maintenance mode have landed:
  *
- * @e2e openspec/changes/admin-operations-console/specs/operations-console/spec.md#scenario-a-failed-run-is-visible-with-its-reason
- * @e2e openspec/changes/admin-operations-console/specs/operations-console/spec.md#scenario-a-stuck-queue-is-cleared-by-hand
- * @e2e openspec/changes/admin-operations-console/specs/operations-console/spec.md#scenario-a-running-job-is-not-started-twice
- * @e2e openspec/changes/admin-operations-console/specs/operations-console/spec.md#scenario-a-rebuild-is-as-observable-as-any-other-job
- * @e2e openspec/changes/admin-operations-console/specs/operations-console/spec.md#scenario-the-check-changes-nothing
- * @e2e openspec/changes/admin-operations-console/specs/operations-console/spec.md#scenario-the-repair-is-authorised-and-recorded
- * @e2e openspec/changes/admin-operations-console/specs/operations-console/spec.md#scenario-a-user-is-told-why-the-instance-is-closed
- * @e2e openspec/changes/admin-operations-console/specs/operations-console/spec.md#scenario-the-administrator-can-still-leave-the-mode
- * @e2e openspec/changes/admin-operations-console/specs/operations-console/spec.md#scenario-a-job-is-disabled-and-stops-being-due
- * @e2e openspec/changes/admin-operations-console/specs/operations-console/spec.md#scenario-the-bundle-carries-no-secret
+ * @e2e openspec/specs/operations-console/spec.md#scenario-a-failed-run-is-visible-with-its-reason
+ * @e2e openspec/specs/operations-console/spec.md#scenario-a-stuck-queue-is-cleared-by-hand
+ * @e2e openspec/specs/operations-console/spec.md#scenario-a-running-job-is-not-started-twice
+ * @e2e openspec/specs/operations-console/spec.md#scenario-a-rebuild-is-as-observable-as-any-other-job
+ * @e2e openspec/specs/operations-console/spec.md#scenario-the-check-changes-nothing
+ * @e2e openspec/specs/operations-console/spec.md#scenario-the-repair-is-authorised-and-recorded
+ * @e2e openspec/specs/operations-console/spec.md#scenario-a-user-is-told-why-the-instance-is-closed
+ * @e2e openspec/specs/operations-console/spec.md#scenario-the-administrator-can-still-leave-the-mode
+ * @e2e openspec/specs/operations-console/spec.md#scenario-a-job-is-disabled-and-stops-being-due
+ * @e2e openspec/specs/operations-console/spec.md#scenario-the-bundle-carries-no-secret
  *
  * MAINTENANCE MODE IS THE DANGEROUS TEST IN THIS FILE. It closes the whole
  * app for every session on the instance while it holds, so the case that

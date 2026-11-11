@@ -107,7 +107,7 @@ fi
 if [ "${SKIP_NEWMAN:-0}" != "1" ]; then
   section "Newman — chat-streaming HTTP contract"
 
-  COLLECTION="$OR_DIR/tests/newman/openregister-chat-streaming.postman_collection.json"
+  COLLECTION="$OR_DIR/tests/integration/openregister-chat-streaming.postman_collection.json"
   if [ ! -f "$COLLECTION" ]; then
     echo "${RED}collection missing: $COLLECTION${NC}"
     mark_layer "newman" 2

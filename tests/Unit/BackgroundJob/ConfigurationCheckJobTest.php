@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use Exception;
 use OCA\OpenRegister\BackgroundJob\ConfigurationCheckJob;
+use OCA\OpenRegister\BackgroundJob\Support\ConfigurationCheckServices;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
@@ -37,12 +39,8 @@ class ConfigurationCheckJobTest extends TestCase {
 			->willReturn($intervalValue);
 
 		return new ConfigurationCheckJob(
-			$timeFactory,
-			$this->configurationMapper,
-			$this->configurationService,
-			$this->notificationService,
-			$this->appConfig,
-			$this->logger,
+			new ConfiguredJobRuntime($timeFactory, $this->appConfig, $this->logger),
+			new ConfigurationCheckServices($this->configurationMapper, $this->configurationService, $this->notificationService),
 		);
 	}
 

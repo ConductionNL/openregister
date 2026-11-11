@@ -26,10 +26,13 @@ declare(strict_types=1);
 
 namespace Unit\Service\Lifecycle;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecision;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSubject;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Lifecycle\CarriedLineage;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -94,17 +97,15 @@ class AutoTransitionPassTest extends TestCase {
 	 */
 	private function wireStateMachine(string $mode = 'sync'): void {
 		$this->runner->method('decide')->willReturnCallback(
-			function (string $uuid, string $register, string $schema, array $previous): ?AutoTransitionDecision {
+			function (ObjectRef $ref, array $previous): ?AutoTransitionDecision {
+				$uuid    = $ref->id;
 				$current = ($this->state[$uuid] ?? '');
 				if (isset($this->moves[$current]) === false) {
 					return null;
 				}
 
 				return new AutoTransitionDecision(
-					uuid: $uuid,
-					register: $register,
-					schema: $schema,
-					schemaSlug: 'bezwaar',
+					subject: new AutoTransitionSubject(uuid: $uuid, register: (string)$ref->register, schema: (string)$ref->schema, schemaSlug: 'bezwaar'),
 					candidate: new AutoTransitionCandidate(
 						action: 'naar-' . $this->moves[$current],
 						from: $current,
@@ -119,13 +120,21 @@ class AutoTransitionPassTest extends TestCase {
 
 		$this->modeForTest = $mode;
 
-		$this->runner->method('fire')->willReturnCallback(
-			function (AutoTransitionDecision $decision, array $lineage, bool $queueOnly): ?ObjectEntity {
+		$this->runner->method('queueOutsideBoundary')->willReturnCallback(
+			function (AutoTransitionDecision $decision, array $lineage): void {
 				$this->fired[] = $decision->candidate->action;
 				$this->lastLineage = $lineage;
-				$this->lastQueueOnly = $queueOnly;
+				$this->lastQueueOnly = true;
+			}
+		);
 
-				if ($this->modeForTest !== 'sync' || $queueOnly === true) {
+		$this->runner->method('fire')->willReturnCallback(
+			function (AutoTransitionDecision $decision, array $lineage): ?ObjectEntity {
+				$this->fired[] = $decision->candidate->action;
+				$this->lastLineage = $lineage;
+				$this->lastQueueOnly = false;
+
+				if ($this->modeForTest !== 'sync') {
 					return null;
 				}
 
@@ -135,9 +144,7 @@ class AutoTransitionPassTest extends TestCase {
 				// drain gets a second iteration to decide.
 				$this->pass->enter();
 				$this->pass->record(
-					uuid: $decision->uuid,
-					register: $decision->register,
-					schema: $decision->schema,
+					ref: new ObjectRef(register: $decision->register, schema: $decision->schema, id: $decision->uuid),
 					previous: []
 				);
 				$this->pass->leave();
@@ -192,7 +199,7 @@ class AutoTransitionPassTest extends TestCase {
 	 * @return void
 	 */
 	private function recordInside(string $uuid): void {
-		$this->pass->record(uuid: $uuid, register: '1', schema: '2', previous: []);
+		$this->pass->record(ref: new ObjectRef(register: '1', schema: '2', id: $uuid), previous: []);
 	}//end recordInside()
 
 	/**
@@ -312,7 +319,7 @@ class AutoTransitionPassTest extends TestCase {
 		$this->state['obj-1'] = 's9';
 		$this->moves = ['s9' => 's10', 's10' => 's11'];
 
-		$this->pass->resume(uuid: 'obj-1', moves: 9, visited: ['s0', 's9']);
+		$this->pass->resumeLineage(uuid: 'obj-1', lineage: new CarriedLineage(moves: 9, visited: ['s0', 's9']));
 
 		$this->pass->enter();
 		$this->recordInside('obj-1');
@@ -329,7 +336,7 @@ class AutoTransitionPassTest extends TestCase {
 		$this->state['obj-1'] = 'terug';
 		$this->moves = ['terug' => 'heen'];
 
-		$this->pass->resume(uuid: 'obj-1', moves: 1, visited: ['heen', 'terug']);
+		$this->pass->resumeLineage(uuid: 'obj-1', lineage: new CarriedLineage(moves: 1, visited: ['heen', 'terug']));
 
 		$this->pass->enter();
 		$this->recordInside('obj-1');
@@ -348,10 +355,7 @@ class AutoTransitionPassTest extends TestCase {
 
 		$this->runner->method('decide')->willReturn(
 			new AutoTransitionDecision(
-				uuid: 'obj-1',
-				register: '1',
-				schema: '2',
-				schemaSlug: 'bezwaar',
+				subject: new AutoTransitionSubject(uuid: 'obj-1', register: '1', schema: '2', schemaSlug: 'bezwaar'),
 				candidate: new AutoTransitionCandidate('beslissen', 'open', 'besloten', 'sync'),
 				version: '1',
 				updated: null
@@ -393,7 +397,7 @@ class AutoTransitionPassTest extends TestCase {
 		$this->moves = ['stap-1' => 'stap-2'];
 
 		$this->pass->enter();
-		$this->pass->record(uuid: 'obj-1', register: '1', schema: '2', previous: []);
+		$this->pass->record(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []);
 
 		$this->assertSame([], $this->fired, 'Recording inside a boundary must apply nothing.');
 		$this->assertSame('stap-1', $this->state['obj-1']);
@@ -426,7 +430,7 @@ class AutoTransitionPassTest extends TestCase {
 
 		$this->runner->expects($this->once())->method('flushQueued');
 
-		$this->pass->record(uuid: 'obj-1', register: '1', schema: '2', previous: []);
+		$this->pass->record(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []);
 		$this->assertSame([], $this->fired, 'Recording alone must apply nothing.');
 
 		$this->pass->flushOutsideBoundary();
@@ -444,7 +448,7 @@ class AutoTransitionPassTest extends TestCase {
 		$this->state['obj-1'] = 'stap-1';
 		$this->moves = ['stap-1' => 'stap-2'];
 
-		$this->pass->record(uuid: 'obj-1', register: '1', schema: '2', previous: []);
+		$this->pass->record(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []);
 
 		$this->pass->enter();
 		$this->pass->leave();

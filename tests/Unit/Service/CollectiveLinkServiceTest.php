@@ -35,6 +35,8 @@ use Exception;
 use OCA\OpenRegister\Db\CollectiveLink;
 use OCA\OpenRegister\Db\CollectiveLinkMapper;
 use OCA\OpenRegister\Service\CollectiveLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -43,6 +45,13 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
+
+foreach (['CollectiveService', 'PageService'] as $collectivesClass) {
+	if (class_exists('OCA\\Collectives\\Service\\' . $collectivesClass) === false) {
+		eval('namespace OCA\\Collectives\\Service; class ' . $collectivesClass . ' {}');
+	}
+}
 
 /**
  * CollectiveLinkServiceTest.
@@ -92,10 +101,8 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->service = new CollectiveLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->urlGenerator,
-			$this->logger
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
+			$this->urlGenerator
 		);
 	}//end setUp()
 
@@ -105,6 +112,10 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		return $user;
 	}//end setupUser()
+
+	private function target(): LinkTarget {
+		return (new LinkTarget(objectUuid: 'abc-123', registerId: 1))->inSchema(schemaId: 2);
+	}//end target()
 
 	public function testIsCollectivesAvailableTrue(): void {
 		$this->appManager->method('isEnabledForUser')->with('collectives')->willReturn(true);
@@ -122,7 +133,7 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->linkPage('abc-123', 1, 2, 99);
+		$this->service->linkPage($this->target(), 99);
 	}//end testLinkPageThrowsWhenNoUser()
 
 	public function testLinkPageThrowsWhenCollectivesUnavailable(): void {
@@ -132,7 +143,7 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->linkPage('abc-123', 1, 2, 99);
+		$this->service->linkPage($this->target(), 99);
 	}//end testLinkPageThrowsWhenCollectivesUnavailable()
 
 	public function testLinkPageThrowsOnDuplicate(): void {
@@ -144,7 +155,7 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Page already linked to this object');
 
-		$this->service->linkPage('abc-123', 1, 2, 99);
+		$this->service->linkPage($this->target(), 99);
 	}//end testLinkPageThrowsOnDuplicate()
 
 	public function testCreateAndLinkPageThrowsWhenNoUser(): void {
@@ -153,7 +164,7 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->createAndLinkPage('abc-123', 1, 2, 5, 'Runbook');
+		$this->service->createAndLinkPage($this->target(), 5, 'Runbook');
 	}//end testCreateAndLinkPageThrowsWhenNoUser()
 
 	public function testCreateAndLinkPageThrowsOnEmptyTitle(): void {
@@ -162,7 +173,7 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkPage('abc-123', 1, 2, 5, '   ');
+		$this->service->createAndLinkPage($this->target(), 5, '   ');
 	}//end testCreateAndLinkPageThrowsOnEmptyTitle()
 
 	public function testCreateAndLinkPageThrowsOnMissingCollective(): void {
@@ -171,7 +182,7 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkPage('abc-123', 1, 2, 0, 'Runbook');
+		$this->service->createAndLinkPage($this->target(), 0, 'Runbook');
 	}//end testCreateAndLinkPageThrowsOnMissingCollective()
 
 	public function testCreateAndLinkPageThrowsWhenCollectivesUnavailable(): void {
@@ -181,7 +192,7 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->createAndLinkPage('abc-123', 1, 2, 5, 'Runbook');
+		$this->service->createAndLinkPage($this->target(), 5, 'Runbook');
 	}//end testCreateAndLinkPageThrowsWhenCollectivesUnavailable()
 
 	public function testUnlinkPageThrowsWhenNoUser(): void {
@@ -269,4 +280,175 @@ class CollectiveLinkServiceTest extends TestCase {
 
 		$this->assertSame([], $this->service->getAvailableCollectives());
 	}//end testGetAvailableCollectivesEmptyWhenNoUser()
+
+	/**
+	 * Hand out Collectives services: one collective (5, Team) holding page 99.
+	 *
+	 * @param object $pages The PageService stand-in.
+	 *
+	 * @return void
+	 */
+	private function collectives(object $pages): void {
+		$collectiveService = new class {
+			public function getCollectives(string $uid): array {
+				return [new class {
+					public function getId(): int {
+						return 5;
+					}
+
+					public function getName(): string {
+						return 'Team';
+					}
+				},
+				];
+			}
+		};
+		$this->appManager->method('isEnabledForUser')->with('collectives')->willReturn(true);
+		$this->container->method('get')->willReturnCallback(
+			fn (string $class): object => str_ends_with($class, 'PageService') ? $pages : $collectiveService
+		);
+		$this->mapper->method('insert')->willReturnArgument(0);
+	}//end collectives()
+
+	/**
+	 * A page as Collectives' PageService returns it.
+	 *
+	 * @param int $pageId The page id.
+	 *
+	 * @return object The page.
+	 */
+	public static function pageFor(int $pageId): object {
+		return new class($pageId) {
+			public function __construct(private int $pageId) {
+			}
+
+			public function getId(): int {
+				return $this->pageId;
+			}
+
+			public function getTitle(): string {
+				return 'Runbook';
+			}
+
+			public function getTimestamp(): int {
+				return 1700000000;
+			}
+
+			public function getEmoji(): string {
+				return 'x';
+			}
+
+			public function getSlug(): string {
+				return 'runbook';
+			}
+		};
+	}//end pageFor()
+
+	public function testLinkPageStampsTheObjectAndCachesThePage(): void {
+		$this->setupUser('bob');
+		$this->mapper->method('findByObjectAndPage')->with('abc-123', 99)->willReturn(null);
+		$this->collectives(new class {
+			public function find(int $collectiveId, int $pageId, string $uid): object {
+				return CollectiveLinkServiceTest::pageFor($collectiveId === 5 && $uid === 'bob' ? $pageId : 0);
+			}
+		});
+
+		$link = $this->service->linkPage($this->target(), 99);
+
+		$this->assertSame('abc-123', $link->getObjectUuid());
+		$this->assertSame(1, $link->getRegisterId());
+		$this->assertSame(2, $link->getSchemaId());
+		$this->assertSame('bob', $link->getLinkedBy());
+		$this->assertNotNull($link->getLinkedAt());
+		$this->assertSame(99, $link->getPageId());
+		$this->assertSame(5, $link->getCollectiveId());
+		$this->assertSame('Team', $link->getCollectiveName());
+		$this->assertSame('Runbook', $link->getPageTitle());
+		$this->assertSame('runbook', $link->getSlug());
+		$this->assertSame('x', $link->getEmoji());
+		$this->assertSame(1700000000, $link->getLastModified()->getTimestamp());
+		$this->assertSame('/index.php/apps/collectives/?fileId=99', $link->getUrl());
+	}//end testLinkPageStampsTheObjectAndCachesThePage()
+
+	public function testLinkPageThrowsWhenThePageIsMissing(): void {
+		$this->setupUser();
+		$this->mapper->method('findByObjectAndPage')->willReturn(null);
+		$this->collectives(new class {
+			public function find(int $collectiveId, int $pageId, string $uid): object {
+				throw new RuntimeException('not found');
+			}
+		});
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(404);
+
+		$this->service->linkPage($this->target(), 99);
+	}//end testLinkPageThrowsWhenThePageIsMissing()
+
+	public function testCreateAndLinkPageStampsTheObjectAndTheNewPage(): void {
+		$this->setupUser('bob');
+		$pages = new class {
+			public array $created = [];
+
+			public function create(int $collectiveId, int $parentId, string $title, ?int $templateId, string $uid): object {
+				$this->created = [$collectiveId, $parentId, $title, $templateId, $uid];
+				return CollectiveLinkServiceTest::pageFor(77);
+			}
+
+			public function find(int $collectiveId, int $pageId, string $uid): object {
+				return CollectiveLinkServiceTest::pageFor($pageId);
+			}
+		};
+		$this->collectives($pages);
+
+		$link = $this->service->createAndLinkPage($this->target(), 5, '  Runbook  ');
+
+		$this->assertSame([5, 0, 'Runbook', null, 'bob'], $pages->created);
+		$this->assertSame('abc-123', $link->getObjectUuid());
+		$this->assertSame(1, $link->getRegisterId());
+		$this->assertSame(2, $link->getSchemaId());
+		$this->assertSame('bob', $link->getLinkedBy());
+		$this->assertSame(77, $link->getPageId());
+		$this->assertSame('Team', $link->getCollectiveName());
+		$this->assertSame('runbook', $link->getSlug());
+	}//end testCreateAndLinkPageStampsTheObjectAndTheNewPage()
+
+	public function testCreateAndLinkPageFallsBackToTheTitleWhenTheReadFails(): void {
+		$this->setupUser();
+		$this->collectives(new class {
+			public function create(int $collectiveId, int $parentId, string $title, ?int $templateId, string $uid): object {
+				return CollectiveLinkServiceTest::pageFor(77);
+			}
+
+			public function find(int $collectiveId, int $pageId, string $uid): object {
+				throw new RuntimeException('not found');
+			}
+		});
+
+		$link = $this->service->createAndLinkPage($this->target(), 9, 'Runbook');
+
+		$this->assertSame(77, $link->getPageId());
+		$this->assertSame(9, $link->getCollectiveId());
+		$this->assertSame('', $link->getCollectiveName());
+		$this->assertSame('Runbook', $link->getPageTitle());
+		$this->assertNull($link->getSlug());
+		$this->assertNull($link->getEmoji());
+		$this->assertNotNull($link->getLastModified());
+		$this->assertSame('/index.php/apps/collectives/?fileId=77', $link->getUrl());
+		$this->assertSame(2, $link->getSchemaId());
+	}//end testCreateAndLinkPageFallsBackToTheTitleWhenTheReadFails()
+
+	public function testCreateAndLinkPageThrowsWhenTheCreateFails(): void {
+		$this->setupUser();
+		$this->collectives(new class {
+			public function create(int $collectiveId, int $parentId, string $title, ?int $templateId, string $uid): object {
+				throw new RuntimeException('down');
+			}
+		});
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(500);
+
+		$this->service->createAndLinkPage($this->target(), 5, 'Runbook');
+	}//end testCreateAndLinkPageThrowsWhenTheCreateFails()
 }//end class

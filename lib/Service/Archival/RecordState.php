@@ -56,7 +56,7 @@ namespace OCA\OpenRegister\Service\Archival;
 /**
  * The Archiefwet lifecycle states, and every spelling that means each one.
  */
-final class RecordState {
+final class RecordState implements RecordStateInterface {
 
 	/**
 	 * Live. Still in use, not yet transferred and not yet destroyed.
@@ -74,11 +74,6 @@ final class RecordState {
 	public const TRANSFERRED = 'transferred';
 
 	/**
-	 * Destroyed under a disposal decision. Immutable from here.
-	 */
-	public const DESTROYED = 'destroyed';
-
-	/**
 	 * The lifecycle, in order.
 	 *
 	 * @var string[]
@@ -89,17 +84,6 @@ final class RecordState {
 		self::TRANSFERRED,
 		self::DESTROYED,
 	];
-
-	/**
-	 * Every spelling that means ACTIVE.
-	 *
-	 * `nog_te_archiveren` is RetentionService's own word for a record still to
-	 * be archived, which is exactly a record that is live and not yet
-	 * transferred. `actief` is TmloService's.
-	 *
-	 * @var string[]
-	 */
-	public const ACTIVE_ALIASES = ['active', 'actief', 'nog_te_archiveren'];
 
 	/**
 	 * Every spelling that means SEMI_STATIC.

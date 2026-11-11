@@ -1,0 +1,2 @@
+- [x] 1.1 rematerialise command, referenced-calculation refresher and temporal sweep restore string-typed values
+- [x] 1.2 tests (RematerialiseRestoresStringTypedValuesTest, ReferencedCalculationRefresherTest, TemporalCalculationSweepServiceTest), red first

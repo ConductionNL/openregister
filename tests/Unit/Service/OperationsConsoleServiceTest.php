@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -29,16 +29,19 @@ namespace Unit\Service;
 
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
-use OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
-use OCA\OpenRegister\Db\NotificationHistoryMapper;
-use OCA\OpenRegister\Db\QueuedNotificationMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
+use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\OperationsConsoleJobs;
+use OCA\OpenRegister\Service\OperationsConsoleNotifications;
+use OCA\OpenRegister\Service\OperationsConsoleRules;
 use OCA\OpenRegister\Service\OperationsConsoleService;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
@@ -108,7 +111,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 
 		// The empty instance, so each test states only what it is about.
 		$this->bulkJobs->method('countByState')->willReturn([]);
-		$this->bulkJobs->method('findAllJobs')->willReturn([]);
+		$this->bulkJobs->method('findJobs')->willReturn([]);
 		$this->jobList->method('getJobsIterator')->willReturn([]);
 		$this->dispatches->method('countByStatus')->willReturn([]);
 		$this->queue->method('findAll')->willReturn([]);
@@ -119,13 +122,9 @@ final class OperationsConsoleServiceTest extends TestCase {
 
 	private function service(): OperationsConsoleService {
 		return new OperationsConsoleService(
-			$this->bulkJobs,
-			$this->jobList,
-			$this->dispatches,
-			$this->queue,
-			$this->templates,
-			$this->ruleRuns,
-			$this->ruleSummaries
+			new OperationsConsoleJobs($this->bulkJobs, $this->jobList),
+			new OperationsConsoleNotifications($this->dispatches, $this->queue, $this->templates),
+			new OperationsConsoleRules($this->ruleRuns, $this->ruleSummaries)
 		);
 	}
 
@@ -180,7 +179,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 				'quarantined' => 1,
 			]
 		);
-		$this->bulkJobs->method('findAllJobs')->willReturn([]);
+		$this->bulkJobs->method('findJobs')->willReturn([]);
 
 		$pane = $this->pane($this->service()->panes(), 'jobs');
 
@@ -284,7 +283,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 	public function testEachJobRowCarriesTheVerbsItsStateAllows(): void {
 		$this->bulkJobs = $this->createMock(BulkJobMapper::class);
 		$this->bulkJobs->method('countByState')->willReturn([]);
-		$this->bulkJobs->method('findAllJobs')->willReturn(
+		$this->bulkJobs->method('findJobs')->willReturn(
 			[$this->bulkJob(BulkJob::STATE_RUNNING), $this->bulkJob(BulkJob::STATE_PAUSED), $this->bulkJob(BulkJob::STATE_FAILED)]
 		);
 
@@ -344,9 +343,31 @@ final class OperationsConsoleServiceTest extends TestCase {
 		$arguments = [];
 
 		foreach ($constructor->getParameters() as $parameter) {
-			$arguments[] = $this->createMock((string)$parameter->getType()?->getName());
+			$arguments[] = $this->double((string)$parameter->getType()?->getName());
 		}
 
 		return new $class(...$arguments);
+	}
+
+	/**
+	 * A double of one constructor argument; a final bundle cannot be mocked,
+	 * so it is built from doubles of its own arguments.
+	 *
+	 * @param class-string $type The argument type.
+	 *
+	 * @return object The double.
+	 */
+	private function double(string $type): object {
+		$reflection = new \ReflectionClass($type);
+		if ($reflection->isFinal() === false) {
+			return $this->createMock($type);
+		}
+
+		$arguments = [];
+		foreach ($reflection->getConstructor()?->getParameters() ?? [] as $parameter) {
+			$arguments[] = $this->double((string)$parameter->getType()?->getName());
+		}
+
+		return $reflection->newInstanceArgs($arguments);
 	}
 }

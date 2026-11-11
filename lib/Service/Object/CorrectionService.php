@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -26,15 +26,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCP\IUser;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Corrects a value on a record and records that it was a correction.
@@ -61,7 +66,7 @@ use Throwable;
  * correction entry instead, because rewriting a sealed row is tampering
  * whoever does it and for whatever reason.
  */
-class CorrectionService {
+class CorrectionService implements CorrectionServiceInterface {
 
 	/**
 	 * The named right a correction requires.
@@ -89,27 +94,23 @@ class CorrectionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService The write path a correction goes through.
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail.
-	 * @param OpenRegisterActionAuthService $actionAuth The action-rights matrix.
-	 * @param IUserSession $userSession Resolves the correcting user.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ObjectOperationsInterface     $objectService The write path a correction goes through.
+	 * @param OpenRegisterActionAuthService $actionAuth    The action-rights matrix.
+	 * @param IUserSession                  $userSession   Resolves the correcting user.
+	 * @param CorrectionAuditing            $auditing      The audit trail and the logger.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly OpenRegisterActionAuthService $actionAuth,
 		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly CorrectionAuditing $auditing,
 	) {
 	}//end __construct()
 
 	/**
 	 * Correct one or more values on a record.
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema The schema slug or id.
-	 * @param string $id The object's id or uuid.
+	 * @param CorrectionTarget $target The register, schema and object the correction is made on.
 	 * @param array $values The properties to correct, mapped to their corrected values.
 	 * @param string|null $reason Why the values are wrong. Required.
 	 *
@@ -118,84 +119,157 @@ class CorrectionService {
 	 * @throws NotAuthorizedException When nobody is signed in, or the right is not held.
 	 * @throws CorrectionRefusedException When there is no reason, or nothing to correct.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function correct(string $register, string $schema, string $id, array $values, ?string $reason): array {
+	public function correct(CorrectionTarget $target, array $values, ?string $reason): array {
+		$user = $this->correctingUser();
+
+		return $this->applyCorrection(
+			user: $user,
+			correction: new Correction(target: $target, reason: self::requiredReason(reason: $reason), values: self::correctableValues(values: $values))
+		);
+	}//end correct()
+
+	/**
+	 * Write a checked correction through the save path and record it on the audit trail.
+	 *
+	 * @param IUser      $user       The correcting user, who holds the right.
+	 * @param Correction $correction The record, the reason and the values.
+	 *
+	 * @return array{object: ObjectEntity, audit: AuditTrail|null} The corrected record and its entry.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function applyCorrection(IUser $user, Correction $correction): array {
+		$target    = $correction->target;
+		$existing  = $this->storedRecord(target: $target);
+		$before    = ($existing->getObject() ?? []);
+		$merged    = array_merge($before, $correction->values);
+		$corrected = $this->objectService->saveObject(
+			object: $merged,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $target->register, schema: $target->schema),
+				uuid: $existing->getUuid()
+			)
+		);
+
+		$fields  = self::fieldChanges(before: $before, values: $correction->values);
+		$context = ['correction' => ['reason' => $correction->reason, 'right' => self::RIGHT, 'actor' => $user->getUID(), 'fields' => $fields]];
+		return ['object' => $corrected, 'audit' => $this->recordCorrection(object: $corrected, context: $context)];
+	}//end applyCorrection()
+
+	/**
+	 * The record as stored, read without RBAC: the right was checked on the caller.
+	 *
+	 * @param CorrectionTarget $target The register, schema and object id.
+	 *
+	 * @return ObjectEntity The stored record.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function storedRecord(CorrectionTarget $target): ObjectEntity {
+		$this->objectService->setRegister(register: $target->register);
+		$this->objectService->setSchema(schema: $target->schema);
+
+		return $this->objectService->findSilent(
+			id: $target->id,
+			options: new ObjectFindOptions(register: $target->register, schema: $target->schema),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end storedRecord()
+
+	/**
+	 * The signed-in user, who must hold the correction right.
+	 *
+	 * The right is named in the refusal, so a principal who does not hold it
+	 * reads its name rather than "forbidden" and can ask an administrator for it.
+	 *
+	 * @return IUser
+	 *
+	 * @throws NotAuthorizedException When nobody is signed in, or the right is not held.
+	 */
+	private function correctingUser(): IUser {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new NotAuthorizedException(message: 'Sign in to correct a value.');
 		}
 
-		// Named first, so a principal who does not hold it reads the right's
-		// name rather than "forbidden". Somebody has to be able to ask an
-		// administrator for a specific thing.
 		try {
 			$this->actionAuth->requireAction(user: $user, action: self::RIGHT);
 		} catch (Throwable $e) {
-			throw new NotAuthorizedException(
-				message: "Correcting a value needs the '" . self::RIGHT . "' right. " . $e->getMessage(),
-				code: 403,
-				previous: $e
-			);
+			$message = "Correcting a value needs the '" . self::RIGHT . "' right. " . $e->getMessage();
+			throw new NotAuthorizedException(message: $message, code: 403, previous: $e);
 		}
 
+		return $user;
+	}//end correctingUser()
+
+	/**
+	 * The trimmed reason, which a correction cannot do without.
+	 *
+	 * @param string|null $reason Why the values are wrong.
+	 *
+	 * @return string
+	 *
+	 * @throws CorrectionRefusedException When there is no reason.
+	 */
+	private static function requiredReason(?string $reason): string {
 		$reason = trim((string)$reason);
 		if ($reason === '') {
-			throw new CorrectionRefusedException(
-				message: 'A correction needs a reason. Say why the recorded value is wrong.'
-			);
+			throw new CorrectionRefusedException(message: 'A correction needs a reason. Say why the recorded value is wrong.');
 		}
 
-		$values = array_filter(
-			$values,
-			static function ($key): bool {
-				return str_starts_with((string)$key, '@') === false
-					&& str_starts_with((string)$key, '_') === false
-					&& in_array((string)$key, ['id', 'uuid', 'register', 'schema'], true) === false;
-			},
-			ARRAY_FILTER_USE_KEY
-		);
+		return $reason;
+	}//end requiredReason()
 
+	/**
+	 * The values a correction may change: no metadata, internal or identity keys.
+	 *
+	 * @param array $values The values sent.
+	 *
+	 * @return array The values to correct.
+	 *
+	 * @throws CorrectionRefusedException When none is left.
+	 */
+	private static function correctableValues(array $values): array {
+		$values = array_filter($values, self::isCorrectable(...), ARRAY_FILTER_USE_KEY);
 		if ($values === []) {
 			throw new CorrectionRefusedException(message: 'A correction needs at least one value to correct.');
 		}
 
-		$this->objectService->setRegister(register: $register);
-		$this->objectService->setSchema(schema: $schema);
+		return $values;
+	}//end correctableValues()
 
-		$existing = $this->objectService->findSilent(
-			id: $id,
-			_extend: [],
-			files: false,
-			register: $register,
-			schema: $schema,
-			_rbac: false,
-			_multitenancy: false
-		);
+	/**
+	 * Whether a key names a value a correction may change.
+	 *
+	 * @param int|string $key The key.
+	 *
+	 * @return bool
+	 */
+	private static function isCorrectable(int|string $key): bool {
+		return str_starts_with((string)$key, '@') === false
+			&& str_starts_with((string)$key, '_') === false
+			&& in_array((string)$key, ['id', 'uuid', 'register', 'schema'], true) === false;
+	}//end isCorrectable()
 
-		$before = ($existing->getObject() ?? []);
-		$merged = array_merge($before, $values);
+	/**
+	 * Each corrected property with its stored and its corrected value.
+	 *
+	 * @param array $before The values as they were stored.
+	 * @param array $values The values as corrected.
+	 *
+	 * @return array<string, array{old: mixed, new: mixed}>
+	 */
+	private static function fieldChanges(array $before, array $values): array {
+		$fields = [];
+		foreach ($values as $property => $value) {
+			$fields[(string)$property] = ['old' => ($before[$property] ?? null), 'new' => $value];
+		}
 
-		$corrected = $this->objectService->saveObject(
-			object: $merged,
-			register: $register,
-			schema: $schema,
-			uuid: $existing->getUuid()
-		);
-
-		$audit = $this->recordCorrection(
-			object: $corrected,
-			before: $before,
-			values: $values,
-			reason: $reason,
-			actor: $user->getUID()
-		);
-
-		return [
-			'object' => $corrected,
-			'audit' => $audit,
-		];
-	}//end correct()
+		return $fields;
+	}//end fieldChanges()
 
 	/**
 	 * Record that the write just made was a correction.
@@ -210,69 +284,45 @@ class CorrectionService {
 	 * than a 500 that leaves the caller believing the correction did not land.
 	 * The fallback entry covers the loss in every case it can.
 	 *
-	 * @param ObjectEntity $object The corrected record.
-	 * @param array $before The values as they were stored.
-	 * @param array $values The values as corrected.
-	 * @param string $reason Why they were wrong.
-	 * @param string $actor The correcting user.
+	 * @param ObjectEntity $object  The corrected record.
+	 * @param array        $context The correction context: reason, right, actor and fields.
 	 *
 	 * @return AuditTrail|null The correction entry, or null when the trail is switched off.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function recordCorrection(
-		ObjectEntity $object,
-		array $before,
-		array $values,
-		string $reason,
-		string $actor,
-	): ?AuditTrail {
-		$fields = [];
-		foreach ($values as $property => $value) {
-			$fields[(string)$property] = [
-				'old' => ($before[$property] ?? null),
-				'new' => $value,
-			];
-		}
-
-		$context = [
-			'correction' => [
-				'reason' => $reason,
-				'right' => self::RIGHT,
-				'actor' => $actor,
-				'fields' => $fields,
-			],
-		];
-
-		$entry = $this->amendLastEntry(object: $object, context: $context);
-		if ($entry !== null) {
-			return $entry;
-		}
-
+	private function recordCorrection(ObjectEntity $object, array $context): ?AuditTrail {
 		// No amendable entry: either the audit trail is switched off for this
 		// schema, or the row was sealed between the save and here. Write the
 		// correction as its own entry so the act is recorded either way.
+		return $this->amendLastEntry(object: $object, context: $context) ?? $this->writeCorrectionEntry(object: $object, context: $context);
+	}//end recordCorrection()
+
+	/**
+	 * Write the correction as an audit entry of its own.
+	 *
+	 * @param ObjectEntity $object  The corrected record.
+	 * @param array        $context The correction context, carrying the actor.
+	 *
+	 * @return AuditTrail|null The entry, or null when it could not be written.
+	 */
+	private function writeCorrectionEntry(ObjectEntity $object, array $context): ?AuditTrail {
+		$actor = $context['correction']['actor'];
 		try {
-			return $this->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: self::ACTION,
-				context: $context,
-				actorId: $actor
-			);
+			$options = new ObjectAuditEventOptions(actor: new NamedActor(id: $actor));
+
+			$event = new ObjectAuditEvent(object: $object, action: self::ACTION, context: $context, options: $options);
+
+			return $this->auditing->auditTrailMapper->recordObjectEvent(event: $event);
 		} catch (Throwable $e) {
-			$this->logger->error(
+			$this->auditing->logger->error(
 				message: '[CorrectionService] The correction landed and the audit entry did not',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $object->getUuid(),
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $object->getUuid(), 'error' => $e->getMessage()]
 			);
 
 			return null;
 		}
-	}//end recordCorrection()
+	}//end writeCorrectionEntry()
 
 	/**
 	 * Relabel the entry the save just wrote, when it is still unsealed.
@@ -285,45 +335,55 @@ class CorrectionService {
 	 *
 	 * @return AuditTrail|null The amended entry, or null.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function amendLastEntry(ObjectEntity $object, array $context): ?AuditTrail {
-		$lastLog = $object->getLastLog();
-		$auditId = ($lastLog['id'] ?? null);
+		$entry = $this->unsealedLastEntry(object: $object);
+		if ($entry === null) {
+			return null;
+		}
+
+		$auditId = (int)$object->getLastLog()['id'];
+		$entry->setAction(self::ACTION);
+		$entry->setChanged(array_merge($entry->getChanged(), $context));
+		try {
+			return $this->auditing->auditTrailMapper->update($entry);
+		} catch (Throwable $e) {
+			$this->auditing->logger->warning(
+				message: '[CorrectionService] Could not relabel the audit entry as a correction',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'auditId' => $auditId, 'error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end amendLastEntry()
+
+	/**
+	 * The entry the save just wrote, when it can be found and is not sealed.
+	 *
+	 * A sealed row is part of the hash chain. Rewriting one is tampering
+	 * whoever does it and for whatever reason, so it is left alone and the
+	 * caller writes a separate entry.
+	 *
+	 * @param ObjectEntity $object The corrected record, carrying its last log.
+	 *
+	 * @return AuditTrail|null The entry, or null when there is none to amend.
+	 */
+	private function unsealedLastEntry(ObjectEntity $object): ?AuditTrail {
+		$auditId = ($object->getLastLog()['id'] ?? null);
 		if (is_numeric($auditId) === false) {
 			return null;
 		}
 
 		try {
-			$entry = $this->auditTrailMapper->find((int)$auditId);
+			$entry = $this->auditing->auditTrailMapper->find((int)$auditId);
 		} catch (Throwable $e) {
 			return null;
 		}
 
-		// A sealed row is part of the hash chain. Rewriting one is tampering
-		// whoever does it and for whatever reason, so it is left alone and the
-		// caller writes a separate entry.
 		if ($entry->getHash() !== null) {
 			return null;
 		}
 
-		$entry->setAction(self::ACTION);
-		$entry->setChanged(array_merge($entry->getChanged(), $context));
-
-		try {
-			return $this->auditTrailMapper->update($entry);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[CorrectionService] Could not relabel the audit entry as a correction',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'auditId' => (int)$auditId,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return null;
-		}
-	}//end amendLastEntry()
+		return $entry;
+	}//end unsealedLastEntry()
 }//end class

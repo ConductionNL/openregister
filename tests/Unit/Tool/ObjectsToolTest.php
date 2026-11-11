@@ -3,16 +3,19 @@
 namespace Unit\Tool;
 
 use DateTime;
-use OCA\OpenRegister\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Tool\ObjectsTool;
+use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
+use OCA\OpenRegister\Mcp\Tool\CreateObjectCommand;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 class ObjectsToolTest extends TestCase {
 	private IUserSession&MockObject $userSession;
@@ -26,8 +29,7 @@ class ObjectsToolTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->tool = new ObjectsTool(
-			$this->userSession,
-			$this->logger,
+			new ToolCallTrail($this->userSession, $this->logger),
 			$this->objectService
 		);
 
@@ -104,7 +106,7 @@ class ObjectsToolTest extends TestCase {
 		$noUserSession = $this->createMock(IUserSession::class);
 		$noUserSession->method('getUser')->willReturn(null);
 
-		$tool = new ObjectsTool($noUserSession, $this->logger, $this->objectService);
+		$tool = new ObjectsTool(new ToolCallTrail($noUserSession, $this->logger), $this->objectService);
 
 		$result = $tool->executeFunction('search_objects', []);
 		$this->assertFalse($result['success']);
@@ -182,6 +184,29 @@ class ObjectsToolTest extends TestCase {
 		$this->assertTrue($result['success']);
 	}
 
+	/**
+	 * Keyed arguments bind by name whatever their order, omitted ones take
+	 * their declared default, and a key the method does not declare is dropped.
+	 */
+	public function testExecuteFunctionBindsKeyedArgumentsByName(): void {
+		$this->objectService->expects($this->once())
+			->method('findAll')
+			->with($this->callback(function ($config) {
+				return $config['limit'] === 20
+					&& $config['offset'] === 0
+					&& $config['filters'] === ['schema' => '2', '_search' => 'needle'];
+			}))
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$result = $this->tool->executeFunction('search_objects', [
+			'query' => 'needle',
+			'unknownHint' => 'ignored',
+			'schema' => '2',
+		]);
+
+		$this->assertTrue($result['success']);
+	}
+
 	// ------------------------------------------------------------------
 	// getObject
 	// ------------------------------------------------------------------
@@ -224,7 +249,7 @@ class ObjectsToolTest extends TestCase {
 			->method('saveObject')
 			->willReturn($obj);
 
-		$result = $this->tool->createObject('10', '20', ['name' => 'New']);
+		$result = $this->tool->createObject(new CreateObjectCommand('10', '20', ['name' => 'New']));
 		$this->assertTrue($result['success']);
 		$this->assertSame('new-uuid', $result['data']['uuid']);
 		$this->assertStringContainsString('created', $result['message']);
@@ -300,7 +325,7 @@ class ObjectsToolTest extends TestCase {
 		$this->objectService->method('find')->willReturn($entity);
 		$this->objectService->expects($this->once())
 			->method('deleteObject')
-			->with('42');
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == '42'));
 
 		$this->tool->deleteObject('42');
 	}

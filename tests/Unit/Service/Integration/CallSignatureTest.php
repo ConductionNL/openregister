@@ -36,7 +36,7 @@ class CallSignatureTest extends TestCase {
 			}
 		};
 
-		$this->assertTrue((new CallSignature())->accepts(service: $service, method: 'call', name: 'withholdBodies'));
+		$this->assertTrue((new CallSignature(service: $service, method: 'call'))->accepts(name: 'withholdBodies'));
 	}//end testAParameterOfThatNameIsAccepted()
 
 	public function testAMethodThatCollectsNamedArgumentsAcceptsAnyName(): void {
@@ -45,7 +45,7 @@ class CallSignatureTest extends TestCase {
 			}
 		};
 
-		$this->assertTrue((new CallSignature())->accepts(service: $service, method: 'call', name: 'withholdBodies'));
+		$this->assertTrue((new CallSignature(service: $service, method: 'call'))->accepts(name: 'withholdBodies'));
 	}//end testAMethodThatCollectsNamedArgumentsAcceptsAnyName()
 
 	public function testAnOlderSignatureAndAMissingMethodAreNotAccepted(): void {
@@ -54,7 +54,7 @@ class CallSignatureTest extends TestCase {
 			}
 		};
 
-		$this->assertFalse((new CallSignature())->accepts(service: $older, method: 'call', name: 'withholdBodies'));
-		$this->assertFalse((new CallSignature())->accepts(service: new \stdClass(), method: 'call', name: 'withholdBodies'));
+		$this->assertFalse((new CallSignature(service: $older, method: 'call'))->accepts(name: 'withholdBodies'));
+		$this->assertFalse((new CallSignature(service: new \stdClass(), method: 'call'))->accepts(name: 'withholdBodies'));
 	}//end testAnOlderSignatureAndAMissingMethodAreNotAccepted()
 }//end class

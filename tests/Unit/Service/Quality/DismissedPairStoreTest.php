@@ -26,11 +26,14 @@ namespace Unit\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Quality\DismissedPairStore;
+use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
+use OCA\OpenRegister\Search\Service\Quality\ReviewedPair;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Quality\PairDismissal;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class DismissedPairStoreTest extends TestCase {
 
@@ -145,26 +148,25 @@ class DismissedPairStoreTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (...$args) use (&$written): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$written): ObjectEntity {
+					$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 					$written = $args[0];
 					return $this->row('new-row', is_array($args[0]) ? $args[0] : []);
 				}
 			);
 
 		$stored = $this->store->dismiss(
-			first: 'bbb',
-			second: 'aaa',
-			registerSlug: 'reg',
-			schemaSlug: 'party',
-			fingerprint: 'fp1',
-			reason: 'different people, same street',
-			dismissedBy: 'reviewer'
+			pair: new ReviewedPair('bbb', 'aaa', 'reg', 'party'),
+			dismissal: new PairDismissal(fingerprint: 'fp1', reason: 'different people, same street', dismissedBy: 'reviewer')
 		);
 
 		$this->assertSame('aaa', $written['objectA']);
 		$this->assertSame('bbb', $written['objectB']);
 		$this->assertSame('reviewer', $written['dismissedBy']);
 		$this->assertSame('different people, same street', $written['reason']);
+		$this->assertSame('reg', $written['registerSlug']);
+		$this->assertSame('party', $written['schemaSlug']);
+		$this->assertSame('fp1', $written['fingerprint']);
 		$this->assertTrue($written['active']);
 		$this->assertNotEmpty($written['dismissedAt']);
 		$this->assertSame('new-row', $stored['id']);
@@ -185,7 +187,8 @@ class DismissedPairStoreTest extends TestCase {
 
 		$uuidPassed = 'not-set';
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$uuidPassed): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$uuidPassed): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				// ObjectService::saveObject is (object, extend, register, schema, uuid, ...),
 				// so the uuid is the FIFTH argument, not the fourth.
 				$uuidPassed = ($args[4] ?? null);
@@ -194,13 +197,8 @@ class DismissedPairStoreTest extends TestCase {
 		);
 
 		$this->store->dismiss(
-			first: 'aaa',
-			second: 'bbb',
-			registerSlug: 'reg',
-			schemaSlug: 'party',
-			fingerprint: 'fp2',
-			reason: 'still different',
-			dismissedBy: 'reviewer'
+			pair: new ReviewedPair('aaa', 'bbb', 'reg', 'party'),
+			dismissal: new PairDismissal(fingerprint: 'fp2', reason: 'still different', dismissedBy: 'reviewer')
 		);
 
 		$this->assertSame('existing-row', $uuidPassed);
@@ -221,17 +219,15 @@ class DismissedPairStoreTest extends TestCase {
 
 		$written = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$written): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$written): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$written = $args[0];
 				return $this->row('existing-row', is_array($args[0]) ? $args[0] : []);
 			}
 		);
 
 		$this->store->undismiss(
-			first: 'aaa',
-			second: 'bbb',
-			registerSlug: 'reg',
-			schemaSlug: 'party',
+			pair: new ReviewedPair('aaa', 'bbb', 'reg', 'party'),
 			reversedBy: 'supervisor'
 		);
 
@@ -254,10 +250,7 @@ class DismissedPairStoreTest extends TestCase {
 
 		$this->assertNull(
 			$this->store->undismiss(
-				first: 'aaa',
-				second: 'bbb',
-				registerSlug: 'reg',
-				schemaSlug: 'party',
+				pair: new ReviewedPair('aaa', 'bbb', 'reg', 'party'),
 				reversedBy: 'supervisor'
 			)
 		);

@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Connection;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Connection\ConnectionStatusReport;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -47,6 +48,7 @@ use RuntimeException;
  * design D6 of the hydra change connection-registry.
  *
  * @covers \OCA\OpenRegister\Service\Connection\ConnectionReporter
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  */
 class ConnectionReporterTest extends TestCase {
 
@@ -138,6 +140,25 @@ class ConnectionReporterTest extends TestCase {
 	}//end testAReportIsSentWithTheAppKeyStatusAndMessage()
 
 	/**
+	 * A report object reaches integriq the same way, and a bad key in one is refused.
+	 *
+	 * @return void
+	 */
+	public function testAReportObjectIsSentOrRefusedLikeTheLooseForm(): void {
+		$reporter = $this->reporter();
+
+		$this->assertTrue($reporter->reportStatus(new ConnectionStatusReport(key: 'kvk', status: 'limited')));
+		$this->assertCount(1, $this->sent);
+		$this->assertSame('kvk', $this->sent[0]->key);
+		$this->assertSame('limited', $this->sent[0]->status);
+		$this->assertSame('', $this->sent[0]->message);
+
+		$this->assertFalse($reporter->reportStatus(new ConnectionStatusReport(key: 'whatsapp', status: 'configured', message: 'x')));
+		$this->assertFalse($reporter->reportStatus(new ConnectionStatusReport(key: 'kvk', status: 'degraded')));
+		$this->assertCount(1, $this->sent);
+	}//end testAReportObjectIsSentOrRefusedLikeTheLooseForm()
+
+	/**
 	 * The event names are the ones the contract fixes, and they resolve here.
 	 *
 	 * A class-name string is exactly the reference that rots into a silent
@@ -215,6 +236,33 @@ class ConnectionReporterTest extends TestCase {
 		$this->assertCount(expectedCount: 6, haystack: $this->sent);
 		$this->assertContains(needle: 'limited', haystack: ConnectionReporter::STATUSES);
 	}//end testStatusMustBeOneOfTheSix()
+
+	/**
+	 * Each refusal logs its exact message and context, and the key is checked before the status.
+	 *
+	 * @return void
+	 */
+	public function testEachRefusalLogsItsExactMessageAndContext(): void {
+		$warnings = [];
+		$this->logger->method('warning')->willReturnCallback(
+			static function (string $message, array $context = []) use (&$warnings): void {
+				$warnings[] = [$message, $context];
+			}
+		);
+		$reporter = $this->reporter();
+
+		$this->assertFalse(condition: $reporter->report(key: 'llm', status: 'degraded', message: 'm'));
+		$this->assertFalse(condition: $reporter->report(key: 'whatsapp', status: 'degraded'));
+
+		$this->assertSame(
+			expected: [
+				['[ConnectionReporter] Refusing to report an unknown connection status', ['key' => 'llm', 'status' => 'degraded']],
+				['[ConnectionReporter] Refusing to report an unknown connection key', ['key' => 'whatsapp']],
+			],
+			actual: $warnings
+		);
+		$this->assertSame(expected: [], actual: $this->sent);
+	}//end testEachRefusalLogsItsExactMessageAndContext()
 
 	/**
 	 * A listener that throws never escapes into the request that reported.

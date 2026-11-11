@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`OffsetPager renders the first page 1`] = `"<div class="pagination"><button disabled="">t:Previous</button><span class="pagination-info">t:Page {current} of {total}{"current":1,"total":3}</span><button>t:Next</button></div>"`;
+
+exports[`OffsetPager renders the last page 1`] = `"<div class="pagination"><button>t:Previous</button><span class="pagination-info">t:Page {current} of {total}{"current":3,"total":3}</span><button disabled="">t:Next</button></div>"`;
+
+exports[`OffsetPager renders the middle page 1`] = `"<div class="pagination"><button>t:Previous</button><span class="pagination-info">t:Page {current} of {total}{"current":2,"total":3}</span><button>t:Next</button></div>"`;
+
+exports[`OffsetPager renders the single page 1`] = `"<!--v-if-->"`;
+
+exports[`RangePager renders the first page 1`] = `"<div class="pagination"><button disabled="">t:Previous</button><span class="paginationInfo">t:Showing {from}-{to} of {total}{"from":1,"to":20,"total":45}</span><button>t:Next</button></div>"`;
+
+exports[`RangePager renders the last page 1`] = `"<div class="pagination"><button>t:Previous</button><span class="paginationInfo">t:Showing {from}-{to} of {total}{"from":41,"to":45,"total":45}</span><button disabled="">t:Next</button></div>"`;
+
+exports[`RangePager renders the middle page 1`] = `"<div class="pagination"><button>t:Previous</button><span class="paginationInfo">t:Showing {from}-{to} of {total}{"from":21,"to":40,"total":45}</span><button>t:Next</button></div>"`;
+
+exports[`RangePager renders the single page 1`] = `"<!--v-if-->"`;

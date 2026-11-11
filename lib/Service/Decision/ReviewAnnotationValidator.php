@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Decision;
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
  */
-final class ReviewAnnotationValidator {
+final class ReviewAnnotationValidator implements ReviewAnnotationValidatorInterface {
 
 	/**
 	 * The refusals for a schema configuration; empty when it is sound or absent.
@@ -86,17 +86,42 @@ final class ReviewAnnotationValidator {
 	 * @return array<int, array{code: string, message: string}> The refusals.
 	 */
 	private static function badValues(array $declaration): array {
-		$errors = [];
-		$ownership = ($declaration['ownership'] ?? ReviewPolicy::OWNERSHIP_OPEN);
-		if (in_array($ownership, [ReviewPolicy::OWNERSHIP_OPEN, ReviewPolicy::OWNERSHIP_DECIDER], true) === false) {
-			$named = gettype($ownership);
-			if (is_scalar($ownership) === true) {
-				$named = (string)$ownership;
-			}
+		return array_merge(
+			self::badOwnership(declaration: $declaration),
+			self::badSupervisorsOrHiding(declaration: $declaration)
+		);
+	}//end badValues()
 
-			$errors[] = self::refusal(code: 'review-ownership', message: 'Ownership "'.$named.'" is not open or decider.');
+	/**
+	 * Refuse an ownership that is neither open nor decider.
+	 *
+	 * @param array<string, mixed> $declaration The review declaration.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusal, or none.
+	 */
+	private static function badOwnership(array $declaration): array {
+		$ownership = ($declaration['ownership'] ?? ReviewPolicy::OWNERSHIP_OPEN);
+		if (in_array($ownership, [ReviewPolicy::OWNERSHIP_OPEN, ReviewPolicy::OWNERSHIP_DECIDER], true) === true) {
+			return [];
 		}
 
+		$named = gettype($ownership);
+		if (is_scalar($ownership) === true) {
+			$named = (string)$ownership;
+		}
+
+		return [self::refusal(code: 'review-ownership', message: 'Ownership "'.$named.'" is not open or decider.')];
+	}//end badOwnership()
+
+	/**
+	 * Refuse supervisors that are not a list of group ids, and a hideOthers that is not a boolean.
+	 *
+	 * @param array<string, mixed> $declaration The review declaration.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusals, in that order.
+	 */
+	private static function badSupervisorsOrHiding(array $declaration): array {
+		$errors = [];
 		if (array_key_exists('supervisors', $declaration) === true && self::isListOfStrings(value: $declaration['supervisors']) === false) {
 			$errors[] = self::refusal(code: 'review-supervisors', message: 'Supervisors must be a list of group ids.');
 		}
@@ -106,7 +131,7 @@ final class ReviewAnnotationValidator {
 		}
 
 		return $errors;
-	}//end badValues()
+	}//end badSupervisorsOrHiding()
 
 	/**
 	 * Whether a value is a list of non-empty strings.

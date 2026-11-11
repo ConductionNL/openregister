@@ -1,0 +1,50 @@
+[
+    [
+        "result",
+        null
+    ],
+    [
+        "result",
+        null
+    ],
+    [
+        "findAll",
+        [
+            {
+                "filters": {
+                    "register": "edepot-transfers",
+                    "schema": "edepotTransferProof",
+                    "objectUuid": "o",
+                    "transferUuid": "t"
+                }
+            },
+            true,
+            true
+        ]
+    ],
+    [
+        "result",
+        null
+    ],
+    [
+        "findAll",
+        [
+            {
+                "filters": {
+                    "register": "edepot-transfers",
+                    "schema": "edepotTransferProof",
+                    "objectUuid": "o",
+                    "transferUuid": "t"
+                }
+            },
+            true,
+            true
+        ]
+    ],
+    [
+        "result",
+        {
+            "uuid": "p"
+        }
+    ]
+]

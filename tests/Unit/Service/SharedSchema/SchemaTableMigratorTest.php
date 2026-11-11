@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\SharedSchema;
 
 use OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator;
+use OCA\OpenRegister\Service\SharedSchema\TableCopy;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -178,9 +179,7 @@ class SchemaTableMigratorTest extends TestCase {
 	 */
 	public function testCopyStatementQuotesIdentifiers(): void {
 		$sql = SchemaTableMigrator::buildCopySql(
-			sourceTable: 'oc_openregister_table_16_161',
-			targetTable: 'oc_openregister_table_16_9465',
-			columns: ['_uuid', '_schema'],
+			copy: new TableCopy(sourceTable: 'oc_openregister_table_16_161', targetTable: 'oc_openregister_table_16_9465', columns: ['_uuid', '_schema']),
 			quote: '"'
 		);
 
@@ -199,9 +198,7 @@ class SchemaTableMigratorTest extends TestCase {
 	 */
 	public function testCopyStatementHonoursTheBacktickDialect(): void {
 		$sql = SchemaTableMigrator::buildCopySql(
-			sourceTable: 'oc_openregister_table_16_161',
-			targetTable: 'oc_openregister_table_16_9465',
-			columns: ['_uuid'],
+			copy: new TableCopy(sourceTable: 'oc_openregister_table_16_161', targetTable: 'oc_openregister_table_16_9465', columns: ['_uuid']),
 			quote: '`'
 		);
 
@@ -221,9 +218,7 @@ class SchemaTableMigratorTest extends TestCase {
 	public function testUnsafeIdentifierIsRefused(): void {
 		$this->expectException(RuntimeException::class);
 		SchemaTableMigrator::buildCopySql(
-			sourceTable: 'oc_openregister_table_16_161',
-			targetTable: 'x"; DROP TABLE users; --',
-			columns: ['_uuid'],
+			copy: new TableCopy(sourceTable: 'oc_openregister_table_16_161', targetTable: 'x"; DROP TABLE users; --', columns: ['_uuid']),
 			quote: '"'
 		);
 
@@ -237,9 +232,7 @@ class SchemaTableMigratorTest extends TestCase {
 	public function testEmptyMappingIsRefused(): void {
 		$this->expectException(RuntimeException::class);
 		SchemaTableMigrator::buildCopySql(
-			sourceTable: 'oc_openregister_table_16_161',
-			targetTable: 'oc_openregister_table_16_9465',
-			columns: [],
+			copy: new TableCopy(sourceTable: 'oc_openregister_table_16_161', targetTable: 'oc_openregister_table_16_9465', columns: []),
 			quote: '"'
 		);
 
@@ -294,9 +287,7 @@ class SchemaTableMigratorTest extends TestCase {
 
 		$pdo->exec(
 			SchemaTableMigrator::buildCopySql(
-				sourceTable: 'oc_openregister_table_16_161',
-				targetTable: 'oc_openregister_table_16_9465',
-				columns: $plan['mapped'],
+				copy: new TableCopy(sourceTable: 'oc_openregister_table_16_161', targetTable: 'oc_openregister_table_16_9465', columns: $plan['mapped']),
 				quote: '"'
 			)
 		);

@@ -2,7 +2,6 @@
 	<NcDialog
 		:name="t('openregister', 'Edit View')"
 		size="large"
-		:canClose="true"
 		@closing="handleClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ t('openregister', 'View successfully updated') }}</p>
@@ -70,53 +69,26 @@
 							<span>{{ t('openregister', 'Share') }}</span>
 						</template>
 						<div class="form-editor">
-							<div class="groups-select-container">
-								<label class="groups-label">{{
-									t('openregister', 'Share with Groups')
-								}}</label>
-								<NcSelect
-									v-model="selectedGroups"
-									inputLabel="Selected Groups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									label="name"
-									trackBy="id"
-									:multiple="true"
-									:labelOutside="true"
-									:filterable="false"
-									:closeOnSelect="false"
-									:placeholder="
-										t('openregister', 'Type to search groups...')
-									"
-									@searchChange="searchGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{
-												name
-											}}</span>
-										</div>
-									</template>
-									<template #no-options>
-										<span v-if="loadingGroups">{{
-											t('openregister', 'Loading groups...')
-										}}</span>
-										<span v-else>{{
-											t(
-												'openregister',
-												'Type to search for groups',
-											)
-										}}</span>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'Members of selected groups can access this view',
-										)
-									}}
-								</p>
-							</div>
+							<GroupSelect
+								v-model="selectedGroups"
+								:label="t('openregister', 'Share with Groups')"
+								:options="availableGroups"
+								:disabled="loading"
+								:loading="loadingGroups"
+								:closeOnSelect="false"
+								:placeholder="
+									t('openregister', 'Type to search groups...')
+								"
+								:emptyText="
+									t('openregister', 'Type to search for groups')
+								"
+								:hint="
+									t(
+										'openregister',
+										'Members of selected groups can access this view',
+									)
+								"
+								@searchChange="searchGroups" />
 
 							<div class="groups-select-container">
 								<label class="groups-label">{{
@@ -208,13 +180,33 @@ import Close from 'vue-material-design-icons/Close.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import ShareVariant from 'vue-material-design-icons/ShareVariant.vue'
+import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import { searchGroupsDebounced } from '../../services/groupSearch.js'
 import { viewsStore } from '../../store/store.js'
+
+/**
+ * Ask Nextcloud for the users matching a search.
+ *
+ * @param {string} searchQuery The search query
+ * @return {Promise<Response>} The OCS response
+ */
+function fetchUsersMatching(searchQuery) {
+	return fetch(
+		`/ocs/v1.php/cloud/users?format=json&search=${encodeURIComponent(searchQuery)}`,
+		{
+			headers: {
+				'OCS-APIRequest': 'true',
+			},
+		},
+	)
+}
 
 export default {
 	name: 'EditView',
 	components: {
+		GroupSelect,
 		NcDialog,
 		NcTextField,
 		NcButton,
@@ -245,20 +237,9 @@ export default {
 			loadingUsers: false,
 			success: false,
 			error: null,
-			viewData: {
-				name: '',
-				description: '',
-				isPublic: false,
-				isDefault: false,
-				query: {},
-			},
+			viewData: emptyViewData(),
 
-			selectedGroups: [],
-			selectedUsers: [],
-			availableGroups: [],
-			availableUsers: [],
-			groupSearchDebounce: null,
-			userSearchDebounce: null,
+			...emptySharing(),
 		}
 	},
 
@@ -266,34 +247,17 @@ export default {
 		view: {
 			immediate: true,
 			/**
-			 * @param newView
+			 * @param {object|null} newView
 			 * @spec exclude Watcher hydrating the local form model from the view prop; UI reactivity plumbing.
 			 */
 			handler(newView) {
 				if (newView) {
-					this.viewData = {
-						name: newView.name || '',
-						description: newView.description || '',
-						isPublic: newView.isPublic || false,
-						isDefault: newView.isDefault || false,
-						query: newView.query || newView.configuration || {},
-					}
+					this.viewData = viewFormData(newView)
 
 					// Initialize selected groups and users from the view
 					// Convert string IDs to objects for NcSelect
-					// A view's group shares are `sharedWith: [{ group, mode }]`.
-					// The mode of an existing share is kept; a new group reads.
-					this.selectedGroups = (newView.sharedWith || []).map(
-						(share) => ({
-							id: share.group,
-							name: share.group,
-							mode: share.mode || 'read',
-						}),
-					)
-					this.selectedUsers = (newView.sharedUsers || []).map((id) => ({
-						id,
-						name: id,
-					}))
+					this.selectedGroups = sharedGroupsOf(newView)
+					this.selectedUsers = sharedUsersOf(newView)
 
 					// Populate available options with currently selected items
 					this.availableGroups = [...this.selectedGroups]
@@ -318,64 +282,14 @@ export default {
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		searchGroups(searchQuery) {
-			// Clear existing debounce timer
-			if (this.groupSearchDebounce) {
-				clearTimeout(this.groupSearchDebounce)
-			}
-
-			// If search is empty, clear results
-			if (!searchQuery || searchQuery.trim() === '') {
-				this.availableGroups = []
-				return
-			}
-
-			// Debounce the search by 300ms
-			this.groupSearchDebounce = setTimeout(async () => {
-				this.loadingGroups = true
-				try {
-					// Query Nextcloud OCS API with search parameter
-					const response = await fetch(
-						`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`,
-						{
-							headers: {
-								'OCS-APIRequest': 'true',
-							},
-						},
-					)
-
-					if (response.ok) {
-						const data = await response.json()
-						if (data.ocs?.data?.groups) {
-							// Transform group IDs into objects
-							const searchResults = data.ocs.data.groups.map(
-								(groupId) => ({
-									id: groupId,
-									name: groupId,
-								}),
-							)
-
-							// Merge with already selected groups to ensure they remain visible
-							const selectedGroupIds = this.selectedGroups.map(
-								(g) => g.id,
-							)
-							const mergedGroups = [
-								...this.selectedGroups,
-								...searchResults.filter(
-									(g) => !selectedGroupIds.includes(g.id),
-								),
-							]
-
-							this.availableGroups = mergedGroups
-						}
-					} else {
-						console.warn('Failed to search groups:', response.statusText)
-					}
-				} catch (error) {
-					console.error('Error searching Nextcloud groups:', error)
-				} finally {
-					this.loadingGroups = false
-				}
-			}, 300)
+			searchGroupsDebounced(this, {
+				query: searchQuery,
+				onEmpty: () => {
+					this.availableGroups = []
+				},
+				toGroup: (groupId) => ({ id: groupId, name: groupId }),
+				warnOnRefusal: true,
+			})
 		},
 
 		/**
@@ -398,52 +312,56 @@ export default {
 			}
 
 			// Debounce the search by 300ms
-			this.userSearchDebounce = setTimeout(async () => {
-				this.loadingUsers = true
-				try {
-					// Query Nextcloud OCS API with search parameter
-					const response = await fetch(
-						`/ocs/v1.php/cloud/users?format=json&search=${encodeURIComponent(searchQuery)}`,
-						{
-							headers: {
-								'OCS-APIRequest': 'true',
-							},
-						},
-					)
+			this.userSearchDebounce = setTimeout(
+				() => this.runUserSearch(searchQuery),
+				300,
+			)
+		},
 
-					if (response.ok) {
-						const data = await response.json()
-						if (data.ocs?.data?.users) {
-							// Transform user IDs into objects
-							const searchResults = data.ocs.data.users.map(
-								(userId) => ({
-									id: userId,
-									name: userId,
-								}),
-							)
-
-							// Merge with already selected users to ensure they remain visible
-							const selectedUserIds = this.selectedUsers.map(
-								(u) => u.id,
-							)
-							const mergedUsers = [
-								...this.selectedUsers,
-								...searchResults.filter(
-									(u) => !selectedUserIds.includes(u.id),
-								),
-							]
-
-							this.availableUsers = mergedUsers
-						}
-					} else {
-						console.warn('Failed to search users:', response.statusText)
-					}
-				} catch (error) {
-					console.error('Error searching Nextcloud users:', error)
-				} finally {
-					this.loadingUsers = false
+		/**
+		 * Look up the Nextcloud users matching a search, keeping the selected
+		 * users visible.
+		 *
+		 * @param {string} searchQuery The search query entered by the user
+		 * @return {Promise<void>}
+		 */
+		async runUserSearch(searchQuery) {
+			this.loadingUsers = true
+			try {
+				const response = await fetchUsersMatching(searchQuery)
+				if (response.ok) {
+					this.showFoundUsers(await response.json())
+				} else {
+					console.warn('Failed to search users:', response.statusText)
 				}
-			}, 300)
+			} catch (error) {
+				console.error('Error searching Nextcloud users:', error)
+			} finally {
+				this.loadingUsers = false
+			}
+		},
+
+		/**
+		 * Offer the found users after the already selected ones, without
+		 * listing a selected user twice.
+		 *
+		 * @param {object} data The OCS answer
+		 * @return {void}
+		 */
+		showFoundUsers(data) {
+			if (!data.ocs?.data?.users) {
+				return
+			}
+			// Transform user IDs into objects
+			const searchResults = data.ocs.data.users.map((userId) => ({
+				id: userId,
+				name: userId,
+			}))
+			const selectedUserIds = this.selectedUsers.map((u) => u.id)
+			this.availableUsers = [
+				...this.selectedUsers,
+				...searchResults.filter((u) => !selectedUserIds.includes(u.id)),
+			]
 		},
 
 		/**
@@ -459,43 +377,78 @@ export default {
 			this.error = null
 
 			try {
-				const sharedWith = this.selectedGroups.map((g) => ({
-					group: g.id,
-					mode: g.mode || 'read',
-				}))
-				const updateData = {
-					name: this.viewData.name.trim(),
-					description: this.viewData.description || '',
-					isPublic: this.viewData.isPublic,
-					isDefault: this.viewData.isDefault,
-					query: this.viewData.query,
-					sharedWith,
-					sharedUsers: this.selectedUsers.map((u) => u.id),
-				}
-
-				await viewsStore.updateView(
-					this.view.id || this.view.uuid,
-					updateData,
-				)
-
-				this.success = true
-
-				// Refresh views list
-				await viewsStore.fetchViews()
-
-				// Close after a brief delay to show success message
-				setTimeout(() => {
-					this.$emit('close')
-				}, 1500)
+				await this.persistView()
 			} catch (error) {
-				console.error('Error updating view:', error)
-				this.error =
-					error.response?.data?.error
-					|| error.message
-					|| this.t('openregister', 'Failed to update view')
+				this.showSaveFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Save the view as the form describes it, then say so.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async persistView() {
+			await viewsStore.updateView(
+				this.view.id || this.view.uuid,
+				this.viewUpdate(),
+			)
+			await this.showSaved()
+		},
+
+		/**
+		 * The view as the form now describes it, with whom it is shared.
+		 *
+		 * @return {object} The view update
+		 */
+		viewUpdate() {
+			const sharedWith = this.selectedGroups.map((g) => ({
+				group: g.id,
+				mode: g.mode || 'read',
+			}))
+			return {
+				name: this.viewData.name.trim(),
+				description: this.viewData.description || '',
+				isPublic: this.viewData.isPublic,
+				isDefault: this.viewData.isDefault,
+				query: this.viewData.query,
+				sharedWith,
+				sharedUsers: this.selectedUsers.map((u) => u.id),
+			}
+		},
+
+		/**
+		 * Say the view was saved, refresh the views list and close after a
+		 * brief delay to show the success message.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async showSaved() {
+			this.success = true
+
+			// Refresh views list
+			await viewsStore.fetchViews()
+
+			setTimeout(() => {
+				this.$emit('close')
+			}, 1500)
+		},
+
+		/**
+		 * Log a failed save and say why it failed: the server's error, the
+		 * error's message, or a generic one.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showSaveFailure(error) {
+			console.error('Error updating view:', error)
+			this.error =
+				error.response?.data?.error
+				|| error.message
+				|| this.t('openregister', 'Failed to update view')
 		},
 
 		/**
@@ -510,46 +463,97 @@ export default {
 		},
 	},
 }
+
+/**
+ * The form of a new view: unnamed, private, not the default, no query.
+ *
+ * @return {object} The form
+ */
+function emptyViewData() {
+	return {
+		name: '',
+		description: '',
+		isPublic: false,
+		isDefault: false,
+		query: {},
+	}
+}
+
+/**
+ * The sharing state of a new view: no groups or users chosen or offered, and
+ * no search pending.
+ *
+ * @return {object} The state
+ */
+function emptySharing() {
+	return {
+		selectedGroups: [],
+		selectedUsers: [],
+		availableGroups: [],
+		availableUsers: [],
+		groupSearchDebounce: null,
+		userSearchDebounce: null,
+	}
+}
+
+/**
+ * The form of a stored view; its query falls back to its configuration.
+ *
+ * @param {object} view The view
+ * @return {object} The form
+ */
+function viewFormData(view) {
+	return {
+		name: view.name || '',
+		description: view.description || '',
+		isPublic: view.isPublic || false,
+		isDefault: view.isDefault || false,
+		query: view.query || view.configuration || {},
+	}
+}
+
+/**
+ * The groups a view is shared with, as select options. A view's group shares
+ * are `sharedWith: [{ group, mode }]`; the mode of an existing share is kept,
+ * and a share without one reads.
+ *
+ * @param {object} view The view
+ * @return {Array<{id: string, name: string, mode: string}>} The options
+ */
+function sharedGroupsOf(view) {
+	return (view.sharedWith || []).map((share) => ({
+		id: share.group,
+		name: share.group,
+		mode: share.mode || 'read',
+	}))
+}
+
+/**
+ * The users a view is shared with, as select options.
+ *
+ * @param {object} view The view
+ * @return {Array<{id: string, name: string}>} The options
+ */
+function sharedUsersOf(view) {
+	return (view.sharedUsers || []).map((id) => ({
+		id,
+		name: id,
+	}))
+}
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 /* EditView-specific styles matching EditOrganisation */
 .tabContainer {
 	margin-top: 20px;
 }
 
 /* Tab title styling with icons */
-.tabContainer :deep(.nav-link) {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	justify-content: center;
-}
+@include tab-container-deep-nav-link-rules;
 
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
-
-.groups-select-container {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.groups-label {
-	font-weight: 500;
-	color: var(--color-main-text);
-	font-size: 14px;
-}
-
-.field-hint {
-	font-size: 12px;
-	color: var(--color-text-lighter);
-	margin: 0;
-}
+@include groups-select-container-rules;
 
 .group-option,
 .user-option {

@@ -28,6 +28,7 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -148,7 +149,7 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 		$this->container = $this->createMock(originalClassName: ContainerInterface::class);
 		$this->registerMapper = $this->createMock(originalClassName: RegisterMapper::class);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
@@ -236,7 +237,7 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 		$this->registerMapper->method('getFirstRegisterWithSchema')->willReturn($registerId);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->container->method('get')->willReturnCallback(
-			fn (string $class) => $class === RegisterMapper::class ? $this->registerMapper : null
+			fn (string $class) => $class === RegisterMapperInterface::class ? $this->registerMapper : null
 		);
 
 	}//end wireRegister()
@@ -615,7 +616,7 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 			fn (int $id) => ($registersById[$id] ?? throw new \OCP\AppFramework\Db\DoesNotExistException('no register'))
 		);
 		$this->container->method('get')->willReturnCallback(
-			fn (string $class) => $class === RegisterMapper::class ? $this->registerMapper : null
+			fn (string $class) => $class === RegisterMapperInterface::class ? $this->registerMapper : null
 		);
 
 	}//end wireRegisters()

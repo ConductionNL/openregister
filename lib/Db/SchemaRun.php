@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\SchemaRun\SchemaRunFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -73,6 +74,9 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class SchemaRun extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Run type constants.
@@ -222,72 +226,10 @@ class SchemaRun extends Entity implements JsonSerializable {
 	 * Constructor — registers field types for hydration.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'type', type: 'string');
-		$this->addType(fieldName: 'state', type: 'string');
-		$this->addType(fieldName: 'proposedDefinition', type: 'json');
-		$this->addType(fieldName: 'plan', type: 'json');
-		$this->addType(fieldName: 'options', type: 'json');
-		$this->addType(fieldName: 'processed', type: 'integer');
-		$this->addType(fieldName: 'total', type: 'integer');
-		$this->addType(fieldName: 'cursor', type: 'integer');
-		$this->addType(fieldName: 'report', type: 'json');
-		$this->addType(fieldName: 'startedBy', type: 'string');
-		$this->addType(fieldName: 'rolledBackFrom', type: 'integer');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-
-	}//end __construct()
-
-	/**
-	 * The field names registered with the 'json' type.
-	 *
-	 * @return array<int, string> The json-typed field names.
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				static function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * Without this, SchemaRunMapper's `$entity->hydrate()` call hit Entity::__call
-	 * and threw "hydrate does not exist", so every migration-run write failed.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields, true) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
+		foreach (SchemaRunFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
 		}
-
-		return $this;
-	}//end hydrate()
+	}//end __construct()
 
 	/**
 	 * Whether the run is in an active (blocking) state.
@@ -299,30 +241,15 @@ class SchemaRun extends Entity implements JsonSerializable {
 	}//end isActive()
 
 	/**
-	 * JSON serialisation.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<string, mixed> The serialised run.
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'schemaId' => $this->schemaId,
-			'registerId' => $this->registerId,
-			'type' => $this->type,
-			'state' => $this->state,
-			'proposedDefinition' => $this->proposedDefinition,
 			'plan' => ($this->plan ?? []),
 			'options' => ($this->options ?? []),
-			'processed' => $this->processed,
-			'total' => $this->total,
-			'cursor' => $this->cursor,
 			'report' => ($this->report ?? []),
-			'startedBy' => $this->startedBy,
-			'rolledBackFrom' => $this->rolledBackFrom,
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
 		];
-
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

@@ -1,0 +1,2725 @@
+{
+    "avg-filter": {
+        "result": {
+            "value": 15,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "avg",
+                        "field": "amount",
+                        "filter": {
+                            "status": "open"
+                        },
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "avg",
+                        "field": "amount",
+                        "filter": {
+                            "status": "open"
+                        },
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 15,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "cache-hit": {
+        "result": {
+            "value": 99,
+            "backend": "php-fallback",
+            "cached": true
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            }
+        ]
+    },
+    "cache-hit-grouped": {
+        "result": {
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 2
+                }
+            ],
+            "backend": "sqlite",
+            "cached": true
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": {
+                            "field": "status"
+                        },
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            }
+        ]
+    },
+    "count": {
+        "result": {
+            "value": 5,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 5,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "current-user": {
+        "result": {
+            "value": 0,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": {
+                            "owner": ""
+                        },
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": {
+                            "owner": ""
+                        },
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 0,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "date-bucket": {
+        "result": {
+            "groups": [
+                {
+                    "key": "2026-05-01T00:00:00Z",
+                    "value": 10
+                },
+                {
+                    "key": "2026-05-02T00:00:00Z",
+                    "value": 25
+                }
+            ],
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": {
+                            "field": "created",
+                            "start": "2026-05-01T00:00:00Z",
+                            "end": "2026-05-31T00:00:00Z",
+                            "gap": "day"
+                        },
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": {
+                            "field": "created",
+                            "start": "2026-05-01T00:00:00Z",
+                            "end": "2026-05-31T00:00:00Z",
+                            "gap": "day"
+                        },
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "groups": [
+                            {
+                                "key": "2026-05-01T00:00:00Z",
+                                "value": 10
+                            },
+                            {
+                                "key": "2026-05-02T00:00:00Z",
+                                "value": 25
+                            }
+                        ],
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "date-bucket-cumulative": {
+        "result": {
+            "groups": [
+                {
+                    "key": "2026-05-01T00:00:00Z",
+                    "value": 10,
+                    "cumulative": 10
+                },
+                {
+                    "key": "2026-05-02T00:00:00Z",
+                    "value": 25,
+                    "cumulative": 35
+                }
+            ],
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": {
+                            "field": "created",
+                            "start": "2026-05-01T00:00:00Z",
+                            "end": "2026-05-31T00:00:00Z",
+                            "gap": "day"
+                        },
+                        "metrics": null,
+                        "cumulative": true
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": {
+                            "field": "created",
+                            "start": "2026-05-01T00:00:00Z",
+                            "end": "2026-05-31T00:00:00Z",
+                            "gap": "day"
+                        },
+                        "metrics": null,
+                        "cumulative": true
+                    },
+                    {
+                        "groups": [
+                            {
+                                "key": "2026-05-01T00:00:00Z",
+                                "value": 10,
+                                "cumulative": 10
+                            },
+                            {
+                                "key": "2026-05-02T00:00:00Z",
+                                "value": 25,
+                                "cumulative": 35
+                            }
+                        ],
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "date-bucket-month": {
+        "result": {
+            "groups": [
+                {
+                    "key": "2026-05-01T00:00:00Z",
+                    "value": 3
+                }
+            ],
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": {
+                            "gap": "month",
+                            "field": "created",
+                            "start": "2026-05-01T00:00:00Z",
+                            "end": "2026-05-31T00:00:00Z"
+                        },
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": {
+                            "gap": "month",
+                            "field": "created",
+                            "start": "2026-05-01T00:00:00Z",
+                            "end": "2026-05-31T00:00:00Z"
+                        },
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "groups": [
+                            {
+                                "key": "2026-05-01T00:00:00Z",
+                                "value": 3
+                            }
+                        ],
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "dbal": {
+        "result": {
+            "backend": "dbal-source",
+            "cached": false,
+            "value": 42
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "dbal": [
+                    {
+                        "id": 3,
+                        "uuid": null,
+                        "slug": "reg",
+                        "title": null,
+                        "version": null,
+                        "description": null,
+                        "schemas": [
+                            5
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": 5,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": "things",
+                        "title": null,
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "status": {
+                                "type": "string"
+                            },
+                            "amount": {
+                                "type": "number"
+                            },
+                            "team": {
+                                "type": "string"
+                            },
+                            "created": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "bsn": {
+                                "type": "string",
+                                "authorization": {
+                                    "read": [
+                                        {
+                                            "group": "staff"
+                                        }
+                                    ],
+                                    "reveal": "explicit"
+                                }
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": {
+                            "x-openregister-object-source": {
+                                "provider": "dbal-source",
+                                "config": {
+                                    "table": "ext"
+                                }
+                            }
+                        },
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "sum",
+                    "amount",
+                    [],
+                    null,
+                    null,
+                    {
+                        "table": "ext"
+                    }
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "backend": "dbal-source",
+                        "cached": false,
+                        "value": 42
+                    }
+                ]
+            }
+        ]
+    },
+    "dbal-config-not-array": {
+        "result": {
+            "value": 51,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 51,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "dbal-multi-metric": {
+        "result": {
+            "values": {
+                "count": 5,
+                "sum_amount": 51
+            },
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "cumulative": false
+                    },
+                    {
+                        "values": {
+                            "count": 5,
+                            "sum_amount": 51
+                        },
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "dbal-no-config": {
+        "result": {
+            "backend": "dbal-source",
+            "cached": false,
+            "value": 1
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "dbal": [
+                    {
+                        "id": 3,
+                        "uuid": null,
+                        "slug": "reg",
+                        "title": null,
+                        "version": null,
+                        "description": null,
+                        "schemas": [
+                            5
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": 5,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": "things",
+                        "title": null,
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "status": {
+                                "type": "string"
+                            },
+                            "amount": {
+                                "type": "number"
+                            },
+                            "team": {
+                                "type": "string"
+                            },
+                            "created": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "bsn": {
+                                "type": "string",
+                                "authorization": {
+                                    "read": [
+                                        {
+                                            "group": "staff"
+                                        }
+                                    ],
+                                    "reveal": "explicit"
+                                }
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": {
+                            "x-openregister-object-source": {
+                                "provider": "dbal-source"
+                            }
+                        },
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "sum",
+                    "amount",
+                    [],
+                    null,
+                    null,
+                    []
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "backend": "dbal-source",
+                        "cached": false,
+                        "value": 1
+                    }
+                ]
+            }
+        ]
+    },
+    "dbal-null": {
+        "result": {
+            "value": 51,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "dbal": [
+                    {
+                        "id": 3,
+                        "uuid": null,
+                        "slug": "reg",
+                        "title": null,
+                        "version": null,
+                        "description": null,
+                        "schemas": [
+                            5
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": 5,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": "things",
+                        "title": null,
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "status": {
+                                "type": "string"
+                            },
+                            "amount": {
+                                "type": "number"
+                            },
+                            "team": {
+                                "type": "string"
+                            },
+                            "created": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "bsn": {
+                                "type": "string",
+                                "authorization": {
+                                    "read": [
+                                        {
+                                            "group": "staff"
+                                        }
+                                    ],
+                                    "reveal": "explicit"
+                                }
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": {
+                            "x-openregister-object-source": {
+                                "provider": "dbal-source",
+                                "config": {
+                                    "table": "ext"
+                                }
+                            }
+                        },
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "sum",
+                    "amount",
+                    [],
+                    null,
+                    null,
+                    {
+                        "table": "ext"
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 51,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "dbal-other-provider": {
+        "result": {
+            "value": 51,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 51,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "dbal-source-not-array": {
+        "result": {
+            "value": 51,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 51,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "dbal-throws": {
+        "result": {
+            "value": 51,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "dbal": [
+                    {
+                        "id": 3,
+                        "uuid": null,
+                        "slug": "reg",
+                        "title": null,
+                        "version": null,
+                        "description": null,
+                        "schemas": [
+                            5
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": 5,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": "things",
+                        "title": null,
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "status": {
+                                "type": "string"
+                            },
+                            "amount": {
+                                "type": "number"
+                            },
+                            "team": {
+                                "type": "string"
+                            },
+                            "created": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "bsn": {
+                                "type": "string",
+                                "authorization": {
+                                    "read": [
+                                        {
+                                            "group": "staff"
+                                        }
+                                    ],
+                                    "reveal": "explicit"
+                                }
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": {
+                            "x-openregister-object-source": {
+                                "provider": "dbal-source",
+                                "config": {
+                                    "table": "ext"
+                                }
+                            }
+                        },
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "sum",
+                    "amount",
+                    [],
+                    null,
+                    null,
+                    {
+                        "table": "ext"
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 51,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "denied": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "You do not have permission to aggregate schema \"things\".",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "permission": [
+                    "list",
+                    null
+                ]
+            },
+            {
+                "qualifies": [
+                    "things",
+                    "read"
+                ]
+            }
+        ]
+    },
+    "denied-and-explicit": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "You do not have permission to aggregate schema \"things\".",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "permission": [
+                    "list",
+                    null
+                ]
+            },
+            {
+                "qualifies": [
+                    "things",
+                    "read"
+                ]
+            }
+        ]
+    },
+    "denied-bypass": {
+        "result": {
+            "value": 51,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 51,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "denied-qualifies": {
+        "result": {
+            "value": 51,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "permission": [
+                    "list",
+                    null
+                ]
+            },
+            {
+                "qualifies": [
+                    "things",
+                    "read"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 51,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "explicit-field": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "This aggregation reads bsn, which is shown only on request, so it cannot be computed for you.",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "explicit-field-bypass": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "This aggregation reads bsn, which is shown only on request, so it cannot be computed for you.",
+        "calls": []
+    },
+    "explicit-filter": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "This aggregation reads bsn, which is shown only on request, so it cannot be computed for you.",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "explicit-group": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "This aggregation reads bsn, which is shown only on request, so it cannot be computed for you.",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "explicit-metrics": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "This aggregation reads bsn, which is shown only on request, so it cannot be computed for you.",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "grouped": {
+        "result": {
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 2
+                },
+                {
+                    "key": "done",
+                    "value": 3
+                }
+            ],
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": {
+                            "field": "status"
+                        },
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": {
+                            "field": "status"
+                        },
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 2
+                            },
+                            {
+                                "key": "done",
+                                "value": 3
+                            }
+                        ],
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "grouped-two": {
+        "result": {
+            "groups": [
+                {
+                    "keys": {
+                        "status": "open",
+                        "team": "a"
+                    },
+                    "value": 10
+                },
+                {
+                    "keys": {
+                        "status": "open",
+                        "team": "b"
+                    },
+                    "value": 20
+                },
+                {
+                    "keys": {
+                        "status": "done",
+                        "team": "a"
+                    },
+                    "value": 5
+                },
+                {
+                    "keys": {
+                        "status": "done",
+                        "team": "b"
+                    },
+                    "value": 16
+                }
+            ],
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": {
+                            "fields": [
+                                "status",
+                                "team"
+                            ]
+                        },
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": {
+                            "fields": [
+                                "status",
+                                "team"
+                            ]
+                        },
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "groups": [
+                            {
+                                "keys": {
+                                    "status": "open",
+                                    "team": "a"
+                                },
+                                "value": 10
+                            },
+                            {
+                                "keys": {
+                                    "status": "open",
+                                    "team": "b"
+                                },
+                                "value": 20
+                            },
+                            {
+                                "keys": {
+                                    "status": "done",
+                                    "team": "a"
+                                },
+                                "value": 5
+                            },
+                            {
+                                "keys": {
+                                    "status": "done",
+                                    "team": "b"
+                                },
+                                "value": 16
+                            }
+                        ],
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "max-operator": {
+        "result": {
+            "value": 10,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "max",
+                        "field": "amount",
+                        "filter": {
+                            "amount": {
+                                "lt": 20
+                            }
+                        },
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "max",
+                        "field": "amount",
+                        "filter": {
+                            "amount": {
+                                "lt": 20
+                            }
+                        },
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 10,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-grouped": {
+        "result": {
+            "groups": [
+                {
+                    "key": "a",
+                    "values": {
+                        "count": 2,
+                        "sum_amount": 15
+                    }
+                },
+                {
+                    "key": "b",
+                    "values": {
+                        "count": 3,
+                        "sum_amount": 36
+                    }
+                }
+            ],
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": {
+                            "field": "team"
+                        },
+                        "dateBucket": null,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": {
+                            "field": "team"
+                        },
+                        "dateBucket": null,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "cumulative": false
+                    },
+                    {
+                        "groups": [
+                            {
+                                "key": "a",
+                                "values": {
+                                    "count": 2,
+                                    "sum_amount": 15
+                                }
+                            },
+                            {
+                                "key": "b",
+                                "values": {
+                                    "count": 3,
+                                    "sum_amount": 36
+                                }
+                            }
+                        ],
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-one": {
+        "result": {
+            "value": 5,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "min",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": [
+                            {
+                                "metric": "max",
+                                "field": "amount"
+                            }
+                        ],
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "min",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": [
+                            {
+                                "metric": "max",
+                                "field": "amount"
+                            }
+                        ],
+                        "cumulative": false
+                    },
+                    {
+                        "value": 5,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-two": {
+        "result": {
+            "values": {
+                "count": 5,
+                "sum_amount": 51
+            },
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "cumulative": false
+                    },
+                    {
+                        "values": {
+                            "count": 5,
+                            "sum_amount": 51
+                        },
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "native-bucket": {
+        "result": {
+            "backend": "sqlite",
+            "cached": false,
+            "groups": [
+                {
+                    "key": "2026-05-01T00:00:00Z",
+                    "value": 2,
+                    "cumulative": 2
+                },
+                {
+                    "key": "2026-05-01T22:00:00Z",
+                    "value": 1,
+                    "cumulative": 3
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": {
+                            "field": "created",
+                            "start": "2026-05-01T00:00:00Z",
+                            "end": "2026-05-31T00:00:00Z",
+                            "gap": "day"
+                        },
+                        "metrics": null,
+                        "cumulative": true
+                    }
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT strftime('%Y-%m-%dT00:00:00Z', \"created\") AS bucket, COUNT(*) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"created\" >= ? AND \"created\" < ? GROUP BY bucket ORDER BY bucket",
+                "bindings": [
+                    "__none__",
+                    "2026-05-01T00:00:00Z",
+                    "2026-05-31T00:00:00Z"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": {
+                            "field": "created",
+                            "start": "2026-05-01T00:00:00Z",
+                            "end": "2026-05-31T00:00:00Z",
+                            "gap": "day"
+                        },
+                        "metrics": null,
+                        "cumulative": true
+                    },
+                    {
+                        "backend": "sqlite",
+                        "cached": false,
+                        "groups": [
+                            {
+                                "key": "2026-05-01T00:00:00Z",
+                                "value": 2,
+                                "cumulative": 2
+                            },
+                            {
+                                "key": "2026-05-01T22:00:00Z",
+                                "value": 1,
+                                "cumulative": 3
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "native-count": {
+        "result": {
+            "value": 2,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": {
+                            "team": "a"
+                        },
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": {
+                            "team": "a"
+                        },
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 2,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "native-count-bypass": {
+        "result": {
+            "value": 5,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 5,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "native-grouped": {
+        "result": {
+            "backend": "sqlite",
+            "cached": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3
+                },
+                {
+                    "key": "done",
+                    "value": 1
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": {
+                            "field": "status"
+                        },
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": [
+                    "alice",
+                    "__none__"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": {
+                            "field": "status"
+                        },
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "backend": "sqlite",
+                        "cached": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 3
+                            },
+                            {
+                                "key": "done",
+                                "value": 1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "native-metrics-two": {
+        "result": {
+            "values": {
+                "count": 5,
+                "sum_amount": 51
+            },
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "count",
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "cumulative": false
+                    },
+                    {
+                        "values": {
+                            "count": 5,
+                            "sum_amount": 51
+                        },
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "sum": {
+        "result": {
+            "value": 51,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 51,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    },
+    "user-and-org": {
+        "result": {
+            "value": 51,
+            "backend": "php-fallback",
+            "cached": false
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    {
+                        "metric": "sum",
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "dateBucket": null,
+                        "metrics": null,
+                        "cumulative": false
+                    },
+                    {
+                        "value": 51,
+                        "backend": "php-fallback",
+                        "cached": false
+                    }
+                ]
+            }
+        ]
+    }
+}

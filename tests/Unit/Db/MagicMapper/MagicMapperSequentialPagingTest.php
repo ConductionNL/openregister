@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -30,7 +33,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -60,6 +65,20 @@ class MagicMapperSequentialPagingTest extends TestCase {
 	];
 
 	/**
+	 * Rows per table the fake search answers from.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private array $tables = self::ROWS;
+
+	/**
+	 * The `_limit` each table was asked for.
+	 *
+	 * @var array<int, mixed>
+	 */
+	private array $askedLimits = [];
+
+	/**
 	 * A mapper whose per-table search pages fixed rows like the database would.
 	 *
 	 * @return MagicMapper The mapper.
@@ -67,9 +86,9 @@ class MagicMapperSequentialPagingTest extends TestCase {
 	private function mapper(): MagicMapper {
 		$container = $this->createMock(ContainerInterface::class);
 		$services = [
-			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
-			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
@@ -77,26 +96,32 @@ class MagicMapperSequentialPagingTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$this->createMock(SchemaMapper::class),
-					$this->createMock(RegisterMapper::class),
-					$this->createMock(IConfig::class),
-					$this->createMock(IEventDispatcher::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
-					$this->createMock(IUserManager::class),
-					$this->createMock(IAppConfig::class),
-					$this->createMock(LoggerInterface::class),
-					$this->createMock(SettingsService::class),
-					$container,
+					new MagicMapperLookups(
+						$this->createMock(SchemaMapper::class),
+						$this->createMock(RegisterMapper::class),
+						$container
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$this->createMock(IConfig::class),
+						$this->createMock(IAppConfig::class),
+						$this->createMock(IEventDispatcher::class),
+						$this->createMock(LoggerInterface::class)
+					),
 				]
 			)
 			->onlyMethods(['searchObjectsInRegisterSchemaTable'])
 			->getMock();
 
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			static function (array $query, Register $register, Schema $schema): array {
+			function (array $query, Register $register, Schema $schema): array {
+				$this->askedLimits[] = $query['_limit'] ?? null;
 				$rows = array_slice(
-					self::ROWS[$schema->getSlug()],
+					$this->tables[$schema->getSlug()],
 					max(0, (int) ($query['_offset'] ?? 0)),
 					QueryLimit::normalise($query['_limit'] ?? null)
 				);
@@ -137,12 +162,12 @@ class MagicMapperSequentialPagingTest extends TestCase {
 	/**
 	 * One page, as uuids.
 	 *
-	 * @param int $offset The offset.
-	 * @param int $limit  The page size.
+	 * @param int             $offset The offset.
+	 * @param int|string|bool $limit  The page size.
 	 *
 	 * @return array<int, string|null> The uuids.
 	 */
-	private function page(int $offset, int $limit): array {
+	private function page(int $offset, int|string|bool $limit): array {
 		$results = $this->mapper()->searchAcrossMultipleTables(
 			query: ['_aggregations' => [], '_offset' => $offset, '_limit' => $limit],
 			registerSchemaPairs: $this->pairs()
@@ -178,4 +203,69 @@ class MagicMapperSequentialPagingTest extends TestCase {
 		// No `_order`: the merged rows are ordered by uuid, as the UNION path orders them.
 		$this->assertSame(['t1', 't2', 't3', 't4', 'z1', 'z2', 'z3'], $seen);
 	}//end testEveryRowArrivesExactlyOnce()
+
+	/**
+	 * Fill both tables with more rows than one page may hold.
+	 *
+	 * @return void
+	 */
+	private function fillTablesPastTheBound(): void {
+		foreach (['zaak', 'taak'] as $slug) {
+			$this->tables[$slug] = array_map(
+				static fn (int $number): string => sprintf('%s-%05d', $slug, $number),
+				range(1, 1200)
+			);
+		}
+	}//end fillTablesPastTheBound()
+
+	/**
+	 * An oversized number is cut at the bound, in the page and in what each table loads.
+	 *
+	 * @return void
+	 */
+	public function testAnOversizedLimitIsBoundedLikeTheUnion(): void {
+		$this->fillTablesPastTheBound();
+
+		$this->assertCount(1000, $this->page(offset: 0, limit: 999999));
+		$this->assertSame([1000, 1000], $this->askedLimits);
+	}//end testAnOversizedLimitIsBoundedLikeTheUnion()
+
+	/**
+	 * The limit of a later page is bounded too, and its rows are still reached.
+	 *
+	 * @return void
+	 */
+	public function testALaterPageOfAnOversizedLimitContinuesAtTheBound(): void {
+		$this->fillTablesPastTheBound();
+
+		$page = $this->page(offset: 1000, limit: '5000');
+
+		$this->assertCount(1000, $page);
+		$this->assertSame('taak-01001', $page[0]);
+		$this->assertSame([2000, 2000], $this->askedLimits);
+	}//end testALaterPageOfAnOversizedLimitContinuesAtTheBound()
+
+	/**
+	 * `_limit=false` stays the way to every row.
+	 *
+	 * @return void
+	 */
+	public function testAnExplicitUnlimitedReturnsEveryRow(): void {
+		$this->fillTablesPastTheBound();
+
+		$this->assertCount(2400, $this->page(offset: 0, limit: false));
+		$this->assertSame([false, false], $this->askedLimits);
+	}//end testAnExplicitUnlimitedReturnsEveryRow()
+
+	/**
+	 * A limit under the bound is left alone.
+	 *
+	 * @return void
+	 */
+	public function testALimitAtTheBoundIsLeftAlone(): void {
+		$this->fillTablesPastTheBound();
+
+		$this->assertCount(1000, $this->page(offset: 0, limit: 1000));
+		$this->assertCount(999, $this->page(offset: 0, limit: 999));
+	}//end testALimitAtTheBoundIsLeftAlone()
 }//end class

@@ -7,7 +7,7 @@
  * subscription (`registry-subscriptions`, finding B22). Its own controller,
  * deliberately: `ObjectsController` already carries a large surface, and
  * this endpoint's only dependency beyond the ordinary object lookup is
- * {@see RegistrySubscriptionService}.
+ * {@see RegistrySubscriptionLifecycleInterface}.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -28,14 +28,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\RegistrySubscriptionControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionLifecycleInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -52,28 +56,64 @@ class RegistrySubscriptionController extends Controller {
 	use HandlesExceptionsTrait;
 
 	/**
+	 * Resolves the target object.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Resolves the object's schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * The per-object `update` guard.
+	 *
+	 * @var PermissionCheckInterface
+	 */
+	private readonly PermissionCheckInterface $permissionHandler;
+
+	/**
+	 * The session user.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Owns the subscription lifecycle.
+	 *
+	 * @var RegistrySubscriptionLifecycleInterface
+	 */
+	private readonly RegistrySubscriptionLifecycleInterface $subscriptions;
+
+	/**
+	 * Consumed by HandlesExceptionsTrait for server-side 500 logging.
+	 *
+	 * @var ?LoggerInterface
+	 */
+	private readonly ?LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param ObjectService $objectService Resolves the target object.
-	 * @param SchemaMapper $schemaMapper Resolves the object's schema.
-	 * @param PermissionHandler $permissionHandler The per-object `update` guard.
-	 * @param IUserSession $userSession The session user.
-	 * @param RegistrySubscriptionService $subscriptions Owns the subscription lifecycle.
-	 * @param LoggerInterface|null $logger Consumed by HandlesExceptionsTrait for server-side 500 logging.
+	 * @param RegistrySubscriptionControllerServices $services The registry subscription controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly IUserSession $userSession,
-		private readonly RegistrySubscriptionService $subscriptions,
-		private readonly ?LoggerInterface $logger = null,
+		RegistrySubscriptionControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->objectService = $services->domain->objectService;
+		$this->schemaMapper = $services->domain->schemaMapper;
+		$this->permissionHandler = $services->domain->permissionHandler;
+		$this->userSession = $services->platform->userSession;
+		$this->subscriptions = $services->domain->subscriptions;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**
@@ -89,20 +129,7 @@ class RegistrySubscriptionController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function subscribe(string $register, string $schema, string $id): JSONResponse {
-		try {
-			[$object, $resolvedSchema] = $this->resolveObjectAndGuardUpdate(register: $register, schema: $schema, id: $id);
-
-			$row = $this->subscriptions->requestSubscription(object: $object, schema: $resolvedSchema);
-
-			$this->logger?->info(
-				'[OpenRegister.RegistrySubscriptionController] Subscription requested for object '
-				. (string)$object->getUuid() . ' on registry ' . (string)$row->getRegistry()
-			);
-
-			return new JSONResponse(data: $row->toSelfMirror());
-		} catch (\Throwable $e) {
-			return $this->handleApiException(e: $e, context: 'registry-subscription-request');
-		}
+		return $this->subscribeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end subscribe()
 
 	/**
@@ -118,8 +145,47 @@ class RegistrySubscriptionController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function unsubscribe(string $register, string $schema, string $id): JSONResponse {
+		return $this->unsubscribeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end unsubscribe()
+
+	/**
+	 * Request a subscription on the named record, once the caller may update it.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The persisted subscription state, or an error.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	private function subscribeOn(ObjectRef $ref): JSONResponse {
 		try {
-			[$object] = $this->resolveObjectAndGuardUpdate(register: $register, schema: $schema, id: $id);
+			[$object, $resolvedSchema] = $this->resolveObjectAndGuardUpdate(ref: $ref);
+
+			$row = $this->subscriptions->requestSubscription(object: $object, schema: $resolvedSchema);
+
+			$this->logger?->info(
+				'[OpenRegister.RegistrySubscriptionController] Subscription requested for object '
+				. (string)$object->getUuid() . ' on registry ' . (string)$row->getRegistry()
+			);
+
+			return new JSONResponse(data: $row->toSelfMirror());
+		} catch (\Throwable $e) {
+			return $this->handleApiException(e: $e, context: 'registry-subscription-request');
+		}
+	}//end subscribeOn()
+
+	/**
+	 * End the subscription on the named record, once the caller may update it.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The persisted subscription state, or an error.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	private function unsubscribeOn(ObjectRef $ref): JSONResponse {
+		try {
+			[$object] = $this->resolveObjectAndGuardUpdate(ref: $ref);
 
 			$row = $this->subscriptions->endSubscription(object: $object);
 
@@ -132,16 +198,14 @@ class RegistrySubscriptionController extends Controller {
 		} catch (\Throwable $e) {
 			return $this->handleApiException(e: $e, context: 'registry-subscription-end');
 		}
-	}//end unsubscribe()
+	}//end unsubscribeOn()
 
 	/**
 	 * Resolve the target object and its schema, then refuse (throw) unless
 	 * the calling user has `update` on THIS specific object — the per-object
 	 * IDOR guard both endpoints in this controller need.
 	 *
-	 * @param string $register The register slug or identifier.
-	 * @param string $schema The schema slug or identifier.
-	 * @param string $id The object id or uuid.
+	 * @param ObjectRef $ref The record the route names.
 	 *
 	 * @return array{0: ObjectEntity, 1: Schema} The resolved object and schema.
 	 *
@@ -151,22 +215,39 @@ class RegistrySubscriptionController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function resolveObjectAndGuardUpdate(string $register, string $schema, string $id): array {
-		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _render: false));
+	private function resolveObjectAndGuardUpdate(ObjectRef $ref): array {
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $ref->id,
+			options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema, render: false)
+		));
 		$resolvedSchema = $this->schemaMapper->find(id: (string)$object->getSchema());
 
-		$user = $this->userSession->getUser();
-		$allowed = $this->permissionHandler->hasPermission(
-			schema: $resolvedSchema,
-			action: 'update',
-			userId: $user?->getUID(),
-			objectOwner: $object->getOwner(),
-			object: $object,
-		);
-		if ($allowed === false) {
+		if ($this->mayUpdate(schema: $resolvedSchema, object: $object) === false) {
 			throw new NotAuthorizedException(message: 'You do not have permission to update this object.');
 		}
 
 		return [$object, $resolvedSchema];
 	}//end resolveObjectAndGuardUpdate()
+
+	/**
+	 * Whether the caller holds `update` on the object.
+	 *
+	 * @param Schema       $schema The object's schema.
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return bool The permission handler's verdict.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	private function mayUpdate(Schema $schema, ObjectEntity $object): bool {
+		$user = $this->userSession->getUser();
+
+		return $this->permissionHandler->hasPermission(
+			schema: $schema,
+			action: 'update',
+			userId: $user?->getUID(),
+			objectOwner: $object->getOwner(),
+			object: $object,
+		);
+	}//end mayUpdate()
 }//end class

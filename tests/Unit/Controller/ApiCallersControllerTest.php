@@ -16,17 +16,19 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Db\ApiCall\ApiCallPeriod;
 use OCA\OpenRegister\Controller\ApiCallersController;
 use OCA\OpenRegister\Db\ApiCallRecord;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiCallersControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -39,6 +41,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ApiCallersController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\ApiCallRecord
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
@@ -88,15 +91,13 @@ class ApiCallersControllerTest extends TestCase {
 			static fn (string $name, mixed $default = null): mixed => ($params[$name] ?? $default)
 		);
 
-		$controller = new ApiCallersController(
+		$controller = ApiCallersControllerFactory::create(
 			'openregister',
 			$request,
 			$mapper,
 			new ApiVersionCatalogue($appConfig, $this->createMock(LoggerInterface::class)),
 			$appConfig,
-			$session,
-			$groups,
-			$this->createMock(LoggerInterface::class),
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $groups, $this->createMock(LoggerInterface::class)),
 		);
 
 		return [$controller, $mapper];
@@ -162,10 +163,10 @@ class ApiCallersControllerTest extends TestCase {
 		$mapper->expects($this->once())
 			->method('findInPeriod')
 			->with(
-				$this->callback(static fn ($from): bool => ($from->format('Y-m-d') === '2026-08-01')),
-				$this->callback(static fn ($to): bool => ($to->format('Y-m-d') === '2026-09-01')),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(
+					static fn (ApiCallPeriod $period): bool => ($period->from->format('Y-m-d') === '2026-08-01')
+						&& ($period->to->format('Y-m-d') === '2026-09-01')
+				)
 			)
 			->willReturn([]);
 

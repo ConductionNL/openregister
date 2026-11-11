@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectRelationsControllerFactory;
 use OCA\OpenRegister\Controller\ObjectRelationsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -33,6 +34,7 @@ use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
+use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -42,10 +44,15 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectRelationsController
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsGraph
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsGuards
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsControllerServices
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
+ * @uses \OCA\OpenRegister\Service\Relation\RelationGraphService
  */
 class ObjectRelationsControllerTreeTest extends TestCase {
 
@@ -112,7 +119,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturn(new Register());
 
-		return new ObjectRelationsController(
+		return ObjectRelationsControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			relations: $this->createMock(ObjectRelationService::class),
@@ -162,7 +169,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 		$root = $this->object();
 		$this->access->method('readable')->willReturn($root);
 		$this->trees->expects($this->once())->method('tree')
-			->with($root, 'both', 2, ['kvkNumber', 'tradeName'])
+			->with(new ObjectTreeQuery($root, 'both', 2, ['kvkNumber', 'tradeName']))
 			->willReturn(['nodes' => []]);
 
 		$response = $controller->tree(register: 'r', schema: 's', id: 'x');
@@ -210,7 +217,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 		$controller = $this->controller(params: []);
 		$this->access->method('readable')->willReturn($this->object());
 		$this->trees->expects($this->once())->method('tree')
-			->with($this->anything(), 'descendants', null, [])
+			->with($this->callback(static fn (ObjectTreeQuery $query): bool => [$query->direction, $query->depth, $query->fields] === ['descendants', null, []]))
 			->willReturn([]);
 
 		$controller->tree(register: 'r', schema: 's', id: 'x');

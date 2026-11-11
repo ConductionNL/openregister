@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
@@ -42,7 +44,33 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetReferencesTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -72,7 +100,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function testAKeptPublicationPointsAtTheThemeWrittenAgainAfterAPartialRemove(): void {
 		$publications             = $this->store->ids(register: 'pub', schema: 'publication');
@@ -90,8 +118,8 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 		$newTheme = $this->store->ids(register: 'pub', schema: 'theme')[0];
 		$this->assertNotSame($oldTheme, $newTheme);
 		$this->assertSame($publications, $this->store->ids(register: 'pub', schema: 'publication'), 'the publications are kept, not written twice');
-		$this->assertSame([$newTheme], $this->store->get(register: 'pub', schema: 'publication', id: $publications[0])['themes']);
-		$this->assertSame($newTheme, $this->store->get(register: 'pub', schema: 'publication', id: $publications[1])['theme']);
+		$this->assertSame([$newTheme], $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $publications[0]))['themes']);
+		$this->assertSame($newTheme, $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $publications[1]))['theme']);
 		$this->assertSame('refreshed', $report['changes']['alpha/pub-1#references']);
 		$this->assertSame('refreshed', $report['changes']['alpha/pub-2#references']);
 		$this->assertSame(
@@ -102,7 +130,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function testARefreshedSetInstallsAgainWithoutWritesAndRemovesWhole(): void {
 		$this->store->undeletable = $this->store->ids(register: 'pub', schema: 'publication');
@@ -126,7 +154,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function testAnUntouchedSecondInstallRefreshesNothing(): void {
 		$updates = $this->store->updates;
@@ -141,7 +169,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	/**
 	 * A user who pointed a kept object's reference at something else keeps that edit: the next install leaves it and says so.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function testAUsersEditOfAKeptObjectsReferenceIsLeftAndNamed(): void {
 		$publications = $this->store->ids(register: 'pub', schema: 'publication');
@@ -150,7 +178,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 
 		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 
-		$this->assertSame(['an-unrelated-id'], $this->store->get(register: 'pub', schema: 'publication', id: $publications[0])['themes']);
+		$this->assertSame(['an-unrelated-id'], $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $publications[0]))['themes']);
 		$this->assertSame($updates, $this->store->updates, 'nothing is written over the edit');
 		$this->assertArrayNotHasKey('alpha/pub-1#references', $report['changes']);
 		$this->assertArrayNotHasKey('alpha/pub-1#references', $this->record->read(set: 'demo')['changes']);
@@ -164,7 +192,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	/**
 	 * A kept object whose record predates the recorded values is not refreshed over a value nobody can vouch for.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function testAReferenceTheRecordHoldsNoValueForIsLeft(): void {
 		$record = $this->record->read(set: 'demo');
@@ -187,7 +215,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	 * A field refreshed in an earlier run stays in the refresh record when a later run refreshes another field of
 	 * the object, so the earlier field is not read as edited by somebody on the run after.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function testARefreshKeepsTheFieldsAnEarlierRunRefreshed(): void {
 		$this->app(app: 'beta', fragment: ['objects' => [
@@ -209,7 +237,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 			$this->store->rows['pub publication'][$pubId][$field] = $stale;
 			$report = $this->installer->install(plan: $plan, today: $this->today());
 			$this->assertSame('refreshed', $report['changes']['beta/pub-3#references'], $field);
-			$this->assertSame($themeId, $this->store->get(register: 'pub', schema: 'publication', id: $pubId)[$field]);
+			$this->assertSame($themeId, $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $pubId))[$field]);
 		}
 
 		$paths = array_column($this->record->read(set: 'demo')['changes']['beta/pub-3#references']['set'], 'path');

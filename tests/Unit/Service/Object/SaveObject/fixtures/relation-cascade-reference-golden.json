@@ -1,0 +1,645 @@
+{
+    "": {
+        "schema": null,
+        "schemaSystem": null,
+        "register": null,
+        "calls": []
+    },
+    "5": {
+        "schema": "5",
+        "schemaSystem": "5",
+        "register": "9",
+        "calls": [
+            [
+                "schemas.find",
+                [
+                    "5",
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.find",
+                [
+                    "5",
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.find",
+                [
+                    "5",
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "404": {
+        "schema": null,
+        "schemaSystem": null,
+        "register": null,
+        "calls": [
+            [
+                "schemas.find",
+                [
+                    "404",
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.find",
+                [
+                    "404",
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.find",
+                [
+                    "404",
+                    true,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "7?x=1": {
+        "schema": null,
+        "schemaSystem": null,
+        "register": null,
+        "calls": [
+            [
+                "schemas.find",
+                [
+                    "7",
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.find",
+                [
+                    "7",
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.find",
+                [
+                    "7",
+                    true,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "21aab6e0-2177-4920-beb0-391492fed04b": {
+        "schema": null,
+        "schemaSystem": null,
+        "register": null,
+        "calls": [
+            [
+                "schemas.find",
+                [
+                    "21aab6e0-2177-4920-beb0-391492fed04b",
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.find",
+                [
+                    "21aab6e0-2177-4920-beb0-391492fed04b",
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.find",
+                [
+                    "21aab6e0-2177-4920-beb0-391492fed04b",
+                    true,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "person": {
+        "schema": "5",
+        "schemaSystem": "5",
+        "register": null,
+        "calls": [
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "PERSON?v=2": {
+        "schema": "5",
+        "schemaSystem": "5",
+        "register": null,
+        "calls": [
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "#/components/schemas/Person": {
+        "schema": "5",
+        "schemaSystem": "5",
+        "register": null,
+        "calls": [
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "https://h.example/api/registers/Demo": {
+        "schema": null,
+        "schemaSystem": null,
+        "register": "9",
+        "calls": [
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "https://h.example/api/registers/5": {
+        "schema": null,
+        "schemaSystem": null,
+        "register": null,
+        "calls": [
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "demo": {
+        "schema": null,
+        "schemaSystem": null,
+        "register": "9",
+        "calls": [
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "nothing": {
+        "schema": null,
+        "schemaSystem": null,
+        "register": null,
+        "calls": [
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "boom": {
+        "schema": null,
+        "schemaSystem": null,
+        "register": null,
+        "calls": [
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "(findAll fails)": {
+        "schema": null,
+        "register": null,
+        "calls": [
+            [
+                "schemas.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "registers.findAll",
+                [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    }
+}

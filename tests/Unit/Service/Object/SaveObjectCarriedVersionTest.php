@@ -6,7 +6,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -24,6 +24,17 @@ use ReflectionMethod;
  * The seed channel (a stored seed follows a higher shipped version) must not be steerable from the object API.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @covers \OCA\OpenRegister\Service\Object\ObjectVersionHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
