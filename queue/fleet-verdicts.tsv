@@ -3247,6 +3247,8 @@ humaniq	1069	703cb894e3486f24fd13b75f9b9570efa9b74398	GREEN	FV9-08:4	tree of 23 
 humaniq	1070	4e1898e0892937c1958fbcd6e72b398b2837e0bd	GREEN	FV9-08:4	tree of 23 green: phpunit 3679 ok, node tests 178 ok (0 inherited failures), floor held
 humaniq	1071	88f25d6d8702bed20ccfe866d081707b23ce686b	GREEN	FV9-08:4	tree of 23 green: phpunit 3679 ok, node tests 178 ok (0 inherited failures), floor held
 humaniq	1072	d3996bb06bad53cfd69b310cd0f7deb0b0094f81	GREEN	FV9-08:4	tree of 23 green: phpunit 3679 ok, node tests 178 ok (0 inherited failures), floor held
+stackiq	1689	a7345f490b18a54e11ea029855584540d7355903	CONFLICT	FV9-01:5	conflicts with the tree on 2109923da7
+stackiq	1694	73b2b73077ce2ba34268f995d1989d530f314b9a	RED	FV9-01:5	unit tests fail beyond development: OCA\Stackiq\Tests\Unit\Service\CmdbExportImportServiceTest::testANewOwnerContactCarriesItsEmailAndRole (added test errors: OpenRegister PackDefinitionValidator is not available)
 dossiq	5962	2472452477059a13acc859fe482d451333704226	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5988	9314c69c2e1d036bc801274dfe07360449d049af	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5989	a0d1fb2708bab6552c3d94be300933b55297caac	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
