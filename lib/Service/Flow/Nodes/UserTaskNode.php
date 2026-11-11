@@ -95,7 +95,7 @@ use RuntimeException;
  * to say the same thing.
  */
 class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
-	use FormFieldsTrait;
+	use TaskNodeTrait;
 
 	/**
 	 * The configuration boundary: validation and templating.
@@ -685,28 +685,6 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	}//end suspension()
 
 	/**
-	 * The run's acting identity: who the task is requested by.
-	 *
-	 * The run's owner (`runAs`) first, the person who triggered it second.
-	 * Null is passed through and refused by the task service by name, which
-	 * is the loud failure an unattributed run should produce.
-	 *
-	 * @param array $context Run-level metadata.
-	 *
-	 * @return string|null The uid, or null when the run has none.
-	 */
-	private function actingIdentity(array $context): ?string {
-		foreach (['runAs', 'triggeredBy'] as $key) {
-			$uid = trim((string)($context[$key] ?? ''));
-			if ($uid !== '') {
-				return $uid;
-			}
-		}
-
-		return null;
-	}//end actingIdentity()
-
-	/**
 	 * What the task is.
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
@@ -838,18 +816,9 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
 	 */
 	private function timeoutFields(): array {
-		return [
-			$this->field(field: new NodeFormField(key: 'onTimeout', label: $this->l10n->t('On timeout'), type: 'text', help: $this->l10n->t(
-				'What happens when the task expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'
-			))),
-			$this->field(field: new NodeFormField(key: 'onReject', label: $this->l10n->t('On rejection'), type: 'text', help: $this->l10n->t(
-				'Only dead_letter changes the record; skip and error are read by whatever resumes the flow.'
-			))),
-			$this->field(field: new NodeFormField(
-				key: 'heartbeatMinutes', label: $this->l10n->t('Re-check every (minutes)'), type: 'number', help: $this->l10n->t(
-				'Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way.'
-			))),
-		];
+		return $this->timeoutFieldsWith(onTimeoutHelp: $this->l10n->t(
+			'What happens when the task expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'
+		));
 	}//end timeoutFields()
 
 	/**
