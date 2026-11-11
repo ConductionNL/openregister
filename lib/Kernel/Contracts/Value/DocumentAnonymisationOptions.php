@@ -9,7 +9,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Files\Service\File
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Files\Service\File;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
  * Optional settings of one document anonymisation.

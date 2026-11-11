@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
+
 /**
  * Lists and looks up the integration providers registered on this instance.
  *

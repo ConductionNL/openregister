@@ -81,6 +81,8 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -102,7 +104,7 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindScope
- * @uses \OCA\OpenRegister\Service\Object\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses   \OCA\OpenRegister\Service\Object\SaveAccessRequest
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
@@ -332,9 +334,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		[$register, $schema] = $this->scope(draftsVisible: $draftsVisible);
 		$this->service->saveObject(
 			object: ['subject' => 'changed by somebody else'],
-			register: $register,
-			schema: $schema,
-			uuid: 'draft-1',
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: 'draft-1'),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);

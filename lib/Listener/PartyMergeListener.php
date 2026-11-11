@@ -48,6 +48,8 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Carries party roles and addresses across a merge, and back on a reversal.
@@ -337,9 +339,10 @@ class PartyMergeListener implements IEventListener {
 		$data[$run->step->definition->addressesProperty()] = $united;
 		$this->objects->saveObject(
 			object: $data,
-			register: $survivor->getRegister(),
-			schema: $survivor->getSchema(),
-			uuid: $run->step->survivorUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $survivor->getRegister(), schema: $survivor->getSchema()),
+				uuid: $run->step->survivorUuid
+			)
 		);
 	}//end saveUnion()
 

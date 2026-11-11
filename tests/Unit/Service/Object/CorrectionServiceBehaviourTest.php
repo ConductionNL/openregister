@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Object\CorrectionAuditing;
 use OCA\OpenRegister\Service\Object\CorrectionService;
 use OCA\OpenRegister\Service\Object\CorrectionTarget;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -36,6 +37,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Every branch of a correction.
@@ -132,9 +134,9 @@ class CorrectionServiceBehaviourTest extends TestCase {
 		$saved = new ObjectEntity();
 		$saved->setUuid('u-1');
 		$saved->setLastLog($lastLog);
-		$this->objects->method('findSilent')->with('obj-1', [], false, 'reg', 'sch', false, false)->willReturn($existing);
+		$this->objects->method('findSilent')->with(...FindCallShape::findSilentArgs('obj-1', [], false, 'reg', 'sch', false, false))->willReturn($existing);
 		$this->objects->expects($this->once())->method('saveObject')
-			->with(['name' => 'New', 'size' => 3, 'id' => 'u-1', 'colour' => 'red'], [], 'reg', 'sch', 'u-1')
+			->with(['name' => 'New', 'size' => 3, 'id' => 'u-1', 'colour' => 'red'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'reg' && $options->target->schema == 'sch' && $options->uuid == 'u-1'))
 			->willReturn($saved);
 
 		return $saved;

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Service\FileWriterInterface;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
@@ -317,7 +318,7 @@ final class SeedRelatedItems
 		}
 
 		try {
-			$this->noteService->createNote((string) $target->object->getUuid(), $message);
+			$this->noteService->createNote(draft: new NoteDraft(objectUuid: (string) $target->object->getUuid(), message: $message));
 			return 1;
 		} catch (Throwable $e) {
 			$this->failed(target: $target, detail: ['kind' => 'note', 'error' => $e->getMessage()]);

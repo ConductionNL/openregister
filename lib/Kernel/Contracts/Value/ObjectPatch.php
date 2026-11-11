@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\Object
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,9 +22,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 use OCP\IUser;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * One partial update: the object, the fields that change, where to find it and who acts.
@@ -49,8 +50,8 @@ final class ObjectPatch {
 	public function __construct(
 		public readonly string $objectId,
 		public readonly array $data,
-		public readonly ObjectFindTarget $target,
-		public readonly ?IUser $currentUser,
+		public readonly ObjectFindTarget $target=new ObjectFindTarget(),
+		public readonly ?IUser $currentUser=null,
 	) {
 	}//end __construct()
 }//end class

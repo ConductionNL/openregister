@@ -43,7 +43,7 @@ use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
 use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use Psr\Log\LoggerInterface;
 
