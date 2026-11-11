@@ -2133,3 +2133,6 @@
 4985 4fccc4ed69d73e8cc00e869f4ff6142243000206 APPROVE cron-expression 3.6.1 is already locked on main; merging this PR changes no file (merged tree equals main)
 5483 b985f2c5066c9017e9381e2597e6cd8edf044b27 BLOCK superseded: main already locks web-token/jwt-library 4.2.7; this PR moves the lock to 4.2.4 and conflicts in composer.lock, so landing it would downgrade the library. Fix: close it, no rebase needed
 2061 296e762cdfddf2fad07e088447a97fc9dea67d51 BLOCK L3: superseded, main already carries ScriptManifestLoader, the esbuild/splitChunks webpack config and every addEntryScripts call site in a later form; merging re-opens 7 conflicts and would revert that later code; fix: close as landed
+4210 cc45fecab2dc9731053bb33fbe54b69ffeb27784 APPROVE no-op against main: main already locks twig/twig v3.30.0, the merge with main changes no file
+5482 9325daffef0923a16361f8fd9065650558f30376 BLOCK superseded: main locks theodo-group/llphant 1.0.10 (with patches); this lock conflicts and would downgrade it to 1.0.8; fix: drop the PR
+7738 96524459176d965598dcb4be5c9507af13310416 BLOCK phpseclib 4 renames the namespace to phpseclib4: lib/Service/Edepot/Transport/SftpTransport.php:29-30 imports phpseclib3 classes, so SFTP transport fails with class-not-found; fix: migrate SftpTransport (namespace and exception-based SFTP API) in the same PR or stay on ^3
