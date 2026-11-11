@@ -50,7 +50,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
@@ -156,12 +155,10 @@ class ObjectDraftController extends Controller {
 	 * @return JSONResponse The activated object, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	#[UserRateLimit(limit: 120, period: 60)]
 	public function activate(string $register, string $schema, string $id): JSONResponse {
 		return $this->activateForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));

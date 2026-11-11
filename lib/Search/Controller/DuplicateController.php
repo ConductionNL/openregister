@@ -167,7 +167,6 @@ class DuplicateController extends Controller {
 	 * @return JSONResponse The matches, with score, matched fields and matched rules.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
@@ -276,7 +275,6 @@ class DuplicateController extends Controller {
 	 * @return JSONResponse The stored dismissal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
@@ -386,7 +384,6 @@ class DuplicateController extends Controller {
 	 * @return JSONResponse The updated dismissal, or 404 when there was none.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */

@@ -94,7 +94,6 @@ class PreferencesController extends Controller {
 	 * @return JSONResponse `{value: string|null}`.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */

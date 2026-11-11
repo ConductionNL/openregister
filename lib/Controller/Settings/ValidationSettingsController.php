@@ -129,8 +129,6 @@ class ValidationSettingsController extends Controller {
 	 * This method validates all objects against their schemas and returns
 	 * a summary of validation results including any errors found.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with validation results
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -156,8 +154,6 @@ class ValidationSettingsController extends Controller {
 	 * This method re-saves all objects in the system to ensure all business logic
 	 * is triggered and objects are properly processed according to current rules.
 	 * Unlike validateAllObjects, this actually saves each object.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with mass validation results
 	 *
@@ -290,8 +286,6 @@ class ValidationSettingsController extends Controller {
 
 	/**
 	 * Predict memory usage for mass validation operation
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with memory prediction
 	 *

@@ -2038,7 +2038,12 @@
               ],
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/user-settings/github/token",
                 "auth": {
                   "type": "basic",
@@ -2136,6 +2141,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
                   }
                 ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/user-settings/github/token",
@@ -2185,6 +2194,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
                   }
                 ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/user-settings/github/token",
@@ -2234,6 +2247,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
                   }
                 ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/user-settings/github/token",
@@ -2302,7 +2319,12 @@
               ],
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/user-settings/github/token",
                 "auth": {
                   "type": "noauth"
@@ -5550,6 +5572,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
               }
             ],
             "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/tags",
@@ -5584,6 +5610,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
               }
             ],
             "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/tags",
@@ -5618,6 +5648,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
               }
             ],
             "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{missing_uuid}}/tags",
@@ -5652,6 +5686,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
               }
             ],
             "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/tags",
@@ -5851,7 +5889,12 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
             "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/tags/{{t30_tags_name}}nosuch"
           }
         },
@@ -5871,7 +5914,12 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
             "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{missing_uuid}}/tags/{{t30_tags_name}}"
           }
         },
@@ -5891,7 +5939,12 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
             "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/tags/{{t30_tags_name}}",
             "auth": {
               "type": "noauth"
@@ -5934,7 +5987,12 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
             "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{object_id}}/tags/{{t30_tags_name}}"
           }
         },
@@ -10250,7 +10308,12 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_text_id}}/extract"
               }
             },
@@ -10367,7 +10430,12 @@
               ],
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_missing_id}}/text"
               }
             },
@@ -10392,7 +10460,12 @@
               ],
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_text_id}}/text",
                 "auth": {
                   "type": "basic",
@@ -10431,7 +10504,12 @@
               ],
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_text_id}}/text"
               }
             },
@@ -10550,6 +10628,10 @@
                   {
                     "key": "Content-Type",
                     "value": "text/plain"
+                  },
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
                   }
                 ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_text_id}}/manual-entities",
@@ -10583,6 +10665,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
                   }
                 ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_text_id}}/manual-entities",
@@ -10621,6 +10707,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
                   }
                 ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_text_id}}/manual-entities",
@@ -10659,6 +10749,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
                   }
                 ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_missing_id}}/manual-entities",
@@ -10697,6 +10791,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
                   }
                 ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_text_id}}/manual-entities",
@@ -10752,6 +10850,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
                   }
                 ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_text_id}}/manual-entities",
@@ -10787,7 +10889,12 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_missing_id}}/anonymize"
               }
             },
@@ -10812,7 +10919,12 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_plain_id}}/anonymize",
                 "auth": {
                   "type": "basic",
@@ -10851,7 +10963,12 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_anon_id}}/anonymize"
               }
             },
@@ -10876,7 +10993,12 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/{{t30_files_plain_id}}/anonymize"
               }
             },
@@ -10901,7 +11023,12 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/extract/bulk",
                 "auth": {
                   "type": "basic",
@@ -10943,7 +11070,12 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "OCS-APIRequest",
+                    "value": "true"
+                  }
+                ],
                 "url": "{{base_url}}/index.php/apps/openregister/api/files/extract/bulk?limit=0"
               }
             },

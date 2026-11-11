@@ -97,7 +97,6 @@ class ReportsController extends Controller {
 	 * @return DataDownloadResponse|JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-9
 	 */

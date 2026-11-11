@@ -157,7 +157,6 @@ class TransferController extends Controller {
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
 	 */
-	#[NoCSRFRequired]
 	public function approve(string $id): JSONResponse {
 		return $this->decide(id: $id, decision: ['approve' => true, 'reason' => '']);
 	}//end approve()
@@ -174,7 +173,6 @@ class TransferController extends Controller {
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
 	 */
-	#[NoCSRFRequired]
 	public function reject(string $id): JSONResponse {
 		$reason = trim((string)($this->request->getParam('reason', '')));
 		if ($reason === '') {
@@ -276,7 +274,6 @@ class TransferController extends Controller {
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 *   (Scenario: Create dispatches an approved transfer)
 	 */
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		try {
 			return $this->dispatchTransfer();

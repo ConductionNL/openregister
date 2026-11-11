@@ -151,7 +151,6 @@ class NotesController extends Controller {
 	 * @return JSONResponse JSON response with the created note
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
@@ -191,7 +190,6 @@ class NotesController extends Controller {
 	 * @return JSONResponse JSON response with the updated note
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
@@ -238,7 +236,6 @@ class NotesController extends Controller {
 	 * @return JSONResponse JSON response with the updated note
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
@@ -308,7 +305,6 @@ class NotesController extends Controller {
 	 * @return JSONResponse JSON response confirming deletion
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */

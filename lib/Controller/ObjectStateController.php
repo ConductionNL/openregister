@@ -96,8 +96,6 @@ class ObjectStateController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The stored archive marker.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
@@ -119,8 +117,6 @@ class ObjectStateController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The cleared archive marker.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
@@ -141,8 +137,6 @@ class ObjectStateController extends Controller {
 	 * @param string $id The id or uuid of the object to freeze.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The stored freeze marker.
 	 *
@@ -186,8 +180,6 @@ class ObjectStateController extends Controller {
 	 * @param string $id The id or uuid of the object to unfreeze.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The cleared freeze marker.
 	 *

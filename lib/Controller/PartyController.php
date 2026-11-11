@@ -152,7 +152,6 @@ class PartyController extends Controller {
 	 * @return JSONResponse The link as stored, or the refusal naming the kind.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
@@ -184,7 +183,6 @@ class PartyController extends Controller {
 	 * @return JSONResponse The new primary link.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
@@ -217,7 +215,6 @@ class PartyController extends Controller {
 	 * @return JSONResponse How many roles went.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */

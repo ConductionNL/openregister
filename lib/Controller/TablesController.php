@@ -119,7 +119,6 @@ class TablesController extends Controller {
 	 * @param int|string $schemaId The schema ID or slug.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse
 	 *
@@ -256,7 +255,6 @@ class TablesController extends Controller {
 	 * Sync all magic tables for all register/schema combinations.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse
 	 *

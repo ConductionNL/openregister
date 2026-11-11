@@ -234,7 +234,6 @@ class PortalTaskController extends Controller {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
-	#[NoCSRFRequired]
 	public function deliveryDelivered(string $uuid): JSONResponse {
 		return ($this->refuseUnlessAdmin() ?? $this->settled(mark: fn (): PortalTaskDelivery => $this->delivery->markDelivered(uuid: $uuid)));
 	}//end deliveryDelivered()
@@ -249,7 +248,6 @@ class PortalTaskController extends Controller {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
-	#[NoCSRFRequired]
 	public function deliveryFailed(string $uuid, string $error = ''): JSONResponse {
 		return ($this->refuseUnlessAdmin() ?? $this->settledAsFailed(uuid: $uuid, error: $error));
 	}//end deliveryFailed()
