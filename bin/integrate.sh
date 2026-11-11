@@ -13,7 +13,9 @@
 #   integrate.sh verdict          GREEN / AUTOPARK / RED / NORESULT, recorded in the state branch; a tree whose
 #                                 suite is green must also hold the maintainability floor against main (no
 #                                 rating drops more than 0.01, floor_check.py from ConductionNL/.github main):
-#                                 the first PR whose merge lowers it is auto-parked
+#                                 the first PR whose merge lowers it is auto-parked; a PR that changes
+#                                 composer.lock or package-lock.json without a matching sbom.cdx.json is
+#                                 auto-parked too (bin/regen-sbom.sh --check, a copy of hydra scripts/regen-sbom.sh)
 #   integrate.sh merge            merges each PR of a GREEN tree; exit 5 when main or a head moved
 #   integrate.sh finish           releases the lease
 # Exit codes: 0 ok, 1 nothing to do / lease held, 4 no result, 5 rebuild needed, 6 stop and report.
@@ -353,6 +355,34 @@ floor_gate() {
 	echo AUTOPARK > "$RUN/verdict"; say "AUTOPARK openregister#$n floor: ${drops:-lowered}"; exit 5
 }
 
+# sbom_park N HEAD REASON: auto-park PR N and exit 5 for a rebuild without it.
+sbom_park() {
+	st_append parked.txt "$(echo "openregister#$1 $2 auto-park: $3" | cut -c1-300)"
+	st_log "AUTOPARK openregister#$1 ${2:0:8} $3 (tree $T10)"
+	echo AUTOPARK > "$RUN/verdict"; say "AUTOPARK openregister#$1 $3"; exit 5
+}
+
+# A PR whose head changes composer.lock or package-lock.json against main must also change sbom.cdx.json,
+# and the file at its head must match its lockfiles (regen-sbom.sh reads the lockfiles only, never vendor/).
+# A check that cannot run is NORESULT, not a pass.
+sbom_gate() {
+	local n head names locks tree=$W/sbom-tree rc
+	while IFS=$'\t' read -r n head _; do
+		names=$(git -C "$C" diff --name-only "$D0...$head") || { say "NORESULT tree $T10: no diff for #$n"; echo NORESULT > "$RUN/verdict"; exit 4; }
+		locks=$(grep -xE 'composer\.lock|package-lock\.json' <<<"$names" | paste -sd,)
+		[ -n "$locks" ] || continue
+		grep -qx 'sbom.cdx.json' <<<"$names" || sbom_park "$n" "$head" "sbom: $locks changed without sbom.cdx.json"
+		rm -rf "$tree"
+		git clone -q --shared --no-checkout "$C" "$tree" && git -C "$tree" checkout -q --detach "$head" \
+			|| { say "NORESULT tree $T10: cannot check out #$n for the SBOM check"; echo NORESULT > "$RUN/verdict"; exit 4; }
+		env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 bash "$BIN/regen-sbom.sh" --check "$tree" > "$RUN/sbom.out" 2>&1; rc=$?
+		rm -rf "$tree"
+		[ "$rc" -eq 1 ] && sbom_park "$n" "$head" "sbom: sbom.cdx.json does not match $locks (run hydra scripts/regen-sbom.sh)"
+		[ "$rc" -eq 0 ] || { say "NORESULT tree $T10: SBOM not checked for #$n (exit $rc): $(tail -1 "$RUN/sbom.out")"; st_log "NORESULT tree $T10: SBOM not checked for #$n (exit $rc)"; echo NORESULT > "$RUN/verdict"; exit 4; }
+		say "SBOM openregister#$n: $(tail -1 "$RUN/sbom.out")"
+	done < "$W/tree.tsv"
+}
+
 phase_verdict() {
 	need_state
 	source "$W/tree.env"
@@ -374,6 +404,7 @@ phase_verdict() {
 		[ -s "$RUN/risky.new" ] && mapfile -t rl < "$RUN/risky.new" && st_append risky-debt.txt "${rl[@]}"
 	fi
 	if [ "${f:-0}" = 0 ] && [ "${e:-0}" = 0 ] && [ "$front" != red ]; then
+		sbom_gate
 		floor_gate
 		echo GREEN > "$RUN/verdict"
 		python3 "$BIN/batch_tools.py" times "$C" "$RUN/class-times.json" >/dev/null && [ -s "$RUN/class-times.json" ] && st_put cache/class-times.json "$RUN/class-times.json"
