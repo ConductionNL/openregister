@@ -18,7 +18,9 @@ use LogicException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\TableSearch;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -79,12 +81,7 @@ class MagicSearchHandlerOrderFormsTest extends TestCase {
 		$schema->setProperties(['title' => ['type' => 'string'], '7' => ['type' => 'string']]);
 
 		try {
-			$this->handler()->searchObjects(
-				query: ['_order' => $order],
-				register: new Register(),
-				schema: $schema,
-				tableName: 'magic'
-			);
+			$this->handler()->searchTable(query: ['_order' => $order], tableSearch: new TableSearch(table: new RegisterSchema(register: new Register(), schema: $schema), tableName: 'magic'));
 			$this->fail('The builder stops the search right after the order.');
 		} catch (LogicException $stopped) {
 			$this->assertSame('ordered', $stopped->getMessage());
@@ -115,9 +112,9 @@ class MagicSearchHandlerOrderFormsTest extends TestCase {
 					$this->createMock(RelatedRowQueryApplier::class),
 				]
 			)
-			->onlyMethods(['buildTableQuery'])
+			->onlyMethods(['buildFilteredQuery'])
 			->getMock();
-		$handler->method('buildTableQuery')->willReturn($this->queryBuilder());
+		$handler->method('buildFilteredQuery')->willReturn($this->queryBuilder());
 
 		return $handler;
 	}//end handler()

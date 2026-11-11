@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -31,14 +33,14 @@ class FlowTriggerMapperIndexGoldenTest extends TestCase {
 	use RecordsQueries;
 
 	/**
-	 * flowUuidsFor() matches event, register, schema and enabled, and returns the uuids as strings.
+	 * flowUuidsSubscribedTo() matches event, register, schema and enabled, and returns the uuids as strings.
 	 *
 	 * @return void
 	 */
 	public function testFlowUuidsForMatchesTheEventOnOneTable(): void {
 		$this->results[] = [['flow_uuid' => 'f-1'], ['flow_uuid' => 'f-2']];
 
-		$uuids = (new FlowTriggerMapper($this->recordingDb()))->flowUuidsFor('object.created', 'zaken', 'zaak');
+		$uuids = (new FlowTriggerMapper($this->recordingDb()))->flowUuidsSubscribedTo(event: 'object.created', table: new RegisterSchemaRef(register: 'zaken', schema: 'zaak'));
 
 		$this->assertSame(['f-1', 'f-2'], $uuids);
 		$this->assertSame('selectDistinct(flow_uuid) from(openregister_flow_triggers) where(eq(event, :p0)) andWhere(eq(register, :p1)) andWhere(eq(schema_slug, :p2)) andWhere(eq(enabled, :p3)) executeQuery()', $this->sql());
@@ -53,12 +55,14 @@ class FlowTriggerMapperIndexGoldenTest extends TestCase {
 	 */
 	public function testReplaceForDeletesThenInsertsEachTrigger(): void {
 		$written = (new FlowTriggerMapper($this->recordingDb()))->replaceFor(
-			'f-1',
-			[
-				['event' => 'object.created', 'register' => 'zaken', 'schema' => 'zaak'],
-				['event' => 'object.updated', 'register' => 7, 'schema' => 'besluit'],
-			],
-			false
+			new FlowTriggerSet(
+				'f-1',
+				[
+					['event' => 'object.created', 'register' => 'zaken', 'schema' => 'zaak'],
+					['event' => 'object.updated', 'register' => 7, 'schema' => 'besluit'],
+				],
+				false
+			)
 		);
 
 		$this->assertSame(2, $written);
@@ -77,7 +81,7 @@ class FlowTriggerMapperIndexGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testReplaceForWithoutTriggersOnlyDeletes(): void {
-		$written = (new FlowTriggerMapper($this->recordingDb()))->replaceFor('f-1', [], true);
+		$written = (new FlowTriggerMapper($this->recordingDb()))->replaceFor(new FlowTriggerSet('f-1', [], true));
 
 		$this->assertSame(0, $written);
 		$this->assertCount(1, $this->queries);

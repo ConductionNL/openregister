@@ -92,17 +92,17 @@ class ExampleSetEngineKinds {
 		$refusals = [];
 		foreach ($this->kinds() as $part => [$rows]) {
 			if ($rows === null) {
-				$refusals = array_merge($refusals, $this->absentRefusals(fragment: $write->fragment, part: $part));
+				$refusals[] = $this->absentRefusals(fragment: $write->fragment, part: $part);
 				continue;
 			}
 
-			$refusals = array_merge(
-				$refusals,
-				$rows->checkFragment(fragment: $write->fragment, context: $write->context, users: $users, values: $write->values)
+			$refusals[] = $rows->checkFragment(
+				fragment: $write->fragment,
+				check: new ExampleSetFragmentCheck(context: $write->context, users: $users, values: $write->values)
 			);
 		}
 
-		return $refusals;
+		return array_merge(...$refusals);
 	}//end kindRefusals()
 
 	/**
@@ -220,7 +220,7 @@ class ExampleSetEngineKinds {
 				continue;
 			}
 
-			if ($rows?->installFragment(write: $write, report: $ledger->report, record: $ledger->record) === true) {
+			if ($rows?->installFragment(write: $write, ledger: $ledger) === true) {
 				$changed = true;
 			}
 
@@ -250,7 +250,7 @@ class ExampleSetEngineKinds {
 		$changed = false;
 		$kinds   = $this->kinds();
 		foreach (self::BEFORE_CHANGES as $part) {
-			if ($kinds[$part][0]?->installFragment(write: $write, report: $ledger->report, record: $ledger->record) === true) {
+			if ($kinds[$part][0]?->installFragment(write: $write, ledger: $ledger) === true) {
 				$changed = true;
 			}
 		}

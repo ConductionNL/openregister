@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetPathValue;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
@@ -73,11 +74,11 @@ class ExampleSetPathsBehaviourTest extends TestCase {
 		$paths = new ExampleSetPaths();
 		$this->assertSame(
 			['a' => ['b' => ['c' => 2], 'n' => null], 's' => 'text'],
-			$paths->withPath(row: self::ROW, path: 'a.b.c', value: 2)
+			$paths->withPath(row: self::ROW, set: new ExampleSetPathValue(path: 'a.b.c', value: 2))
 		);
 		$this->assertSame(
 			self::ROW + ['x' => ['y' => 'v']],
-			$paths->withPath(row: self::ROW, path: 'x.y', value: 'v')
+			$paths->withPath(row: self::ROW, set: new ExampleSetPathValue(path: 'x.y', value: 'v'))
 		);
 	}//end testWithPathCreatesParentsAndKeepsSiblings()
 

@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 
 /**
@@ -223,7 +224,7 @@ class CaseSentryEvaluator {
 	public function dataOn(CaseSentryOccasion $occasion): array {
 		$object = $occasion->object;
 		$context = ['event' => $occasion->event, 'payload' => $occasion->payload];
-		$data = FlowExpression::dataFor(item: [FlowItems::JSON => $object], context: $context);
+		$data = FlowExpression::documentFor(item: [FlowItems::JSON => $object], options: new FlowExpressionDataOptions(context: $context));
 		$data['subject'] = $object;
 		$data['case'] = ['items' => $occasion->tree->stateMap(), 'object' => $object] + $context;
 

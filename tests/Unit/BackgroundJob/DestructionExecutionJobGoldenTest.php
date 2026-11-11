@@ -7,12 +7,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -20,6 +22,7 @@ use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IGroup;
@@ -180,10 +183,10 @@ class DestructionExecutionJobGoldenTest extends TestCase
                 return $object->getUuid() === 'held';
             }
         );
-        $service->method('generateDestructionCertificate')->willReturnCallback(
-            function (array $list, int $count, string $at): array {
-                $this->record('generateDestructionCertificate', [self::mask($list), $count, $at === '' ? '' : 'T']);
-                return ['certificate' => $count];
+        $service->method('certify')->willReturnCallback(
+            function (ExecutedDestruction $execution): array {
+                $this->record('generateDestructionCertificate', [self::mask($execution->destructionList), $execution->destroyedCount, $execution->executedAt === '' ? '' : 'T']);
+                return ['certificate' => $execution->destroyedCount];
             }
         );
         return $service;
@@ -264,12 +267,12 @@ class DestructionExecutionJobGoldenTest extends TestCase
     private function audit(): AuditTrailMapperInterface
     {
         $mapper = $this->createMock(AuditTrailMapperInterface::class);
-        $mapper->method('createAuditTrailEntry')->willReturnCallback(
+        $mapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
             function (ObjectEntity $object, string $action, array $context=[]): AuditTrail {
                 $this->record('audit', [$object->getUuid(), $object->getRetention(), $action, $context]);
                 return new AuditTrail();
             }
-        );
+        ));
         return $mapper;
     }//end audit()
 
@@ -277,8 +280,9 @@ class DestructionExecutionJobGoldenTest extends TestCase
     {
         $deleter = $this->createMock(DeleteObject::class);
         $deleter->method('deleteObject')->willReturnCallback(
-            function (...$args): bool {
-                $this->record('deleteObject', array_slice($args, 0, 6));
+            function (DeletionRequest $request, bool $_rbac = true, bool $_multitenancy = true): bool {
+                $args = [$request->register, $request->schema, $request->uuid, $request->options->originalObjectId, $_rbac, $_multitenancy];
+                $this->record('deleteObject', $args);
                 $this->assertTrue((new RetentionDestruction())->isRunning(), 'a destruction is not stopped by a lock or the archive');
                 if ($args[2] === 'undeletable') {
                     throw new RuntimeException('delete refused');

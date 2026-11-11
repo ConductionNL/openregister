@@ -44,9 +44,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use Opis\JsonSchema\ValidationResult;
@@ -175,38 +178,6 @@ class MoveObject implements MoveObjectInterface {
 
 		return $errors;
 	}//end errorsOf()
-
-	/**
-	 * Move an object, keeping its uuid and everything keyed on it.
-	 *
-	 * @param ObjectEntity $object         The object.
-	 * @param Register     $sourceRegister Where it is.
-	 * @param Schema       $sourceSchema   Where it is.
-	 * @param Register     $targetRegister Where it is going.
-	 * @param Schema       $targetSchema   Where it is going.
-	 * @param string       $actor          Who asked.
-	 *
-	 * @return array{moved: bool, uuid: string, from: array<string, mixed>, to: array<string, mixed>, errors: array<int, string>}
-	 *
-	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
-	 */
-	public function move(
-		ObjectEntity $object,
-		Register $sourceRegister,
-		Schema $sourceSchema,
-		Register $targetRegister,
-		Schema $targetSchema,
-		string $actor,
-	): array {
-		return $this->perform(
-			move: new ObjectMove(
-				object: $object,
-				source: new MoveAddress(register: $sourceRegister, schema: $sourceSchema),
-				target: new MoveAddress(register: $targetRegister, schema: $targetSchema),
-				actor: $actor
-			)
-		);
-	}//end move()
 
 	/**
 	 * Perform a move, keeping the object's uuid and everything keyed on it.
@@ -424,7 +395,8 @@ class MoveObject implements MoveObjectInterface {
 	private function assignTargetSlug(ObjectMove $move): ?string {
 		$object = $move->object;
 		$sourceSlug = $object->getSlug();
-		$object->setSlug($this->objects->slugForMove(entity: $object, register: $move->target->register, schema: $move->target->schema));
+		$target = new RegisterSchema(register: $move->target->register, schema: $move->target->schema);
+		$object->setSlug($this->objects->slugForMove(entity: $object, table: $target));
 
 		return $sourceSlug;
 	}//end assignTargetSlug()
@@ -549,15 +521,17 @@ class MoveObject implements MoveObjectInterface {
 		}
 
 		try {
-			$this->recording->auditTrail->createAuditTrailEntry(
-				object: $object,
-				action: self::ACTION,
-				context: [
-					'from' => $move->source->ids(),
-					'to' => $move->target->ids(),
-					'strandedSourceRow' => $stranded,
-				],
-				actorId: $actorId
+			$this->recording->auditTrail->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: self::ACTION,
+					context: [
+						'from' => $move->source->ids(),
+						'to' => $move->target->ids(),
+						'strandedSourceRow' => $stranded,
+					],
+					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $actorId))
+				)
 			);
 		} catch (Throwable $e) {
 			// The move happened. Failing it now would leave the object moved

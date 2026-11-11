@@ -33,8 +33,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnerWriter;
+use OCA\OpenRegister\Service\Rbac\OwnerAssignment;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -120,7 +122,7 @@ class ObjectOwnerWriterTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturn($this->recordingQueryBuilder());
 
 		$writer = new ObjectOwnerWriter($mapper, $db, new NullLogger());
-		$writer->writeOwner(new Register(), new Schema(), $uuid, $owner);
+		$writer->writeOwner(new RegisterSchema(new Register(), new Schema()), new OwnerAssignment($uuid, $owner));
 	}//end writeOwner()
 
 	public function testItUpdatesTheTableTheRegisterAndSchemaResolveTo(): void {

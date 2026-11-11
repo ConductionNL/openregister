@@ -41,11 +41,11 @@ namespace OCA\OpenRegister\Notifications\Search;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Notifications\Service\ObjectDeepLinks;
 use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntrySearch;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
 use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\Search\FilterDefinition;
 use OCP\Search\IFilteringProvider;
@@ -82,8 +82,7 @@ class TimelineEntriesProvider implements IFilteringProvider {
 	 *
 	 * @param IL10N                      $l10n      Localisation.
 	 * @param TimelineEntrySearchService $entries   The search, with its two filters.
-	 * @param IURLGenerator              $urls      Builds the fallback link.
-	 * @param DeepLinkResolverInterface    $deepLinks Sends a hit to the app that owns the case, when one claimed it.
+	 * @param ObjectDeepLinks            $links     Sends a hit to the app that owns the case, when one claimed it, else to the fallback link.
 	 *
 	 * @return void
 	 *
@@ -92,8 +91,7 @@ class TimelineEntriesProvider implements IFilteringProvider {
 	public function __construct(
 		private readonly IL10N $l10n,
 		private readonly TimelineEntrySearchService $entries,
-		private readonly IURLGenerator $urls,
-		private readonly DeepLinkResolverInterface $deepLinks,
+		private readonly ObjectDeepLinks $links,
 	) {
 	}//end __construct()
 
@@ -273,14 +271,14 @@ class TimelineEntriesProvider implements IFilteringProvider {
 		$schemaId = (int)$object->getSchema();
 		$uuid = (string)$object->getUuid();
 
-		$url = $this->deepLinks->resolveUrl(
+		$url = $this->links->resolver?->resolveUrl(
 			registerId: $registerId,
 			schemaId: $schemaId,
 			objectData: ['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
 		);
 
 		if ($url === null) {
-			$url = $this->urls->linkToRoute(
+			$url = $this->links->urls->linkToRoute(
 				'openregister.objects.show',
 				['register' => $registerId, 'schema' => $schemaId, 'id' => $uuid]
 			);

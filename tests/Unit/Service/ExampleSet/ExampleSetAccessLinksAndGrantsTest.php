@@ -61,6 +61,7 @@ use OCP\Share\Exceptions\ShareNotFound;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * The `accessLinks` and `grants` parts of an example set.
@@ -786,7 +787,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	 */
 	private function shareRow(): array {
 		$id = (string) $this->record->read(set: 'demo')['objects']['alpha/share-sanne']['id'];
-		return (array) $this->store->get(register: 'dossiq', schema: 'caseShare', id: $id);
+		return (array) $this->store->row(ref: new ObjectRef(register: 'dossiq', schema: 'caseShare', id: $id));
 	}//end shareRow()
 
 	/**

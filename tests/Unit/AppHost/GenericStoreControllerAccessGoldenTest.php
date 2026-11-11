@@ -22,6 +22,7 @@ use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
+use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCA\OpenRegister\AppHost\Store\StoreManifestContent;
 use OCA\OpenRegister\AppHost\Store\StoreManifestPermissions;
@@ -102,10 +103,10 @@ class GenericStoreControllerAccessGoldenTest extends TestCase
                 return ['success' => true, 'components' => ['local']];
             }
         );
-        $authorizer = $this->getMockBuilder(StoreActionAuthorizer::class)->disableOriginalConstructor()->onlyMethods(['can', 'canPublish'])->getMock();
-        $authorizer->method('can')->willReturnCallback(
-            function (string $appId, string $action) use ($options): bool {
-                $this->calls[] = 'can:'.$appId.':'.$action;
+        $authorizer = $this->getMockBuilder(StoreActionAuthorizer::class)->disableOriginalConstructor()->onlyMethods(['permits', 'canPublish'])->getMock();
+        $authorizer->method('permits')->willReturnCallback(
+            function (StoreActionCheck $check) use ($options): bool {
+                $this->calls[] = 'can:'.$check->appId.':'.$check->action;
                 return ($options['can'] ?? false);
             }
         );

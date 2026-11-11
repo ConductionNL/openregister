@@ -32,9 +32,11 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use DateTime;
 use OCA\OpenRegister\Controller\ProcessingLogController;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
 use OCA\OpenRegister\Db\ProcessingLogReadScope;
+use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -67,16 +69,16 @@ final class ProcessingLogControllerA24GoldenTest extends TestCase {
 
 	protected function setUp(): void {
 		$this->logMapper = $this->createMock(ProcessingLogMapper::class);
-		$this->logMapper->method('findFiltered')->willReturnCallback(
-			function (array $filters, ProcessingLogReadScope $scope, int $limit, int $offset): array {
-				$this->calls[] = [$filters, $scope->from, $scope->to, $scope->organisationId, $scope->includeConfidential, $limit, $offset];
+		$this->logMapper->method('findListed')->willReturnCallback(
+			function (ListQuery $query, ProcessingLogReadScope $scope): array {
+				$this->calls[] = [$query->filters, $scope->from, $scope->to, $scope->organisationId, $scope->includeConfidential, $query->limit, $query->offset];
 
 				return [['id' => 1]];
 			}
 		);
-		$this->logMapper->method('findBySubject')->willReturnCallback(
-			function (string $idType, string $idValue, ProcessingLogReadScope $scope): array {
-				$this->calls[] = [$idType, $idValue, $scope->from, $scope->to, $scope->organisationId, $scope->includeConfidential];
+		$this->logMapper->method('findForSubject')->willReturnCallback(
+			function (ProcessingLogSubject $subject, ProcessingLogReadScope $scope): array {
+				$this->calls[] = [$subject->type, $subject->value, $scope->from, $scope->to, $scope->organisationId, $scope->includeConfidential];
 
 				return [['id' => 2], ['id' => 3]];
 			}

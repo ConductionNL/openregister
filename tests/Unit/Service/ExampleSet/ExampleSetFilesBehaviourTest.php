@@ -24,12 +24,15 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\ExampleSet\AttachedFile;
 
 /**
  * Behaviour of the files an example set attaches to its objects.
@@ -104,7 +107,8 @@ class ExampleSetFilesBehaviourTest extends TestCase {
 
 	public function testAttachAddsReadableFilesAndCollectsErrorsForTheRest(): void {
 		$this->fileService->expects($this->exactly(2))->method('addFile')->willReturnCallback(
-			function (...$args): File {
+			function (FileTarget $target, FileUpload $upload): File {
+				$args = [$target->object, $upload->fileName, $upload->content, $upload->share];
 				if ($args[3] === true) {
 					throw new \RuntimeException('quota exceeded');
 				}
@@ -126,7 +130,10 @@ class ExampleSetFilesBehaviourTest extends TestCase {
 
 	public function testAShareFlagThatIsNotLiterallyTrueDoesNotShare(): void {
 		$this->fileService->expects($this->once())->method('addFile')
-			->with('obj-1', 'brief.txt', 'Geachte heer', false)
+			->with(
+				$this->callback(fn (FileTarget $target): bool => $target->object === 'obj-1'),
+				$this->callback(fn (FileUpload $upload): bool => $upload->fileName === 'brief.txt' && $upload->content === 'Geachte heer' && $upload->share === false)
+			)
 			->willReturn($this->named(name: 'brief.txt', id: 1));
 
 		$result = $this->files()->attach($this->dir, ['files' => [['path' => 'docs/brief.txt', 'share' => 'yes']]], 'obj-1');
@@ -170,14 +177,14 @@ class ExampleSetFilesBehaviourTest extends TestCase {
 		$this->fileService->method('getFileById')->with(9)->willReturn($file);
 		$this->fileService->expects($this->once())->method('deleteFile')->with($file)->willReturn(true);
 
-		$this->assertSame('', $this->files()->delete('9', 'a.pdf', 'obj-1'));
+		$this->assertSame('', $this->files()->deleteAttached(new AttachedFile('9', 'a.pdf'), 'obj-1'));
 	}
 
 	public function testDeleteReportsAFileServiceThatDidNotDelete(): void {
 		$this->fileService->method('getFileById')->willReturn($this->named('a.pdf', 9));
 		$this->fileService->method('deleteFile')->willReturn(false);
 
-		$this->assertSame('OpenRegister did not delete it (see the Nextcloud log)', $this->files()->delete('9', 'a.pdf', 'obj-1'));
+		$this->assertSame('OpenRegister did not delete it (see the Nextcloud log)', $this->files()->deleteAttached(new AttachedFile('9', 'a.pdf'), 'obj-1'));
 	}
 
 	public function testDeleteOfAGoneFileIsFineWhenTheObjectNoLongerHasIt(): void {
@@ -185,7 +192,7 @@ class ExampleSetFilesBehaviourTest extends TestCase {
 		$this->fileService->method('getFiles')->willReturn([$this->named('other.pdf')]);
 		$this->fileService->expects($this->never())->method('deleteFile');
 
-		$this->assertSame('', $this->files()->delete('9', 'a.pdf', 'obj-1'));
+		$this->assertSame('', $this->files()->deleteAttached(new AttachedFile('9', 'a.pdf'), 'obj-1'));
 	}
 
 	public function testDeleteOfAnUnfindableFileTheObjectStillHasIsRefused(): void {
@@ -194,13 +201,13 @@ class ExampleSetFilesBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			'OpenRegister cannot find file id 9 although the object still has a.pdf',
-			$this->files()->delete('9', 'a.pdf', 'obj-1')
+			$this->files()->deleteAttached(new AttachedFile('9', 'a.pdf'), 'obj-1')
 		);
 	}
 
 	public function testDeleteReportsAThrownMessage(): void {
 		$this->fileService->method('getFileById')->willThrowException(new \RuntimeException('locked'));
 
-		$this->assertSame('locked', $this->files()->delete('9', 'a.pdf', 'obj-1'));
+		$this->assertSame('locked', $this->files()->deleteAttached(new AttachedFile('9', 'a.pdf'), 'obj-1'));
 	}
 }//end class

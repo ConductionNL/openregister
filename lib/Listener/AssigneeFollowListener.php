@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -137,7 +138,10 @@ final class AssigneeFollowListener implements IEventListener {
 			return;
 		}
 
-		$this->follow->watchers->followAssigned(object: $object, userId: $assignee, register: (string)$object->getRegister(), schema: $schemaId);
+		$this->follow->watchers->followAssigned(
+			target: new AddressedObject(object: $object, register: (string)$object->getRegister(), schema: $schemaId),
+			userId: $assignee
+		);
 
 	}//end followNewAssignee()
 

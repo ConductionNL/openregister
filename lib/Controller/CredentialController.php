@@ -41,6 +41,7 @@ use OCA\OpenRegister\Controller\Support\CredentialCaller;
 use OCA\OpenRegister\Controller\Support\CredentialControllerServices;
 use OCA\OpenRegister\Controller\Support\CredentialUpdateTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
@@ -50,6 +51,8 @@ use OCA\OpenRegister\Service\Credential\CredentialUpdateRequests;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\Sharing\ShareGrantee;
+use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriverInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -63,6 +66,10 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * HTTP controller for owner-scoped credentials and the constrained broker call.
@@ -570,9 +577,10 @@ class CredentialController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				uuid: $target->uuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+					uuid: $target->uuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->services->session->logger->error(
@@ -673,9 +681,10 @@ class CredentialController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				uuid: (string) $existing->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+					uuid: (string) $existing->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to update shares'], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -779,10 +788,8 @@ class CredentialController extends Controller {
 			}
 
 			$admits = $this->services->tokens->shareDeriver->grants(
-				sharedWith: ($data[SharePrincipalDeriverInterface::PROP_SHARED_WITH] ?? null),
-				userId: $caller->uid,
-				userGroups: $caller->groups,
-				permissions: ['use', null]
+				grantee: new ShareGrantee(userId: $caller->uid, groups: $caller->groups),
+				check: new ShareListCheck(sharedWith: ($data[SharePrincipalDeriverInterface::PROP_SHARED_WITH] ?? null), permissions: ['use', null])
 			);
 
 			if ($admits === false) {
@@ -817,9 +824,10 @@ class CredentialController extends Controller {
 
 		try {
 			$this->objectService->deleteObject(
-				uuid: $uuid,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA
+				deletion: new ObjectDeletion(
+					uuid: $uuid,
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA)
+				)
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to delete credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -918,7 +926,8 @@ class CredentialController extends Controller {
 		// Pass method+path so a request-bound token (harden-credential-token-binding)
 		// is only accepted for the exact call it was minted for. Unbound tokens
 		// ignore these (backward-compatible).
-		$claims = $this->services->tokens->tokenService->verify(token: $call['token'], method: $call['method'], path: $call['path']);
+		$request = new BrokerTokenBinding(method: $call['method'], path: $call['path']);
+		$claims  = $this->services->tokens->tokenService->verify(token: $call['token'], request: $request);
 		if ($claims['credentialId'] !== $id) {
 			throw new CredentialAccessDeniedException(message: 'token/credential mismatch');
 		}
@@ -1069,8 +1078,7 @@ class CredentialController extends Controller {
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
+				options: new ObjectFindOptions(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
 				_rbac: false
 			));
 		} catch (Throwable $e) {

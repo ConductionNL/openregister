@@ -30,6 +30,7 @@ use Exception;
 use OCA\OpenRegister\Db\MultiTenancyTrait;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\IDBConnection;
@@ -160,7 +161,7 @@ class SharedMasterDataWriteGuardGoldenTest extends TestCase {
 	public function testAConsumerIsRefusedNamingTheHolder(): void {
 		$resolver = $this->createMock(SharedMasterDataServiceInterface::class);
 		$resolver->expects($this->once())->method('assertWritable')
-			->with(SharedMasterDataServiceInterface::SCHEMAS, 5, ['org-b'])
+			->with(new DeclaredRow(SharedMasterDataServiceInterface::SCHEMAS, 5), ['org-b'])
 			->willThrowException(new SharedMasterDataWriteException('org-a', 'Holder', 'schema'));
 		$resolver->expects($this->never())->method('clearCache');
 
@@ -193,7 +194,7 @@ class SharedMasterDataWriteGuardGoldenTest extends TestCase {
 	public function testANonConsumerMeetsTheGenericRefusal(): void {
 		$resolver = $this->createMock(SharedMasterDataServiceInterface::class);
 		$resolver->expects($this->once())->method('assertWritable')
-			->with(SharedMasterDataServiceInterface::SCHEMAS, 7, ['org-b']);
+			->with(new DeclaredRow(SharedMasterDataServiceInterface::SCHEMAS, 7), ['org-b']);
 		$resolver->expects($this->once())->method('clearCache');
 
 		$host = new SharedMasterDataGuardHost('org-b', $resolver, $this->logger());

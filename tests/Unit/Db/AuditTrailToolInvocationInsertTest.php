@@ -3,7 +3,7 @@
 /**
  * An MCP tool invocation writes its audit row into the real table.
  *
- * `createToolInvocationEntry()` never set `changed`, and
+ * `recordToolInvocation()` never set `changed`, and
  * `openregister_audit_trails.changed` is NOT NULL (Version1Date20241020231700).
  * QBMapper inserts only the fields a setter touched, so the column reached the
  * database as NULL and PostgreSQL refused every attribute tool's audit row
@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
@@ -65,10 +66,8 @@ class AuditTrailToolInvocationInsertTest extends TestCase {
 	 * A tool invocation inserts a row, with an empty change set.
 	 */
 	public function testAToolInvocationIsWrittenToTheAuditTable(): void {
-		$entry = $this->mapper->createToolInvocationEntry(
-			toolId: 'keepiq.listEntries',
-			paramsDigest: hash('sha256', '{}'),
-			resultSummary: ['count' => 3]
+		$entry = $this->mapper->recordToolInvocation(
+			invocation: new ToolInvocation(toolId: 'keepiq.listEntries', paramsDigest: hash('sha256', '{}'), resultSummary: ['count' => 3])
 		);
 
 		$rows = $this->database->connection()->fetchAllAssociative(
@@ -89,10 +88,8 @@ class AuditTrailToolInvocationInsertTest extends TestCase {
 	public function testARowInsideAnOrganisationContextNamesTheOrganisation(): void {
 		$entry = \OCA\OpenRegister\Service\OrganisationContext::run(
 			'org-a',
-			fn () => $this->mapper->createToolInvocationEntry(
-				toolId: 'keepiq.listEntries',
-				paramsDigest: hash('sha256', '{}'),
-				resultSummary: ['count' => 3]
+			fn () => $this->mapper->recordToolInvocation(
+				invocation: new ToolInvocation(toolId: 'keepiq.listEntries', paramsDigest: hash('sha256', '{}'), resultSummary: ['count' => 3])
 			)
 		);
 

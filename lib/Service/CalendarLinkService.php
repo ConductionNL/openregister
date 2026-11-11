@@ -79,26 +79,6 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * not own the VEVENT). Re-fetches event details from CalDAV to
 	 * populate cached fields (summary/dtstart/dtend/location).
 	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
-	 * @param string $calendarUri Calendar URI (per-user CalDAV path component).
-	 * @param string $eventUid VEVENT UID.
-	 *
-	 * @return CalendarLink The persisted link row.
-	 *
-	 * @throws Exception When no user is logged in or the event cannot be located.
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function linkEvent(string $objectUuid, int $registerId, int $schemaId, string $calendarUri, string $eventUid): CalendarLink {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->linkLocatedEvent(target: $target, key: new CalendarEventKey(calendarUri: $calendarUri, eventUid: $eventUid));
-	}//end linkEvent()
-
-	/**
-	 * Insert a link-table row for an existing VEVENT, with its cacheable fields.
-	 *
 	 * @param LinkTarget       $target The object, register and schema to link to.
 	 * @param CalendarEventKey $key    The calendar URI and event UID.
 	 *
@@ -176,29 +156,6 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		$link->setLinkedBy($uid);
 		$link->setLinkedAt(new DateTime());
 	}//end stampLinkedBy()
-
-	/**
-	 * Create a new VEVENT through CalendarEventService and record a link-table row.
-	 *
-	 * Delegates the VEVENT write (which adds X-OPENREGISTER-* properties)
-	 * to {@see CalendarEventService::createEvent()} then mirrors the
-	 * linkage in the link table with `taggedWithXor=true`.
-	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
-	 * @param array<string,mixed> $eventData Event data (summary, dtstart, dtend, location, ...).
-	 *
-	 * @return CalendarLink The persisted link row.
-	 *
-	 * @throws Exception On creation failure.
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function createAndLinkEvent(string $objectUuid, int $registerId, int $schemaId, array $eventData): CalendarLink {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->createLinkedEvent(target: $target, eventData: $eventData);
-	}//end createAndLinkEvent()
 
 	/**
 	 * Create a VEVENT through CalendarEventService and insert its link-table mirror row.

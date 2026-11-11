@@ -31,6 +31,7 @@ final class EntityRelationsControllerFactory {
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param RelationDecisionService $relationDecisions Constructor argument.
 	 * @param DecisionVisibility $decisionVisibility Constructor argument.
+	 * @param IGroupManager $groupManager Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -48,6 +49,7 @@ final class EntityRelationsControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 		\OCA\OpenRegister\Service\Decision\RelationDecisionService $relationDecisions,
 		\OCA\OpenRegister\Service\Decision\DecisionVisibility $decisionVisibility,
+		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
 			$request,
@@ -69,9 +71,12 @@ final class EntityRelationsControllerFactory {
 					decisionVisibility: $decisionVisibility,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\EntityRelationsPlatform(
-					userSession: $userSession,
+					session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+						userSession: $userSession,
+						groupManager: $groupManager,
+						logger: $logger,
+					),
 					rootFolder: $rootFolder,
-					logger: $logger,
 				),
 			),
 		];

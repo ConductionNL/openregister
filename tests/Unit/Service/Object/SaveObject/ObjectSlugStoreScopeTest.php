@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope;
@@ -91,11 +92,11 @@ class ObjectSlugStoreScopeTest extends TestCase {
 		$schema   = new Schema();
 		$this->magic->expects($this->once())
 			->method('findSlugHolders')
-			->with($register, $schema, 'jan', 'u-1')
+			->with(new RegisterSchema($register, $schema), 'jan', 'u-1')
 			->willReturn(['u-9', 'u-8']);
 		$this->magic->expects($this->once())
 			->method('findSlugState')
-			->with($register, $schema, ['jan'], ['u-1'])
+			->with(new RegisterSchema($register, $schema), ['jan'], ['u-1'])
 			->willReturn(['holders' => ['jan' => 'u-9'], 'stored' => []]);
 		$scope = new ObjectSlugScope($register, $schema);
 

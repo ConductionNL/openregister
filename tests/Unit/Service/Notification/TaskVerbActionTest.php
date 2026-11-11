@@ -243,7 +243,7 @@ class TaskVerbActionTest extends TestCase {
 		$notification->method('setParsedSubject')->willReturnSelf();
 		$notification->method('addParsedAction')->willReturnSelf();
 
-		(new \OCA\OpenRegister\Notification\AnnotationNotifier($factory, $urls))->prepare($notification, 'nl');
+		(new \OCA\OpenRegister\Notification\AnnotationNotifier($factory, new \OCA\OpenRegister\Notifications\Service\ObjectDeepLinks($urls)))->prepare($notification, 'nl');
 
 		$this->assertSame([
 			['https://x/complete?outcome=approved', 'POST'],

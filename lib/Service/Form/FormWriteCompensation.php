@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Undoes the writes a submit made before a later write was refused.
@@ -51,16 +53,14 @@ final readonly class FormWriteCompensation {
 	/**
 	 * Delete the writes this submit made before a later one was refused, and record it.
 	 *
-	 * @param array<int, array{plan: array<string, mixed>, object: ObjectEntity}> $created  The writes made.
-	 * @param string                                                             $failedAt The write that was refused.
-	 * @param Throwable                                                          $reason   Why.
+	 * @param array<int, array{plan: array<string, mixed>, object: ObjectEntity}> $created The writes made.
+	 * @param FormSubmitFailure                                                  $failure The write that was refused, and why.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
-	public function compensate(array $created, string $failedAt, Throwable $reason): void {
-		$failure = new FormSubmitFailure(failedAt: $failedAt, reason: $reason);
+	public function compensate(array $created, FormSubmitFailure $failure): void {
 		foreach (array_reverse($created) as $done) {
 			$this->undo(done: $done, failure: $failure);
 		}
@@ -127,12 +127,13 @@ final readonly class FormWriteCompensation {
 	 */
 	private function deleteWrite(array $done, string $uuid): void {
 		$this->objects->deleteObject(
-			uuid: $uuid,
-			register: $done['plan']['register'],
-			schema: $done['plan']['schema'],
+			deletion: new ObjectDeletion(
+				uuid: $uuid,
+				target: new ObjectFindTarget(register: $done['plan']['register'], schema: $done['plan']['schema']),
+				permanent: true
+			),
 			_rbac: false,
-			_multitenancy: false,
-			permanent: true
+			_multitenancy: false
 		);
 	}//end deleteWrite()
 }//end class

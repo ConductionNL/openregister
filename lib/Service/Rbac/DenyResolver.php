@@ -192,21 +192,35 @@ class DenyResolver implements DenyResolverInterface {
 		$merged = [];
 
 		foreach ([$baseline, $override] as $block) {
-			if (is_array($block) === false) {
-				continue;
-			}
-
-			foreach ($block as $action => $entries) {
-				if (is_array($entries) === false) {
-					continue;
-				}
-
-				$merged[$action] = array_merge(($merged[$action] ?? []), array_values($entries));
-			}
+			$merged = self::withBlock(merged: $merged, block: $block);
 		}
 
 		return $this->deduplicate(block: $merged);
 	}//end mergeDeny()
+
+	/**
+	 * The union so far with one more level's readable actions appended.
+	 *
+	 * @param array<string, array> $merged The union so far.
+	 * @param array|null           $block  One level's deny block.
+	 *
+	 * @return array<string, array> The union including this level.
+	 */
+	private static function withBlock(array $merged, ?array $block): array {
+		if (is_array($block) === false) {
+			return $merged;
+		}
+
+		foreach ($block as $action => $entries) {
+			if (is_array($entries) === false) {
+				continue;
+			}
+
+			$merged[$action] = array_merge(($merged[$action] ?? []), array_values($entries));
+		}
+
+		return $merged;
+	}//end withBlock()
 
 	/**
 	 * Drop entries repeated by the union, keeping declaration order.
@@ -258,23 +272,49 @@ class DenyResolver implements DenyResolverInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function principalsFor(?string $userId, array $userGroups): array {
-		$principals = [self::PRINCIPAL_PUBLIC];
+		$principals = array_merge(
+			[self::PRINCIPAL_PUBLIC],
+			self::userPrincipals(userId: $userId),
+			self::groupPrincipals(userGroups: $userGroups)
+		);
 
-		if ($userId !== null && $userId !== '') {
-			$principals[] = self::PRINCIPAL_AUTHENTICATED;
-			$principals[] = (self::USER_PREFIX . $userId);
+		return array_values(array_unique($principals));
+	}//end principalsFor()
+
+	/**
+	 * The names a signed-in caller is reached by; none for an anonymous caller.
+	 *
+	 * @param string|null $userId The caller, or null when anonymous.
+	 *
+	 * @return string[] `authenticated` and `user:<id>`, or nothing.
+	 */
+	private static function userPrincipals(?string $userId): array {
+		if ($userId === null || $userId === '') {
+			return [];
 		}
 
+		return [self::PRINCIPAL_AUTHENTICATED, (self::USER_PREFIX . $userId)];
+	}//end userPrincipals()
+
+	/**
+	 * The caller's usable group ids, in order.
+	 *
+	 * @param array<mixed> $userGroups The caller's group IDs.
+	 *
+	 * @return string[] The non-empty string ids.
+	 */
+	private static function groupPrincipals(array $userGroups): array {
+		$groups = [];
 		foreach ($userGroups as $groupId) {
 			if (is_string($groupId) === false || $groupId === '') {
 				continue;
 			}
 
-			$principals[] = $groupId;
+			$groups[] = $groupId;
 		}
 
-		return array_values(array_unique($principals));
-	}//end principalsFor()
+		return $groups;
+	}//end groupPrincipals()
 
 	/**
 	 * Whether one deny entry names one of these principals.
@@ -318,16 +358,15 @@ class DenyResolver implements DenyResolverInterface {
 	 * A conditional denial removes the verb only for the rows its `match` clause
 	 * selects, so it is never the answer here.
 	 *
-	 * @param array|null $authorization The resolved authorization block.
-	 * @param string     $action        The verb being decided.
-	 * @param string[]   $principals    The caller's principal names.
+	 * @param array|null   $authorization The resolved authorization block.
+	 * @param DenyQuestion $question      The verb being decided and the caller's principal names.
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null The denial, or null.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function unconditionalDenial(?array $authorization, string $action, array $principals): ?array {
-		$denials = $this->matchingDenials(authorization: $authorization, question: new DenyQuestion(action: $action, principals: $principals));
+	public function unconditionalDenial(?array $authorization, DenyQuestion $question): ?array {
+		$denials = $this->matchingDenials(authorization: $authorization, question: $question);
 
 		$unconditional = array_filter($denials, static fn (array $denial): bool => $denial['conditional'] === false);
 
@@ -337,16 +376,15 @@ class DenyResolver implements DenyResolverInterface {
 	/**
 	 * The denials that only bite on the rows their `match` clause selects.
 	 *
-	 * @param array|null $authorization The resolved authorization block.
-	 * @param string     $action        The verb being decided.
-	 * @param string[]   $principals    The caller's principal names.
+	 * @param array|null   $authorization The resolved authorization block.
+	 * @param DenyQuestion $question      The verb being decided and the caller's principal names.
 	 *
 	 * @return array<int, array{rule: mixed, principal: string, action: string, conditional: bool}> The conditional denials.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function conditionalDenials(?array $authorization, string $action, array $principals): array {
-		$denials = $this->matchingDenials(authorization: $authorization, question: new DenyQuestion(action: $action, principals: $principals));
+	public function conditionalDenials(?array $authorization, DenyQuestion $question): array {
+		$denials = $this->matchingDenials(authorization: $authorization, question: $question);
 
 		return array_values(array_filter($denials, static fn (array $denial): bool => $denial['conditional'] === true));
 	}//end conditionalDenials()
@@ -372,28 +410,14 @@ class DenyResolver implements DenyResolverInterface {
 	 * fail-closed direction and matches the PHP verdict for every row its
 	 * condition would have selected.
 	 *
-	 * @param string   $columnName The `_authorization` column, qualified by the caller.
-	 * @param string   $action     The verb being filtered.
-	 * @param bool     $isPostgres Whether the connected platform is PostgreSQL.
-	 * @param string[] $principals The caller's principal names.
+	 * @param DenyRowTest $test       The `_authorization` column (qualified by the caller), the verb and the platform.
+	 * @param string[]    $principals The caller's principal names.
 	 *
 	 * @return string A SQL predicate true for rows this caller is not denied.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function notDeniedRowSql(string $columnName, string $action, bool $isPostgres, array $principals): string {
-		return $this->notDenied(test: new DenyRowTest(columnName: $columnName, action: $action, isPostgres: $isPostgres), principals: $principals);
-	}//end notDeniedRowSql()
-
-	/**
-	 * The "this row is NOT denied to this caller" predicate for one column, verb and platform.
-	 *
-	 * @param DenyRowTest $test       The `_authorization` column, the verb and the platform.
-	 * @param string[]    $principals The caller's principal names.
-	 *
-	 * @return string A SQL predicate true for rows this caller is not denied.
-	 */
-	private function notDenied(DenyRowTest $test, array $principals): string {
+	public function notDeniedRowSql(DenyRowTest $test, array $principals): string {
 		if ($principals === []) {
 			return '1 = 1';
 		}
@@ -433,7 +457,7 @@ class DenyResolver implements DenyResolverInterface {
 		$guard = $this->denyKeyProbeSql(columnName: $test->columnName, isPostgres: $test->isPostgres);
 
 		return "({$guard} OR NOT (" . implode(' OR ', $denied) . '))';
-	}//end notDenied()
+	}//end notDeniedRowSql()
 
 	/**
 	 * The cheap test for "this row's block cannot carry a denial".

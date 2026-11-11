@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -41,6 +42,8 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Pins the allowed and refused outcomes of lock-object and unlock-object.
@@ -76,8 +79,8 @@ final class LockNodesAccessGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('lockObject')->willReturnCallback(
-			function (...$args): array {
-				$this->calls[] = ['lockObject', $args];
+			function (LockRequest $request, bool $advisory=false): array {
+				$this->calls[] = ['lockObject', [$request->identifier, $request->process, $request->duration, $advisory, $request->runUuid, $request->nodeId]];
 				if ($this->lockRefuses === true) {
 					throw new RuntimeException('held by another run');
 				}
@@ -86,8 +89,8 @@ final class LockNodesAccessGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('unlockObject')->willReturnCallback(
-			function (...$args): bool {
-				$this->calls[] = ['unlockObject', $args];
+			function (UnlockRequest $request): bool {
+				$this->calls[] = ['unlockObject', [$request->identifier, $request->advisory, $request->runUuid]];
 				return true;
 			}
 		);
@@ -177,7 +180,7 @@ final class LockNodesAccessGoldenTest extends TestCase {
 		$this->calls = [];
 		$this->lockRefuses = $refuses;
 		try {
-			$result = ['returned' => $node->execute($items, $config, $context)];
+			$result = ['returned' => $node->execute(new FlowNodeCall(items: $items, config: $config, context: $context))];
 		} catch (FlowSuspension $e) {
 			$result = ['suspended' => $e->getMessage()];
 		} catch (Throwable $e) {

@@ -34,6 +34,10 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Writes a task form's accepted values onto its subject object, as the run that raised the task.
@@ -85,7 +89,7 @@ final class TaskFormInlineSave {
 		//
 		// Measured by the flow-subjects Newman collection, which locks a case
 		// and then asks a person with a form on it — the scene from the brief.
-		$this->runContext?->push(runUuid: self::actingRun(task: $task), nodeId: 'task-form', sequence: 0);
+		$this->runContext?->push(frame: new FlowRunFrame(runUuid: self::actingRun(task: $task), nodeId: 'task-form', sequence: 0));
 
 		try {
 			$this->writeMerged(object: $object, accepted: $accepted);
@@ -147,10 +151,11 @@ final class TaskFormInlineSave {
 		try {
 			$this->objects->saveObject(
 				object: array_merge($object->getObject(), $accepted),
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				uuid: $object->getUuid(),
-				currentUser: $this->userSession->getUser()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					uuid: $object->getUuid(),
+					actor: new SaveActor(currentUser: $this->userSession->getUser())
+				)
 			);
 		} catch (NotAuthorizedException $denied) {
 			throw new TaskAccessDeniedException(message: $denied->getMessage());

@@ -135,6 +135,23 @@ class DeleteFileHandlerTest extends TestCase {
 	}//end testADeleteThatLeavesTheNodeBehindIsReportedFalse()
 
 	/**
+	 * A delete the trash bin catches keeps the file id, but the file is gone from where it was.
+	 */
+	public function testADeleteMovedToTheTrashBinIsReportedTrue(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(42);
+		$file->method('getPath')->willReturn('/openregister/files/Open Registers/doc.txt');
+		$file->method('isDeletable')->willReturn(true);
+		$file->expects($this->once())->method('delete');
+
+		$trashed = $this->createMock(File::class);
+		$trashed->method('getPath')->willReturn('/openregister/files_trashbin/files/doc.txt.d1700000000');
+		$this->rootFolder->method('getFirstNodeById')->with(42)->willReturn($trashed);
+
+		$this->assertTrue($this->handler->deleteFile(file: $file, object: $this->createMock(ObjectEntity::class)));
+	}//end testADeleteMovedToTheTrashBinIsReportedTrue()
+
+	/**
 	 * A Node argument MUST be deleted directly, never cast to string.
 	 *
 	 * The docblock has always promised Node|string|int. The handler cast the

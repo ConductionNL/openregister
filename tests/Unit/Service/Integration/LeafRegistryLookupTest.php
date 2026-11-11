@@ -23,6 +23,7 @@ use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Service\Integration\LeafIdentity;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -82,7 +83,7 @@ class LeafRegistryLookupTest extends TestCase {
 	 * @return LeafDescriptor
 	 */
 	private function leaf(string $id): LeafDescriptor {
-		return new LeafDescriptor(id: $id, label: 'L', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]);
+		return new LeafDescriptor(identity: new LeafIdentity(id: $id, label: 'L', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]);
 
 	}//end leaf()
 
@@ -128,7 +129,7 @@ class LeafRegistryLookupTest extends TestCase {
 		$registry = $this->registry(
 			function (RegisterLeafProvidersEvent $event) use ($provider): void {
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'acme-data', label: 'D', icon: 'Cube', kinds: [LeafDescriptor::KIND_DATA_PROVIDER]),
+					new LeafDescriptor(identity: new LeafIdentity(id: 'acme-data', label: 'D', icon: 'Cube'), kinds: [LeafDescriptor::KIND_DATA_PROVIDER]),
 					$provider
 				);
 				$event->registerLeaf($this->leaf('acme-tab'));

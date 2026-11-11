@@ -10,7 +10,7 @@
  * markers on a single map (procest's "cases on map" overview, issue #112).
  *
  * Two responsibilities, both additive:
- *   1. registerOverview() — declares a `map` page widget on the
+ *   1. declareOverview() — declares a `map` page widget on the
  *      IntegrationRegistry (declarative render contract + optional
  *      base-layer config such as PDOK WMTS), so the nc-vue render layer
  *      can discover and place the map surface. Mirrors
@@ -125,43 +125,7 @@ class MapsOverviewService {
 	}//end ensureCanRegister()
 
 	/**
-	 * Register (declare) a page-level map overview widget.
-	 *
-	 * Declares a `map` page widget on the IntegrationRegistry so the
-	 * nc-vue render layer can discover and place a multi-object map. The
-	 * descriptor carries the register/schema scope, an optional default
-	 * filter set, an optional geo-property hint and the declarative base
-	 * layer. It carries NO per-request marker data — the points are fetched
-	 * separately, RBAC-scoped, via queryPoints().
-	 *
-	 * Mirrors AnalyticsSeriesServiceInterface::register()'s widget declaration:
-	 * first-write-wins inside the registry (a re-declare with the same id
-	 * is a harmless no-op logged as a duplicate).
-	 *
-	 * @param string                   $overviewKey Stable overview/widget key.
-	 * @param MapMarkerSource          $source      The register, schema, geo property and filters the markers come from.
-	 * @param string|null              $title       Display title for the map widget.
-	 * @param array<string,mixed>|null $baseLayer   Declarative base-layer override; null = PDOK default.
-	 *
-	 * @return array<string,mixed> The stored widget render contract.
-	 *
-	 * @throws InvalidArgumentException On empty key / register / schema.
-	 *
-	 * @spec openspec/specs/integration-maps-overview/spec.md
-	 */
-	public function registerOverview(
-		string $overviewKey,
-		MapMarkerSource $source,
-		?string $title = null,
-		?array $baseLayer = null,
-	): array {
-		return $this->declareOverview(
-			overview: new MapOverview(key: $overviewKey, source: $source, title: $title, baseLayer: $baseLayer)
-		);
-	}//end registerOverview()
-
-	/**
-	 * Declare a page-level map overview widget; see registerOverview().
+	 * Declare a page-level map overview widget.
 	 *
 	 * @param MapOverview $overview The key, marker source, title and base layer.
 	 *
@@ -402,6 +366,24 @@ class MapsOverviewService {
 			return null;
 		}
 
+		return $this->markerIdentity(row: $row, feature: $feature) + [
+			'lat' => $latLng['lat'],
+			'lng' => $latLng['lng'],
+			'register' => (string)$source->register,
+			'schema' => (string)$source->schema,
+			'geometry' => ($feature['geometry'] ?? null),
+		];
+	}//end pointFromRow()
+
+	/**
+	 * A marker's id and label: the row's id, else its `@self` id, else the feature's.
+	 *
+	 * @param array<string,mixed> $row     The rendered object row.
+	 * @param array<string,mixed> $feature The row's GeoJSON feature.
+	 *
+	 * @return array{id: ?string, label: string}
+	 */
+	private function markerIdentity(array $row, array $feature): array {
 		$self = ($row['@self'] ?? []);
 		$id = ($row['id'] ?? ($self['id'] ?? ($feature['id'] ?? null)));
 		$label = $this->deriveLabel(row: $row, id: $id);
@@ -414,13 +396,8 @@ class MapsOverviewService {
 		return [
 			'id' => $idString,
 			'label' => $label,
-			'lat' => $latLng['lat'],
-			'lng' => $latLng['lng'],
-			'register' => (string)$source->register,
-			'schema' => (string)$source->schema,
-			'geometry' => ($feature['geometry'] ?? null),
 		];
-	}//end pointFromRow()
+	}//end markerIdentity()
 
 	/**
 	 * Reduce a GeoJSON geometry to a single representative [lat,lng].

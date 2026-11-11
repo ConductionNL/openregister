@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\OrganisationHaltController;
+use OCA\OpenRegister\Service\Flow\Oversight\HaltRequest;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltService;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -41,12 +42,12 @@ class OrganisationHaltControllerTest extends TestCase {
 	public function testTheRoutesAnswerWhatTheServiceDecided(): void {
 		$halts = $this->createMock(OrganisationHaltService::class);
 		$halts->method('engage')->willReturnCallback(
-			static function (string $organisation, string $app, string $reason, ?string $nodeTypePrefix = null): array {
-				if ($reason === '') {
+			static function (HaltRequest $request): array {
+				if ($request->reason === '') {
 					throw new InvalidArgumentException('A halt carries a reason.');
 				}
 
-				return ['id' => 'h1', 'organisation' => $organisation, 'app' => $app, 'nodeTypePrefix' => ($nodeTypePrefix ?? $app . '.'), 'reason' => $reason];
+				return ['id' => 'h1', 'organisation' => $request->organisation, 'app' => $request->app, 'nodeTypePrefix' => $request->prefix(), 'reason' => $request->reason];
 			}
 		);
 		$halts->method('list')->willReturn([['id' => 'h1']]);

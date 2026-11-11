@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * The principal whose grant is missing, the identity it would act as, and why the run stopped.
  *
- * Built by {@see FlowConsentParking::park()} and never leaves that class.
+ * Read by {@see FlowConsentParking::parkFor()}.
  *
  * @spec openspec/specs/delegation-grants/spec.md
  */

@@ -109,7 +109,8 @@ final readonly class FormPayloadMapper {
 		$tokens = [];
 		foreach ($uploads as $property => $value) {
 			$token = (string)$this->tokenOf(value: $value);
-			$file = $this->uploads->redeem(formId: $submission->scope, property: (string)$property, token: $token, draftId: $submission->draftId);
+			$claim = new FormUploadClaim(formId: $submission->scope, property: (string)$property, draftId: $submission->draftId);
+			$file = $this->uploads->redeem(claim: $claim, token: $token);
 			if ($file !== null) {
 				$files[$property] = $file;
 				$tokens[] = $token;

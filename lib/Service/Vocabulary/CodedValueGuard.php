@@ -35,7 +35,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use DateTimeInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CodedValueException;
 
@@ -72,9 +71,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 * behind `hardValidation`: an expiry that only applies to schemas with
 	 * hard validation on is an expiry a gemeente cannot rely on.
 	 *
-	 * @param array<string,mixed> $object The submitted object data.
-	 * @param Schema $schema The schema being written against.
-	 * @param DateTimeInterface|null $at The instant to judge windows at; now when null.
+	 * @param CodedValueWrite $write The submitted object data, the schema it is written against and the instant to judge windows at (now when null).
 	 *
 	 * @return void
 	 *
@@ -82,8 +79,8 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function enforce(array $object, Schema $schema, ?DateTimeInterface $at = null): void {
-		$this->refuse(errors: $this->collectViolations(write: new CodedValueWrite(object: $object, schema: $schema, at: $at)));
+	public function enforce(CodedValueWrite $write): void {
+		$this->refuse(errors: $this->collectViolations(write: $write));
 	}//end enforce()
 
 	/**

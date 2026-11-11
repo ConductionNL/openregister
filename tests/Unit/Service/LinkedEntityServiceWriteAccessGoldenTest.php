@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\LinkedEntityIntegrations;
@@ -118,7 +119,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 	private function expectUpdateCheck(ObjectEntity $object, bool $allow): void {
 		$expectation = $this->permissionHandler->expects($this->once())
 			->method('checkPermission')
-			->with($this->identicalTo($this->schema), 'update', null, 'alice', true, $this->identicalTo($object));
+			->with($this->identicalTo($this->schema), 'update', new PermissionCheckOptions(objectOwner: 'alice', object: $object));
 		if ($allow === false) {
 			$expectation->willThrowException(new NotAuthorizedException('denied'));
 		}
@@ -173,7 +174,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		$this->expectUpdateCheck(object: $object, allow: true);
 		$this->magicMapper->expects($this->once())->method('update')->with($this->identicalTo($object));
 
-		$this->assertSame(['n-2'], $this->service->removeLink('o-1', 'notes', 'n-1'));
+		$this->assertSame(['n-2'], $this->service->removeLink('o-1', new EntityLink(type: 'notes', entityId: 'n-1')));
 		$this->assertSame(['n-2'], $object->getNotes());
 	}//end testRemoveLinkAllowedWritesAfterTheCheck()
 
@@ -183,7 +184,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('update');
 
 		try {
-			$this->service->removeLink('o-1', 'notes', 'n-1');
+			$this->service->removeLink('o-1', new EntityLink(type: 'notes', entityId: 'n-1'));
 			$this->fail('A refused write must throw.');
 		} catch (NotAuthorizedException $e) {
 			$this->assertSame('denied', $e->getMessage());
@@ -197,7 +198,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		$this->expectUpdateCheck(object: $object, allow: true);
 		$this->magicMapper->expects($this->once())->method('update');
 
-		$this->assertSame(['n-2'], $this->service->removeLink('o-1', 'notes', 'n-9'));
+		$this->assertSame(['n-2'], $this->service->removeLink('o-1', new EntityLink(type: 'notes', entityId: 'n-9')));
 	}//end testRemoveLinkOfAbsentIdStillChecksAndWrites()
 
 	public function testAddLinkToRegisterAppendsOnceAndNotFoundThrows(): void {

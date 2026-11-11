@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -123,10 +124,8 @@ class SaveObjectFieldEncryptionTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $objectEntityMapper,
-						unifiedObjectMapper: $unifiedObjectMapper,
-						schemaMapper: $schemaMapper,
-						registerMapper: $registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectEntityMapper),
+						unifiedObjectMapper: $unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $auditTrailMapper,
@@ -172,10 +171,10 @@ class SaveObjectFieldEncryptionTest extends TestCase {
 		$entity = new ObjectEntity();
 		$entity->setUuid('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 
-		$method = $this->reflection->getMethod('prepareObjectData');
+		$method = $this->reflection->getMethod('prepareCascadeData');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($this->saveObject, [$entity, $schema, $data]);
+		return $method->invokeArgs($this->saveObject, [CascadeRun::forObject(parent: $entity, data: $data), $schema]);
 	}
 
 	public function testFlaggedPropertyIsEncryptedBeforePersistence(): void {

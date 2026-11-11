@@ -36,7 +36,7 @@ final class FlowConcurrencyResultCharacterisationTest extends TestCase {
 		$rejected = new LogicException('rejected');
 		$seen     = [];
 
-		$out = (new FlowConcurrency())->map(
+		$out = (new FlowConcurrency())->within(limit: 2)->map(
 			['a' => 'plain', 'b' => 'promise', 'c' => 'string-reason', 'd' => 'throwable-reason', 'e' => 'throws', 'f' => 'null'],
 			static function (string $item, int $index) use ($thrown, $rejected, &$seen) {
 				$seen[] = [$item, $index];
@@ -49,8 +49,7 @@ final class FlowConcurrencyResultCharacterisationTest extends TestCase {
 					'throws' => throw $thrown,
 					'null' => null,
 				};
-			},
-			2
+			}
 		);
 
 		$this->assertSame([0, 1, 2, 3, 4, 5], array_keys($out));

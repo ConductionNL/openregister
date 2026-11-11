@@ -386,6 +386,18 @@ class AuditSink implements AuditSinkInterface, AuditSinkShipperInterface {
 			return;
 		}
 
+		$this->recordFailureOnTrail(entry: $entry, error: $error);
+	}//end onFailure()
+
+	/**
+	 * Count the failure and, on the first of a gap, hand it to the trail recorder; never re-entered, never thrown.
+	 *
+	 * @param AuditTrail $entry The entry that did not ship.
+	 * @param string     $error Why.
+	 *
+	 * @return void
+	 */
+	private function recordFailureOnTrail(AuditTrail $entry, string $error): void {
 		$this->recordingFailure = true;
 
 		try {
@@ -394,14 +406,25 @@ class AuditSink implements AuditSinkInterface, AuditSinkShipperInterface {
 				($this->failureRecorder)($entry, $error);
 			}
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[AuditSink] The sink failure could not be recorded on the trail.',
-				context: ['error' => $e->getMessage()]
-			);
+			$this->logUnrecordedFailure(error: $e);
 		} finally {
 			$this->recordingFailure = false;
 		}
-	}//end onFailure()
+	}//end recordFailureOnTrail()
+
+	/**
+	 * Log that a sink failure could not be recorded on the trail.
+	 *
+	 * @param Throwable $error Why the recording failed.
+	 *
+	 * @return void
+	 */
+	private function logUnrecordedFailure(Throwable $error): void {
+		$this->logger->error(
+			message: '[AuditSink] The sink failure could not be recorded on the trail.',
+			context: ['error' => $error->getMessage()]
+		);
+	}//end logUnrecordedFailure()
 
 	/**
 	 * Tell the sink how to record a gap on the trail.

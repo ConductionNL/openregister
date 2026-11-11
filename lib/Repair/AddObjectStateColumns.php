@@ -87,47 +87,61 @@ class AddObjectStateColumns implements IRepairStep {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
 	 */
 	public function run(IOutput $output): void {
+		$sweep  = new MagicTableSweepRun(step: 'AddObjectStateColumns', output: $output);
+		$tables = $sweep->listTables(magicMapper: $this->magicMapper, logger: $this->logger);
+		if ($tables === null) {
+			return;
+		}
+
+		foreach ($tables as $tableName) {
+			$this->healTable(sweep: $sweep, tableName: $tableName);
+		}
+
+		$sweep->report(checkedFor: 'their metadata columns', changedAs: 'healed');
+	}//end run()
+
+	/**
+	 * Heal one table's metadata columns and count the outcome.
+	 *
+	 * @param MagicTableSweepRun $sweep     The pass.
+	 * @param string             $tableName The magic table.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
+	 */
+	private function healTable(MagicTableSweepRun $sweep, string $tableName): void {
 		try {
-			$tables = $this->magicMapper->listMagicTableNames();
+			$result = $this->magicMapper->healMetadataColumns(tableName: $tableName);
 		} catch (\Throwable $e) {
-			// A database that cannot list its tables during an upgrade is not
-			// something this step can fix, and it must not stop the upgrade.
-			$this->logger->info(
-				'[AddObjectStateColumns] Could not list magic tables, skipping: ' . $e->getMessage()
+			$sweep->failed++;
+			$this->logger->warning(
+				'[AddObjectStateColumns] Could not read table ' . $tableName . ': ' . $e->getMessage()
 			);
 			return;
 		}
 
-		$healed = 0;
-		$failed = 0;
-		foreach ($tables as $tableName) {
-			try {
-				$result = $this->magicMapper->healMetadataColumns(tableName: $tableName);
-			} catch (\Throwable $e) {
-				$failed++;
-				$this->logger->warning(
-					'[AddObjectStateColumns] Could not read table ' . $tableName . ': ' . $e->getMessage()
-				);
-				continue;
-			}
+		self::count(sweep: $sweep, result: $result);
+	}//end healTable()
 
-			if ($result['failed'] !== []) {
-				$failed++;
-				continue;
-			}
+	/**
+	 * Count one healed table: failed when a column could not be added, healed when one was.
+	 *
+	 * @param MagicTableSweepRun                         $sweep  The pass.
+	 * @param array{added: string[], failed: string[]} $result The healer's outcome for the table.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
+	 */
+	private static function count(MagicTableSweepRun $sweep, array $result): void {
+		if ($result['failed'] !== []) {
+			$sweep->failed++;
+			return;
+		}
 
-			if ($result['added'] !== []) {
-				$healed++;
-			}
-		}//end foreach
-
-		$output->info(
-			sprintf(
-				'Checked %d object table(s) for their metadata columns: %d healed, %d could not be.',
-				count($tables),
-				$healed,
-				$failed
-			)
-		);
-	}//end run()
+		if ($result['added'] !== []) {
+			$sweep->changed++;
+		}
+	}//end count()
 }//end class

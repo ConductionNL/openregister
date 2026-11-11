@@ -29,9 +29,12 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -87,7 +90,7 @@ class AnnotationNotificationListenerGoldenTest extends TestCase {
 			'updated' => new ObjectUpdatedEvent($new, $old),
 			'updated without old' => new ObjectUpdatedEvent($new),
 			'updated, old has no data' => new ObjectUpdatedEvent($new, $unset),
-			'transitioned' => new ObjectTransitionedEvent($new, 'close', 'open', 'closed', 'u', '7', $schema),
+			'transitioned' => new ObjectTransitionedEvent(object: $new, move: new TransitionMove(action: 'close', from: 'open', to: 'closed'), scope: new RegisterSchemaRef(register: '7', schema: $schema), actor: new TransitionActor(userId: 'u')),
 			'deleted' => new ObjectDeletedEvent($new),
 		];
 	}

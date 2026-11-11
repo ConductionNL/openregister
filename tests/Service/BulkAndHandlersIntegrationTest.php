@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -264,7 +265,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		$this->assertSame([$fresh, $existing], $saved);
 		$this->assertCount(
 			2,
-			$this->objectMapper->findAllInRegisterSchemaTable(register: $this->testRegister, schema: $this->testSchema),
+			$this->objectMapper->findAllInRegisterSchemaTable(table: new RegisterSchema(register: $this->testRegister, schema: $this->testSchema)),
 			'the update MUST land on the existing row, not beside it'
 		);
 
@@ -314,43 +315,43 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testExtractMetadataValueSimplePath(): void {
 		$data = ['title' => 'Hello World'];
-		$result = $this->metadataHandler->extractMetadataValue($data, 'title');
+		$result = $this->metadataHandler->metadataText(fieldPath: 'title', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Hello World', $result);
 	}
 
 	public function testExtractMetadataValueFallbackChain(): void {
 		$data = ['ggm_naam' => 'Fallback Name'];
-		$result = $this->metadataHandler->extractMetadataValue($data, 'name | ggm_naam | identifier');
+		$result = $this->metadataHandler->metadataText(fieldPath: 'name | ggm_naam | identifier', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Fallback Name', $result);
 	}
 
 	public function testExtractMetadataValueFallbackChainFirstMatch(): void {
 		$data = ['name' => 'First', 'ggm_naam' => 'Second'];
-		$result = $this->metadataHandler->extractMetadataValue($data, 'name | ggm_naam');
+		$result = $this->metadataHandler->metadataText(fieldPath: 'name | ggm_naam', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('First', $result);
 	}
 
 	public function testExtractMetadataValueFallbackChainAllEmpty(): void {
 		$data = ['other' => 'value'];
-		$result = $this->metadataHandler->extractMetadataValue($data, 'name | ggm_naam | identifier');
+		$result = $this->metadataHandler->metadataText(fieldPath: 'name | ggm_naam | identifier', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertNull($result);
 	}
 
 	public function testExtractMetadataValueTwigTemplate(): void {
 		$data = ['voornaam' => 'Jan', 'achternaam' => 'de Vries'];
-		$result = $this->metadataHandler->extractMetadataValue($data, '{{ voornaam }} {{ achternaam }}');
+		$result = $this->metadataHandler->metadataText(fieldPath: '{{ voornaam }} {{ achternaam }}', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Jan de Vries', $result);
 	}
 
 	public function testExtractMetadataValueTwigTemplateMissingField(): void {
 		$data = ['voornaam' => 'Jan'];
-		$result = $this->metadataHandler->extractMetadataValue($data, '{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}');
+		$result = $this->metadataHandler->metadataText(fieldPath: '{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Jan', $result);
 	}
 
 	public function testExtractMetadataValueTwigTemplateAllMissing(): void {
 		$data = ['other' => 'value'];
-		$result = $this->metadataHandler->extractMetadataValue($data, '{{ voornaam }} {{ achternaam }}');
+		$result = $this->metadataHandler->metadataText(fieldPath: '{{ voornaam }} {{ achternaam }}', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertNull($result);
 	}
 
@@ -368,63 +369,51 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testProcessFieldWithFallbacksEmptyFields(): void {
 		$data = ['a' => 'val'];
-		$result = $this->metadataHandler->processFieldWithFallbacks($data, ' | | a');
+		$result = $this->metadataHandler->fallbackValue(fieldChain: ' | | a', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('val', $result);
 	}
 
 	public function testProcessMapFilter(): void {
 		$data = ['richting' => 'AnaarB'];
-		$result = $this->metadataHandler->processMapFilter(
-			$data,
-			'richting',
-			'AnaarB=arrow-right, BnaarA=arrow-left, bi-directioneel=arrows'
-		);
+		$result = $this->metadataHandler->mapFilterValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'richting'), mapDefinition: 'AnaarB=arrow-right, BnaarA=arrow-left, bi-directioneel=arrows');
 		$this->assertEquals('arrow-right', $result);
 	}
 
 	public function testProcessMapFilterNoMatch(): void {
 		$data = ['richting' => 'Unknown'];
-		$result = $this->metadataHandler->processMapFilter(
-			$data,
-			'richting',
-			'AnaarB=arrow-right, BnaarA=arrow-left'
-		);
+		$result = $this->metadataHandler->mapFilterValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'richting'), mapDefinition: 'AnaarB=arrow-right, BnaarA=arrow-left');
 		// Falls back to the raw field value.
 		$this->assertEquals('Unknown', $result);
 	}
 
 	public function testProcessMapFilterEmptyField(): void {
 		$data = [];
-		$result = $this->metadataHandler->processMapFilter(
-			$data,
-			'richting',
-			'AnaarB=arrow-right, BnaarA=arrow-left'
-		);
+		$result = $this->metadataHandler->mapFilterValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'richting'), mapDefinition: 'AnaarB=arrow-right, BnaarA=arrow-left');
 		// Defaults to first mapped value when field is empty.
 		$this->assertEquals('arrow-right', $result);
 	}
 
 	public function testProcessIfFilledFilterFieldFilled(): void {
 		$data = ['voorziening' => 'some-value'];
-		$result = $this->metadataHandler->processIfFilledFilter($data, 'voorziening', 'extern, intern');
+		$result = $this->metadataHandler->ifFilledValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'voorziening'), definition: 'extern, intern');
 		$this->assertEquals('extern', $result);
 	}
 
 	public function testProcessIfFilledFilterFieldEmpty(): void {
 		$data = [];
-		$result = $this->metadataHandler->processIfFilledFilter($data, 'voorziening', 'extern, intern');
+		$result = $this->metadataHandler->ifFilledValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'voorziening'), definition: 'extern, intern');
 		$this->assertEquals('intern', $result);
 	}
 
 	public function testProcessIfFilledFilterFieldEmptyString(): void {
 		$data = ['voorziening' => ''];
-		$result = $this->metadataHandler->processIfFilledFilter($data, 'voorziening', 'extern, intern');
+		$result = $this->metadataHandler->ifFilledValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'voorziening'), definition: 'extern, intern');
 		$this->assertEquals('intern', $result);
 	}
 
 	public function testProcessIfFilledFilterSingleValue(): void {
 		$data = [];
-		$result = $this->metadataHandler->processIfFilledFilter($data, 'field', 'onlyvalue');
+		$result = $this->metadataHandler->ifFilledValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'field'), definition: 'onlyvalue');
 		$this->assertEquals('onlyvalue', $result);
 	}
 
@@ -568,38 +557,38 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testIsFilePropertyDataUri(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB')
+			$this->fileHandler->isFileValue('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB')
 		);
 	}
 
 	public function testIsFilePropertyUrlWithFileExtension(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('https://example.com/files/document.pdf')
+			$this->fileHandler->isFileValue('https://example.com/files/document.pdf')
 		);
 	}
 
 	public function testIsFilePropertyUrlWithoutExtension(): void {
 		$this->assertFalse(
-			$this->fileHandler->isFileProperty('https://example.com/page')
+			$this->fileHandler->isFileValue('https://example.com/page')
 		);
 	}
 
 	public function testIsFilePropertyBase64Long(): void {
 		// Generate a valid base64 string > 100 chars.
 		$longBase64 = base64_encode(str_repeat('A', 200));
-		$this->assertTrue($this->fileHandler->isFileProperty($longBase64));
+		$this->assertTrue($this->fileHandler->isFileValue($longBase64));
 	}
 
 	public function testIsFilePropertyPlainStringNotFile(): void {
-		$this->assertFalse($this->fileHandler->isFileProperty('just a normal string'));
+		$this->assertFalse($this->fileHandler->isFileValue('just a normal string'));
 	}
 
 	public function testIsFilePropertyNullValue(): void {
-		$this->assertFalse($this->fileHandler->isFileProperty(null));
+		$this->assertFalse($this->fileHandler->isFileValue(null));
 	}
 
 	public function testIsFilePropertyIntValue(): void {
-		$this->assertFalse($this->fileHandler->isFileProperty(42));
+		$this->assertFalse($this->fileHandler->isFileValue(42));
 	}
 
 	public function testIsFilePropertySchemaBasedFileType(): void {
@@ -608,7 +597,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'photo' => ['type' => 'file'],
 		]);
 
-		$this->assertTrue($this->fileHandler->isFileProperty('any-value', $schema, 'photo'));
+		$this->assertTrue($this->fileHandler->isFileInSchema($schema, 'photo'));
 	}
 
 	public function testIsFilePropertySchemaBasedArrayFileType(): void {
@@ -620,7 +609,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			],
 		]);
 
-		$this->assertTrue($this->fileHandler->isFileProperty('any-value', $schema, 'photos'));
+		$this->assertTrue($this->fileHandler->isFileInSchema($schema, 'photos'));
 	}
 
 	public function testIsFilePropertySchemaBasedNonFileType(): void {
@@ -629,7 +618,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->assertFalse($this->fileHandler->isFileProperty('any-value', $schema, 'name'));
+		$this->assertFalse($this->fileHandler->isFileInSchema($schema, 'name'));
 	}
 
 	public function testIsFilePropertySchemaBasedMissingProperty(): void {
@@ -638,33 +627,33 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->assertFalse($this->fileHandler->isFileProperty('any-value', $schema, 'nonexistent'));
+		$this->assertFalse($this->fileHandler->isFileInSchema($schema, 'nonexistent'));
 	}
 
 	public function testIsFilePropertyFileObject(): void {
 		$fileObj = ['id' => 123, 'title' => 'test.pdf', 'path' => '/files/test.pdf'];
-		$this->assertTrue($this->fileHandler->isFileProperty($fileObj));
+		$this->assertTrue($this->fileHandler->isFileValue($fileObj));
 	}
 
 	public function testIsFilePropertyArrayOfDataUris(): void {
 		$arr = ['data:image/png;base64,abc123'];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayOfUrls(): void {
 		$arr = ['https://example.com/files/doc.pdf'];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayOfBase64(): void {
 		$longBase64 = base64_encode(str_repeat('B', 200));
 		$arr = [$longBase64];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayOfFileObjects(): void {
 		$arr = [['id' => 1, 'title' => 'file1.pdf', 'path' => '/a']];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFileObjectValid(): void {
@@ -883,24 +872,24 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testIsFilePropertyUrlWithImageExtension(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('https://cdn.example.com/photo.jpg')
+			$this->fileHandler->isFileValue('https://cdn.example.com/photo.jpg')
 		);
 	}
 
 	public function testIsFilePropertyUrlWithDocxExtension(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('https://example.com/report.docx')
+			$this->fileHandler->isFileValue('https://example.com/report.docx')
 		);
 	}
 
 	public function testIsFilePropertyArrayWithUrlInside(): void {
 		$arr = ['https://example.com/image.png'];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayWithNonFiles(): void {
 		$arr = ['just a string', 'another string'];
-		$this->assertFalse($this->fileHandler->isFileProperty($arr));
+		$this->assertFalse($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testBlockExecutableFilesPhpTag(): void {

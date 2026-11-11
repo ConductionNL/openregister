@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AuthDenialWarning;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EntityRelationPatch;
 use OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
@@ -65,7 +66,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -84,9 +84,9 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Session user accessor.
 	 *
-	 * @var IUserSession
+	 * @var ControllerSession
 	 */
-	private readonly IUserSession $userSession;
+	private readonly ControllerSession $session;
 
 	/**
 	 * Nextcloud root folder (for file lookups).
@@ -156,13 +156,13 @@ class EntityRelationsController extends Controller {
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
-		$this->userSession = $services->platform->userSession;
+		$this->session = $services->platform->session;
 		$this->rootFolder = $services->platform->rootFolder;
 		$this->permissionHandler = $services->domain->permissionHandler;
 		$this->catalog = $services->mappers->catalog;
 		$this->magicMapper = $this->catalog->tables();
 		$this->emailLinkMapper = $services->links->emailLinkMapper;
-		$this->logger = $services->platform->logger;
+		$this->logger = $services->platform->session->logger;
 		$this->relationDecisions = $services->domain->relationDecisions;
 		$this->decisionVisibility = $services->domain->decisionVisibility;
 	}//end __construct()
@@ -186,7 +186,7 @@ class EntityRelationsController extends Controller {
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
 	public function update(int $id): JSONResponse {
-		$user = $this->userSession->getUser();
+		$user = $this->session->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(
 				data: ['error' => 'unauthenticated'],

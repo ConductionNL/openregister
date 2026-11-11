@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetStore;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
@@ -281,7 +282,7 @@ class ExampleSetChangesGoldenTest extends TestCase {
 		return [
 			'refresh mixed'     => function () {
 				$id  = $this->seed(['a' => 1, 'b' => 'old', 'c' => 'edited', 'd' => '{"x":1}']);
-				$row = (array) $this->store->get('site', 'portal', $id);
+				$row = (array) $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $id));
 				return $this->changes->refresh(
 					['register' => 'site', 'schema' => 'portal', 'jsonFields' => ['d']],
 					$row,
@@ -291,13 +292,13 @@ class ExampleSetChangesGoldenTest extends TestCase {
 			},
 			'refresh nothing'   => function () {
 				$id  = $this->seed(['a' => 1]);
-				$row = (array) $this->store->get('site', 'portal', $id);
+				$row = (array) $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $id));
 				return $this->changes->refresh(['register' => 'site', 'schema' => 'portal'], $row, ['a' => 1]);
 			},
 			'refresh structure' => function () {
 				$this->store->textFields['site portal'] = ['t'];
 				$id  = $this->seed(['t' => ['k' => 1]]);
-				$row = (array) $this->store->get('site', 'portal', $id);
+				$row = (array) $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $id));
 				return $this->changes->refresh(['register' => 'site', 'schema' => 'portal'], $row, ['t' => ['k' => 2]], ['t' => ['k' => 1]]);
 			},
 		];

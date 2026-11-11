@@ -31,8 +31,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Db;
 
 use DateTime;
-use JsonSerializable;
-use OCP\AppFramework\Db\Entity;
 
 /**
  * TimelineKind.
@@ -64,28 +62,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
-class TimelineKind extends Entity implements JsonSerializable {
-
-	/**
-	 * The stable id of the kind.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $uuid = null;
-
-	/**
-	 * The name entries carry, for example `contactmoment`.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $slug = null;
-
-	/**
-	 * The label a reader sees.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $title = null;
+class TimelineKind extends AdministeredDeclaration {
 
 	/**
 	 * What the kind is for.
@@ -116,48 +93,16 @@ class TimelineKind extends Entity implements JsonSerializable {
 	protected ?bool $followUp = false;
 
 	/**
-	 * The register the kind is scoped to, or null for every register.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $register = null;
-
-	/**
-	 * The schema the kind is scoped to, or null for every schema.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $schema = null;
-
-	/**
-	 * When the kind was declared.
-	 *
-	 * @var DateTime|null
-	 */
-	protected ?DateTime $created = null;
-
-	/**
-	 * When the declaration last changed.
-	 *
-	 * @var DateTime|null
-	 */
-	protected ?DateTime $updated = null;
-
-	/**
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'title', type: 'string');
+		$this->addNameTypes();
 		$this->addType(fieldName: 'description', type: 'string');
 		$this->addType(fieldName: 'properties', type: 'json');
 		$this->addType(fieldName: 'required', type: 'json');
 		$this->addType(fieldName: 'followUp', type: 'boolean');
-		$this->addType(fieldName: 'register', type: 'string');
-		$this->addType(fieldName: 'schema', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addScopeTypes();
+		$this->addTimestampTypes();
 
 	}//end __construct()
 
@@ -169,19 +114,17 @@ class TimelineKind extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->uuid,
-			'slug' => $this->slug,
-			'title' => $this->title,
-			'description' => $this->description,
-			'properties' => ($this->properties ?? []),
-			'required' => ($this->required ?? []),
-			'followUp' => ($this->followUp === true),
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
+		return array_merge(
+			$this->nameFields(),
+			[
+				'description' => $this->description,
+				'properties' => ($this->properties ?? []),
+				'required' => ($this->required ?? []),
+				'followUp' => ($this->followUp === true),
+			],
+			$this->scopeFields(),
+			$this->timestampFields()
+		);
 
 	}//end jsonSerialize()
 }//end class

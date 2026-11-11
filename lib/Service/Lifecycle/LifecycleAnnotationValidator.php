@@ -103,20 +103,32 @@ final class LifecycleAnnotationValidator implements LifecycleAnnotationValidator
 		// naming the real mistake.
 		if (isset($annotation['provider']) === true) {
 			$errors = $this->validateProviderMode(annotation: $annotation, schema: $schema);
-			$scope  = LifecycleStateValidator::scopeOf(schema: $schema, enumSet: null);
-			return array_merge($errors, $this->states->validateStates(annotation: $annotation, scope: $scope));
+			return array_merge($errors, $this->unscopedStateErrors(annotation: $annotation, schema: $schema));
 		}
 
 		// Graph mode: the lifecycle field is a `$ref` with no enum, so the graph
 		// block is shape-checked instead of the static `transitions`/enum contract.
 		if ($this->declaresGraph(annotation: $annotation) === true) {
 			$errors = $this->graph->validate(annotation: $annotation, schema: $schema);
-			$scope  = LifecycleStateValidator::scopeOf(schema: $schema, enumSet: null);
-			return array_merge($errors, $this->states->validateStates(annotation: $annotation, scope: $scope));
+			return array_merge($errors, $this->unscopedStateErrors(annotation: $annotation, schema: $schema));
 		}
 
 		return $this->validateStaticMode(annotation: $annotation, schema: $schema);
 	}//end validate()
+
+	/**
+	 * The state errors of an annotation whose states are not bound to an enum.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation.
+	 * @param array<string, mixed> $schema     The schema shape.
+	 *
+	 * @return array<int, array{code: string, message: string}> The errors.
+	 */
+	private function unscopedStateErrors(array $annotation, array $schema): array {
+		$scope = LifecycleStateValidator::scopeOf(schema: $schema, enumSet: null);
+
+		return $this->states->validateStates(annotation: $annotation, scope: $scope);
+	}//end unscopedStateErrors()
 
 	/**
 	 * The annotation with `property`, an additive alias for `field`, folded in,

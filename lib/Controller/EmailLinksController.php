@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Support\EmailLinksControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
@@ -49,6 +50,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\MailboxPage;
 
 /**
  * Tier-2 Email links controller.
@@ -177,32 +179,54 @@ class EmailLinksController extends Controller {
 
 		return $this->onLinkedObject(
 			route: $this->routeOf(ref: $ref),
-			action: function (ObjectEntity $object): JSONResponse {
-				if ($this->mayUpdate(object: $object) === false) {
-					return $this->updateRefused();
-				}
-
-				$mailAccountId = (int)$this->request->getParam('mailAccountId', 0);
-				$messageId = (string)$this->request->getParam('messageId', '');
-				$messageUid = (string)$this->request->getParam('messageUid', '');
-
-				if ($mailAccountId === 0 || $messageId === '') {
-					return new JSONResponse(
-						['error' => 'mailAccountId and messageId are required'],
-						400
-					);
-				}
-
-				$link = $this->emailLinkService->linkEmail(
-					target: $this->linkTargetOf(object: $object),
-					message: (new EmailMessageRef(mailAccountId: $mailAccountId, messageId: $messageId))
-						->withUid(uid: $messageUid)
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+			action: fn (ObjectEntity $object): JSONResponse => $this->linkEmailTo(object: $object)
 		);
 	}//end linkFor()
+
+	/**
+	 * Link the requested message to the object, once the caller may update it.
+	 *
+	 * @param ObjectEntity $object The object the message is linked to.
+	 *
+	 * @return JSONResponse 201 with the link, 403 without the update right, or 400 for a missing account or message.
+	 */
+	private function linkEmailTo(ObjectEntity $object): JSONResponse {
+		if ($this->mayUpdate(object: $object) === false) {
+			return $this->updateRefused();
+		}
+
+		$message = $this->requestedMessage();
+		if ($message instanceof JSONResponse) {
+			return $message;
+		}
+
+		$link = $this->emailLinkService->linkEmail(
+			target: $this->linkTargetOf(object: $object),
+			message: $message
+		);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end linkEmailTo()
+
+	/**
+	 * The mail message the request names.
+	 *
+	 * @return EmailMessageRef|JSONResponse The message with its uid, or a 400 when the account or message id is missing.
+	 */
+	private function requestedMessage(): EmailMessageRef|JSONResponse {
+		$mailAccountId = (int)$this->request->getParam('mailAccountId', 0);
+		$messageId = (string)$this->request->getParam('messageId', '');
+		$messageUid = (string)$this->request->getParam('messageUid', '');
+
+		if ($mailAccountId === 0 || $messageId === '') {
+			return new JSONResponse(
+				['error' => 'mailAccountId and messageId are required'],
+				400
+			);
+		}
+
+		return (new EmailMessageRef(mailAccountId: $mailAccountId, messageId: $messageId))->withUid(uid: $messageUid);
+	}//end requestedMessage()
 
 	/**
 	 * Unlink a Mail message from an object.
@@ -329,12 +353,8 @@ class EmailLinksController extends Controller {
 			$cursorStr = $this->requestedCursor();
 			$limit     = (int)$this->request->getParam('limit', 50);
 
-			$result = $this->emailLinkService->getMessagesForMailbox(
-				(int)$accountId,
-				$mailbox,
-				$cursorStr,
-				$limit
-			);
+			$page   = (new MailboxPage(accountId: (int)$accountId, mailbox: $mailbox))->startingAfter(afterCursor: $cursorStr, limit: $limit);
+			$result = $this->emailLinkService->getMessagesForMailbox(page: $page);
 
 			return new JSONResponse($result);
 		} catch (Exception $e) {
@@ -377,12 +397,7 @@ class EmailLinksController extends Controller {
 	 *              is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if (in_array($code, [401, 403, 404, 409, 503], true) === true) {
-			return new JSONResponse(['error' => $exception->getMessage()], $code);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [401, 403, 404, 409, 503]);
 	}//end mapException()
 
 	/**

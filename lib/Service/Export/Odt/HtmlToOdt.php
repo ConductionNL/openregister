@@ -131,19 +131,30 @@ class HtmlToOdt {
 
 		$text = $this->content->createElementNS(self::NS_OFFICE, 'office:text');
 
-		$source = new DOMDocument();
-		$previous = libxml_use_internal_errors(true);
-		$source->loadHTML('<?xml encoding="UTF-8">' . $html, (LIBXML_NONET | LIBXML_NOERROR));
-		libxml_clear_errors();
-		libxml_use_internal_errors($previous);
-
-		$body = (new DOMXPath($source))->query('//body')->item(0);
+		$body = self::bodyOf(html: $html);
 		if ($body instanceof DOMNode) {
 			$this->blocks(parent: $body, into: $text);
 		}
 
 		return $text;
 	}//end convert()
+
+	/**
+	 * The `<body>` of the HTML, parsed without network access or error output.
+	 *
+	 * @param string $html The HTML.
+	 *
+	 * @return DOMNode|null The body, or null when there is none.
+	 */
+	private static function bodyOf(string $html): ?DOMNode {
+		$source = new DOMDocument();
+		$previous = libxml_use_internal_errors(true);
+		$source->loadHTML('<?xml encoding="UTF-8">' . $html, (LIBXML_NONET | LIBXML_NOERROR));
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous);
+
+		return (new DOMXPath($source))->query('//body')->item(0);
+	}//end bodyOf()
 
 	/**
 	 * Text of the first `h1` of the last conversion, or empty.
@@ -184,10 +195,7 @@ class HtmlToOdt {
 		$tag = strtolower($element->tagName);
 		$class = $this->firstClass(element: $element);
 
-		if ($tag === 'div' && $class === 'pdf-section') {
-			$this->breakBefore = ($this->sections > 0);
-			$this->sections++;
-		}
+		$this->noteSection(tag: $tag, class: $class);
 
 		match (true) {
 			$tag === 'h1', $tag === 'h2' => $into->appendChild($this->heading(element: $element, level: (int) substr($tag, 1))),
@@ -200,6 +208,21 @@ class HtmlToOdt {
 			default => null,
 		};
 	}//end block()
+
+	/**
+	 * Count a new PDF section; every section after the first starts on a new page.
+	 *
+	 * @param string $tag   The element's tag, lower-cased.
+	 * @param string $class Its first class.
+	 *
+	 * @return void
+	 */
+	private function noteSection(string $tag, string $class): void {
+		if ($tag === 'div' && $class === 'pdf-section') {
+			$this->breakBefore = ($this->sections > 0);
+			$this->sections++;
+		}
+	}//end noteSection()
 
 	/**
 	 * An ODF heading for an `h1` or `h2`.
@@ -215,11 +238,7 @@ class HtmlToOdt {
 			$this->title = $text;
 		}
 
-		$style = 'OR_H' . $level;
-		if ($level === 1 && $this->breakBefore === true) {
-			$style = 'OR_H1_Break';
-			$this->breakBefore = false;
-		}
+		$style = $this->headingStyle(level: $level);
 
 		$heading = $this->content->createElementNS(self::NS_TEXT, 'text:h');
 		$heading->setAttributeNS(self::NS_TEXT, 'text:style-name', $style);
@@ -228,6 +247,22 @@ class HtmlToOdt {
 
 		return $heading;
 	}//end heading()
+
+	/**
+	 * The heading's style: a first-level heading after a section break opens a new page, once.
+	 *
+	 * @param int $level The heading level.
+	 *
+	 * @return string The style name.
+	 */
+	private function headingStyle(int $level): string {
+		if ($level === 1 && $this->breakBefore === true) {
+			$this->breakBefore = false;
+			return 'OR_H1_Break';
+		}
+
+		return 'OR_H' . $level;
+	}//end headingStyle()
 
 	/**
 	 * A `text:p` with a style and plain text.

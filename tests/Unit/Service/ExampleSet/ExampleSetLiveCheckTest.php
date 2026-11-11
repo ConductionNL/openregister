@@ -28,6 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
@@ -111,8 +114,8 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('created', $report['changes']['cases/case-1-result']);
-		$case   = $this->store->find(register: 'cases', schema: 'case', filters: [])[0];
-		$result = $this->store->find(register: 'cases', schema: 'result', filters: [])[0];
+		$case   = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0];
+		$result = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'result'), filters: [])[0];
 		$this->assertSame($result['id'], $case['result']);
 		$this->assertSame('[{"status":"ontvangen","enteredAt":"2026-10-10"}]', $case['statusHistory']);
 
@@ -194,10 +197,10 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame([], $report['lost']);
-		$this->assertSame('[{"at":"a"},{"at":"b"}]', $this->store->get(register: 'cases', schema: 'case', id: $id)['history']);
+		$this->assertSame('[{"at":"a"},{"at":"b"}]', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['history']);
 
 		$this->assertSame([], $this->remover->remove(set: 'demo')['failed']);
-		$this->assertSame('[{"at":"a"}]', $this->store->get(register: 'cases', schema: 'case', id: $id)['history']);
+		$this->assertSame('[{"at":"a"}]', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['history']);
 	}
 
 	/**
@@ -224,7 +227,7 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 		// so the ticket is only written when the accounts are there first.
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$ticket = $this->store->find(register: 'crm', schema: 'ticket', filters: [])[0];
+		$ticket = $this->store->find(table: new RegisterSchemaRef(register: 'crm', schema: 'ticket'), filters: [])[0];
 		$this->assertSame('esra.demir', $ticket['assignee']);
 		$this->assertSame('demo_bot', $ticket['owner']);
 	}
@@ -235,7 +238,7 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 	 * in a change; an existing account still passes.
 	 */
 	public function testAnAccountIdTheSetDoesNotDeclareIsStillRefused(): void {
-		$this->accounts->createUser(uid: 'kees.bestaand', displayName: 'Kees', email: '', password: 'x');
+		$this->accounts->createAccount(account: new \OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount(uid: 'kees.bestaand', displayName: 'Kees', email: '', password: 'x'));
 		$this->app(app: 'crm', fragment: [
 			'objects' => [
 				['key' => 'ticket-1', 'register' => 'crm', 'schema' => 'ticket', 'data' => ['assignee' => 'nobody.here']],

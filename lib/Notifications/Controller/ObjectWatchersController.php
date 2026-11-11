@@ -43,7 +43,9 @@ namespace OCA\OpenRegister\Notifications\Controller;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices;
+use OCA\OpenRegister\Notifications\Controller\Support\ReadableObject;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -156,9 +158,7 @@ class ObjectWatchersController extends Controller {
 	private function watchObject(ObjectEntity $object, array $scope): JSONResponse {
 		try {
 			$watcher = $this->watchers->watch(
-				object: $object,
-				register: $scope['register'],
-				schema: $scope['schema'],
+				target: new AddressedObject(object: $object, register: $scope['register'], schema: $scope['schema']),
 				notify: $this->notifyParam()
 			);
 		} catch (NotAuthorizedException $e) {
@@ -339,10 +339,8 @@ class ObjectWatchersController extends Controller {
 
 		try {
 			$added = $this->watchers->addWatcher(
-				object: $object,
-				userId: $watcher['userId'],
-				register: $watcher['register'],
-				schema: $watcher['schema']
+				target: new AddressedObject(object: $object, register: $watcher['register'], schema: $watcher['schema']),
+				userId: $watcher['userId']
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
@@ -441,21 +439,7 @@ class ObjectWatchersController extends Controller {
 	 * @return ObjectEntity|JSONResponse The object, or the response to return.
 	 */
 	private function resolveObject(array $path): ObjectEntity|JSONResponse {
-		try {
-			// The setObject() call already looks the object up, so an unknown id throws here.
-			$this->objectService->setRegister($path['register']);
-			$this->objectService->setSchema($path['schema']);
-			$this->objectService->setObject($path['id']);
-			$object = $this->objectService->getObject();
-		} catch (\Throwable $e) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		if (($object instanceof ObjectEntity) === false) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		return $object;
+		return (new ReadableObject(objects: $this->objectService))->resolve(path: $path);
 	}//end resolveObject()
 
 	/**

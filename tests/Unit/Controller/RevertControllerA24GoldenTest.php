@@ -128,7 +128,7 @@ final class RevertControllerA24GoldenTest extends TestCase {
 		$controller = $this->controller(params: ['version' => '2'], objects: $objects);
 		$reverted = $this->reverted();
 		$this->handler->method('revert')->willReturn($reverted);
-		$objects->expects($this->once())->method('renderEntity')->with($reverted, [], 0, [], [], [], true)->willReturn(['masked' => true]);
+		$objects->expects($this->once())->method('renderEntity')->with($reverted, null, true)->willReturn(['masked' => true]);
 		$response = $controller->revert('r', 's', 'u-1');
 
 		$this->assertSame([200, ['masked' => true]], [$response->getStatus(), $response->getData()]);

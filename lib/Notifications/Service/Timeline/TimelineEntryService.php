@@ -41,6 +41,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * The timeline entry record.
@@ -213,26 +214,20 @@ class TimelineEntryService {
 	/**
 	 * One object's timeline, pinned first.
 	 *
-	 * @param ObjectEntity $object     The object.
-	 * @param string|null  $visibility The effective filter, or null for the unfiltered view.
-	 * @param integer      $limit      Page size.
-	 * @param integer      $offset     Page offset.
+	 * @param ObjectEntity $object The object.
+	 * @param ListQuery    $query  The page (limit and offset) and the `visibility` filter: the effective
+	 *                             filter, or absent for the unfiltered view.
 	 *
 	 * @return array<int, TimelineEntry> The entries.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function listForObject(
-		ObjectEntity $object,
-		?string $visibility = null,
-		int $limit = 50,
-		int $offset = 0,
-	): array {
+	public function listForObject(ObjectEntity $object, ListQuery $query = new ListQuery(limit: 50)): array {
 		return $this->records->entryMapper->findForObject(
 			objectUuid: (string)$object->getUuid(),
-			visibility: $visibility,
-			limit: $limit,
-			offset: $offset
+			visibility: ($query->filters['visibility'] ?? null),
+			limit: $query->limit,
+			offset: ($query->offset ?? 0)
 		);
 	}//end listForObject()
 

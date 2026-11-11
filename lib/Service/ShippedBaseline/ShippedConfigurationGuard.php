@@ -74,6 +74,19 @@ class ShippedConfigurationGuard {
 	public const ACTION_DECIDED = 'configuration.conflict.decided';
 
 	/**
+	 * The divergence answer for a schema with no shipped baseline recorded.
+	 *
+	 * @var array{baseline: false, app: '', appVersion: '', recordedAt: '', divergences: array{}}
+	 */
+	private const NO_BASELINE_DIVERGENCE = [
+		'baseline' => false,
+		'app' => '',
+		'appVersion' => '',
+		'recordedAt' => '',
+		'divergences' => [],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ShippedBaselineStore   $baselines  Where the shipped definitions are kept.
@@ -96,42 +109,8 @@ class ShippedConfigurationGuard {
 	/**
 	 * What an upgrade should write for one schema, and what it could not decide.
 	 *
-	 * Kept with its signature for the import seam that calls it; builds the
-	 * operation objects and delegates to {@see self::guardUpgrade()}.
-	 *
-	 * @param string               $slug       The schema slug.
-	 * @param array<string, mixed> $live       What the instance runs.
-	 * @param array<string, mixed> $incoming   What the app now ships.
-	 * @param string               $app        The app.
-	 * @param string               $appVersion The app version.
-	 * @param array<int, string>   $decisions  Paths an administrator decided to take from upstream.
-	 * @param bool                 $record     False leaves the baseline unrecorded, {@see SchemaUpgradeOptions}.
-	 *
-	 * @return array<string, mixed> What {@see self::guardUpgrade()} returns.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every existing caller unchanged.
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 */
-	public function guardSchemaUpdate(
-		string $slug,
-		array $live,
-		array $incoming,
-		string $app,
-		string $appVersion,
-		array $decisions = [],
-		bool $record = true
-	): array {
-		$shipped = new ShippedDefinition(definition: $incoming, app: $app, appVersion: $appVersion);
-		$upgrade = new SchemaUpgrade(slug: $slug, live: $live, incoming: $shipped);
-		return $this->guardUpgrade(upgrade: $upgrade, options: new SchemaUpgradeOptions(decisions: $decisions, record: $record));
-	}//end guardSchemaUpdate()
-
-	/**
-	 * What an upgrade should write for one schema, and what it could not decide.
-	 *
 	 * With `record: false` in the options the baseline is left unrecorded: the
-	 * caller records `baseline` with recordShipped() once the definition is
+	 * caller records `baseline` with recordShippedSchema() once the definition is
 	 * actually written. A baseline recorded for a write that then fails makes
 	 * the next import read the old live definition as a local edit and keep it.
 	 *
@@ -383,22 +362,6 @@ class ShippedConfigurationGuard {
 	}//end authorizationRoots()
 
 	/**
-	 * Record what an app shipped for a schema it has just created.
-	 *
-	 * @param string               $slug       The schema slug.
-	 * @param array<string, mixed> $definition What the app ships.
-	 * @param string               $app        The app.
-	 * @param string               $appVersion The app version.
-	 *
-	 * @return bool True when it was recorded.
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 */
-	public function recordShipped(string $slug, array $definition, string $app, string $appVersion): bool {
-		return $this->recordShippedSchema(slug: $slug, shipped: new ShippedDefinition(definition: $definition, app: $app, appVersion: $appVersion));
-	}//end recordShipped()
-
-	/**
 	 * Record what an app shipped for a schema, with the release that shipped it.
 	 *
 	 * @param string            $slug    The schema slug.
@@ -438,13 +401,7 @@ class ShippedConfigurationGuard {
 		$baseline = $this->baselines->read(subject: $this->baselines->schemaSubject(slug: $slug));
 
 		if ($this->comparator->hasBaseline(baseline: ($baseline['definition'] ?? null)) === false) {
-			return [
-				'baseline' => false,
-				'app' => '',
-				'appVersion' => '',
-				'recordedAt' => '',
-				'divergences' => [],
-			];
+			return self::NO_BASELINE_DIVERGENCE;
 		}
 
 		return [
@@ -462,23 +419,6 @@ class ShippedConfigurationGuard {
 	 * Reads nothing back into the schema: a reset shows its effect before it is
 	 * confirmed, which is the spec's second scenario, and a preview that wrote
 	 * would make the confirmation decorative.
-	 *
-	 * @param string               $slug The schema slug.
-	 * @param array<string, mixed> $live What the instance runs.
-	 * @param string               $path The part to reset.
-	 *
-	 * @return array{applicable: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>} The preview.
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 */
-	public function previewReset(string $slug, array $live, string $path): array {
-		return $this->previewPartReset(request: new ResetRequest(slug: $slug, live: $live, path: $path));
-	}//end previewReset()
-
-	/**
-	 * What resetting one part to the shipped baseline would change.
-	 *
-	 * Reads nothing back into the schema, for the reason {@see self::previewReset()} gives.
 	 *
 	 * @param ResetRequest $request The schema, what it runs and the part to reset.
 	 *
@@ -604,7 +544,7 @@ class ShippedConfigurationGuard {
 	 * session means no actor means no reset, and the refusal says which.
 	 *
 	 * `$record: false` leaves the audit row to the caller, which writes it with
-	 * recordReset() once the reset definition is stored. Recorded here, a write
+	 * recordPartReset() once the reset definition is stored. Recorded here, a write
 	 * that then fails leaves a trail naming a reset the instance never ran.
 	 *
 	 * @param string               $slug   The schema slug.
@@ -622,30 +562,64 @@ class ShippedConfigurationGuard {
 	public function resetToBaseline(string $slug, array $live, string $path, bool $record = true): array {
 		$user = $this->session->getUser();
 		if ($user === null) {
-			return [
-				'applied' => false,
-				'reason' => 'a reset needs an actor, and there is no session; it is never done by an unattended path',
-				'from' => null,
-				'to' => null,
-				'definition' => $live,
-			];
+			return self::refusedWithoutActor(live: $live);
 		}
 
-		$preview = $this->previewReset(slug: $slug, live: $live, path: $path);
+		$preview = $this->previewPartReset(request: new ResetRequest(slug: $slug, live: $live, path: $path));
 		if ($preview['applicable'] === false) {
-			return [
-				'applied' => false,
-				'reason' => $preview['reason'],
-				'from' => $preview['from'],
-				'to' => $preview['to'],
-				'definition' => $live,
-			];
+			return self::refusedReset(preview: $preview, live: $live);
 		}
 
 		if ($record === true) {
-			$this->recordReset(slug: $slug, path: $path, from: $preview['from'], to: $preview['to']);
+			$this->recordPartReset(slug: $slug, reset: new PartReset(path: $path, from: $preview['from'], to: $preview['to']));
 		}
 
+		return self::appliedReset(preview: $preview);
+	}//end resetToBaseline()
+
+	/**
+	 * The outcome of a reset asked for without a signed-in actor.
+	 *
+	 * @param array<string, mixed> $live What the instance runs, left as it is.
+	 *
+	 * @return array{applied: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>}
+	 */
+	private static function refusedWithoutActor(array $live): array {
+		return [
+			'applied' => false,
+			'reason' => 'a reset needs an actor, and there is no session; it is never done by an unattended path',
+			'from' => null,
+			'to' => null,
+			'definition' => $live,
+		];
+	}//end refusedWithoutActor()
+
+	/**
+	 * The outcome of a reset whose preview is not applicable, carrying the preview's reason.
+	 *
+	 * @param array<string, mixed> $preview The preview of the reset.
+	 * @param array<string, mixed> $live    What the instance runs, left as it is.
+	 *
+	 * @return array{applied: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>}
+	 */
+	private static function refusedReset(array $preview, array $live): array {
+		return [
+			'applied' => false,
+			'reason' => $preview['reason'],
+			'from' => $preview['from'],
+			'to' => $preview['to'],
+			'definition' => $live,
+		];
+	}//end refusedReset()
+
+	/**
+	 * The outcome of an applied reset: the preview's change and its reset definition.
+	 *
+	 * @param array<string, mixed> $preview The applicable preview of the reset.
+	 *
+	 * @return array{applied: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>}
+	 */
+	private static function appliedReset(array $preview): array {
 		return [
 			'applied' => true,
 			'reason' => '',
@@ -653,23 +627,7 @@ class ShippedConfigurationGuard {
 			'to' => $preview['to'],
 			'definition' => $preview['definition'],
 		];
-	}//end resetToBaseline()
-
-	/**
-	 * Put a reset on the trail: who, which schema, which part, from what, to what.
-	 *
-	 * @param string $slug The schema slug.
-	 * @param string $path The part that was reset.
-	 * @param mixed  $from What the instance ran before.
-	 * @param mixed  $to   What was shipped, and now runs.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
-	 */
-	public function recordReset(string $slug, string $path, mixed $from, mixed $to): void {
-		$this->recordPartReset(slug: $slug, reset: new PartReset(path: $path, from: $from, to: $to));
-	}//end recordReset()
+	}//end appliedReset()
 
 	/**
 	 * Put a reset on the trail: who, which schema, which part, from what, to what.

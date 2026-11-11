@@ -71,19 +71,35 @@ class ExampleSetTalkStore {
 	private const GROUP_ROOM = 2;
 
 	/**
+	 * Hands out the other app's services.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Tells whether the app is installed.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Finds the accounts.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container   Hands out Talk's services.
-	 * @param IAppManager        $appManager  Tells whether Talk is installed.
-	 * @param IUserManager       $userManager Finds the owner and the participants.
-	 *
-	 * @return void
+	 * @param ExampleSetAppReach $reach Hands out Talk's services, tells whether Talk is installed, finds the owner and the participants.
 	 */
-	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-		private readonly IUserManager $userManager,
-	) {
+	public function __construct(ExampleSetAppReach $reach) {
+		$this->container   = $reach->container;
+		$this->appManager  = $reach->apps;
+		$this->userManager = $reach->users;
 	}//end __construct()
 
 	/**
@@ -158,23 +174,21 @@ class ExampleSetTalkStore {
 	/**
 	 * Write a call that was held into the conversation's history.
 	 *
-	 * @param string               $token  The conversation token.
-	 * @param string               $owner  The account that started the call.
-	 * @param array<string, mixed> $call   The declared call: when it started (`start`) and ended (`end`).
-	 * @param array<int, string>   $joined The accounts that joined.
+	 * @param HeldTalkCall $held The conversation token, the account that started the call, when it started and
+	 *                           ended, and the accounts that joined.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
-	public function heldCall(string $token, string $owner, array $call, array $joined): void {
-		$start = new DateTime((string) $call['start']);
-		$end   = new DateTime((string) $call['end']);
-		$room  = $this->container->get(self::MANAGER)->getRoomByToken($token);
+	public function heldCall(HeldTalkCall $held): void {
+		$start = new DateTime((string) $held->call['start']);
+		$end   = new DateTime((string) $held->call['end']);
+		$room  = $this->container->get(self::MANAGER)->getRoomByToken($held->token);
 		$chat  = $this->container->get(self::CHAT);
-		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode(['message' => 'call_started', 'parameters' => []]), $start, false);
-		$ended = self::callEnded(joined: $joined, seconds: max(0, $end->getTimestamp() - $start->getTimestamp()));
-		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode($ended), $end, false);
+		$chat->addSystemMessage($room, null, 'users', $held->owner, (string) json_encode(['message' => 'call_started', 'parameters' => []]), $start, false);
+		$ended = self::callEnded(joined: $held->joined, seconds: max(0, $end->getTimestamp() - $start->getTimestamp()));
+		$chat->addSystemMessage($room, null, 'users', $held->owner, (string) json_encode($ended), $end, false);
 	}//end heldCall()
 
 	/**

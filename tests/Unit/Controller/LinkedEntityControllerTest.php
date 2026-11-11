@@ -141,7 +141,7 @@ class LinkedEntityControllerTest extends TestCase {
 	public function testRemoveObjectLinkReturnsTheRemainingIds(): void {
 		$this->service->expects($this->once())
 			->method('removeLink')
-			->with('uuid-1', 'deck', 'card-7')
+			->with('uuid-1', new EntityLink(type: 'deck', entityId: 'card-7'))
 			->willReturn(['card-3']);
 
 		$response = $this->controller->removeObjectLink('uuid-1', 'deck', 'card-7');

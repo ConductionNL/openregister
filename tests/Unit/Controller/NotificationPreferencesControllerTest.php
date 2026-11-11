@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Controller\NotificationPreferencesController;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
@@ -73,9 +75,9 @@ class NotificationPreferencesControllerTest extends TestCase {
 		]);
 
 		$this->preferenceService->expects($this->once())
-			->method('setOverride')
-			->with('jan', 'meldingen', 'object_created', ['enabled' => false]);
-		$this->preferenceService->method('getOverride')->willReturn(['enabled' => false]);
+			->method('storeOverride')
+			->with(new PreferenceWrite(party: 'jan', address: new PreferenceAddress(schemaSlug: 'meldingen', notificationKey: 'object_created'), value: ['enabled' => false]));
+		$this->preferenceService->method('overrideAt')->willReturn(['enabled' => false]);
 
 		$response = $this->controller->update();
 		$data = $response->getData();
@@ -93,8 +95,8 @@ class NotificationPreferencesControllerTest extends TestCase {
 		]);
 
 		$this->preferenceService->expects($this->once())
-			->method('setOverride')
-			->with('jan', 'meldingen', 'object_created', null);
+			->method('storeOverride')
+			->with(new PreferenceWrite(party: 'jan', address: new PreferenceAddress(schemaSlug: 'meldingen', notificationKey: 'object_created'), value: null));
 
 		$response = $this->controller->update();
 		$this->assertNull($response->getData()['override']);
@@ -103,7 +105,7 @@ class NotificationPreferencesControllerTest extends TestCase {
 	public function testUpdateRejectsMissingFields(): void {
 		$this->signIn('jan');
 		$this->request->method('getParams')->willReturn(['schema' => 'meldingen']);
-		$this->preferenceService->expects($this->never())->method('setOverride');
+		$this->preferenceService->expects($this->never())->method('storeOverride');
 
 		$response = $this->controller->update();
 		$this->assertSame(422, $response->getStatus());

@@ -95,8 +95,8 @@ class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 			->onlyMethods(['extractFile'])
 			->getMock();
 		$failing = $s['failing'] ?? [];
-		$service->method('extractFile')->willReturnCallback(function ($fileId, $force) use (&$pool, $failing) {
-			$this->calls[] = ['extract', $fileId, $force];
+		$service->method('extractFile')->willReturnCallback(function ($fileId, $options) use (&$pool, $failing) {
+			$this->calls[] = ['extract', $fileId, $options->forceReExtract];
 			if (in_array($fileId, $failing, true) === true) {
 				throw new Exception('unreadable ' . $fileId);
 			}
