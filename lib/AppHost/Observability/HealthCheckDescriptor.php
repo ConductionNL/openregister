@@ -152,22 +152,35 @@ final class HealthCheckDescriptor {
 			throw new ObservabilityValidationException('Health check id must be a non-empty string.');
 		}
 
-		$target = new HealthCheckTarget();
-		if ($type === 'appEnabled') {
-			$target = new HealthCheckTarget(app: self::appId(raw: $raw));
-		}
-
-		if ($type === 'appConfig') {
-			$target = self::appConfigTarget(raw: $raw);
-		}
-
 		return new self(
 			id: $id,
 			type: $type,
 			severity: $severity,
-			target: $target
+			target: self::targetOf(type: $type, raw: $raw)
 		);
 	}//end fromArray()
+
+	/**
+	 * What a check of this type looks at: an app, an app config key, or nothing.
+	 *
+	 * @param string               $type The check type.
+	 * @param array<string, mixed> $raw  The raw check entry.
+	 *
+	 * @return HealthCheckTarget
+	 *
+	 * @throws ObservabilityValidationException When the target is malformed.
+	 */
+	private static function targetOf(string $type, array $raw): HealthCheckTarget {
+		if ($type === 'appEnabled') {
+			return new HealthCheckTarget(app: self::appId(raw: $raw));
+		}
+
+		if ($type === 'appConfig') {
+			return self::appConfigTarget(raw: $raw);
+		}
+
+		return new HealthCheckTarget();
+	}//end targetOf()
 
 	/**
 	 * A value that must be one of a closed set of strings.
