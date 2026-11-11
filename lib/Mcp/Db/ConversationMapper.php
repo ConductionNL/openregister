@@ -24,8 +24,8 @@ namespace OCA\OpenRegister\Mcp\Db;
 
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 use OCA\OpenRegister\Event\ConversationCreatedEvent;
 use OCA\OpenRegister\Event\ConversationDeletedEvent;
 use OCA\OpenRegister\Event\ConversationUpdatedEvent;
@@ -36,6 +36,7 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
+use OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope;
 
 /**
  * ConversationMapper handles database operations for Conversation entities

@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Database
- * @package  OCA\OpenRegister\Mcp\Db
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Mcp\Db;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
  * Who an agent listing is for: one organisation, narrowed to the agents one user may access when a user is named.

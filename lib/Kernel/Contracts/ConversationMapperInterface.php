@@ -22,9 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
-use OCA\OpenRegister\Mcp\Db\ConversationScope;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;

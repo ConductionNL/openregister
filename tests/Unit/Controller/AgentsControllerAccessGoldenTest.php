@@ -20,8 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Mcp\Db\AgentAudience;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\AgentAudience;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use Exception;
 use OCA\OpenRegister\Controller\AgentsController;
 use OCA\OpenRegister\Db\Organisation;

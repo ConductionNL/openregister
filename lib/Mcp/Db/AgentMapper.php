@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Mcp\Db;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\MultiTenancyTrait;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\QueryPage;
+use OCA\OpenRegister\Kernel\Contracts\Value\AgentAudience;
 
 /**
  * Class AgentMapper

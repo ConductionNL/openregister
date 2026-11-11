@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
-use OCA\OpenRegister\Mcp\Db\ConversationScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCP\EventDispatcher\IEventDispatcher;

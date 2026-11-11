@@ -23,10 +23,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
-use OCA\OpenRegister\Mcp\Db\ConversationScope;
-use OCA\OpenRegister\Mcp\Db\AgentAudience;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\AgentAudience;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\AgentMapperPlatform;
