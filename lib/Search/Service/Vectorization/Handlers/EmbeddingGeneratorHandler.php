@@ -89,30 +89,16 @@ class EmbeddingGeneratorHandler {
 		$cacheKey = $config['provider'] . '_' . $config['model'];
 
 		if (isset($this->generatorCache[$cacheKey]) === false) {
-			$this->generatorCache[$cacheKey] = $this->createGenerator(config: $config);
+			$this->logCreating(config: $config);
+
+			// Cached before logCreated() asks for the dimensions, so a failing length probe does not rebuild it.
+			$this->generatorCache[$cacheKey] = $this->createProviderGenerator(config: $config);
+
+			$this->logCreated(config: $config, generator: $this->generatorCache[$cacheKey]);
 		}
 
 		return $this->generatorCache[$cacheKey];
 	}//end getGenerator()
-
-	/**
-	 * Create and log a new embedding generator for a configuration
-	 *
-	 * @param array $config Embedding configuration with provider, model, api_key, base_url
-	 *
-	 * @return EmbeddingGeneratorInterface The new generator
-	 *
-	 * @throws \Exception If the provider is not supported
-	 */
-	private function createGenerator(array $config): EmbeddingGeneratorInterface {
-		$this->logCreating(config: $config);
-
-		$generator = $this->createProviderGenerator(config: $config);
-
-		$this->logCreated(config: $config, generator: $generator);
-
-		return $generator;
-	}//end createGenerator()
 
 	/**
 	 * Log that a generator is about to be created
