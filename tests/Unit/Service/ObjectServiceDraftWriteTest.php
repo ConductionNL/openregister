@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -239,10 +240,11 @@ class ObjectServiceDraftWriteTest extends TestCase {
 	 * A register and a schema, whose drafts are the owner's alone unless told otherwise.
 	 *
 	 * @param bool $draftsVisible Whether the schema lets others see its drafts.
+	 * @param bool $appendOnly    Whether the schema is append-only.
 	 *
 	 * @return array{0: Register, 1: Schema}
 	 */
-	private function scope(bool $draftsVisible = false): array {
+	private function scope(bool $draftsVisible = false, bool $appendOnly = false): array {
 		$register = new Register();
 		$register->setId(7);
 		$schema = new Schema();
@@ -251,6 +253,8 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		if ($draftsVisible === true) {
 			$schema->setConfiguration(['draftsVisible' => true]);
 		}
+
+		$schema->setAppendOnly($appendOnly);
 
 		return [$register, $schema];
 	}//end scope()
@@ -325,11 +329,12 @@ class ObjectServiceDraftWriteTest extends TestCase {
 	 *
 	 * @param bool $rbac          Whether the save is judged for the signed-in caller.
 	 * @param bool $draftsVisible Whether the schema lets others see its drafts.
+	 * @param bool $appendOnly    Whether the schema is append-only.
 	 *
 	 * @return void
 	 */
-	private function saveOver(bool $rbac = true, bool $draftsVisible = false): void {
-		[$register, $schema] = $this->scope(draftsVisible: $draftsVisible);
+	private function saveOver(bool $rbac = true, bool $draftsVisible = false, bool $appendOnly = false): void {
+		[$register, $schema] = $this->scope(draftsVisible: $draftsVisible, appendOnly: $appendOnly);
 		$this->service->saveObject(
 			object: ['subject' => 'changed by somebody else'],
 			register: $register,
@@ -364,6 +369,25 @@ class ObjectServiceDraftWriteTest extends TestCase {
 
 		$this->assertSame([], $this->saves);
 	}//end testSomebodyElsesDraftIsNotWritten()
+
+	/**
+	 * On an append-only schema somebody else's draft gets the answer every stored row gets, not the draft refusal.
+	 *
+	 * @return void
+	 */
+	public function testOnAnAppendOnlySchemaADraftAnswersAsAnyStoredRow(): void {
+		$this->signedIn(uid: 'colleague');
+		$this->hiddenFromTheCaller(status: 'draft');
+
+		try {
+			$this->saveOver(appendOnly: true);
+			$this->fail('A save over a stored row of an append-only schema was let through.');
+		} catch (AppendOnlyException $refused) {
+			$this->addToAssertionCount(1);
+		}
+
+		$this->assertSame([], $this->saves);
+	}//end testOnAnAppendOnlySchemaADraftAnswersAsAnyStoredRow()
 
 	/**
 	 * Callers who are not the draft's owner.

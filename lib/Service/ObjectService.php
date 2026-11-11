@@ -3146,7 +3146,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertMayWriteUnseen(SaveAccessRequest $request): ?string
     {
-        $hidden = $this->refuseSomebodyElsesDraft(uuid: $request->uuid, _rbac: $request->rbac);
+        $hidden = $this->hiddenStoredRow(uuid: $request->uuid, _rbac: $request->rbac);
 
         $this->assertMayCreate(request: $request);
         if ($hidden === null) {
@@ -3154,9 +3154,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         // Stored but hidden: the write lands on that row, so it must keep to
-        // the caller's organisations and pass the update rule against it.
+        // the caller's organisations and pass the update rule against it. The
+        // refusals that answer for every hidden row come before the ones that
+        // depend on the row, so the answer tells nothing about it.
         $this->refuseAWriteOntoAnAppendOnlyRow();
         $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $request->multitenancy);
+        $this->refuseSomebodyElsesDraft(stored: $hidden);
         $this->assertMayUpdate(stored: $hidden, _rbac: $request->rbac);
 
         return $hidden->getUuid();
@@ -3219,18 +3222,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end refuseAnotherOrganisationsRow()
 
     /**
-     * Refuse a write to a stored draft the caller cannot read.
+     * The stored row a uuid names that the caller's own lookup did not find.
      *
-     * A draft answers to its owner only (decision 180), and that rule lives in
-     * the read query. The lookup above therefore does not find somebody else's
-     * draft, and the write went on as a create under a chosen uuid, judged by
-     * the schema's create rule, and was then stored over the draft. Anybody
-     * who may create in the schema could change somebody else's draft through
-     * PATCH and got its content back in the answer. Found on a live instance,
-     * 12 October 2026.
-     *
-     * So the uuid is looked up once more, past the read rule, and only for
-     * this question. Skipped with RBAC off: an administrator, a job and a
+     * The uuid is looked up once more, past the read rules, so a write by uuid
+     * onto a row the caller cannot read is judged as a write onto that row, not
+     * as a create. Skipped with RBAC off: an administrator, a job and a
      * scope-value owner (decision 195) are judged by their caller.
      *
      * @param string $uuid  The uuid the caller's own lookup did not find.
@@ -3238,11 +3234,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return ObjectEntity|null The stored row the caller cannot read, null when there is none or RBAC is off.
      *
-     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the uuid is a draft kept from the caller.
-     *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
      */
-    private function refuseSomebodyElsesDraft(string $uuid, bool $_rbac): ?ObjectEntity
+    private function hiddenStoredRow(string $uuid, bool $_rbac): ?ObjectEntity
     {
         if ($_rbac === false || $this->currentSchema === null) {
             return null;
@@ -3250,7 +3244,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         try {
             // A soft-deleted row counts too: the write would land on it.
-            $stored = $this->objectMapper->find(
+            return $this->objectMapper->find(
                 identifier: $uuid,
                 register: $this->currentRegister,
                 schema: $this->currentSchema,
@@ -3261,7 +3255,29 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         } catch (\OCP\AppFramework\Db\DoesNotExistException) {
             return null;
         }
+    }//end hiddenStoredRow()
 
+    /**
+     * Refuse a write to a stored draft the caller cannot read.
+     *
+     * A draft answers to its owner only (decision 180), and that rule lives in
+     * the read query. The lookup above therefore does not find somebody else's
+     * draft, and the write went on as a create under a chosen uuid, judged by
+     * the schema's create rule, and was then stored over the draft. Anybody
+     * who may create in the schema could change somebody else's draft through
+     * PATCH and got its content back in the answer. Found on a live instance,
+     * 12 October 2026.
+     *
+     * @param ObjectEntity $stored The stored row the caller cannot read.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the row is a draft kept from the caller.
+     *
+     * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     */
+    private function refuseSomebodyElsesDraft(ObjectEntity $stored): void
+    {
         $user = $this->userSession->getUser();
         $kept = (new DraftCallerRule())->keptFromCaller(
             subject: new DraftSubject(object: $stored, schema: $this->currentSchema),
@@ -3273,8 +3289,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         if ($kept === true) {
             throw new NotAuthorizedException(message: 'Only the person who started this draft can change it.');
         }
-
-        return $stored;
     }//end refuseSomebodyElsesDraft()
 
     /**
