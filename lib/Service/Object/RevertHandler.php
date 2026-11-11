@@ -110,7 +110,7 @@ class RevertHandler implements RevertHandlerInterface {
 		// Revert from the object just checked: looked up again, the URL id could name another row.
 		$revertedObject = $this->stores->auditTrailMapper->revertObjectWith(
 			identifier: $context['object'],
-			options: new RevertOptions(until: $point->until, overwriteVersion: $point->overwriteVersion)
+			options: RevertOptions::forPoint(until: $point->until, overwriteVersion: $point->overwriteVersion)
 		);
 		$savedObject = $this->saveReverted(reverted: $revertedObject, context: $context);
 

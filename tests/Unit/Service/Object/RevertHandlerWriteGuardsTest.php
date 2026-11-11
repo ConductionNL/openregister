@@ -195,6 +195,31 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	}//end testTheTrailIsHandedTheCheckedObject()
 
 	/**
+	 * A point that is not a DateTime, id, version or null is refused, as the strict trail mapper did.
+	 *
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function untypedPoints(): array {
+		return ['true' => [true], 'false' => [false], 'one point zero' => [1.0], 'five point five' => [5.5]];
+	}//end untypedPoints()
+
+	/**
+	 * A boolean or float point throws instead of being coerced to an audit trail id.
+	 *
+	 * @param mixed $until The point as the request handed it over.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('untypedPoints')]
+	public function testAnUntypedRevertPointIsRefused(mixed $until): void {
+		$this->audit->expects($this->never())->method('revertObjectWith');
+
+		$this->expectException(exception: \TypeError::class);
+
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: $until));
+	}//end testAnUntypedRevertPointIsRefused()
+
+	/**
 	 * With audit trails switched off, the revert writes no row, as a save does not.
 	 *
 	 * @return void
