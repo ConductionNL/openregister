@@ -81,6 +81,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -2485,7 +2486,7 @@ class ObjectServiceTest extends TestCase {
 			});
 
 		try {
-			$this->service->patchObject('42', ['title' => 'Updated Title']);
+			$this->service->patchObject(patch: new ObjectPatch(objectId: '42', data: ['title' => 'Updated Title']));
 		} catch (\Throwable $e) {
 			// Expected — deep pipeline.
 		}
