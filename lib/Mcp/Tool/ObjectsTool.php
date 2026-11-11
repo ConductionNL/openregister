@@ -306,21 +306,29 @@ class ObjectsTool extends AbstractTool {
 			throw new RuntimeException("Object with id {$id} not found.");
 		}
 
-		return $this->formatSuccess(
-			data: [
-				'id' => $object->getId(),
-				'uuid' => $object->getUuid(),
-				'register' => $object->getRegister(),
-				'schema' => $object->getSchema(),
-				'data' => $object->getObject(),
-				'organisation' => $object->getOrganisation(),
-				'owner' => $object->getOwner(),
-				'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
-				'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
-			],
-			message: 'Object retrieved successfully'
-		);
+		return $this->formatSuccess(data: self::objectDetails(object: $object), message: 'Object retrieved successfully');
 	}//end getObject()
+
+	/**
+	 * The full row of one object: its identity, place, data, ownership and dates.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function objectDetails(ObjectEntity $object): array {
+		return [
+			'id' => $object->getId(),
+			'uuid' => $object->getUuid(),
+			'register' => $object->getRegister(),
+			'schema' => $object->getSchema(),
+			'data' => $object->getObject(),
+			'organisation' => $object->getOrganisation(),
+			'owner' => $object->getOwner(),
+			'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
+			'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
+		];
+	}//end objectDetails()
 
 	/**
 	 * Create a new object
