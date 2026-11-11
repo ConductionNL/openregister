@@ -1638,3 +1638,53 @@ shillinq	2720	a5f6ebe4c3943553ba35364423ec1160c0420bd8	GREEN	FV03:10	tree green 
 shillinq	2722	f082ac5a206018c07ed933c35ec70f2149c5de0a	GREEN	FV03:10	tree green (phpunit 7260 ok, vitest 1073 ok), diff review clean
 shillinq	2724	2f4e8fc61fa5039621e0246021d87232b839572e	GREEN	FV03:10	tree green (phpunit 7260 ok, vitest 1073 ok), diff review clean
 shillinq	2726	f88adb9db37a0e4e6e41daa2cf343583a863cd05	GREEN	FV03:10	tree green (phpunit 7260 ok, vitest 1073 ok), diff review clean
+pipelinq	3394	0af9af6e290dc4cb1f6192c9a7c7aa05b2d0ab3d	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3395	be4762a02f0688fabad9f5ee1ead4e042eda6480	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3396	5cda92a50b01069add5811bcf17f2974ca0e7a1b	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3397	8da2288467f46394dd733eb3c0433ca3fc38af1d	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3398	e895bd69fb4e32f91a54d7fce0b956d6855aa678	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3399	46ec9faefe3aa72b28fd66075635a09eb27be81c	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3400	11019fabf52b5ccc2c00ed56f4c05b09ecfbb83d	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3401	53598405236816d361f15a5d4f914308856cc804	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3402	06b821b3424078c2d9a484b1fdc6447601768f50	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3403	814fd3ecd116e616d2b7ef8360555deabb025668	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3404	1a65ae323454d76a5fa5ced49351b31a9438b0dc	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3405	e016777eac4119d0ceaaa063d590de98c9c61653	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3406	5e0d023c7773fb0be0cd87fcd0f79c88828c019b	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3407	d2b4612dab032577a12b170788bc0a02fc0ddae4	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3408	298564494cc842de0fe6547857fdb69d12c4ec76	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3409	69e9a219d852edd8748ea088e07893fd781a7ac9	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3410	0742360ffa82a1917c8886d97d957497e6dd9f42	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3411	1c57c9ae629680258d6a01b792f3bf67c070445d	CONFLICT	FV07:10	merge conflict with #3396 in tests/Unit/Service/Social/SocialAdapterRequestShapeTest.php
+pipelinq	3412	a4e74d4de9a2a8df2784a68b3ebc18c9eee17163	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3413	09c480f59e6954d1361d7bfbefe20ca0c01ddb68	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3414	f5b0fd2e0a62c9722fbce84c310be5e1e3579733	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3415	2dbeedd10484fac9a476afab56145d489eb5dec3	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3416	5caa459582ae44e4330216881b64a71bab636f85	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3417	13ef58553b2411fb87896004a08e873a51585e28	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3418	d459ef0f614e0a501f93cf23ed515f880be8e249	GREEN	FV07:10	tree green: phpunit 0 new failures, vitest 0 new failures
+integriq	3218	f51cd3a404b77bfb15abba83912a8008e9ee04dd	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3219	4e6a14163f85ef9c4405547bd36ad84bd2cf688e	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3220	1e58c267ebe86bbc20f03ac7a43e31c6df599d40	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3221	31f1d75ca9b480b0fffcff5b05b71ba0ff5af517	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3222	ce723cbffe7751e81e4c9248cc7daace6c5666da	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3223	4c85fbc6a022485f042c4db1c178d3fb311033ba	BLOCK	FV09:7	lib/Service/MessageValidation/OpenApiChecker.php moves the null-schema check after reference resolution, so a body schema whose $ref resolves to null now validates as valid where the old code threw a TypeError
+integriq	3224	2016f4c7178fb9717e438798808a8ada04f6dcb2	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3225	b05367bf954a3d248d6ecb0fe14f20e3dafe1ccf	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3226	9f4f29d6876e2a9389f6cfd5ccb2ceb50ac6ccff	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3227	34df1bbf67146d61061631450568c9cf1ac57c56	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3228	fd647060af1ca816079e9fba146b2c4f5d6d3fd7	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3229	aa50741d07cd3a195afaa82e0306d4ba32dfe315	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3230	ab9ecc0e6fdf1ebd2355678b6f9f22a4b2f0e084	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3231	a2b7c57f258baf386bf5ca7f9cc85d29ce60525d	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3232	e13b5fec86eaeb0cfed56c4e69c309c06977e8b9	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3233	1fe7afe24fb479f8c1708cc47b875b0563b8a6cb	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3234	1cb6839161ebdda0cef408d31a7979a139f34800	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3235	ea95bdecf8bcc2c663c394d7736ccf6769482db6	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3236	29ab78a9d673ef1e597f617491126bfd796be632	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3237	a306f99e5cd5f4f27c6573cb3534bf1984d345c3	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3238	73feace017b204e39ee301251ecadbf25087d80c	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3239	a8fcde07b8b2851600760e5f783a02d40436ead1	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3240	853b875376f4294d4322844f0e6969550e228716	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3241	73f1effed66a982369a29f4ec8f186f352c96ada	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3242	25d928ea5218a4f47f35d538c37f134899b2eba9	GREEN	FV09:7	unit suite green on the verify tree
