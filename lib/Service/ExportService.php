@@ -51,7 +51,10 @@ use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Symfony\Component\Uid\Uuid;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -153,6 +156,7 @@ class ExportService implements ObjectExporterInterface {
 	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
+	 * @param ProcessRevealAuditInterface|null $processAudit Records, once per export, that it revealed audited values.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
@@ -164,6 +168,7 @@ class ExportService implements ObjectExporterInterface {
 		CacheHandlerInterface $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,
+		private readonly ?ProcessRevealAuditInterface $processAudit = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->groupManager = $groupManager;
@@ -857,7 +862,7 @@ class ExportService implements ObjectExporterInterface {
 			'_multitenancy_explicit' => $multiExplicitlySet,
 		] + $propertyFilters;
 
-		return $this->objectService->searchObjects(
+		$search = fn (): array => $this->objectService->searchObjects(
 			query: $query,
 			_rbac: true,
 			// Apply RBAC filtering.
@@ -866,6 +871,12 @@ class ExportService implements ObjectExporterInterface {
 			ids: $selectedIds,
 			uses: null
 		);
+
+		if ($this->processAudit === null) {
+			return $search();
+		}
+
+		return $this->processAudit->run(run: new RevealingProcess(process: 'export', runId: Uuid::v4()->toRfc4122()), operation: $search);
 	}//end fetchObjectsForExport()
 
 

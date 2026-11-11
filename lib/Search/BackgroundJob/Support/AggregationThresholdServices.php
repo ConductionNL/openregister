@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Search\BackgroundJob\Support;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
+use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
 
 /**
  * What re-fetches a deferred entry, finds its schema and evaluates the schema's thresholds.
@@ -38,6 +39,7 @@ final class AggregationThresholdServices {
 	 * @param DeferredEntryObjectResolverInterface $resolver     Stale-safe entry re-fetch.
 	 * @param SchemaMapperInterface       $schemaMapper Schema lookup mapper.
 	 * @param ThresholdEvaluationService  $evaluator    Shared threshold evaluation logic.
+	 * @param ProcessRevealAuditInterface|null $processAudit Records, once per chunk, that the job revealed audited values.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
@@ -45,6 +47,7 @@ final class AggregationThresholdServices {
 		public readonly DeferredEntryObjectResolverInterface $resolver,
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly ThresholdEvaluationService $evaluator,
+		public readonly ?ProcessRevealAuditInterface $processAudit = null,
 	) {
 	}//end __construct()
 }//end class

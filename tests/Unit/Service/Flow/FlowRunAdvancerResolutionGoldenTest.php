@@ -31,6 +31,8 @@ use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowRunPass;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowStreamAdvance;
+use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -241,4 +243,34 @@ final class FlowRunAdvancerResolutionGoldenTest extends TestCase {
 			}
 		}
 	}//end testASubjectlessRunWalksOverABareHolder()
+
+	/**
+	 * Each pass of a resolved run is run as a revealing process named after the run.
+	 *
+	 * @return void
+	 */
+	public function testAPassIsRecordedAsARevealingProcess(): void {
+		foreach (['advance', 'advanceStream'] as $entry) {
+			$this->passes = [];
+			$this->advancer();
+			$this->locator->method('resolveFlow')->willReturn(['id' => 'f1']);
+			$this->locator->method('resolveObject')->willReturn(new stdClass());
+			$seen = [];
+			$audit = $this->createMock(ProcessRevealAuditInterface::class);
+			$audit->expects($this->once())->method('run')->willReturnCallback(
+				function (RevealingProcess $run, callable $operation) use (&$seen): mixed {
+					$seen[] = [$run->process, $run->runId, $this->passes];
+					return $operation();
+				}
+			);
+			$advancer = new FlowRunAdvancer($this->mapper, new FlowExecution($this->locator, $this->runner, new NullLogger()), $audit);
+			$run = $this->flowRun();
+			$run->setUuid('run-7');
+
+			$this->enter(advancer: $advancer, entry: $entry, run: $run);
+
+			$this->assertSame([['flow', 'run-7', []]], $seen, $entry);
+			$this->assertCount(1, $this->passes, $entry);
+		}
+	}//end testAPassIsRecordedAsARevealingProcess()
 }//end class
