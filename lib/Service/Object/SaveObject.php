@@ -862,7 +862,13 @@ class SaveObject implements SaveObjectInterface {
 	 * @return InverseWriteBack
 	 */
 	private function inverseWriteBack(): InverseWriteBack {
-		return new InverseWriteBack(objects: $this->objectEntityMapper, saver: $this, lookups: $this->lookups(), urls: $this->urlGenerator);
+		return new InverseWriteBack(
+			objects: $this->objectEntityMapper,
+			saver: $this,
+			lookups: $this->lookups(),
+			urls: $this->urlGenerator,
+			assertMayUpdate: fn (ObjectEntity $target) => $this->assertMayCascadeUpdate(target: $target)
+		);
 	}//end inverseWriteBack()
 
 	/**
@@ -2714,6 +2720,30 @@ class SaveObject implements SaveObjectInterface {
 			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
 		);
 	}//end assertMayCascadeCreate()
+
+	/**
+	 * Refuse a write-back onto an existing object the caller may not update.
+	 *
+	 * The write-back changes the target, so the caller needs update rights on
+	 * it in its own schema. Skipped only when an enclosing save runs with RBAC off.
+	 *
+	 * @param ObjectEntity $target The object written back into.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not update the target.
+	 * @throws DoesNotExistException When the target's schema cannot be found.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function assertMayCascadeUpdate(ObjectEntity $target): void {
+		$this->permissionHandler->checkPermission(
+			schema: $this->lookups()->schema(schemaId: (string)$target->getSchema()),
+			action: 'update',
+			options: new PermissionCheckOptions(objectOwner: $target->getOwner(), object: $target),
+			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
+		);
+	}//end assertMayCascadeUpdate()
 
 	/**
 	 * Resolve the soft-uniqueness checker from the app container, or null when

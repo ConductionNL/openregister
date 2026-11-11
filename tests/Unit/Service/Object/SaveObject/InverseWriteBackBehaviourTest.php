@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
@@ -55,6 +56,13 @@ class InverseWriteBackBehaviourTest extends TestCase {
 	 * @var SaveObjectWriterInterface&MockObject
 	 */
 	private SaveObjectWriterInterface&MockObject $saver;
+
+	/**
+	 * Uuids of targets the caller may not update.
+	 *
+	 * @var list<string>
+	 */
+	private array $notUpdatable = [];
 
 	/**
 	 * Build the shared mocks.
@@ -105,7 +113,12 @@ class InverseWriteBackBehaviourTest extends TestCase {
 			$this->objects,
 			$this->saver,
 			new SaveLookups($schemas, $this->createMock(RegisterMapperInterface::class)),
-			$this->createMock(IURLGenerator::class)
+			$this->createMock(IURLGenerator::class),
+			function (ObjectEntity $target): void {
+				if (in_array($target->getUuid(), $this->notUpdatable, true) === true) {
+					throw new NotAuthorizedException('no update');
+				}
+			}
 		))->write($run, $source);
 
 	}//end writeBack()
@@ -208,4 +221,25 @@ class InverseWriteBackBehaviourTest extends TestCase {
 		);
 
 	}//end testAnUnreadableTargetIsSkipped()
+
+	/**
+	 * A target the caller may not update is left as it is; the next target is still written.
+	 *
+	 * @return void
+	 */
+	public function testATargetTheCallerMayNotUpdateIsLeftAlone(): void {
+		$this->notUpdatable = [self::TARGET_1];
+		$this->objects->method('find')->willReturnCallback(
+			fn (string $id): ObjectEntity => $this->target($id, [])
+		);
+		$this->saver->expects($this->once())
+			->method('saveObject')
+			->with('4', '5', $this->callback(static fn (array $d): bool => $d['cases'] === ['case-1']), self::TARGET_2);
+
+		$this->writeBack(
+			['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'cases', 'writeBack' => true]],
+			['notes' => [self::TARGET_1, self::TARGET_2]]
+		);
+
+	}//end testATargetTheCallerMayNotUpdateIsLeftAlone()
 }//end class

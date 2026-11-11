@@ -102,7 +102,7 @@ class CascadeCreateRightsTest extends TestCase {
 		$note->setSlug('note');
 		$note->setTitle('Note');
 		$note->setProperties(['text' => ['type' => 'string']]);
-		$note->setAuthorization(['create' => ['editors'], 'read' => ['authenticated']]);
+		$note->setAuthorization(['create' => ['editors'], 'read' => ['authenticated'], 'update' => ['editors']]);
 
 		return $note;
 	}//end note()
@@ -280,6 +280,49 @@ class CascadeCreateRightsTest extends TestCase {
 
 		$this->expectException(NotAuthorizedException::class);
 		self::cascadeNote(handler: $handler);
+	}
+
+	/**
+	 * A stored note owned by alice, the target of a write-back.
+	 *
+	 * @return ObjectEntity
+	 */
+	private static function storedNote(): ObjectEntity {
+		$target = new ObjectEntity();
+		$target->setUuid('44444444-4444-4444-4444-444444444444');
+		$target->setSchema('2');
+		$target->setRegister('10');
+		$target->setOwner('alice');
+		$target->setObject(['text' => 'kept']);
+
+		return $target;
+	}//end storedNote()
+
+	public function testAWriteBackOntoAnObjectTheCallerMayNotUpdateIsRefused(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions());
+
+		try {
+			$handler->assertMayCascadeUpdate(target: self::storedNote());
+			$this->fail('A clerk wrote back into a note they may not update.');
+		} catch (NotAuthorizedException $e) {
+			$this->assertStringContainsString(needle: "'mallory'", haystack: $e->getMessage());
+			$this->assertStringContainsString(needle: "'update'", haystack: $e->getMessage());
+		}
+	}
+
+	public function testAWriteBackOntoAnObjectTheCallerMayUpdateIsAllowed(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions(groups: ['mallory' => ['editors'], 'alice' => ['clerks']]));
+
+		$handler->assertMayCascadeUpdate(target: self::storedNote());
+		$this->addToAssertionCount(1);
+	}
+
+	public function testAWriteBackInsideASaveWithRbacOffSkipsTheUpdateCheck(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions());
+		$handler->enterCascadeScope(_rbac: false);
+
+		$handler->assertMayCascadeUpdate(target: self::storedNote());
+		$this->addToAssertionCount(1);
 	}
 
 	public function testTheRefusalOfAnInlineObjectPropertyRefusesTheParent(): void {
