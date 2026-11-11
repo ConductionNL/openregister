@@ -148,6 +148,8 @@ use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
@@ -4269,9 +4271,10 @@ class ObjectsController extends Controller {
 		// It also meant the URL's scope was never enforced: an object could
 		// be deleted through a register/schema it does not belong to.
 		$deleteResult = $route->objectService->deleteObject(
-			uuid: $route->id,
-			register: $route->register,
-			schema: $route->schema,
+			deletion: new ObjectDeletion(
+				uuid: $route->id,
+				target: new ObjectFindTarget(register: $route->register, schema: $route->schema)
+			),
 			_rbac: $scoped,
 			_multitenancy: $scoped
 		);

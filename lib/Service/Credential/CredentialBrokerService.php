@@ -79,6 +79,8 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Constrained, host-locked, secret-injecting outbound broker.
@@ -640,9 +642,10 @@ class CredentialBrokerService {
 	private function discardOrphanedCredential(string $uuid): void {
 		try {
 			$this->sources->objectService->deleteObject(
-				uuid: $uuid,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
+				deletion: new ObjectDeletion(
+					uuid: $uuid,
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)
+				),
 				_rbac: false
 			);
 		} catch (Throwable $e) {
