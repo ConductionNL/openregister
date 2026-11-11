@@ -2463,3 +2463,4 @@ decidiq	1969	13333867f24a99b6f6cc0958398ebaee6eaadb49	GREEN	FXL	golden dates rec
 humaniq	893	ad5d63002b97d21995ad89c301794a28bbb41f4a	GREEN	FXL	collaborator golden gains the new SchemaWriteFilter; merged
 stackiq	1484	0499fba8d1970652bbf1ae36d0628b64f9cebfeb	GREEN	FXL	golden passes under phpunit-unit.xml (full unit suite too); other reds inherited from development; merged
 stackiq	1466	fa5f4cae9dbca0d8003e9d0f9099acedeab0d4c3	GREEN	FXL	development merged in, both imports kept; golden passes; catalogPanelsGolden red inherited from development; merged
+larpinq	971	b02cc5d39bb55ac036405a7ee34c2d64eacf346f	GREEN	FXL	resolver test no longer declares the OpenRegister class (leak source); unit suite reds = development's 7 HeaderUtils; merged
