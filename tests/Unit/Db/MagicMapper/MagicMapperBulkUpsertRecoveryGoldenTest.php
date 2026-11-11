@@ -23,8 +23,10 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Closure;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -56,7 +58,7 @@ class MagicMapperBulkUpsertRecoveryGoldenTest extends TestCase {
 	public function testAnUpsertIsDelegated(): void {
 		$mapper = $this->mapper(failures: [], tableExists: false);
 
-		$result = $mapper->bulkUpsert(objects: [['id' => 'a']], register: $this->register(), schema: $this->schema(), tableName: 'openregister_table_1_2', needsPreUpdateState: false);
+		$result = $mapper->bulkUpsert(command: new BulkUpsertCommand(objects: [['id' => 'a']], table: new RegisterSchema(register: $this->register(), schema: $this->schema()), tableName: 'openregister_table_1_2', needsPreUpdateState: false));
 
 		$this->assertSame(['ok:openregister_table_1_2'], $result);
 		$this->assertSame(
@@ -76,7 +78,7 @@ class MagicMapperBulkUpsertRecoveryGoldenTest extends TestCase {
 	public function testAMissingTableIsCreatedAndTheUpsertRetried(): void {
 		$mapper = $this->mapper(failures: ['SQLSTATE[42P01]: relation does not exist'], tableExists: false);
 
-		$result = $mapper->bulkUpsert(objects: [['id' => 'a']], register: $this->register(), schema: $this->schema(), tableName: 't', needsPreUpdateState: false);
+		$result = $mapper->bulkUpsert(command: new BulkUpsertCommand(objects: [['id' => 'a']], table: new RegisterSchema(register: $this->register(), schema: $this->schema()), tableName: 't', needsPreUpdateState: false));
 
 		$this->assertSame(['ok:t'], $result);
 		$this->assertSame(
@@ -101,7 +103,7 @@ class MagicMapperBulkUpsertRecoveryGoldenTest extends TestCase {
 		foreach (['Table x does not exist', "Table 'x' doesn't exist", 'SQLSTATE[42S02]: 1146 Base table'] as $message) {
 			$this->trace = [];
 			$mapper = $this->mapper(failures: [$message], tableExists: false);
-			$this->assertSame(['ok:t'], $mapper->bulkUpsert(objects: [['id' => 'a']], register: $this->register(), schema: $this->schema(), tableName: 't'), $message);
+			$this->assertSame(['ok:t'], $mapper->bulkUpsert(command: new BulkUpsertCommand(objects: [['id' => 'a']], table: new RegisterSchema(register: $this->register(), schema: $this->schema()), tableName: 't')), $message);
 			$this->assertContains('ensure table 1_2 force=true', $this->trace, $message);
 		}
 	}//end testEverySpellingOfAMissingTableIsRecovered()
@@ -115,7 +117,7 @@ class MagicMapperBulkUpsertRecoveryGoldenTest extends TestCase {
 		$mapper = $this->mapper(failures: ['column "x" of relation "t" does not exist'], tableExists: true);
 
 		try {
-			$mapper->bulkUpsert(objects: [['id' => 'a']], register: $this->register(), schema: $this->schema(), tableName: 't');
+			$mapper->bulkUpsert(command: new BulkUpsertCommand(objects: [['id' => 'a']], table: new RegisterSchema(register: $this->register(), schema: $this->schema()), tableName: 't'));
 			$this->fail('expected the failure to surface');
 		} catch (Exception $e) {
 			$this->assertSame('column "x" of relation "t" does not exist', $e->getMessage());
@@ -134,7 +136,7 @@ class MagicMapperBulkUpsertRecoveryGoldenTest extends TestCase {
 		$mapper = $this->mapper(failures: ['deadlock'], tableExists: false);
 
 		try {
-			$mapper->bulkUpsert(objects: [['id' => 'a']], register: $this->register(), schema: $this->schema(), tableName: 't');
+			$mapper->bulkUpsert(command: new BulkUpsertCommand(objects: [['id' => 'a']], table: new RegisterSchema(register: $this->register(), schema: $this->schema()), tableName: 't'));
 			$this->fail('expected the failure to surface');
 		} catch (Exception $e) {
 			$this->assertSame('deadlock', $e->getMessage());
@@ -158,7 +160,7 @@ class MagicMapperBulkUpsertRecoveryGoldenTest extends TestCase {
 		$mapper = $this->mapper(failures: ['1146', 'still broken'], tableExists: false);
 
 		try {
-			$mapper->bulkUpsert(objects: [['id' => 'a']], register: $this->register(), schema: $this->schema(), tableName: 't');
+			$mapper->bulkUpsert(command: new BulkUpsertCommand(objects: [['id' => 'a']], table: new RegisterSchema(register: $this->register(), schema: $this->schema()), tableName: 't'));
 			$this->fail('expected the failure to surface');
 		} catch (Exception $e) {
 			$this->assertSame('still broken', $e->getMessage());
@@ -186,8 +188,9 @@ class MagicMapperBulkUpsertRecoveryGoldenTest extends TestCase {
 		);
 
 		$bulk = $this->createMock(MagicBulkHandler::class);
-		$bulk->method('bulkUpsert')->willReturnCallback(
-			function (array $objects, Register $register, Schema $schema, string $tableName, bool $needsPreUpdateState = true) use (&$failures): array {
+		$bulk->method('upsert')->willReturnCallback(
+			function (BulkUpsertCommand $command) use (&$failures): array {
+				[$objects, $tableName, $needsPreUpdateState] = [$command->objects, $command->tableName, $command->needsPreUpdateState];
 				$ids = array_map(static fn (array $o): string => $o['id'], $objects);
 				$this->trace[] = 'upsert '.$tableName.' '.implode(',', $ids).' pre='.var_export($needsPreUpdateState, true);
 				if ($failures !== []) {

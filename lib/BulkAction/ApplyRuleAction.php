@@ -28,12 +28,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BulkAction;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
-use OCP\IUser;
 use Throwable;
 use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Applying a rule to objects that already exist.
@@ -165,43 +165,64 @@ class ApplyRuleAction implements ApplyRuleActionInterface {
 	/**
 	 * Rehearse or make the write for one object.
 	 *
-	 * @param ObjectEntity $object The object to act on.
-	 * @param array<string, mixed> $parameters The job's parameters.
-	 * @param bool $commit False to rehearse, true to write.
-	 * @param IUser|null $actor The user the job runs as.
+	 * @param BulkStep $step The member, the job's parameters, rehearsal or commit, and the actor.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the rehearsal and
-	 *   the commit is the design property of D-5.
 	 * @SuppressWarnings(PHPMD.StaticAccess) BulkActionResult's named constructors are
 	 *   its only constructor: the class is immutable and its private __construct exists
 	 *   so an outcome cannot be built without saying which of the four it is.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		$rule = $this->ruleFor(parameters: $parameters);
+	public function apply(BulkStep $step): BulkActionResult {
+		$rule = $this->ruleFor(parameters: $step->parameters);
 		if ($rule === null) {
 			return BulkActionResult::failed(
-				message: sprintf('The rule "%s" is no longer declared.', (string)($parameters['ruleId'] ?? ''))
+				message: sprintf('The rule "%s" is no longer declared.', (string)($step->parameters['ruleId'] ?? ''))
 			);
 		}
 
+		$notReplayable = $this->notReplayable(rule: $rule);
+		if ($notReplayable !== null) {
+			return BulkActionResult::skipped(reason: $notReplayable);
+		}
+
+		return $this->replay(step: $step, rule: $rule);
+	}//end apply()
+
+	/**
+	 * Why a declared rule derives nothing to replay, or null when it does.
+	 *
+	 * @param RuleDescriptor $rule The rule.
+	 *
+	 * @return string|null The reason to skip, or null.
+	 */
+	private function notReplayable(RuleDescriptor $rule): ?string {
 		if ($rule->getKind() !== RuleVocabulary::KIND_CALCULATION) {
-			return BulkActionResult::skipped(
-				reason: sprintf(
-					'A rule of kind "%s" derives no value for a stored object, so there is nothing to replay.',
-					$rule->getKind()
-				)
+			return sprintf(
+				'A rule of kind "%s" derives no value for a stored object, so there is nothing to replay.',
+				$rule->getKind()
 			);
 		}
 
 		if ($rule->isEnabled() === false) {
-			return BulkActionResult::skipped(reason: 'The rule is switched off.');
+			return 'The rule is switched off.';
 		}
 
-		$current = $object->getObject();
+		return null;
+	}//end notReplayable()
+
+	/**
+	 * Evaluate a replayable rule against the object and write what it derives.
+	 *
+	 * @param BulkStep       $step The member, rehearsal or commit, and the actor.
+	 * @param RuleDescriptor $rule The calculation rule, switched on.
+	 *
+	 * @return BulkActionResult What happened, or what would happen.
+	 */
+	private function replay(BulkStep $step, RuleDescriptor $rule): BulkActionResult {
+		$current = $step->object->getObject();
 		if (is_array($current) === false) {
 			$current = [];
 		}
@@ -218,19 +239,18 @@ class ApplyRuleAction implements ApplyRuleActionInterface {
 			return BulkActionResult::skipped(reason: 'The object already carries the value this rule derives.');
 		}
 
-		if ($commit === false) {
+		if ($step->commit === false) {
 			return BulkActionResult::applied();
 		}
 
-		return $this->write(object: $object, patch: [$key => $value], actor: $actor);
-	}//end apply()
+		return $this->write(step: $step, patch: [$key => $value]);
+	}//end replay()
 
 	/**
 	 * Write the derived value onto one object.
 	 *
-	 * @param ObjectEntity $object The object.
+	 * @param BulkStep             $step  The member and the user the job runs as.
 	 * @param array<string, mixed> $patch The merge patch.
-	 * @param IUser|null $actor The user the job runs as.
 	 *
 	 * @return BulkActionResult The outcome.
 	 *
@@ -238,14 +258,16 @@ class ApplyRuleAction implements ApplyRuleActionInterface {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function write(ObjectEntity $object, array $patch, ?IUser $actor): BulkActionResult {
+	private function write(BulkStep $step, array $patch): BulkActionResult {
+		$object = $step->object;
 		try {
 			$this->access->objects->patchObject(
-				objectId: (string)$object->getUuid(),
-				data: $patch,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				currentUser: $actor
+				patch: new ObjectPatch(
+					objectId: (string)$object->getUuid(),
+					data: $patch,
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					currentUser: $step->actor
+				)
 			);
 		} catch (Throwable $failure) {
 			$this->access->logger->warning(

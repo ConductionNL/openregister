@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\App\IAppManager;
@@ -180,17 +181,15 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	 * citizen's side of the counter. A `visibility=public` filter therefore
 	 * empties this source rather than narrowing it.
 	 *
-	 * @param string $register Register slug for the parent object.
-	 * @param string $schema Schema slug for the parent object.
-	 * @param string $objectId UUID of the OR object whose rows we want.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array $filters Optional filters: `type`, `actor`, `after` (Unix ts), `visibility`.
 	 *
 	 * @return array<int,array<string,mixed>> List of registry leaf rows.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->listMarked(objectId: $objectId, filters: $filters);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->listMarked(objectId: $ref->id, filters: $filters);
 	}//end list()
 
 	/**
@@ -206,13 +205,14 @@ class ActivityProvider extends AbstractIntegrationProvider {
 			return [];
 		}
 
-		$rows = $this->findByMarker(
+		$rows = $this->scanMarker(
 			db: $this->db,
-			table: 'activity',
-			markerColumn: 'subject',
-			marker: self::MARKER_PREFIX . $objectId . ']',
-			extraColumns: ['type', 'affecteduser', 'timestamp', 'object_id'],
-			idColumn: 'activity_id',
+			scan: new MarkerScan(
+				table: 'activity',
+				markerColumn: 'subject',
+				marker: self::MARKER_PREFIX . $objectId . ']',
+				columns: ['activity_id', 'type', 'affecteduser', 'timestamp', 'object_id'],
+			),
 		);
 
 		if ($this->wantsPublicOnly(filters: $filters) === true) {

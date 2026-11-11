@@ -29,7 +29,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\ActivityFilter;
+use OCA\OpenRegister\Service\ActivityEntriesOptions;
 use OCA\OpenRegister\Service\ActivityFilterService;
+use OCP\IUserSession;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -74,7 +78,7 @@ class ActivityFilterServiceEntriesGoldenTest extends TestCase {
 			fn (): IQueryBuilder => $this->queryBuilder(rows: $rows, count: $count, fail: $fail)
 		);
 
-		return new ActivityFilterService(db: $db, appManager: $appManager, logger: $this->createMock(LoggerInterface::class));
+		return new ActivityFilterService(db: $db, runtime: new LinkServiceRuntime(appManager: $appManager, userSession: $this->createMock(IUserSession::class), logger: $this->createMock(LoggerInterface::class)));
 	}//end service()
 
 	/**
@@ -189,7 +193,7 @@ class ActivityFilterServiceEntriesGoldenTest extends TestCase {
 	}//end row()
 
 	public function testRefusedWhenTheActivityAppIsMissing(): void {
-		$page = $this->service(rows: [$this->row(1, 10)], count: 1, installed: false)->getActivityEntries(objectUuid: 'u1');
+		$page = $this->service(rows: [$this->row(1, 10)], count: 1, installed: false)->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u1', type: null, actor: null, after: null), options: new ActivityEntriesOptions());
 
 		self::assertSame(['results' => [], 'total' => 0, 'nextCursor' => null], $page);
 		self::assertSame([], $this->queries);
@@ -197,7 +201,7 @@ class ActivityFilterServiceEntriesGoldenTest extends TestCase {
 
 	public function testRefusedForAPublicOnlyReadInAnySpelling(): void {
 		foreach (['public', ' PUBLIC ', 'Public'] as $visibility) {
-			$page = $this->service(rows: [$this->row(1, 10)], count: 1)->getActivityEntries(objectUuid: 'u1', visibility: $visibility);
+			$page = $this->service(rows: [$this->row(1, 10)], count: 1)->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u1', type: null, actor: null, after: null), options: new ActivityEntriesOptions(visibility: $visibility));
 			self::assertSame(['results' => [], 'total' => 0, 'nextCursor' => null], $page, $visibility);
 		}
 
@@ -207,7 +211,7 @@ class ActivityFilterServiceEntriesGoldenTest extends TestCase {
 	public function testAllowedForEveryOtherVisibility(): void {
 		foreach ([null, 'internal', '', 'publicx'] as $visibility) {
 			$this->queries = [];
-			$page = $this->service(rows: [$this->row(1, 10)], count: 1)->getActivityEntries(objectUuid: 'u1', visibility: $visibility);
+			$page = $this->service(rows: [$this->row(1, 10)], count: 1)->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u1', type: null, actor: null, after: null), options: new ActivityEntriesOptions(visibility: $visibility));
 			self::assertCount(1, $page['results'], (string) $visibility);
 			self::assertSame(1, $page['total']);
 			self::assertCount(2, $this->queries);
@@ -216,14 +220,7 @@ class ActivityFilterServiceEntriesGoldenTest extends TestCase {
 
 	public function testFullFilterPageAndCount(): void {
 		$rows = [$this->row(9, 900), $this->row(8, 800), $this->row(7, 700)];
-		$page = $this->service(rows: $rows, count: 42)->getActivityEntries(
-			objectUuid: 'u1',
-			type: 'files',
-			actor: 'alice',
-			after: 100,
-			limit: 2,
-			cursor: 1000,
-		);
+		$page = $this->service(rows: $rows, count: 42)->getActivityEntries(filter: (new ActivityFilter(objectUuid: 'u1', type: 'files', actor: 'alice', after: 100))->withCursor(cursor: 1000), options: new ActivityEntriesOptions(limit: 2));
 
 		self::assertSame(42, $page['total']);
 		self::assertSame(800, $page['nextCursor']);
@@ -286,7 +283,7 @@ class ActivityFilterServiceEntriesGoldenTest extends TestCase {
 	}//end testFullFilterPageAndCount()
 
 	public function testEmptyFiltersAddNoClauses(): void {
-		$page = $this->service(rows: [$this->row(1, 10)], count: 1)->getActivityEntries(objectUuid: 'u1', type: '', actor: '', limit: 5);
+		$page = $this->service(rows: [$this->row(1, 10)], count: 1)->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u1', type: '', actor: '', after: null), options: new ActivityEntriesOptions(limit: 5));
 
 		self::assertNull($page['nextCursor']);
 		self::assertSame(
@@ -309,13 +306,13 @@ class ActivityFilterServiceEntriesGoldenTest extends TestCase {
 		$expected = [0 => 'setMaxResults:101', -3 => 'setMaxResults:101', 1 => 'setMaxResults:2', 200 => 'setMaxResults:201', 500 => 'setMaxResults:201'];
 		foreach ($expected as $limit => $clause) {
 			$this->queries = [];
-			$this->service(rows: [], count: 0)->getActivityEntries(objectUuid: 'u1', limit: $limit);
+			$this->service(rows: [], count: 0)->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u1', type: null, actor: null, after: null), options: new ActivityEntriesOptions(limit: $limit));
 			self::assertSame($clause, $this->queries[0][5], (string) $limit);
 		}
 	}//end testLimitIsClamped()
 
 	public function testExactlyAFullPageHasNoNextCursor(): void {
-		$page = $this->service(rows: [$this->row(2, 20), $this->row(1, 10)], count: 2)->getActivityEntries(objectUuid: 'u1', limit: 2);
+		$page = $this->service(rows: [$this->row(2, 20), $this->row(1, 10)], count: 2)->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u1', type: null, actor: null, after: null), options: new ActivityEntriesOptions(limit: 2));
 
 		self::assertCount(2, $page['results']);
 		self::assertNull($page['nextCursor']);
@@ -323,7 +320,7 @@ class ActivityFilterServiceEntriesGoldenTest extends TestCase {
 	}//end testExactlyAFullPageHasNoNextCursor()
 
 	public function testADatabaseErrorDegradesToAnEmptyPage(): void {
-		$page = $this->service(rows: [$this->row(1, 10)], count: 1, fail: true)->getActivityEntries(objectUuid: 'u1');
+		$page = $this->service(rows: [$this->row(1, 10)], count: 1, fail: true)->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u1', type: null, actor: null, after: null), options: new ActivityEntriesOptions());
 
 		self::assertSame(['results' => [], 'total' => 0, 'nextCursor' => null], $page);
 	}//end testADatabaseErrorDegradesToAnEmptyPage()

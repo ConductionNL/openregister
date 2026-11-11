@@ -39,6 +39,14 @@ final class IntervalCron {
 	private const WEEK = 604800;
 
 	/**
+	 * The intervals a fixed daily or weekly expression fires at, by seconds.
+	 */
+	private const CALENDAR = [
+		self::WEEK => '0 0 * * 0',
+		self::DAY  => '0 0 * * *',
+	];
+
+	/**
 	 * The cron expression for an interval, or null when none fires at exactly it.
 	 *
 	 * @param int $seconds The interval in seconds.
@@ -48,12 +56,8 @@ final class IntervalCron {
 	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
 	 */
 	public function cronFor(int $seconds): ?string {
-		if ($seconds === self::WEEK) {
-			return '0 0 * * 0';
-		}
-
-		if ($seconds === self::DAY) {
-			return '0 0 * * *';
+		if (isset(self::CALENDAR[$seconds]) === true) {
+			return self::CALENDAR[$seconds];
 		}
 
 		if ($seconds % self::HOUR === 0) {

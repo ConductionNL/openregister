@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutorInterface;
+use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -151,9 +152,7 @@ class LifecycleActionListener implements IEventListener {
 		$newData = $attempt->edit->getNewData();
 		$result  = $this->executor->run(
 			actions: $actions,
-			objectData: $newData,
-			previousData: $attempt->edit->getOldData(),
-			transition: $attempt->action
+			payload: new TransitionPayload(transition: $attempt->action, objectData: $newData, previousData: $attempt->edit->getOldData())
 		);
 
 		if ($result !== $newData) {

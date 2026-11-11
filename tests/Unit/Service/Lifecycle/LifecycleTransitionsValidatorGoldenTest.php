@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
+use OCA\OpenRegister\Service\Lifecycle\LifecycleGraph;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionsValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -113,9 +114,9 @@ class LifecycleTransitionsValidatorGoldenTest extends TestCase {
 		$name      = $this->dataName();
 		$validator = new LifecycleTransitionsValidator();
 		$actual    = [
-			'no catalogue' => $validator->validate($states, $initial, $transitions),
-			'catalogue' => $validator->validate($states, $initial, $transitions, ['isOwner', 'hasFile']),
-			'empty catalogue' => $validator->validate($states, $initial, $transitions, []),
+			'no catalogue' => $validator->validate(new LifecycleGraph($states, $initial, $transitions)),
+			'catalogue' => $validator->validate(new LifecycleGraph($states, $initial, $transitions, ['isOwner', 'hasFile'])),
+			'empty catalogue' => $validator->validate(new LifecycleGraph($states, $initial, $transitions, [])),
 		];
 
 		$golden = [];

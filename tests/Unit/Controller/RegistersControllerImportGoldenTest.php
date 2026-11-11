@@ -40,6 +40,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 
 /**
  * Golden test for RegistersController::import().
@@ -331,8 +332,8 @@ class RegistersControllerImportGoldenTest extends TestCase {
 
 		$importService = $this->createMock(ImportService::class);
 		foreach (['importFromExcel', 'importFromCsv', 'importFromJson'] as $method) {
-			$importService->method($method)->willReturnCallback(function () use ($method, $case) {
-				$this->record(method: 'importService.' . $method, args: func_get_args());
+			$importService->method($method)->willReturnCallback(function (ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true) use ($method, $case) {
+				$this->record(method: 'importService.' . $method, args: $this->importArguments(method: $method, request: $request, guards: [$_rbac, $_multitenancy]));
 				$this->ranAsSystem[] = KeepLifecycleStatesScope::isActive();
 				$this->elevated[] = SystemOperationContext::isActive();
 				if (($case['throw'] ?? null) === $method) {
@@ -485,6 +486,40 @@ class RegistersControllerImportGoldenTest extends TestCase {
 	/**
 	 * @param list<mixed> $args
 	 */
+	/**
+	 * An import request as the positional argument list the fixture records.
+	 *
+	 * @param string        $method  The importer method called.
+	 * @param ImportRequest $request The request it received.
+	 * @param array         $guards  The `_rbac` and `_multitenancy` flags.
+	 *
+	 * @return array The file, scope, flags and options in the fixture's order.
+	 */
+	private function importArguments(string $method, ImportRequest $request, array $guards): array {
+		$args = [
+			$request->filePath,
+			$request->scope->register,
+			$request->scope->schema,
+			$request->options->validation,
+			$request->options->events,
+			$guards[0],
+			$guards[1],
+			$request->options->publish,
+			$request->scope->currentUser,
+			$request->options->enrich,
+		];
+		if ($method === 'importFromExcel') {
+			return $args;
+		}
+
+		$args = [...$args, $request->mapping->pack, $request->mapping->dryRun];
+		if ($method === 'importFromJson') {
+			$args[] = $request->scope->registerSlug;
+		}
+
+		return $args;
+	}//end importArguments()
+
 	private function record(string $method, array $args): void {
 		$this->calls[] = ['method' => $method, 'args' => array_map(fn ($arg) => $this->describe(value: $arg), $args)];
 	}//end record()

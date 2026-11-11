@@ -25,8 +25,11 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCP\DB\IPreparedStatement;
@@ -84,7 +87,7 @@ class MagicBulkHandlerBulkUpsertGoldenTest extends TestCase {
 			$this->events = [];
 			$handler = $this->makeHandler(platform: $platform, fail: $fail);
 			try {
-				$result = $handler->bulkUpsert($objects, $this->register(), $this->schema(managed: $managed), 'openregister_table_bulk_' . $index, $preUpdate);
+				$result = $handler->upsert(new BulkUpsertCommand($objects, new RegisterSchema($this->register(), $this->schema(managed: $managed)), 'openregister_table_bulk_' . $index, $preUpdate));
 			} catch (\Exception $e) {
 				$result = ['thrown' => get_class($e) . ': ' . $e->getMessage()];
 			}
@@ -108,7 +111,7 @@ class MagicBulkHandlerBulkUpsertGoldenTest extends TestCase {
 
 	public function testTheDefaultReadsThePreUpdateRows(): void {
 		$handler = $this->makeHandler(platform: 'pg', fail: null);
-		$handler->bulkUpsert(self::objects()['two objects'], $this->register(), $this->schema(managed: false), 'openregister_table_bulk_default');
+		$handler->upsert(new BulkUpsertCommand(self::objects()['two objects'], new RegisterSchema($this->register(), $this->schema(managed: false)), 'openregister_table_bulk_default'));
 
 		$selects = array_values(array_filter($this->events, static fn (array $e): bool => str_starts_with($e['prepare'] ?? '', 'SELECT * FROM')));
 		$this->assertCount(2, $selects, 'the existence check and the read-back both select every column');
@@ -180,11 +183,9 @@ class MagicBulkHandlerBulkUpsertGoldenTest extends TestCase {
 		$config->method('getSystemValue')->willReturn('oc_');
 
 		return new MagicBulkHandler(
-			db: $db,
-			logger: $logger,
+			sql: new MagicTableSql(db: $db, config: $config, logger: $logger),
 			eventDispatcher: $this->createMock(IEventDispatcher::class),
-			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
-			config: $config
+			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class)
 		);
 	}//end makeHandler()
 

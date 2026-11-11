@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowClaim;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -353,7 +354,9 @@ class RunLockReleaseTerminalityTest extends TestCase {
 	private function walkFlow(FlowStepDispatcher $dispatcher): array {
 		return $this->engine->run(
 			start: (new FlowRunStart(flow: $this->flow(), store: new FlowRunMarkingStore(run: $this->row), subject: new stdClass(), dispatcher: $dispatcher))->withStreams(streams: $this->walk),
-			items: [FlowItems::item(json: ['n' => 1])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 	}//end walkFlow()
 
@@ -410,7 +413,9 @@ class RunLockReleaseTerminalityTest extends TestCase {
 
 			$result = $this->engine->run(
 				start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->row), subject: new stdClass(), dispatcher: $drivers[$status]()))->withStreams(streams: $this->walk),
-				items: [FlowItems::item(json: ['n' => 1])]
+				origin: new FlowRunOrigin(
+					items: [FlowItems::item(json: ['n' => 1])]
+				)
 			);
 
 			$this->assertSame($status, $result['status'], 'the walk did not reach ' . $status);

@@ -38,6 +38,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -46,6 +48,7 @@ use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTimers;
+use OCA\OpenRegister\Service\Flow\SubjectRunsMigration;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -394,8 +397,8 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$timerService = $this->createMock(FlowTimerService::class);
 		$superseded = [];
 		$timerService->method('supersede')->willReturnCallback(
-			function (string $uuid, $anchorEventAt, string $reason, ?string $actor) use (&$superseded) {
-				$superseded[] = [$uuid, $reason];
+			function (TimerAnchorMove $move, TimerChange $change) use (&$superseded) {
+				$superseded[] = [$move->uuid, $change->reason];
 				return new FlowTimer();
 			}
 		);
@@ -427,10 +430,8 @@ final class FlowRunMigrationServiceTest extends TestCase {
 	public function testASubjectWithNoRunInFlightIsNotARefusal(): void {
 		$this->runs->method('findActive')->willReturn([]);
 
-		$outcome = $this->service()->migrateRunForSubject(
-			subjectUuid: 'case-1',
-			targetDefinitionRef: '3',
-			actorUid: 'anna',
+		$outcome = $this->service()->migrateSubjectRuns(
+			request: new SubjectRunsMigration(subjectUuid: 'case-1', targetDefinitionRef: '3', actorUid: 'anna'),
 		);
 
 		self::assertTrue($outcome['migrated'], 'nothing to migrate is not a refusal');
@@ -448,10 +449,8 @@ final class FlowRunMigrationServiceTest extends TestCase {
 	public function testARunCannotBeMovedToAnotherFlow(): void {
 		$this->runs->method('findActive')->willReturn([$this->aRun()]);
 
-		$outcome = $this->service()->migrateRunForSubject(
-			subjectUuid: 'case-1',
-			targetDefinitionRef: 'some-other-flow-uuid',
-			actorUid: 'anna',
+		$outcome = $this->service()->migrateSubjectRuns(
+			request: new SubjectRunsMigration(subjectUuid: 'case-1', targetDefinitionRef: 'some-other-flow-uuid', actorUid: 'anna'),
 		);
 
 		self::assertFalse($outcome['migrated']);
@@ -470,10 +469,8 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$this->runs->method('findActive')->willReturn([$run]);
 		$this->resolves($run);
 
-		$outcome = $this->service()->migrateRunForSubject(
-			subjectUuid: 'case-1',
-			targetDefinitionRef: '3',
-			actorUid: 'anna',
+		$outcome = $this->service()->migrateSubjectRuns(
+			request: new SubjectRunsMigration(subjectUuid: 'case-1', targetDefinitionRef: '3', actorUid: 'anna'),
 		);
 
 		self::assertTrue($outcome['migrated']);
@@ -494,10 +491,8 @@ final class FlowRunMigrationServiceTest extends TestCase {
 	public function testAnUnreadableRunStoreIsNotAnEmptyList(): void {
 		$this->runs->method('findActive')->willThrowException(new \RuntimeException('db down'));
 
-		$outcome = $this->service()->migrateRunForSubject(
-			subjectUuid: 'case-1',
-			targetDefinitionRef: '3',
-			actorUid: 'anna',
+		$outcome = $this->service()->migrateSubjectRuns(
+			request: new SubjectRunsMigration(subjectUuid: 'case-1', targetDefinitionRef: '3', actorUid: 'anna'),
 		);
 
 		self::assertFalse($outcome['migrated']);

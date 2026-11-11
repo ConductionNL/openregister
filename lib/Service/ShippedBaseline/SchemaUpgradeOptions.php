@@ -34,7 +34,7 @@ final class SchemaUpgradeOptions {
 	 *
 	 * @param array<int, string> $decisions Paths an administrator decided to take from upstream.
 	 * @param bool               $record    False leaves the baseline unrecorded: the caller records
-	 *                                      it with recordShipped() once the definition is written.
+	 *                                      it with recordShippedSchema() once the definition is written.
 	 */
 	public function __construct(
 		public readonly array $decisions = [],

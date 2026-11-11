@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
@@ -72,7 +74,7 @@ final class UserDirectoryVisibilityTest extends TestCase {
 		$this->users->method('get')->willThrowException(new RuntimeException('ldap down'));
 		$this->logger->expects($this->once())->method('warning')->with('[ObjectSource:user-directory-source] could not read user: ldap down');
 
-		$this->assertNull($this->provider()->find(new Register(), new Schema(), 'anna'));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema(new Register(), new Schema())), 'anna'));
 	}
 
 	public function testSignedOutNoAccountIsReadable(): void {
@@ -80,7 +82,7 @@ final class UserDirectoryVisibilityTest extends TestCase {
 		$this->users->method('get')->willReturn($this->user('anna'));
 		$this->groups->expects($this->never())->method('isAdmin');
 
-		$this->assertNull($this->provider()->find(new Register(), new Schema(), 'anna'));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema(new Register(), new Schema())), 'anna'));
 	}
 
 	public function testAThrowingAdminCheckCountsAsNotAdmin(): void {
@@ -90,18 +92,18 @@ final class UserDirectoryVisibilityTest extends TestCase {
 		$this->users->method('get')->willReturnMap([['anna', $this->user('anna')], ['bert', $bert]]);
 		$this->users->expects($this->never())->method('search');
 
-		$this->assertNull($this->provider()->find(new Register(), new Schema(), 'anna'), 'Another account stays hidden.');
-		$self = $this->provider()->find(new Register(), new Schema(), 'bert');
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema(new Register(), new Schema())), 'anna'), 'Another account stays hidden.');
+		$self = $this->provider()->find(new SourcedTable(new RegisterSchema(new Register(), new Schema())), 'bert');
 		$this->assertSame(['bert', 'Bert', ''], [$self->getUuid(), $self->getObject()['displayName'], $self->getObject()['email']]);
-		$this->assertSame(['bert'], array_map(static fn ($e) => $e->getUuid(), $this->provider()->findAll(new Register(), new Schema(), [])));
+		$this->assertSame(['bert'], array_map(static fn ($e) => $e->getUuid(), $this->provider()->findAll(new SourcedTable(new RegisterSchema(new Register(), new Schema())), [])));
 	}
 
 	public function testANonAdminSearchOnlyMatchesTheirOwnUid(): void {
 		$this->session->method('getUser')->willReturn($this->user('bert'));
 		$this->groups->method('isAdmin')->willReturn(false);
 
-		$this->assertSame([], $this->provider()->findAll(new Register(), new Schema(), ['search' => 'anna']));
-		$this->assertCount(1, $this->provider()->findAll(new Register(), new Schema(), ['_search' => 'BER']));
+		$this->assertSame([], $this->provider()->findAll(new SourcedTable(new RegisterSchema(new Register(), new Schema())), ['search' => 'anna']));
+		$this->assertCount(1, $this->provider()->findAll(new SourcedTable(new RegisterSchema(new Register(), new Schema())), ['_search' => 'BER']));
 	}
 
 	public function testAnAdminSearchesTheDirectoryAndAFailingSearchIsLogged(): void {
@@ -116,8 +118,8 @@ final class UserDirectoryVisibilityTest extends TestCase {
 		});
 		$this->logger->expects($this->once())->method('warning')->with('[ObjectSource:user-directory-source] could not list users: directory timeout');
 
-		$rows = $this->provider()->findAll(new Register(), new Schema(), ['filters' => ['search' => 'an'], 'limit' => 5, 'offset' => 10]);
+		$rows = $this->provider()->findAll(new SourcedTable(new RegisterSchema(new Register(), new Schema())), ['filters' => ['search' => 'an'], 'limit' => 5, 'offset' => 10]);
 		$this->assertSame('anna@example.com', $rows[0]->getObject()['email']);
-		$this->assertSame([], $this->provider()->findAll(new Register(), new Schema(), ['search' => 'boom']));
+		$this->assertSame([], $this->provider()->findAll(new SourcedTable(new RegisterSchema(new Register(), new Schema())), ['search' => 'boom']));
 	}
 }

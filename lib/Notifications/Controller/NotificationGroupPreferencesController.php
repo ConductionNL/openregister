@@ -40,6 +40,8 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Group\ISubAdmin;
@@ -229,11 +231,9 @@ class NotificationGroupPreferencesController extends Controller {
 	private function groupDefaults(string $groupId, ?string $scope): array {
 		$items = [];
 		foreach ($this->declaredNotifications() as $entry) {
-			$stored = $this->preferenceService->getGroupDefault(
+			$stored = $this->preferenceService->groupDefaultAt(
 				groupId: $groupId,
-				schemaSlug: $entry['schema'],
-				notificationKey: $entry['notification'],
-				scope: $scope
+				address: new PreferenceAddress(schemaSlug: $entry['schema'], notificationKey: $entry['notification'], scope: $scope)
 			);
 			if ($stored !== null) {
 				$items[] = self::groupItem(entry: ['group' => $groupId, 'scope' => $scope] + $entry, stored: $stored);
@@ -276,19 +276,15 @@ class NotificationGroupPreferencesController extends Controller {
 	 */
 	private function writeGroupDefault(array $target, ?array $default): JSONResponse {
 		$groupId = (string)$target['group'];
-		$schema = (string)$target['schema'];
-		$notification = (string)$target['notification'];
-		$this->preferenceService->setGroupDefault(
-			groupId: $groupId,
-			schemaSlug: $schema,
-			notificationKey: $notification,
-			default: $default,
+		$address = new PreferenceAddress(
+			schemaSlug: (string)$target['schema'],
+			notificationKey: (string)$target['notification'],
 			scope: $target['scope']
 		);
+		$this->preferenceService->storeGroupDefault(write: new PreferenceWrite(party: $groupId, address: $address, value: $default));
 
-		$scope = $target['scope'];
-		$stored = $this->preferenceService->getGroupDefault(groupId: $groupId, schemaSlug: $schema, notificationKey: $notification, scope: $scope);
-		return $this->settingResponse(target: $target, key: 'default', stored: $stored);
+		$stored = $this->preferenceService->groupDefaultAt(groupId: $groupId, address: $address);
+		return $this->settingResponse(target: $target, stored: ['default' => $stored]);
 	}//end writeGroupDefault()
 
 	/**

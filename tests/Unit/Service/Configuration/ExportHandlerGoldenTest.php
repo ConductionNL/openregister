@@ -22,11 +22,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
@@ -271,12 +273,13 @@ class ExportHandlerGoldenTest extends TestCase {
 		);
 
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('findAll')->willReturnCallback(
-			function (...$args): array {
-				$this->calls[] = ['objects.findAll', $args];
-				$register = $args[2]['register'];
+		$objectMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			function (RegisterSchema $table): array {
+				[$registerEntity, $schemaEntity] = [$table->register, $table->schema];
+				$this->calls[] = ['objects.findAllInRegisterSchemaTable', $registerEntity->getId(), $schemaEntity->getId()];
+				$register = $registerEntity->getId();
 				$objects = [];
-				foreach ([[$register, 11], [$register, 12], [7, 99]] as $index => [$registerId, $schemaId]) {
+				foreach ([[$register, $schemaEntity->getId()], [7, 99]] as $index => [$registerId, $schemaId]) {
 					$object = $this->createMock(ObjectEntity::class);
 					$object->method('jsonSerialize')->willReturn(
 						['@self' => ['id' => 'o'.$index, 'register' => (string)$registerId, 'schema' => $schemaId], 'name' => 'n'.$index]

@@ -105,6 +105,68 @@ import { NcEmptyContent } from '@nextcloud/vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 
 /**
+ * The fields a declared rule names, as a list.
+ *
+ * @param {object} declared The declared rule.
+ * @return {Array<string>} The field names.
+ */
+function declaredFields(declared) {
+	return Array.isArray(declared.fields)
+		? declared.fields
+		: [declared.fields || declared.field].filter(Boolean)
+}
+
+/**
+ * Whom a declared rule applies to, and whether a condition narrows it.
+ *
+ * @param {object} declared The declared rule.
+ * @return {{groups: Array<string>, conditional: boolean}} The scope.
+ */
+function declaredScope(declared) {
+	const groups = Array.isArray(declared.groups)
+		? declared.groups
+		: [declared.groups].filter(Boolean)
+	return {
+		groups,
+		conditional: Boolean(declared.when || declared.condition),
+	}
+}
+
+/**
+ * The rules of one kind a status declares; entries without fields are left
+ * out.
+ *
+ * @param {string} kind One of hidden, readOnly, required.
+ * @param {Array|undefined} entries The declared entries of that kind.
+ * @return {Array} One entry per declared rule.
+ */
+function kindRules(kind, entries) {
+	if (!Array.isArray(entries)) {
+		return []
+	}
+
+	const rules = []
+	entries.forEach((declared, index) => {
+		if (!declared || typeof declared !== 'object') {
+			return
+		}
+
+		const names = declaredFields(declared)
+		if (names.length === 0) {
+			return
+		}
+
+		rules.push({
+			id: `${kind}-${index}`,
+			kind,
+			fields: names,
+			...declaredScope(declared),
+		})
+	})
+	return rules
+}
+
+/**
  * Read-only view of a schema's per-status field rules.
  *
  * There is no CRUD here on purpose, the same call TaskSequencePanel makes: the
@@ -173,35 +235,7 @@ export default {
 
 			const rules = []
 			for (const kind of ['hidden', 'readOnly', 'required']) {
-				const entries = fields[kind]
-				if (!Array.isArray(entries)) {
-					continue
-				}
-
-				entries.forEach((declared, index) => {
-					if (!declared || typeof declared !== 'object') {
-						return
-					}
-
-					const names = Array.isArray(declared.fields)
-						? declared.fields
-						: [declared.fields || declared.field].filter(Boolean)
-					if (names.length === 0) {
-						return
-					}
-
-					const groups = Array.isArray(declared.groups)
-						? declared.groups
-						: [declared.groups].filter(Boolean)
-
-					rules.push({
-						id: `${kind}-${index}`,
-						kind,
-						fields: names,
-						groups,
-						conditional: Boolean(declared.when || declared.condition),
-					})
-				})
+				rules.push(...kindRules(kind, fields[kind]))
 			}
 
 			return rules

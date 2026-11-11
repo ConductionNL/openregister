@@ -32,14 +32,20 @@ use OCA\OpenRegister\Controller\Support\RuleReplayRequest;
 use OCA\OpenRegister\Controller\Support\RulesControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaRule;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Rules\RuleReplayRequest as ReplayAsk;
+use OCA\OpenRegister\Service\Rules\RuleReplaySelection;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue;
 use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
+use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleSwitch;
+use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
 use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -196,7 +202,7 @@ class RulesController extends Controller {
 		return new JSONResponse(
 			[
 				'schema' => (string)($entity->getSlug() ?? ''),
-				'rules' => $this->inventory->inventory(schema: $entity, idleDays: $window, scope: $scope),
+				'rules' => $this->inventory->inventory(schema: $entity, options: new RuleInventoryOptions(idleDays: $window, scope: $scope)),
 			]
 		);
 
@@ -224,7 +230,7 @@ class RulesController extends Controller {
 			return $this->unprocessable(code: 'rule-switch-no-state', message: 'A boolean "enabled" is required.');
 		}
 
-		return $this->answer(result: $this->enablement->setEnabled(schema: $entity, ruleId: $ruleId, enabled: $enabled));
+		return $this->answer(result: $this->enablement->setEnabled(switch: new RuleSwitch(schema: $entity, ruleId: $ruleId, enabled: $enabled)));
 
 	}//end setEnabled()
 
@@ -274,17 +280,14 @@ class RulesController extends Controller {
 		$objectId = $this->request->getParam('objectId');
 		if ($this->isFilled(value: $register) === true && $this->isFilled(value: $objectId) === true) {
 			return $this->trials->tryObject(
-				schema: $rule->schema,
-				ruleId: $rule->ruleId,
-				register: $register,
-				objectId: $objectId,
-				override: $override
+				request: new RuleTrialRequest(schema: $rule->schema, ruleId: $rule->ruleId, override: $override),
+				ref: new ObjectRef(register: $register, schema: (string)$rule->schema->getId(), id: $objectId)
 			);
 		}
 
 		$sample = $this->arrayParam(name: 'object');
 
-		return $this->trials->trySample(schema: $rule->schema, ruleId: $rule->ruleId, sample: $sample, override: $override);
+		return $this->trials->trySample(request: new RuleTrialRequest(schema: $rule->schema, ruleId: $rule->ruleId, override: $override), sample: $sample);
 	}//end trial()
 
 	/**
@@ -359,13 +362,9 @@ class RulesController extends Controller {
 	 * @return array<string, mixed> The previewed job.
 	 */
 	private function askPreview(SchemaRule $rule, RuleReplayRequest $request): array {
-		return $this->replays->preview(
-			schema: $rule->schema,
-			ruleId: $rule->ruleId,
-			selection: $request->selection,
-			actorUid: $request->actorUid,
-			justification: $request->justification,
-			registerId: $request->registerId
+		return $this->replays->previewReplay(
+			request: new ReplayAsk(ruleId: $rule->ruleId, actorUid: $request->actorUid, justification: $request->justification),
+			selection: new RuleReplaySelection(schema: $rule->schema, registerId: $request->registerId, criteria: $request->selection)
 		);
 	}//end askPreview()
 

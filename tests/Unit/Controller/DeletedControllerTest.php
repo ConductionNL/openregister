@@ -8,6 +8,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\DeletedControllerFactory;
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
@@ -57,8 +58,7 @@ class DeletedControllerTest extends TestCase {
 
 		$authorizer = new DeletedObjectAuthorizer(
 			$this->schemaMapper,
-			$this->userSession,
-			$this->groupManager,
+			new CallerContext($this->userSession, $this->groupManager),
 			$this->permissionHandler,
 		);
 

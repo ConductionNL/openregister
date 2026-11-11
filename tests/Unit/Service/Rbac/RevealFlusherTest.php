@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Rbac\RevealFlusher;
+use OCA\OpenRegister\Service\Rbac\RevealRecording;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -90,9 +91,8 @@ class RevealFlusherTest extends TestCase {
 	 */
 	private function flusher(): RevealFlusher {
 		return new RevealFlusher(
-			collector: $this->collector,
-			mapper: $this->mapper,
-			logger: $this->logger
+			recording: new RevealRecording(logger: $this->logger, reveals: $this->collector),
+			mapper: $this->mapper
 		);
 	}//end flusher()
 
@@ -228,7 +228,7 @@ class RevealFlusherTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testASecondFlushWritesNothingAgain(): void {
-		$this->collector->record('alice', 'object-1', 'bsn');
+		$this->collector->recordReveal(new PropertyReveal(userId: 'alice', objectUuid: 'object-1', property: 'bsn'));
 
 		$this->mapper->expects($this->once())
 			->method('insertAuditTrails')
@@ -250,7 +250,7 @@ class RevealFlusherTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testAFailedWriteDoesNotFailTheRequest(): void {
-		$this->collector->record('alice', 'object-1', 'bsn');
+		$this->collector->recordReveal(new PropertyReveal(userId: 'alice', objectUuid: 'object-1', property: 'bsn'));
 
 		$this->mapper->method('insertAuditTrails')->willThrowException(
 			new \RuntimeException('the database went away')
@@ -274,7 +274,7 @@ class RevealFlusherTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testAFailedWriteStillEmptiesTheCollector(): void {
-		$this->collector->record('alice', 'object-1', 'bsn');
+		$this->collector->recordReveal(new PropertyReveal(userId: 'alice', objectUuid: 'object-1', property: 'bsn'));
 		$this->mapper->method('insertAuditTrails')->willThrowException(
 			new \RuntimeException('the database went away')
 		);
@@ -296,7 +296,7 @@ class RevealFlusherTest extends TestCase {
 	 */
 	public function testAnOverflowedRequestSaysSo(): void {
 		for ($i = 0; $i <= RevealCollector::MAX_PER_REQUEST; $i++) {
-			$this->collector->record('alice', 'object-' . $i, 'bsn');
+			$this->collector->recordReveal(new PropertyReveal(userId: 'alice', objectUuid: 'object-' . $i, property: 'bsn'));
 		}
 
 		$this->assertTrue($this->collector->overflowed());
@@ -328,4 +328,17 @@ class RevealFlusherTest extends TestCase {
 		$this->assertNull($row->getRegister());
 		$this->assertNotEmpty($row->getUuid());
 	}//end testARevealWithoutContextStillWrites()
+
+	/**
+	 * Without a collector there is nothing to flush, and nothing is written.
+	 *
+	 * @return void
+	 */
+	public function testWithoutACollectorNothingIsWritten(): void {
+		$this->mapper->expects($this->never())->method('insertAuditTrails');
+
+		$flusher = new RevealFlusher(recording: new RevealRecording(logger: $this->logger), mapper: $this->mapper);
+
+		$this->assertSame(0, $flusher->flush());
+	}//end testWithoutACollectorNothingIsWritten()
 }//end class

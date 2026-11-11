@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -85,10 +86,8 @@ class SaveObjectSystemOwnerTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->createMock(MagicMapper::class),
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -253,7 +252,9 @@ class SaveObjectSystemOwnerTest extends TestCase {
 		$entity = new ObjectEntity();
 		$method = new ReflectionMethod(SaveObject::class, 'applyOwnerAttribution');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $entity, false, 'portal:subject-1');
+		$flags        = new ObjectSaveFlags();
+		$flags->owner = 'portal:subject-1';
+		$method->invoke($this->handler, $entity, $flags);
 
 		$this->assertSame('portal:subject-1', $entity->getOwner());
 	}//end testAnExplicitOwnerWinsOverTheSession()

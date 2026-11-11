@@ -33,6 +33,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallObservation;
 
 /**
  * @covers \OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder
@@ -136,10 +137,8 @@ class ApiCallRecorderTest extends TestCase {
 			)
 			->willReturn(true);
 
-		$recorder->record(
-			path: '/apps/openregister/api/objects/zaken/melding/3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-			method: 'get',
-			apiVersion: '1',
+		$recorder->recordCall(
+			call: new ApiCallObservation(path: '/apps/openregister/api/objects/zaken/melding/3f2504e0-4f89-41d3-9a0c-0305e82c3301', method: 'get', apiVersion: '1')
 		);
 	}//end testACallIsCountedAgainstItsCaller()
 
@@ -154,7 +153,7 @@ class ApiCallRecorderTest extends TestCase {
 			)
 			->willReturn(true);
 
-		$recorder->record(path: '/apps/openregister/api/capabilities', method: 'post', apiVersion: '2');
+		$recorder->recordCall(call: new ApiCallObservation(path: '/apps/openregister/api/capabilities', method: 'post', apiVersion: '2'));
 	}//end testAnAnonymousCallIsCountedWithAnEmptyCaller()
 
 	public function testNothingIsRecordedWhenTheRecordIsSwitchedOff(): void {
@@ -162,14 +161,14 @@ class ApiCallRecorderTest extends TestCase {
 
 		$mapper->expects($this->never())->method('count');
 
-		$recorder->record(path: '/apps/openregister/api/x', method: 'GET', apiVersion: '1');
+		$recorder->recordCall(call: new ApiCallObservation(path: '/apps/openregister/api/x', method: 'GET', apiVersion: '1'));
 	}//end testNothingIsRecordedWhenTheRecordIsSwitchedOff()
 
 	public function testAFailedRecordDoesNotFailTheCall(): void {
 		[$recorder, $mapper] = $this->build();
 		$mapper->method('count')->willThrowException(new RuntimeException('deadlock'));
 
-		$recorder->record(path: '/apps/openregister/api/x', method: 'GET', apiVersion: '1');
+		$recorder->recordCall(call: new ApiCallObservation(path: '/apps/openregister/api/x', method: 'GET', apiVersion: '1'));
 
 		$this->assertTrue(true, 'A gemeente API going down because its usage log deadlocked is an outage caused by an ornament.');
 	}//end testAFailedRecordDoesNotFailTheCall()

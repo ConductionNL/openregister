@@ -40,10 +40,10 @@ final class SchemaImportOptions {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
 	 */
 	public function __construct(
-		public readonly ?string $owner,
-		public readonly ?string $appId,
-		public readonly ?string $version,
-		public readonly bool $force,
+		public readonly ?string $owner = null,
+		public readonly ?string $appId = null,
+		public readonly ?string $version = null,
+		public readonly bool $force = false,
 	) {
 	}//end __construct()
 }//end class

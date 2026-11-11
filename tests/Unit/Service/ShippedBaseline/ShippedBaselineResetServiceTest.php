@@ -275,6 +275,37 @@ class ShippedBaselineResetServiceTest extends TestCase {
 		$this->assertStringContainsString('already matches', $result['reason']);
 		$this->assertSame([], $this->written);
 	}//end testAPartThatAlreadyMatchesIsRefused()
+
+	/**
+	 * Golden: the exact reset outcome, refused before the guard, refused by it, and applied.
+	 *
+	 * @return void
+	 */
+	public function testTheResetOutcomeShapeIsPinned(): void {
+		$schema = $this->storedSchema();
+		$service = $this->service(schema: $schema, actor: $this->admin());
+		$keys = ['applied', 'reason', 'schema', 'schemaId', 'path', 'from', 'to'];
+
+		$empty = $service->reset(schema: 'learner-profile', path: ' ');
+		$this->assertSame($keys, array_keys($empty));
+		$this->assertSame(
+			[false, 'name one part to reset (for example authorization.read); there is no reset of everything', 'learner-profile', $schema->getId(), '', null, null],
+			array_values($empty)
+		);
+
+		$matching = $service->reset(schema: 'learner-profile', path: ' authorization.update ');
+		$this->assertSame($keys, array_keys($matching));
+		$this->assertFalse($matching['applied']);
+		$this->assertSame('authorization.update', $matching['path']);
+		$this->assertSame(['hr'], $matching['from']);
+		$this->assertSame($matching['from'], $matching['to']);
+
+		$applied = $service->reset(schema: 'learner-profile', path: 'authorization.read');
+		$this->assertSame($keys, array_keys($applied));
+		$this->assertSame([true, ''], [$applied['applied'], $applied['reason']]);
+		$this->assertSame($applied['to'], $this->rows[0]->getChanged()['to']);
+		$this->assertSame($applied['from'], $this->rows[0]->getChanged()['from']);
+	}//end testTheResetOutcomeShapeIsPinned()
 	/**
 	 * Golden: the exact preview shape, for a refused part and for an applicable one.
 	 *

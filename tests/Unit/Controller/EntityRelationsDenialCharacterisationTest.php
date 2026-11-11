@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EntityRelationsControllerFactory;
 use OCP\Files\IRootFolder;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -179,7 +180,8 @@ class EntityRelationsDenialCharacterisationTest extends TestCase {
 			$this->emailLinks,
 			$logger,
 			$this->decisions,
-			$visibility
+			$visibility,
+			$this->createMock(IGroupManager::class)
 		);
 		$response = $controller->update(42);
 

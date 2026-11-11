@@ -71,22 +71,6 @@ class FlowExpression {
 	 * `subject` is always present and empty here; a caller whose expressions
 	 * read the object a run is about (a case sentry) fills it in.
 	 *
-	 * @param array $item The current item.
-	 * @param integer $itemIndex Its position in the list.
-	 * @param integer $itemCount How many items the step received.
-	 * @param array $context Run-level metadata.
-	 *
-	 * @return array<string, mixed> The data document.
-	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
-	 */
-	public static function dataFor(array $item, int $itemIndex = 0, int $itemCount = 1, array $context = []): array {
-		return self::documentFor(item: $item, options: new FlowExpressionDataOptions(itemIndex: $itemIndex, itemCount: $itemCount, context: $context));
-	}//end dataFor()
-
-	/**
-	 * The document an expression is evaluated against, for one item at its place in the list.
-	 *
 	 * @param array                     $item    The current item.
 	 * @param FlowExpressionDataOptions $options Its position, the list size and the run-level metadata.
 	 *
@@ -181,7 +165,7 @@ class FlowExpression {
 		}
 
 		try {
-			JsonLogic::apply($logic, self::dataFor(item: []));
+			JsonLogic::apply($logic, self::documentFor(item: [], options: new FlowExpressionDataOptions()));
 			return true;
 		} catch (Throwable $e) {
 			return false;

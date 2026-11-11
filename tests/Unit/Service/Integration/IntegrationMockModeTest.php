@@ -31,7 +31,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- test method names + arrange/act/assert structure make intent obvious; matches ExternalIntegrationRouterTest convention.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion + local fixture helpers take positional args by convention; mirroring ExternalIntegrationRouterTest in this repo.
 
+use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
 use OCA\OpenRegister\Controller\CompanyLookupController;
+use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Controller\Support\CompanyLookupControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Controller\MessageDispatchController;
@@ -128,8 +130,16 @@ class IntegrationMockModeTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
+		$router = $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta);
+		if (in_array($class, [KvkProvider::class, OpenCorporatesProvider::class, MessageDispatchProvider::class], true) === true) {
+			return new $class(
+				routing: new ConnectorRouting(router: $router, appManager: $appManager, l10n: $l10n),
+				logger: new NullLogger(),
+			);
+		}
+
 		return new $class(
-			router: $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta),
+			router: $router,
 			appManager: $appManager,
 			l10n: $l10n,
 			logger: new NullLogger(),
@@ -201,7 +211,7 @@ class IntegrationMockModeTest extends TestCase {
 
 		// @var MessageDispatchProvider $dispatch
 		$dispatch = $this->provider(MessageDispatchProvider::class, $fixture);
-		$result = $dispatch->dispatch('cmcom-sms', ['to' => '+31600000000', 'body' => 'Hi'], 'message');
+		$result = $dispatch->dispatch('cmcom-sms', new OutboundMessage(path: 'message', body: ['to' => '+31600000000', 'body' => 'Hi']));
 
 		$this->assertSame('sent', $result['status']);
 		$this->assertSame('cmcom-sms', $result['source']);
@@ -216,7 +226,7 @@ class IntegrationMockModeTest extends TestCase {
 
 		// @var MessageDispatchProvider $dispatch
 		$dispatch = $this->provider(MessageDispatchProvider::class, $fixture);
-		$result = $dispatch->dispatch('whatsapp-cloud-api', ['to' => '31600000000'], '123/messages');
+		$result = $dispatch->dispatch('whatsapp-cloud-api', new OutboundMessage(path: '123/messages', body: ['to' => '31600000000']));
 
 		$this->assertSame('sent', $result['status']);
 		$this->assertSame('wamid.MOCK0001', $result['response']['messages'][0]['id']);
@@ -259,7 +269,7 @@ class IntegrationMockModeTest extends TestCase {
 
 		// The send endpoint signature is exercised in MessageDispatchControllerTest;
 		// here we assert the leaf surfaces the canned body through dispatch().
-		$result = $dispatch->dispatch('cmcom-sms', ['to' => '+31611112222', 'body' => 'Test'], 'message');
+		$result = $dispatch->dispatch('cmcom-sms', new OutboundMessage(path: 'message', body: ['to' => '+31611112222', 'body' => 'Test']));
 		$this->assertSame('MOCK-SMS-CTRL', $result['response']['messages'][0]['id']);
 		$this->assertInstanceOf(MessageDispatchController::class, $controller);
 	}//end testMessageDispatchControllerReturns200WithMockBody()

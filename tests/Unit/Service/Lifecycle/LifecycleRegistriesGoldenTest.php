@@ -138,11 +138,7 @@ class LifecycleRegistriesGoldenTest extends TestCase {
 
 		foreach ($scenarios as $name => [$ids, $app, $server]) {
 			$this->trace = [];
-			$registry = new LifecycleActionRegistry(
-				$this->container('app', $app),
-				$this->serverContainer($server),
-				$this->logger()
-			);
+			$registry = new LifecycleActionRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->container('app', $app), $this->serverContainer($server), $this->logger()));
 			foreach ($ids as $id) {
 				$this->record($id, fn () => $registry->resolve($id));
 			}
@@ -188,11 +184,7 @@ class LifecycleRegistriesGoldenTest extends TestCase {
 
 		foreach ($scenarios as $name => [$ids, $app, $server]) {
 			$this->trace = [];
-			$registry = new LifecycleActionProviderRegistry(
-				$this->container('app', $app),
-				$this->serverContainer($server),
-				$this->logger()
-			);
+			$registry = new LifecycleActionProviderRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->container('app', $app), $this->serverContainer($server), $this->logger()));
 			foreach ($ids as $id) {
 				$this->record($id, fn () => $registry->resolve($id));
 			}
@@ -249,11 +241,7 @@ class LifecycleRegistriesGoldenTest extends TestCase {
 
 		foreach ($scenarios as $name => [$ids, $app, $server]) {
 			$this->trace = [];
-			$registry = new LifecycleGuardRegistry(
-				$this->container('app', $app),
-				$this->serverContainer($server),
-				$this->logger()
-			);
+			$registry = new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->container('app', $app), $this->serverContainer($server), $this->logger()));
 			foreach ($ids as $id) {
 				$this->record($id, fn () => $registry->resolve($id));
 			}

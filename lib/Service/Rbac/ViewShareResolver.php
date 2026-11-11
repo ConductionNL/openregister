@@ -99,24 +99,6 @@ class ViewShareResolver implements ViewShareResolverInterface {
 	 * because the view said so. Mixing the two would put `owner` on a row an
 	 * administrator does not own and cannot hand back.
 	 *
-	 * @param array<string, mixed> $view The view, as the entity serialises it.
-	 * @param string $userId The caller.
-	 * @param string[] $userGroups The caller's group ids.
-	 *
-	 * @return string|null One of owner, write, read, or null when the view grants nothing.
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md
-	 */
-	public function accessFor(array $view, string $userId, array $userGroups): ?string {
-		return $this->accessOf(view: $view, reach: new ViewerReach(userId: $userId, groups: $userGroups, isAdmin: false));
-	}//end accessFor()
-
-	/**
-	 * The access a view grants a reach: owner, write, read, or null.
-	 *
-	 * The reach's administrator flag is not read here, for the reason
-	 * accessFor() gives.
-	 *
 	 * @param array<string, mixed> $view  The view, as the entity serialises it.
 	 * @param ViewerReach          $reach The caller and their group ids.
 	 *
@@ -129,9 +111,31 @@ class ViewShareResolver implements ViewShareResolverInterface {
 			return self::ACCESS_OWNER;
 		}
 
-		// The widest share that names the caller or one of their groups. A
-		// caller reached read by name and write by a group holds write: the
-		// shares are ways in, not ceilings on each other.
+		$shared = $this->sharedAccess(view: $view, reach: $reach);
+		if ($shared !== null) {
+			return $shared;
+		}
+
+		if (($view['isPublic'] ?? false) === true) {
+			return self::ACCESS_READ;
+		}
+
+		return null;
+	}//end accessOf()
+
+	/**
+	 * The widest access a view's shares give the caller, or null when none names them.
+	 *
+	 * The widest share that names the caller or one of their groups. A
+	 * caller reached read by name and write by a group holds write: the
+	 * shares are ways in, not ceilings on each other.
+	 *
+	 * @param array<string, mixed> $view  The view.
+	 * @param ViewerReach          $reach The caller and their group ids.
+	 *
+	 * @return string|null Write, read, or null.
+	 */
+	private function sharedAccess(array $view, ViewerReach $reach): ?string {
 		$best = null;
 		foreach ($this->sharesOf(view: $view) as $share) {
 			if ($this->shareNames(share: $share, reach: $reach) === false) {
@@ -145,16 +149,8 @@ class ViewShareResolver implements ViewShareResolverInterface {
 			$best = self::ACCESS_READ;
 		}
 
-		if ($best !== null) {
-			return $best;
-		}
-
-		if (($view['isPublic'] ?? false) === true) {
-			return self::ACCESS_READ;
-		}
-
-		return null;
-	}//end accessOf()
+		return $best;
+	}//end sharedAccess()
 
 	/**
 	 * Whether one share names the caller, by user id or by one of their groups.
@@ -188,21 +184,6 @@ class ViewShareResolver implements ViewShareResolverInterface {
 
 		return $share['group'];
 	}//end targetKey()
-
-	/**
-	 * Whether this caller may change the shares, the owner, or delete the view.
-	 *
-	 * @param array<string, mixed> $view The view.
-	 * @param string $userId The caller.
-	 * @param bool $isAdmin Whether the caller is an administrator.
-	 *
-	 * @return bool True for the owner and for an administrator.
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md
-	 */
-	public function mayAdminister(array $view, string $userId, bool $isAdmin): bool {
-		return $this->mayAdministerAs(view: $view, reach: new ViewerReach(userId: $userId, groups: [], isAdmin: $isAdmin));
-	}//end mayAdminister()
 
 	/**
 	 * Whether this reach may change the shares, the owner, or delete the view.
@@ -267,16 +248,28 @@ class ViewShareResolver implements ViewShareResolverInterface {
 			case 'isDefault':
 				return (bool)$value;
 			case 'sharedWith':
-				$shares = array_map(
-					fn (array $share): string => $this->targetKey(share: $share).'|'.$share['mode'],
-					$this->sharesOf(view: ['sharedWith' => $value])
-				);
-				sort($shares);
-				return $shares;
+				return $this->canonicalShares(value: $value);
 			default:
 				return $this->sortedKeys(value: $value);
 		}
 	}//end canonical()
+
+	/**
+	 * A `sharedWith` value as a sorted list of target-and-mode keys.
+	 *
+	 * @param mixed $value The `sharedWith` value.
+	 *
+	 * @return array<int, string> The keys, sorted.
+	 */
+	private function canonicalShares(mixed $value): array {
+		$shares = array_map(
+			fn (array $share): string => $this->targetKey(share: $share).'|'.$share['mode'],
+			$this->sharesOf(view: ['sharedWith' => $value])
+		);
+		sort($shares);
+
+		return $shares;
+	}//end canonicalShares()
 
 	/**
 	 * A value with every object's keys sorted; lists keep their order.
@@ -384,7 +377,25 @@ class ViewShareResolver implements ViewShareResolverInterface {
 	 * @return array<int, array{group?: string, user?: string, mode: string}> The shares.
 	 */
 	private function sharesOf(array $view): array {
-		$raw = ($view['sharedWith'] ?? null);
+		$shares = [];
+		foreach (self::storedShares(raw: ($view['sharedWith'] ?? null)) as $share) {
+			$normalised = self::readableShare(share: $share);
+			if ($normalised !== null) {
+				$shares[] = $normalised;
+			}
+		}
+
+		return $shares;
+	}//end sharesOf()
+
+	/**
+	 * The stored share list as a list, decoded when it is raw JSON; empty when it is neither.
+	 *
+	 * @param mixed $raw The stored `sharedWith` value.
+	 *
+	 * @return array<int|string, mixed> The entries, unchecked.
+	 */
+	private static function storedShares(mixed $raw): array {
 		if (is_string($raw) === true) {
 			// The column is TEXT and some read paths hand back the raw JSON.
 			// Decoding here rather than at every call site is what keeps the
@@ -400,31 +411,36 @@ class ViewShareResolver implements ViewShareResolverInterface {
 			return [];
 		}
 
-		$shares = [];
-		foreach ($raw as $share) {
-			if (is_array($share) === false) {
-				continue;
-			}
+		return $raw;
+	}//end storedShares()
 
-			$group = trim((string)($share['group'] ?? ''));
-			$user = trim((string)($share['user'] ?? ''));
-			$mode = trim((string)($share['mode'] ?? ''));
-			if (($group === '') === ($user === '') || in_array($mode, self::MODES, true) === false) {
-				// An unreadable share grants NOTHING: one naming both a user and
-				// a group, or neither, or a mode this resolver does not know. An
-				// unknown mode is not "probably read": that is the direction that
-				// admits somebody on a typo.
-				continue;
-			}
-
-			if ($user !== '') {
-				$shares[] = ['user' => $user, 'mode' => $mode];
-				continue;
-			}
-
-			$shares[] = ['group' => $group, 'mode' => $mode];
+	/**
+	 * One share entry, trimmed, or null when it grants nothing.
+	 *
+	 * @param mixed $share One entry of the share list.
+	 *
+	 * @return array{group?: string, user?: string, mode: string}|null The share.
+	 */
+	private static function readableShare(mixed $share): ?array {
+		if (is_array($share) === false) {
+			return null;
 		}
 
-		return $shares;
-	}//end sharesOf()
+		$group = trim((string)($share['group'] ?? ''));
+		$user = trim((string)($share['user'] ?? ''));
+		$mode = trim((string)($share['mode'] ?? ''));
+		if (($group === '') === ($user === '') || in_array($mode, self::MODES, true) === false) {
+			// An unreadable share grants NOTHING: one naming both a user and
+			// a group, or neither, or a mode this resolver does not know. An
+			// unknown mode is not "probably read": that is the direction that
+			// admits somebody on a typo.
+			return null;
+		}
+
+		if ($user !== '') {
+			return ['user' => $user, 'mode' => $mode];
+		}
+
+		return ['group' => $group, 'mode' => $mode];
+	}//end readableShare()
 }//end class

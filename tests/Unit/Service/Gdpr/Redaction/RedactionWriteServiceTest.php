@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Gdpr\Redaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
+use OCA\OpenRegister\Service\Gdpr\Redaction\FieldRedaction;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use PHPUnit\Framework\TestCase;
 
@@ -54,9 +55,7 @@ class RedactionWriteServiceTest extends TestCase {
 		$service = new RedactionWriteService($accessor);
 		$result = $service->applyRedaction(
 			caseUuid: '00000000-0000-0000-0000-000000000000',
-			field: 'notes',
-			after: '[redacted]',
-			ground: 'third-party-data'
+			redaction: new FieldRedaction(field: 'notes', after: '[redacted]', ground: 'third-party-data')
 		);
 
 		$this->assertSame('sensitive third-party name', $result['before']);

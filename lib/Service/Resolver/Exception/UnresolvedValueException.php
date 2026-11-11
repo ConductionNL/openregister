@@ -33,13 +33,6 @@ use Exception;
 abstract class UnresolvedValueException extends ResolverConfigException {
 
 	/**
-	 * Slug, UUID or name that failed to resolve.
-	 *
-	 * @var string
-	 */
-	private string $resolvedValue;
-
-	/**
 	 * Construct the not-found refusal with diagnostic context.
 	 *
 	 * @param ResolverConfigKey $config        The app and config key that resolved.
@@ -47,31 +40,9 @@ abstract class UnresolvedValueException extends ResolverConfigException {
 	 * @param string            $message       The message.
 	 * @param Exception|null    $previous      Previous exception in the chain.
 	 */
-	protected function __construct(ResolverConfigKey $config, string $resolvedValue, string $message, ?Exception $previous) {
-		$this->resolvedValue = $resolvedValue;
-
+	protected function __construct(ResolverConfigKey $config, private readonly string $resolvedValue, string $message, ?Exception $previous) {
 		parent::__construct(config: $config, message: $message, code: 404, previous: $previous);
 	}//end __construct()
-
-	/**
-	 * The message of a slug/UUID that names no entity of that kind in the caller's tenant.
-	 *
-	 * @param string $kind          The entity kind, capitalised.
-	 * @param string $appId         Consumer app id.
-	 * @param string $configKey     Config key that resolved.
-	 * @param string $resolvedValue Slug/UUID the lookup attempted.
-	 *
-	 * @return string The message.
-	 */
-	protected static function notInTenant(string $kind, string $appId, string $configKey, string $resolvedValue): string {
-		return sprintf(
-			'%s "%s" (from config key "%s" on app "%s") not found in caller tenant.',
-			$kind,
-			$resolvedValue,
-			$configKey,
-			$appId
-		);
-	}//end notInTenant()
 
 	/**
 	 * Get the resolved value that could not be hydrated.

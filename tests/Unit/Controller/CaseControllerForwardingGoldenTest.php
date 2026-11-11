@@ -22,6 +22,9 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
+use OCA\OpenRegister\Service\Case\CaseItemTransition;
+use OCA\OpenRegister\Service\Case\CasePlanCreation;
 
 /**
  * Pins exactly what the case routes hand the plan service: every argument of
@@ -63,6 +66,20 @@ class CaseControllerForwardingGoldenTest extends TestCase {
 		);
 	}
 
+	/**
+	 * The fields of a plan creation, in the order the old positional signature carried them.
+	 *
+	 * @param CasePlanCreation $creation The creation the controller sent.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private static function creationArgs(CasePlanCreation $creation): array {
+		$anchor = $creation->anchor;
+		$provenance = $creation->provenance;
+
+		return [$anchor->objectUuid, $anchor->registerId, $anchor->schemaId, $creation->definition, $creation->actor, $provenance->flowUuid, $provenance->flowVersion];
+	}
+
 	private function item(): CaseItem {
 		$item = new CaseItem();
 		$item->setUuid('i-1');
@@ -70,8 +87,8 @@ class CaseControllerForwardingGoldenTest extends TestCase {
 	}
 
 	public function testCreateForwardsEveryArgument(): void {
-		$this->plans->expects($this->once())->method('createPlan')->willReturnCallback(function (mixed ...$args): array {
-			$this->calls[] = $args;
+		$this->plans->expects($this->once())->method('createPlan')->willReturnCallback(function (CasePlanCreation $creation): array {
+			$this->calls[] = self::creationArgs(creation: $creation);
 			return ['objectUuid' => 'o'];
 		});
 
@@ -86,8 +103,8 @@ class CaseControllerForwardingGoldenTest extends TestCase {
 	}
 
 	public function testCreateWithoutADefinitionSendsAnEmptyOne(): void {
-		$this->plans->method('createPlan')->willReturnCallback(function (mixed ...$args): array {
-			$this->calls[] = $args;
+		$this->plans->method('createPlan')->willReturnCallback(function (CasePlanCreation $creation): array {
+			$this->calls[] = self::creationArgs(creation: $creation);
 			return [];
 		});
 
@@ -100,12 +117,18 @@ class CaseControllerForwardingGoldenTest extends TestCase {
 	}
 
 	public function testAttachSendsEveryGivenFieldInOrder(): void {
-		$this->plans->method('attachAdHoc')->willReturnCallback(function (string $objectUuid, array $data, ?string $uid): CaseItem {
-			$this->calls[] = [$objectUuid, $data, $uid];
+		$this->plans->method('attachAdHoc')->willReturnCallback(function (CaseAdHocRequest $request): CaseItem {
+			$this->calls[] = [$request->objectUuid, $request->data, $request->actor];
 			return $this->item();
 		});
 
-		$response = $this->controller()->attach('o', 'k', 'humanTask', 'N', 'D', 'p', [1], [2], ['u'], ['g'], 'r', '2026-01-01', '2026-02-01', false);
+		$body = [
+			'objectUuid' => 'o', '_route' => 'openregister.case.attach',
+			'expiresAt' => '2026-02-01', 'required' => 'false', 'key' => 'k', 'type' => 'humanTask', 'name' => 'N', 'description' => 'D', 'parent' => 'p',
+			'entryCriteria' => [1], 'exitCriteria' => [2], 'candidateUsers' => ['u'], 'candidateGroups' => ['g'], 'candidateRole' => 'r', 'dueAt' => '2026-01-01',
+		];
+
+		$response = $this->controller($body)->attach('o');
 
 		$this->assertSame(Http::STATUS_CREATED, $response->getStatus());
 		$this->assertSame('i-1', $response->getData()['uuid']);
@@ -124,31 +147,56 @@ class CaseControllerForwardingGoldenTest extends TestCase {
 	}
 
 	public function testAttachDropsNullFieldsAndForwardsABodyAuthorization(): void {
-		$this->plans->method('attachAdHoc')->willReturnCallback(function (string $objectUuid, array $data, ?string $uid): CaseItem {
-			$this->calls[] = [$objectUuid, $data, $uid];
+		$this->plans->method('attachAdHoc')->willReturnCallback(function (CaseAdHocRequest $request): CaseItem {
+			$this->calls[] = [$request->objectUuid, $request->data, $request->actor];
 			throw new CaseValidationException('An ad-hoc item cannot declare its own authorization');
 		});
 
-		$response = $this->controller(['authorization' => null, 'name' => 'ignored'])->attach('o', 'k');
+		$response = $this->controller(['authorization' => null, 'key' => 'k', 'name' => null])->attach('o');
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertSame([['o', ['key' => 'k', 'required' => true, 'authorization' => null], 'alice']], $this->calls);
 	}
 
 	public function testAttachWithoutABodyAuthorizationSendsNone(): void {
-		$this->plans->method('attachAdHoc')->willReturnCallback(function (string $objectUuid, array $data, ?string $uid): CaseItem {
-			$this->calls[] = [$objectUuid, $data, $uid];
+		$this->plans->method('attachAdHoc')->willReturnCallback(function (CaseAdHocRequest $request): CaseItem {
+			$this->calls[] = [$request->objectUuid, $request->data, $request->actor];
 			return $this->item();
 		});
 
-		$this->controller(['key' => 'body'])->attach('o');
+		$this->controller(['name' => 'N'])->attach('o');
 
-		$this->assertSame([['o', ['required' => true], 'alice']], $this->calls);
+		$this->assertSame([['o', ['name' => 'N', 'required' => true], 'alice']], $this->calls);
+	}
+
+	public function testAttachReadsRequiredTheWayARouteBindsABoolean(): void {
+		$this->plans->method('attachAdHoc')->willReturnCallback(function (CaseAdHocRequest $request): CaseItem {
+			$this->calls[] = $request->data['required'];
+			return $this->item();
+		});
+
+		foreach (['false', '0', '', '1', 'true', 'yes'] as $value) {
+			$this->request = $this->createMock(IRequest::class);
+			$this->controller(['required' => $value])->attach('o');
+		}
+
+		$this->assertSame([false, false, false, true, true, true], $this->calls);
+	}
+
+	public function testAttachRefusesAFieldOfTheWrongTypeBeforeTheService(): void {
+		$this->plans->expects($this->never())->method('attachAdHoc');
+
+		$wrongList   = $this->controller(['entryCriteria' => 'not-a-list'])->attach('o');
+		$this->request = $this->createMock(IRequest::class);
+		$wrongString = $this->controller(['name' => ['N']])->attach('o');
+
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['error' => 'Parameter `entryCriteria` must be an array']], [$wrongList->getStatus(), $wrongList->getData()]);
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['error' => 'Parameter `name` must be a string']], [$wrongString->getStatus(), $wrongString->getData()]);
 	}
 
 	public function testTransitionForwardsItsReason(): void {
-		$this->plans->method('transition')->willReturnCallback(function (mixed ...$args): CaseItem {
-			$this->calls[] = $args;
+		$this->plans->method('transition')->willReturnCallback(function (CaseItemTransition $transition): CaseItem {
+			$this->calls[] = [$transition->itemUuid, $transition->to, $transition->actor, $transition->reason];
 			return $this->item();
 		});
 

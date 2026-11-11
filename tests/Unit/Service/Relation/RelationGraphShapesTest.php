@@ -63,8 +63,12 @@ class RelationGraphShapesTest extends TestCase {
 			['uuid' => 'u', 'title' => null, 'register' => null, 'schema' => null, 'distance' => 2, 'resolved' => false, 'external' => false],
 			$shapes->unresolvedNode(uuid: 'u', distance: 2)
 		);
-		$this->assertSame('u', $shapes->externalNode(edge: [], uuid: 'u', distance: 1)['title']);
-		$this->assertSame('T', $shapes->externalNode(edge: ['targetTitle' => 'T'], uuid: 'u', distance: 1)['title']);
+		$this->assertSame('u', $shapes->externalNode(edge: [], node: $shapes->unresolvedNode(uuid: 'u', distance: 1))['title']);
+		$this->assertSame('T', $shapes->externalNode(edge: ['targetTitle' => 'T'], node: $shapes->unresolvedNode(uuid: 'u', distance: 1))['title']);
+		$this->assertSame(
+			['uuid' => 'u', 'title' => 'T', 'register' => null, 'schema' => null, 'distance' => 3, 'resolved' => true, 'external' => true],
+			$shapes->externalNode(edge: ['targetTitle' => 'T'], node: $shapes->unresolvedNode(uuid: 'u', distance: 3))
+		);
 		$this->assertSame('property', $shapes->outgoingDetails(row: [])['origin']);
 	}//end testNodeShapes()
 }//end class
