@@ -195,8 +195,47 @@ class ChatProxyHandler implements ChatProxyHandlerInterface {
 			hermiqPath: $hermiqPath,
 			queryString: $this->extractQueryString(request: $request)
 		);
-		$method = strtoupper($request->getMethod());
 
+		$upstream = $this->sendForward(request: $request, url: $url);
+		if ($upstream === null) {
+			return null;
+		}
+
+		return $this->rebuildResponse(upstream: $upstream);
+	}//end forwardJsonRequest()
+
+	/**
+	 * Send the request on to hermiq with its forwardable headers and, unless it is
+	 * a GET or DELETE, its JSON body.
+	 *
+	 * @param IRequest $request The original incoming request.
+	 * @param string   $url     The absolute hermiq URL.
+	 *
+	 * @return IResponse|null The upstream response, or null on transport failure (logged).
+	 */
+	private function sendForward(IRequest $request, string $url): ?IResponse {
+		$method  = strtoupper($request->getMethod());
+		$options = $this->forwardOptions(request: $request, method: $method);
+
+		try {
+			$client = $this->endpoint->clientService->newClient();
+			return $client->request($method, $url, $options);
+		} catch (Throwable $e) {
+			$this->logForwardFailure(url: $url, error: $e);
+			return null;
+		}
+	}//end sendForward()
+
+	/**
+	 * The client options of a forward: headers, upstream errors passed through, the
+	 * forward timeout, and the JSON body for methods that carry one.
+	 *
+	 * @param IRequest $request The original incoming request.
+	 * @param string   $method  The upper-cased HTTP method.
+	 *
+	 * @return array<string, mixed> The client options.
+	 */
+	private function forwardOptions(IRequest $request, string $method): array {
 		$options = [
 			'headers' => $this->buildForwardHeaders(request: $request),
 			'http_errors' => false,
@@ -207,20 +246,35 @@ class ChatProxyHandler implements ChatProxyHandlerInterface {
 			$options['body'] = (string)json_encode($this->extractForwardableParams(request: $request));
 		}
 
-		try {
-			$client = $this->endpoint->clientService->newClient();
-			$upstream = $client->request($method, $url, $options);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[ChatProxyHandler] hermiq forward failed — falling back to local serving',
-				[
-					'url' => $url,
-					'error' => $e->getMessage(),
-				]
-			);
-			return null;
-		}
+		return $options;
+	}//end forwardOptions()
 
+	/**
+	 * Log a failed forward; the caller falls back to local serving.
+	 *
+	 * @param string    $url   The absolute hermiq URL.
+	 * @param Throwable $error The transport failure.
+	 *
+	 * @return void
+	 */
+	private function logForwardFailure(string $url, Throwable $error): void {
+		$this->logger->warning(
+			'[ChatProxyHandler] hermiq forward failed — falling back to local serving',
+			[
+				'url' => $url,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logForwardFailure()
+
+	/**
+	 * Rebuild hermiq's answer verbatim: body, status code and Content-Type.
+	 *
+	 * @param IResponse $upstream The upstream response.
+	 *
+	 * @return Response The rebuilt response.
+	 */
+	private function rebuildResponse(IResponse $upstream): Response {
 		$body = $upstream->getBody();
 		if (is_resource($body) === true) {
 			$body = stream_get_contents($body);
@@ -252,7 +306,7 @@ class ChatProxyHandler implements ChatProxyHandlerInterface {
 		}
 
 		return $response;
-	}//end forwardJsonRequest()
+	}//end rebuildResponse()
 
 	/**
 	 * Cheap reachability probe used before redirecting the SSE streaming
