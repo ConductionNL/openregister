@@ -172,3 +172,4 @@ openregister#9847 6b3edb4c60c3e0a665b5eb7b34b081449baa0a46 precheck-red alone on
 openregister#9860 31eb2a6482f47247c44f42ec416fed9d05c452f1 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
 openregister#9864 c1f2e25950466d3f763d8d1725f18b0b488256ef precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
 openregister#9869 fa7a414bbd95e40f347e814a0b7b3a2bfa1715bc precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
+openregister#9760 c08d30bc039019e917028348d673f7431958e06c precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\ObjectServiceTest::testUpdateObjectSetsIdAndDelegatesToSaveObject;OCA\OpenRegister\Tests\Unit\Service\ObjectServiceUpdateAccessFlagsGoldenTest::testAnUpdateWithoutFlagsIsChecke;
