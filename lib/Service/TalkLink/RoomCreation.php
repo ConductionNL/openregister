@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\TalkLink;
 /**
  * What creating a Talk room for an object asks for.
  *
- * ADR-011 Rule 2 operation object for TalkLinkService::createRoomFor().
+ * ADR-011 Rule 2 operation object for TalkLinkService::createAndLinkRoom().
  *
  * @spec openspec/specs/integration-talk/spec.md
  */

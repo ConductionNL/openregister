@@ -34,6 +34,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
@@ -77,7 +79,12 @@ final class SchemaMapperWriteGuardsTest extends TestCase {
 				private string $refuseAt,
 				private \ArrayObject $asked,
 			) {
-				parent::__construct($db, $events, $validator, $organisations, $session, $groups, $config, $logger);
+				parent::__construct(
+					$db,
+					new TenancyServices($organisations, $session, $groups),
+					$config,
+					new SchemaMapperServices($events, $validator, $logger)
+				);
 			}
 
 			protected function verifyRbacPermission(string $action, string $entityType): void {

@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
@@ -161,7 +163,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$flow = array_values($this->flows)[0];
-		$type = $this->store->find(register: 'cases', schema: 'caseType', filters: [])[0];
+		$type = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'caseType'), filters: [])[0];
 		$this->assertSame(expected: [$flow->getUuid()], actual: $type['startableFlows']);
 	}//end testAChangeQuotesAFlowOfItsFragment()
 

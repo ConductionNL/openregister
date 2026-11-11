@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Case\CasePlanTimerRearmInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -50,18 +49,24 @@ class CasePlanTimerRearmJob extends TimedJob {
 	public const INTERVAL_SECONDS = 300;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Job scheduling clock.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param CasePlanTimerRearmInterface $rearm The pass.
-	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		private readonly CasePlanTimerRearmInterface $rearm,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 		// Two overlapping passes would enforce one expired term twice and race on the same markers.
 		$this->setAllowParallelRuns(allow: false);
@@ -83,16 +88,7 @@ class CasePlanTimerRearmJob extends TimedJob {
 		try {
 			$result = $this->rearm->run(now: DateTimeImmutable::createFromInterface($this->time->getDateTime()));
 			if ($result !== ['armed' => 0, 'enforced' => 0, 'dropped' => 0, 'failed' => 0]) {
-				$this->logger->info(
-					message: sprintf(
-						'[CasePlanTimerRearmJob] Armed %d statutory timer(s), enforced %d expired term(s), dropped %d marker(s); %d still failing',
-						$result['armed'],
-						$result['enforced'],
-						$result['dropped'],
-						$result['failed']
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__] + $result
-				);
+				$this->logRearmed(result: $result);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -100,6 +96,25 @@ class CasePlanTimerRearmJob extends TimedJob {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e]
 			);
 		}//end try
-
 	}//end run()
+
+	/**
+	 * Log what a re-arm pass did.
+	 *
+	 * @param array{armed: int, enforced: int, dropped: int, failed: int} $result The pass's counts.
+	 *
+	 * @return void
+	 */
+	private function logRearmed(array $result): void {
+		$this->logger->info(
+			message: sprintf(
+				'[CasePlanTimerRearmJob] Armed %d statutory timer(s), enforced %d expired term(s), dropped %d marker(s); %d still failing',
+				$result['armed'],
+				$result['enforced'],
+				$result['dropped'],
+				$result['failed']
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__] + $result
+		);
+	}//end logRearmed()
 }//end class

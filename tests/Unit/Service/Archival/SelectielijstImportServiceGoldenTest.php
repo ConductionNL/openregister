@@ -30,6 +30,8 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 /**
  * Golden outcomes of SelectielijstImportService.
@@ -53,8 +55,8 @@ class SelectielijstImportServiceGoldenTest extends TestCase {
 		$registerMapper->method('find')->willReturn(new Register());
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
-		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAll'])->getMock();
-		$objectMapper->method('findAll')->willReturnCallback(
+		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAllListed'])->getMock();
+		$objectMapper->method('findAllListed')->willReturnCallback(
 			function (): array {
 				$objects = ['not an entity'];
 				foreach ($this->stored as $data) {
@@ -78,7 +80,7 @@ class SelectielijstImportServiceGoldenTest extends TestCase {
 			}
 		);
 
-		return new SelectielijstImportService($handler, new ArchivalRegisterMappers($registerMapper, $schemaMapper, $objectMapper), $saveObject, new NullLogger());
+		return new SelectielijstImportService(storage: new SelectielijstStorage(settings: $handler, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), writer: $saveObject), logger: new NullLogger());
 	}
 
 	/**

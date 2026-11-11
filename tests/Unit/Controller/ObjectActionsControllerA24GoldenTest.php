@@ -34,6 +34,7 @@ use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
@@ -111,9 +112,6 @@ class ObjectActionsControllerA24GoldenTest extends TestCase {
 		$this->macros = $this->createMock(MacroActionResolver::class);
 		$this->list = $this->createMock(ObjectActionList::class);
 		$this->runner = $this->createMock(ObjectActionRunner::class);
-		$this->runner->method('target')->willReturnCallback(
-			static fn (ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget => new ObjectActionTarget($object, $schema, $register, $schemaRef)
-		);
 		$this->history = $this->createMock(ObjectActionHistory::class);
 		$this->bulk = $this->createMock(ObjectActionBulk::class);
 
@@ -243,8 +241,7 @@ class ObjectActionsControllerA24GoldenTest extends TestCase {
 		$this->runner->expects($this->once())->method('run')
 			->with(
 				$this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 'uuid-a', 'register' => 'r', 'schema' => 's']),
-				'assign',
-				['x' => 1]
+				new ObjectActionRequest('assign', ['x' => 1])
 			)
 			->willReturn(['status' => 403, 'body' => ['error' => 'refused']]);
 

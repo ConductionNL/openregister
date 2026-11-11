@@ -27,6 +27,7 @@ final class ObjectDraftControllerFactory {
 	 * @param IUserSession $session Constructor argument.
 	 * @param IL10N $l10n Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
+	 * @param IGroupManager $groupManager Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -40,6 +41,7 @@ final class ObjectDraftControllerFactory {
 		\OCP\IUserSession $session,
 		\OCP\IL10N $l10n,
 		\Psr\Log\LoggerInterface $logger,
+		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
 			$request,
@@ -51,9 +53,12 @@ final class ObjectDraftControllerFactory {
 					activation: $activation,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\ObjectDraftPlatform(
-					session: $session,
+					session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+						userSession: $session,
+						groupManager: $groupManager,
+						logger: $logger,
+					),
 					l10n: $l10n,
-					logger: $logger,
 				),
 			),
 		];

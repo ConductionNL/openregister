@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Store;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
@@ -101,20 +102,20 @@ class FederatedStoreCatalog {
 	 * Browse every declared type's published configuration.
 	 *
 	 * @param StoreDescriptor $descriptor The calling app's store parameters.
-	 * @param string|null     $query      Optional free-text filter.
-	 * @param string|null     $kind       Optional type-id filter, matching the surface's kind chips.
+	 * @param StoreSearch     $search     Optional free-text filter, and optional type-id filter matching the
+	 *                                    surface's kind chips.
 	 *
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#scenario-a-configuration-set-reaches-the-store-surface
 	 */
-	public function search(StoreDescriptor $descriptor, ?string $query = null, ?string $kind = null): array {
+	public function search(StoreDescriptor $descriptor, StoreSearch $search = new StoreSearch()): array {
 		$cards = [];
 
 		foreach ($descriptor->types as $typeId) {
 			$declared = $this->ownedType(descriptor: $descriptor, typeId: $typeId);
-			if ($declared !== null && $this->kindExcludes(kind: $kind, typeId: $typeId) === false) {
-				$cards = [...$cards, ...$this->matchingCards(declared: $declared, query: $query)];
+			if ($declared !== null && $this->kindExcludes(kind: $search->kind, typeId: $typeId) === false) {
+				$cards = [...$cards, ...$this->matchingCards(declared: $declared, query: $search->query)];
 			}
 		}
 
@@ -287,61 +288,128 @@ class FederatedStoreCatalog {
 		$source = (string)($ref['source'] ?? '');
 
 		if ($this->federated->isSourceAllowed(source: $source) === false) {
-			return [
-				'success' => false,
-				'components' => [
-					[
-						'schema' => (string)($ref['typeId'] ?? ''),
-						'status' => 'refused',
-						'message' => sprintf('This organisation does not trust %s as a store source.', $source),
-					],
-				],
-			];
+			return $this->refusedReport(ref: $ref, source: $source);
 		}
 
 		try {
-			$result = $this->federated->install(
-				typeId: (string)$ref['typeId'],
-				bundle: (array)$ref['bundle'],
-				source: $source
-			);
+			$result = $this->installThroughType(ref: $ref, source: $source);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: sprintf('[AppHost\\Store] installing %s failed: %s', (string)$ref['typeId'], $e->getMessage()),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'success' => false,
-				'components' => [
-					[
-						'schema' => (string)$ref['typeId'],
-						'status' => 'error',
-						'message' => 'The configuration could not be installed.',
-					],
-				],
-			];
-		}//end try
-
-		$installed = ($result['installed'] ?? []);
-		if (is_array($installed) === false) {
-			$installed = [];
+			return $this->failedReport(typeId: (string)$ref['typeId'], error: $e);
 		}
 
+		return ['success' => true, 'components' => $this->installedComponents(result: $result, typeId: (string)$ref['typeId'])];
+	}//end install()
+
+	/**
+	 * The report of a bundle refused because its source is not trusted.
+	 *
+	 * @param array  $ref    The resolved bundle.
+	 * @param string $source The bundle's source.
+	 *
+	 * @return array{success: bool, components: array<int, array<string, string>>}
+	 */
+	private function refusedReport(array $ref, string $source): array {
+		return $this->failureReport(
+			component: [
+				'schema' => (string)($ref['typeId'] ?? ''),
+				'status' => 'refused',
+				'message' => sprintf('This organisation does not trust %s as a store source.', $source),
+			]
+		);
+	}//end refusedReport()
+
+	/**
+	 * An install report of one component that did not install.
+	 *
+	 * @param array<string, string> $component The component's report line.
+	 *
+	 * @return array{success: bool, components: array<int, array<string, string>>}
+	 */
+	private function failureReport(array $component): array {
+		return [
+			'success' => false,
+			'components' => [$component],
+		];
+	}//end failureReport()
+
+	/**
+	 * Install the bundle through the shareable type that owns it.
+	 *
+	 * @param array  $ref    The resolved bundle.
+	 * @param string $source The bundle's (trusted) source.
+	 *
+	 * @return array The type's install result.
+	 */
+	private function installThroughType(array $ref, string $source): array {
+		return $this->federated->install(
+			typeId: (string)$ref['typeId'],
+			bundle: (array)$ref['bundle'],
+			source: $source
+		);
+	}//end installThroughType()
+
+	/**
+	 * Log a failed install and report it without the exception's detail.
+	 *
+	 * @param string    $typeId The type the bundle was installed through.
+	 * @param Throwable $error  The failure.
+	 *
+	 * @return array{success: bool, components: array<int, array<string, string>>}
+	 */
+	private function failedReport(string $typeId, Throwable $error): array {
+		$this->logger->error(
+			message: sprintf('[AppHost\\Store] installing %s failed: %s', $typeId, $error->getMessage()),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		return $this->failureReport(
+			component: [
+				'schema' => $typeId,
+				'status' => 'error',
+				'message' => 'The configuration could not be installed.',
+			]
+		);
+	}//end failedReport()
+
+	/**
+	 * The components a successful install reports, the type itself when it named none.
+	 *
+	 * @param array  $result The type's install result.
+	 * @param string $typeId The type the bundle was installed through.
+	 *
+	 * @return array<int, array<string, string>>
+	 */
+	private function installedComponents(array $result, string $typeId): array {
 		$components = [];
-		foreach ($installed as $entry) {
+		foreach ($this->installedEntries(result: $result) as $entry) {
 			$components[] = [
-				'schema' => $this->componentName(entry: $entry, fallback: (string)$ref['typeId']),
+				'schema' => $this->componentName(entry: $entry, fallback: $typeId),
 				'status' => 'installed',
 				'message' => '',
 			];
 		}
 
 		if ($components === []) {
-			$components[] = ['schema' => (string)$ref['typeId'], 'status' => 'installed', 'message' => ''];
+			$components[] = ['schema' => $typeId, 'status' => 'installed', 'message' => ''];
 		}
 
-		return ['success' => true, 'components' => $components];
-	}//end install()
+		return $components;
+	}//end installedComponents()
+
+	/**
+	 * The entries a type's install result lists as installed, none when it lists nothing readable.
+	 *
+	 * @param array $result The type's install result.
+	 *
+	 * @return array
+	 */
+	private function installedEntries(array $result): array {
+		$installed = ($result['installed'] ?? []);
+		if (is_array($installed) === false) {
+			$installed = [];
+		}
+
+		return $installed;
+	}//end installedEntries()
 
 	/**
 	 * Name one installed component for the report.
@@ -376,12 +444,7 @@ class FederatedStoreCatalog {
 	 */
 	private function fetch(string $repo): ?array {
 		foreach (self::BUNDLE_PATHS as $path) {
-			try {
-				$bundle = $this->federated->fetchBundle(repo: $repo, path: $path);
-			} catch (Throwable $e) {
-				continue;
-			}
-
+			$bundle = $this->fetchAt(repo: $repo, path: $path);
 			if ($bundle !== []) {
 				return $bundle;
 			}
@@ -394,6 +457,22 @@ class FederatedStoreCatalog {
 
 		return null;
 	}//end fetch()
+
+	/**
+	 * Read a repository's bundle at one path; empty when the path does not answer.
+	 *
+	 * @param string $repo The `owner/repo`.
+	 * @param string $path The path to read.
+	 *
+	 * @return array<string, mixed> The decoded bundle, empty on failure.
+	 */
+	private function fetchAt(string $repo, string $path): array {
+		try {
+			return $this->federated->fetchBundle(repo: $repo, path: $path);
+		} catch (Throwable $e) {
+			return [];
+		}
+	}//end fetchAt()
 
 	/**
 	 * Turn one discovered repository into a store card.

@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
@@ -84,15 +85,6 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
-	 * App configuration for multitenancy settings
-	 *
-	 * Used by MultiTenancyTrait for checking multitenancy configuration.
-	 *
-	 * @var IAppConfig App configuration instance
-	 */
-	protected IAppConfig $appConfig;
-
-	/**
 	 * User session for current user
 	 *
 	 * Used to determine current user context for RBAC filtering.
@@ -111,16 +103,6 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	private readonly IGroupManager $groupManager;
 
 	/**
-	 * Interception-flag cache invalidated on every webhook CRUD operation
-	 *
-	 * Nullable so the mapper stays constructible without a cache backend
-	 * (unit tests, degraded environments); invalidation is skipped then.
-	 *
-	 * @var WebhookInterceptionCacheInterface|null Interception cache instance
-	 */
-	private readonly ?WebhookInterceptionCacheInterface $interceptionCache;
-
-	/**
 	 * Constructor
 	 *
 	 * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
@@ -128,26 +110,22 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 *
 	 * @param IDBConnection                          $db                Database connection
 	 * @param TenancyServices                        $tenancy           Organisation mapper, user session and groups for multi-tenancy and RBAC
-	 * @param IAppConfig                             $appConfig         App configuration for multitenancy settings
-	 * @param WebhookInterceptionCacheInterface|null $interceptionCache Interception-flag cache invalidated on webhook CRUD
+	 * @param IAppConfig                             $appConfig         App configuration for multitenancy settings, read by MultiTenancyTrait
+	 * @param WebhookInterceptionCacheInterface|null $interceptionCache Interception-flag cache invalidated on webhook CRUD;
+	 *                                                                  null skips invalidation (no cache backend)
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IDBConnection $db,
 		TenancyServices $tenancy,
-		IAppConfig $appConfig,
-		?WebhookInterceptionCacheInterface $interceptionCache = null,
+		protected IAppConfig $appConfig,
+		private readonly ?WebhookInterceptionCacheInterface $interceptionCache = null,
 	) {
-		// Call parent constructor to initialize base mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_webhooks', entityClass: Webhook::class);
-
-		// Store dependencies for use in mapper methods.
 		$this->organisationMapper = $tenancy->organisationMapper;
 		$this->userSession = $tenancy->userSession;
 		$this->groupManager = $tenancy->groupManager;
-		$this->appConfig = $appConfig;
-		$this->interceptionCache = $interceptionCache;
 	}//end __construct()
 
 	/**
@@ -155,42 +133,44 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 *
 	 * Retrieves all webhooks with organisation filtering for multi-tenancy.
 	 * Returns only webhooks belonging to the current organisation.
-	 * Supports pagination and filtering.
+	 * Supports pagination and column filtering; the listing's sort and search are not applied.
 	 *
-	 * @param int|null $limit Maximum number of results to return
-	 * @param int|null $offset Number of results to skip
-	 * @param array $filters Optional filters to apply
+	 * @param ListQuery $query The page (limitOrNull() and offset) and the column filters.
 	 *
 	 * @return Webhook[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array {
+	public function findAll(ListQuery $query): array {
 		// Check if table exists before querying (migrations might not have run yet).
 		if ($this->tableExists() === false) {
 			return [];
 		}
 
-		// Step 1: Get query builder instance.
-		$qb = $this->db->getQueryBuilder();
+		$page = new QueryPage(limit: $query->limitOrNull(), offset: $query->offset);
+		return $this->findEntities(query: $this->listQuery(page: $page, filters: $query->filters));
+	}//end findAll()
 
-		// Step 2: Build SELECT query for all columns.
+	/**
+	 * The listing query: one page, the column filters, and the organisation filter for multi-tenancy.
+	 *
+	 * @param QueryPage $page    The page to take.
+	 * @param array     $filters Column filters to apply.
+	 *
+	 * @return IQueryBuilder The query, ready to run.
+	 */
+	private function listQuery(QueryPage $page, array $filters): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName());
-
-		// Step 3: Apply pagination if provided.
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
-
-		// Step 4: Apply filters if provided.
+		$page->applyTo(qb: $qb);
 		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
-		// Step 5: Apply organisation filter for multi-tenancy.
-		// This ensures users only see webhooks from their organisation.
+		// Users only see webhooks from their organisation.
 		$this->applyOrganisationFilter(qb: $qb);
 
-		// Step 6: Execute query and return entities.
-		return $this->findEntities(query: $qb);
-	}//end findAll()
+		return $qb;
+	}//end listQuery()
 
 	/**
 	 * Find a single webhook by ID

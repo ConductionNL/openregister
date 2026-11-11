@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -138,7 +139,7 @@ class SecurityServiceTest extends TestCase {
 		$this->cache->method('get')->willReturn(0);
 		$this->cache->expects($this->atLeastOnce())->method('set');
 
-		$this->service->recordFailedLoginAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('user1', '1.2.3.4', 'invalid_credentials'));
 	}
 
 	public function testRecordFailedLoginAttemptLocksOutAfterThreshold(): void {
@@ -150,7 +151,7 @@ class SecurityServiceTest extends TestCase {
 			$setCalls[] = $key;
 		});
 
-		$this->service->recordFailedLoginAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('user1', '1.2.3.4', 'invalid_credentials'));
 
 		// Should set both user lockout and ip lockout.
 		$lockoutKeys = array_filter($setCalls, fn ($k) => str_contains($k, 'lockout'));
@@ -415,7 +416,7 @@ class SecurityServiceTest extends TestCase {
 			$setCalls[] = $key;
 		});
 
-		$this->service->recordFailedAuthAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('user1', '1.2.3.4', 'inbound_auth_failed'));
 
 		// Both the composite and per-IP counters are written.
 		$this->assertNotEmpty(array_filter($setCalls, fn ($k) => str_contains($k, 'auth_attempts')));
@@ -436,7 +437,7 @@ class SecurityServiceTest extends TestCase {
 			$setCalls[] = $key;
 		});
 
-		$this->service->recordFailedAuthAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('user1', '1.2.3.4', 'inbound_auth_failed'));
 
 		$this->assertNotEmpty(array_filter($setCalls, fn ($k) => str_contains($k, 'auth_lockout')));
 	}
@@ -449,7 +450,7 @@ class SecurityServiceTest extends TestCase {
 			$setCalls[] = $key;
 		});
 
-		$this->service->recordFailedAuthAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('user1', '1.2.3.4', 'inbound_auth_failed'));
 
 		$this->assertEmpty(array_filter($setCalls, fn ($k) => str_contains($k, 'auth_lockout')));
 	}
@@ -508,7 +509,7 @@ class SecurityServiceTest extends TestCase {
 			$ttls[$key] = $ttl;
 		});
 
-		$service->recordFailedAuthAttempt('user1', '1.2.3.4');
+		$service->recordFailedAuthAttempt(new FailedAttempt('user1', '1.2.3.4', 'inbound_auth_failed'));
 
 		$lockoutKeys = array_filter(array_keys($ttls), fn ($k) => str_contains($k, 'auth_lockout'));
 		$this->assertNotEmpty($lockoutKeys, 'The administered ceiling of 3 did not lock the identity out.');

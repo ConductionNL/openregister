@@ -183,7 +183,7 @@ class ScopedPropertyGovernanceTest extends TestCase {
 		$schema     = $this->schemaWithScopedProperties(3, 'team-a');
 
 		try {
-			$governance->assertBelowCeiling(schema: $schema, scope: 'team-a', property: 'salary');
+			$governance->assertBelowCeiling(schema: $schema, field: new ScopedField(property: 'salary', scope: 'team-a'));
 			$this->fail('A scope at its ceiling must refuse the next property.');
 		} catch (ScopedPropertyException $e) {
 			$this->assertStringContainsString('3', $e->getMessage());
@@ -202,11 +202,7 @@ class ScopedPropertyGovernanceTest extends TestCase {
 	public function testAScopeBelowItsCeilingIsAllowed(): void {
 		$governance = $this->governanceFor('alice', ['team-a'], 3);
 
-		$governance->assertBelowCeiling(
-			schema: $this->schemaWithScopedProperties(2, 'team-a'),
-			scope: 'team-a',
-			property: 'salary'
-		);
+		$governance->assertBelowCeiling(schema: $this->schemaWithScopedProperties(2, 'team-a'), field: new ScopedField(property: 'salary', scope: 'team-a'));
 
 		$this->expectNotToPerformAssertions();
 	}//end testAScopeBelowItsCeilingIsAllowed()
@@ -246,14 +242,10 @@ class ScopedPropertyGovernanceTest extends TestCase {
 	public function testEditingAnExistingPropertyIsNotCountedTwice(): void {
 		$governance = $this->governanceFor('alice', ['team-a'], 2);
 
-		$governance->assertBelowCeiling(
-			schema: $this->schemaWith([
+		$governance->assertBelowCeiling(schema: $this->schemaWith([
 				'a' => ['scope' => 'team-a'],
 				'b' => ['scope' => 'team-a'],
-			]),
-			scope: 'team-a',
-			property: 'b'
-		);
+			]), field: new ScopedField(property: 'b', scope: 'team-a'));
 
 		$this->expectNotToPerformAssertions();
 	}//end testEditingAnExistingPropertyIsNotCountedTwice()

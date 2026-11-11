@@ -140,59 +140,72 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	 */
 	public function statisticsFor($register, $schema): array {
 		$quality = $this->loadAnnotation(register: $register, schema: $schema);
-		$field = $this->scoreField(quality: $quality);
-		$thresholds = $this->thresholds(quality: $quality);
+		$run = new QualityStatisticsRun(
+			reading: new QualityScoreReading(field: $this->scoreField(quality: $quality), thresholds: $this->thresholds(quality: $quality))
+		);
 
 		$objects = $this->loadObjects(register: $register, schema: $schema);
 
-		$histogram = $this->emptyHistogram();
-		$buckets = [
-			'good' => 0,
-			'fair' => 0,
-			'poor' => 0,
-		];
-
-		$sum = 0.0;
-		$total = 0;
-
+		$run->histogram = $this->emptyHistogram();
 		foreach ($objects as $object) {
-			$score = $this->scoreOf(object: $object, field: $field);
-			if ($score === null) {
-				continue;
-			}
+			$this->tally(run: $run, object: $object);
+		}
 
-			$total++;
-			$sum += $score;
+		return self::summary(run: $run);
+	}//end statisticsFor()
 
-			$status = $this->scorer->status(score: $score, thresholds: $thresholds);
-			if (isset($buckets[$status]) === true) {
-				$buckets[$status]++;
-			}
+	/**
+	 * Count one object's score into the run, when it has one.
+	 *
+	 * @param QualityStatisticsRun $run    The pass being counted.
+	 * @param ObjectEntity         $object The object.
+	 *
+	 * @return void
+	 */
+	private function tally(QualityStatisticsRun $run, ObjectEntity $object): void {
+		$score = $this->scoreOf(object: $object, field: $run->reading->field);
+		if ($score === null) {
+			return;
+		}
 
-			$index = $this->histogramIndex(score: $score);
-			$histogram[$index]['count']++;
-		}//end foreach
+		$run->total++;
+		$run->sum += $score;
 
+		$status = $this->scorer->status(score: $score, thresholds: $run->reading->thresholds);
+		if (isset($run->buckets[$status]) === true) {
+			$run->buckets[$status]++;
+		}
+
+		$index = $this->histogramIndex(score: $score);
+		$run->histogram[$index]['count']++;
+	}//end tally()
+
+	/**
+	 * The statistics a finished run reports.
+	 *
+	 * @param QualityStatisticsRun $run The counted pass.
+	 *
+	 * @return array{average: float|null, total: int, buckets: array<string, int>, histogram: array<int, array<string, mixed>>}
+	 */
+	private static function summary(QualityStatisticsRun $run): array {
 		$average = null;
-		if ($total > 0) {
-			$average = round(($sum / $total), 4);
+		if ($run->total > 0) {
+			$average = round(($run->sum / $run->total), 4);
 		}
 
 		return [
 			'average' => $average,
-			'total' => $total,
-			'buckets' => $buckets,
-			'histogram' => array_values($histogram),
+			'total' => $run->total,
+			'buckets' => $run->buckets,
+			'histogram' => array_values($run->histogram),
 		];
-	}//end statisticsFor()
+	}//end summary()
 
 	/**
 	 * List objects of a register/schema ascending by quality score.
 	 *
-	 * @param int|string $register Register id, uuid or slug.
-	 * @param int|string $schema Schema id, uuid or slug.
-	 * @param string|null $qualityStatus Optional status filter (`good`/`fair`/`poor`).
-	 * @param QualityListingWindow $window Sort field and order, page size and offset.
+	 * @param QualityListingRequest $request The register and schema (id, uuid or slug), the optional status filter
+	 *                                       (`good`/`fair`/`poor`) and the window: sort field and order, page size and offset.
 	 *
 	 * @return array{
 	 *   items: array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}>,
@@ -203,34 +216,48 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	 *
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
 	 */
-	public function lowestQuality(
-		$register,
-		$schema,
-		?string $qualityStatus = null,
-		QualityListingWindow $window = new QualityListingWindow(),
-	): array {
-		$quality = $this->loadAnnotation(register: $register, schema: $schema);
-		$reading = new QualityScoreReading(
-			field: $this->scoreField(quality: $quality),
-			thresholds: $this->thresholds(quality: $quality)
-		);
+	public function lowestQuality(QualityListingRequest $request): array {
+		$rows = $this->statusRows(request: $request);
+		$this->sortRows(rows: $rows, window: $request->window);
 
-		$objects = $this->loadObjects(register: $register, schema: $schema);
+		return self::page(rows: $rows, window: $request->window);
+	}//end lowestQuality()
 
-		$rows = $this->withStatus(rows: $this->listingRows(objects: $objects, reading: $reading), qualityStatus: $qualityStatus);
+	/**
+	 * Every loaded object's listing row, scored under the schema's annotation, filtered by status.
+	 *
+	 * @param QualityListingRequest $request The register, schema and status filter.
+	 *
+	 * @return array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}> The rows.
+	 *
+	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
+	 */
+	private function statusRows(QualityListingRequest $request): array {
+		$quality = $this->loadAnnotation(register: $request->register, schema: $request->schema);
+		$reading = new QualityScoreReading(field: $this->scoreField(quality: $quality), thresholds: $this->thresholds(quality: $quality));
+		$objects = $this->loadObjects(register: $request->register, schema: $request->schema);
 
-		$this->sortRows(rows: $rows, window: $window);
+		return $this->withStatus(rows: $this->listingRows(objects: $objects, reading: $reading), qualityStatus: $request->qualityStatus);
+	}//end statusRows()
 
-		$total = count($rows);
-		$page = array_slice($rows, max(0, $window->offset), max(0, $window->limit));
-
+	/**
+	 * One window of sorted rows, with the total before paging.
+	 *
+	 * @param array<int, array<string, mixed>> $rows   The sorted rows.
+	 * @param QualityListingWindow             $window The page size and offset.
+	 *
+	 * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
+	 *
+	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
+	 */
+	private static function page(array $rows, QualityListingWindow $window): array {
 		return [
-			'items' => $page,
-			'total' => $total,
+			'items' => array_slice($rows, max(0, $window->offset), max(0, $window->limit)),
+			'total' => count($rows),
 			'limit' => $window->limit,
 			'offset' => $window->offset,
 		];
-	}//end lowestQuality()
+	}//end page()
 
 	/**
 	 * Build one listing row per object.
@@ -391,29 +418,32 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	 */
 	private function loadObjects($register, $schema): array {
 		try {
-			$objects = $this->objectService->findAll(
-				[
-					'filters' => [
-						'register' => $register,
-						'schema' => $schema,
-					],
-					'limit' => self::MAX_OBJECTS,
-				]
-			);
+			$objects = $this->objectService->findAll(self::objectsQuery(register: $register, schema: $schema));
 		} catch (Throwable $e) {
 			$this->logger->warning('Quality statistics object load failed: ' . $e->getMessage());
 			return [];
 		}
 
-		$entities = [];
-		foreach ($objects as $object) {
-			if ($object instanceof ObjectEntity) {
-				$entities[] = $object;
-			}
-		}
-
-		return $entities;
+		return ObjectEntities::in(objects: $objects);
 	}//end loadObjects()
+
+	/**
+	 * The object-service query for a register/schema's objects, capped at MAX_OBJECTS.
+	 *
+	 * @param int|string $register Register reference.
+	 * @param int|string $schema   Schema reference.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private static function objectsQuery($register, $schema): array {
+		return [
+			'filters' => [
+				'register' => $register,
+				'schema' => $schema,
+			],
+			'limit' => self::MAX_OBJECTS,
+		];
+	}//end objectsQuery()
 
 	/**
 	 * Read the `x-openregister-quality` annotation off a schema.

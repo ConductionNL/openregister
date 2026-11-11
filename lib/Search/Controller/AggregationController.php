@@ -46,11 +46,16 @@ namespace OCA\OpenRegister\Search\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
+use OCA\OpenRegister\Search\Controller\Support\AggregationRun;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Support\AggregationFilterRequest;
 use OCA\OpenRegister\Support\FilterParams;
+use OCA\OpenRegister\Support\UnknownFilterKeys;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -102,10 +107,8 @@ class AggregationController extends Controller {
 	 * nothing. The lookup is the register-scoped one `runAdhocByRef()` will
 	 * repeat, so both resolve the same schema.
 	 *
-	 * @param string $action The controller action, keying its control params.
-	 * @param string $register Register reference from the URL.
-	 * @param string $schema Schema reference from the URL.
-	 * @param Schema|null $schemaEntity Already-resolved schema, when the caller has one.
+	 * @param AggregationRun $run    The register and schema references, and the schema when already resolved.
+	 * @param string         $action The controller action, keying its control params.
 	 *
 	 * @return array<string, mixed> The normalised filter map.
 	 *
@@ -113,12 +116,7 @@ class AggregationController extends Controller {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
-	private function resolveFilter(
-		string $action,
-		string $register,
-		string $schema,
-		?Schema $schemaEntity = null,
-	): array {
+	private function resolveFilter(AggregationRun $run, string $action): array {
 		$bracket = (array)($this->request->getParam(FilterParams::FILTER_KEY, []));
 		$params = $this->request->getParams();
 		$controlParams = FilterParams::AGGREGATION_CONTROL_PARAMS[$action];
@@ -129,24 +127,23 @@ class AggregationController extends Controller {
 			return [];
 		}
 
-		$resolvedSchema = $schemaEntity;
+		$resolvedSchema = $run->schemaEntity;
 		if ($resolvedSchema === null) {
-			$resolvedSchema = $this->services->runner->findSchema(schemaRef: $schema, registerRef: $register);
+			$resolvedSchema = $this->services->runner->findSchema(schemaRef: $run->schema, registerRef: $run->register);
 		}
 
 		$normalised = FilterParams::forAggregation(
-			bracket: $bracket,
-			params: $params,
-			controlParams: $controlParams,
+			request: new AggregationFilterRequest(bracket: $bracket, params: $params, controlParams: $controlParams),
 			properties: ($resolvedSchema->getProperties() ?? [])
 		);
 
 		FilterParams::warnUnknownKeys(
 			logger: $this->services->logger,
-			keys: $normalised['unknown'],
-			endpoint: 'aggregation#' . $action,
-			register: $register,
-			schema: $schema
+			unknown: new UnknownFilterKeys(
+				keys: $normalised['unknown'],
+				endpoint: 'aggregation#' . $action,
+				table: new RegisterSchemaRef(register: $run->register, schema: $run->schema)
+			)
 		);
 
 		return $normalised['filter'];
@@ -174,6 +171,18 @@ class AggregationController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
 	public function aggregate(string $register, string $schema, string $name): JSONResponse {
+		return $this->runNamed(run: new AggregationRun(register: $register, schema: $schema), name: $name);
+	}//end aggregate()
+
+	/**
+	 * Run a named aggregation, narrowed by the request's filter.
+	 *
+	 * @param AggregationRun $run  The register and schema references.
+	 * @param string         $name Aggregation name.
+	 *
+	 * @return JSONResponse The result with its cache header, 403 when refused, 404 when unknown.
+	 */
+	private function runNamed(AggregationRun $run, string $name): JSONResponse {
 		try {
 			// `filter[...]` NARROWS a declared aggregation; it can never relax
 			// it. The runner refuses any key the declaration already
@@ -187,13 +196,11 @@ class AggregationController extends Controller {
 			//
 			// Both spellings narrow: `filter[administrationId]=X` and a bare
 			// `administrationId=X` reach the runner as the same constraint.
-			$extraFilter = $this->resolveFilter(action: 'aggregate', register: $register, schema: $schema);
+			$extraFilter = $this->resolveFilter(run: $run, action: 'aggregate');
 
 			$result = $this->services->runner->run(
-				registerRef: $register,
-				schemaRef: $schema,
-				name: $name,
-				extraFilter: $extraFilter
+				ref: new NamedAggregationRef(register: $run->register, schema: $run->schema, name: $name),
+				options: new NamedAggregationOptions(bypassRbac: false, extraFilter: $extraFilter)
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
@@ -202,7 +209,7 @@ class AggregationController extends Controller {
 		}
 
 		return $this->withCacheHeader(result: $result);
-	}//end aggregate()
+	}//end runNamed()
 
 	/**
 	 * Ad-hoc single-value aggregation entry point.
@@ -231,13 +238,14 @@ class AggregationController extends Controller {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public function value(string $register, string $schema): JSONResponse {
+		$run = new AggregationRun(register: $register, schema: $schema);
 		try {
-			$filter = $this->resolveFilter(action: 'value', register: $register, schema: $schema);
+			$run->filter = $this->resolveFilter(run: $run, action: 'value');
 		} catch (RuntimeException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
 
-		return $this->runAdhocQuery(register: $register, schema: $schema, filter: $filter, groupBy: null);
+		return $this->runAdhocQuery(run: $run, groupBy: null);
 	}//end value()
 
 	/**
@@ -266,15 +274,7 @@ class AggregationController extends Controller {
 				continue;
 			}
 
-			$entryField = ($entry['field'] ?? null);
-			if ($entryField === '') {
-				$entryField = null;
-			}
-
-			$metrics[] = [
-				'metric' => (string)($entry['metric'] ?? ''),
-				'field' => $entryField,
-			];
+			$metrics[] = $this->metricEntry(entry: $entry);
 		}
 
 		if (count($metrics) === 0) {
@@ -283,6 +283,25 @@ class AggregationController extends Controller {
 
 		return $metrics;
 	}//end parseMetricsParam()
+
+	/**
+	 * One `metrics[...]` entry as the query expects it; a blank field means none.
+	 *
+	 * @param array<string, mixed> $entry The raw entry.
+	 *
+	 * @return array{metric: string, field: mixed}
+	 */
+	private function metricEntry(array $entry): array {
+		$entryField = ($entry['field'] ?? null);
+		if ($entryField === '') {
+			$entryField = null;
+		}
+
+		return [
+			'metric' => (string)($entry['metric'] ?? ''),
+			'field' => $entryField,
+		];
+	}//end metricEntry()
 
 	/**
 	 * Surface the `X-OR-Cache: hit|miss` header on an ad-hoc envelope
@@ -337,18 +356,14 @@ class AggregationController extends Controller {
 			return new JSONResponse(['error' => 'groupBy is required'], Http::STATUS_BAD_REQUEST);
 		}
 
+		$run = new AggregationRun(register: $register, schema: $schema);
 		try {
-			$filter = $this->resolveFilter(action: 'grouped', register: $register, schema: $schema);
+			$run->filter = $this->resolveFilter(run: $run, action: 'grouped');
 		} catch (RuntimeException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
 
-		return $this->runAdhocQuery(
-			register: $register,
-			schema: $schema,
-			filter: $filter,
-			groupBy: $this->groupSpec(groupFields: $groupFields)
-		);
+		return $this->runAdhocQuery(run: $run, groupBy: $this->groupSpec(groupFields: $groupFields));
 	}//end grouped()
 
 	/**
@@ -356,14 +371,12 @@ class AggregationController extends Controller {
 	 *
 	 * An input AggregationQuery::create() refuses is a 400 and never runs.
 	 *
-	 * @param string                    $register Register reference.
-	 * @param string                    $schema   Schema reference.
-	 * @param array<string, mixed>      $filter   The resolved filter map.
-	 * @param array<string, mixed>|null $groupBy  The groupBy spec, or null.
+	 * @param AggregationRun            $run     The register and schema references and the resolved filter map.
+	 * @param array<string, mixed>|null $groupBy The groupBy spec, or null.
 	 *
 	 * @return JSONResponse The runner's envelope, or the refusal.
 	 */
-	private function runAdhocQuery(string $register, string $schema, array $filter, ?array $groupBy): JSONResponse {
+	private function runAdhocQuery(AggregationRun $run, ?array $groupBy): JSONResponse {
 		$metrics = $this->parseMetricsParam();
 		$primary = $this->primaryMetric(metrics: $metrics);
 
@@ -371,7 +384,7 @@ class AggregationController extends Controller {
 			$query = AggregationQuery::create(
 				metric: $primary['metric'],
 				field: $primary['field'],
-				filter: $filter,
+				filter: $run->filter,
 				groupBy: $groupBy,
 				metrics: $metrics
 			);
@@ -379,7 +392,7 @@ class AggregationController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
-		return $this->runAndRespond(register: $register, schema: $schema, query: $query);
+		return $this->runAndRespond(run: $run, query: $query);
 	}//end runAdhocQuery()
 
 	/**
@@ -410,15 +423,14 @@ class AggregationController extends Controller {
 	 * A refusal is a 403 and an unknown register or schema a 404, each
 	 * carrying the runner's message.
 	 *
-	 * @param string           $register Register reference.
-	 * @param string           $schema   Schema reference.
-	 * @param AggregationQuery $query    The validated query.
+	 * @param AggregationRun   $run   The register and schema references.
+	 * @param AggregationQuery $query The validated query.
 	 *
 	 * @return JSONResponse The envelope with its cache header, or the refusal.
 	 */
-	private function runAndRespond(string $register, string $schema, AggregationQuery $query): JSONResponse {
+	private function runAndRespond(AggregationRun $run, AggregationQuery $query): JSONResponse {
 		try {
-			$result = $this->services->runner->runAdhocByRef(registerRef: $register, schemaRef: $schema, query: $query);
+			$result = $this->services->runner->runAdhocByRef(registerRef: $run->register, schemaRef: $run->schema, query: $query);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		} catch (RuntimeException $e) {
@@ -475,17 +487,8 @@ class AggregationController extends Controller {
 	 * @return array<int, string> Ordered, non-empty field names.
 	 */
 	private function parseGroupByParam(): array {
-		$raw = $this->request->getParam('groupBy', '');
-
-		$candidates = [];
-		if (is_array($raw) === true) {
-			$candidates = $raw;
-		} else {
-			$candidates = explode(',', (string)$raw);
-		}
-
 		$fields = [];
-		foreach ($candidates as $candidate) {
+		foreach ($this->groupByCandidates() as $candidate) {
 			if (is_string($candidate) === false) {
 				continue;
 			}
@@ -500,6 +503,21 @@ class AggregationController extends Controller {
 
 		return $fields;
 	}//end parseGroupByParam()
+
+	/**
+	 * The raw `groupBy` entries: the repeated-param array as given, else the comma-separated parts.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function groupByCandidates(): array {
+		$raw = $this->request->getParam('groupBy', '');
+
+		if (is_array($raw) === true) {
+			return $raw;
+		}
+
+		return explode(',', (string)$raw);
+	}//end groupByCandidates()
 
 	/**
 	 * Ad-hoc time-bucket aggregation entry point.
@@ -549,24 +567,9 @@ class AggregationController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
 
-		// Pull the request shape from the active IRequest. The filter
-		// map comes through as a nested array because PHP parses
-		// `filter[x][op]=y` into `$_GET['filter']['x']['op']='y'`.
-		$input = [
-			'field' => $this->request->getParam('field', ''),
-			'interval' => $this->request->getParam('interval'),
-			'from' => $this->request->getParam('from'),
-			'to' => $this->request->getParam('to'),
-			'metric' => $this->request->getParam('metric', 'count'),
-			'metricField' => $this->request->getParam('metricField'),
-			'filter' => $this->resolveFilter(
-				action: 'timeseries',
-				register: $register,
-				schema: $schema,
-				schemaEntity: $schemaEntity
-			),
-			'cumulative' => $this->request->getParam('cumulative', false),
-		];
+		$run = new AggregationRun(register: $register, schema: $schema, schemaEntity: $schemaEntity);
+
+		$input = $this->timeseriesInput(run: $run);
 
 		try {
 			$query = $this->services->validator->validate(input: $input, schema: $schemaEntity);
@@ -574,6 +577,31 @@ class AggregationController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
-		return $this->runAndRespond(register: $register, schema: $schema, query: $query);
+		return $this->runAndRespond(run: $run, query: $query);
 	}//end timeseries()
+
+	/**
+	 * The time-bucket request as the validator reads it, from the active request.
+	 *
+	 * @param AggregationRun $run The register and schema references, with the resolved schema.
+	 *
+	 * @return array<string, mixed> field, interval, from, to, metric, metricField, filter and cumulative.
+	 *
+	 * @throws RuntimeException When the schema cannot be resolved for the filter.
+	 */
+	private function timeseriesInput(AggregationRun $run): array {
+		// Pull the request shape from the active IRequest. The filter
+		// map comes through as a nested array because PHP parses
+		// `filter[x][op]=y` into `$_GET['filter']['x']['op']='y'`.
+		return [
+			'field' => $this->request->getParam('field', ''),
+			'interval' => $this->request->getParam('interval'),
+			'from' => $this->request->getParam('from'),
+			'to' => $this->request->getParam('to'),
+			'metric' => $this->request->getParam('metric', 'count'),
+			'metricField' => $this->request->getParam('metricField'),
+			'filter' => $this->resolveFilter(run: $run, action: 'timeseries'),
+			'cumulative' => $this->request->getParam('cumulative', false),
+		];
+	}//end timeseriesInput()
 }//end class

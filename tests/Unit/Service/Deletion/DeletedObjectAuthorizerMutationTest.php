@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
@@ -78,7 +79,7 @@ final class DeletedObjectAuthorizerMutationTest extends TestCase {
 			$session->method('getUser')->willReturn($user);
 		}
 
-		return new DeletedObjectAuthorizer($this->schemas, $session, $this->groups, $this->permissions);
+		return new DeletedObjectAuthorizer($this->schemas, new CallerContext($session, $this->groups), $this->permissions);
 	}//end authorizer()
 
 	private function record(?string $actor): AuditTrail {

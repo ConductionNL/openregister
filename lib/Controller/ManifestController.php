@@ -169,7 +169,7 @@ class ManifestController extends Controller {
 		$enriched = $this->manifestService->getEnrichedManifest(manifest: $manifest);
 
 		$response = new JSONResponse($enriched);
-		$response->setETag(md5(json_encode($enriched)));
+		$response->setETag(hash(algo: 'xxh128', data: json_encode($enriched)));
 		$response->addHeader('Cache-Control', 'private, no-cache');
 		return $response;
 	}//end enrichedResponse()

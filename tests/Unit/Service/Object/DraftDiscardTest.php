@@ -13,10 +13,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DiscardDraftRequest;
 use OCA\OpenRegister\Service\Object\DraftDiscard;
@@ -24,6 +26,7 @@ use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Decision 195: a draft is discarded by its asserted owner only.
@@ -68,7 +71,11 @@ class DraftDiscardTest extends TestCase {
 			fn (string|int $id, ...$rest): ?ObjectEntity => ($this->stored[(string)$id] ?? null)
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false, $currentUser = null, bool $permanent = false): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
+				$register = $deletion->target->register;
+				$schema = $deletion->target->schema;
+				$permanent = $deletion->permanent;
 				if ($uuid === 'stuck') {
 					throw new RuntimeException('database gone');
 				}
@@ -101,7 +108,8 @@ class DraftDiscardTest extends TestCase {
 			}
 		);
 
-		$this->discard = new DraftDiscard(objects: $objects, registers: $registers, schemas: $schemas);
+		$catalog = new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapperInterface::class));
+		$this->discard = new DraftDiscard(objects: $objects, catalog: $catalog);
 	}//end setUp()
 
 	/**

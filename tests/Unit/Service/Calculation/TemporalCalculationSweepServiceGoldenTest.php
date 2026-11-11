@@ -47,6 +47,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * TemporalCalculationSweepServiceGoldenTest.
@@ -125,7 +126,7 @@ class TemporalCalculationSweepServiceGoldenTest extends TestCase {
 
 		$logger = $this->logger;
 		$this->service = new TemporalCalculationSweepService(
-			scan: new TemporalSchemaScan(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, logger: $logger),
+			scan: new TemporalSchemaScan(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), logger: $logger),
 			calculations: new TemporalCalculations(),
 			sweeper: new TemporalSchemaSweeper(
 				terminals: new LifecycleTerminals(),
@@ -239,7 +240,12 @@ class TemporalCalculationSweepServiceGoldenTest extends TestCase {
 		);
 		$saved = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function (array $object, $extend, $register, $schema, $uuid, $rbac, $multitenancy) use (&$saved): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saved): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
+				$rbac = $_rbac;
+				$multitenancy = $_multitenancy;
 				if ($uuid === 'savefails') {
 					throw new RuntimeException('refused');
 				}

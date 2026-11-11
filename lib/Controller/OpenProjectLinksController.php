@@ -47,6 +47,8 @@ use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\OpenProjectLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\WorkPackageDraft;
 use OCA\OpenRegister\Service\OpenProjectLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -105,13 +107,24 @@ class OpenProjectLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
 		return $this->whenOpenConnectorInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 				action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->linkService->getLinkedWorkPackages($object->getUuid()))
 			)
 		);
-	}//end index()
+	}//end indexForObject()
 
 	/**
 	 * Link an existing OpenProject work package.
@@ -130,17 +143,27 @@ class OpenProjectLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end link()
+
+	/**
+	 * link() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkForObject(ObjectRef $ref): JSONResponse {
 		return $this->whenOpenConnectorInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: LinkedSourceActions::linkById(
-					request: $this->request,
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
 					param: 'workPackageId',
 					link: fn (ObjectEntity $object, int $workPackageId) => $this->linkService->linkWorkPackage($this->linkTargetOf(object: $object), $workPackageId)
 				)
 			)
 		);
-	}//end link()
+	}//end linkForObject()
 
 	/**
 	 * Create a new OpenProject work package and link it.
@@ -159,17 +182,27 @@ class OpenProjectLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
+		return $this->createAndLinkForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end createAndLink()
+
+	/**
+	 * createAndLink() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createAndLinkForObject(ObjectRef $ref): JSONResponse {
 		return $this->whenOpenConnectorInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: LinkedSourceActions::linkByTexts(
-					request: $this->request,
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: (new LinkedSourceActions(request: $this->request))->linkByTexts(
 					params: ['projectId', 'subject'],
 					link: $this->createWorkPackage(...)
 				)
 			)
 		);
-	}//end createAndLink()
+	}//end createAndLinkForObject()
 
 	/**
 	 * Unlink an OpenProject work package.
@@ -187,13 +220,25 @@ class OpenProjectLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $wpId): JSONResponse {
+		return $this->destroyForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), wpId: $wpId);
+	}//end destroy()
+
+	/**
+	 * destroy() for the object the route names.
+	 *
+	 * @param ObjectRef $ref  The object the route names.
+	 * @param string    $wpId Work-package id (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyForObject(ObjectRef $ref, string $wpId): JSONResponse {
 		return $this->whenOpenConnectorInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 				action: LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->linkService->unlink($uuid, (int)$wpId))
 			)
 		);
-	}//end destroy()
+	}//end destroyForObject()
 
 	/**
 	 * List work packages reachable through the OpenConnector
@@ -228,7 +273,7 @@ class OpenProjectLinksController extends Controller {
 	private function createWorkPackage(ObjectEntity $object, string $projectId, string $subject): OpenProjectLink {
 		$type = (string)$this->request->getParam('type', '');
 
-		return $this->linkService->createAndLinkWorkPackage($this->linkTargetOf(object: $object), $projectId, $subject, $type);
+		return $this->linkService->createAndLinkDraft($this->linkTargetOf(object: $object), new WorkPackageDraft($projectId, $subject, $type));
 	}//end createWorkPackage()
 
 	/**

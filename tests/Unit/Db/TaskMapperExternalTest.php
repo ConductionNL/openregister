@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\TaskInboxAudience;
 use OCA\OpenRegister\Db\TaskInboxAnchor;
 use OCA\OpenRegister\Db\TaskInboxSelection;
@@ -73,7 +74,7 @@ class TaskMapperExternalTest extends TestCase {
 	 */
 	public function testThePartyFindersPredicateOnPartyTypeAndOpenness(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith(rows: [['id' => 1, 'uuid' => 't-1', 'state' => 'active', 'is_terminal' => 0, 'performer_type' => 'external', 'assignee' => 'party:bsn-1']]));
-		$page = $mapper->findOpenExternalForParty(partyReference: 'party:bsn-1', limit: 10, offset: 20);
+		$page = $mapper->findOpenExternalForParty(partyReference: 'party:bsn-1', page: new ListQuery(limit: 10, offset: 20));
 		$this->assertCount(1, $page);
 		$this->assertSame('party:bsn-1', $page[0]->getAssignee());
 		$this->assertTrue($this->saw('expr.eq', 'assignee'));

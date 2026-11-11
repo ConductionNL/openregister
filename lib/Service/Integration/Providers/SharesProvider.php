@@ -21,10 +21,8 @@
  *
  * Lazy-resolution policy: `IManager`, `FileService`, and
  * `IUserSession` are pulled from the server container on demand rather
- * than constructor-injected, so the ctor signature
- * `(IDBConnection, IAppManager, IL10N)` stays compatible with the
- * existing `Application.php` registration. Tests inject a mock
- * `ContainerInterface` via the optional fourth ctor arg.
+ * than constructor-injected. Tests inject a mock `ContainerInterface`
+ * via the optional second ctor arg.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -47,12 +45,13 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata;
 // Getters mirror the contract in the interface.
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
+use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCP\App\IAppManager;
+use OCA\OpenRegister\Service\Sharing\ObjectShareLookup;
 use OCP\Files\Folder;
-use OCP\IDBConnection;
 use OCP\IL10N;
-use OCP\Server;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Container\ContainerInterface;
@@ -64,18 +63,14 @@ use Throwable;
  * Always-on metadata: id='shares', group='core', requiredApp=null
  * (NC core sharing is always available), storage='query-time'.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Provider exposes list/delete/health plus lazy
- * container resolution helpers (lookup, resolveContainer, resolveCurrentUserId, resolveObjectFolder,
- * normaliseShare, mapServiceRow); each serves a distinct phase of the query-time share-walk and
- * cannot be combined.
- * @SuppressWarnings(PHPMD.StaticAccess)             \OCP\Server::get() is the Nextcloud-prescribed static
- * service-locator pattern for optional late-bound dependencies; no injectable alternative exists
- * for the lazy-resolution policy (constructor injection would fail when optional services are absent).
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Provider exposes list/delete/health plus the
+ * share-walk helpers (normaliseShare, mapServiceRow); each serves a distinct phase of the
+ * query-time share-walk and cannot be combined.
  * @SuppressWarnings(PHPMD.UnusedPrivateMethod)      mapServiceRow() is used as a callable in
  * array_map([$this, 'mapServiceRow'], ...) — PHPMD does not trace callable-array references
  * and incorrectly flags it as unused.
  */
-class SharesProvider extends AbstractIntegrationProvider {
+class SharesProvider extends CoreIntegrationProvider {
 
 	/**
 	 * Share types the provider surfaces. Order matters: it drives
@@ -84,14 +79,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 *
 	 * @var int[]
 	 */
-	private const SHARE_TYPES = [
-		IShare::TYPE_USER,
-		IShare::TYPE_GROUP,
-		IShare::TYPE_LINK,
-		IShare::TYPE_EMAIL,
-		IShare::TYPE_REMOTE,
-		IShare::TYPE_REMOTE_GROUP,
-	];
+	private const SHARE_TYPES = ObjectShareLookup::SHARE_TYPES;
 
 	/**
 	 * Maximum nodes inside the object's folder to query. The registry
@@ -101,32 +89,21 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 *
 	 * @var int
 	 */
-	private const MAX_NODES = 50;
+	private const MAX_NODES = ObjectShareLookup::MAX_NODES;
 
 	/**
-	 * Optional server container override. Defaults to NC's global
-	 * `\OCP\Server` container; tests inject a mock so the IManager /
-	 * FileService / IUserSession lookups are exerciseable
-	 * without spinning up the full container.
+	 * Container-backed lookups of the share manager, object folder, entity and user.
 	 *
-	 * @var ContainerInterface|null
+	 * @var ObjectShareLookup
 	 */
-	private ?ContainerInterface $container;
+	private readonly ObjectShareLookup $shares;
 
 	/**
 	 * Constructor.
 	 *
-	 * Required args mirror the registration block in `Application.php`
-	 * so the wiring there stays untouched. The optional container
-	 * argument is for unit tests only; production uses
-	 * `\OCP\Server::get(...)` via {@see resolveContainer()}.
+	 * The optional container argument is for unit tests only; production uses
+	 * `\OCP\Server::get(...)` through {@see ObjectShareLookup}.
 	 *
-	 * @param IDBConnection $db NC DB connection (unused at runtime since
-	 *                          the IManager pivot owns query construction —
-	 *                          kept for parity with the registration block).
-	 * @param IAppManager $appManager NC app manager (unused at runtime: NC core
-	 *                                sharing is always available — kept for
-	 *                                registration-block parity).
 	 * @param IL10N $l10n Localisation.
 	 * @param ContainerInterface|null $container Optional server-container override (tests
 	 *                                           only).
@@ -134,12 +111,10 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
 		private IL10N $l10n,
 		?ContainerInterface $container = null,
 	) {
-		$this->container = $container;
+		$this->shares = new ObjectShareLookup(container: $container);
 	}//end __construct()
 
 	public function getId(): string {
@@ -154,33 +129,9 @@ class SharesProvider extends AbstractIntegrationProvider {
 		return 'Share';
 	}//end getIcon()
 
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
 	public function getStorageStrategy(): string {
 		return 'query-time';
 	}//end getStorageStrategy()
-
-	/**
-	 * Whether the integration is available — NC core sharing is always on.
-	 *
-	 * @return bool
-	 *
-	 * @spec exclude Trivial always-on predicate (`return true`) — the registry stage-1 enabled-filter contract
-	 *              is owned by pluggable-integration-registry task-3.
-	 */
-	public function isEnabled(): bool {
-		// NC core sharing is always available; the only "disabled"
-		// case is the share subsystem being unreachable at runtime,
-		// which the per-call Throwable catches surface as a degraded
-		// empty list (see `list()` + `health()`).
-		return true;
-	}//end isEnabled()
 
 	/**
 	 * List shares linked to an OR object.
@@ -211,10 +162,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 *   - `url`                   — deep-link into the NC Files share panel
 	 *   - `data`                  — passthrough of the above (for the widget)
 	 *
-	 * @param string $register Register slug or numeric id (unused — link
-	 *                         convention is per-object).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Reserved.
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -232,7 +180,18 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * (register, schema, objectId, filters); $register and $schema are unused because shares are
 	 * indexed per-object-uuid and there is no register/schema scope for NC core sharing.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->sharesOf(objectId: $ref->id);
+	}//end list()
+
+	/**
+	 * The shares of an object's folder: the service rows, else the local walk, else none.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function sharesOf(string $objectId): array {
 		try {
 			// Tier-2: delegate the IManager folder-walk to ShareLinkService
 			// so there is exactly ONE canonical implementation (and one
@@ -253,7 +212,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 			// AD-23 graceful-degradation contract.
 			return [];
 		}//end try
-	}//end list()
+	}//end sharesOf()
 
 	/**
 	 * The ShareLinkService rows re-mapped to the widget contract, or null to fall back to the walk.
@@ -263,7 +222,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * @return array<int, array<string, mixed>>|null The rows, or null when the service is absent or fails.
 	 */
 	private function serviceRows(string $objectId): ?array {
-		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
+		$service = $this->shares->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
 		if ($service === null || method_exists($service, 'getLinkedShares') === false) {
 			return null;
 		}
@@ -285,30 +244,29 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * @return array<int, array<string, mixed>> The rows, empty without a share manager, user or folder.
 	 */
 	private function walkObjectFolder(string $objectId): array {
-		$shareManager = $this->lookup(serviceName: 'OCP\\Share\\IManager');
-		$userId = $this->resolveCurrentUserId();
+		$shareManager = $this->shares->lookup(serviceName: 'OCP\\Share\\IManager');
+		$userId = $this->shares->currentUserId();
 		if ($shareManager === null || $userId === null) {
 			return [];
 		}
 
-		$folder = $this->resolveObjectFolder(objectId: $objectId);
+		$folder = $this->shares->objectFolder(objectUuid: $objectId);
 		if ($folder === null) {
 			return [];
 		}
 
-		return $this->walkFolder(folder: $folder, shareManager: $shareManager, userId: $userId);
+		return $this->walkFolder(run: new ShareWalkRun(shareManager: $shareManager, userId: $userId), folder: $folder);
 	}//end walkObjectFolder()
 
 	/**
 	 * Collect the shares of the first MAX_NODES children, each share once.
 	 *
-	 * @param Folder $folder       The object folder.
-	 * @param object $shareManager The share manager.
-	 * @param string $userId       The current user uid.
+	 * @param ShareWalkRun $run    The share manager and the current user.
+	 * @param Folder       $folder The object folder.
 	 *
 	 * @return array<int, array<string, mixed>> The rows, in walk order.
 	 */
-	private function walkFolder(Folder $folder, object $shareManager, string $userId): array {
+	private function walkFolder(ShareWalkRun $run, Folder $folder): array {
 		$rows = [];
 		$seen = [];
 		$count = 0;
@@ -318,8 +276,9 @@ class SharesProvider extends AbstractIntegrationProvider {
 			}
 
 			$count++;
+			$run->node = $node;
 
-			foreach ($this->nodeShares(shareManager: $shareManager, userId: $userId, node: $node) as $row) {
+			foreach ($this->nodeShares(run: $run) as $row) {
 				$id = $row['id'];
 				if (isset($seen[$id]) === true) {
 					continue;
@@ -336,17 +295,15 @@ class SharesProvider extends AbstractIntegrationProvider {
 	/**
 	 * The readable shares of one node across every share type, in type order.
 	 *
-	 * @param object $shareManager The share manager.
-	 * @param string $userId       The current user uid.
-	 * @param mixed  $node         The child node.
+	 * @param ShareWalkRun $run The share manager, the current user and the child node in hand.
 	 *
 	 * @return array<int, array<string, mixed>> The normalised rows (may repeat ids).
 	 */
-	private function nodeShares(object $shareManager, string $userId, mixed $node): array {
+	private function nodeShares(ShareWalkRun $run): array {
 		$rows = [];
 		foreach (self::SHARE_TYPES as $type) {
-			foreach ($this->sharesOfType(shareManager: $shareManager, userId: $userId, type: $type, node: $node) as $share) {
-				$row = $this->normaliseShare(share: $share, userId: $userId);
+			foreach ($this->sharesOfType(run: $run, type: $type) as $share) {
+				$row = $this->normaliseShare(share: $share, userId: $run->userId);
 				if ($row !== null) {
 					$rows[] = $row;
 				}
@@ -362,16 +319,14 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * A missing provider for one type keeps the other types walking rather
 	 * than blanking the whole list.
 	 *
-	 * @param object $shareManager The share manager.
-	 * @param string $userId       The current user uid.
-	 * @param int    $type         The share type.
-	 * @param mixed  $node         The child node.
+	 * @param ShareWalkRun $run  The share manager, the current user and the child node in hand.
+	 * @param int          $type The share type.
 	 *
 	 * @return mixed The shares, as the manager returns them.
 	 */
-	private function sharesOfType(object $shareManager, string $userId, int $type, mixed $node): mixed {
+	private function sharesOfType(ShareWalkRun $run, int $type): mixed {
 		try {
-			return $shareManager->getSharesBy($userId, $type, $node);
+			return $run->shareManager->getSharesBy($run->userId, $type, $run->node);
 		} catch (Throwable $e) {
 			return [];
 		}
@@ -423,7 +378,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 *
 	 * The payload selects the kind of thing to create:
 	 *   - `type: 'public-token'` (or `type` omitted) — mint a case token
-	 *     bound to the object via {@see CaseTokenService::mint()}. Optional
+	 *     bound to the object via {@see CaseTokenService::mintFor()}. Optional
 	 *     `label` (string) and `ttlSeconds` (int) tune the link. Returns
 	 *     the token metadata + the public resolve URL.
 	 *
@@ -435,9 +390,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * defers to the abstract NotImplementedException so the controller
 	 * returns the canonical 501 — preserving backward compatibility.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload Mint options (type/label/ttlSeconds).
 	 *
 	 * @return array<string,mixed> Minted token metadata + public URL.
@@ -447,27 +400,41 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
+	public function create(ObjectRef $ref, array $payload): array {
+		return $this->mintCaseTokenFor(ref: $ref, payload: $payload);
+	}//end create()
+
+	/**
+	 * Mint a public case token for the object; any other type, or no token service, answers the 501.
+	 *
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $payload `type` (only `public-token`), `label`, `ttlSeconds`.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function mintCaseTokenFor(ObjectRef $ref, array $payload): array {
 		$type = (string)($payload['type'] ?? 'public-token');
 		if ($type !== 'public-token') {
 			// Only the public-token surface is supported by this provider;
 			// anything else defers to the abstract 501 contract.
-			return parent::create(register: $register, schema: $schema, objectId: $objectId, payload: $payload);
+			return parent::create(ref: $ref, payload: $payload);
 		}
 
-		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
-		if ($service === null || method_exists($service, 'mint') === false) {
-			return parent::create(register: $register, schema: $schema, objectId: $objectId, payload: $payload);
+		$service = $this->shares->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
+		if ($service === null || method_exists($service, 'mintFor') === false) {
+			return parent::create(ref: $ref, payload: $payload);
 		}
 
-		return $service->mint(
-			objectUuid: $objectId,
-			registerId: $this->numericOrNull(value: $register),
-			schemaId: $this->numericOrNull(value: $schema),
-			label: self::mintLabel(payload: $payload),
+		return $service->mintFor(
+			target: new CaseTokenTarget(
+				objectUuid: $ref->id,
+				registerId: $this->numericOrNull(value: (string)$ref->register),
+				schemaId: $this->numericOrNull(value: (string)$ref->schema),
+				label: self::mintLabel(payload: $payload)
+			),
 			ttlSeconds: self::mintTtl(payload: $payload)
 		);
-	}//end create()
+	}//end mintCaseTokenFor()
 
 	/**
 	 * The token label from a mint payload, cast to a string when given.
@@ -508,49 +475,57 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * path. A `token:`-prefixed entityId addresses a case token; anything
 	 * else is treated as an NC share id exactly as before.
 	 *
-	 * @param string $register Register slug.
-	 * @param string $schema Schema slug.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Share id, or `token:<token-or-id>`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/integration-shares/spec.md
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->revokeFor(ref: $ref, entityId: $entityId);
+	}//end delete()
+
+	/**
+	 * Revoke a case token (`token:<token-or-id>`) or a file share of the object; without the service, the 501.
+	 *
+	 * @param ObjectRef $ref      The owning object.
+	 * @param string    $entityId `token:<token-or-id>`, or a share id.
+	 *
+	 * @return void
+	 */
+	private function revokeFor(ObjectRef $ref, string $entityId): void {
 		// Case-token revoke path: `token:<token-or-id>`.
 		if (str_starts_with($entityId, 'token:') === true) {
-			$this->deleteCaseToken(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+			$this->deleteCaseToken(ref: $ref, entityId: $entityId);
 			return;
 		}
 
-		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
+		$service = $this->shares->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
 		if ($service === null || method_exists($service, 'revokeShare') === false) {
-			parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+			parent::delete(ref: $ref, entityId: $entityId);
 			return;
 		}
 
-		$service->revokeShare($objectId, $entityId);
-	}//end delete()
+		$service->revokeShare($ref->id, $entityId);
+	}//end revokeFor()
 
 	/**
 	 * Revoke a `token:`-addressed case token, or answer the 501 without a token service.
 	 *
-	 * @param string $register Register slug.
-	 * @param string $schema   Schema slug.
-	 * @param string $objectId Owning object uuid.
-	 * @param string $entityId `token:<token-or-id>`.
+	 * @param ObjectRef $ref      The owning object.
+	 * @param string    $entityId `token:<token-or-id>`.
 	 *
 	 * @return void
 	 */
-	private function deleteCaseToken(string $register, string $schema, string $objectId, string $entityId): void {
-		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
+	private function deleteCaseToken(ObjectRef $ref, string $entityId): void {
+		$service = $this->shares->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
 		if ($service !== null && method_exists($service, 'revoke') === true) {
-			$service->revoke($objectId, substr($entityId, strlen('token:')));
+			$service->revoke($ref->id, substr($entityId, strlen('token:')));
 			return;
 		}
 
-		parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+		parent::delete(ref: $ref, entityId: $entityId);
 	}//end deleteCaseToken()
 
 	/**
@@ -583,7 +558,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 */
 	public function health(): array {
 		try {
-			$shareManager = $this->lookup(serviceName: 'OCP\\Share\\IManager');
+			$shareManager = $this->shares->lookup(serviceName: 'OCP\\Share\\IManager');
 			if ($shareManager === null) {
 				return [
 					'status' => 'degraded',
@@ -605,100 +580,6 @@ class SharesProvider extends AbstractIntegrationProvider {
 			];
 		}//end try
 	}//end health()
-
-	/**
-	 * Resolve the object's NC folder via the FileService.
-	 *
-	 * Looks up the ObjectEntity via MagicMapper::find() first so
-	 * `FileService::getObjectFolder()` is invoked on its
-	 * entity-input branch (which knows how to resolve the register from
-	 * the entity itself). The string-input branch in the handler routes
-	 * to `createObjectFolderById(string, registerId: null)` which throws
-	 * `"Failed to create file because no objectEntity or registerId
-	 * given"` — that throw used to be swallowed by the Throwable catch
-	 * below, so the leaf returned `[]` for every object regardless of
-	 * how many real shares existed.
-	 *
-	 * @param string $objectId Owning object uuid.
-	 *
-	 * @return Folder|null
-	 */
-	private function resolveObjectFolder(string $objectId): ?Folder {
-		try {
-			$handler = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Service\\FileService'
-			);
-			if ($handler === null) {
-				return null;
-			}
-
-			$entity = $this->resolveObjectEntity(objectId: $objectId);
-			$folder = $handler->getObjectFolder($entity ?? $objectId);
-			if (($folder instanceof Folder) === true) {
-				return $folder;
-			}
-
-			return null;
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end resolveObjectFolder()
-
-	/**
-	 * Look up an ObjectEntity by uuid via the lazy container so the
-	 * handler can resolve the register from the entity.
-	 *
-	 * Returns null on any failure — the calling site falls back to the
-	 * raw UUID string which preserves prior behaviour (folder won't
-	 * resolve, leaf reports `[]`), letting the integration degrade
-	 * gracefully per AD-23.
-	 *
-	 * @param string $objectId Object uuid.
-	 *
-	 * @return object|null ObjectEntity instance or null.
-	 */
-	private function resolveObjectEntity(string $objectId): ?object {
-		try {
-			$mapper = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Db\\MagicMapper'
-			);
-			if ($mapper === null) {
-				return null;
-			}
-
-			$entity = $mapper->find($objectId);
-			if (is_object($entity) === true) {
-				return $entity;
-			}
-
-			return null;
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end resolveObjectEntity()
-
-	/**
-	 * Resolve the current user's UID via IUserSession.
-	 *
-	 * @return string|null
-	 */
-	private function resolveCurrentUserId(): ?string {
-		try {
-			$session = $this->lookup(serviceName: 'OCP\\IUserSession');
-			if ($session === null) {
-				return null;
-			}
-
-			$user = $session->getUser();
-			if ($user === null) {
-				return null;
-			}
-
-			return $user->getUID();
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end resolveCurrentUserId()
 
 	/**
 	 * Normalise an `IShare` into the leaf-row contract.
@@ -810,73 +691,4 @@ class SharesProvider extends AbstractIntegrationProvider {
 		return '/index.php/apps/files';
 	}//end filesUrl()
 
-	/**
-	 * Resolve a service from the container.
-	 *
-	 * @param string $serviceName Fully qualified class name to resolve.
-	 *
-	 * @return object|null
-	 */
-	private function lookup(string $serviceName): ?object {
-		try {
-			$container = $this->resolveContainer();
-			$service = $container->get($serviceName);
-			if (is_object($service) === true) {
-				return $service;
-			}
-
-			return null;
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end lookup()
-
-	/**
-	 * Resolve the active container — the test override if injected,
-	 * otherwise NC's global server container.
-	 *
-	 * @return ContainerInterface
-	 */
-	private function resolveContainer(): ContainerInterface {
-		if ($this->container !== null) {
-			return $this->container;
-		}
-
-		// Thin PSR-11 adapter around `\OCP\Server::get()` so the rest
-		// of the provider can treat container lookups uniformly.
-		return new class implements ContainerInterface {
-			/**
-			 * Resolve a service from NC's global server container.
-			 *
-			 * @param string $id Service id.
-			 *
-			 * @return object
-			 *
-			 * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
-			 */
-			public function get(string $id): object {
-				// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- PSR-11 adapter shim: this IS the container being handed to a collaborator, so there is no container to inject into it.
-				return Server::get($id);
-			}//end get()
-
-			/**
-			 * Whether NC's global server container can resolve the id.
-			 *
-			 * @param string $id Service id.
-			 *
-			 * @return bool
-			 *
-			 * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
-			 */
-			public function has(string $id): bool {
-				try {
-					// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- PSR-11 adapter shim: this IS the container being handed to a collaborator, so there is no container to inject into it.
-					Server::get($id);
-					return true;
-				} catch (Throwable $e) {
-					return false;
-				}
-			}//end has()
-		};
-	}//end resolveContainer()
 }//end class

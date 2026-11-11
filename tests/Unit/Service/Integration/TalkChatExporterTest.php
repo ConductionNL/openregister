@@ -18,11 +18,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Files\Controller\FilesController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -46,7 +49,7 @@ class TalkChatExporterTest extends TestCase {
 	 * @return void
 	 */
 	public function testThreeMessagesBecomeThreeLinesOldestFirst(): void {
-		$file = (new TalkChatExporter())->export(
+		$file = (new TalkChatExporter())->exportTranscript(new ChatTranscriptRequest(
 			conversation: 'Bezwaar 2026-17',
 			messages: [
 				['actorDisplayName' => 'Piet', 'timestamp' => 1791540060, 'message' => 'Akkoord.'],
@@ -55,7 +58,7 @@ class TalkChatExporterTest extends TestCase {
 			],
 			savedBy: 'Anna de Vries',
 			savedAt: new DateTimeImmutable('2026-10-09 12:00:00 UTC')
-		);
+		));
 
 		$lines = explode("\n", trim($file['content']));
 		$this->assertSame('Bezwaar 2026-17', $lines[0]);
@@ -76,7 +79,7 @@ class TalkChatExporterTest extends TestCase {
 	 */
 	public function testAnEmptyConversationIsRefused(): void {
 		$this->expectException(\InvalidArgumentException::class);
-		(new TalkChatExporter())->export('Leeg', [], 'Anna', new DateTimeImmutable());
+		(new TalkChatExporter())->exportTranscript(new ChatTranscriptRequest('Leeg', [], 'Anna', new DateTimeImmutable()));
 	}//end testAnEmptyConversationIsRefused()
 
 	/**
@@ -105,7 +108,10 @@ class TalkChatExporterTest extends TestCase {
 		$objectService->method('getObject')->willReturn($object);
 		$fileService = $this->createMock(FileService::class);
 		$fileService->expects($this->once())->method('addFile')
-			->with($object, $this->stringStartsWith('Overleg-'), $this->stringContains('Anna: Hallo'))
+			->with(
+				$this->callback(fn (FileTarget $target): bool => $target->object === $object),
+				$this->callback(fn (FileUpload $upload): bool => $this->stringStartsWith('Overleg-')->evaluate($upload->fileName, '', true) && $this->stringContains('Anna: Hallo')->evaluate($upload->content, '', true))
+			)
 			->willReturn($this->createMock(File::class));
 		$fileService->method('formatFile')->willReturn(['title' => 'Overleg.txt']);
 

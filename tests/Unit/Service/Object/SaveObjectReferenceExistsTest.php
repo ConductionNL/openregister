@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -122,6 +123,10 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 				throw new RuntimeException('database down');
 			}
 
+			if ($lookup === 'lookup failed') {
+				throw new ObjectLookupFailedException('database down');
+			}
+
 			return new ObjectEntity();
 		});
 		$events = $this->createMock(IEventDispatcher::class);
@@ -133,10 +138,8 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->createMock(MagicMapper::class),
-						unifiedObjectMapper: $unified,
-						schemaMapper: $schemas,
-						registerMapper: $registers
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $unified
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -231,6 +234,17 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 			],
 			$this->checkTwice($this->handler(lookup: 'fails'), null)
 		);
+	}
+
+	public function testAFailedStoreLookupRefusesTheSave(): void {
+		try {
+			$this->checkTwice($this->handler(lookup: 'lookup failed'), null);
+			$this->fail('A failed store lookup must not let the reference pass.');
+		} catch (ObjectLookupFailedException $e) {
+			$this->assertSame('database down', $e->getMessage());
+		}
+
+		$this->assertSame([['find', self::UUID, null, 2, false, false, false]], $this->trace);
 	}
 
 	public function testAnUnknownRegisterSkipsTheLookup(): void {

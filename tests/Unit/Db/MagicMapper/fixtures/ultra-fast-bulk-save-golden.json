@@ -310,7 +310,7 @@
     "updates only": {
         "result": [],
         "trace": [
-            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":0,\"updateCount\":1,\"hasRegister\":true,\"hasSchema\":true}",
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":0,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":true}",
             "ensure table 1_2",
             "upsert openregister_table_1_2  pre=true"
         ]
@@ -318,7 +318,7 @@
     "updates only / no pre-update state": {
         "result": [],
         "trace": [
-            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":0,\"updateCount\":1,\"hasRegister\":true,\"hasSchema\":true}",
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":0,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":true}",
             "ensure table 1_2",
             "upsert openregister_table_1_2  pre=false"
         ]
@@ -329,7 +329,7 @@
             "openregister_table_1_3:b"
         ],
         "trace": [
-            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":1,\"hasRegister\":false,\"hasSchema\":false}",
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
             "find register 1",
             "find schema 2",
             "ensure table 1_2",
@@ -346,7 +346,7 @@
             "openregister_table_1_3:b"
         ],
         "trace": [
-            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":1,\"hasRegister\":false,\"hasSchema\":false}",
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
             "find register 1",
             "find schema 2",
             "ensure table 1_2",

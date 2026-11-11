@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Notifications\Controller\NotificationBroadcastController;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationBroadcastControllerServices;
@@ -65,6 +67,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionNamedType;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Controller\NotificationBroadcastController
@@ -231,8 +234,8 @@ class A26NotificationControllersGoldenTest extends TestCase {
 			class: NotificationPreferencesInterface::class,
 			returns: [
 				'getEffectiveForUser' => [['schema' => 'case', 'enabled' => true]],
-				'getOverride'         => ['enabled' => false],
-				'getGroupDefault'     => static fn (string $groupId, string $schemaSlug, string $notificationKey): ?array => $notificationKey === 'quiet' ? null : ['channels' => ['email']],
+				'overrideAt'          => ['enabled' => false],
+				'groupDefaultAt'      => static fn (string $groupId, PreferenceAddress $address): ?array => $address->notificationKey === 'quiet' ? null : ['channels' => ['email']],
 			]
 		);
 	}//end preferences()
@@ -285,17 +288,19 @@ class A26NotificationControllersGoldenTest extends TestCase {
 		$entity->method('jsonSerialize')->willReturn(['id' => 1]);
 		$mapper = $this->createMock(NotificationSubscriptionMapper::class);
 		$mapper->method('findByUser')->willReturnCallback(fn (string $userId): array => $this->log(call: 'mapper::findByUser', args: [$userId], result: [$entity]));
-		$mapper->method('subscribe')->willReturnCallback(
-			function (string $userId, ?int $registerId, ?int $schemaId) use ($entity): NotificationSubscription {
-				$this->log(call: 'mapper::subscribe', args: [$userId, $registerId, $schemaId], result: null);
-				if ($registerId === null && $schemaId === null) {
+		$mapper->method('subscribeTo')->willReturnCallback(
+			function (SubscriptionKey $key) use ($entity): NotificationSubscription {
+				$this->log(call: 'mapper::subscribe', args: [$key->userId, $key->registerId, $key->schemaId], result: null);
+				if ($key->registerId === null && $key->schemaId === null) {
 					throw new InvalidArgumentException('needs a scope');
 				}
 
 				return $entity;
 			}
 		);
-		$mapper->method('unsubscribe')->willReturnCallback(fn (string $userId, ?int $registerId, ?int $schemaId): bool => $this->log(call: 'mapper::unsubscribe', args: [$userId, $registerId, $schemaId], result: true));
+		$mapper->method('unsubscribeFrom')->willReturnCallback(
+			fn (SubscriptionKey $key): bool => $this->log(call: 'mapper::unsubscribe', args: [$key->userId, $key->registerId, $key->schemaId], result: true)
+		);
 		$register = new Register();
 		$schema = new Schema();
 		$registers = $this->recording(
@@ -394,6 +399,10 @@ class A26NotificationControllersGoldenTest extends TestCase {
 
 		if ($value instanceof IGroup === true) {
 			return 'IGroup';
+		}
+
+		if ($value instanceof PreferenceAddress === true || $value instanceof PreferenceWrite === true) {
+			return $this->plain(value: get_object_vars($value));
 		}
 
 		if (is_object($value) === true) {

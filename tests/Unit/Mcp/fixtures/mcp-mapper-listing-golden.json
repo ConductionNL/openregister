@@ -1,0 +1,211 @@
+{
+    "agent findByOrganisation, no user": {
+        "result": [
+            "a-public",
+            "a-private"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 where(eq(organisation, :p1, NULL))",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findByOrganisation, stranger": {
+        "result": [
+            "a-public"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 where(eq(organisation, :p1, NULL))",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findByOrganisation, invited": {
+        "result": [
+            "a-public",
+            "a-private"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 where(eq(organisation, :p1, NULL))",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "conversation findByUser defaults": {
+        "result": [
+            "c1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_conversations, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 expr.isNull(deleted_at)",
+            "#1 andWhere(isNull(deleted_at))",
+            "#1 orderBy(updated, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "conversation findByUser org, deleted, page": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_conversations, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 andWhere(eq(organisation, :p2, NULL))",
+            "#1 orderBy(updated, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "conversation findByUser org only": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_conversations, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 andWhere(eq(organisation, :p2, NULL))",
+            "#1 expr.isNull(deleted_at)",
+            "#1 andWhere(isNull(deleted_at))",
+            "#1 orderBy(updated, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "conversation findDeletedByUser defaults": {
+        "result": [
+            "c2"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_conversations, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 expr.isNotNull(deleted_at)",
+            "#1 andWhere(isNotNull(deleted_at))",
+            "#1 orderBy(deleted_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "conversation findDeletedByUser org, page": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_conversations, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 expr.isNotNull(deleted_at)",
+            "#1 andWhere(isNotNull(deleted_at))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 andWhere(eq(organisation, :p2, NULL))",
+            "#1 orderBy(deleted_at, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 executeQuery()"
+        ]
+    },
+    "conversation countByUser defaults": {
+        "result": 4,
+        "queries": [
+            "#1 func.count(*, count)",
+            "#1 select(count(*, count))",
+            "#1 from(openregister_conversations, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 expr.isNull(deleted_at)",
+            "#1 andWhere(isNull(deleted_at))",
+            "#1 executeQuery()"
+        ]
+    },
+    "conversation countByUser org, deleted": {
+        "result": 7,
+        "queries": [
+            "#1 func.count(*, count)",
+            "#1 select(count(*, count))",
+            "#1 from(openregister_conversations, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 andWhere(eq(organisation, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "conversation countDeletedByUser org": {
+        "result": 2,
+        "queries": [
+            "#1 func.count(*, count)",
+            "#1 select(count(*, count))",
+            "#1 from(openregister_conversations, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 expr.isNotNull(deleted_at)",
+            "#1 andWhere(isNotNull(deleted_at))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 andWhere(eq(organisation, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "conversation findTitlesByUserAgent": {
+        "result": [
+            "New",
+            "New (2)"
+        ],
+        "queries": [
+            "#1 select(title)",
+            "#1 from(openregister_conversations, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = 9, 1",
+            "#1 expr.eq(agent_id, :p2, NULL)",
+            "#1 andWhere(eq(agent_id, :p2, NULL))",
+            "#1 param :p3 = New%, 2",
+            "#1 expr.like(title, :p3, NULL)",
+            "#1 andWhere(like(title, :p3, NULL))",
+            "#1 expr.isNull(deleted_at)",
+            "#1 andWhere(isNull(deleted_at))",
+            "#1 executeQuery()"
+        ]
+    }
+}

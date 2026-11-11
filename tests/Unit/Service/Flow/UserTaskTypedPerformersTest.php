@@ -159,10 +159,7 @@ final class UserTaskTypedPerformersTest extends TestCase {
 			}
 		);
 
-		return new UserTaskPerformers(
-			config: $this->configReader(),
-			principals: new PrincipalResolverRegistry($dispatcher, $this->createMock(LoggerInterface::class))
-		);
+		return new UserTaskPerformers(config: $this->configReader(), hooks: new \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks(principals: new PrincipalResolverRegistry($dispatcher, $this->createMock(LoggerInterface::class))));
 	}//end performers()
 
 	/**

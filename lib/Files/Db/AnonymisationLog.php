@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Files\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\TypedFieldsJsonTrait;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -71,6 +72,9 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class AnonymisationLog extends Entity implements JsonSerializable {
+	// Serialises every registered field in registration order, dates as ISO 8601.
+	use TypedFieldsJsonTrait;
+
 
 	/**
 	 * Status: anonymisation completed successfully.
@@ -211,25 +215,11 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 	}//end getSanitizationArray()
 
 	/**
-	 * JSON serialize the entity.
+	 * The serialised sanitization report, decoded.
 	 *
-	 * @return array<string, mixed>
+	 * @return array{sanitization: array|null}
 	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'fileId' => $this->fileId,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'mimeType' => $this->mimeType,
-			'engine' => $this->engine,
-			'status' => $this->status,
-			'reason' => $this->reason,
-			'sanitization' => $this->getSanitizationArray(),
-			'replacements' => $this->replacements,
-			'durationMs' => $this->durationMs,
-			'created' => $this->created->format('c'),
-		];
-	}//end jsonSerialize()
+	protected function jsonOverrides(): array {
+		return ['sanitization' => $this->getSanitizationArray()];
+	}//end jsonOverrides()
 }//end class

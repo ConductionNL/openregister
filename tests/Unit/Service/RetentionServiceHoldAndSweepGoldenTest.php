@@ -26,10 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\HoldOrder;
+use OCA\OpenRegister\Service\DisposalSweep;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
@@ -61,9 +64,11 @@ class RetentionServiceHoldAndSweepGoldenTest extends TestCase {
 
 		$this->service = new RetentionService(
 			new RetentionStores(
-				$this->createMock(MagicMapper::class),
-				$this->createMock(SchemaMapper::class),
-				$this->createMock(RegisterMapper::class),
+				new SchemaCatalog(
+					registers: $this->createMock(RegisterMapper::class),
+					schemas: $this->createMock(SchemaMapper::class),
+					tables: $this->createMock(MagicMapper::class)
+				),
 				$this->createMock(AuditTrailMapper::class)
 			),
 			new RetentionRules(
@@ -87,9 +92,9 @@ class RetentionServiceHoldAndSweepGoldenTest extends TestCase {
 
 		$object = new ObjectEntity();
 		$object->setRetention([]);
-		$this->service->placeLegalHold($object, 'Bezwaar 12', 'matter-a');
-		$this->service->placeLegalHold($object, 'WOO-verzoek 7', 'matter-b');
-		$this->service->releaseLegalHold($object, 'Bezwaar afgehandeld', 'matter-a');
+		$this->service->placeHold($object, new HoldOrder('Bezwaar 12', 'matter-a'));
+		$this->service->placeHold($object, new HoldOrder('WOO-verzoek 7', 'matter-b'));
+		$this->service->releaseHold($object, new HoldOrder('Bezwaar afgehandeld', 'matter-a'));
 
 		$legalHold = $object->getRetention()['legalHold'];
 		$this->assertTrue($legalHold['active']);
@@ -107,9 +112,9 @@ class RetentionServiceHoldAndSweepGoldenTest extends TestCase {
 
 		$object = new ObjectEntity();
 		$object->setRetention([]);
-		$this->service->placeLegalHold($object, 'Bezwaar 12', 'matter-a');
-		$this->service->placeLegalHold($object, 'WOO-verzoek 7', 'matter-b');
-		$this->service->releaseLegalHold($object, 'Alles afgehandeld');
+		$this->service->placeHold($object, new HoldOrder('Bezwaar 12', 'matter-a'));
+		$this->service->placeHold($object, new HoldOrder('WOO-verzoek 7', 'matter-b'));
+		$this->service->releaseHold($object, new HoldOrder('Alles afgehandeld'));
 
 		$legalHold = $object->getRetention()['legalHold'];
 		$this->assertFalse($legalHold['active']);
@@ -127,7 +132,7 @@ class RetentionServiceHoldAndSweepGoldenTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setRetention(['archiefnominatie' => 'vernietigen']);
 
-		$this->assertSame($object, $this->service->releaseLegalHold($object, 'Niets', 'matter-a'));
+		$this->assertSame($object, $this->service->releaseHold($object, new HoldOrder('Niets', 'matter-a')));
 		$this->assertSame(['archiefnominatie' => 'vernietigen'], $object->getRetention());
 	}//end testAReleaseWithNothingHeldChangesNothing()
 
@@ -164,10 +169,10 @@ class RetentionServiceHoldAndSweepGoldenTest extends TestCase {
 		$this->assertSame(
 			[RetentionService::REFUSAL_ALREADY_LISTED, RetentionService::REFUSAL_LEGAL_HOLD, RetentionService::REFUSAL_NOT_DUE, null],
 			[
-				$this->service->destructionRefusal($objects[5], '2026-01-01', ['destroy-listed']),
-				$this->service->destructionRefusal($objects[6], '2026-01-01', []),
-				$this->service->destructionRefusal($objects[7], '2026-01-01', []),
-				$this->service->destructionRefusal($objects[4], '2026-01-01', ['destroy-listed']),
+				$this->service->destructionRefusalIn($objects[5], new DisposalSweep('2026-01-01', ['destroy-listed'])),
+				$this->service->destructionRefusalIn($objects[6], new DisposalSweep('2026-01-01', [])),
+				$this->service->destructionRefusalIn($objects[7], new DisposalSweep('2026-01-01', [])),
+				$this->service->destructionRefusalIn($objects[4], new DisposalSweep('2026-01-01', ['destroy-listed'])),
 			]
 		);
 	}//end testTheSweepsAcceptAndRefuseTheSameObjectsAsBefore()

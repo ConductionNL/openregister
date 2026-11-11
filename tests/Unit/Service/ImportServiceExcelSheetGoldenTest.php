@@ -25,6 +25,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
 
 /**
  * Golden test for ImportService::importFromExcel() and the spreadsheet batch processing behind it.
@@ -117,16 +121,18 @@ class ImportServiceExcelSheetGoldenTest extends TestCase {
 
 		try {
 			$result = @$service->importFromExcel(
-				$path,
-				$register,
-				$schema,
-				$case['validation'] ?? false,
-				$case['events'] ?? false,
-				$case['rbac'] ?? true,
-				$case['multi'] ?? true,
-				$case['publish'] ?? false,
-				$user,
-				$case['enrich'] ?? true
+				request: new ImportRequest(
+					filePath: $path,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user),
+					options: new ImportOptions(
+						validation: $case['validation'] ?? false,
+						events: $case['events'] ?? false,
+						enrich: $case['enrich'] ?? true,
+						publish: $case['publish'] ?? false,
+					),
+				),
+				_rbac: $case['rbac'] ?? true,
+				_multitenancy: $case['multi'] ?? true,
 			);
 			$outcome = ['result' => $this->describe(value: $result)];
 		} catch (\Throwable $e) {
@@ -169,8 +175,8 @@ class ImportServiceExcelSheetGoldenTest extends TestCase {
 		}
 
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObjects')->willReturnCallback(function (array $objects) use ($case) {
-			$this->record(method: 'objectService.saveObjects', args: func_get_args());
+		$objectService->method('saveObjects')->willReturnCallback(function (array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($case) {
+			$this->record(method: 'objectService.saveObjects', args: [$objects, $options->defaults->register, $options->defaults->schema, $_rbac, $_multitenancy, $options->validation, $options->events, $options->audit]);
 			if (($case['saveThrows'] ?? false) === true) {
 				throw new Exception('Bulk save failed');
 			}

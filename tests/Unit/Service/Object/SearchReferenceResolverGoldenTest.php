@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * The answers, lookups and log lines of the search reference resolver.
@@ -212,7 +214,7 @@ final class SearchReferenceResolverGoldenTest extends TestCase {
 			}
 		);
 
-		return new SearchReferenceResolver($registers, $schemas, $logger);
+		return new SearchReferenceResolver(new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapperInterface::class)), $logger);
 	}//end resolver()
 
 	/**

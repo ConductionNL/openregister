@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\PrincipalReachController;
+use OCA\OpenRegister\Controller\Support\PrincipalReachControllerServices;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
 use OCA\OpenRegister\Service\Rbac\ReachRevocationService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -74,7 +75,7 @@ class PrincipalReachControllerA24GoldenTest extends TestCase {
 	private function controller(array $params = []): PrincipalReachController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => ($params[$key] ?? $default));
-		return new PrincipalReachController('openregister', $request, $this->reach, $this->revocation);
+		return new PrincipalReachController($request, new PrincipalReachControllerServices($this->reach, $this->revocation));
 	}//end controller()
 
 	/**

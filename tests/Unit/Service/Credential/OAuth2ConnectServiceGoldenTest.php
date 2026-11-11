@@ -29,6 +29,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
 use OCA\OpenRegister\Service\Credential\OAuth2AuthorizationRequest;
 use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
@@ -49,6 +51,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectClients;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectSteps;
+use OCA\OpenRegister\Service\Credential\OAuth2CodeGrant;
+use OCA\OpenRegister\Service\Credential\OAuth2Revocation;
 
 /**
  * Golden outcomes of the OAuth2 connect seam.
@@ -138,15 +142,10 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 	}
 
 	public function testAFirstConnectPostsTheExactTokenRequestAndMintsTheCredential(): void {
-		$id = $this->service(provider: $this->mastodon())->complete(
-			claims: [
+		$id = $this->service(provider: $this->mastodon())->complete(claims: [
 				'p' => 'mastodon', 'u' => 'alice', 'h' => 'https://mastodon.example', 's' => 'organisation', 'o' => 'org-1',
 				'cl' => 'CID', 'cr' => 'CREF', 'a' => ['pipelinq'], 'nm' => 'Company account', 'sc' => ['read'],
-			],
-			code: 'CODE',
-			verifier: 'VERIFIER',
-			redirectUri: 'https://home.example/cb'
-		);
+			], grant: new OAuth2CodeGrant(code: 'CODE', verifier: 'VERIFIER', redirectUri: 'https://home.example/cb'));
 
 		$this->assertSame('minted-uuid', $id);
 		$this->assertSame(
@@ -195,12 +194,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 	}
 
 	public function testAFirstConnectToACentralProviderWithBasicAuthAndNoPkce(): void {
-		$this->service(provider: $this->github())->complete(
-			claims: ['p' => 'github', 'u' => 'bob', 'a' => 'not-a-list'],
-			code: 'CODE',
-			verifier: 'VERIFIER',
-			redirectUri: 'https://home.example/cb'
-		);
+		$this->service(provider: $this->github())->complete(claims: ['p' => 'github', 'u' => 'bob', 'a' => 'not-a-list'], grant: new OAuth2CodeGrant(code: 'CODE', verifier: 'VERIFIER', redirectUri: 'https://home.example/cb'));
 
 		$this->assertSame(
 			[[
@@ -225,7 +219,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 
 	public function testAPublicClientSendsNoSecretAnywhere(): void {
 		$this->clientSecret = null;
-		$this->service(provider: $this->github())->complete(claims: ['p' => 'github', 'u' => 'bob'], code: 'C', verifier: 'V', redirectUri: 'R');
+		$this->service(provider: $this->github())->complete(claims: ['p' => 'github', 'u' => 'bob'], grant: new OAuth2CodeGrant(code: 'C', verifier: 'V', redirectUri: 'R'));
 
 		$this->assertSame(
 			['body' => ['grant_type' => 'authorization_code', 'code' => 'C', 'redirect_uri' => 'R', 'client_id' => 'RESOLVED'], 'headers' => ['Accept' => 'application/json'], 'timeout' => 20],
@@ -253,18 +247,13 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('token response carries no access token');
-		$this->service(provider: $this->github())->complete(claims: ['p' => 'github'], code: 'C', verifier: 'V', redirectUri: 'R');
+		$this->service(provider: $this->github())->complete(claims: ['p' => 'github'], grant: new OAuth2CodeGrant(code: 'C', verifier: 'V', redirectUri: 'R'));
 	}
 
 	public function testAReauthorisationOverwritesInPlaceAndKeepsTheStoredClient(): void {
 		$this->stored = ['provider' => 'mastodon', 'owner' => 'carol', 'instanceBaseUrl' => 'https://mastodon.example', 'clientId' => 'OLD', 'clientCredentialRef' => 'OLDREF'];
 
-		$id = $this->service(provider: $this->mastodon())->complete(
-			claims: ['p' => 'mastodon', 'u' => 'alice', 'h' => 'https://mastodon.example', 'cid' => 'existing-uuid', 'cl' => ' ', 's' => 'personal'],
-			code: 'C',
-			verifier: 'V',
-			redirectUri: 'R'
-		);
+		$id = $this->service(provider: $this->mastodon())->complete(claims: ['p' => 'mastodon', 'u' => 'alice', 'h' => 'https://mastodon.example', 'cid' => 'existing-uuid', 'cl' => ' ', 's' => 'personal'], grant: new OAuth2CodeGrant(code: 'C', verifier: 'V', redirectUri: 'R'));
 
 		$this->assertSame('existing-uuid', $id);
 		$this->assertSame([], $this->mints);
@@ -276,7 +265,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 
 	public function testAReauthorisationFallsBackToTheClaimedOwner(): void {
 		$this->stored = ['provider' => 'github'];
-		$this->service(provider: $this->github())->complete(claims: ['p' => 'github', 'u' => 'alice', 'cid' => 'x'], code: 'C', verifier: 'V', redirectUri: 'R');
+		$this->service(provider: $this->github())->complete(claims: ['p' => 'github', 'u' => 'alice', 'cid' => 'x'], grant: new OAuth2CodeGrant(code: 'C', verifier: 'V', redirectUri: 'R'));
 
 		$this->assertSame('alice', $this->records[0]['owner']);
 	}
@@ -302,12 +291,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		$this->stored = $stored;
 
 		try {
-			$this->service(provider: $this->mastodon())->complete(
-				claims: ['p' => 'mastodon', 'u' => 'alice', 'h' => 'https://mastodon.example', 'cid' => 'existing-uuid'],
-				code: 'C',
-				verifier: 'V',
-				redirectUri: 'R'
-			);
+			$this->service(provider: $this->mastodon())->complete(claims: ['p' => 'mastodon', 'u' => 'alice', 'h' => 'https://mastodon.example', 'cid' => 'existing-uuid'], grant: new OAuth2CodeGrant(code: 'C', verifier: 'V', redirectUri: 'R'));
 			$this->fail('re-authorisation accepted');
 		} catch (RuntimeException $refused) {
 			$this->assertSame($message, $refused->getMessage());
@@ -320,19 +304,14 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 
 	public function testAnUnpinnedCredentialMayBeReauthorisedFromAnyHost(): void {
 		$this->stored = ['provider' => 'mastodon', 'instanceBaseUrl' => ' '];
-		$id = $this->service(provider: $this->mastodon())->complete(
-			claims: ['p' => 'mastodon', 'h' => 'https://mastodon.example', 'cid' => 'existing-uuid'],
-			code: 'C',
-			verifier: 'V',
-			redirectUri: 'R'
-		);
+		$id = $this->service(provider: $this->mastodon())->complete(claims: ['p' => 'mastodon', 'h' => 'https://mastodon.example', 'cid' => 'existing-uuid'], grant: new OAuth2CodeGrant(code: 'C', verifier: 'V', redirectUri: 'R'));
 
 		$this->assertSame('existing-uuid', $id);
 	}
 
 	public function testRevokeIsSkippedWithoutAnEndpoint(): void {
-		$this->assertSame('', $this->service(provider: null)->revokeUpstream(provider: $this->github(), credential: [], credentialId: 'c', scope: 'personal'));
-		$this->assertSame('', $this->service(provider: null)->revokeUpstream(provider: ['oauth2' => 'x'], credential: [], credentialId: 'c', scope: 'personal'));
+		$this->assertSame('', $this->service(provider: null)->revokeUpstream(revocation: new OAuth2Revocation(provider: $this->github(), credential: [], address: new TokenSetAddress(credentialId: 'c', scope: 'personal'))));
+		$this->assertSame('', $this->service(provider: null)->revokeUpstream(revocation: new OAuth2Revocation(provider: ['oauth2' => 'x'], credential: [], address: new TokenSetAddress(credentialId: 'c', scope: 'personal'))));
 		$this->assertSame([], $this->posts);
 	}
 
@@ -340,12 +319,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		$provider = $this->mastodon();
 		$provider['oauth2']['revokeEndpoint'] = '/oauth/revoke';
 
-		$result = $this->service(provider: null)->revokeUpstream(
-			provider: $provider,
-			credential: ['provider' => 'mastodon', 'owner' => 'alice', 'instanceBaseUrl' => 'https://mastodon.example'],
-			credentialId: 'c',
-			scope: 'personal'
-		);
+		$result = $this->service(provider: null)->revokeUpstream(revocation: new OAuth2Revocation(provider: $provider, credential: ['provider' => 'mastodon', 'owner' => 'alice', 'instanceBaseUrl' => 'https://mastodon.example'], address: new TokenSetAddress(credentialId: 'c', scope: 'personal')));
 
 		$this->assertSame('', $result);
 		$this->assertSame(
@@ -361,7 +335,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		$provider = $this->github();
 		$provider['oauth2']['revokeEndpoint'] = 'https://api.github.com/revoke';
 
-		$this->assertSame('revoke_failed', $this->service(provider: null)->revokeUpstream(provider: $provider, credential: [], credentialId: 'c', scope: 'personal'));
+		$this->assertSame('revoke_failed', $this->service(provider: null)->revokeUpstream(revocation: new OAuth2Revocation(provider: $provider, credential: [], address: new TokenSetAddress(credentialId: 'c', scope: 'personal'))));
 		$this->assertSame(['token' => 'STORED_AT', 'client_id' => 'RESOLVED'], $this->posts[0][1]['body']);
 	}
 
@@ -374,7 +348,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 	 */
 	private function assertCompleteRefused(string $message): void {
 		try {
-			$this->service(provider: $this->github())->complete(claims: ['p' => 'github'], code: 'C', verifier: 'V', redirectUri: 'R');
+			$this->service(provider: $this->github())->complete(claims: ['p' => 'github'], grant: new OAuth2CodeGrant(code: 'C', verifier: 'V', redirectUri: 'R'));
 			$this->fail('exchange accepted');
 		} catch (RuntimeException $refused) {
 			$this->assertSame($message, $refused->getMessage());
@@ -450,8 +424,17 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		});
 
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->method('mint')->willReturnCallback(function (string $name, string $provider, string $owner, array $allowedApps = [], ?string $secret = null, string $scope = 'personal', ?string $organisation = null, array $metadata = []): ObjectEntity {
-			$this->mints[] = compact('name', 'provider', 'owner', 'allowedApps', 'secret', 'scope', 'organisation', 'metadata');
+		$broker->method('mintCredential')->willReturnCallback(function (CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
+			$this->mints[] = [
+				'name' => $mint->name,
+				'provider' => $mint->provider,
+				'owner' => $mint->owner,
+				'allowedApps' => $options->allowedApps,
+				'secret' => $options->secret(),
+				'scope' => $options->scope,
+				'organisation' => $options->organisation,
+				'metadata' => $mint->metadata,
+			];
 			$minted = new ObjectEntity();
 			$minted->setUuid('minted-uuid');
 			return $minted;
@@ -461,7 +444,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		$refresh->method('persist')->willReturnCallback(function (TokenSetAddress $address, OAuth2TokenSet $set): void {
 			$this->persists[] = ['credentialId' => $address->credentialId, 'scope' => $address->scope];
 		});
-		$refresh->method('storedSet')->willReturn(OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'STORED_AT']));
+		$refresh->method('storedSet')->willReturn(OAuth2TokenSet::fromResponse(response: ['access_token' => 'STORED_AT']));
 
 		$identities = $this->createMock(OAuth2AccountIdentity::class);
 		$identities->method('record')->willReturnCallback(function (\OCA\OpenRegister\Service\Credential\RedeemedConnection $connection, TokenSetAddress $address): void {

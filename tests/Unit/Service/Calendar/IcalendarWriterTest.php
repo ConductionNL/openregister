@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Calendar;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use DateTimeZone;
+use OCA\OpenRegister\Service\Calendar\CalendarContents;
 use OCA\OpenRegister\Service\Calendar\CalendarYearSpan;
 use OCA\OpenRegister\Service\Calendar\IcalendarWriter;
 use PHPUnit\Framework\TestCase;
@@ -125,13 +126,64 @@ class IcalendarWriterTest extends TestCase {
 		$this->assertStringContainsString('TZOFFSETTO:+0000', $body);
 	}
 
+	public function testAZoneWithoutTransitionsIsExactlyOneStandardBlock(): void {
+		// A fixed-offset zone has no transitions to read an offset from, so it is
+		// written with +0000: pinned as the writer behaves, not as it might.
+		foreach (['UTC' => '+0000', '+0230' => '+0000'] as $zone => $offset) {
+			$timeZone = new DateTimeZone($zone);
+			$this->assertSame(
+				[
+					'BEGIN:VTIMEZONE',
+					'TZID:' . $timeZone->getName(),
+					'BEGIN:STANDARD',
+					'DTSTART:19700101T000000',
+					'TZOFFSETFROM:' . $offset,
+					'TZOFFSETTO:' . $offset,
+					'TZNAME:' . $timeZone->getName(),
+					'END:STANDARD',
+					'END:VTIMEZONE',
+				],
+				$this->writer->timeZoneComponent(timeZone: $timeZone, years: new CalendarYearSpan(fromYear: 2026, toYear: 2026)),
+				$zone
+			);
+		}
+	}
+
+	public function testAZoneWithTransitionsGetsOneBlockPerTransitionAfterTheFirst(): void {
+		$timeZone = new DateTimeZone('Europe/Amsterdam');
+		$from     = (new \DateTimeImmutable('2025-01-01T00:00:00+00:00'))->getTimestamp();
+		$to       = (new \DateTimeImmutable('2028-12-31T23:59:59+00:00'))->getTimestamp();
+		// The zone database of this PHP build, read the way the writer reads it.
+		$transitions = $timeZone->getTransitions($from, $to);
+
+		$lines = $this->writer->timeZoneComponent(timeZone: $timeZone, years: new CalendarYearSpan(fromYear: 2026, toYear: 2027));
+
+		$this->assertSame(['BEGIN:VTIMEZONE', 'TZID:Europe/Amsterdam'], array_slice($lines, 0, 2));
+		$this->assertSame('END:VTIMEZONE', $lines[count($lines) - 1]);
+		$begins = array_values(array_filter($lines, static fn (string $line): bool => in_array($line, ['BEGIN:STANDARD', 'BEGIN:DAYLIGHT'], true)));
+		$this->assertCount(count($transitions) - 1, $begins);
+
+		$froms = array_values(array_filter($lines, static fn (string $line): bool => str_starts_with($line, 'TZOFFSETFROM:')));
+		$tos   = array_values(array_filter($lines, static fn (string $line): bool => str_starts_with($line, 'TZOFFSETTO:')));
+		foreach (array_slice($transitions, 1) as $index => $transition) {
+			$this->assertSame('TZOFFSETFROM:' . $this->writer->formatOffset((int)$transitions[$index]['offset']), $froms[$index]);
+			$this->assertSame('TZOFFSETTO:' . $this->writer->formatOffset((int)$transition['offset']), $tos[$index]);
+			$expected = 'BEGIN:STANDARD';
+			if ($transition['isdst'] === true) {
+				$expected = 'BEGIN:DAYLIGHT';
+			}
+
+			$this->assertSame($expected, $begins[$index]);
+		}
+	}
+
 	public function testTheCalendarIsWellFormedAndCrlfTerminated(): void {
-		$body = $this->writer->calendar(
+		$body = $this->writer->calendar(new CalendarContents(
 			calendarName: 'Zaken',
 			timeZone: new DateTimeZone('Europe/Amsterdam'),
 			componentLines: ['BEGIN:VEVENT', 'UID:one', 'END:VEVENT'],
 			years: new CalendarYearSpan(fromYear: 2026, toYear: 2026)
-		);
+		));
 
 		$this->assertStringStartsWith("BEGIN:VCALENDAR\r\n", $body);
 		$this->assertStringEndsWith("END:VCALENDAR\r\n", $body);

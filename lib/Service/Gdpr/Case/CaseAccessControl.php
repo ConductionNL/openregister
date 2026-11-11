@@ -36,10 +36,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr\Case;
 
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Handler-scopes-own + officer-override case-level access control (fail-closed).
@@ -63,16 +61,12 @@ class CaseAccessControl implements CaseAccessControlInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserSession $userSession Current caller.
-	 * @param IGroupManager $groupManager Group membership resolver for the officer role.
-	 * @param IAppConfig $appConfig Reads the configured officer group.
-	 * @param LoggerInterface $logger Logger for fail-closed diagnostics.
+	 * @param GdprCallerMembership $membership Current caller, the officer-role group check and the fail-closed log.
+	 * @param IAppConfig           $appConfig  Reads the configured officer group.
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly GdprCallerMembership $membership,
 		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -91,7 +85,7 @@ class CaseAccessControl implements CaseAccessControlInterface {
 	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	public function mayAct(array $case): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->membership->userSession->getUser();
 		if ($user === null) {
 			// No session identity → cannot establish handler-scope or officer
 			// role → deny (fail closed).
@@ -124,9 +118,23 @@ class CaseAccessControl implements CaseAccessControlInterface {
 	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	private function isOfficer(\OCP\IUser $user): bool {
-		$officerGroup = '';
+		$officerGroup = $this->officerGroup();
+		if ($officerGroup === null || $officerGroup === '') {
+			// Unreadable, or no officer role configured → no override is possible → deny.
+			return false;
+		}
+
+		return $this->membership->groupManager->isInGroup($user->getUID(), $officerGroup);
+	}//end isOfficer()
+
+	/**
+	 * The configured officer group, '' when none is configured, or null when the configuration cannot be read.
+	 *
+	 * @return string|null The group id.
+	 */
+	private function officerGroup(): ?string {
 		try {
-			$officerGroup = (string)$this->appConfig->getValueString(
+			return (string)$this->appConfig->getValueString(
 				app: self::APP_ID,
 				key: self::CONFIG_KEY_OFFICER_GROUP,
 				default: ''
@@ -134,17 +142,10 @@ class CaseAccessControl implements CaseAccessControlInterface {
 		} catch (\Throwable $e) {
 			// Cannot read the configuration → cannot confirm the officer role →
 			// deny (fail closed). We do NOT swallow this into a "skip".
-			$this->logger->warning(
+			$this->membership->logger->warning(
 				message: '[CaseAccessControl] officer-group config unreadable — denying (fail closed): ' . $e->getMessage()
 			);
-			return false;
+			return null;
 		}
-
-		if ($officerGroup === '') {
-			// No officer role configured → no override is possible → deny.
-			return false;
-		}
-
-		return $this->groupManager->isInGroup($user->getUID(), $officerGroup);
-	}//end isOfficer()
+	}//end officerGroup()
 }//end class

@@ -328,6 +328,14 @@
                 "debug",
                 "[ImportHandler] Schema with slug missing-schema not found during array items schema property import (will be resolved after schemas are imported).",
                 []
+            ],
+            [
+                "debug",
+                "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+                {
+                    "slug": "thing",
+                    "exception": "no schema thing"
+                }
             ]
         ],
         "result": {
@@ -811,7 +819,16 @@
             },
             "thing"
         ],
-        "logs": [],
+        "logs": [
+            [
+                "debug",
+                "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+                {
+                    "slug": "thing",
+                    "exception": "no schema thing"
+                }
+            ]
+        ],
         "result": {
             "id": 100,
             "slug": "thing",

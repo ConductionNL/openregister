@@ -36,14 +36,13 @@ final class ObjectPermissionsControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ObjectPermissionsControllerServices(
 				objectService: $objectService,
 				report: $report,
 				gate: $gate,
+				logger: $logger,
 			),
-			$logger,
 		];
 	}
 

@@ -213,7 +213,7 @@ class PayloadComparator {
 			return null;
 		}
 
-		$similarity = $this->similarity->similarity($method, $valueA, $valueB);
+		$similarity = $this->similarity->similarity(method: $method, values: new ComparedValues(left: $valueA, right: $valueB));
 
 		return ['field' => $field, 'method' => $method, 'weight' => $weight, 'similarity' => $similarity];
 	}//end scoreRule()

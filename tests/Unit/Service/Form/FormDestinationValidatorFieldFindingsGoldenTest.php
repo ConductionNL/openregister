@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormFieldRules;
 use OCP\IL10N;
@@ -112,7 +113,7 @@ class FormDestinationValidatorFieldFindingsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testFieldFindingsArePinnedWhenExtrasAreRefused(): void {
-		$findings = $this->validator()->validate(mapping: $this->mapping(), schema: $this->schema(configuration: []));
+		$findings = $this->validator()->validate(mapping: $this->mapping(), destination: new FormDestination(schema: $this->schema(configuration: [])));
 
 		$this->assertSame(self::EXPECTED_STRICT, $findings);
 	}//end testFieldFindingsArePinnedWhenExtrasAreRefused()
@@ -123,10 +124,7 @@ class FormDestinationValidatorFieldFindingsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testFieldFindingsArePinnedWhenExtrasAreAllowed(): void {
-		$findings = $this->validator()->validate(
-			mapping: $this->mapping(),
-			schema: $this->schema(configuration: ['additionalProperties' => true])
-		);
+		$findings = $this->validator()->validate(mapping: $this->mapping(), destination: new FormDestination(schema: $this->schema(configuration: ['additionalProperties' => true])));
 
 		$this->assertSame(self::EXPECTED_EXTRAS, $findings);
 	}//end testFieldFindingsArePinnedWhenExtrasAreAllowed()

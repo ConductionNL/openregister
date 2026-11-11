@@ -19,7 +19,7 @@
  *     may take it: the handover gives them nothing they did not already have, it
  *     only says out loud who is now answerable for it.
  *  2. An ADMINISTRATOR REASSIGNS one record or many ({@see assign()},
- *     {@see reassignMany()}), which is what a departure looks like in practice.
+ *     {@see reassign()}), which is what a departure looks like in practice.
  *  3. The owner (or an administrator) names the OWNING GROUP
  *     ({@see setOwnerGroup()}), after which every member of that group edits the
  *     record on the same terms as the named owner.
@@ -57,6 +57,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -135,10 +136,8 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * hand a record to somebody who never asked for it, and a way for a caller to
 	 * put its own name on a record it may not edit.
 	 *
-	 * @param Register $register The record's register.
-	 * @param Schema $schema The record's schema.
-	 * @param ObjectEntity $object The record.
-	 * @param bool $cascade Whether the change carries to the record's children.
+	 * @param OwnedRecord $record  The record, its register and schema.
+	 * @param bool        $cascade Whether the change carries to the record's children.
 	 *
 	 * @throws NotAuthorizedException When nobody is signed in, or the rules refuse this caller the edit.
 	 *
@@ -149,31 +148,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function claim(
-		Register $register,
-		Schema $schema,
-		ObjectEntity $object,
-		bool $cascade = false,
-	): array {
-		return $this->takeOver(
-			record: new OwnedRecord(register: $register, schema: $schema, object: $object),
-			cascade: $cascade
-		);
-	}//end claim()
-
-	/**
-	 * Take ownership of one record as the acting user, once the rules admit the edit.
-	 *
-	 * @param OwnedRecord $record  The record, its register and schema.
-	 * @param bool        $cascade Whether the change carries to the record's children.
-	 *
-	 * @throws NotAuthorizedException When nobody is signed in, or the rules refuse this caller the edit.
-	 *
-	 * @return array The outcome, as {@see transfer()} describes it.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
-	 */
-	private function takeOver(OwnedRecord $record, bool $cascade): array {
+	public function claim(OwnedRecord $record, bool $cascade = false): array {
 		$actor = $this->callerUid();
 		if ($actor === null) {
 			throw new NotAuthorizedException(message: 'Sign in to take ownership of a record');
@@ -194,7 +169,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			record: $record,
 			handover: new OwnershipHandover(newOwner: $actor, cascade: $cascade)
 		);
-	}//end takeOver()
+	}//end claim()
 
 	/**
 	 * Assign one record to a named owner.
@@ -204,35 +179,21 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * they have not accepted makes them answerable for something they may never
 	 * see, and it would let anybody park a record on somebody else's name.
 	 *
-	 * @param Register $register The record's register.
-	 * @param Schema $schema The record's schema.
-	 * @param ObjectEntity $object The record.
-	 * @param string $newOwner The uid of the new owner.
-	 * @param bool $cascade Whether the change carries to the record's children.
+	 * @param OwnedRecord       $record   The record, its register and schema.
+	 * @param OwnershipHandover $handover The uid of the new owner and whether the change carries to the record's children.
 	 *
 	 * @throws NotAuthorizedException When the caller is not an administrator.
 	 * @throws InvalidArgumentException When no such user exists.
 	 *
 	 * @return array The outcome, as {@see transfer()} describes it.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
-	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function assign(
-		Register $register,
-		Schema $schema,
-		ObjectEntity $object,
-		string $newOwner,
-		bool $cascade = false,
-	): array {
+	public function assign(OwnedRecord $record, OwnershipHandover $handover): array {
 		$this->requireAdmin();
-		$this->requireExistingUser(uid: $newOwner);
+		$this->requireExistingUser(uid: $handover->newOwner);
 
-		return $this->transfer(
-			record: new OwnedRecord(register: $register, schema: $schema, object: $object),
-			handover: new OwnershipHandover(newOwner: $newOwner, cascade: $cascade)
-		);
+		return $this->transfer(record: $record, handover: $handover);
 	}//end assign()
 
 	/**
@@ -247,32 +208,26 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * still moved — a bulk reassignment that stops halfway leaves an
 	 * administrator with no way to know how far it got.
 	 *
-	 * @param string[] $identifiers The records, by uuid, id, slug or uri.
-	 * @param string $newOwner The uid of the new owner.
-	 * @param bool $cascade Whether the change carries to each record's children.
+	 * @param string[]              $identifiers  The records, by uuid, id, slug or uri.
+	 * @param OwnershipReassignment $reassignment The new owner and whether the change carries to each record's children.
 	 *
 	 * @throws NotAuthorizedException When the caller is not an administrator.
 	 * @throws InvalidArgumentException When no such user exists, or no record was named.
 	 *
 	 * @return array{newOwner: string, transferred: array, failed: array, unchanged: array}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
-	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function reassignMany(array $identifiers, string $newOwner, bool $cascade = false): array {
+	public function reassign(array $identifiers, OwnershipReassignment $reassignment): array {
 		$this->requireAdmin();
-		$this->requireExistingUser(uid: $newOwner);
+		$this->requireExistingUser(uid: $reassignment->newOwner);
 
 		if ($identifiers === []) {
 			throw new InvalidArgumentException('Name at least one record to reassign');
 		}
 
-		return $this->reassignAll(
-			identifiers: $identifiers,
-			reassignment: new OwnershipReassignment(newOwner: $newOwner, cascade: $cascade)
-		);
-	}//end reassignMany()
+		return $this->reassignAll(identifiers: $identifiers, reassignment: $reassignment);
+	}//end reassign()
 
 	/**
 	 * Reassign every named record, one outcome per record, and log the totals.
@@ -374,14 +329,12 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	/**
 	 * Name the group that owns one record, or take the owning group away.
 	 *
-	 * Owner or administrator, through the same resolver the read side uses, so
-	 * "who may name the owning group" and "who is admitted unconditionally"
-	 * cannot drift apart.
+	 * Kept for the apps that call it by class name; setOwnerGroupFor takes the record.
 	 *
-	 * @param Register $register The record's register.
-	 * @param Schema $schema The record's schema.
-	 * @param ObjectEntity $object The record.
-	 * @param string|null $group The group id, or null to remove the owning group.
+	 * @param Register     $register The record's register.
+	 * @param Schema       $schema   The record's schema.
+	 * @param ObjectEntity $object   The record.
+	 * @param string|null  $group    The group id, or null to remove the owning group.
 	 *
 	 * @throws NotAuthorizedException When the caller is neither owner nor administrator.
 	 * @throws InvalidArgumentException When no such group exists.
@@ -390,20 +343,18 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function setOwnerGroup(
-		Register $register,
-		Schema $schema,
-		ObjectEntity $object,
-		?string $group,
-	): array {
-		return $this->nameOwnerGroup(
-			record: new OwnedRecord(register: $register, schema: $schema, object: $object),
-			group: $group
-		);
+	public function setOwnerGroup(Register $register, Schema $schema, ObjectEntity $object, ?string $group): array {
+		$record = new OwnedRecord(register: $register, schema: $schema, object: $object);
+
+		return $this->setOwnerGroupFor(record: $record, group: $group);
 	}//end setOwnerGroup()
 
 	/**
-	 * Name or clear one record's owning group, once the caller may, and audit it.
+	 * Name the group that owns one record, or take the owning group away, and audit it.
+	 *
+	 * Owner or administrator, through the same resolver the read side uses, so
+	 * "who may name the owning group" and "who is admitted unconditionally"
+	 * cannot drift apart.
 	 *
 	 * @param OwnedRecord $record The record, its register and schema.
 	 * @param string|null $group  The group id, or null to remove the owning group.
@@ -412,8 +363,10 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * @throws InvalidArgumentException When no such group exists.
 	 *
 	 * @return array The stored authorization block.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	private function nameOwnerGroup(OwnedRecord $record, ?string $group): array {
+	public function setOwnerGroupFor(OwnedRecord $record, ?string $group): array {
 		$object = $record->object;
 		$this->requireMayNameOwnerGroup(object: $object, group: $group);
 
@@ -427,10 +380,8 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		$block = $this->withOwnerGroup(block: $block, group: $group);
 
 		$this->writers->authorizationWriter->writeAuthorizationBlock(
-			register: $record->register,
-			schema: $record->schema,
-			objectUuid: (string)$object->getUuid(),
-			block: $block
+			table: new RegisterSchema(register: $record->register, schema: $record->schema),
+			assignment: new AuthorizationAssignment(objectUuid: (string)$object->getUuid(), block: $block)
 		);
 
 		$object->setAuthorization($block);
@@ -442,7 +393,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		);
 
 		return $block;
-	}//end nameOwnerGroup()
+	}//end setOwnerGroupFor()
 
 	/**
 	 * Refuse an owning group that does not exist; null or '' clears and passes.
@@ -583,10 +534,8 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		$before = clone $object;
 
 		$this->writers->ownerWriter->writeOwner(
-			register: $record->register,
-			schema: $record->schema,
-			objectUuid: (string)$object->getUuid(),
-			owner: $handover->newOwner
+			table: new RegisterSchema(register: $record->register, schema: $record->schema),
+			assignment: new OwnerAssignment(objectUuid: (string)$object->getUuid(), owner: $handover->newOwner)
 		);
 		$object->setOwner($handover->newOwner);
 
@@ -843,7 +792,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		$uid = $this->callerUid();
 		$groups = $this->callerGroups();
 
-		$admittedAs = $this->guards->grantManage->admittedAs(userId: $uid, userGroups: $groups, object: $object);
+		$admittedAs = $this->guards->grantManage->admittedAs(caller: new GrantCaller(userId: $uid, userGroups: $groups), object: $object);
 		if ($admittedAs === null) {
 			throw new NotAuthorizedException(
 				message: 'Only the owner or an administrator may change who owns this record'
@@ -852,8 +801,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 		if ($this->guards->grantManage->letsItselfIn(
 			admittedAs: $admittedAs,
-			userId: $uid,
-			userGroups: $groups,
+			caller: new GrantCaller(userId: $uid, userGroups: $groups),
 			principal: new GrantedPrincipal(group: $group)
 		) === true
 		) {

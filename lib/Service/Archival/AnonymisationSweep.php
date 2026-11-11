@@ -67,9 +67,7 @@ class AnonymisationSweep {
 	}//end __construct()
 
 	/**
-	 * Anonymise every candidate that may be anonymised.
-	 *
-	 * The caller supplies the candidates and the targets each record must reach.
+	 * Anonymise every candidate of one batch that may be anonymised.
 	 *
 	 * @param AnonymisationBatch $batch The candidates, how to find their targets, and the instance salt.
 	 *
@@ -77,7 +75,7 @@ class AnonymisationSweep {
 	 *
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
-	public function run(AnonymisationBatch $batch): array {
+	public function sweep(AnonymisationBatch $batch): array {
 		$outcome = ['anonymised' => [], 'refused' => []];
 
 		foreach ($batch->candidates as $candidate) {
@@ -91,7 +89,7 @@ class AnonymisationSweep {
 			'anonymisedCount' => count($outcome['anonymised']),
 			'refusedCount' => count($outcome['refused']),
 		];
-	}//end run()
+	}//end sweep()
 
 	/**
 	 * Anonymise one candidate, or say why not.

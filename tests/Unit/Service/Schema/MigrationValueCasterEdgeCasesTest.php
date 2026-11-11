@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\Schema\CastTarget;
 use OCA\OpenRegister\Service\Schema\MigrationValueCaster;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -38,7 +39,7 @@ class MigrationValueCasterEdgeCasesTest extends TestCase {
 
 	private function refusalOf(mixed $value, string $toType, ?string $format = null): string {
 		try {
-			(new MigrationValueCaster())->cast($value, $toType, $format);
+			(new MigrationValueCaster())->cast($value, new CastTarget($toType, $format));
 		} catch (RuntimeException $refused) {
 			return $refused->getMessage();
 		}
@@ -49,19 +50,19 @@ class MigrationValueCasterEdgeCasesTest extends TestCase {
 	public function testBooleansPassThroughAndZeroOneAreBooleans(): void {
 		$caster = new MigrationValueCaster();
 
-		$this->assertTrue($caster->cast(true, 'boolean', null));
-		$this->assertFalse($caster->cast(false, 'boolean', null));
-		$this->assertTrue($caster->cast(1, 'boolean', null));
-		$this->assertFalse($caster->cast(0, 'boolean', null));
+		$this->assertTrue($caster->cast(true, new CastTarget('boolean', null)));
+		$this->assertFalse($caster->cast(false, new CastTarget('boolean', null)));
+		$this->assertTrue($caster->cast(1, new CastTarget('boolean', null)));
+		$this->assertFalse($caster->cast(0, new CastTarget('boolean', null)));
 	}
 
 	public function testBooleanWordsAreTrimmedAndCaseInsensitive(): void {
 		$caster = new MigrationValueCaster();
 
-		$this->assertTrue($caster->cast('  YES ', 'boolean', null));
-		$this->assertTrue($caster->cast('On', 'boolean', null));
-		$this->assertFalse($caster->cast('0', 'boolean', null));
-		$this->assertFalse($caster->cast('No', 'boolean', null));
+		$this->assertTrue($caster->cast('  YES ', new CastTarget('boolean', null)));
+		$this->assertTrue($caster->cast('On', new CastTarget('boolean', null)));
+		$this->assertFalse($caster->cast('0', new CastTarget('boolean', null)));
+		$this->assertFalse($caster->cast('No', new CastTarget('boolean', null)));
 	}
 
 	public function testANonWordOrNonScalarIsNotABoolean(): void {
@@ -77,13 +78,13 @@ class MigrationValueCasterEdgeCasesTest extends TestCase {
 	public function testIntegerTruncatesAndNumberKeepsTheFraction(): void {
 		$caster = new MigrationValueCaster();
 
-		$this->assertSame(3, $caster->cast('3.9', 'integer', null));
-		$this->assertSame(3.9, $caster->cast('3.9', 'number', null));
-		$this->assertSame(0, $caster->cast(false, 'integer', null));
+		$this->assertSame(3, $caster->cast('3.9', new CastTarget('integer', null)));
+		$this->assertSame(3.9, $caster->cast('3.9', new CastTarget('number', null)));
+		$this->assertSame(0, $caster->cast(false, new CastTarget('integer', null)));
 	}
 
 	public function testAnEmptyFormatMeansFreeFormAndAnEpochValueIsUtc(): void {
-		$this->assertSame('1970-01-02T00:00:00+00:00', (new MigrationValueCaster())->cast('@86400', 'date', ''));
+		$this->assertSame('1970-01-02T00:00:00+00:00', (new MigrationValueCaster())->cast('@86400', new CastTarget('date', '')));
 	}
 
 	public function testAnUnparseableFreeFormDateIsRefused(): void {

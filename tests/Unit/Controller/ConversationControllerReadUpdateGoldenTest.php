@@ -7,10 +7,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapper;
@@ -107,8 +109,9 @@ class ConversationControllerReadUpdateGoldenTest extends TestCase {
 
 			return $conversation;
 		});
-		$conversations->method('canUserAccessConversation')->willReturnCallback(function (Conversation $c, string $userId, ?string $org = null) use ($fail) {
-			$this->calls[] = ['conversationMapper.canUserAccessConversation' => [$c->getId(), $userId, $org]];
+		$conversations->method('canUserAccessConversation')->willReturnCallback(function (Conversation $c, ConversationScope $scope) use ($fail) {
+			$userId = $scope->userId;
+			$this->calls[] = ['conversationMapper.canUserAccessConversation' => [$c->getId(), $userId, $scope->organisation]];
 			$this->failOn('access', $fail);
 			return $userId === $c->getUserId();
 		});
@@ -129,8 +132,8 @@ class ConversationControllerReadUpdateGoldenTest extends TestCase {
 			$this->failOn('count', $fail);
 			return 3;
 		});
-		$messages->method('findByConversation')->willReturnCallback(function (...$args) use ($fail) {
-			$this->calls[] = ['messageMapper.findByConversation' => $args];
+		$messages->method('findByConversation')->willReturnCallback(function (int $conversationId, ListQuery $page) use ($fail) {
+			$this->calls[] = ['messageMapper.findByConversation' => [$conversationId, $page->limit, $page->offset]];
 			$this->failOn('messages', $fail);
 			$message = new Message();
 			$message->setId(7);

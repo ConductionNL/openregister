@@ -31,12 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
-use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -74,21 +70,16 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db DB for the GdprEntity join.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param RegisterMapperInterface $registerMapper Register lookup (annotation
-	 *                                       fallback).
-	 * @param LoggerInterface $logger Logger.
-	 * @param ProcessingLogMapperInterface|null $logMapper Read-log mapper (fallback-gap count).
-	 * @param VerwerkingsactiviteitMapperInterface|null $vrwMapper Activity resolver (fallback uuid).
+	 * @param IDBConnection          $db           DB for the GdprEntity join.
+	 * @param SchemaCatalogInterface $catalog      Register and schema lookup (annotation check).
+	 * @param LoggerInterface        $logger       Logger.
+	 * @param UnclassifiedProcessing $unclassified The fallback-gap count.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
-		private readonly ?ProcessingLogMapperInterface $logMapper = null,
-		private readonly ?VerwerkingsactiviteitMapperInterface $vrwMapper = null,
+		private readonly UnclassifiedProcessing $unclassified,
 	) {
 
 	}//end __construct()
@@ -121,8 +112,26 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-avg-verwerkingsregister/tasks.md#task-1
 	 */
 	public function findUnannotatedSchemasWithPii(): array {
+		$issues = [];
+		foreach ($this->piiRowsBySchema() as $row) {
+			$issue = $this->unannotatedIssue(row: $row);
+			if ($issue !== null) {
+				$issues[] = $issue;
+			}
+		}
+
+		return $issues;
+	}//end findUnannotatedSchemasWithPii()
+
+
+	/**
+	 * The PII rows aggregated per (register, schema) pair; none when the aggregation fails.
+	 *
+	 * @return array<int, array<string, mixed>> The aggregated rows.
+	 */
+	private function piiRowsBySchema(): array {
 		try {
-			$rows = $this->aggregatePiiBySchema();
+			return $this->aggregatePiiBySchema();
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[AVG compliance] Failed to aggregate PII by schema',
@@ -130,41 +139,54 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 			);
 			return [];
 		}
+	}//end piiRowsBySchema()
 
-		if ($rows === []) {
-			return [];
+	/**
+	 * The issue for one aggregated row, when neither its register nor its schema is annotated.
+	 *
+	 * @param array<string, mixed> $row The aggregated row.
+	 *
+	 * @return array<string, mixed>|null The issue, or null when the row is attributed or cannot be attributed.
+	 */
+	private function unannotatedIssue(array $row): ?array {
+		$registerId = (string)($row['register_id'] ?? '');
+		$schemaId = (string)($row['schema_id'] ?? '');
+		if ($registerId === '' || $schemaId === '') {
+			// Legacy entity_relations row predating the
+			// disambiguation migration — can't be definitively
+			// attributed to a (register, schema) pair so we skip.
+			return null;
 		}
 
-		$issues = [];
-		foreach ($rows as $row) {
-			$registerId = (string)($row['register_id'] ?? '');
-			$schemaId = (string)($row['schema_id'] ?? '');
-			if ($registerId === '' || $schemaId === '') {
-				// Legacy entity_relations row predating the
-				// disambiguation migration — can't be definitively
-				// attributed to a (register, schema) pair so we skip.
-				continue;
-			}
+		$registerHas = $this->registerHasAnnotation(registerId: $registerId);
+		$schemaHas = $this->schemaHasAnnotation(schemaId: $schemaId);
+		if ($schemaHas === true || $registerHas === true) {
+			return null;
+		}
 
-			$registerHas = $this->registerHasAnnotation(registerId: $registerId);
-			$schemaHas = $this->schemaHasAnnotation(schemaId: $schemaId);
+		return $this->issueRow(row: $row);
+	}//end unannotatedIssue()
 
-			if ($schemaHas === true || $registerHas === true) {
-				continue;
-			}
+	/**
+	 * The issue row for an aggregated row whose register and schema are both unannotated.
+	 *
+	 * @param array<string, mixed> $row The aggregated row.
+	 *
+	 * @return array<string, mixed> The issue.
+	 */
+	private function issueRow(array $row): array {
+		$schemaId = (string)($row['schema_id'] ?? '');
 
-			$issues[] = [
-				'registerId' => $registerId,
-				'schemaId' => $schemaId,
-				'schemaTitle' => $this->resolveSchemaTitle(schemaId: $schemaId),
-				'piiCount' => (int)($row['pii_count'] ?? 0),
-				'registerHasAnnotation' => $registerHas,
-				'schemaHasAnnotation' => $schemaHas,
-			];
-		}//end foreach
-
-		return $issues;
-	}//end findUnannotatedSchemasWithPii()
+		return [
+			'registerId' => (string)($row['register_id'] ?? ''),
+			'schemaId' => $schemaId,
+			'schemaTitle' => $this->resolveSchemaTitle(schemaId: $schemaId),
+			'piiCount' => (int)($row['pii_count'] ?? 0),
+			// Only rows with neither annotation are issues.
+			'registerHasAnnotation' => false,
+			'schemaHasAnnotation' => false,
+		];
+	}//end issueRow()
 
 	/**
 	 * Run every check in sequence and return the aggregate envelope.
@@ -204,18 +226,8 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function countUnclassifiedProcessing(): int {
-		if ($this->logMapper === null || $this->vrwMapper === null) {
-			return 0;
-		}
-
 		try {
-			$fallback = $this->vrwMapper->findByCode(code: self::FALLBACK_CODE);
-			if ($fallback === null) {
-				return 0;
-			}
-
-			$counts = $this->logMapper->countByActivity();
-			return (int)($counts[(string)$fallback->getUuid()] ?? 0);
+			return $this->unclassified->count();
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[AVG compliance] Failed to count unclassified processing',
@@ -262,23 +274,17 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 	 */
 	private function registerHasAnnotation(string $registerId): bool {
 		try {
-			$register = $this->registerMapper->find(
+			$register = $this->catalog->registers()->find(
 				$registerId,
 				_rbac: false,
 				_multitenancy: false
 			);
-		} catch (DoesNotExistException $e) {
-			return false;
 		} catch (\Throwable $e) {
+			// Missing (DoesNotExistException) or unreadable: not annotated.
 			return false;
 		}
 
-		$config = $register->getConfiguration();
-		if (is_array($config) === false) {
-			return false;
-		}
-
-		return $this->configHasAttribution(config: $config);
+		return $this->configurationHasAttribution(config: $register->getConfiguration());
 	}//end registerHasAnnotation()
 
 	/**
@@ -290,24 +296,34 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 	 */
 	private function schemaHasAnnotation(string $schemaId): bool {
 		try {
-			$schema = $this->schemaMapper->find(
+			$schema = $this->catalog->schemas()->find(
 				$schemaId,
 				_rbac: false,
 				_multitenancy: false
 			);
-		} catch (DoesNotExistException $e) {
-			return false;
 		} catch (\Throwable $e) {
+			// Missing (DoesNotExistException) or unreadable: not annotated.
 			return false;
 		}
 
-		$config = $schema->getConfiguration();
+		return $this->configurationHasAttribution(config: $schema->getConfiguration());
+	}//end schemaHasAnnotation()
+
+
+	/**
+	 * Whether a stored configuration is an array that satisfies the attribution requirement.
+	 *
+	 * @param mixed $config The configuration column.
+	 *
+	 * @return bool
+	 */
+	private function configurationHasAttribution(mixed $config): bool {
 		if (is_array($config) === false) {
 			return false;
 		}
 
 		return $this->configHasAttribution(config: $config);
-	}//end schemaHasAnnotation()
+	}//end configurationHasAttribution()
 
 	/**
 	 * Whether a configuration array satisfies the attribution
@@ -348,7 +364,7 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 	 */
 	private function resolveSchemaTitle(string $schemaId): string {
 		try {
-			$schema = $this->schemaMapper->find(
+			$schema = $this->catalog->schemas()->find(
 				$schemaId,
 				_rbac: false,
 				_multitenancy: false

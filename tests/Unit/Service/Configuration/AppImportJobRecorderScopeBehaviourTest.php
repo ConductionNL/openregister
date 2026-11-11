@@ -27,6 +27,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Configuration\FinishedImportJob;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder
@@ -98,7 +99,7 @@ class AppImportJobRecorderScopeBehaviourTest extends TestCase
         $this->logger->expects($this->never())->method('warning');
         $this->config->expects($this->never())->method('setValueString');
 
-        $this->assertFalse($this->recorder()->record('demo', 'job-0', '1.0.0', 0));
+        $this->assertFalse($this->recorder()->recordFinished(new FinishedImportJob('demo', 'job-0', '1.0.0', 0)));
     }//end testAnImportThatWroteNothingIsSkippedWithoutAskingForTraces()
 
     public function testMalformedStoredJobsAreDroppedWhenRead(): void

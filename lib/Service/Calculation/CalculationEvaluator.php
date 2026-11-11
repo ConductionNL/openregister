@@ -369,23 +369,34 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
 	 */
 	public function evaluate(array $object, mixed $expression, ?SequenceContext $sequenceContext = null): mixed {
-		// Outermost call installs the sequence context (when supplied); nested
-		// recursive calls pass null and therefore inherit the active context.
-		$restore = false;
-		$previous = $this->sequenceContext;
-		if ($sequenceContext !== null) {
-			$this->sequenceContext = $sequenceContext;
-			$restore = true;
-		}
-
+		$previous = $this->installSequenceContext(context: $sequenceContext);
 		try {
 			return $this->evaluateNode(object: $object, expression: $expression);
 		} finally {
-			if ($restore === true) {
-				$this->sequenceContext = $previous;
-			}
+			$this->sequenceContext = $previous;
 		}
 	}//end evaluate()
+
+	/**
+	 * Install a sequence context for one evaluate() call and hand back the one it replaces.
+	 *
+	 * The outermost call installs the context (when supplied); nested recursive
+	 * calls pass null and therefore inherit the active one. Restoring the
+	 * returned value afterwards is a no-op for a call that installed nothing,
+	 * since every call that does install restores its own predecessor.
+	 *
+	 * @param SequenceContext|null $context The context to install, or null to inherit the active one.
+	 *
+	 * @return SequenceContext|null The context that was active before this call.
+	 */
+	private function installSequenceContext(?SequenceContext $context): ?SequenceContext {
+		$previous = $this->sequenceContext;
+		if ($context !== null) {
+			$this->sequenceContext = $context;
+		}
+
+		return $previous;
+	}//end installSequenceContext()
 
 	/**
 	 * Evaluate a single AST node (the recursion target shared by every handler).
@@ -1783,12 +1794,7 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 			$cap = $this->evaluateNode(object: $object, expression: $args[2]);
 		}
 
-		return $this->rates->evaluate(
-			quantity: $this->evaluateNode(object: $object, expression: $args[0]),
-			bands: $this->evaluateNode(object: $object, expression: $args[1]),
-			cap: $cap,
-			cumulative: true
-		);
+		return $this->rates->graduated(operands: $this->rateOperands(object: $object, args: $args), cap: $cap);
 	}//end graduated()
 
 	/**
@@ -1806,13 +1812,25 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 	private function bandRate(array $object, mixed $args): int|float|null {
 		$this->requireRateOperands(args: $args);
 
-		return $this->rates->evaluate(
-			quantity: $this->evaluateNode(object: $object, expression: $args[0]),
-			bands: $this->evaluateNode(object: $object, expression: $args[1]),
-			cap: null,
-			cumulative: false
-		);
+		return $this->rates->bandRate(operands: $this->rateOperands(object: $object, args: $args));
 	}//end bandRate()
+
+	/**
+	 * Resolve the quantity and the schedule of a rate-schedule operator.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param array<int, mixed>    $args   The operator's arguments, at least two.
+	 *
+	 * @return RateOperands The resolved quantity (or unit) and schedule.
+	 *
+	 * @throws EvaluationException When an operand cannot be evaluated.
+	 */
+	private function rateOperands(array $object, array $args): RateOperands {
+		return new RateOperands(
+			quantity: $this->evaluateNode(object: $object, expression: $args[0]),
+			bands: $this->evaluateNode(object: $object, expression: $args[1])
+		);
+	}//end rateOperands()
 
 	/**
 	 * Refuse rate-schedule arguments that are not a list of at least two operands.

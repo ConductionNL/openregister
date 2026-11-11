@@ -33,18 +33,32 @@ use OCP\IUserSession;
  */
 final class ImportPreviewPlatform {
 	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	public readonly IUserSession $userSession;
+
+	/**
+	 * Group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	public readonly IGroupManager $groupManager;
+
+	/**
 	 * Bundle the services.
 	 *
+	 * @param SessionPrincipal $principal The session and group manager, kept as userSession and groupManager.
 	 * @param IJobList      $jobList      The background queue.
-	 * @param IUserSession  $userSession  Current-user session.
-	 * @param IGroupManager $groupManager Group manager.
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	public function __construct(
+		SessionPrincipal $principal,
 		public readonly IJobList $jobList,
-		public readonly IUserSession $userSession,
-		public readonly IGroupManager $groupManager,
 	) {
+		$this->userSession  = $principal->userSession;
+		$this->groupManager = $principal->groupManager;
 	}//end __construct()
 }//end class

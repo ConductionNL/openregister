@@ -1,9 +1,9 @@
 /**
  * Script transformer for vue3-jest. Babel's .babelrc is file-relative, so it
  * never reaches a single-file component inside node_modules (the
- * vue-material-design-icons, for one): its script would stay an ES module
- * and fail to load. Those get @babel/preset-env passed explicitly; every
- * other component keeps the project's own babel configuration.
+ * vue-material-design-icons, for one) and its script would stay an ES module.
+ * Those components get @babel/preset-env passed explicitly; every other
+ * component keeps the project's own babel configuration.
  *
  * @spec exclude Test tooling configuration.
  * @license EUPL-1.2

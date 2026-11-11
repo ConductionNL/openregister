@@ -98,7 +98,6 @@ final class IntegrationControllersWiring {
 		$context->registerService(
 			ObjectIntegrationsController::class,
 			static fn (ContainerInterface $container) => new ObjectIntegrationsController(
-				appName: 'openregister',
 				request: $container->get('OCP\IRequest'),
 				services: self::buildObjectIntegrationsServices(container: $container)
 			)

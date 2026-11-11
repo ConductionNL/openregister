@@ -72,8 +72,7 @@ class DbalAggregatorSqliteTest extends TestCase {
 	private function aggregate(Connection $connection, string $metric, ?string $field, DbalAggregationShape $shape, ?LoggerInterface $logger = null, string $table = 'facts'): ?array {
 		$aggregator = new DbalAggregator(logger: ($logger ?? new NullLogger()));
 		$query = $aggregator->query(
-			connection: $connection,
-			table: $table,
+			from: new \OCA\OpenRegister\Service\ObjectSource\DbalFromClause(connection: $connection, table: $table),
 			aggregation: new DbalAggregation(metric: $metric, field: $field, filter: [], columns: self::COLUMNS)
 		);
 

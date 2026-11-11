@@ -83,13 +83,41 @@ class MagicBulkHandlerPreUpdateStateTest extends TestCase {
 	}
 
 	/**
+	 * The mapper and the handler take the flag only inside a BulkUpsertCommand,
+	 * so its TRUE default (pinned above) is the default of every bulk upsert.
+	 *
+	 * @param string $class The class holding the method.
+	 * @param string $method The bulk upsert entry point.
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('commandEntryPoints')]
+	public function testTheEntryPointsTakeTheCommand(string $class, string $method): void {
+		$parameters = (new ReflectionMethod($class, $method))->getParameters();
+
+		$this->assertCount(1, $parameters, "$class::$method takes more than the command.");
+		$this->assertSame(
+			\OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand::class,
+			(string) $parameters[0]->getType(),
+			"$class::$method no longer takes a BulkUpsertCommand."
+		);
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function commandEntryPoints(): array {
+		return [
+			'handler upsert' => [MagicBulkHandler::class, 'upsert'],
+			'mapper bulkUpsert' => [\OCA\OpenRegister\Db\MagicMapper::class, 'bulkUpsert'],
+			'writer interface bulkUpsert' => [\OCA\OpenRegister\Db\MagicMapper\MagicObjectWriterInterface::class, 'bulkUpsert'],
+		];
+	}
+
+	/**
 	 * @return array<string, array{0: string, 1: string, 2: int}>
 	 */
 	public static function plumbedMethods(): array {
 		return [
-			'handler bulkUpsert' => [MagicBulkHandler::class, 'bulkUpsert', 4],
-			'handler executeUpsertChunk' => [MagicBulkHandler::class, 'executeUpsertChunk', 3],
-			'mapper bulkUpsert' => [\OCA\OpenRegister\Db\MagicMapper::class, 'bulkUpsert', 4],
+			'upsert command' => [\OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand::class, '__construct', 3],
 			'mapper ultraFastBulkSave' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSave', 4],
 			'bulk save group' => [\OCA\OpenRegister\Db\MagicMapper\MagicBulkSaveGroup::class, '__construct', 1],
 			'saveObjects persistChunk' => [\OCA\OpenRegister\Service\Object\SaveObjects::class, 'persistChunk', 3],

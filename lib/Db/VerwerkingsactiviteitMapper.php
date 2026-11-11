@@ -38,9 +38,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Mapper class for Verwerkingsactiviteit rows.
@@ -48,6 +46,8 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<Verwerkingsactiviteit>
  */
 class VerwerkingsactiviteitMapper extends QBMapper implements VerwerkingsactiviteitMapperInterface {
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -72,12 +72,7 @@ class VerwerkingsactiviteitMapper extends QBMapper implements Verwerkingsactivit
 	 * @throws DoesNotExistException When no row matches the id.
 	 */
 	public function find(int $id): Verwerkingsactiviteit {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -88,21 +83,12 @@ class VerwerkingsactiviteitMapper extends QBMapper implements Verwerkingsactivit
 	 * @return Verwerkingsactiviteit|null Null when no row matches.
 	 */
 	public function findByUuid(string $uuid): ?Verwerkingsactiviteit {
-		if ($uuid === '') {
-			return null;
+		$found = $this->findOneByFilledColumn(name: 'uuid', value: $uuid);
+		if ($found instanceof Verwerkingsactiviteit) {
+			return $found;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
-
+		return null;
 	}//end findByUuid()
 
 	/**
@@ -113,21 +99,12 @@ class VerwerkingsactiviteitMapper extends QBMapper implements Verwerkingsactivit
 	 * @return Verwerkingsactiviteit|null Null when no row matches.
 	 */
 	public function findByCode(string $code): ?Verwerkingsactiviteit {
-		if ($code === '') {
-			return null;
+		$found = $this->findOneByFilledColumn(name: 'code', value: $code);
+		if ($found instanceof Verwerkingsactiviteit) {
+			return $found;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('code', $qb->createNamedParameter($code)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
-
+		return null;
 	}//end findByCode()
 
 	/**
@@ -198,20 +175,14 @@ class VerwerkingsactiviteitMapper extends QBMapper implements Verwerkingsactivit
 	public function insert($entity): Verwerkingsactiviteit {
 		$this->validate(entity: $entity);
 
-		if ($entity->getUuid() === null || $entity->getUuid() === '') {
-			$entity->setUuid(Uuid::v4()->toRfc4122());
-		}
+		$stamps = new NewRowStamps();
+		$stamps->fillBlankUuid(entity: $entity);
 
 		if ($entity->getStatus() === null || $entity->getStatus() === '') {
 			$entity->setStatus('concept');
 		}
 
-		$now = new DateTime();
-		if ($entity->getCreated() === null) {
-			$entity->setCreated($now);
-		}
-
-		$entity->setUpdated($now);
+		$stamps->stampCreatedAndUpdated(entity: $entity);
 
 		return parent::insert(entity: $entity);
 	}//end insert()
@@ -237,44 +208,81 @@ class VerwerkingsactiviteitMapper extends QBMapper implements Verwerkingsactivit
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When validation fails.
+	 */
+	private function validate(Verwerkingsactiviteit $entity): void {
+		$this->requireText(value: $entity->getName(), refusal: 'Verwerkingsactiviteit MUST have a name (AVG Art 30 §1(a))');
+		$this->requireText(value: $entity->getPurpose(), refusal: 'Verwerkingsactiviteit MUST have a purpose (AVG Art 30 §1(b))');
+		$this->requireKnownVocabulary(entity: $entity);
+	}//end validate()
+
+	/**
+	 * Refuse a required text field that is unset or blank.
+	 *
+	 * @param mixed  $value   The field value.
+	 * @param string $refusal The refusal message.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the value is null or only whitespace.
+	 */
+	private function requireText(mixed $value, string $refusal): void {
+		if ($value === null || trim((string)$value) === '') {
+			throw new InvalidArgumentException($refusal);
+		}
+	}//end requireText()
+
+	/**
+	 * Refuse a legal basis outside the AVG Art 6 vocabulary (an unset one included),
+	 * then a set status outside the lifecycle vocabulary (an unset or empty status passes).
+	 *
+	 * @param Verwerkingsactiviteit $entity Entity to validate.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the legal basis or the status is not in its vocabulary.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
-	private function validate(Verwerkingsactiviteit $entity): void {
-		if ($entity->getName() === null || trim((string)$entity->getName()) === '') {
-			throw new InvalidArgumentException(
-				'Verwerkingsactiviteit MUST have a name (AVG Art 30 §1(a))'
-			);
-		}
-
-		if ($entity->getPurpose() === null || trim((string)$entity->getPurpose()) === '') {
-			throw new InvalidArgumentException(
-				'Verwerkingsactiviteit MUST have a purpose (AVG Art 30 §1(b))'
-			);
-		}
-
+	private function requireKnownVocabulary(Verwerkingsactiviteit $entity): void {
 		if (Verwerkingsactiviteit::isValidLegalBasis($entity->getLegalBasis()) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'Invalid legalBasis "%s"; expected one of: %s (AVG Art 6)',
-					(string)$entity->getLegalBasis(),
-					implode(', ', Verwerkingsactiviteit::LEGAL_BASIS_VOCABULARY)
-				)
-			);
+			throw new InvalidArgumentException($this->legalBasisRefusal(entity: $entity));
 		}
 
 		if ($entity->getStatus() !== null
 			&& $entity->getStatus() !== ''
 			&& Verwerkingsactiviteit::isValidStatus($entity->getStatus()) === false
 		) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'Invalid status "%s"; expected one of: %s',
-					(string)$entity->getStatus(),
-					implode(', ', Verwerkingsactiviteit::STATUS_VOCABULARY)
-				)
-			);
+			throw new InvalidArgumentException($this->statusRefusal(entity: $entity));
 		}
+	}//end requireKnownVocabulary()
 
-	}//end validate()
+	/**
+	 * The refusal of a legal basis outside the AVG Art 6 vocabulary.
+	 *
+	 * @param Verwerkingsactiviteit $entity The refused entity.
+	 *
+	 * @return string The message.
+	 */
+	private function legalBasisRefusal(Verwerkingsactiviteit $entity): string {
+		return sprintf(
+			'Invalid legalBasis "%s"; expected one of: %s (AVG Art 6)',
+			(string)$entity->getLegalBasis(),
+			implode(', ', Verwerkingsactiviteit::LEGAL_BASIS_VOCABULARY)
+		);
+	}//end legalBasisRefusal()
+
+	/**
+	 * The refusal of a status outside the lifecycle vocabulary.
+	 *
+	 * @param Verwerkingsactiviteit $entity The refused entity.
+	 *
+	 * @return string The message.
+	 */
+	private function statusRefusal(Verwerkingsactiviteit $entity): string {
+		return sprintf(
+			'Invalid status "%s"; expected one of: %s',
+			(string)$entity->getStatus(),
+			implode(', ', Verwerkingsactiviteit::STATUS_VOCABULARY)
+		);
+	}//end statusRefusal()
 }//end class

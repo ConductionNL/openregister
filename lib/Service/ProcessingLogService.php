@@ -49,8 +49,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ProcessingLogEntry;
 use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCP\IUserSession;
@@ -105,45 +104,19 @@ class ProcessingLogService {
 	 *
 	 * @param ProcessingLogMapperInterface $logMapper Append-only log mapper.
 	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper Activity resolver + fallback seed.
-	 * @param SchemaMapperInterface $schemaMapper Schema annotation reader.
-	 * @param RegisterMapperInterface $registerMapper Register annotation reader (inheritance).
+	 * @param SchemaCatalogInterface $catalog Schema and register annotation readers (register inheritance).
 	 * @param IUserSession $userSession Actor identity.
 	 * @param LoggerInterface $logger Fail-soft diagnostics.
 	 */
 	public function __construct(
 		private readonly ProcessingLogMapperInterface $logMapper,
 		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
-
-	/**
-	 * Record a single object read/export if its schema opts in.
-	 *
-	 * Fail-soft: never throws. Buffers the entry; nothing is written to
-	 * the database until `flush()` runs.
-	 *
-	 * @param ObjectEntity $object The object being processed.
-	 * @param string $action `read` | `export`.
-	 * @param string|null $channel Access channel; defaults from the request shape.
-	 * @param string|null $actor Explicit actor (e.g. API client id) or null for the NC user.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
-	 */
-	public function logRead(
-		ObjectEntity $object,
-		string $action = 'read',
-		?string $channel = null,
-		?string $actor = null,
-	): void {
-		$this->recordRead(object: $object, read: new ProcessingRead(action: $action, channel: $channel, actor: $actor));
-	}//end logRead()
 
 	/**
 	 * Record a single object read/export if its schema opts in.
@@ -254,34 +227,6 @@ class ProcessingLogService {
 
 	/**
 	 * Record a single collapsed entry for a list/search result.
-	 *
-	 * A list response produces ONE entry carrying `objectCount` and the
-	 * query parameters — never one row per scanned object. When the result
-	 * set holds LIST_IDENTIFIER_LIMIT objects or fewer, the entry also
-	 * carries every object's uuid and the subject identifiers found.
-	 *
-	 * @param array<int, ObjectEntity> $objects The list result.
-	 * @param string $action `read` | `export`.
-	 * @param string|null $channel Access channel.
-	 * @param string|null $actor Explicit actor or null.
-	 * @param array<string, mixed> $query The query parameters of the list or search.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
-	 */
-	public function logReadList(
-		array $objects,
-		string $action = 'read',
-		?string $channel = null,
-		?string $actor = null,
-		array $query = [],
-	): void {
-		$this->recordReadList(objects: $objects, read: new ProcessingRead(action: $action, channel: $channel, actor: $actor, query: $query));
-	}//end logReadList()
-
-	/**
-	 * Record a single collapsed entry for a list/search result (see logReadList()).
 	 *
 	 * Fail-soft: never throws.
 	 *
@@ -626,7 +571,7 @@ class ProcessingLogService {
 			return null;
 		}
 
-		$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+		$schema = $this->catalog->schemas()->find($schemaId, _rbac: false, _multitenancy: false);
 		return $schema->getConfiguration();
 	}//end loadSchemaConfig()
 
@@ -642,7 +587,7 @@ class ProcessingLogService {
 			return null;
 		}
 
-		$register = $this->registerMapper->find($registerId, _multitenancy: false);
+		$register = $this->catalog->registers()->find($registerId, _multitenancy: false);
 		return $register->getConfiguration();
 	}//end loadRegisterConfig()
 

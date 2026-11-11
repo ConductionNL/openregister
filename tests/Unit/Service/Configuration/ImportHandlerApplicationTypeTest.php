@@ -34,7 +34,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\AppImport;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportedConfigurationUpdate;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -94,15 +96,20 @@ class ImportHandlerApplicationTypeTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $this->objectEntityMapper,
-			configurationMapper: $this->configurationMapper,
-			mappingMapper:       $this->mappingMapper,
-			appConfig:           $this->appConfig,
-			logger:              $this->logger,
-			appDataPath:         '/tmp',
-			objectService:       $this->objectService
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->configurationMapper,
+				mappings: $this->mappingMapper,
+				appConfig: $this->appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->logger,
+			appDataPath: '/tmp',
+			objectService: $this->objectService
 		);
 
 	}//end setUp()
@@ -131,7 +138,9 @@ class ImportHandlerApplicationTypeTest extends TestCase {
 		// a way that mutates the caller; use the underlying closure binding to
 		// preserve pass-by-reference semantics for $result.
 		$closure = $method->getClosure($this->handler);
-		$closure($data, $appId, $schemas, $configuration, $result);
+		$update = new ImportedConfigurationUpdate(configuration: $configuration, result: ['schemas' => $schemas] + $result);
+		$closure(new AppImport(appId: $appId, data: $data, version: '1.0.0', force: false), $update);
+		$result = array_diff_key($update->result, ['schemas' => true]);
 
 	}//end invokeAutoCreate()
 
