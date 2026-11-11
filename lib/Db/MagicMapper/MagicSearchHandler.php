@@ -5124,11 +5124,11 @@ class MagicSearchHandler {
 	 * A text column value as its `date` or `date-time` format reads it; any other format keeps it.
 	 *
 	 * @param string $value  The column value, after its type conversion
-	 * @param string $format The schema property format
+	 * @param mixed  $format The schema property format, as the schema stores it
 	 *
 	 * @return string|null The value, or null for a date that does not parse
 	 */
-	private function formattedRowValue(string $value, string $format): ?string {
+	private function formattedRowValue(string $value, mixed $format): ?string {
 		if ($format === 'date') {
 			return $this->dateRowValue(value: $value);
 		}

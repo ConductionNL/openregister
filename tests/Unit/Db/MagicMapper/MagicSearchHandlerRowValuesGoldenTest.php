@@ -111,6 +111,9 @@ class MagicSearchHandlerRowValuesGoldenTest extends TestCase {
 			'date-time'            => ['2026-03-04 05:06:07', ['type' => 'string', 'format' => 'date-time'], '2026-03-04T05:06:07+00:00'],
 			'other format'         => ['x@y.z', ['type' => 'string', 'format' => 'email'], 'x@y.z'],
 			'not a string, a date' => [7, ['type' => 'integer', 'format' => 'date'], 7],
+			'boolean format'       => ['abc', ['type' => 'string', 'format' => true], 'abc'],
+			'integer format'       => ['abc', ['type' => 'string', 'format' => 1], 'abc'],
+			'array format'         => ['abc', ['type' => 'string', 'format' => ['date']], 'abc'],
 		];
 	}//end rowValues()
 
