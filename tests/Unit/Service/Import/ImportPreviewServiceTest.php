@@ -62,6 +62,7 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 final class ImportPreviewServiceTest extends TestCase {
 
@@ -526,7 +527,7 @@ final class ImportPreviewServiceTest extends TestCase {
 		$this->objectService->expects($this->exactly(2))
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object) use ($keptId): \OCA\OpenRegister\Db\ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($keptId): \OCA\OpenRegister\Db\ObjectEntity {
 					if ($object['@self']['id'] === $keptId) {
 						throw new \RuntimeException('Object is locked by bob');
 					}
