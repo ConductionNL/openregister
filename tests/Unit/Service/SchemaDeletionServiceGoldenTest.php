@@ -23,12 +23,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\TableDeletionOptions;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -36,6 +40,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -137,7 +142,8 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 		$magic->method('tableExistsForRegisterSchema')->willReturnCallback(
 			fn (Register $r, Schema $s): bool => isset($this->rows[$r->getId() . '_' . $s->getId()])
 		);
-		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(function (Register $register, Schema $schema, $limit, $offset, $filters) {
+		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(function (RegisterSchema $table, ListQuery $listing) {
+			[$register, $schema, $limit, $offset, $filters] = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters)];
 			$this->trace[] = 'findAll ' . $register->getId() . '_' . $schema->getId() . ' ' . $offset . ' ' . json_encode($filters);
 			return ($offset === 0 ? ($this->rows[$register->getId() . '_' . $schema->getId()] ?? []) : []);
 		});
@@ -186,12 +192,12 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 		});
 
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(function ($object, $action, $context = []) {
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(function ($object, $action, $context = []) {
 			$this->trace[] = 'audit ' . $action . ' ' . $object->getUuid();
 			unset($context['snapshot']);
 			$this->audits[] = [$action, $object->getUuid(), $context];
 			return new AuditTrail();
-		});
+		}));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		foreach (['info', 'warning', 'error'] as $level) {
@@ -311,7 +317,7 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 	public function testDeletingASchemasObjects(): void {
 		$this->world();
 		$filters = '{"_includeDeleted":true,"_rbac":false,"_multitenancy":false}';
-		$result = $this->service()->deleteObjectsBySchema(7, 42);
+		$result = $this->service()->deleteObjectsBySchema(table: new RegisterSchemaRef(register: 7, schema: 42));
 		$this->assertSame(['deleted_count' => 2, 'deleted_uuids' => ['a', 'b'], 'schema_id' => 42], $result);
 		$this->assertSame(
 			[
@@ -338,7 +344,7 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 	 */
 	public function testAnArchivalSchemaIsRefusedBeforeAnyTransaction(): void {
 		$this->world(archival: true);
-		$e = $this->thrown(fn () => $this->service()->deleteObjectsBySchema(7, 42, true));
+		$e = $this->thrown(fn () => $this->service()->deleteObjectsBySchema(table: new RegisterSchemaRef(register: 7, schema: 42), options: new TableDeletionOptions(hardDelete: true)));
 		$this->assertInstanceOf(ArchivalImmutableException::class, $e);
 		$this->assertSame(
 			['warning [SchemaDeletionService] Refused a schema-wide delete on an archival schema {"schemaId":42,"schemaSlug":"cow","operation":"delete"}'],
@@ -364,7 +370,7 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 	public function testALockedRowRollsTheDeleteBack(): void {
 		$this->world();
 		$this->rows['7_42'][] = $this->object('c', ['user' => 'bob']);
-		$e = $this->thrown(fn () => $this->service()->deleteObjectsBySchema(7, 42, true, 'manual'));
+		$e = $this->thrown(fn () => $this->service()->deleteObjectsBySchema(table: new RegisterSchemaRef(register: 7, schema: 42), options: new TableDeletionOptions(hardDelete: true, triggeredBy: 'manual')));
 		$this->assertInstanceOf(LockedException::class, $e);
 		$this->assertSame('beginTransaction', $this->trace[0]);
 		$this->assertSame('rollBack', $this->trace[2]);
@@ -381,7 +387,7 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 	public function testDeletingARegistersObjects(): void {
 		[$register] = $this->world();
 		$this->rows['7_43'] = [$this->object('p')];
-		$result = $this->service()->deleteObjectsByRegister($register, true);
+		$result = $this->service()->deleteObjectsByRegister(register: $register, options: new TableDeletionOptions(hardDelete: true));
 		$this->assertSame(['deleted_count' => 3, 'deleted_uuids' => ['a', 'b', 'p'], 'register_id' => 7], $result);
 		$this->assertStringStartsWith('warning [SchemaDeletionService] Register lists a schema that does not resolve; skipped {"registerId":7,"schemaId":"99","error":"no schema 99"}', $this->trace[0]);
 		$this->assertSame(

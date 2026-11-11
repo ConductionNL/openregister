@@ -28,6 +28,7 @@ use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Controller\Support\AddressedObject;
 use OCA\OpenRegister\Notifications\Controller\Support\NotePath;
+use OCA\OpenRegister\Notifications\Controller\Support\NoteStep;
 use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
 use OCA\OpenRegister\Notifications\Controller\Support\NoteUpdate;
 use OCA\OpenRegister\Notifications\Controller\Support\ObjectNote;
@@ -41,6 +42,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
 
 /**
  * NotesController handles note operations for objects in registers.
@@ -128,8 +130,10 @@ class NotesController extends Controller {
 	private function notesAt(NotePath $path): JSONResponse {
 		return $this->onObject(
 			path: $path,
-			action: fn (ObjectEntity $object): JSONResponse => $this->listNotes(object: $object),
-			failure: $this->failureWith(status: 500)
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->listNotes(object: $object),
+				failure: $this->failureWith(status: 500)
+			)
 		);
 	}//end notesAt()
 
@@ -165,8 +169,10 @@ class NotesController extends Controller {
 	private function createAt(NotePath $path): JSONResponse {
 		return $this->onObject(
 			path: $path,
-			action: fn (ObjectEntity $object): JSONResponse => $this->createOn(target: new AddressedObject(object: $object, path: $path)),
-			failure: $this->failureWith(status: 400)
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->createOn(target: new AddressedObject(object: $object, path: $path)),
+				failure: $this->failureWith(status: 400)
+			)
 		);
 	}//end createAt()
 
@@ -205,8 +211,10 @@ class NotesController extends Controller {
 	private function updateAt(NotePath $path, string $noteId): JSONResponse {
 		return $this->onObject(
 			path: $path,
-			action: fn (ObjectEntity $object): JSONResponse => $this->updateOn(object: $object, noteId: (int)$noteId),
-			failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->updateOn(object: $object, noteId: (int)$noteId),
+				failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
+			)
 		);
 	}//end updateAt()
 
@@ -278,8 +286,10 @@ class NotesController extends Controller {
 	private function versionsAt(NotePath $path, string $noteId): JSONResponse {
 		return $this->onObject(
 			path: $path,
-			action: fn (ObjectEntity $object): JSONResponse => $this->versionsOf(object: $object, noteId: (int)$noteId),
-			failure: $this->failureWith(status: 400)
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->versionsOf(object: $object, noteId: (int)$noteId),
+				failure: $this->failureWith(status: 400)
+			)
 		);
 	}//end versionsAt()
 
@@ -318,8 +328,10 @@ class NotesController extends Controller {
 	private function destroyAt(NotePath $path, string $noteId): JSONResponse {
 		return $this->onObject(
 			path: $path,
-			action: fn (ObjectEntity $object): JSONResponse => $this->destroyOn(object: $object, noteId: (int)$noteId),
-			failure: fn (Exception $e): JSONResponse => $this->failureWith(status: $this->statusFor(e: $e))($e)
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->destroyOn(object: $object, noteId: (int)$noteId),
+				failure: fn (Exception $e): JSONResponse => $this->failureWith(status: $this->statusFor(e: $e))($e)
+			)
 		);
 	}//end destroyAt()
 
@@ -330,24 +342,23 @@ class NotesController extends Controller {
 	 * before the action runs; any other failure is handed to `$failure`. A
 	 * `DoesNotExistException` raised by the action itself answers the same 404.
 	 *
-	 * @param NotePath                             $path    The register, schema and object id.
-	 * @param \Closure(ObjectEntity): JSONResponse $action  What to do with the object.
-	 * @param \Closure(Exception): JSONResponse    $failure How to answer any other failure.
+	 * @param NotePath $path The register, schema and object id.
+	 * @param NoteStep $step What to do with the object, and how to answer any other failure.
 	 *
 	 * @return JSONResponse The answer.
 	 */
-	private function onObject(NotePath $path, \Closure $action, \Closure $failure): JSONResponse {
+	private function onObject(NotePath $path, NoteStep $step): JSONResponse {
 		try {
 			$object = $this->validateObject(path: $path);
 			if ($object === null) {
 				return $this->notFound(what: 'Object');
 			}
 
-			return $action($object);
+			return ($step->action)($object);
 		} catch (DoesNotExistException $e) {
 			return $this->notFound(what: 'Object');
 		} catch (Exception $e) {
-			return $failure($e);
+			return ($step->failure)($e);
 		}
 	}//end onObject()
 
@@ -583,7 +594,8 @@ class NotesController extends Controller {
 
 		if ($update->previous !== null) {
 			$to = (string)($note['visibility'] ?? '');
-			$this->services->visibility->auditVisibilityChange(object: $object, noteId: $noteId, from: $update->previous, to: $to);
+			$move = new NoteVisibilityMove(noteId: $noteId, from: $update->previous, to: $to);
+			$this->services->visibility->auditNoteMove(object: $object, move: $move);
 		}
 	}//end recordUpdate()
 

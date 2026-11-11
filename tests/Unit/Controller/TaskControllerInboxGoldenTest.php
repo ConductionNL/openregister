@@ -37,8 +37,10 @@ final class TaskControllerInboxGoldenTest extends TestCase {
 
 	private TaskInboxService&MockObject $inbox;
 
-	private function controller(?string $uid = 'alice'): TaskController {
+	private function controller(?string $uid = 'alice', array $params = []): TaskController {
 		$this->inbox = $this->createMock(TaskInboxService::class);
+		$request     = $this->createMock(IRequest::class);
+		$request->method('getParams')->willReturn($params);
 		$session     = $this->createMock(IUserSession::class);
 		$user        = null;
 		if ($uid !== null) {
@@ -53,7 +55,7 @@ final class TaskControllerInboxGoldenTest extends TestCase {
 
 		return TaskControllerFactory::create(
 			appName: 'openregister',
-			request: $this->createMock(IRequest::class),
+			request: $request,
 			tasks: $this->createMock(TaskService::class),
 			inbox: $this->inbox,
 			authorization: $this->createMock(TaskAuthorizationService::class),
@@ -67,7 +69,23 @@ final class TaskControllerInboxGoldenTest extends TestCase {
 	}
 
 	public function testEveryParameterReachesTheCriteriaAndThePage(): void {
-		$controller = $this->controller();
+		$controller = $this->controller(params: [
+			'scope' => TaskInboxCriteria::SCOPE_POOLED,
+			'state' => 'active,,enabled',
+			'isTerminal' => 'true',
+			'priority' => 'low',
+			'kind' => '  approval ',
+			'objectUuid' => 'obj-1',
+			'runUuid' => ' run-1 ',
+			'overdue' => '1',
+			'dueAfter' => '2026-09-01T00:00:00+00:00',
+			'dueBefore' => '2026-09-08T00:00:00+00:00',
+			'sort' => '-priority',
+			'limit' => '7',
+			'offset' => '14',
+			'includeBlocked' => 'yes',
+			'openFirst' => 'on',
+		]);
 		$seen       = [];
 		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
 			function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
@@ -84,23 +102,7 @@ final class TaskControllerInboxGoldenTest extends TestCase {
 			}
 		);
 
-		$response = $controller->index(
-			TaskInboxCriteria::SCOPE_POOLED,
-			'active,,enabled',
-			'true',
-			'low',
-			'  approval ',
-			'obj-1',
-			' run-1 ',
-			'1',
-			'2026-09-01T00:00:00+00:00',
-			'2026-09-08T00:00:00+00:00',
-			'-priority',
-			7,
-			14,
-			'yes',
-			'on'
-		);
+		$response = $controller->index();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(
@@ -117,7 +119,7 @@ final class TaskControllerInboxGoldenTest extends TestCase {
 	}
 
 	public function testBlankKindAndRunAreNoFilter(): void {
-		$controller = $this->controller();
+		$controller = $this->controller(params: ['state' => ' ', 'kind' => '  ', 'runUuid' => '']);
 		$seen       = [];
 		$this->inbox->method('inbox')->willReturnCallback(
 			function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
@@ -126,7 +128,7 @@ final class TaskControllerInboxGoldenTest extends TestCase {
 			}
 		);
 
-		$controller->index(state: ' ', kind: '  ', runUuid: '');
+		$controller->index();
 
 		$this->assertSame([null, null, [], TaskInboxCriteria::SORT_DUE, false], $seen);
 	}
@@ -139,5 +141,31 @@ final class TaskControllerInboxGoldenTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 		$this->assertSame(['error' => 'No session'], $response->getData());
+	}
+
+	public function testAParameterOfTheWrongTypeIsAnEmpty400(): void {
+		$controller = $this->controller(params: ['state' => ['active']]);
+		$this->inbox->expects($this->never())->method('inbox');
+
+		$response = $controller->index();
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame(['error' => 'Parameter `state` must be a string'], $response->getData());
+	}
+
+	public function testAbsentAndNullParametersTakeTheRouteDefaults(): void {
+		$controller = $this->controller(params: ['limit' => null, 'sort' => null, '_route' => 'openregister.task.index']);
+		$seen       = [];
+		$this->inbox->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
+				$seen = [$criteria->scope, $criteria->sort, $criteria->sortDescending, $page->limit, $page->offset];
+				return ['results' => [], 'total' => 0, 'limit' => $page->limit, 'offset' => $page->offset];
+			}
+		);
+
+		$response = $controller->index();
+
+		$this->assertSame(['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0], $response->getData());
+		$this->assertSame([TaskInboxCriteria::SCOPE_ASSIGNED, TaskInboxCriteria::SORT_DUE, false, 25, 0], $seen);
 	}
 }

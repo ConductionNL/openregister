@@ -33,9 +33,8 @@ interface JobRunRecorderInterface {
 	/**
 	 * Run the work and record the run, its outcome and its duration.
 	 *
-	 * @param string             $jobClass The job class the run belongs to.
-	 * @param callable           $work     The execution to observe.
-	 * @param JobRunContext|null $context  The cause, actor, argument and details; null for a scheduled run.
+	 * @param JobRunStart $start The job class the run belongs to, with its cause, actor, argument and details.
+	 * @param callable    $work  The execution to observe.
 	 *
 	 * @return mixed Whatever the work returned.
 	 *
@@ -43,9 +42,5 @@ interface JobRunRecorderInterface {
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function around(
-		string $jobClass,
-		callable $work,
-		?JobRunContext $context = null,
-	): mixed;
+	public function around(JobRunStart $start, callable $work): mixed;
 }//end interface

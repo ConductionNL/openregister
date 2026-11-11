@@ -71,21 +71,6 @@ final class ObjectActionElevationScope {
 	}//end run()
 
 	/**
-	 * Whether a write the person's rights refused may go ahead as the system.
-	 *
-	 * @param string|int|null $schemaId   The schema written to.
-	 * @param string|int|null $registerId The register written to, when the write names one.
-	 * @param string          $verb       `create`, `update` or `delete`.
-	 *
-	 * @return bool True when the open elevation lists it.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
-	 */
-	public static function allows(string|int|null $schemaId, string|int|null $registerId, string $verb): bool {
-		return self::permits(write: new ElevatedWrite(schemaId: $schemaId, registerId: $registerId, verb: $verb));
-	}//end allows()
-
-	/**
 	 * Whether a write the person's rights refused may go ahead as the system; marks the entry used.
 	 *
 	 * @param ElevatedWrite $write The schema, register and verb of the write.
@@ -96,10 +81,33 @@ final class ObjectActionElevationScope {
 	 */
 	public static function permits(ElevatedWrite $write): bool {
 		$frame = array_key_last(self::$frames);
-		if ($frame === null || $write->schemaId === null || in_array($write->verb, ObjectActionElevation::VERBS, true) === false) {
+		if ($frame === null || self::isElevatable(write: $write) === false) {
 			return false;
 		}
 
+		return self::permitsInFrame(frame: $frame, write: $write);
+	}//end permits()
+
+	/**
+	 * Whether a write could be elevated at all: it names its schema and an elevatable verb.
+	 *
+	 * @param ElevatedWrite $write The write.
+	 *
+	 * @return bool True when it could.
+	 */
+	private static function isElevatable(ElevatedWrite $write): bool {
+		return $write->schemaId !== null && in_array($write->verb, ObjectActionElevation::VERBS, true) === true;
+	}//end isElevatable()
+
+	/**
+	 * Whether an entry of one open frame lists the write; marks the listing entry used.
+	 *
+	 * @param int           $frame The frame index.
+	 * @param ElevatedWrite $write The write, its schema known.
+	 *
+	 * @return bool True when the frame lists it.
+	 */
+	private static function permitsInFrame(int $frame, ElevatedWrite $write): bool {
 		foreach (self::$frames[$frame]['entries'] as $entry) {
 			if (self::matches(entry: $entry, write: $write) === true) {
 				self::$frames[$frame]['used'][$write->schemaId . ':' . $write->verb] = true;
@@ -108,7 +116,7 @@ final class ObjectActionElevationScope {
 		}
 
 		return false;
-	}//end permits()
+	}//end permitsInFrame()
 
 	/**
 	 * The attribution an audit row of an elevated write carries, or null.

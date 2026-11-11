@@ -32,6 +32,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Three verbs and the subject axis, through the controller a client reaches.
@@ -281,8 +282,8 @@ class NotificationHistoryBellTest extends TestCase {
 
 		$seen = [];
 		$this->mapper->method('findFiltered')->willReturnCallback(
-			static function (array $filters) use (&$seen): array {
-				$seen['find'] = $filters;
+			static function (ListQuery $query) use (&$seen): array {
+				$seen['find'] = $query->filters;
 				return [];
 			}
 		);

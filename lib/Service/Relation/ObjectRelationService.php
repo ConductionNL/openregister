@@ -167,32 +167,26 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	/**
 	 * Record a child created under a parent, with what it inherited.
 	 *
-	 * @param ObjectEntity $parent The parent object.
-	 * @param ObjectEntity $child The created child.
-	 * @param ProvenanceLink|null $link The vocabulary key naming the link, and the
-	 *                                  entry of the parent it came out of, when it
-	 *                                  came out of one. A derivation and a split are
-	 *                                  the same act seen twice: a sub-case started
-	 *                                  from a timeline entry is both.
-	 * @param array<string, mixed> $inherited What the child took, as recorded.
+	 * A derivation and a split are the same act seen twice: a sub-case started
+	 * from a timeline entry is both.
+	 *
+	 * @param Derivation $derivation The parent, the child, the link naming it and what the child inherited.
 	 *
 	 * @return ObjectRelation The row.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function recordDerivation(
-		ObjectEntity $parent,
-		ObjectEntity $child,
-		?ProvenanceLink $link = null,
-		array $inherited = [],
-	): ObjectRelation {
-		$link ??= new ProvenanceLink();
+	public function recordDerived(Derivation $derivation): ObjectRelation {
 		return $this->stores->mapper->createFromArray(
-			$this->fields->derivedLink(from: $child, to: $parent)
-			+ ['relationType' => $link->relationType, 'sourceEntry' => $link->entry, 'inherited' => $this->fields->recordOf(inherited: $inherited)]
+			$this->fields->derivedLink(from: $derivation->child, to: $derivation->parent)
+			+ [
+				'relationType' => $derivation->link->relationType,
+				'sourceEntry' => $derivation->link->entry,
+				'inherited' => $this->fields->recordOf(inherited: $derivation->inherited),
+			]
 			+ ['createdBy' => $this->actor()]
 		);
-	}//end recordDerivation()
+	}//end recordDerived()
 
 	/**
 	 * Add an address outside the product as a relation on an object.

@@ -60,6 +60,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
@@ -248,7 +249,7 @@ class SaveObjects {
 		}
 
 		// Load from database and cache.
-		$schema = $this->stores->schemaMapper->find($schemaId);
+		$schema = $this->stores->catalog->schemas()->find($schemaId);
 		self::$schemaCache[$schemaId] = $schema;
 
 		return $schema;
@@ -262,7 +263,7 @@ class SaveObjects {
 	private function bulkSlugs(): BulkObjectSlugs {
 		$this->bulkSlugs ??= new BulkObjectSlugs(
 			slugHandler: $this->stores->saveHandler->getSlugHandler(),
-			registerMapper: $this->stores->registerMapper,
+			registerMapper: $this->stores->catalog->registers(),
 			logger: $this->reporting->logger,
 			schemaOf: fn (string $schemaId): Schema => $this->loadSchemaWithCache(schemaId: $schemaId)
 		);
@@ -315,7 +316,7 @@ class SaveObjects {
 		}
 
 		// Load from database and cache.
-		$register = $this->stores->registerMapper->find($registerId);
+		$register = $this->stores->catalog->registers()->find($registerId);
 		self::$registerCache[$registerId] = $register;
 
 		return $register;
@@ -346,16 +347,10 @@ class SaveObjects {
 	 * 6. Optimized inverse relation processing
 	 * 7. Bulk writeBack operations
 	 *
-	 * @param array $objects Array of objects in serialized format
-	 * @param Register|string|int|null $register Optional register context
-	 * @param Schema|string|int|null $schema Optional schema context
-	 * @param bool $_rbac Whether to apply RBAC filtering
-	 * @param bool $_multitenancy Whether to apply multi-organization filtering
-	 * @param bool $_validation Whether to validate objects against schema definitions
-	 * @param bool $_events Whether to dispatch object lifecycle events
-	 * @param bool $deduplicateIds Whether to deduplicate by IDs
-	 * @param bool $enrich Whether to enrich objects
-	 * @param bool $_audit Whether to write audit trail rows for the persisted objects
+	 * @param array           $objects       Array of objects in serialized format
+	 * @param BulkSaveOptions $options       The default register and schema, and the validation, event and audit switches
+	 * @param bool            $_rbac         Whether to apply RBAC filtering
+	 * @param bool            $_multitenancy Whether to apply multi-organization filtering
 	 *
 	 * @throws InvalidArgumentException If required fields are missing from any object
 	 * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -366,38 +361,31 @@ class SaveObjects {
 	 * @psalm-param    array<int, array<string, mixed>> $objects
 	 * @phpstan-return array<string, mixed>
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every argument after $schema is a per-call
-	 *   policy switch that the single-object saveObject() also takes, and the two paths have to
-	 *   offer the same switches or a caller cannot move between them — which is exactly what the
-	 *   `$_audit` flag exists for. Collapsing them into an options object is worth doing, but it
-	 *   is a change to BOTH save paths and all their callers, not to this signature alone.
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function saveObjects(
 		array $objects,
-		Register|string|int|null $register = null,
-		Schema|string|int|null $schema = null,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $_validation = false,
-		bool $_events = false,
-		bool $deduplicateIds = false,
-		bool $enrich = false,
-		bool $_audit = true,
+		BulkSaveOptions $options=new BulkSaveOptions(
+			defaults: new BulkBatchDefaults(register: null, schema: null),
+			validation: false,
+			events: false,
+			audit: true
+		),
+		bool $_rbac=true,
+		bool $_multitenancy=true
 	): array {
 		$run = $this->openBulkSaveRun(totalObjects: count($objects));
 		if (empty($objects) === true) {
 			return $run->result;
 		}
 
-		$run->register     = $register;
-		$run->schema       = $schema;
+		$run->register     = $options->defaults->register;
+		$run->schema       = $options->defaults->schema;
 		$run->rbac         = $_rbac;
 		$run->multitenancy = $_multitenancy;
-		$run->validation   = $_validation;
-		$run->events       = $_events;
-		$run->audit        = $_audit;
+		$run->validation   = $options->validation;
+		$run->events       = $options->events;
+		$run->audit        = $options->audit;
 
 		return $this->runBulkSave(run: $run, objects: $objects);
 	}//end saveObjects()
@@ -1053,7 +1041,7 @@ class SaveObjects {
 			return $row;
 		}
 
-		return ExplicitReveal::restoreMasked(schema: $run->rowSchema, incoming: $row, stored: ($run->rowExisting->getObject() ?? []));
+		return ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $run->rowSchema, incoming: $row, stored: ($run->rowExisting->getObject() ?? [])));
 	}//end restoreRevealedValues()
 
 	/**
@@ -1173,10 +1161,8 @@ class SaveObjects {
 		}
 
 		$draftKept = (new DraftCallerRule())->keptFromCaller(
-			object: $run->rowExisting,
-			schema: $run->rowSchema,
-			userId: $run->userId(),
-			isAdmin: $run->isAdmin
+			subject: new DraftSubject(object: $run->rowExisting, schema: $run->rowSchema),
+			caller: new DraftCaller(userId: $run->userId(), isAdmin: $run->isAdmin)
 		);
 		if ($draftKept === false) {
 			return null;
@@ -1252,7 +1238,7 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function callerMayOverwriteStoredRow(BulkSafeguardRun $run): bool {
-		return $this->stores->objectEntityMapper->callerOrganisationsHold(row: $run->rowExisting) === true
+		return $this->stores->catalog->tables()->callerOrganisationsHold(row: $run->rowExisting) === true
 			|| $this->callerReadsStoredRow(run: $run) === true;
 	}//end callerMayOverwriteStoredRow()
 
@@ -1269,7 +1255,7 @@ class SaveObjects {
 	private function callerReadsStoredRow(BulkSafeguardRun $run): bool {
 		$uuid = (string) $run->rowExisting->getUuid();
 		try {
-			$read = $this->stores->objectEntityMapper->find(
+			$read = $this->stores->catalog->tables()->find(
 				identifier: $uuid,
 				register: $run->rowRegister,
 				schema: $run->rowSchema
@@ -1321,7 +1307,7 @@ class SaveObjects {
 			return null;
 		}
 
-		if ($this->stores->objectEntityMapper->callerOrganisationsHold(row: $run->rowDeleted) === true) {
+		if ($this->stores->catalog->tables()->callerOrganisationsHold(row: $run->rowDeleted) === true) {
 			return null;
 		}
 
@@ -1838,7 +1824,7 @@ class SaveObjects {
 	 * @throws \Throwable When no row, or no single row, is found.
 	 */
 	private function findStoredRow(string $uuid, BulkSafeguardRun $run): ObjectEntity {
-		return $this->stores->objectEntityMapper->find(
+		return $this->stores->catalog->tables()->find(
 			identifier: $uuid,
 			register: $run->rowRegister,
 			schema: self::boundedSchema(run: $run),
@@ -1990,7 +1976,7 @@ class SaveObjects {
 	 * @return array<string, ObjectEntity>
 	 */
 	private function findGroupRows(array $group): array {
-		return $this->stores->objectEntityMapper->findObjectsByUuidsInRegisterSchema(
+		return $this->stores->catalog->tables()->findObjectsByUuidsInRegisterSchema(
 			register: $group['register'],
 			schema: $group['schema'],
 			uuids: $group['uuids'],
@@ -3236,6 +3222,7 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function dispatchesChunkEvents(bool $events): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $events === true && $this->reporting->eventDispatcher !== null && SystemOperationContext::isActive() === false;
 	}//end dispatchesChunkEvents()
 
@@ -3349,7 +3336,7 @@ class SaveObjects {
 		}
 
 		try {
-			return $this->stores->objectEntityMapper->convertRowToObjectEntity(
+			return $this->stores->catalog->tables()->convertRowToObjectEntity(
 				row: $row,
 				_register: $this->loadRegisterWithCache(registerId: $row['_register']),
 				_schema: $this->loadSchemaWithCache(schemaId: $row['_schema'])
@@ -3436,7 +3423,7 @@ class SaveObjects {
 		$this->logBulkPersist(count: count($transformedObjects));
 
 		// MAXIMUM PERFORMANCE: Always use ultra-fast bulk operations for large imports.
-		return $this->stores->objectEntityMapper->ultraFastBulkSave(
+		return $this->stores->catalog->tables()->ultraFastBulkSave(
 			insertObjects: $transformedObjects,
 			updateObjects: [],
 			register: $this->persistRegister(register: $register),
@@ -3478,7 +3465,7 @@ class SaveObjects {
 		}
 
 		try {
-			return $this->stores->registerMapper->find($register);
+			return $this->stores->catalog->registers()->find($register);
 		} catch (Exception $e) {
 			$this->reporting->logger->warning(
 				message: '[SaveObjects] Failed to resolve register for bulk save',
@@ -3501,7 +3488,7 @@ class SaveObjects {
 		}
 
 		try {
-			return $this->stores->schemaMapper->find($schema);
+			return $this->stores->catalog->schemas()->find($schema);
 		} catch (Exception $e) {
 			$this->reporting->logger->warning(
 				message: '[SaveObjects] Failed to resolve schema for bulk save',

@@ -7,7 +7,9 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\SearchTrailController;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -16,7 +18,6 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
 
 /**
  * Unit tests for SearchTrailController
@@ -444,7 +445,7 @@ class SearchTrailControllerTest extends TestCase {
 			]);
 		$this->searchTrailService->expects($this->once())
 			->method('getSearchActivity')
-			->with('week', null, null)
+			->with(new SearchPeriod(), 'week')
 			->willReturn($activityData);
 
 		$result = $this->controller->activity();
@@ -1668,13 +1669,12 @@ class SearchTrailControllerTest extends TestCase {
 		$this->searchTrailService->expects($this->once())
 			->method('getSearchActivity')
 			->with(
-				'day',
-				$this->callback(function ($from) {
-					return $from instanceof \DateTime && $from->format('Y-m-d') === '2024-06-01';
+				$this->callback(function ($period) {
+					return $period instanceof SearchPeriod
+						&& $period->from instanceof \DateTime && $period->from->format('Y-m-d') === '2024-06-01'
+						&& $period->to instanceof \DateTime && $period->to->format('Y-m-d') === '2024-06-30';
 				}),
-				$this->callback(function ($to) {
-					return $to instanceof \DateTime && $to->format('Y-m-d') === '2024-06-30';
-				})
+				'day'
 			)
 			->willReturn($activityData);
 

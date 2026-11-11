@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -44,6 +45,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode
@@ -145,7 +147,7 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('cannot create a task outside a persisted run');
 
-		$this->node->execute($this->items(), ['title' => 'Send it'], $this->context(new FlowResumeState(), ['runUuid' => '  ']));
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: ['title' => 'Send it'], context: $this->context(new FlowResumeState(), ['runUuid' => '  '])));
 	}//end testAnAskOutsideAPersistedRunIsRefusedBeforeAnythingIsCreated()
 
 	public function testTheLegacyRunKeyAndTheTriggeringUserCreateTheTask(): void {
@@ -165,15 +167,15 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 				'clerk'
 			)
 			->willReturn($created);
-		$this->bridge->expects(self::once())->method('record')->with('t-1', 'match', 'clerk', self::stringContains('(cycle 1)'));
+		$this->bridge->expects(self::once())->method('record')->with(self::callback(static fn (TaskAuditEntry $entry): bool => [$entry->uuid, $entry->action, $entry->actor] === ['t-1', 'match', 'clerk'] && str_contains($entry->reason, '(cycle 1)')));
 		$this->delivery->expects(self::once())->method('request')->with($created, PortalTaskDelivery::KIND_ASK, ['title' => 'x']);
 
 		try {
-			$this->node->execute(
-				$this->items(),
-				['title' => 'Send the {{ document }}', 'description' => 'About {{ document }}', 'dueAt' => '{{ missing }}', 'onTimeout' => ' error ', 'onReject' => ''],
-				$this->context($state, ['runUuid' => 'run-legacy', 'runAs' => '  ', 'triggeredBy' => 'clerk'])
-			);
+			$this->node->execute(new FlowNodeCall(
+				items: $this->items(),
+				config: ['title' => 'Send the {{ document }}', 'description' => 'About {{ document }}', 'dueAt' => '{{ missing }}', 'onTimeout' => ' error ', 'onReject' => ''],
+				context: $this->context($state, ['runUuid' => 'run-legacy', 'runAs' => '  ', 'triggeredBy' => 'clerk'])
+			));
 			self::fail('The ask must suspend the run.');
 		} catch (FlowSuspension $suspension) {
 			self::assertSame('waiting for a party outside the organisation: Send the payslip', $suspension->getMessage());
@@ -190,7 +192,7 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 
 		$this->expectException(FlowSuspension::class);
 
-		$this->node->execute($this->items(), ['title' => 'Send it'], $this->context(new FlowResumeState(), [FlowRunContext::CONTEXT_RUN => 'run-1']));
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: ['title' => 'Send it'], context: $this->context(new FlowResumeState(), [FlowRunContext::CONTEXT_RUN => 'run-1'])));
 	}//end testWithoutAnActingIdentityTheTaskIsCreatedWithoutAnActor()
 
 	public function testAWakeOnAnOpenTaskParksAgainUnderAGenericTitleAndKeepsTheSlot(): void {
@@ -199,7 +201,7 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 		$this->bridge->expects(self::never())->method('createTask');
 
 		try {
-			$this->node->execute($this->items(), ['title' => '{{ nothing }}'], $this->context($state));
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: ['title' => '{{ nothing }}'], context: $this->context($state)));
 			self::fail('An open task must suspend again.');
 		} catch (FlowSuspension $suspension) {
 			self::assertSame('waiting for a party outside the organisation: a portal task', $suspension->getMessage());
@@ -218,7 +220,7 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 
 		$items = $this->items();
 		$items[] = 'not-an-item';
-		$out = $this->node->execute($items, ['title' => 'Send it', 'outcomeKey' => 'answer'], $this->context($state));
+		$out = $this->node->execute(new FlowNodeCall(items: $items, config: ['title' => 'Send it', 'outcomeKey' => 'answer'], context: $this->context($state)));
 
 		$bag = $out[0][FlowItems::JSON]['answer'];
 		self::assertArrayNotHasKey('portalTask', $out[0][FlowItems::JSON]);
@@ -241,11 +243,11 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 		$this->bridge->method('taskOrNull')->willReturn($task);
 		$this->bridge->expects(self::never())->method('recordHeartbeatRecovery');
 
-		$out = $this->node->execute(
-			$this->items(),
-			['title' => 'Send it'],
-			$this->context($state, [FlowRunServiceInterface::SIGNAL_CONTEXT_KEY => ['taskUuid' => 't-1']])
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items(),
+			config: ['title' => 'Send it'],
+			context: $this->context($state, [FlowRunServiceInterface::SIGNAL_CONTEXT_KEY => ['taskUuid' => 't-1']])
+		));
 
 		$bag = $out[0][FlowItems::JSON]['portalTask'];
 		self::assertTrue($bag['decided']);
@@ -278,11 +280,11 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 		$this->delivery->expects(self::once())->method('request')->with($created, PortalTaskDelivery::KIND_RE_ASK, self::anything());
 
 		try {
-			$this->node->execute(
-				$this->items(['why' => ['text' => 'The scan is unreadable']]),
-				['title' => 'Send it', 'reasonField' => 'why.text'],
-				$this->context($state, [FlowRunContext::CONTEXT_RUN => 'run-1', 'runAs' => 'caseworker'])
-			);
+			$this->node->execute(new FlowNodeCall(
+				items: $this->items(['why' => ['text' => 'The scan is unreadable']]),
+				config: ['title' => 'Send it', 'reasonField' => 'why.text'],
+				context: $this->context($state, [FlowRunContext::CONTEXT_RUN => 'run-1', 'runAs' => 'caseworker'])
+			));
 			self::fail('A re-ask must suspend the run.');
 		} catch (FlowSuspension) {
 			$slot = $state->read(nodeId: 'ask');
@@ -301,11 +303,11 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('re-entered after task t-1 ended, but the items carry no reason under "why"');
 
-		$this->node->execute(
-			$this->items(['why' => ['nested' => 'object']]),
-			['title' => 'Send it', 'reasonField' => 'why'],
-			$this->context($state, [FlowRunContext::CONTEXT_RUN => 'run-1'])
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items(['why' => ['nested' => 'object']]),
+			config: ['title' => 'Send it', 'reasonField' => 'why'],
+			context: $this->context($state, [FlowRunContext::CONTEXT_RUN => 'run-1'])
+		));
 	}//end testAReEntryWhoseReasonIsNotAScalarNamesTheConfiguredField()
 
 	public function testAVanishedTaskNamesTheUuidItWaitedOn(): void {
@@ -314,7 +316,7 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Task t-9, which this step was waiting on, no longer exists.');
 
-		$this->node->execute($this->items(), ['title' => 'Send it'], $this->context($this->waitingOn(taskUuid: ' t-9 ')));
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: ['title' => 'Send it'], context: $this->context($this->waitingOn(taskUuid: ' t-9 '))));
 	}//end testAVanishedTaskNamesTheUuidItWaitedOn()
 	private function urls(): IURLGenerator {
 		$urls = $this->createMock(IURLGenerator::class);
@@ -369,14 +371,14 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 	public function testAnEmptyBranchPassesThroughWithoutASlot(): void {
 		$this->bridge->expects(self::never())->method('createTask');
 
-		self::assertSame([], $this->node->execute([], ['title' => 'Send it'], []));
+		self::assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: ['title' => 'Send it'], context: [])));
 	}//end testAnEmptyBranchPassesThroughWithoutASlot()
 
 	public function testItemsWithoutAResumeSlotAreRefused(): void {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('needs a node resume slot');
 
-		$this->node->execute($this->items(), ['title' => 'Send it'], [FlowRunContext::CONTEXT_RUN => 'run-1']);
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: ['title' => 'Send it'], context: [FlowRunContext::CONTEXT_RUN => 'run-1']));
 	}//end testItemsWithoutAResumeSlotAreRefused()
 
 	public function testAnItemWithoutACaseIsRefusedBeforeAPartyIsMatched(): void {
@@ -385,10 +387,10 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('needs the item to be about a case object');
 
-		$this->node->execute(
-			[FlowItems::item(json: ['document' => 'payslip'])],
-			['title' => 'Send it'],
-			$this->context(new FlowResumeState(), [FlowRunContext::CONTEXT_RUN => 'run-1'])
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['document' => 'payslip'])],
+			config: ['title' => 'Send it'],
+			context: $this->context(new FlowResumeState(), [FlowRunContext::CONTEXT_RUN => 'run-1'])
+		));
 	}//end testAnItemWithoutACaseIsRefusedBeforeAPartyIsMatched()
 }//end class

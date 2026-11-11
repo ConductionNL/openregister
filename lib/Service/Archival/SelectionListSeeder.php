@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
@@ -445,7 +447,8 @@ class SelectionListSeeder {
 	 */
 	private function storedRows(RegisterSchema $table): array {
 		try {
-			$objects = $this->storage->catalog->tables()->findAll(limit: self::MAX_ROWS, register: $table->register, schema: $table->schema);
+			$request = new MagicListRequest(table: $table, query: new ListQuery(limit: self::MAX_ROWS));
+			$objects = $this->storage->catalog->tables()->findAllListed(request: $request);
 		} catch (Throwable $e) {
 			$this->logger->warning('[SelectionListSeeder] Could not read the selectielijst: ' . $e->getMessage());
 			return [];

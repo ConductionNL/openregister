@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -116,16 +117,14 @@ interface CaseItemMapperInterface {
 	 * `(plan_item_type, state)` index. The total is {@see countByTypeAndState()}
 	 * over the same predicate, so page and total cannot disagree.
 	 *
-	 * @param string|null $type Restrict to one plan-item type, or null for all.
-	 * @param string|null $state Restrict to one state, or null for all.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param ListQuery $query The page (limit, offset), and the `type` and `state` filters: each
+	 *                         restricts to one plan-item type or state, or is null for all.
 	 *
 	 * @return array<int, CaseItem> The page, oldest first.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	public function findByTypeAndState(?string $type, ?string $state, int $limit = 25, int $offset = 0): array;
+	public function findByTypeAndState(ListQuery $query): array;
 
 	/**
 	 * The total behind {@see findByTypeAndState()}.

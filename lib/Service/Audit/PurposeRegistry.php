@@ -124,11 +124,7 @@ class PurposeRegistry implements PurposeRegistryInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function boundActivity(ProcessingPurpose $purpose): ?Verwerkingsactiviteit {
-		$reference = (string)($purpose->getActivity() ?? '');
-		if ($reference === '') {
-			$reference = (string)($purpose->getActivityUuid() ?? '');
-		}
-
+		$reference = $this->activityReference(purpose: $purpose);
 		if ($reference === '') {
 			return null;
 		}
@@ -146,6 +142,22 @@ class PurposeRegistry implements PurposeRegistryInterface {
 
 		return $activity;
 	}//end boundActivity()
+
+	/**
+	 * The activity a purpose names: its activity reference, else its activity UUID.
+	 *
+	 * @param ProcessingPurpose $purpose The purpose.
+	 *
+	 * @return string The reference, or '' when it names none.
+	 */
+	private function activityReference(ProcessingPurpose $purpose): string {
+		$reference = (string)($purpose->getActivity() ?? '');
+		if ($reference === '') {
+			return (string)($purpose->getActivityUuid() ?? '');
+		}
+
+		return $reference;
+	}//end activityReference()
 
 	/**
 	 * Resolve a named purpose to one that may carry a query, or refuse.

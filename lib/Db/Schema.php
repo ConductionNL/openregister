@@ -47,6 +47,7 @@ use OCP\DB\Types;
 use OCA\OpenRegister\Db\Schema\NotSuppliedReasons;
 use OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration;
 use OCA\OpenRegister\Db\Schema\PresentationAnnotations;
+use OCA\OpenRegister\Db\Schema\FacetBlockStamp;
 use OCA\OpenRegister\Db\Schema\PropertyFacetBlock;
 use OCP\IURLGenerator;
 use stdClass;
@@ -140,6 +141,7 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  */
 class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	use JsonFieldsTrait;
+	use LinkedItemsTrait;
 
 	/**
 	 * Unique identifier for the schema
@@ -445,55 +447,6 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var array|null Hooks configuration
 	 */
 	protected ?array $hooks = null;
-
-	/**
-	 * Linked mail entity IDs for this schema.
-	 *
-	 * @var array|null Linked mail entity IDs
-	 */
-	protected ?array $mail = null;
-
-	/**
-	 * Linked contact entity IDs for this schema.
-	 *
-	 * @var array|null Linked contact entity IDs
-	 */
-	protected ?array $contacts = null;
-
-	/**
-	 * Linked note entity IDs for this schema.
-	 *
-	 * @var array|null Linked note entity IDs
-	 */
-	protected ?array $notes = null;
-
-	/**
-	 * Linked todo entity IDs for this schema.
-	 *
-	 * @var array|null Linked todo entity IDs
-	 */
-	protected ?array $todos = null;
-
-	/**
-	 * Linked calendar event entity IDs for this schema.
-	 *
-	 * @var array|null Linked calendar event entity IDs
-	 */
-	protected ?array $calendar = null;
-
-	/**
-	 * Linked Talk conversation IDs for this schema.
-	 *
-	 * @var array|null Linked Talk conversation IDs
-	 */
-	protected ?array $talk = null;
-
-	/**
-	 * Linked Deck card IDs for this schema.
-	 *
-	 * @var array|null Linked Deck card IDs
-	 */
-	protected ?array $deck = null;
 
 	/**
 	 * A pending edit of this schema's definition, held beside the published one.
@@ -2222,10 +2175,9 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 */
 	public function regenerateFacetsFromProperties(): void {
 		$this->setFacets(
-			facets: (new PropertyFacetBlock())->built(
+			facets: (new PropertyFacetBlock())->builtFor(
 				properties: $this->getProperties(),
-				version: $this->getVersion(),
-				generatedAt: time()
+				stamp: new FacetBlockStamp(version: $this->getVersion(), generatedAt: time())
 			)
 		);
 	}//end regenerateFacetsFromProperties()

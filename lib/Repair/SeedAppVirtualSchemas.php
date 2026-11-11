@@ -39,7 +39,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\ObjectSource\NcEntitySemanticMap;
@@ -173,48 +172,9 @@ class SeedAppVirtualSchemas implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			// Group the app-gated rows (register !== directory) by their register
-			// slug so each register is created once with all of its schemas.
-			$rowsByRegister = [];
-			foreach (NcEntitySemanticMap::ENTITIES as $row) {
-				if ($row['register'] === NcEntitySemanticMap::DIRECTORY_REGISTER) {
-					continue;
-				}
-
-				// The `tables` register is NOT a single-schema projection: its
-				// per-table schemas are auto-seeded by SeedTablesVirtualSchemas /
-				// `occ openregister:tables:sync` (design D7). The semantic-map
-				// `tables` row only records the provider + app gate, so it must
-				// not be materialised into a nominal schema here.
-				if ($row['register'] === 'tables') {
-					continue;
-				}
-
-				$rowsByRegister[$row['register']][] = $row;
+			foreach (self::rowsByRegister() as $rows) {
+				$this->seedRegister(rows: $rows, output: $output);
 			}
-
-			foreach ($rowsByRegister as $registerSlug => $rows) {
-				$register = $this->ensureRegister(slug: $registerSlug, application: $rows[0]['application']);
-				$schemaIds = $register->getSchemas();
-				$changed = false;
-
-				foreach ($rows as $row) {
-					$schema = $this->ensureSchema(row: $row);
-					if (in_array($schema->getId(), $schemaIds, false) === false) {
-						$schemaIds[] = $schema->getId();
-						$changed = true;
-					}
-
-					$output->info(sprintf('App schema "%s" (id %s) ready', $row['schema'], (string)$schema->getId()));
-				}
-
-				if ($changed === true) {
-					$register->setSchemas($schemaIds);
-					$this->catalog->registers()->update($register);
-				}
-
-				$output->info(sprintf('App virtual register "%s" seeded', $registerSlug));
-			}//end foreach
 		} catch (Throwable $e) {
 			$this->logger->warning('[SeedAppVirtualSchemas] seed failed: ' . $e->getMessage());
 			$output->warning('App virtual schema seed skipped: ' . $e->getMessage());
@@ -222,31 +182,82 @@ class SeedAppVirtualSchemas implements IRepairStep {
 	}//end run()
 
 	/**
-	 * Find or create one app-gated virtual register.
+	 * The app-gated semantic-map rows, grouped by their register slug.
 	 *
-	 * @param string $slug The register slug (e.g. `contacts`).
-	 * @param string $application The register application (drives the ADR-048 gate).
+	 * Grouped so each register is created once with all of its schemas.
 	 *
-	 * @return Register The existing or newly created register.
+	 * @return array<string, array<int, array<string, mixed>>> The rows per register slug, in map order.
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
 	 */
-	private function ensureRegister(string $slug, string $application): Register {
-		try {
-			return $this->catalog->registers()->find($slug, _rbac: false, _multitenancy: false);
-		} catch (Throwable $e) {
-			// Not found — create it.
-			return $this->catalog->registers()->createFromArray(
-				object: [
-					'title' => ucfirst($slug),
-					'slug' => $slug,
-					'description' => (self::REGISTER_DESCRIPTIONS[$slug] ?? sprintf('Read-only virtual register for Nextcloud %s.', $slug)),
-					'application' => $application,
-					'schemas' => [],
-				]
-			);
-		}//end try
-	}//end ensureRegister()
+	private static function rowsByRegister(): array {
+		$rowsByRegister = [];
+		foreach (NcEntitySemanticMap::ENTITIES as $row) {
+			if ($row['register'] === NcEntitySemanticMap::DIRECTORY_REGISTER) {
+				continue;
+			}
+
+			// The `tables` register is NOT a single-schema projection: its
+			// per-table schemas are auto-seeded by SeedTablesVirtualSchemas /
+			// `occ openregister:tables:sync` (design D7). The semantic-map
+			// `tables` row only records the provider + app gate, so it must
+			// not be materialised into a nominal schema here.
+			if ($row['register'] === 'tables') {
+				continue;
+			}
+
+			$rowsByRegister[$row['register']][] = $row;
+		}
+
+		return $rowsByRegister;
+	}//end rowsByRegister()
+
+	/**
+	 * Seed one app-gated register with the schemas of its rows.
+	 *
+	 * @param array<int, array<string, mixed>> $rows   The register's semantic-map rows (all share its slug).
+	 * @param IOutput                          $output Output interface for status messages.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
+	 */
+	private function seedRegister(array $rows, IOutput $output): void {
+		$registerSlug = $rows[0]['register'];
+		$seed = VirtualRegisterSeed::findOrCreate(
+			catalog: $this->catalog,
+			definition: self::registerDefinition(slug: $registerSlug, application: $rows[0]['application'])
+		);
+
+		foreach ($rows as $row) {
+			$schema = $this->ensureSchema(row: $row);
+			$seed->attach(schema: $schema);
+			$output->info(sprintf('App schema "%s" (id %s) ready', $row['schema'], (string)$schema->getId()));
+		}
+
+		$seed->save(catalog: $this->catalog);
+		$output->info(sprintf('App virtual register "%s" seeded', $registerSlug));
+	}//end seedRegister()
+
+	/**
+	 * The app-gated virtual register to create when it does not exist yet.
+	 *
+	 * @param string $slug        The register slug (e.g. `contacts`).
+	 * @param string $application The register application (drives the ADR-048 gate).
+	 *
+	 * @return array<string, mixed> The register definition.
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
+	 */
+	private static function registerDefinition(string $slug, string $application): array {
+		return [
+			'title' => ucfirst($slug),
+			'slug' => $slug,
+			'description' => (self::REGISTER_DESCRIPTIONS[$slug] ?? sprintf('Read-only virtual register for Nextcloud %s.', $slug)),
+			'application' => $application,
+			'schemas' => [],
+		];
+	}//end registerDefinition()
 
 	/**
 	 * Find or create one virtual schema for a semantic-map row.
@@ -262,36 +273,59 @@ class SeedAppVirtualSchemas implements IRepairStep {
 			return $this->catalog->schemas()->find($row['schema'], _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			// Not found — create it as a read-only object-source-backed schema.
-			$properties = (self::SCHEMA_PROPERTIES[$row['schema']] ?? []);
-
-			$objectSource = [
-				'provider' => $row['provider'],
-				'readOnly' => true,
-			];
-
-			// Per-schema provider `config` extras (threaded to the provider's
-			// find/findAll `$config` argument by GetObject). `nc-task` reuses the
-			// shared `caldav-vtodo` provider, which by default only surfaces VTODOs
-			// whose X-OPENREGISTER link points at the bound register/schema. As a
-			// virtual projection of ALL of the acting user's tasks, `nc-task` opts
-			// out of that link scoping with `config.unscoped`.
-			$providerConfig = (self::SCHEMA_SOURCE_CONFIG[$row['schema']] ?? []);
-			if (empty($providerConfig) === false) {
-				$objectSource['config'] = $providerConfig;
-			}
-
-			return $this->catalog->schemas()->createFromArray(
-				object: [
-					'title' => $row['schema'],
-					'slug' => $row['schema'],
-					'description' => sprintf('Read-only virtual schema for Nextcloud %s (%s).', $row['schema'], $row['schemaOrg']),
-					'properties' => $properties,
-					'configuration' => [
-						'x-schema-org' => $row['schemaOrg'],
-						'x-openregister-object-source' => $objectSource,
-					],
-				]
-			);
-		}//end try
+			return $this->catalog->schemas()->createFromArray(object: self::schemaDefinition(row: $row));
+		}
 	}//end ensureSchema()
+
+	/**
+	 * The read-only object-source-backed schema to create for a semantic-map row.
+	 *
+	 * @param array{schema: string, schemaOrg: string, provider: string} $row The semantic-map row.
+	 *
+	 * @return array<string, mixed> The schema definition.
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
+	 */
+	private static function schemaDefinition(array $row): array {
+		return [
+			'title' => $row['schema'],
+			'slug' => $row['schema'],
+			'description' => sprintf('Read-only virtual schema for Nextcloud %s (%s).', $row['schema'], $row['schemaOrg']),
+			'properties' => (self::SCHEMA_PROPERTIES[$row['schema']] ?? []),
+			'configuration' => [
+				'x-schema-org' => $row['schemaOrg'],
+				'x-openregister-object-source' => self::objectSource(row: $row),
+			],
+		];
+	}//end schemaDefinition()
+
+	/**
+	 * The read-only object source of a semantic-map row's schema.
+	 *
+	 * Per-schema provider `config` extras are threaded to the provider's
+	 * find/findAll `$config` argument by GetObject. `nc-task` reuses the
+	 * shared `caldav-vtodo` provider, which by default only surfaces VTODOs
+	 * whose X-OPENREGISTER link points at the bound register/schema. As a
+	 * virtual projection of ALL of the acting user's tasks, `nc-task` opts
+	 * out of that link scoping with `config.unscoped`.
+	 *
+	 * @param array{schema: string, schemaOrg: string, provider: string} $row The semantic-map row.
+	 *
+	 * @return array<string, mixed> The `x-openregister-object-source` annotation.
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
+	 */
+	private static function objectSource(array $row): array {
+		$objectSource = [
+			'provider' => $row['provider'],
+			'readOnly' => true,
+		];
+
+		$providerConfig = (self::SCHEMA_SOURCE_CONFIG[$row['schema']] ?? []);
+		if (empty($providerConfig) === false) {
+			$objectSource['config'] = $providerConfig;
+		}
+
+		return $objectSource;
+	}//end objectSource()
 }//end class

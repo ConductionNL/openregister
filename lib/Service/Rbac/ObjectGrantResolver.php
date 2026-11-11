@@ -354,15 +354,14 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	/**
 	 * Whether one object is granted to the caller for one action.
 	 *
-	 * @param string|null $userId The caller.
-	 * @param string|null $objectUuid The object's UUID.
-	 * @param string $action The action being decided.
+	 * @param GrantLookup $lookup The caller and the object's UUID.
+	 * @param string      $action The action being decided.
 	 *
 	 * @return bool True when a grant exists that carries the action's permission.
 	 */
-	public function isGranted(?string $userId, ?string $objectUuid, string $action = 'read'): bool {
-		return $this->namesAnObject(objectUuid: $objectUuid) === true
-			&& array_key_exists((string)$objectUuid, $this->grantedObjectUuidsFor(userId: $userId, action: $action));
+	public function isGranted(GrantLookup $lookup, string $action = 'read'): bool {
+		return $this->namesAnObject(objectUuid: $lookup->objectUuid) === true
+			&& array_key_exists((string)$lookup->objectUuid, $this->grantedObjectUuidsFor(userId: $lookup->userId, action: $action));
 	}//end isGranted()
 
 	/**
@@ -419,22 +418,24 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	private function collectForType(ShareGrantRun $run): void {
 		$page = 0;
 		while ($page < self::MAX_PAGES) {
-			$shares = $this->readPage(run: $run, page: $page);
-			if (empty($shares) === true) {
-				return;
-			}
-
-			foreach ($shares as $share) {
-				$this->absorbShare(share: $share, run: $run);
-			}
-
-			if (count($shares) < self::PAGE_SIZE) {
+			if ($this->absorbPage(run: $run, shares: $this->readPage(run: $run, page: $page)) === false) {
 				return;
 			}
 
 			$page++;
-		}//end while
+		}
 
+		$this->warnPagingBound(run: $run);
+	}//end collectForType()
+
+	/**
+	 * Say that the paging bound was hit, so some grants of this type were not read.
+	 *
+	 * @param ShareGrantRun $run The run: its share type.
+	 *
+	 * @return void
+	 */
+	private function warnPagingBound(ShareGrantRun $run): void {
 		$this->logger->warning(
 			message: '[ObjectGrantResolver] Hit the share paging bound; some grants were NOT read',
 			context: [
@@ -444,7 +445,27 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 				'bound' => (self::PAGE_SIZE * self::MAX_PAGES),
 			]
 		);
-	}//end collectForType()
+	}//end warnPagingBound()
+
+	/**
+	 * Add one page of shares to the grant map, and say whether another page may follow.
+	 *
+	 * @param ShareGrantRun $run    The run whose grant map takes the shares.
+	 * @param IShare[]      $shares The page.
+	 *
+	 * @return bool True when the page was full, so the next one must be read.
+	 */
+	private function absorbPage(ShareGrantRun $run, array $shares): bool {
+		if (empty($shares) === true) {
+			return false;
+		}
+
+		foreach ($shares as $share) {
+			$this->absorbShare(share: $share, run: $run);
+		}
+
+		return count($shares) >= self::PAGE_SIZE;
+	}//end absorbPage()
 
 	/**
 	 * Read one page of one share type, or nothing when the read failed.
@@ -464,18 +485,30 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 				($page * self::PAGE_SIZE)
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[ObjectGrantResolver] Could not read shares for a type; skipping it',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'shareType' => $run->shareType,
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->warnUnreadableType(run: $run, error: $e);
 			return [];
 		}
 	}//end readPage()
+
+	/**
+	 * Say that the shares of one type could not be read, so the type is skipped.
+	 *
+	 * @param ShareGrantRun $run   The run: its share type.
+	 * @param Throwable     $error Why the read failed.
+	 *
+	 * @return void
+	 */
+	private function warnUnreadableType(ShareGrantRun $run, Throwable $error): void {
+		$this->logger->warning(
+			message: '[ObjectGrantResolver] Could not read shares for a type; skipping it',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'shareType' => $run->shareType,
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end warnUnreadableType()
 
 	/**
 	 * Add one share to the grant map, when it is a folder share on an object.
@@ -537,15 +570,14 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	 * evaluator finite and reviewable. An extension verb is asked for by the
 	 * endpoint that performs the action, and only there.
 	 *
-	 * @param string|null $userId The caller.
-	 * @param string|null $objectUuid The object.
-	 * @param string $verb The extension verb, e.g. `use`.
+	 * @param GrantLookup $lookup The caller and the object.
+	 * @param string      $verb   The extension verb, e.g. `use`.
 	 *
 	 * @return bool True when a grant to this caller carries that verb.
 	 */
-	public function grantCarriesVerb(?string $userId, ?string $objectUuid, string $verb): bool {
-		return $this->namesAnObject(objectUuid: $objectUuid) === true
-			&& in_array($verb, $this->verbsHeldOn(userId: $userId, objectUuid: (string)$objectUuid), true);
+	public function grantCarriesVerb(GrantLookup $lookup, string $verb): bool {
+		return $this->namesAnObject(objectUuid: $lookup->objectUuid) === true
+			&& in_array($verb, $this->verbsHeldOn(userId: $lookup->userId, objectUuid: (string)$lookup->objectUuid), true);
 	}//end grantCarriesVerb()
 
 	/**

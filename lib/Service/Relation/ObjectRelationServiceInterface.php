@@ -187,25 +187,13 @@ interface ObjectRelationServiceInterface {
 	/**
 	 * Record a child created under a parent, with what it inherited.
 	 *
-	 * @param ObjectEntity $parent The parent object.
-	 * @param ObjectEntity $child The created child.
-	 * @param ProvenanceLink|null $link The vocabulary key naming the link, and the
-	 *                                  entry of the parent it came out of, when it
-	 *                                  came out of one. A derivation and a split are
-	 *                                  the same act seen twice: a sub-case started
-	 *                                  from a timeline entry is both.
-	 * @param array<string, mixed> $inherited What the child took, as recorded.
+	 * @param Derivation $derivation The parent, the child, the link naming it and what the child inherited.
 	 *
 	 * @return ObjectRelation The row.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function recordDerivation(
-		ObjectEntity $parent,
-		ObjectEntity $child,
-		?ProvenanceLink $link = null,
-		array $inherited = [],
-	): ObjectRelation;
+	public function recordDerived(Derivation $derivation): ObjectRelation;
 
 	/**
 	 * Record that one object was created out of another.

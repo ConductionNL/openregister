@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Task\TaskFieldTypes;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCP\AppFramework\Db\Entity;
 
@@ -741,70 +742,9 @@ class Task extends Entity implements JsonSerializable, TaskInterface {
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'taskKey', type: 'string');
-		$this->addType(fieldName: 'title', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'metadata', type: 'json');
-		$this->addType(fieldName: 'kind', type: 'string');
-		$this->addType(fieldName: 'runUuid', type: 'string');
-		$this->addType(fieldName: 'nodeId', type: 'string');
-		$this->addType(fieldName: 'definitionVersion', type: 'integer');
-		$this->addType(fieldName: 'appId', type: 'string');
-		$this->addType(fieldName: 'workflowStepId', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'state', type: 'string');
-		$this->addType(fieldName: 'isTerminal', type: 'boolean');
-		$this->addType(fieldName: 'lastAction', type: 'string');
-		$this->addType(fieldName: 'outcome', type: 'string');
-		$this->addType(fieldName: 'blockedReason', type: 'string');
-		$this->addType(fieldName: 'blockedBy', type: 'string');
-		$this->addType(fieldName: 'performerType', type: 'string');
-		$this->addType(fieldName: 'assignee', type: 'string');
-		$this->addType(fieldName: 'candidateUsers', type: 'json');
-		$this->addType(fieldName: 'candidateGroups', type: 'json');
-		$this->addType(fieldName: 'candidateRole', type: 'string');
-		$this->addType(fieldName: 'routingStrategy', type: 'string');
-		$this->addType(fieldName: 'routingFallback', type: 'string');
-		$this->addType(fieldName: 'onBehalfOf', type: 'string');
-		$this->addType(fieldName: 'mandate', type: 'string');
-		$this->addType(fieldName: 'requester', type: 'string');
-		$this->addType(fieldName: 'watchers', type: 'json');
-		$this->addType(fieldName: 'startAt', type: 'datetime');
-		$this->addType(fieldName: 'dueAt', type: 'datetime');
-		$this->addType(fieldName: 'expiresAt', type: 'datetime');
-		$this->addType(fieldName: 'onTimeout', type: 'string');
-		$this->addType(fieldName: 'onReject', type: 'string');
-		$this->addType(fieldName: 'slaValue', type: 'integer');
-		$this->addType(fieldName: 'slaUnit', type: 'string');
-		$this->addType(fieldName: 'compliancePeriodDays', type: 'integer');
-		$this->addType(fieldName: 'suspendedUntil', type: 'datetime');
-		$this->addType(fieldName: 'recurrence', type: 'string');
-		$this->addType(fieldName: 'priority', type: 'string');
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'templateId', type: 'string');
-		$this->addType(fieldName: 'templateVersion', type: 'integer');
-		$this->addType(fieldName: 'templateSnapshot', type: 'json');
-		$this->addType(fieldName: 'sequenceUuid', type: 'string');
-		$this->addType(fieldName: 'sequencePosition', type: 'integer');
-		$this->addType(fieldName: 'legacyStepId', type: 'integer');
-		$this->addType(fieldName: 'checklist', type: 'json');
-		$this->addType(fieldName: 'responses', type: 'json');
-		$this->addType(fieldName: 'percentComplete', type: 'integer');
-		$this->addType(fieldName: 'completedAt', type: 'datetime');
-		$this->addType(fieldName: 'completedBy', type: 'string');
-		$this->addType(fieldName: 'resultText', type: 'string');
-		$this->addType(fieldName: 'comment', type: 'string');
-		$this->addType(fieldName: 'evidence', type: 'json');
-		$this->addType(fieldName: 'overrideReason', type: 'string');
-		$this->addType(fieldName: 'parentTaskId', type: 'integer');
-		$this->addType(fieldName: 'epicTaskId', type: 'integer');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'createdBy', type: 'string');
-
+		foreach (TaskFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -837,71 +777,9 @@ class Task extends Entity implements JsonSerializable, TaskInterface {
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'key' => $this->taskKey,
-			'title' => $this->title,
-			'description' => $this->description,
-			'metadata' => $this->metadata,
-			'kind' => $this->kind,
-			'runUuid' => $this->runUuid,
-			'nodeId' => $this->nodeId,
-			'definitionVersion' => $this->definitionVersion,
-			'appId' => $this->appId,
-			'workflowStepId' => $this->workflowStepId,
-			'organisation' => $this->organisation,
-			'state' => $this->state,
-			'isTerminal' => $this->isTerminal,
-			'lastAction' => $this->lastAction,
-			'outcome' => $this->outcome,
-			'blockedReason' => $this->blockedReason,
-			'blockedBy' => $this->blockedBy,
-			'performerType' => $this->performerType,
-			'assignee' => $this->assignee,
-			'candidateUsers' => $this->candidateUsers,
-			'candidateGroups' => $this->candidateGroups,
-			'candidateRole' => $this->candidateRole,
-			'routingStrategy' => $this->routingStrategy,
-			'routingFallback' => $this->routingFallback,
-			'onBehalfOf' => $this->onBehalfOf,
-			'mandate' => $this->mandate,
-			'requester' => $this->requester,
-			'watchers' => $this->watchers,
-			'startAt' => $this->startAt?->format('c'),
-			'dueAt' => $this->dueAt?->format('c'),
-			'expiresAt' => $this->expiresAt?->format('c'),
-			'onTimeout' => $this->onTimeout,
-			'onReject' => $this->onReject,
-			'slaValue' => $this->slaValue,
-			'slaUnit' => $this->slaUnit,
-			'compliancePeriodDays' => $this->compliancePeriodDays,
-			'suspendedUntil' => $this->suspendedUntil?->format('c'),
-			'recurrence' => $this->recurrence,
-			'priority' => $this->priority,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'templateId' => $this->templateId,
-			'templateVersion' => $this->templateVersion,
-			'templateSnapshot' => $this->templateSnapshot,
-			'sequenceUuid' => $this->sequenceUuid,
-			'sequencePosition' => $this->sequencePosition,
-			'legacyStepId' => $this->legacyStepId,
-			'checklist' => $this->checklist,
-			'responses' => $this->responses,
-			'percentComplete' => $this->percentComplete,
-			'completedAt' => $this->completedAt?->format('c'),
-			'completedBy' => $this->completedBy,
-			'resultText' => $this->resultText,
-			'comment' => $this->comment,
-			'evidence' => $this->evidence,
-			'overrideReason' => $this->overrideReason,
-			'parentTaskId' => $this->parentTaskId,
-			'epicTaskId' => $this->epicTaskId,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-			'createdBy' => $this->createdBy,
-		];
+		$typed = new TypedFieldsJson();
+		$json = $typed->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
+
+		return $typed->renamed(json: $json, names: ['taskKey' => 'key']);
 	}//end jsonSerialize()
 }//end class

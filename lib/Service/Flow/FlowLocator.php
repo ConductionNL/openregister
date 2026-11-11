@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\TriggerLookup;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -114,7 +115,7 @@ class FlowLocator implements FlowLocatorInterface {
 	}//end resolveFlow()
 
 	/**
-	 * Load the object a run walks against.
+	 * Load the object a run walks against, by reference.
 	 *
 	 * Loads with RBAC and multitenancy OFF, which is correct here and ONLY
 	 * here: a trigger fires with no acting user, so there is no session whose
@@ -127,24 +128,6 @@ class FlowLocator implements FlowLocatorInterface {
 	 * an IDOR, and the same call is only defensible because no request can get
 	 * here. Anything that later routes a request into this method must apply
 	 * its own authorisation first.
-	 *
-	 * @param string $uuid The subject uuid.
-	 * @param string $register The register slug.
-	 * @param string $schema The schema slug.
-	 *
-	 * @return object|null The subject, or null when it cannot be found.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 */
-	public function resolveSubject(string $uuid, string $register, string $schema): ?object {
-		return $this->resolveObject(ref: new ObjectRef(register: $register, schema: $schema, id: $uuid));
-	}//end resolveSubject()
-
-	/**
-	 * Load the object a run walks against, by reference.
-	 *
-	 * The same load, with the same RBAC and multitenancy OFF and the same
-	 * background-only boundary, as {@see self::resolveSubject()}.
 	 *
 	 * @param ObjectRef $ref The subject's register, schema and uuid.
 	 *
@@ -179,7 +162,7 @@ class FlowLocator implements FlowLocatorInterface {
 	}//end resolveObject()
 
 	/**
-	 * The ids of the flows a fired event should start.
+	 * The ids of the flows an event fired on one register and schema should start.
 	 *
 	 * A flow that matches the event but cannot dispatch is REFUSED OUT LOUD
 	 * rather than filtered away in SQL. The distinction matters: a flow that
@@ -187,21 +170,6 @@ class FlowLocator implements FlowLocatorInterface {
 	 * interested", which is precisely how a misconfigured trigger reads as
 	 * working. An ownerless flow is the common case — a trigger has no acting
 	 * user, so the flow's owner is the only identity a run could execute as.
-	 *
-	 * @param string $event The event id.
-	 * @param string $register The register the event fired on.
-	 * @param string $schema The schema the event fired on.
-	 *
-	 * @return array<int, string> The ids of the flows to run.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 */
-	public function flowsForTrigger(string $event, string $register, string $schema): array {
-		return $this->flowsForEvent(event: $event, table: new RegisterSchemaRef(register: $register, schema: $schema));
-	}//end flowsForTrigger()
-
-	/**
-	 * The ids of the flows an event fired on one register and schema should start.
 	 *
 	 * NODES FIRST. A flow that has any row in the derived index has been
 	 * converted, and its NODES decide entirely — including deciding that it
@@ -278,7 +246,8 @@ class FlowLocator implements FlowLocatorInterface {
 	 */
 	private function columnCandidates(string $event, RegisterSchemaRef $table): ?array {
 		try {
-			return $this->stores->mapper->findByTrigger(trigger: $event, register: (string)$table->register, schema: (string)$table->schema);
+			$lookup = new TriggerLookup(trigger: $event, register: (string)$table->register, schema: (string)$table->schema);
+			return $this->stores->mapper->findByTrigger(lookup: $lookup);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowLocator] Could not list flows for trigger "' . $event . '": ' . $e->getMessage(),
@@ -423,7 +392,7 @@ class FlowLocator implements FlowLocatorInterface {
 	/**
 	 * The uuids of the matched flows that can actually be dispatched.
 	 *
-	 * Extracted from `flowsForTrigger()`, which sat exactly on the configured
+	 * Extracted from `flowsForEvent()`, which sat exactly on the configured
 	 * Cyclomatic Complexity threshold (10 of 10). Behaviour is unchanged: the
 	 * ownerless flow is still skipped and still says out loud why, which is the
 	 * point — a flow that matched and then vanished without a word is the
@@ -466,8 +435,27 @@ class FlowLocator implements FlowLocatorInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function scheduledFlows(): array {
+		$candidates = [];
+		foreach ($this->findScheduled() as $flow) {
+			if ($flow->canDispatch() === false) {
+				$this->warnNotDispatched(flow: $flow);
+				continue;
+			}
+
+			$candidates[] = $this->scheduleCandidate(flow: $flow);
+		}
+
+		return $candidates;
+	}//end scheduledFlows()
+
+	/**
+	 * The flows stored with a schedule trigger, or none when they cannot be listed.
+	 *
+	 * @return array<int, Flow> The flows.
+	 */
+	private function findScheduled(): array {
 		try {
-			$flows = $this->stores->mapper->findScheduled();
+			return $this->stores->mapper->findScheduled();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowLocator] Could not list scheduled flows: ' . $e->getMessage(),
@@ -475,32 +463,42 @@ class FlowLocator implements FlowLocatorInterface {
 			);
 			return [];
 		}
+	}//end findScheduled()
 
-		$candidates = [];
-		foreach ($flows as $flow) {
-			if ($flow->canDispatch() === false) {
-				$this->logger->warning(
-					message: '[FlowLocator] Scheduled flow "' . $flow->getUuid()
-						. '" was not dispatched: it is disabled, or its definition has no owner and is therefore '
-						. 'an orphan that cannot be listed, found or edited either. This is not the identity '
-						. 'check — whose rights a run uses comes from the schedule trigger node\'s runAs.',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
-				);
-				continue;
-			}
+	/**
+	 * Say why a scheduled flow is not dispatched.
+	 *
+	 * @param Flow $flow The flow that cannot dispatch.
+	 *
+	 * @return void
+	 */
+	private function warnNotDispatched(Flow $flow): void {
+		$this->logger->warning(
+			message: '[FlowLocator] Scheduled flow "' . $flow->getUuid()
+				. '" was not dispatched: it is disabled, or its definition has no owner and is therefore '
+				. 'an orphan that cannot be listed, found or edited either. This is not the identity '
+				. 'check — whose rights a run uses comes from the schedule trigger node\'s runAs.',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
+		);
+	}//end warnNotDispatched()
 
-			$candidates[] = [
-				'id' => (string)$flow->getUuid(),
-				'enabled' => (bool)$flow->getEnabled(),
-				'trigger' => (string)($flow->getTrigger() ?? ''),
-				'cron' => (string)($flow->getCron() ?? ''),
-				'owner' => $flow->getOwner(),
-				'since' => $this->savedAt(flow: $flow),
-			];
-		}//end foreach
-
-		return $candidates;
-	}//end scheduledFlows()
+	/**
+	 * The scheduler's view of one dispatchable flow.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return array{id: string, enabled: bool, trigger: string, cron: string, owner: string|null, since: string} The candidate.
+	 */
+	private function scheduleCandidate(Flow $flow): array {
+		return [
+			'id' => (string)$flow->getUuid(),
+			'enabled' => (bool)$flow->getEnabled(),
+			'trigger' => (string)($flow->getTrigger() ?? ''),
+			'cron' => (string)($flow->getCron() ?? ''),
+			'owner' => $flow->getOwner(),
+			'since' => $this->savedAt(flow: $flow),
+		];
+	}//end scheduleCandidate()
 
 	/**
 	 * When a flow was last saved, as an ATOM timestamp, or the empty string.

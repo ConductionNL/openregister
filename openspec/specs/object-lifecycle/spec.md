@@ -390,7 +390,7 @@ match the audit logs MUST be returned as a paginated envelope.
 
 `ObjectsController::validate()` MUST require `register` and `schema` parameters
 (HTTP 400 if absent), accept optional `limit`/`offset` for chunked processing,
-delegate to `ObjectService::validateAndSaveObjectsBySchema()`, and return a
+delegate to `ObjectService::validateAndSaveTable()`, and return a
 `{success, message, statistics, pagination, errors}` envelope. Failures MUST
 return HTTP 500 with `success: false`. `ObjectsController::clearBlob()` is a
 retired endpoint that MUST return a static success envelope reporting zero

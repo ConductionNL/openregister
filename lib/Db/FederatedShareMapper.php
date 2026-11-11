@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -166,23 +167,23 @@ class FederatedShareMapper extends QBMapper implements FederatedShareMapperInter
 	/**
 	 * Find all federated shares, optionally filtered.
 	 *
-	 * @param int|null $limit Maximum number of results.
-	 * @param int|null $offset Result offset.
-	 * @param array<string, mixed>|null $filters Column => value equality filters.
+	 * @param ListQuery|null $query The page (unbounded for every row) and the column => value equality filters;
+	 *                              null for every share.
 	 *
 	 * @return FederatedShare[] The matching shares.
 	 *
 	 * @psalm-return list<FederatedShare>
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array {
-		$qb = $this->db->getQueryBuilder();
+	public function findAll(?ListQuery $query = null): array {
+		$query ??= ListQuery::unbounded();
+		$qb      = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_federated_shares')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset);
 
-		foreach ($filters ?? [] as $column => $value) {
+		foreach ($query->filters as $column => $value) {
 			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
 		}
 

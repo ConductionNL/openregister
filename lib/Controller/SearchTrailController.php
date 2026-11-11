@@ -27,10 +27,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SearchTrailPageLinks;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapperInterface;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -159,16 +161,9 @@ class SearchTrailController extends Controller {
 	 * @return JSONResponse|null 401/403 response when blocked, null when allowed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->failure(message: 'Authentication required', status: 401);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return $this->failure(message: 'Forbidden: this search-trail operation is admin-only', status: 403);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: this search-trail operation is admin-only');
 	}//end requireAdmin()
 
 	/**
@@ -571,9 +566,8 @@ class SearchTrailController extends Controller {
 	 */
 	private function popularTermsPage(array $query): array {
 		$serviceResult = $this->searchTrailService->getPopularSearchTerms(
-			limit: (int)$query['statsLimit'],
-			from: $query['from'],
-			to: $query['to']
+			period: new SearchPeriod(from: $query['from'], to: $query['to']),
+			limit: (int)$query['statsLimit']
 		);
 
 		return $this->withSearchMeta(
@@ -612,7 +606,7 @@ class SearchTrailController extends Controller {
 		$period = $this->period();
 		$interval = $this->request->getParam(key: 'interval', default: 'day');
 
-		return $this->searchTrailService->getSearchActivity(interval: $interval, from: $period['from'], to: $period['to']);
+		return $this->searchTrailService->getSearchActivity(period: new SearchPeriod(from: $period['from'], to: $period['to']), interval: $interval);
 	}//end activityResult()
 
 	/**
@@ -685,9 +679,8 @@ class SearchTrailController extends Controller {
 	 */
 	private function userAgentPage(array $query): array {
 		$serviceResult = $this->searchTrailService->getUserAgentStatistics(
-			limit: (int)$query['statsLimit'],
-			from: $query['from'],
-			to: $query['to']
+			period: new SearchPeriod(from: $query['from'], to: $query['to']),
+			limit: (int)$query['statsLimit']
 		);
 		if (($serviceResult['user_agents'] ?? null) !== null) {
 			return $this->structuredUserAgentPage(serviceResult: $serviceResult, query: $query);

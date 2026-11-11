@@ -49,6 +49,9 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapperInterface;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 use Symfony\Component\Uid\Uuid;
@@ -95,32 +98,14 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	}//end __construct()
 
 	/**
-	 * The terms a link is minted on, as asked; mint() refuses unusable ones.
-	 *
-	 * @param array<int, string> $capabilities The declared capabilities; empty means read only.
-	 * @param string|null        $expiresAt    The end date, in any format DateTime parses.
-	 * @param string|null        $password     Optional password, checked at use.
-	 * @param string|null        $label        Optional human label.
-	 *
-	 * @return AccessLinkTerms The terms.
-	 *
-	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
-	 */
-	public function terms(array $capabilities, ?string $expiresAt, ?string $password, ?string $label): AccessLinkTerms {
-		return new AccessLinkTerms(capabilities: $capabilities, expiresAt: $expiresAt, password: $password, label: $label);
-	}//end terms()
-
-	/**
 	 * Mint a link over one subject.
 	 *
-	 * The minting principal is an argument rather than something this service
-	 * reaches for, so the identity behind a published link is decided at the
-	 * HTTP boundary and is visible there.
+	 * The minting principal travels in the request rather than being something
+	 * this service reaches for, so the identity behind a published link is
+	 * decided at the HTTP boundary and is visible there.
 	 *
-	 * @param string          $userId      The principal minting the link.
-	 * @param string          $subjectType `object`, `view` or `file`.
-	 * @param string          $subjectId   The object uuid, view uuid, or file id.
-	 * @param AccessLinkTerms $terms       The capabilities, the expiry (required), the password and the label.
+	 * @param LinkMintRequest $request The minting principal, the subject (`object`, `view` or `file`, and its id)
+	 *                                 and the terms: capabilities, the expiry (required), the password and the label.
 	 *
 	 * @return array<string, mixed> The link row plus the URL a holder opens.
 	 *
@@ -128,11 +113,12 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
-	public function mint(string $userId, string $subjectType, string $subjectId, AccessLinkTerms $terms): array {
+	public function mint(LinkMintRequest $request): array {
 		// Every refusal is answered before anything is drawn, hashed or written.
-		$minter = $this->requireMinter(userId: $userId);
-		$kind = $this->requireSubjectType(subjectType: $subjectType);
-		$subject = $this->requireSubjectId(subjectId: $subjectId);
+		$terms = $request->terms;
+		$minter = $this->requireMinter(userId: $request->minter);
+		$kind = $this->requireSubjectType(subjectType: $request->subjectType);
+		$subject = $this->requireSubjectId(subjectId: $request->subjectId);
 		$declared = $this->normaliseCapabilities(capabilities: $terms->capabilities);
 		$expiry = $this->requireExpiry(expiresAt: $terms->expiresAt);
 
@@ -232,31 +218,79 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	}//end revoke()
 
 	/**
-	 * Switch a link off, or back on, without revoking it.
+	 * Switch a link off without revoking it.
 	 *
 	 * Switching off is the reversible half of revocation, and it is what the
 	 * spec means by a link that grants nothing while it is off. A switched-off
-	 * link answers the same 404 as a revoked one.
+	 * link answers the same 404 as a revoked one. A link somebody else minted
+	 * is, to this caller, a link that does not exist.
 	 *
-	 * @param int $id The link row id.
+	 * @param int    $id     The link row id.
 	 * @param string $userId The principal asking.
-	 * @param bool $disabled True to switch the link off.
+	 *
+	 * @return array<string, mixed>|null The updated link, or null when there is none.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
+	 */
+	public function disable(int $id, string $userId): ?array {
+		$link = $this->ownedLink(id: $id, userId: $userId);
+		$link?->setDisabled(true);
+
+		return $this->storedOrNull(link: $link);
+	}//end disable()
+
+	/**
+	 * Switch a link the caller minted back on.
+	 *
+	 * @param int    $id     The link row id.
+	 * @param string $userId The principal asking.
+	 *
+	 * @return array<string, mixed>|null The updated link, or null when there is none.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
+	 */
+	public function enable(int $id, string $userId): ?array {
+		$link = $this->ownedLink(id: $id, userId: $userId);
+		$link?->setDisabled(false);
+
+		return $this->storedOrNull(link: $link);
+	}//end enable()
+
+	/**
+	 * Switch a link off, or back on, without revoking it.
+	 *
+	 * Kept for callers in other apps that look this method up by name.
+	 *
+	 * @param int    $id       The link row id.
+	 * @param string $userId   The principal asking.
+	 * @param bool   $disabled True to switch the link off.
 	 *
 	 * @return array<string, mixed>|null The updated link, or null when there is none.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
 	 */
 	public function setDisabled(int $id, string $userId, bool $disabled): ?array {
-		$link = $this->ownedLink(id: $id, userId: $userId);
+		if ($disabled === true) {
+			return $this->disable(id: $id, userId: $userId);
+		}
+
+		return $this->enable(id: $id, userId: $userId);
+	}//end setDisabled()
+
+	/**
+	 * Store a switched link and describe it to its owner, or null when there was none.
+	 *
+	 * @param AccessLink|null $link The caller's own link, already switched.
+	 *
+	 * @return array<string, mixed>|null The updated link, or null.
+	 */
+	private function storedOrNull(?AccessLink $link): ?array {
 		if ($link === null) {
 			return null;
 		}
 
-		$link->setDisabled($disabled);
-		$updated = $this->mapper->update($link);
-
-		return $this->describeForOwner(link: $updated);
-	}//end setDisabled()
+		return $this->describeForOwner(link: $this->mapper->update($link));
+	}//end storedOrNull()
 
 	/**
 	 * Every link one principal minted, with the URL each one opens.
@@ -302,22 +336,22 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	public function recordUse(AccessLink $link, AccessLinkUse $use): void {
 		if ($use->object !== null) {
 			try {
-				$this->useLog->auditTrail->createAuditTrailEntry(
-					object: $use->object,
-					action: $use->act,
-					context: array_merge(
-						$use->context,
-						[
-							'accessLink' => $link->getUuid(),
-							'capabilities' => $link->declaredCapabilities(),
-							'subjectType' => $link->getSubjectType(),
-							'subjectId' => $link->getSubjectId(),
-							'ipAddress' => $use->ipAddress,
-						]
-					),
-					actorId: $link->principalId(),
-					actorName: $link->principalName(),
-					ipAddress: $use->ipAddress
+				$this->useLog->auditTrail->recordObjectEvent(
+					event: new ObjectAuditEvent(
+						object: $use->object,
+						action: $use->act,
+						context: array_merge(
+							$use->context,
+							[
+								'accessLink' => $link->getUuid(),
+								'capabilities' => $link->declaredCapabilities(),
+								'subjectType' => $link->getSubjectType(),
+								'subjectId' => $link->getSubjectId(),
+								'ipAddress' => $use->ipAddress,
+							]
+						),
+						options: new ObjectAuditEventOptions(actor: new NamedActor(id: $link->principalId(), name: $link->principalName()), ipAddress: $use->ipAddress)
+					)
 				);
 			} catch (Throwable $failure) {
 				// An audit write that fails must be visible, and it must not
@@ -527,32 +561,59 @@ class AccessLinkService implements AccessLinkServiceInterface {
 		$declared = [AccessLink::CAP_READ];
 
 		foreach ($capabilities as $candidate) {
-			if (is_string($candidate) === false) {
-				throw new InvalidArgumentException('A capability must be named as a string.');
-			}
-
-			$name = strtolower(trim($candidate));
-			if ($name === '') {
-				continue;
-			}
-
-			if (in_array($name, AccessLink::CAPABILITIES, true) === false) {
-				throw new InvalidArgumentException(
-					sprintf(
-						"'%s' is not a link capability: use %s.",
-						$name,
-						implode(', ', AccessLink::CAPABILITIES)
-					)
-				);
-			}
-
-			if (in_array($name, $declared, true) === false) {
+			$name = $this->capabilityName(candidate: $candidate);
+			if ($name !== '' && in_array($name, $declared, true) === false) {
 				$declared[] = $name;
 			}
 		}
 
 		return $declared;
 	}//end normaliseCapabilities()
+
+	/**
+	 * One requested capability, lower-cased and trimmed; '' for a blank one.
+	 *
+	 * @param mixed $candidate The requested capability.
+	 *
+	 * @return string The capability name, or ''.
+	 *
+	 * @throws InvalidArgumentException When it is not a string, or not a capability this app knows.
+	 */
+	private function capabilityName(mixed $candidate): string {
+		if (is_string($candidate) === false) {
+			throw new InvalidArgumentException('A capability must be named as a string.');
+		}
+
+		$name = strtolower(trim($candidate));
+		if ($name === '') {
+			return '';
+		}
+
+		$this->assertKnownCapability(name: $name);
+
+		return $name;
+	}//end capabilityName()
+
+	/**
+	 * Refuse a capability this app does not know.
+	 *
+	 * @param string $name The lower-cased capability name.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not one of AccessLink::CAPABILITIES.
+	 */
+	private function assertKnownCapability(string $name): void {
+		if (in_array($name, AccessLink::CAPABILITIES, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					"'%s' is not a link capability: use %s.",
+					$name,
+					implode(', ', AccessLink::CAPABILITIES)
+				)
+			);
+		}
+	}//end assertKnownCapability()
 
 	/**
 	 * The end date a link must carry.

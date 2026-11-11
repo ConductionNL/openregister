@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Aggregation;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -108,39 +109,28 @@ class AggregationCache implements AggregationCacheInterface {
 	 * Returns the cached associative array (with the same shape
 	 * AggregationRunner emits) or null on miss.
 	 *
-	 * @param string $registerSlug Register slug component of the cache key.
-	 * @param string $schemaSlug Schema slug component of the cache key.
-	 * @param string $name Aggregation name component of the cache key.
-	 * @param array<string, mixed> $filter Resolved filter (placeholders concrete).
+	 * @param AggregationSlot $slot The register, schema, aggregation name and resolved filter (placeholders concrete).
 	 *
 	 * @return array<string, mixed>|null Cached result or null on miss.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
-	public function get(string $registerSlug, string $schemaSlug, string $name, array $filter): ?array {
-		return $this->read(
-			slot: new AggregationSlot(registerSlug: $registerSlug, schemaSlug: $schemaSlug, name: $name, filter: $filter)
-		);
+	public function get(AggregationSlot $slot): ?array {
+		return $this->read(slot: $slot);
 	}//end get()
 
 	/**
 	 * Store an aggregation result.
 	 *
-	 * @param string $registerSlug Register slug component of the cache key.
-	 * @param string $schemaSlug Schema slug component of the cache key.
-	 * @param string $name Aggregation name component of the cache key.
-	 * @param array<string, mixed> $filter Resolved filter (placeholders concrete).
+	 * @param AggregationSlot      $slot   The register, schema, aggregation name and resolved filter.
 	 * @param array<string, mixed> $result Result envelope to store.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
-	public function set(string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void {
-		$this->write(
-			slot: new AggregationSlot(registerSlug: $registerSlug, schemaSlug: $schemaSlug, name: $name, filter: $filter),
-			result: $result
-		);
+	public function set(AggregationSlot $slot, array $result): void {
+		$this->write(slot: $slot, result: $result);
 	}//end set()
 
 	/**
@@ -201,6 +191,12 @@ class AggregationCache implements AggregationCacheInterface {
 			$this->cache->set($this->key(slot: $slot), json_encode($result), self::TTL);
 		} catch (\Throwable $e) {
 			// Don't escalate: a cache write failure shouldn't break the response.
+			$this->logger->debug(
+				message: '[AggregationCache] Cache write failed',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end write()
 
@@ -220,7 +216,8 @@ class AggregationCache implements AggregationCacheInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
 	public function getAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query): ?array {
-		return $this->read(slot: AggregationSlot::fromAdhocQuery(registerSlug: $registerSlug, schemaSlug: $schemaSlug, query: $query));
+		$table = new RegisterSchemaRef(register: $registerSlug, schema: $schemaSlug);
+		return $this->read(slot: AggregationSlot::fromAdhocQuery(table: $table, query: $query));
 	}//end getAdhoc()
 
 	/**
@@ -240,8 +237,8 @@ class AggregationCache implements AggregationCacheInterface {
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
 	public function setAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query, array $result): void {
-		$slot = AggregationSlot::fromAdhocQuery(registerSlug: $registerSlug, schemaSlug: $schemaSlug, query: $query);
-		$this->write(slot: $slot, result: $result);
+		$table = new RegisterSchemaRef(register: $registerSlug, schema: $schemaSlug);
+		$this->write(slot: AggregationSlot::fromAdhocQuery(table: $table, query: $query), result: $result);
 	}//end setAdhoc()
 
 	/**
@@ -272,11 +269,7 @@ class AggregationCache implements AggregationCacheInterface {
 			// outlives the data TTL so a bump can never be undone by expiry while
 			// stale data is still live.
 			$versionKey = $this->versionKey(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
-			$current = $this->cache->get($versionKey);
-			$next = 1;
-			if (is_numeric($current) === true) {
-				$next = ((int)$current + 1);
-			}
+			$next = $this->nextVersion(current: $this->cache->get($versionKey));
 
 			// TTL well beyond the data TTL (self::TTL) so the bump persists.
 			$this->cache->set($versionKey, $next, (self::TTL * 60));
@@ -286,6 +279,21 @@ class AggregationCache implements AggregationCacheInterface {
 			);
 		}
 	}//end evictForSchema()
+
+	/**
+	 * The version after the cached one; 1 when none (or nothing numeric) is cached.
+	 *
+	 * @param mixed $current The cached version counter.
+	 *
+	 * @return int
+	 */
+	private function nextVersion(mixed $current): int {
+		if (is_numeric($current) === true) {
+			return ((int)$current + 1);
+		}
+
+		return 1;
+	}//end nextVersion()
 
 	/**
 	 * Build the cache key. Hashes the filter and the RBAC scope so that:
@@ -319,6 +327,7 @@ class AggregationCache implements AggregationCacheInterface {
 			$slot->schemaSlug,
 			$version,
 			$slot->name,
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 			sha1($filterStr),
 			$this->rbacScopeHash()
 		);
@@ -374,6 +383,7 @@ class AggregationCache implements AggregationCacheInterface {
 			$orgId = $org->getUuid();
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return sha1($uid . ':' . $orgId);
 	}//end rbacScopeHash()
 }//end class

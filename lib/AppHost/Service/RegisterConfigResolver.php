@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Service;
 
+use OCA\OpenRegister\Service\ConfigLookup;
 use OCA\OpenRegister\AppHost\Exception\ConfigurationMissingException;
 use OCA\OpenRegister\AppHost\Exception\FoundationUnavailableException;
 use OCP\App\IAppManager;
@@ -103,7 +104,7 @@ class RegisterConfigResolver {
 
 		return $this->guardEmptyConfig(
 			configKey: $configKey,
-			resolve: fn (): string => (string)$resolver->resolveRegisterId($this->appId, $configKey)
+			resolve: fn (): string => (string)$resolver->lookupId(new ConfigLookup(appId: $this->appId, configKey: $configKey))
 		);
 	}//end resolveRegisterId()
 
@@ -124,7 +125,7 @@ class RegisterConfigResolver {
 
 		return $this->guardEmptyConfig(
 			configKey: $configKey,
-			resolve: fn (): string => (string)$resolver->resolveSchemaId($this->appId, $configKey)
+			resolve: fn (): string => (string)$resolver->lookupId(new ConfigLookup(appId: $this->appId, configKey: $configKey))
 		);
 	}//end resolveSchemaId()
 
@@ -170,17 +171,28 @@ class RegisterConfigResolver {
 		try {
 			return $this->container->get(self::REGISTER_RESOLVER_SERVICE);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				sprintf('[AppHost:%s] RegisterResolverService unresolvable — register config resolution refused (fail-closed)', $this->appId),
-				['exception' => $e]
-			);
-			throw new FoundationUnavailableException(
-				appId: $this->appId,
-				detail: 'RegisterResolverService could not be resolved from the container.',
-				previous: $e
-			);
+			throw $this->resolverUnresolvable(error: $e);
 		}
 	}//end getResolver()
+
+	/**
+	 * Log, and build, the refusal for a RegisterResolverService the container cannot give.
+	 *
+	 * @param Throwable $error Why it could not be resolved.
+	 *
+	 * @return FoundationUnavailableException
+	 */
+	private function resolverUnresolvable(Throwable $error): FoundationUnavailableException {
+		$this->logger->error(
+			sprintf('[AppHost:%s] RegisterResolverService unresolvable — register config resolution refused (fail-closed)', $this->appId),
+			['exception' => $error]
+		);
+		return new FoundationUnavailableException(
+			appId: $this->appId,
+			detail: 'RegisterResolverService could not be resolved from the container.',
+			previous: $error
+		);
+	}//end resolverUnresolvable()
 
 	/**
 	 * Run a resolver callback, translating OR's MissingConfigException (and an

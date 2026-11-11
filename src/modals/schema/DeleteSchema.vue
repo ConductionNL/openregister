@@ -45,6 +45,17 @@ import {
 	settleConfirmRequest,
 } from '../shared/confirmDialogState.js'
 
+/**
+ * The first register that holds the schema being deleted.
+ *
+ * @return {object|undefined} The register
+ */
+function registerHoldingSchema() {
+	return registerStore.registerList.find((reg) =>
+		reg.schemas.includes(schemaStore.schemaItem.id),
+	)
+}
+
 export default {
 	name: 'DeleteSchema',
 	components: {
@@ -80,10 +91,21 @@ export default {
 					'Could not load schema stats, falling back to individual register checks:',
 					err,
 				)
-				for (const reg of registerStore.registerList) {
-					if (reg.schemas.includes(schemaStore.schemaItem.id)) {
-						await this.collectFromRegister(reg)
-					}
+				await this.collectFromRegisters()
+			}
+		},
+
+		/**
+		 * Collect the schema's objects register by register, from every
+		 * register that holds the schema.
+		 *
+		 * @spec exclude Modal data-load plumbing — counts objects referencing the schema before delete.
+		 * @return {Promise<void>}
+		 */
+		async collectFromRegisters() {
+			for (const reg of registerStore.registerList) {
+				if (reg.schemas.includes(schemaStore.schemaItem.id)) {
+					await this.collectFromRegister(reg)
 				}
 			}
 		},
@@ -99,11 +121,7 @@ export default {
 		async countFromStats() {
 			const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
 			const totalObjects = stats.objects?.total || 0
-			const register =
-				totalObjects > 0
-				&& registerStore.registerList.find((reg) =>
-					reg.schemas.includes(schemaStore.schemaItem.id),
-				)
+			const register = totalObjects > 0 && registerHoldingSchema()
 			if (register) {
 				this.registerName = register.title
 				this.objects = Array(totalObjects).fill({

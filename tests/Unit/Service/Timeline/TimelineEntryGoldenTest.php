@@ -46,6 +46,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Drives the services through the collaborators they build.
@@ -90,6 +91,22 @@ class TimelineEntryGoldenTest extends TestCase {
 		$records = new TimelineEntryRecords(entryMapper: $mapper, kinds: $kinds, languages: $languages);
 		return new TimelineEntryService($records, $visibility, $session, $this->createMock(LoggerInterface::class));
 	}//end entryService()
+
+	public function testAListPassesTheVisibilityFilterAndThePageToTheRead(): void {
+		$mapper = $this->createMock(TimelineEntryMapper::class);
+		$mapper->expects($this->exactly(2))->method('findForObject')->willReturnCallback(
+			function (string $objectUuid, ?string $visibility, int $limit, int $offset): array {
+				$this->log[] = 'find '.json_encode([$objectUuid, $visibility, $limit, $offset]);
+				return [];
+			}
+		);
+
+		$service = $this->entryService(mapper: $mapper);
+		$service->listForObject($this->object(), new ListQuery(limit: 5, offset: 2, filters: ['visibility' => 'public']));
+		$service->listForObject($this->object());
+
+		$this->assertSame(['find ["object-1","public",5,2]', 'find ["object-1",null,50,0]'], $this->log);
+	}//end testAListPassesTheVisibilityFilterAndThePageToTheRead()
 
 	public function testARecordCarriesEverythingThePayloadOffers(): void {
 		$entry = $this->entryService()->record(

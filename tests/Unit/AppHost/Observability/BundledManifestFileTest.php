@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Observability;
 
 use OCA\OpenRegister\AppHost\Observability\BundledManifestFile;
+use OCA\OpenRegister\AppHost\Observability\ManifestLookup;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -93,5 +94,19 @@ class BundledManifestFileTest extends TestCase {
 		);
 
 		$this->assertNull(BundledManifestFile::decode($this->appPath, 'other', $logger, 'Tag'));
+	}
+
+	public function testDecodeForReadsTheLookup(): void {
+		$this->write('{"broken":');
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(
+			'[Tag] manifest.json for "myapp" is invalid JSON',
+			$this->anything()
+		);
+
+		$this->assertNull(BundledManifestFile::decodeFor(new ManifestLookup('myapp', $this->appPath, 'Tag'), $logger));
+
+		$this->write('{"a":1}');
+		$this->assertSame(['a' => 1], BundledManifestFile::decodeFor(new ManifestLookup('myapp', $this->appPath, 'Tag'), $this->createMock(LoggerInterface::class)));
 	}
 }//end class

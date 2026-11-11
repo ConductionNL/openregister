@@ -1046,6 +1046,50 @@ async function runSeam(view, field, seam) {
 	}
 }
 
+/**
+ * The question asked before an erasure, naming how many objects it erases.
+ *
+ * @param {number} count The objects matched for the subject
+ * @return {string} The question
+ */
+function erasureQuestion(count) {
+	return t(
+		'openregister',
+		'Erase {count} object(s) for this subject? This action is logged in the audit trail.',
+		{
+			count,
+		},
+	)
+}
+
+/**
+ * The question asked before a processing activity is archived.
+ *
+ * @return {string} The question
+ */
+function archiveQuestion() {
+	return t(
+		'openregister',
+		'Archive this processing activity? Audit-trail rows will keep referring to it.',
+	)
+}
+
+/**
+ * Let the browser save a file under a name.
+ *
+ * @param {Blob} blob The file
+ * @param {string} filename The name to offer
+ * @return {void}
+ */
+function saveFile(blob, filename) {
+	const url = URL.createObjectURL(blob)
+	const a = document.createElement('a')
+	a.href = url
+	a.download = filename
+	a.click()
+	URL.revokeObjectURL(url)
+}
+
 export default {
 	name: 'AvgIndex',
 
@@ -1485,14 +1529,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async archiveActivity(activity) {
-			if (
-				!confirm(
-					t(
-						'openregister',
-						'Archive this processing activity? Audit-trail rows will keep referring to it.',
-					),
-				)
-			) {
+			if (!confirm(archiveQuestion())) {
 				return
 			}
 			try {
@@ -1553,29 +1590,32 @@ export default {
 		},
 
 		/**
+		 * The data subject a request is about: the identifier, and its type
+		 * when one is chosen.
+		 *
+		 * @spec exclude UI plumbing — DSAR request parameters
+		 * @return {{subject: string, type: string|undefined}} The subject
+		 */
+		subjectQuery() {
+			return {
+				subject: this.dsar.subject,
+				type: this.dsar.type || undefined,
+			}
+		},
+
+		/**
 		 * Confirm and run an erasure after user confirmation.
 		 *
 		 * @spec exclude UI plumbing — confirm dialog plus store delegation
 		 * @return {Promise<void>}
 		 */
 		async confirmErasure() {
-			if (
-				!confirm(
-					t(
-						'openregister',
-						'Erase {count} object(s) for this subject? This action is logged in the audit trail.',
-						{
-							count: this.dsarSummary?.matchedCount ?? 0,
-						},
-					),
-				)
-			) {
+			if (!confirm(erasureQuestion(this.dsarSummary?.matchedCount ?? 0))) {
 				return
 			}
 			try {
 				await avgStore.runErasure({
-					subject: this.dsar.subject,
-					type: this.dsar.type || undefined,
+					...this.subjectQuery(),
 					dryRun: false,
 				})
 			} catch (e) {
@@ -1591,20 +1631,15 @@ export default {
 		 */
 		async downloadPortability() {
 			try {
-				const data = await avgStore.runPortability({
-					subject: this.dsar.subject,
-					type: this.dsar.type || undefined,
-				})
+				const data = await avgStore.runPortability(this.subjectQuery())
 				if (!data) return
 				const blob = new Blob([JSON.stringify(data, null, 2)], {
 					type: 'application/json',
 				})
-				const url = URL.createObjectURL(blob)
-				const a = document.createElement('a')
-				a.href = url
-				a.download = `avg-portability-${this.dsar.subject.replace(/[^a-z0-9]/gi, '-')}.json`
-				a.click()
-				URL.revokeObjectURL(url)
+				saveFile(
+					blob,
+					`avg-portability-${this.dsar.subject.replace(/[^a-z0-9]/gi, '-')}.json`,
+				)
 			} catch (e) {
 				// surfaced via store error
 			}
@@ -1941,12 +1976,7 @@ export default {
 					token,
 				)
 				if (!blob) return
-				const url = URL.createObjectURL(blob)
-				const a = document.createElement('a')
-				a.href = url
-				a.download = `dsar-case-${this.selectedCaseId}.pdf`
-				a.click()
-				URL.revokeObjectURL(url)
+				saveFile(blob, `dsar-case-${this.selectedCaseId}.pdf`)
 				await this.reloadSelectedCase()
 			} catch (e) {
 				// surfaced via store error

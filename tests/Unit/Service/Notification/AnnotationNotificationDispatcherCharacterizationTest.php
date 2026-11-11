@@ -33,19 +33,34 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationCoalescer;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\OutboundTransportInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Service\Notification\MailingRequest;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\CoalesceBucket;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCP\Activity\IEvent;
 use OCP\Activity\IManager as IActivityManager;
@@ -374,8 +389,8 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
 		$party = $this->createMock(PartyNotificationService::class);
 		$party->method('notifyParties')->willReturnCallback(
-			function (...$args) use ($case): array {
-				$this->record(what: 'parties.notifyParties', args: $args);
+			function (PartyMessage $message, ?string $role = null) use ($case): array {
+				$this->record(what: 'parties.notifyParties', args: [$message->objectUuid, $message->subject, $message->body, $role, $message->category]);
 				if (($case['partiesNone'] ?? false) === true) {
 					return [];
 				}
@@ -385,8 +400,9 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		);
 
 		$addresses = $this->createMock(ReferencedAddressNotifier::class);
-		$addresses->method('notify')->willReturnCallback(
-			function (...$args): array {
+		$addresses->method('mail')->willReturnCallback(
+			function (ReferenceOrigin $origin, MailingRequest $request): array {
+				$args = [$origin->object, $origin->data, $request->recipients, $request->subject, $request->body, $request->category, $origin->schema];
 				$this->record(what: 'addresses.notify', args: $args);
 				return [
 					['field' => 'mail', 'outcome' => EmailSender::OUTCOME_DISPATCHED],
@@ -485,8 +501,9 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
 		$coalescer = $this->createMock(NotificationCoalescer::class);
 		$coalescer->method('shouldDispatch')->willReturnCallback(
-			function (string $ruleId, string $recipient, ?array $perRuleOverride) use ($prefix): bool {
-				$this->record(what: 'coalescer.shouldDispatch', args: [$ruleId, $recipient, $perRuleOverride]);
+			function (CoalesceBucket $bucket, ?array $perRuleOverride) use ($prefix): bool {
+				$recipient = $bucket->recipient;
+				$this->record(what: 'coalescer.shouldDispatch', args: [$bucket->ruleId, $recipient, $perRuleOverride]);
 				if ($recipient === '__talk__') {
 					return (($perRuleOverride['blockTalk'] ?? false) !== true);
 				}
@@ -600,15 +617,34 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		$time->method('getDateTime')->willReturn(new DateTime('2026-07-12T20:15:00+02:00'));
 
 		$ncSender = $this->createMock(NcNotificationSender::class);
-		$ncSender->method('send')->willReturnCallback(
-			function (...$args): string {
-				$this->record(what: 'nc.send', args: $args);
+		$ncSender->method('notify')->willReturnCallback(
+			function (InAppNotice $notice): string {
+				$this->record(what: 'nc.send', args: [
+					$notice->uid,
+					$notice->object,
+					$notice->content->subjectKey,
+					$notice->rule->name,
+					$notice->content->subject,
+					$notice->content->message,
+					$notice->content->context,
+					$notice->rule->originApp,
+					$notice->rule->actions,
+					$notice->rule->webPushActive,
+				]);
 				return 'dispatched';
 			}
 		);
-		$ncSender->method('enqueueWebPush')->willReturnCallback(
-			function (...$args): void {
-				$this->record(what: 'nc.enqueueWebPush', args: $args);
+		$ncSender->method('enqueuePush')->willReturnCallback(
+			function (PushRideAlong $push): void {
+				$this->record(what: 'nc.enqueueWebPush', args: [
+					$push->recipients,
+					$push->rule->name,
+					$push->rule->originApp,
+					$push->content->subject,
+					$push->content->message,
+					$push->rule->actions,
+					$push->object,
+				]);
 			}
 		);
 
@@ -645,32 +681,39 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		);
 
 		return new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $logger,
-			groupManager: $this->createMock(IGroupManager::class),
-			userManager: $this->createMock(IUserManager::class),
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $activity,
-			httpClient: $httpClient,
-			serverContainer: $container,
-			rateLimiter: $rateLimiter,
-			config: $config,
-			historyMapper: $history,
-			coalescer: $coalescer,
-			subscriptionMapper: $subscriptions,
-			dispatchLogMapper: $dispatchLog,
-			preferenceService: $preferences,
-			jobList: $this->createMock(\OCP\BackgroundJob\IJobList::class),
-			deliveryWindowService: $window,
-			queuedNotificationMapper: $queued,
-			digestScheduleEvaluator: $digest,
-			timeFactory: $time,
-			ncSender: $ncSender,
-			emailSender: $emailSender,
-			talkSender: $talkSender,
-			recipientResolver: $resolver,
-			reachRecorder: $reach
+			channels: new ChannelSet(
+				ncSender: $ncSender,
+				emailSender: $emailSender,
+				talkSender: $talkSender,
+				activityManager: $activity
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(rateLimiter: $rateLimiter, coalescer: $coalescer),
+				deliveryHold: new DeliveryHold(windowService: $window, digestEvaluator: $digest, queue: $queued, timeFactory: $time),
+				preferenceService: $preferences,
+				subscriptionMapper: $subscriptions
+			),
+			integrations: new AppIntegrations(
+				httpClient: $httpClient,
+				serverContainer: $container,
+				jobList: $this->createMock(\OCP\BackgroundJob\IJobList::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: $logger,
+				historyMapper: $history,
+				dispatchLogMapper: $dispatchLog,
+				reachRecorder: $reach
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: $resolver,
+				config: $config
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $logger
+				)
+			)
 		);
 	}//end dispatcher()
 }//end class

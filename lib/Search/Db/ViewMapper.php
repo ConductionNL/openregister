@@ -271,8 +271,30 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 		// Verify RBAC permission to read.
 		$this->verifyRbacPermission(action: 'read', entityType: 'view');
 
-		$qb = $this->db->getQueryBuilder();
+		$qb = $this->selectViewsOf(owner: $owner);
 
+		// Apply organisation filter (all users including admins must have active org).
+		$this->applyOrganisationFilter(qb: $qb);
+
+		$entities = $this->findEntities(query: $qb);
+
+		// Enrich all entities with configuration management info.
+		foreach ($entities as $entity) {
+			$this->enrichWithConfigurationInfo(view: $entity);
+		}
+
+		return $entities;
+	}//end findAll()
+
+	/**
+	 * Every view, newest first; for an owner, only theirs and the public ones.
+	 *
+	 * @param string|null $owner The owner, or null for every view.
+	 *
+	 * @return IQueryBuilder The query, before the organisation filter.
+	 */
+	private function selectViewsOf(?string $owner): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName());
 
@@ -287,18 +309,8 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 
 		$qb->orderBy('created', 'DESC');
 
-		// Apply organisation filter (all users including admins must have active org).
-		$this->applyOrganisationFilter(qb: $qb);
-
-		$entities = $this->findEntities(query: $qb);
-
-		// Enrich all entities with configuration management info.
-		foreach ($entities as $entity) {
-			$this->enrichWithConfigurationInfo(view: $entity);
-		}
-
-		return $entities;
-	}//end findAll()
+		return $qb;
+	}//end selectViewsOf()
 
 	/**
 	 * Every view this caller may see, each carrying the access they hold.
@@ -330,6 +342,20 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 	public function findAllFor(ViewerReach $reach): array {
 		$this->verifyRbacPermission(action: 'read', entityType: 'view');
 
+		$qb = $this->selectViewsReachableBy(reach: $reach);
+		$this->applyOrganisationFilter(qb: $qb);
+
+		return $this->grantedViews(views: $this->findEntities(query: $qb), reach: $reach);
+	}//end findAllFor()
+
+	/**
+	 * The caller's own views, the public ones and every shared one, newest first.
+	 *
+	 * @param ViewerReach $reach The caller.
+	 *
+	 * @return IQueryBuilder The query, before the organisation filter.
+	 */
+	private function selectViewsReachableBy(ViewerReach $reach): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -342,18 +368,22 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 			)
 			->orderBy('created', 'DESC');
 
-		$this->applyOrganisationFilter(qb: $qb);
+		return $qb;
+	}//end selectViewsReachableBy()
 
+	/**
+	 * The views that grant the caller something, each carrying that access.
+	 *
+	 * @param View[]      $views The candidate views.
+	 * @param ViewerReach $reach The caller.
+	 *
+	 * @return View[] The views, each with its `access` set.
+	 */
+	private function grantedViews(array $views, ViewerReach $reach): array {
 		$resolver = RbacChecks::viewShares();
 		$visible = [];
-		foreach ($this->findEntities(query: $qb) as $entity) {
-			$view = $entity->jsonSerialize();
-
-			$access = $resolver->accessFor(
-				view: $view,
-				userId: $reach->userId,
-				userGroups: $reach->groups
-			);
+		foreach ($views as $entity) {
+			$access = $resolver->accessOf(view: $entity->jsonSerialize(), reach: $reach);
 
 			// A list holds what the view grants the caller: their own, the ones
 			// shared with them and the public ones. Another user's private view
@@ -369,7 +399,7 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 		}
 
 		return $visible;
-	}//end findAllFor()
+	}//end grantedViews()
 
 	/**
 	 * Create a new view from an Entity

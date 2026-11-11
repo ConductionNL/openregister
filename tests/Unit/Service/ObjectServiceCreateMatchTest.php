@@ -69,6 +69,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The create check sees the incoming object, so a `match` on it can pass.
@@ -132,7 +133,7 @@ class ObjectServiceCreateMatchTest extends TestCase {
 			$container
 		);
 
-		$this->objectService = new ObjectService(
+		$this->objectService = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -171,7 +172,7 @@ class ObjectServiceCreateMatchTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		// planninq's plannedTimeEntry: a member books time for themselves.
 		$schema = new Schema();
@@ -205,9 +206,10 @@ class ObjectServiceCreateMatchTest extends TestCase {
 	 * @return void
 	 */
 	public function testACreateThatSatisfiesTheMatchIsAllowed(): void {
+		$this->expectNotToPerformAssertions();
+
 		$this->checkCreate(['user' => 'alice', 'hours' => 4]);
 
-		$this->addToAssertionCount(1);
 	}//end testACreateThatSatisfiesTheMatchIsAllowed()
 
 	/**
@@ -279,9 +281,10 @@ class ObjectServiceCreateMatchTest extends TestCase {
 	 * @return void
 	 */
 	public function testOrdinaryPropertiesBesideAMetadataKeyStillCount(): void {
+		$this->expectNotToPerformAssertions();
+
 		$this->checkCreate(object: ['user' => 'alice', '_owner' => 'bob', 'hours' => 4]);
 
-		$this->addToAssertionCount(count: 1);
 	}//end testOrdinaryPropertiesBesideAMetadataKeyStillCount()
 
 	/**
@@ -293,6 +296,8 @@ class ObjectServiceCreateMatchTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPrivateDefaultScopeDoesNotBlockACreate(): void {
+		$this->expectNotToPerformAssertions();
+
 		$schema = new Schema();
 		$schema->setId(682);
 		$schema->setTitle('Private note');
@@ -307,6 +312,5 @@ class ObjectServiceCreateMatchTest extends TestCase {
 
 		$this->checkCreate(['title' => 'mine']);
 
-		$this->addToAssertionCount(1);
 	}//end testAPrivateDefaultScopeDoesNotBlockACreate()
 }//end class

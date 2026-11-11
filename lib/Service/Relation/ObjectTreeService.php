@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Rbac\HierarchyLevel;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -156,9 +157,8 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * A node the caller may not read is left out, and so is everything reached
 	 * only through it.
 	 *
-	 * @param ObjectEntity         $root  The object to walk from, already read under the caller's RBAC.
-	 * @param ObjectTreeQuery|null $query The direction, the depth and the fields asked for; null walks down to the declared bound.
-	 * @param bool                 $_rbac Whether to apply the caller's read access to every node.
+	 * @param ObjectTreeQuery $query The root, the direction, the depth and the fields asked for.
+	 * @param bool            $_rbac Whether to apply the caller's read access to every node.
 	 *
 	 * @return array{root: string, register: int, schema: int, parentProperty: string|null,
 	 *     direction: string, depth: int, requestedDepth: int|null, maxDepth: int,
@@ -169,10 +169,10 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 *
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
-	public function tree(ObjectEntity $root, ?ObjectTreeQuery $query = null, bool $_rbac = true): array {
-		$query ??= new ObjectTreeQuery();
+	public function tree(ObjectTreeQuery $query, bool $_rbac = true): array {
+		$root    = $query->root;
 		$asked   = ['fields' => $query->fields, 'rbac' => $_rbac];
-		$answer  = self::rootAnswer(root: $root, query: $query);
+		$answer  = self::rootAnswer(query: $query);
 		$answer['nodes'] = [$this->rootNode(root: $root, walk: $asked)];
 		$walk    = $this->treeWalk(root: $root, depth: $query->depth);
 		if ($walk === null) {
@@ -185,14 +185,14 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	/**
 	 * The tree answer with no nodes yet and no declaration applied yet.
 	 *
-	 * @param ObjectEntity    $root  The object to walk from.
-	 * @param ObjectTreeQuery $query The direction and depth the caller asked for.
+	 * @param ObjectTreeQuery $query The root, and the direction and depth the caller asked for.
 	 *
 	 * @return array<string, mixed> The answer.
 	 *
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
-	private static function rootAnswer(ObjectEntity $root, ObjectTreeQuery $query): array {
+	private static function rootAnswer(ObjectTreeQuery $query): array {
+		$root = $query->root;
 		return [
 			'root' => (string)$root->getUuid(),
 			'register' => (int)$root->getRegister(),
@@ -508,7 +508,8 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 		}
 
 		try {
-			return $this->sources->descender->childrenOf(table: $table, parentColumn: $column, parentUuids: $parents, limit: $limit);
+			$level = new HierarchyLevel(table: $table, parentColumn: $column, limit: $limit);
+			return $this->sources->descender->childrenOf(level: $level, parentUuids: $parents);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[ObjectTreeService] A level of the tree could not be read',
@@ -559,27 +560,38 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * @return array{chain: array<string, ObjectEntity>, truncatedBy: string|null, topParent: string|null} The climb.
 	 */
 	private function ancestorChain(ObjectEntity $root, array $walk): array {
-		$chain   = [];
-		$seen    = [(string)$root->getUuid() => true];
-		$current = $root;
+		$chain    = [];
+		$rootUuid = (string)$root->getUuid();
+		$current  = $root;
 		for ($level = 1; $level <= ($walk['depth'] + 1); $level++) {
 			$parentUuid = $this->bounds->reference(value: ($current->getObject()[$walk['property']] ?? null));
-			if ($parentUuid !== null && isset($seen[$parentUuid]) === true) {
-				$parentUuid = null;
-			}
-
-			$step = $this->parentStep(parentUuid: $parentUuid, walk: $walk);
+			$step       = $this->parentStep(parentUuid: $this->unvisited(uuid: $parentUuid, visited: $chain + [$rootUuid => $root]), walk: $walk);
 			if ($step['object'] === null || $level > $walk['depth']) {
 				return $this->bounds->climbEnd(chain: $chain, step: $step);
 			}
 
 			$current = $step['object'];
-			$seen[(string)$current->getUuid()]  = true;
 			$chain[(string)$current->getUuid()] = $current;
 		}
 
 		return ['chain' => $chain, 'truncatedBy' => null, 'topParent' => null];
 	}//end ancestorChain()
+
+	/**
+	 * A parent uuid the climb has not visited yet, or null when it has (a cycle) or there is none.
+	 *
+	 * @param string|null                 $uuid    The parent uuid.
+	 * @param array<string, ObjectEntity> $visited The root and the ancestors so far, by uuid.
+	 *
+	 * @return string|null The parent uuid to step to.
+	 */
+	private function unvisited(?string $uuid, array $visited): ?string {
+		if ($uuid !== null && isset($visited[$uuid]) === true) {
+			return null;
+		}
+
+		return $uuid;
+	}//end unvisited()
 
 	/**
 	 * The parent of one object when it exists and is readable.

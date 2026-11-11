@@ -43,6 +43,8 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 
 /**
  * Evaluates threshold-typed notifications declared on a schema.
@@ -136,22 +138,34 @@ class ThresholdEvaluationService {
 				continue;
 			}
 
-			try {
-				$this->evaluate(
-					run: new ThresholdRun(schema: $schema, object: $object, notificationName: (string)$name),
-					trigger: $trigger
-				);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					sprintf(
-						'[ThresholdEvaluationService] evaluation of "%s" failed: %s',
-						(string)$name,
-						$e->getMessage()
-					)
-				);
-			}
-		}//end foreach
+			$this->evaluateLogged(
+				run: new ThresholdRun(schema: $schema, object: $object, notificationName: (string)$name),
+				trigger: $trigger
+			);
+		}
 	}//end evaluateSchema()
+
+	/**
+	 * Evaluate one notification, logging a failure instead of letting it stop the others.
+	 *
+	 * @param ThresholdRun         $run     The schema, the object that just changed and the notification name.
+	 * @param array<string, mixed> $trigger Trigger configuration block.
+	 *
+	 * @return void
+	 */
+	private function evaluateLogged(ThresholdRun $run, array $trigger): void {
+		try {
+			$this->evaluate(run: $run, trigger: $trigger);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf(
+					'[ThresholdEvaluationService] evaluation of "%s" failed: %s',
+					$run->notificationName,
+					$e->getMessage()
+				)
+			);
+		}
+	}//end evaluateLogged()
 
 	/**
 	 * The schema's declared notifications, or none when the block is not a list.
@@ -209,10 +223,7 @@ class ThresholdEvaluationService {
 			return;
 		}
 
-		$newState = self::STATE_BELOW;
-		if ($parsed->isMetBy(actual: $value) === true) {
-			$newState = self::STATE_ABOVE;
-		}
+		$newState = $this->stateFor(trigger: $parsed, value: $value);
 
 		if ($this->isRisingEdge(stateKey: $run->stateKey(), newState: $newState) === true) {
 			$this->notify(run: $run, payload: $this->breachPayload(trigger: $parsed, value: $value));
@@ -220,6 +231,22 @@ class ThresholdEvaluationService {
 
 		$this->storeState(stateKey: $run->stateKey(), newState: $newState);
 	}//end evaluate()
+
+	/**
+	 * Whether the value puts the notification above or below its threshold.
+	 *
+	 * @param ThresholdTrigger $trigger The parsed trigger.
+	 * @param int|float        $value   The aggregation value.
+	 *
+	 * @return string STATE_ABOVE when the trigger is met, else STATE_BELOW.
+	 */
+	private function stateFor(ThresholdTrigger $trigger, int|float $value): string {
+		if ($trigger->isMetBy(actual: $value) === true) {
+			return self::STATE_ABOVE;
+		}
+
+		return self::STATE_BELOW;
+	}//end stateFor()
 
 	/**
 	 * What a breach notification carries.
@@ -264,10 +291,12 @@ class ThresholdEvaluationService {
 	 */
 	private function aggregationValue(ThresholdRun $run, string $aggregationName): int|float|null {
 		$result = $this->aggregationRunner->run(
-			registerRef: (string)$run->object->getRegister(),
-			schemaRef: (string)$run->schema->getSlug(),
-			name: $aggregationName,
-			bypassRbac: true
+			ref: new NamedAggregationRef(
+				register: (string)$run->object->getRegister(),
+				schema: (string)$run->schema->getSlug(),
+				name: $aggregationName
+			),
+			options: new NamedAggregationOptions(bypassRbac: true)
 		);
 		$value = ($result['value'] ?? null);
 		if (is_int($value) === false && is_float($value) === false) {
@@ -305,7 +334,14 @@ class ThresholdEvaluationService {
 			// still has continuity across maintenance restarts.
 			$this->stateCache?->set($stateKey, $newState, (60 * 60 * 24 * 30));
 		} catch (\Throwable $e) {
-			// Don't escalate.
+			// A lost state write can repeat a crossing notification; not escalated.
+			$this->logger->warning(
+				message: '[ThresholdEvaluationService] Could not store the threshold state',
+				context: [
+					'stateKey' => $stateKey,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end storeState()
 }//end class

@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
 
@@ -107,11 +108,39 @@ class SchemaManageGate implements SchemaManageGateInterface {
 			return true;
 		}
 
-		$rules = ($authorization['manage'] ?? null);
-		if (is_array($rules) === false || $rules === []) {
+		$rules = self::manageRuleOf(authorization: $authorization);
+		if ($rules === []) {
 			return false;
 		}
 
+		return $this->sharesAGroupWith(user: $user, rules: $rules);
+	}//end allowedByManageRule()
+
+	/**
+	 * The block's `manage` rule, or an empty rule when it has none or it is not a list.
+	 *
+	 * @param array<string, mixed>|null $authorization The block.
+	 *
+	 * @return array<mixed> The rule.
+	 */
+	private static function manageRuleOf(?array $authorization): array {
+		$rules = ($authorization['manage'] ?? null);
+		if (is_array($rules) === false) {
+			return [];
+		}
+
+		return $rules;
+	}//end manageRuleOf()
+
+	/**
+	 * Whether the user is in a group the rule names; refused when membership cannot be read.
+	 *
+	 * @param IUser        $user  The caller.
+	 * @param array<mixed> $rules The non-empty `manage` rule.
+	 *
+	 * @return bool True when they share a group.
+	 */
+	private function sharesAGroupWith(IUser $user, array $rules): bool {
 		try {
 			$userGroups = $this->groupManager->getUserGroupIds($user);
 		} catch (Throwable $e) {
@@ -119,7 +148,7 @@ class SchemaManageGate implements SchemaManageGateInterface {
 		}
 
 		return array_intersect($this->groupsNamedBy(rules: $rules), $userGroups) !== [];
-	}//end allowedByManageRule()
+	}//end sharesAGroupWith()
 
 	/**
 	 * The groups a `manage` rule names, as plain strings or `{group: ...}` entries.
@@ -155,29 +184,68 @@ class SchemaManageGate implements SchemaManageGateInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
 	 */
 	public function firstUnmanageableRowSchema(array $objects): ?string {
-		$checked = [];
-		foreach ($objects as $object) {
-			$named = null;
-			if (is_array($object) === true) {
-				$named = ($object['@self']['schema'] ?? null);
-			}
-
-			if (is_scalar($named) === false || (string)$named === '' || isset($checked[(string)$named]) === true) {
-				continue;
-			}
-
-			$checked[(string)$named] = true;
-			try {
-				$schema = $this->schemaMapper->find((string)$named);
-			} catch (Throwable $e) {
-				return (string)$named;
-			}
-
-			if ($this->mayManage(schema: $schema) === false) {
-				return (string)$named;
+		foreach (self::rowSchemaNames(objects: $objects) as $named) {
+			if ($this->mayManageNamed(schemaId: $named) === false) {
+				return $named;
 			}
 		}
 
 		return null;
 	}//end firstUnmanageableRowSchema()
+
+	/**
+	 * The distinct schemas the rows name, in first-named order.
+	 *
+	 * A row that names no schema (or names one that is not a non-empty scalar)
+	 * is left to the save, which records it as invalid.
+	 *
+	 * @param array<mixed> $objects The rows.
+	 *
+	 * @return list<string> The schema ids.
+	 */
+	private static function rowSchemaNames(array $objects): array {
+		$names = [];
+		foreach ($objects as $object) {
+			$named = self::rowSchemaOf(object: $object);
+			if (is_scalar($named) === false || (string)$named === '') {
+				continue;
+			}
+
+			$names[(string)$named] = (string)$named;
+		}
+
+		return array_values($names);
+	}//end rowSchemaNames()
+
+	/**
+	 * The schema one row names under `@self`, or null when the row is not a map.
+	 *
+	 * @param mixed $object The row.
+	 *
+	 * @return mixed The named schema.
+	 */
+	private static function rowSchemaOf(mixed $object): mixed {
+		if (is_array($object) === false) {
+			return null;
+		}
+
+		return ($object['@self']['schema'] ?? null);
+	}//end rowSchemaOf()
+
+	/**
+	 * Whether the caller may manage the schema with this id; refused when it cannot be resolved.
+	 *
+	 * @param string $schemaId The schema id.
+	 *
+	 * @return bool
+	 */
+	private function mayManageNamed(string $schemaId): bool {
+		try {
+			$schema = $this->schemaMapper->find($schemaId);
+		} catch (Throwable $e) {
+			return false;
+		}
+
+		return $this->mayManage(schema: $schema);
+	}//end mayManageNamed()
 }//end class

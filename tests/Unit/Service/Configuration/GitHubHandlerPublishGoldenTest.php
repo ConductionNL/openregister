@@ -33,6 +33,8 @@ use OCP\ICacheFactory;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
 
 /**
  * Runs publishConfiguration() over a fixed corpus and compares the result
@@ -41,7 +43,7 @@ use Psr\Log\LoggerInterface;
  * regenerate the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubHandler
- * @covers \OCA\OpenRegister\Service\Configuration\GitHubFileLocation
+ * @covers \OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation
  */
 class GitHubHandlerPublishGoldenTest extends TestCase {
 
@@ -170,7 +172,10 @@ class GitHubHandlerPublishGoldenTest extends TestCase {
 		);
 
 		try {
-			$out = ['returned' => $handler->publishConfiguration('org', 'app', $path, 'dev', '{"a":1}', 'Publish it', $fileSha)];
+			$out = ['returned' => $handler->publishConfiguration(
+				location: new GitHubFileLocation(owner: 'org', repo: 'app', path: $path, branch: 'dev'),
+				write: new GitHubFileWrite(content: '{"a":1}', commitMessage: 'Publish it', fileSha: $fileSha),
+			)];
 		} catch (\Throwable $e) {
 			$out = ['threw' => get_class($e), 'message' => $e->getMessage()];
 		}

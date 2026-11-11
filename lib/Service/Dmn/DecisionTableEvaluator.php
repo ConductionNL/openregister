@@ -188,13 +188,7 @@ class DecisionTableEvaluator {
 	 * @throws DecisionEvaluationException `unknown_input`, `missing_input`, `type_mismatch`.
 	 */
 	private function resolveInputs(array $declaredInputs, array $inputs): array {
-		$declaredNames = array_map(static fn (array $input): string => $input['name'], $declaredInputs);
-
-		foreach (array_keys($inputs) as $key) {
-			if (in_array($key, $declaredNames, true) === false) {
-				throw new DecisionEvaluationException(errorCode: 'unknown_input', details: ['key' => $key]);
-			}
-		}
+		self::refuseUndeclaredInputs(declaredInputs: $declaredInputs, inputs: $inputs);
 
 		$coerced = [];
 		foreach ($declaredInputs as $declared) {
@@ -210,6 +204,26 @@ class DecisionTableEvaluator {
 	}//end resolveInputs()
 
 	/**
+	 * Refuse an input the table does not declare.
+	 *
+	 * @param array<int, array{name: string, type: string}> $declaredInputs The declared inputs.
+	 * @param array<string, mixed>                          $inputs         The supplied inputs.
+	 *
+	 * @return void
+	 *
+	 * @throws DecisionEvaluationException On the first undeclared input.
+	 */
+	private static function refuseUndeclaredInputs(array $declaredInputs, array $inputs): void {
+		$declaredNames = array_map(static fn (array $input): string => $input['name'], $declaredInputs);
+
+		foreach (array_keys($inputs) as $key) {
+			if (in_array($key, $declaredNames, true) === false) {
+				throw new DecisionEvaluationException(errorCode: 'unknown_input', details: ['key' => $key]);
+			}
+		}
+	}//end refuseUndeclaredInputs()
+
+	/**
 	 * Check whether every input entry on a rule matches the coerced inputs.
 	 *
 	 * @param array{id: mixed, inputEntries: mixed} $cells  The rule's id (its position when it has none) and input entries.
@@ -220,11 +234,7 @@ class DecisionTableEvaluator {
 	 * @throws DecisionEvaluationException `invalid_expression`/`type_mismatch` (re-thrown with rule context).
 	 */
 	private function ruleMatches(array $cells, ResolvedInputs $inputs): bool {
-		$entries = [];
-		if (is_array($cells['inputEntries']) === true) {
-			$entries = $cells['inputEntries'];
-		}
-
+		$entries = self::inputEntriesOf(cells: $cells);
 		foreach ($inputs->declared as $position => $declared) {
 			$expression = (string)($entries[$position] ?? '-');
 			$subject = new UnaryTestValue(value: $inputs->coerced[$declared['name']], type: $declared['type']);
@@ -234,15 +244,42 @@ class DecisionTableEvaluator {
 					return false;
 				}
 			} catch (DecisionEvaluationException $e) {
-				throw new DecisionEvaluationException(
-					errorCode: $e->getErrorCode(),
-					details: array_merge($e->getDetails(), ['ruleId' => $cells['id'], 'input' => $declared['name']]),
-				);
+				throw self::locatedIn(error: $e, where: ['ruleId' => $cells['id'], 'input' => $declared['name']]);
 			}
 		}
 
 		return true;
 	}//end ruleMatches()
+
+	/**
+	 * The same evaluation error, its details naming the rule and input it occurred in.
+	 *
+	 * @param DecisionEvaluationException $error The error.
+	 * @param array<string, mixed>        $where The rule id and input name.
+	 *
+	 * @return DecisionEvaluationException The located error.
+	 */
+	private static function locatedIn(DecisionEvaluationException $error, array $where): DecisionEvaluationException {
+		return new DecisionEvaluationException(
+			errorCode: $error->getErrorCode(),
+			details: array_merge($error->getDetails(), $where),
+		);
+	}//end locatedIn()
+
+	/**
+	 * A rule's input entries, or none when it carries no list of them.
+	 *
+	 * @param array<string, mixed> $cells The rule's cells.
+	 *
+	 * @return array<int, mixed> The input entries.
+	 */
+	private static function inputEntriesOf(array $cells): array {
+		if (is_array($cells['inputEntries']) === true) {
+			return $cells['inputEntries'];
+		}
+
+		return [];
+	}//end inputEntriesOf()
 
 	/**
 	 * Refuse an ANY table whose matching rules disagree.

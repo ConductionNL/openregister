@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -27,6 +28,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -58,6 +60,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Golden record of deleteObject() over every branch: the scope it resolves, every object lookup
@@ -339,7 +342,10 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 
 		$permissionHandler = $this->createMock(PermissionHandler::class);
 		$permissionHandler->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): void {
+			function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true): void {
+				$userId = $options->userId;
+				$objectOwner = $options->objectOwner;
+				$object = $options->object;
 				$this->calls[] = ['checkPermission' => $action, 'schema' => $schema->getId(), 'userId' => $userId, 'owner' => $objectOwner, 'rbac' => $_rbac, 'object' => $object?->getUuid()];
 				$actor = ($userId ?? 'alice');
 				if ($this->grantTo === null || $actor !== $this->grantTo) {
@@ -350,7 +356,8 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 
 		$deleteHandler = $this->createMock(DeleteObject::class);
 		$deleteHandler->method('deleteObject')->willReturnCallback(
-			function (Register|int|string|null $register, Schema|int|string|null $schema, string $uuid, ?string $originalObjectId = null, bool $_rbac = true, bool $_multitenancy = true, bool $scoped = false, ?ObjectEntity $preResolved = null, bool $permanent = false): bool {
+			function (DeletionRequest $request, bool $_rbac = true, bool $_multitenancy = true): bool {
+				[$register, $schema, $uuid, $originalObjectId, $scoped, $preResolved, $permanent] = [$request->register, $request->schema, $request->uuid, $request->options->originalObjectId, $request->options->scoped, $request->options->preResolved, $request->options->permanent];
 				$this->assertSame($this->sweeping, (new RetentionDestruction())->isRunning());
 				$this->calls[] = [
 					'deleteHandler' => $uuid,
@@ -384,7 +391,7 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 			);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->createMock(DataManipulationHandler::class),
 			deleteHandler: $deleteHandler,
 			getHandler: $this->createMock(GetObject::class),
@@ -423,6 +430,6 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
 			container: $this->createMock(IAppContainer::class),
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end service()
 }//end class

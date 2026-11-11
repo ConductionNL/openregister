@@ -20,9 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -42,7 +40,6 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Handles folder management operations for files.
@@ -159,7 +156,7 @@ class FolderManagementHandler {
 				return $this->createRegisterFolderById(register: $entity, currentUser: $currentUser);
 			}
 
-			return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
+			return $this->createObjectFolderById(objectEntity: $entity, options: new ObjectFolderOptions(currentUser: $currentUser));
 		} catch (FolderAccessDeniedException $e) {
 			// Access denials must propagate to the controller so it can return HTTP 403
 			// with the structured body. Do NOT downgrade to a logged null-return.
@@ -248,9 +245,8 @@ class FolderManagementHandler {
 	/**
 	 * Creates a folder for an ObjectEntity nested under the register folder.
 	 *
-	 * @param ObjectEntity|string $objectEntity The object entity to create the folder for.
-	 * @param IUser|null $currentUser The current user to share the folder with.
-	 * @param int|string|null $registerId The register of the object to add the file to.
+	 * @param ObjectEntity|string      $objectEntity The object entity to create the folder for.
+	 * @param ObjectFolderOptions|null $options      The current user, and the register when the object does not name it.
 	 *
 	 * @throws Exception If folder creation fails.
 	 * @throws NotPermittedException If folder creation is not permitted.
@@ -260,17 +256,14 @@ class FolderManagementHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/specs/file-actions/spec.md#requirement-reading-an-objects-files-never-saves-the-object-req-ofib-002
 	 */
-	public function createObjectFolderById(
-		ObjectEntity|string $objectEntity,
-		?IUser $currentUser = null,
-		int|string|null $registerId = null,
-	): Folder {
+	public function createObjectFolderById(ObjectEntity|string $objectEntity, ?ObjectFolderOptions $options=null): Folder {
+		$currentUser    = $options?->currentUser;
 		$existingFolder = $this->findExistingObjectFolder(objectEntity: $objectEntity, currentUser: $currentUser);
 		if ($existingFolder !== null) {
 			return $existingFolder;
 		}
 
-		$register = $this->getRegisterFromObjectOrId(objectEntity: $objectEntity, registerId: $registerId);
+		$register = $this->getRegisterFromObjectOrId(objectEntity: $objectEntity, registerId: $options?->registerId);
 		$registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
 		return $this->createObjectFolderUnder(registerFolder: $registerFolder, objectEntity: $objectEntity);
 	}//end createObjectFolderById()
@@ -325,7 +318,9 @@ class FolderManagementHandler {
 	 */
 	private function verifySuppliedObjectFolder(ObjectEntity|string $objectEntity, ?IUser $currentUser): Folder {
 		$folderId = (string)$this->folderValueOf(objectEntity: $objectEntity);
-		$existingFolder = $this->assertFolderIsAccessible(folderId: $folderId, currentUser: $currentUser, objectEntity: $objectEntity);
+		$existingFolder = $this->assertFolderIsAccessible(
+			check: new FolderAccessCheck(folderId: $folderId, currentUser: $currentUser, objectEntity: $objectEntity)
+		);
 		$this->logger->debug(
 			message: '[FolderManagementHandler] Object folder bind verified (ID: ' . $folderId . ')',
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -393,31 +388,11 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function getRegisterFolderById(Register $register): ?Folder {
-		$folderProperty = $register->getFolder();
-
-		// Handle legacy cases where folder might be null, empty string, or a non-numeric string path.
-		if ($folderProperty === null || $folderProperty === '') {
-			$regId = $register->getId();
-			$this->logger->debug(
-				message: "[FolderManagementHandler] Register $regId has legacy folder property, creating new folder",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+	public function getRegisterFolderById(Register $register): Folder|null {
+		$folderId = $this->storedRegisterFolderId(register: $register);
+		if ($folderId === null) {
 			return $this->createRegisterFolderById(register: $register);
 		}
-
-		// At this point $folderProperty is a non-empty string.
-		// Check if it's a numeric string (folder ID) or a legacy path.
-		if (is_numeric($folderProperty) === false) {
-			$registerId = $register->getId();
-			$this->logger->warning(
-				message: "[FolderManagementHandler] Invalid folder ID type for register {$registerId}, creating new folder",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return $this->createRegisterFolderById(register: $register);
-		}
-
-		$folderId = (int)$folderProperty;
 
 		// Try to get folder by ID.
 		$folder = $this->getNodeById(nodeId: $folderId);
@@ -426,13 +401,87 @@ class FolderManagementHandler {
 			return $folder;
 		}
 
-		// If stored ID is invalid, recreate the folder.
+		return $this->recreateRegisterFolder(register: $register);
+	}//end getRegisterFolderById()
+
+	/**
+	 * The folder id a register stores, or null (logged) when it stores none or a legacy path.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return int|null The folder id.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function storedRegisterFolderId(Register $register): int|null {
+		$folderProperty = $register->getFolder();
+
+		// Handle legacy cases where folder might be null, empty string, or a non-numeric string path.
+		if ($folderProperty === null || $folderProperty === '') {
+			$this->logLegacyRegisterFolder(register: $register);
+			return null;
+		}
+
+		// At this point $folderProperty is a non-empty string.
+		// Check if it's a numeric string (folder ID) or a legacy path.
+		if (is_numeric($folderProperty) === false) {
+			$this->logInvalidRegisterFolderType(register: $register);
+			return null;
+		}
+
+		return (int)$folderProperty;
+	}//end storedRegisterFolderId()
+
+	/**
+	 * Log a register without a stored folder; a new folder is created.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function logLegacyRegisterFolder(Register $register): void {
+		$regId = $register->getId();
+		$this->logger->debug(
+			message: "[FolderManagementHandler] Register $regId has legacy folder property, creating new folder",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logLegacyRegisterFolder()
+
+	/**
+	 * Log a register whose stored folder is a path, not an id; a new folder is created.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function logInvalidRegisterFolderType(Register $register): void {
+		$registerId = $register->getId();
+		$this->logger->warning(
+			message: "[FolderManagementHandler] Invalid folder ID type for register {$registerId}, creating new folder",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logInvalidRegisterFolderType()
+
+	/**
+	 * If stored ID is invalid, recreate the folder.
+	 *
+	 * @param Register $register The register whose stored folder id finds no folder.
+	 *
+	 * @return Node The new folder.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function recreateRegisterFolder(Register $register): Node {
 		$this->logger->warning(
 			message: "[FolderManagementHandler] Register {$register->getId()} has invalid folder ID, recreating folder",
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 		return $this->createRegisterFolderById(register: $register);
-	}//end getRegisterFolderById()
+	}//end recreateRegisterFolder()
 
 	/**
 	 * Remove the folder of a register whose row was just deleted.
@@ -504,27 +553,14 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId = null): ?Folder {
-		$folderProperty = null;
-		if ($objectEntity instanceof ObjectEntity === true) {
-			$folderProperty = $objectEntity->getFolder();
-		}
+	public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId = null): Folder|null {
+		$folderProperty = self::storedObjectFolder(objectEntity: $objectEntity);
 
 		// Handle legacy cases where folder might be null, empty string, or a non-numeric string path.
-		if ($folderProperty === null || $folderProperty === ''
-			|| (is_string($folderProperty) === true && is_numeric($folderProperty) === false)
-		) {
-			$objectEntityId = $objectEntity;
-			if ($objectEntity instanceof ObjectEntity) {
-				$objectEntityId = $objectEntity->getId();
-			}
-
-			$this->logger->debug(
-				message: "[FolderManagementHandler] Object $objectEntityId has legacy folder property, creating new folder",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return $this->createObjectFolderById(objectEntity: $objectEntity, registerId: $registerId);
-		}//end if
+		if (self::isLegacyFolderProperty(folderProperty: $folderProperty) === true) {
+			$this->logLegacyObjectFolder(objectEntity: $objectEntity);
+			return $this->createObjectFolderById(objectEntity: $objectEntity, options: new ObjectFolderOptions(registerId: $registerId));
+		}
 
 		// Convert string numeric ID to integer.
 		$folderId = (int)$folderProperty;
@@ -536,14 +572,78 @@ class FolderManagementHandler {
 			return $folder;
 		}
 
-		// If stored ID is invalid, recreate the folder.
+		return $this->recreateObjectFolder(objectEntity: $objectEntity);
+	}//end getObjectFolder()
+
+	/**
+	 * The folder an object entity stores; a bare uuid stores none.
+	 *
+	 * @param ObjectEntity|string $objectEntity The object entity or UUID.
+	 *
+	 * @return mixed The stored folder property, or null.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private static function storedObjectFolder(ObjectEntity|string $objectEntity): mixed {
+		if ($objectEntity instanceof ObjectEntity === true) {
+			return $objectEntity->getFolder();
+		}
+
+		return null;
+	}//end storedObjectFolder()
+
+	/**
+	 * Whether a stored folder property names no folder id: unset, empty, or a non-numeric legacy path.
+	 *
+	 * @param mixed $folderProperty The stored folder property.
+	 *
+	 * @return bool True when a new folder must be created.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private static function isLegacyFolderProperty(mixed $folderProperty): bool {
+		return $folderProperty === null || $folderProperty === ''
+			|| (is_string($folderProperty) === true && is_numeric($folderProperty) === false);
+	}//end isLegacyFolderProperty()
+
+	/**
+	 * Log an object without a stored folder id; a new folder is created.
+	 *
+	 * @param ObjectEntity|string $objectEntity The object entity or UUID.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function logLegacyObjectFolder(ObjectEntity|string $objectEntity): void {
+		$objectEntityId = $objectEntity;
+		if ($objectEntity instanceof ObjectEntity) {
+			$objectEntityId = $objectEntity->getId();
+		}
+
+		$this->logger->debug(
+			message: "[FolderManagementHandler] Object $objectEntityId has legacy folder property, creating new folder",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logLegacyObjectFolder()
+
+	/**
+	 * If stored ID is invalid, recreate the folder.
+	 *
+	 * @param ObjectEntity|string $objectEntity The object whose stored folder id finds no folder.
+	 *
+	 * @return Folder The new folder.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function recreateObjectFolder(ObjectEntity|string $objectEntity): Folder {
 		$this->logger->warning(
 			message: "[FolderManagementHandler] Object {$objectEntity->getId()} has invalid folder ID, recreating folder",
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
 		return $this->createObjectFolderById(objectEntity: $objectEntity);
-	}//end getObjectFolder()
+	}//end recreateObjectFolder()
 
 	/**
 	 * Creates a folder for an ObjectEntity and returns the folder ID without updating the object.
@@ -818,8 +918,28 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function getNodeById(int $nodeId): ?Node {
+	public function getNodeById(int $nodeId): Node|null {
 		// First try via the current user's folder (handles most authenticated cases).
+		$node = $this->nodeFromUserFolder(nodeId: $nodeId);
+		if ($node !== null) {
+			return $node;
+		}
+
+		// Fall back to root folder lookup (works for files owned by any user,
+		// needed for public/anonymous access to files uploaded by non-system users).
+		return $this->nodeFromRootFolder(nodeId: $nodeId);
+	}//end getNodeById()
+
+	/**
+	 * The node with this id in the OpenRegister user folder, or null (a failure is logged at debug).
+	 *
+	 * @param int $nodeId The ID of the node to retrieve.
+	 *
+	 * @return Node|null The node.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function nodeFromUserFolder(int $nodeId): Node|null {
 		try {
 			$userFolder = $this->getOpenRegisterUserFolder();
 			$nodes = $userFolder->getById($nodeId);
@@ -833,8 +953,19 @@ class FolderManagementHandler {
 			);
 		}
 
-		// Fall back to root folder lookup (works for files owned by any user,
-		// needed for public/anonymous access to files uploaded by non-system users).
+		return null;
+	}//end nodeFromUserFolder()
+
+	/**
+	 * The node with this id anywhere under the root folder, or null (a failure is logged as an error).
+	 *
+	 * @param int $nodeId The ID of the node to retrieve.
+	 *
+	 * @return Node|null The node.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function nodeFromRootFolder(int $nodeId): Node|null {
 		try {
 			$nodes = $this->rootFolder->getById($nodeId);
 			if (empty($nodes) === false) {
@@ -848,7 +979,7 @@ class FolderManagementHandler {
 		}
 
 		return null;
-	}//end getNodeById()
+	}//end nodeFromRootFolder()
 
 	/**
 	 * A node in OpenRegister's managed tree, looked up in the openregister account's home.
@@ -958,7 +1089,7 @@ class FolderManagementHandler {
 	 * @psalm-return   Folder|null
 	 * @phpstan-return Folder|null
 	 */
-	private function getExistingFolderFromProperty(?string $folderProperty): ?Folder {
+	private function getExistingFolderFromProperty(string|null $folderProperty): Folder|null {
 		// Check if folder ID is already set and valid (not legacy string).
 		// Note: getFolder() returns string|null.
 		if ($folderProperty === null || $folderProperty === '') {
@@ -971,8 +1102,18 @@ class FolderManagementHandler {
 			return null;
 		}
 
+		return $this->existingFolderById(folderId: (int)$folderProperty);
+	}//end getExistingFolderFromProperty()
+
+	/**
+	 * The folder with a stored id, or null when it is gone or no folder (a failure is logged).
+	 *
+	 * @param int $folderId The stored folder id.
+	 *
+	 * @return Folder|null The existing folder.
+	 */
+	private function existingFolderById(int $folderId): Folder|null {
 		try {
-			$folderId = (int)$folderProperty;
 			$existingFolder = $this->getNodeById(nodeId: $folderId);
 			if ($existingFolder !== null && $existingFolder instanceof Folder) {
 				return $existingFolder;
@@ -986,7 +1127,7 @@ class FolderManagementHandler {
 			);
 			return null;
 		}//end try
-	}//end getExistingFolderFromProperty()
+	}//end existingFolderById()
 
 	/**
 	 * Resolve a numeric folder ID and verify the acting user can read it.
@@ -1010,9 +1151,8 @@ class FolderManagementHandler {
 	 * invariant: any condition that prevents a positive read-access
 	 * confirmation results in denial.
 	 *
-	 * @param string $folderId The numeric folder ID supplied by the caller.
-	 * @param IUser|null $currentUser Explicit acting user; falls back to session user.
-	 * @param ObjectEntity|string|null $objectEntity Object the bind would attach to (used for audit context).
+	 * @param FolderAccessCheck $check The numeric folder ID supplied by the caller, the explicit acting user (null
+	 *                                 falls back to the session user) and the object the bind would attach to (audit).
 	 *
 	 * @return Folder The accessible folder, ready to be used as the existing object folder.
 	 *
@@ -1026,12 +1166,12 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/self-folder-access-control/spec.md
 	 */
-	final public function assertFolderIsAccessible(
-		string $folderId,
-		?IUser $currentUser = null,
-		ObjectEntity|string|null $objectEntity = null,
-	): Folder {
-		$bind = new FolderBindRun(folderId: $folderId, actingUser: $this->resolveActingUser(currentUser: $currentUser), objectEntity: $objectEntity);
+	final public function assertFolderIsAccessible(FolderAccessCheck $check): Folder {
+		$bind = new FolderBindRun(
+			folderId: $check->folderId,
+			actingUser: $this->resolveActingUser(currentUser: $check->currentUser),
+			objectEntity: $check->objectEntity
+		);
 		return $this->readableBoundFolder(bind: $bind);
 	}//end assertFolderIsAccessible()
 
@@ -1206,9 +1346,8 @@ class FolderManagementHandler {
 	 * nothing. Passing the caller-supplied gate to create such a binding
 	 * already required the caller to be able to read that folder.
 	 *
-	 * @param string $folderId The stored numeric folder ID.
-	 * @param IUser|null $currentUser Explicit acting user; falls back to session resolution.
-	 * @param ObjectEntity|string|null $objectEntity Object the binding belongs to (audit context).
+	 * @param FolderAccessCheck $check The stored numeric folder ID, the explicit acting user (null falls back to
+	 *                                 session resolution) and the object the binding belongs to (audit context).
 	 *
 	 * @return void Nothing: this is an assertion, not a lookup. Handing back a
 	 *              `Folder` the acting user may not read would be the escape
@@ -1222,11 +1361,7 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/self-folder-access-control/spec.md
 	 */
-	final public function assertManagedFolderIsAccessible(
-		string $folderId,
-		?IUser $currentUser = null,
-		ObjectEntity|string|null $objectEntity = null,
-	): void {
+	final public function assertManagedFolderIsAccessible(FolderAccessCheck $check): void {
 		// The managed-tree question is asked FIRST, and not only because it is
 		// the cheaper one. `assertFolderIsAccessible()` writes a
 		// `folder_access_denied` audit row before every throw, so asking it
@@ -1237,15 +1372,11 @@ class FolderManagementHandler {
 		// Nothing is lost by the order: a managed folder is accepted either
 		// way, and anything else still falls through to the full check below,
 		// which denies and audits exactly as it always did.
-		if ($this->isManagedFolder(folderId: $folderId) === true) {
+		if ($this->isManagedFolder(folderId: $check->folderId) === true) {
 			return;
 		}
 
-		$this->assertFolderIsAccessible(
-			folderId: $folderId,
-			currentUser: $currentUser,
-			objectEntity: $objectEntity
-		);
+		$this->assertFolderIsAccessible(check: $check);
 	}//end assertManagedFolderIsAccessible()
 
 	/**
@@ -1348,73 +1479,36 @@ class FolderManagementHandler {
 	 * @return void
 	 */
 	private function logFolderAccessDenied(FolderBindRun $bind, string $reason): void {
-		$folderId     = $bind->folderId;
-		$objectEntity = $bind->objectEntity;
-		$actorUid     = $bind->actingUser?->getUID() ?? 'system';
+		$denial = new FolderAccessDenial(bind: $bind, reason: $reason);
 
 		try {
-			// Use positional args throughout — Nextcloud Entity setters route through __call,
-			// which doesn't honour PHP named-args (the parameter name on the magic method
-			// doesn't match the entity field name).
-			$auditTrail = new AuditTrail();
-			$auditTrail->setUuid(Uuid::v4()->toRfc4122());
-			$auditTrail->setAction('folder_access_denied');
-			$auditTrail->setUser($actorUid);
-			// Required NOT NULL columns on `oc_openregister_audit_trails` (per migration
-			// Version1Date20241020231700: `object` INT NOT NULL, `user_name` STR NOT NULL,
-			// `session` STR NOT NULL). The audit row is about a save that was REJECTED
-			// before persistence, so there is no object id to record. We use:
-			// - `object = 0` as the documented sentinel for "no object persisted yet".
-			// Auto-increment PKs on this schema start at 1, so 0 cannot collide with
-			// a real ObjectEntity row. Audit-trail queries filtering on
-			// `WHERE action = 'folder_access_denied'` are the canonical way to
-			// find these rows; querying by `object = 0` is also safe.
-			// - `user_name = $actorUid` so the audit UI has something to display in the
-			// "user" column when the system actor is involved.
-			// - `session = ''` (empty string) rather than $actorUid: the UID is already
-			// recorded in the `user` column; duplicating it into the `session` field
-			// adds no information and would mislead forensic correlation. We use
-			// empty string (not null) because the column is NOT NULL.
-			$auditTrail->setObject(0);
-			$auditTrail->setUserName($actorUid);
-			$auditTrail->setSession('');
-			$auditTrail->setCreated(new DateTime());
-			$auditTrail->setChanged(
-				[
-					'folder' => $folderId,
-					'reason' => $reason,
-				]
-			);
-
-			if ($objectEntity instanceof ObjectEntity === true) {
-				if ($objectEntity->getUuid() !== null) {
-					$auditTrail->setObjectUuid($objectEntity->getUuid());
-				}
-
-				if ($objectEntity->getRegister() !== null) {
-					$auditTrail->setRegister((int)$objectEntity->getRegister());
-				}
-
-				if ($objectEntity->getSchema() !== null) {
-					$auditTrail->setSchema((int)$objectEntity->getSchema());
-				}
-			}
-
-			$this->auditTrailMapper->insert(entity: $auditTrail);
+			$this->auditTrailMapper->insert(entity: $denial->auditEntry());
 		} catch (Exception $e) {
 			// Audit is best-effort — log a warning and let the denial proceed.
-			$this->logger->warning(
-				message: '[FolderManagementHandler] Failed to write folder_access_denied audit entry: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'folder' => $folderId,
-					'actor' => $actorUid,
-					'reason' => $reason,
-				]
-			);
-		}//end try
+			$this->warnDenialAuditFailed(denial: $denial, error: $e);
+		}
 	}//end logFolderAccessDenied()
+
+	/**
+	 * Log a denial whose audit entry could not be written.
+	 *
+	 * @param FolderAccessDenial $denial The denial.
+	 * @param Exception          $error  The failure.
+	 *
+	 * @return void
+	 */
+	private function warnDenialAuditFailed(FolderAccessDenial $denial, Exception $error): void {
+		$this->logger->warning(
+			message: '[FolderManagementHandler] Failed to write folder_access_denied audit entry: ' . $error->getMessage(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'folder' => $denial->bind->folderId,
+				'actor' => $denial->actorUid(),
+				'reason' => $denial->reason,
+			]
+		);
+	}//end warnDenialAuditFailed()
 
 	/**
 	 * Get register from object entity or register ID.

@@ -30,6 +30,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 /**
  * Golden: the status, body and call order of index/create/destroy on the email links API,
@@ -74,15 +76,15 @@ class EmailsControllerGoldenTest extends TestCase
             }
         );
         $emailService->method('getEmailsForObject')->willReturnCallback(
-            function (string $uuid, ?int $limit, ?int $offset) use ($scenario): array {
-                $this->log[] = 'getEmailsForObject:' . $uuid . ':' . var_export($limit, true) . ':' . var_export($offset, true);
+            function (string $uuid, ListQuery $query) use ($scenario): array {
+                $this->log[] = 'getEmailsForObject:' . $uuid . ':' . var_export($query->limitOrNull(), true) . ':' . var_export($query->offset, true);
                 $this->maybeFail($scenario['fail'], 'list');
                 return ['results' => [], 'total' => 0];
             }
         );
         $emailService->method('linkEmail')->willReturnCallback(
-            function (string $uuid, int $register, int $account, int $message) use ($scenario): EmailLink {
-                $this->log[] = 'linkEmail:' . $uuid . ':' . $register . ':' . $account . ':' . $message;
+            function (EmailLinkRequest $request) use ($scenario): EmailLink {
+                $this->log[] = 'linkEmail:' . $request->objectUuid . ':' . $request->registerId . ':' . $request->mailAccountId . ':' . $request->mailMessageId;
                 $this->maybeFail($scenario['fail'], 'link');
                 $link = new EmailLink();
                 $link->setId(5);

@@ -17,13 +17,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -340,7 +343,8 @@ class MagicMapperSearchIdsTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFindAllKeepsToWhatUsesTheObject(): void {
-		$this->mapper()->findAll(uses: 'u', register: new Register(), schema: new Schema());
+		$table = new RegisterSchema(register: new Register(), schema: new Schema());
+		$this->mapper()->findAllListed(new MagicListRequest(table: $table, query: ListQuery::unbounded(), uses: 'u'));
 
 		$this->assertSame(['u'], $this->tableUses());
 	}//end testAFindAllKeepsToWhatUsesTheObject()

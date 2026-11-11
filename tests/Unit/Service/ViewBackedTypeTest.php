@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -71,6 +73,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The Schema, View, Register entities and the provider are real. MagicMapper
@@ -168,10 +171,8 @@ class ViewBackedTypeTest extends TestCase {
 			->willReturn([$permit]);
 
 		$rows = $this->provider($magic)->findAll(
-			register: new Register(),
-			schema: $this->viewBackedSchema(),
-			query: ['limit' => 10, 'offset' => 20],
-			config: ['view' => 'active-permits']
+			source: new SourcedTable(new RegisterSchema(new Register(), $this->viewBackedSchema()), ['view' => 'active-permits']),
+			query: ['limit' => 10, 'offset' => 20]
 		);
 
 		$this->assertSame([$permit], $rows);
@@ -183,10 +184,8 @@ class ViewBackedTypeTest extends TestCase {
 
 		// status=expired is outside the view's status=active: nothing can match.
 		$rows = $this->provider($magic)->findAll(
-			register: new Register(),
-			schema: $this->viewBackedSchema(),
-			query: ['status' => 'expired'],
-			config: ['view' => 'active-permits']
+			source: new SourcedTable(new RegisterSchema(new Register(), $this->viewBackedSchema()), ['view' => 'active-permits']),
+			query: ['status' => 'expired']
 		);
 
 		$this->assertSame([], $rows);
@@ -199,7 +198,7 @@ class ViewBackedTypeTest extends TestCase {
 			->with($this->callback(fn (array $q): bool => $q['status'] === ['active'] && isset($q['_limit']) === false))
 			->willReturn(7);
 
-		$this->assertSame(7, $this->provider($magic)->count(register: new Register(), schema: $this->viewBackedSchema(), query: ['limit' => 5], config: ['view' => 'active-permits']));
+		$this->assertSame(7, $this->provider($magic)->count(source: new SourcedTable(new RegisterSchema(new Register(), $this->viewBackedSchema()), ['view' => 'active-permits']), query: ['limit' => 5]));
 	}//end testTheCountIsTheQueryCount()
 
 	/**
@@ -216,7 +215,7 @@ class ViewBackedTypeTest extends TestCase {
 			static fn (array $obj, mixed $schema, ?string $uuid, ?int $register): array => [$obj, $uuid]
 		);
 
-		$service = new ObjectService(
+		$service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$delete,
 			$this->createMock(GetObject::class),
@@ -255,7 +254,7 @@ class ViewBackedTypeTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$prop = (new ReflectionClass(ObjectService::class))->getProperty('currentSchema');
 		$prop->setAccessible(true);

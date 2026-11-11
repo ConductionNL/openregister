@@ -24,7 +24,6 @@ use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
-use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\DependentValueTable;
@@ -32,7 +31,6 @@ use OCA\OpenRegister\Service\Rules\DependentValueValidator;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
-use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -214,8 +212,6 @@ class NoCeilingRegressionTest extends TestCase {
 
 		$inventory = new RuleInventoryService(
 			summaries: $summaries,
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary(),
 			flows: new FlowRuleDescriptors(triggers: $triggers, published: null)
 		);
 

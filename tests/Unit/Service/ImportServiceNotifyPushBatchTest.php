@@ -51,6 +51,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
 
 /**
  * Tests that bulk imports flush deduplicated notify_push collection events
@@ -306,7 +309,12 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 
 		try {
 			// Default flags — exactly what RegistersController/the UI import sends.
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -371,7 +379,12 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 
 		try {
 			$this->expectException(\RuntimeException::class);
-			$this->service->importFromCsv($tmpFile, $register, $schema);
+			$this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 		} finally {
 			@unlink($tmpFile);
 
@@ -412,7 +425,12 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 			);
 
 		try {
-			$this->service->importFromCsv($tmpFile, $register, $schema);
+			$this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -446,12 +464,11 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 
 		try {
 			$this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				false,
-				// events=true.
-				true
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+					options: new ImportOptions(events: true),
+				),
 			);
 		} finally {
 			@unlink($tmpFile);

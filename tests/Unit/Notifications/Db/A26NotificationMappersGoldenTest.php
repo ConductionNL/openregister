@@ -31,6 +31,7 @@ use OCA\OpenRegister\Notifications\Db\HistoryEntry;
 use OCA\OpenRegister\Notifications\Db\HistoryNotice;
 use OCA\OpenRegister\Notifications\Db\HistorySubject;
 use OCA\OpenRegister\Notifications\Db\HistoryTarget;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
@@ -46,9 +47,12 @@ use OCA\OpenRegister\Notifications\Db\TextBlockMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\OutgoingBroadcast;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
+use OCA\OpenRegister\Notifications\Db\TimelineSearch;
 use OCA\OpenRegister\Notifications\Db\TimelineKindMapper;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\RecipientNotice;
+use OCA\OpenRegister\Notifications\Db\TextBlockScope;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Exception as DbException;
@@ -56,6 +60,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationBroadcastMapper
@@ -141,15 +146,15 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			}
 		};
 		return [
-			'dedupe findOne found'          => [$dedupe, 'findOne', [2, 'r', 'o-1'], [[self::ROW]], false],
-			'dedupe findOne missing'        => [$dedupe, 'findOne', [2, 'r', 'o-1'], [[]], false],
-			'dedupe findOne failure'        => [$dedupe, 'findOne', [2, 'r', 'o-1'], [], true],
-			'dedupe upsert existing'        => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, false], [[self::ROW]], false],
-			'dedupe upsert existing sent'   => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[self::ROW]], false],
-			'dedupe upsert insert'          => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, false], [[]], false],
-			'dedupe upsert race reread'     => [$racing(true), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[], [self::ROW]], false],
-			'dedupe upsert race no row'     => [$racing(true), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[], []], false],
-			'dedupe upsert other failure'   => [$racing(false), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[]], false],
+			'dedupe findOne found'          => [$dedupe, 'findByKey', [new NotificationDedupeKey(2, 'r', 'o-1')], [[self::ROW]], false],
+			'dedupe findOne missing'        => [$dedupe, 'findByKey', [new NotificationDedupeKey(2, 'r', 'o-1')], [[]], false],
+			'dedupe findOne failure'        => [$dedupe, 'findByKey', [new NotificationDedupeKey(2, 'r', 'o-1')], [], true],
+			'dedupe upsert existing'        => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, false)], [[self::ROW]], false],
+			'dedupe upsert existing sent'   => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, true)], [[self::ROW]], false],
+			'dedupe upsert insert'          => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, false)], [[]], false],
+			'dedupe upsert race reread'     => [$racing(true), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, true)], [[], [self::ROW]], false],
+			'dedupe upsert race no row'     => [$racing(true), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, true)], [[], []], false],
+			'dedupe upsert other failure'   => [$racing(false), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, true)], [[]], false],
 			'dedupe deleteByObject'         => [$dedupe, 'deleteByObject', ['o-1'], [], false],
 			'dedupe deleteByObject failure' => [$dedupe, 'deleteByObject', ['o-1'], [], true],
 			'dedupe deleteByRule'           => [$dedupe, 'deleteByRule', [2, 'r'], [], false],
@@ -205,17 +210,17 @@ class A26NotificationMappersGoldenTest extends TestCase {
 					),
 				], [], false,
 			],
-			'history findFiltered'           => [$history, 'findFiltered', [$filters, 10, 5, $at], [[self::ROW]], false],
-			'history findFiltered snoozed'   => [$history, 'findFiltered', [$snoozed], [[]], false],
+			'history findFiltered'           => [$history, 'findFiltered', [new ListQuery(limit: 10, offset: 5, filters: $filters), $at], [[self::ROW]], false],
+			'history findFiltered snoozed'   => [$history, 'findFiltered', [ListQuery::unbounded(filters: $snoozed)], [[]], false],
 			'history countByStatus'          => [$history, 'countByStatus', [], [self::ROWS_TWO], false],
 			'history countByStatus since'    => [$history, 'countByStatus', [$at], [[]], false],
 			'history countFiltered'          => [$history, 'countFiltered', [$filters, $at], [[['c' => 6]]], false],
 			'history countFiltered snoozed'  => [$history, 'countFiltered', [$snoozed, $at], [[['c' => 0]]], false],
-			'history markRead'               => [$history, 'markRead', [7, 'alice', $at], [], false],
+			'history markRead'               => [$history, 'markRead', [new \OCA\OpenRegister\Notifications\Db\RecipientNotice(7, 'alice'), $at], [], false],
 			'history markReadForSubject'     => [$history, 'markReadForSubject', ['alice', 'o-1', 's-1', $at], [], false],
 			'history markReadForSubject all' => [$history, 'markReadForSubject', ['alice', 'o-1', '', $at], [], false],
-			'history snooze'                 => [$history, 'snooze', [7, 'alice', $at], [], false],
-			'history archive'                => [$history, 'archive', [7, 'alice', $at], [], false],
+			'history snooze'                 => [$history, 'snooze', [new RecipientNotice(7, 'alice'), $at], [], false],
+			'history archive'                => [$history, 'archive', [new RecipientNotice(7, 'alice'), $at], [], false],
 			'history archiveByObject'        => [$history, 'archiveByObject', ['o-1', $at], [], false],
 			'history findOwn found'          => [$history, 'findOwn', [7, 'alice'], [[self::ROW]], false],
 			'history findOwn missing'        => [$history, 'findOwn', [7, 'alice'], [[]], false],
@@ -235,10 +240,10 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'entry findByComment missing'    => [$entries, 'findByComment', [12], [[]], false],
 			'entry findForObject'            => [$entries, 'findForObject', ['o-1'], [[self::ROW]], false],
 			'entry findForObject public'     => [$entries, 'findForObject', ['o-1', 'public', 5, 10], [[]], false],
-			'entry search'                   => [$entries, 'search', ['50%_off', new TimelineEntryScope()], [[self::ROW]], false],
-			'entry search narrowed'          => [$entries, 'search', ['x', new TimelineEntryScope(['o-1', 'o-2'], 'call', 900), 'public'], [[]], false],
-			'entry search no objects'        => [$entries, 'search', ['x', new TimelineEntryScope([])], [], false],
-			'entry search low limit'         => [$entries, 'search', ['x', new TimelineEntryScope(null, null, 0)], [[]], false],
+			'entry search'                   => [$entries, 'searchEntries', [new TimelineSearch('50%_off', new TimelineEntryScope())], [[self::ROW]], false],
+			'entry search narrowed'          => [$entries, 'searchEntries', [new TimelineSearch('x', new TimelineEntryScope(['o-1', 'o-2'], 'call', 900), 'public')], [[]], false],
+			'entry search no objects'        => [$entries, 'searchEntries', [new TimelineSearch('x', new TimelineEntryScope([]))], [], false],
+			'entry search low limit'         => [$entries, 'searchEntries', [new TimelineSearch('x', new TimelineEntryScope(null, null, 0))], [[]], false],
 			'entry followUps'                => [$entries, 'findOpenFollowUps', [new TimelineEntryScope()], [[self::ROW]], false],
 			'entry followUps narrowed'       => [$entries, 'findOpenFollowUps', [new TimelineEntryScope(['o-1'], 'call', 3)], [[]], false],
 			'entry followUps no objects'     => [$entries, 'findOpenFollowUps', [new TimelineEntryScope([])], [], false],
@@ -251,9 +256,9 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'kind findAll schema only'       => [$kinds, 'findAll', [null, 'sch'], [[]], false],
 			'block findBySlug found'         => [$blocks, 'findBySlug', ['s'], [[self::ROW]], false],
 			'block findBySlug missing'       => [$blocks, 'findBySlug', ['s'], [[]], false],
-			'block findInScope'              => [$blocks, 'findInScope', [], [[self::ROW]], false],
-			'block findInScope groups'       => [$blocks, 'findInScope', ['reg', 'sch', ['g1', 'g2']], [[]], false],
-			'block findInScope register'     => [$blocks, 'findInScope', ['reg', null, []], [[]], false],
+			'block findInScope'              => [$blocks, 'findInScope', [new TextBlockScope()], [[self::ROW]], false],
+			'block findInScope groups'       => [$blocks, 'findInScope', [new TextBlockScope('reg', 'sch', ['g1', 'g2'])], [[]], false],
+			'block findInScope register'     => [$blocks, 'findInScope', [new TextBlockScope('reg', null, [])], [[]], false],
 			'pattern findBySlug found'       => [$patterns, 'findBySlug', ['s'], [[self::ROW]], false],
 			'pattern findBySlug missing'     => [$patterns, 'findBySlug', ['s'], [[]], false],
 			'pattern findAll'                => [$patterns, 'findAll', [], [[self::ROW]], false],

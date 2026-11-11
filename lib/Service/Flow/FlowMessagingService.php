@@ -40,13 +40,19 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
+use OCA\OpenRegister\Notifications\Service\Notification\NoticeContent;
+use OCA\OpenRegister\Notifications\Service\Notification\NoticeRule;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
 use LogicException;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * Sends on behalf of a flow run, through the notification subsystem.
@@ -169,25 +175,6 @@ class FlowMessagingService {
 	/**
 	 * Send an in-app Nextcloud notification (web-push riding along) per item.
 	 *
-	 * @param array $config The step configuration (`recipients`, `title`, `message`).
-	 * @param array $items The flow items; one send per recipient per item.
-	 * @param array $context The run context (acting user, report handle).
-	 * @param string $stepName The step's type id, used as the send's rule identity.
-	 *
-	 * @return array The outcome report also written to the run log.
-	 *
-	 * @throws RuntimeException When there is no resolvable acting user, the
-	 *                          recipient bound is exceeded, or a send failed.
-	 *
-	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
-	 */
-	public function sendNotification(array $config, array $items, array $context, string $stepName): array {
-		return $this->notify(request: new MessageSend(config: $config, items: $items, context: $context, stepName: $stepName));
-	}//end sendNotification()
-
-	/**
-	 * Send an in-app notification per recipient per item; see {@see self::sendNotification()}.
-	 *
 	 * @param MessageSend $request The step configuration, items, run context and step id.
 	 *
 	 * @return array The outcome report also written to the run log.
@@ -209,46 +196,24 @@ class FlowMessagingService {
 	 * Per item: the recipients the step resolves, and the subject and body its
 	 * templates give. For `talk` the recipient is the conversation and there is
 	 * no subject. Reads only: no rate budget is spent, nothing is delivered and
-	 * no report is written.
+	 * no report is written. Only the scalar entries of the run context reach the templates.
 	 *
-	 * @param string $channel `email`, `notification` or `talk`.
-	 * @param array $config The step configuration.
-	 * @param array $items The flow items.
-	 * @param array $context The run context.
+	 * @param string      $channel `email`, `notification` or `talk`.
+	 * @param MessageSend $step    The step configuration, items and run context (no step name).
 	 *
 	 * @return array<int, array{channel: string, to: array<int, string>, subject: string, body: string}>
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
-	public function previewMessages(string $channel, array $config, array $items, array $context): array {
+	public function preview(string $channel, MessageSend $step): array {
 		$preview = new FlowMessagePreview(addresses: $this->addresses, templating: $this->platform->templating);
+		$scalar  = new MessageSend(config: $step->config, items: $step->items, context: $this->scalarContext(context: $step->context));
 
-		$step = new MessageSend(config: $config, items: $items, context: $this->scalarContext(context: $context));
-
-		return $preview->messages(channel: $channel, step: $step);
-	}//end previewMessages()
+		return $preview->messages(channel: $channel, step: $scalar);
+	}//end preview()
 
 	/**
 	 * Send an email per recipient per item.
-	 *
-	 * @param array $config The step configuration (`recipients`, `subject`, `body`).
-	 * @param array $items The flow items; one send per recipient per item.
-	 * @param array $context The run context (acting user, report handle).
-	 * @param string $stepName The step's type id, used as the send's rule identity.
-	 *
-	 * @return array The outcome report also written to the run log.
-	 *
-	 * @throws RuntimeException When there is no resolvable acting user, the
-	 *                          recipient bound is exceeded, or a send failed.
-	 *
-	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
-	 */
-	public function sendEmail(array $config, array $items, array $context, string $stepName): array {
-		return $this->email(request: new MessageSend(config: $config, items: $items, context: $context, stepName: $stepName));
-	}//end sendEmail()
-
-	/**
-	 * Send an email per recipient per item; see {@see self::sendEmail()}.
 	 *
 	 * @param MessageSend $request The step configuration, items, run context and step id.
 	 *
@@ -273,24 +238,6 @@ class FlowMessagingService {
 	 * The conversation is a token or an item-field template. The acting user
 	 * MUST be a participant; "not a participant" is a step failure with that
 	 * reason, never an auto-join.
-	 *
-	 * @param array $config The step configuration (`conversation`, `message`).
-	 * @param array $items The flow items; one post per item.
-	 * @param array $context The run context (acting user, report handle).
-	 * @param string $stepName The step's type id, used as the send's rule identity.
-	 *
-	 * @return array The outcome report also written to the run log.
-	 *
-	 * @throws RuntimeException When there is no resolvable acting user or a post failed.
-	 *
-	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
-	 */
-	public function sendTalkMessage(array $config, array $items, array $context, string $stepName): array {
-		return $this->talk(request: new MessageSend(config: $config, items: $items, context: $context, stepName: $stepName));
-	}//end sendTalkMessage()
-
-	/**
-	 * Post a Talk chat message per item; see {@see self::sendTalkMessage()}.
 	 *
 	 * @param MessageSend $request The step configuration, items, run context and step id.
 	 *
@@ -333,10 +280,9 @@ class FlowMessagingService {
 	 */
 	private function postTalkItem(FlowSend $send, array $json): void {
 		$token = $this->conversationToken(send: $send, json: $json);
-		$message = $this->platform->templating->interpolate(
+		$message = $this->platform->templating->render(
 			template: (string)($send->config['message'] ?? ''),
-			data: $json,
-			context: $this->scalarContext(context: $send->context)
+			values: new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context))
 		);
 		if ($token === '') {
 			$send->failures[] = 'No Talk conversation resolved for an item; nothing was posted for it.';
@@ -542,11 +488,13 @@ class FlowMessagingService {
 	 */
 	private function askOptOut(FlowSend $send): void {
 		$runId = (string)($this->scalarContext(context: $send->context)[FlowRunContext::CONTEXT_RUN] ?? '');
-		$send->decisions = $this->optOut->ask(
-			channel: 'email',
-			category: (string)($this->scalarContext(context: $send->config)['messageCategory'] ?? ''),
-			addresses: array_map('strval', array_keys($send->distinctAddresses)),
-			correlationId: 'openregister-flow:' . $runId . ':' . $send->stepName
+		$send->decisions = $this->optOut->askQuestion(
+			question: new OptOutQuestion(
+				channel: 'email',
+				category: (string)($this->scalarContext(context: $send->config)['messageCategory'] ?? ''),
+				addresses: array_map('strval', array_keys($send->distinctAddresses)),
+				correlationId: 'openregister-flow:' . $runId . ':' . $send->stepName
+			)
 		);
 	}//end askOptOut()
 
@@ -565,10 +513,10 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function sendItem(FlowSend $send, FlowSendItem $item): void {
-		$scalars = $this->scalarContext(context: $send->context);
+		$values = new PlaceholderValues(data: $item->json, context: $this->scalarContext(context: $send->context));
 		$templating = $this->platform->templating;
-		$item->title = $templating->interpolate(template: (string)($send->config[$send->titleKey] ?? ''), data: $item->json, context: $scalars);
-		$item->body = $templating->interpolate(template: (string)($send->config[$send->bodyKey] ?? ''), data: $item->json, context: $scalars);
+		$item->title = $templating->render(template: (string)($send->config[$send->titleKey] ?? ''), values: $values);
+		$item->body = $templating->render(template: (string)($send->config[$send->bodyKey] ?? ''), values: $values);
 		$item->kind = FlowEmailSentEvent::KIND_USER;
 		foreach ($item->uids as $uid) {
 			$item->recipient = $uid;
@@ -577,14 +525,13 @@ class FlowMessagingService {
 
 		$this->sendToAddresses(send: $send, item: $item);
 		if ($send->channel === 'nc-notification' && $item->delivered !== []) {
-			$this->channels->ncSender->enqueueWebPush(
-				recipients: $item->delivered,
-				ruleId: $send->stepName,
-				originApp: 'openregister',
-				subject: $item->title,
-				message: $item->body,
-				actions: [],
-				object: $item->objectReference()
+			$this->channels->ncSender->enqueuePush(
+				push: new PushRideAlong(
+					recipients: $item->delivered,
+					object: $item->objectReference(),
+					rule: new NoticeRule(name: $send->stepName),
+					content: new NoticeContent(subjectKey: '', subject: $item->title, message: $item->body)
+				)
 			);
 		}
 	}//end sendItem()
@@ -675,12 +622,13 @@ class FlowMessagingService {
 	 */
 	private function mailAddress(FlowSend $send, FlowSendItem $item): void {
 		$unsubscribe = $this->optOut->decisionFor(decisions: $send->decisions, address: $item->recipient)['unsubscribe'];
-		$outcome = $this->channels->emailSender->sendToAddress(
-			address: $item->recipient,
-			displayName: $item->name,
-			subject: $item->title,
-			body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
-			unsubscribe: $unsubscribe
+		$outcome = $this->channels->emailSender->sendMailTo(
+			addressee: new \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee(address: $item->recipient, displayName: $item->name),
+			content: new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
+				subject: $item->title,
+				body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
+				unsubscribe: $unsubscribe
+			)
 		);
 		if ($outcome === EmailSenderInterface::OUTCOME_DISPATCHED) {
 			$send->add(bucket: 'delivered', recipient: $item->recipient);
@@ -722,20 +670,16 @@ class FlowMessagingService {
 			return $this->channels->emailSender->send(uid: $item->recipient, subject: $item->title, body: $item->body);
 		}
 
-		return $this->channels->ncSender->send(
-			uid: $item->recipient,
-			object: $item->objectReference(),
-			subjectKey: 'flow_message',
-			name: $send->stepName,
-			subject: $item->title,
-			message: $item->body,
-			context: [],
-			originApp: 'openregister',
-			actions: [],
-			// Web-push rides along (enqueued after this item's sends), so the
-			// foreground popup is suppressed for the tag exactly as the
-			// declarative dispatcher suppresses it.
-			webPushActive: true
+		// Web-push rides along (enqueued after this item's sends), so the
+		// foreground popup is suppressed for the tag exactly as the
+		// declarative dispatcher suppresses it.
+		return $this->channels->ncSender->notify(
+			notice: new InAppNotice(
+				uid: $item->recipient,
+				object: $item->objectReference(),
+				rule: new NoticeRule(name: $send->stepName, webPushActive: true),
+				content: new NoticeContent(subjectKey: 'flow_message', subject: $item->title, message: $item->body)
+			)
 		);
 	}//end deliver()
 
@@ -882,6 +826,7 @@ class FlowMessagingService {
 			return $value;
 		}
 
-		return trim($this->platform->templating->interpolate(template: $value, data: $json, context: $this->scalarContext(context: $send->context)));
+		$values = new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context));
+		return trim($this->platform->templating->render(template: $value, values: $values));
 	}//end conversationToken()
 }//end class

@@ -173,14 +173,28 @@ class AggregationQuery {
 		bool $cumulative = false,
 	): self {
 		AggregationQueryRules::assertValidMetric(metric: $metric, field: $field);
-		AggregationQueryRules::assertValidMetricsList(metrics: $metrics, timeBucketed: $dateBucket !== null);
-		AggregationQueryRules::assertValidGroupBy(groupBy: $groupBy);
-		AggregationQueryRules::assertValidTimeBucketing(dateBucket: $dateBucket, grouped: $groupBy !== null);
-		AggregationQueryRules::assertCumulativeIsTimeBucketed(cumulative: $cumulative, timeBucketed: $dateBucket !== null);
-
 		$layout = new AggregationLayout(groupBy: $groupBy, dateBucket: $dateBucket, metrics: $metrics, cumulative: $cumulative);
+		self::assertValidLayout(layout: $layout);
 		return new self(metric: $metric, field: $field, filter: $filter, layout: $layout);
 	}//end create()
+
+	/**
+	 * Fail fast on a metric list, grouping, time bucketing or running total that cannot run together.
+	 *
+	 * @param AggregationLayout $layout The grouping, date buckets, metric list and running-total flag.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the layout is invalid.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function assertValidLayout(AggregationLayout $layout): void {
+		AggregationQueryRules::assertValidMetricsList(metrics: $layout->metrics, timeBucketed: $layout->dateBucket !== null);
+		AggregationQueryRules::assertValidGroupBy(groupBy: $layout->groupBy);
+		AggregationQueryRules::assertValidTimeBucketing(dateBucket: $layout->dateBucket, grouped: $layout->groupBy !== null);
+		AggregationQueryRules::assertCumulativeIsTimeBucketed(cumulative: $layout->cumulative, timeBucketed: $layout->dateBucket !== null);
+	}//end assertValidLayout()
 
 	/**
 	 * Test whether the request includes a groupBy clause.

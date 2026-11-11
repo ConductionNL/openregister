@@ -78,33 +78,73 @@ class RecordTemplateInput {
 	 */
 	public function validated(array $data, bool $partial): array {
 		$fields = array_intersect_key($data, array_flip(self::WRITABLE));
-		$findings = [];
-
-		foreach (self::REQUIRED as $required) {
-			if ($partial === true && array_key_exists($required, $fields) === false) {
-				continue;
-			}
-
-			$text = $this->text(value: ($fields[$required] ?? null));
-			if ($text === '') {
-				$findings[] = ['code' => $required . '.required', 'message' => $required . ' is required.'];
-				continue;
-			}
-
-			$fields[$required] = $text;
+		$required = self::REQUIRED;
+		if ($partial === true) {
+			$required = array_values(array_intersect(self::REQUIRED, array_keys($fields)));
 		}
 
-		$findings = array_merge($findings, $this->shapeFindings(fields: $fields));
-		if (array_key_exists('sharedWith', $fields) === true) {
-			$findings = array_merge($findings, ($this->shareFindings)($fields['sharedWith']));
-		}
-
+		$fields = $this->withTrimmed(fields: $fields, required: $required);
+		$findings = array_merge($this->requiredFindings(fields: $fields, required: $required), $this->otherFindings(fields: $fields));
 		if ($findings !== []) {
 			throw new RecordTemplateRefused(status: 400, message: 'The record template is not valid.', findings: $findings);
 		}
 
 		return $fields;
 	}//end validated()
+
+	/**
+	 * The fields with each required text that is not blank trimmed.
+	 *
+	 * @param array<string, mixed> $fields   The writable fields sent.
+	 * @param array<int, string>   $required The required fields to judge.
+	 *
+	 * @return array<string, mixed> The fields.
+	 */
+	private function withTrimmed(array $fields, array $required): array {
+		foreach ($required as $field) {
+			$text = $this->text(value: ($fields[$field] ?? null));
+			if ($text !== '') {
+				$fields[$field] = $text;
+			}
+		}
+
+		return $fields;
+	}//end withTrimmed()
+
+	/**
+	 * One finding per required field that is missing or blank, in order.
+	 *
+	 * @param array<string, mixed> $fields   The writable fields sent.
+	 * @param array<int, string>   $required The required fields to judge.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function requiredFindings(array $fields, array $required): array {
+		$findings = [];
+		foreach ($required as $field) {
+			if ($this->text(value: ($fields[$field] ?? null)) === '') {
+				$findings[] = ['code' => $field . '.required', 'message' => $field . ' is required.'];
+			}
+		}
+
+		return $findings;
+	}//end requiredFindings()
+
+	/**
+	 * The shape findings of the fields, then the findings of their share list when they carry one.
+	 *
+	 * @param array<string, mixed> $fields The writable fields, trimmed.
+	 *
+	 * @return array<int, array<string, mixed>> The findings.
+	 */
+	private function otherFindings(array $fields): array {
+		$findings = $this->shapeFindings(fields: $fields);
+		if (array_key_exists('sharedWith', $fields) === true) {
+			$findings = array_merge($findings, ($this->shareFindings)($fields['sharedWith']));
+		}
+
+		return $findings;
+	}//end otherFindings()
 
 	/**
 	 * Set the checked fields on the template.

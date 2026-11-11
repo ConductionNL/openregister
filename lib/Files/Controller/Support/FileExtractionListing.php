@@ -196,23 +196,33 @@ final class FileExtractionListing {
 	 */
 	public function sortRows(array $rows): array
 	{
-		$sort  = $this->sort;
-		$order = $this->order;
 		usort(
 			$rows,
-			function ($a, $b) use ($sort, $order) {
-				$cmp = ($a[$sort] ?? 0) <=> ($b[$sort] ?? 0);
-				if ($sort === 'riskLevel') {
-					$cmp = (self::RISK_ORDER[$a['riskLevel']] ?? 0) <=> (self::RISK_ORDER[$b['riskLevel']] ?? 0);
-				}
-
-				if ($order === 'ASC') {
-					return $cmp;
-				}
-
-				return -$cmp;
-			}
+			fn ($a, $b): int => $this->compareRows(a: $a, b: $b)
 		);
 		return $rows;
 	}//end sortRows()
+
+	/**
+	 * Compare two rows on the sort column (risk levels by their rank, a missing value as 0),
+	 * reversed unless the order is ASC.
+	 *
+	 * @param mixed $a The first row.
+	 * @param mixed $b The second row.
+	 *
+	 * @return int The comparison.
+	 */
+	private function compareRows(mixed $a, mixed $b): int
+	{
+		$cmp = ($a[$this->sort] ?? 0) <=> ($b[$this->sort] ?? 0);
+		if ($this->sort === 'riskLevel') {
+			$cmp = (self::RISK_ORDER[$a['riskLevel']] ?? 0) <=> (self::RISK_ORDER[$b['riskLevel']] ?? 0);
+		}
+
+		if ($this->order === 'ASC') {
+			return $cmp;
+		}
+
+		return -$cmp;
+	}//end compareRows()
 }//end class

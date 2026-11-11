@@ -81,16 +81,14 @@ class UniqueHintChecker {
 	 * not reported as a collision with yourself.
 	 *
 	 * @param array<string, mixed> $configuration The schema's configuration block.
-	 * @param UniqueHintScope $scope The register and schema references the write goes to.
-	 * @param array<string, mixed> $data The incoming payload.
-	 * @param string|null $selfUuid Uuid of the object being written, on an update.
+	 * @param UniqueHintCandidate  $candidate     The register and schema the write goes to, the incoming payload and,
+	 *                                            on an update, the uuid of the object being written.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
-	public function check(array $configuration, UniqueHintScope $scope, array $data, ?string $selfUuid = null): void {
-		$candidate = new UniqueHintCandidate(scope: $scope, data: $data, selfUuid: $selfUuid);
+	public function check(array $configuration, UniqueHintCandidate $candidate): void {
 		foreach ($this->annotation->nominated(configuration: $configuration) as $property) {
 			$this->checkProperty(candidate: $candidate, property: $property);
 		}
@@ -135,7 +133,7 @@ class UniqueHintChecker {
 		$allUuids = $this->uuidsExcludingSelf(holders: $all, selfUuid: $selfUuid);
 
 		if (count($visibleUuids) > 0) {
-			$this->warnings->record(property: $property, matches: $visibleUuids, visible: true);
+			$this->warnings->recordVisible(property: $property, matches: $visibleUuids);
 			return;
 		}
 
@@ -150,7 +148,7 @@ class UniqueHintChecker {
 		// says "somewhere in this schema, one exists", which is exactly what a
 		// database unique constraint would have leaked anyway, and nothing
 		// about whose it is or what else it holds.
-		$this->warnings->record(property: $property, matches: [], visible: false);
+		$this->warnings->recordHidden(property: $property);
 	}//end checkOne()
 
 	/**
@@ -206,14 +204,7 @@ class UniqueHintChecker {
 	private function holdersOf(UniqueHintLookup $lookup, bool $scoped = true): array {
 		try {
 			$objects = $this->objectService->findAll(
-				[
-					'filters' => [
-						'register' => $lookup->register,
-						'schema' => $lookup->schema,
-						$lookup->property => $lookup->value,
-					],
-					'limit' => self::MAX_CANDIDATES,
-				],
+				self::holdersQuery(lookup: $lookup),
 				_rbac: $scoped,
 				_multitenancy: $scoped
 			);
@@ -222,13 +213,24 @@ class UniqueHintChecker {
 			return [];
 		}
 
-		$entities = [];
-		foreach ($objects as $object) {
-			if ($object instanceof ObjectEntity) {
-				$entities[] = $object;
-			}
-		}
-
-		return $entities;
+		return ObjectEntities::in(objects: $objects);
 	}//end holdersOf()
+
+	/**
+	 * The object-service query for the objects holding the looked-up value.
+	 *
+	 * @param UniqueHintLookup $lookup The register, schema, property and value.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private static function holdersQuery(UniqueHintLookup $lookup): array {
+		return [
+			'filters' => [
+				'register' => $lookup->register,
+				'schema' => $lookup->schema,
+				$lookup->property => $lookup->value,
+			],
+			'limit' => self::MAX_CANDIDATES,
+		];
+	}//end holdersQuery()
 }//end class

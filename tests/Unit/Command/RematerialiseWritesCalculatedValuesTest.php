@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Calculation\ReferringObject;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
@@ -51,6 +52,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * learniq session (O8) and enrolment (O9), each one row.
@@ -110,7 +112,7 @@ class RematerialiseWritesCalculatedValuesTest extends TestCase {
 		$objects->method('saveObject')->willReturnCallback(
 			function (array|ObjectEntity $object, ?array $extend = [], $reg = null, $sch = null, ?string $uuid = null) use ($rules, $schema, $stored, $listener): ObjectEntity {
 				$this->saved[] = $object;
-				$violations = $rules->validateReadOnlyConstraints(incomingObject: $object, existingObject: $stored, schema: $schema);
+				$violations = $rules->validateReadOnlyConstraints(check: new WriteConstraintCheck(incoming: $object, stored: $stored), schema: $schema);
 				if ($violations !== []) {
 					throw new RuntimeException('Cannot modify readOnly properties: ' . implode(', ', array_column($violations, 'property')));
 				}
@@ -202,7 +204,7 @@ class RematerialiseWritesCalculatedValuesTest extends TestCase {
 			}
 		);
 		$resolver = new AggregateReferenceResolver(aggregationRunner: $runner, logger: $this->createMock(LoggerInterface::class));
-		$this->assertSame(['completed' => 4], $resolver->resolveAll(payload: [], aggregates: $schema->getConfiguration()['x-openregister-aggregate-refs'], registerRef: '5'));
+		$this->assertSame(['completed' => 4], $resolver->resolveAll(referrer: new ReferringObject(payload: [], register: '5'), aggregates: $schema->getConfiguration()['x-openregister-aggregate-refs']));
 
 		$broken = $this->createMock(AggregationRunner::class);
 		$broken->method('runAdhocByRef')->willThrowException(new RuntimeException('database went away'));

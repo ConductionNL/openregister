@@ -35,6 +35,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\ExampleSet\DeckBoardRequest;
 
 /**
  * Behaviour of the Deck cards an example set puts on its objects.
@@ -135,7 +136,7 @@ class ExampleSetDeckCardsBehaviourTest extends TestCase {
 	public function testWritePlacesTheCardWithLabelsAndLinksIt(): void {
 		$this->store->method('available')->willReturn(true);
 		$this->objectFound();
-		$this->store->expects($this->once())->method('board')->with('alice', 'Zaken', 'ff0000', ['g1'])->willReturn(['id' => 10, 'created' => true]);
+		$this->store->expects($this->once())->method('board')->with(new DeckBoardRequest(owner: 'alice', title: 'Zaken', color: 'ff0000', groups: ['g1']))->willReturn(['id' => 10, 'created' => true]);
 		$this->store->expects($this->once())->method('stack')->with(10, 'Nieuw')->willReturn(['id' => 20, 'created' => false]);
 		$this->store->method('label')->willReturnMap(
 			[
@@ -216,7 +217,7 @@ class ExampleSetDeckCardsBehaviourTest extends TestCase {
 	public function testWriteUsesTheDefaultColourAndNoLabels(): void {
 		$this->store->method('available')->willReturn(true);
 		$this->objectFound();
-		$this->store->expects($this->once())->method('board')->with('alice', 'Zaken', '0082c9', [])->willReturn(['id' => 1, 'created' => false]);
+		$this->store->expects($this->once())->method('board')->with(new DeckBoardRequest(owner: 'alice', title: 'Zaken', color: '0082c9', groups: []))->willReturn(['id' => 1, 'created' => false]);
 		$this->store->method('stack')->willReturn(['id' => 2, 'created' => false]);
 		$this->store->expects($this->never())->method('label');
 		$this->store->method('insertCard')->willReturn(3);

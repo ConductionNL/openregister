@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureSchemaResolver;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 
 final class ErasureRunnerTest extends TestCase {
 	private const SUBJECT = 'jan@example.org';
@@ -162,8 +163,9 @@ final class ErasureRunnerTest extends TestCase {
 		);
 
 		$recorder = $this->createMock(DestructionRecorder::class);
-		$recorder->method('record')->willReturnCallback(
-			function (ObjectEntity $object, array $scope, string $rule, array $context): array {
+		$recorder->method('recordDestruction')->willReturnCallback(
+			function (RecordDestructionCommand $command): array {
+				[$object, $scope, $rule, $context] = [$command->object, $command->scope, $command->rule, $command->context];
 				$written = array_merge(['objectUuid' => (string)$object->getUuid(), 'rule' => $rule], $context);
 				$this->records[] = $written;
 

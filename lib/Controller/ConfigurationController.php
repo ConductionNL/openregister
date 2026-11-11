@@ -37,6 +37,8 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\NotificationServiceInterface;
 use OCA\OpenRegister\Service\Security\SafeFetchUrl;
@@ -46,6 +48,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
 
 /**
  * Class ConfigurationController
@@ -375,7 +379,7 @@ class ConfigurationController extends Controller {
 			return null;
 		}
 
-		return $this->githubHandler->enrichConfigurationDetails(owner: $meta['owner'], repo: $meta['repo'], path: $meta['path'], branch: $meta['branch']);
+		return $this->githubHandler->enrichConfigurationDetails(location: self::githubFile(meta: $meta));
 	}//end detailsFrom()
 
 	/**
@@ -812,7 +816,7 @@ class ConfigurationController extends Controller {
 	 */
 	private function searchGitLab(mixed $search, int $page): array {
 		$this->logger->debug(message: '[ConfigurationController] About to call GitLab search service', context: ['file' => __FILE__, 'line' => __LINE__]);
-		$results = $this->gitlabHandler->searchConfigurations(search: $search, page: $page);
+		$results = $this->gitlabHandler->searchPage(search: $search, page: new RepositorySearchPage(page: $page, perPage: 30));
 		$this->logger->debug(
 			message: '[ConfigurationController] GitLab search completed',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
@@ -831,7 +835,7 @@ class ConfigurationController extends Controller {
 	 */
 	private function searchGitHub(mixed $search, int $page): array {
 		$this->logger->debug(message: '[ConfigurationController] About to call GitHub search service', context: ['file' => __FILE__, 'line' => __LINE__]);
-		$results = $this->githubHandler->searchConfigurations(search: $search, page: $page);
+		$results = $this->githubHandler->searchConfigurations(search: $search, page: new RepositorySearchPage(page: $page, perPage: 30));
 		$this->logger->debug(
 			message: '[ConfigurationController] GitHub search completed',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
@@ -1019,7 +1023,7 @@ class ConfigurationController extends Controller {
 			message: '[ConfigurationController] Fetching GitHub configurations',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $owner, 'repo' => $repo, 'branch' => $branch]
 		);
-		$files = $this->githubHandler->listConfigurationFiles(owner: $owner, repo: $repo, branch: $branch);
+		$files = $this->githubHandler->listConfigurationFiles(directory: new GitHubFileLocation(owner: $owner, repo: $repo, path: '', branch: $branch));
 
 		return new JSONResponse(data: ['files' => $files], statusCode: 200);
 	}//end gitHubConfigurations()
@@ -1115,7 +1119,8 @@ class ConfigurationController extends Controller {
 				'project_id' => $projectId, 'ref' => $ref]
 		);
 
-		return new JSONResponse(data: ['files' => $this->gitlabHandler->listConfigurationFiles(projectId: $projectId, ref: $ref)], statusCode: 200);
+		$files = $this->gitlabHandler->listConfigurationFiles(project: new GitLabProjectRef(projectId: $projectId, ref: $ref));
+		return new JSONResponse(data: ['files' => $files], statusCode: 200);
 	}//end gitLabConfigurations()
 
 	/**
@@ -1134,7 +1139,7 @@ class ConfigurationController extends Controller {
 		}
 
 		return [
-			'configData' => $this->githubHandler->getFileContent(owner: $meta['owner'], repo: $meta['repo'], path: $meta['path'], branch: $meta['branch']),
+			'configData' => $this->githubHandler->getFileContent(location: self::githubFile(meta: $meta)),
 			'sourceUrl' => "https://github.com/{$meta['owner']}/{$meta['repo']}/blob/{$meta['branch']}/{$meta['path']}",
 			'metadata' => $meta,
 		];
@@ -1191,7 +1196,7 @@ class ConfigurationController extends Controller {
 		}
 
 		$projectId  = $this->gitlabHandler->getProjectByPath(namespace: $meta['namespace'], project: $meta['project'])['id'];
-		$configData = $this->gitlabHandler->getFileContent(projectId: $projectId, path: $meta['path'], ref: $meta['ref']);
+		$configData = $this->gitlabHandler->fileContent(project: new GitLabProjectRef(projectId: $projectId, ref: $meta['ref']), path: $meta['path']);
 		$webBase    = str_replace('/api/v4', '', $this->gitlabHandler->getApiBase());
 
 		return [
@@ -1881,7 +1886,7 @@ class ConfigurationController extends Controller {
 	 */
 	private function getExistingFileSha(array $params): ?string {
 		try {
-			return $this->githubHandler->getFileSha(owner: $params['owner'], repo: $params['repo'], path: $params['path'], branch: $params['branch']);
+			return $this->githubHandler->getFileSha(location: self::githubFile(meta: $params));
 		} catch (Exception $e) {
 			// File doesn't exist, which is fine for new files.
 			$this->logger->debug(
@@ -1909,15 +1914,21 @@ class ConfigurationController extends Controller {
 		$fileSha = $this->getExistingFileSha(params: $params);
 
 		return $this->githubHandler->publishConfiguration(
-			owner: $params['owner'],
-			repo: $params['repo'],
-			path: $params['path'],
-			branch: $params['branch'],
-			content: $content,
-			commitMessage: $params['commitMessage'],
-			fileSha: $fileSha
+			location: self::githubFile(meta: $params),
+			write: new GitHubFileWrite(content: $content, commitMessage: $params['commitMessage'], fileSha: $fileSha)
 		);
 	}//end publishConfigurationToGitHub()
+
+	/**
+	 * The GitHub file named by a request's owner, repo, path and branch.
+	 *
+	 * @param array{owner: string, repo: string, path: string, branch: string} $meta The request fields.
+	 *
+	 * @return GitHubFileLocation
+	 */
+	private static function githubFile(array $meta): GitHubFileLocation {
+		return new GitHubFileLocation(owner: $meta['owner'], repo: $meta['repo'], path: $meta['path'], branch: $meta['branch']);
+	}//end githubFile()
 
 	/**
 	 * Update configuration with GitHub information

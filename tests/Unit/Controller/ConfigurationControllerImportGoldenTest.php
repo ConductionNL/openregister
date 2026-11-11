@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\NotificationService;
 use OCP\App\IAppManager;
@@ -24,6 +25,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 /**
  * Golden test for the configuration import pipeline behind importFromGitHub(),
@@ -152,8 +154,8 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 	 */
 	private function github(array $case): GitHubClientInterface {
 		$github = $this->createMock(GitHubClientInterface::class);
-		$github->method('getFileContent')->willReturnCallback(function (...$args) use ($case) {
-			$this->calls[] = ['github.getFileContent' => $args];
+		$github->method('getFileContent')->willReturnCallback(function (GitHubFileLocation $file) use ($case) {
+			$this->calls[] = ['github.getFileContent' => [$file->owner, $file->repo, $file->path, $file->branch]];
 			if (isset($case['fetchThrows']) === true) {
 				throw new Exception($case['fetchThrows'][0], $case['fetchThrows'][1]);
 			}
@@ -172,8 +174,8 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 			$this->calls[] = ['gitlab.getProjectByPath' => $args];
 			return ['id' => 77];
 		});
-		$gitlab->method('getFileContent')->willReturnCallback(function (...$args) use ($case) {
-			$this->calls[] = ['gitlab.getFileContent' => $args];
+		$gitlab->method('fileContent')->willReturnCallback(function (GitLabProjectRef $project, string $path) use ($case) {
+			$this->calls[] = ['gitlab.getFileContent' => [$project->projectId, $path, $project->ref]];
 			return $case['config'] ?? [];
 		});
 		$gitlab->method('getApiBase')->willReturnCallback(function () {

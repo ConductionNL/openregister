@@ -37,6 +37,8 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Document;
 use Sabre\VObject\Reader;
+use OCA\OpenRegister\Service\CalendarEvent\VeventDraft;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 
 /**
  * CalendarEventService wraps CalDAV VEVENT operations for OpenRegister objects.
@@ -351,7 +353,7 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	/**
 	 * Get all VEVENTs across the acting user's VEVENT-supporting calendars.
 	 *
-	 * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::getAllUserTasks()}
+	 * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::listUserTasks()}
 	 * for events: it enumerates every calendar the user owns (not just the pinned
 	 * one), skips non-VEVENT objects, and returns the parsed event arrays sorted by
 	 * start date (soonest first, undated last). Backs the `calendar-event-source`
@@ -449,12 +451,7 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 		$calendarId = $this->findUserCalendar()['id'];
 
 		$uid = strtoupper(bin2hex(random_bytes(16)));
-		$calendarData = $this->veventCodec->calendarData(
-			uid: $uid,
-			dtstart: $dtstart,
-			data: $data,
-			link: $link
-		);
+		$calendarData = $this->veventCodec->calendarDataOf(draft: new VeventDraft(uid: $uid, dtstart: $dtstart, data: $data, link: $link));
 		$uri = $uid . '.ics';
 
 		$this->calDavBackend->createCalendarObject($calendarId, $uri, $calendarData);
@@ -534,9 +531,8 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	/**
 	 * Refuse an event that is not one of the caller's events on the given object.
 	 *
-	 * @param string $objectUuid The object the caller addressed.
-	 * @param string $calendarId The calendar the caller named.
-	 * @param string $eventUri   The event the caller named.
+	 * @param string                $objectUuid The object the caller addressed.
+	 * @param CalendarObjectAddress $event      The calendar and event the caller named.
 	 *
 	 * @return void
 	 *
@@ -544,8 +540,8 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function requireEventOf(string $objectUuid, string $calendarId, string $eventUri): void {
-		if (in_array([$calendarId, $eventUri], $this->heldEvents(objectUuid: $objectUuid), true) === false) {
+	public function requireEventOf(string $objectUuid, CalendarObjectAddress $event): void {
+		if (in_array([$event->calendarId, $event->uri], $this->heldEvents(objectUuid: $objectUuid), true) === false) {
 			throw new Exception('Calendar event not found', 404);
 		}
 	}//end requireEventOf()
@@ -742,7 +738,7 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 			return null;
 		}
 
-		return $this->veventCodec->eventArray(vevent: $vevent, calendarId: $stored->calendarId, uri: $stored->uri);
+		return $this->veventCodec->eventArrayAt(vevent: $vevent, address: new CalendarObjectAddress(calendarId: $stored->calendarId, uri: $stored->uri));
 	}//end veventToArray()
 
 	/**

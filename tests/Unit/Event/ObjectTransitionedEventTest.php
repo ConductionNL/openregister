@@ -22,6 +22,9 @@ namespace Unit\Event;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -36,7 +39,7 @@ class ObjectTransitionedEventTest extends TestCase {
 	 */
 	public function testAccessorsReturnConstructedValuesAndAutomaticDefaultsFalse(): void {
 		$object = new ObjectEntity();
-		$event  = new ObjectTransitionedEvent($object, 'publish', 'draft', 'published', 'alice', 'reg', 'sch');
+		$event  = new ObjectTransitionedEvent(object: $object, move: new TransitionMove(action: 'publish', from: 'draft', to: 'published'), scope: new RegisterSchemaRef(register: 'reg', schema: 'sch'), actor: new TransitionActor(userId: 'alice'));
 
 		self::assertSame($object, $event->getObject());
 		self::assertSame('publish', $event->getAction());
@@ -57,17 +60,31 @@ class ObjectTransitionedEventTest extends TestCase {
 	public function testNamedConstructionCarriesNullUserAndAutomaticMove(): void {
 		$event = new ObjectTransitionedEvent(
 			object: new ObjectEntity(),
-			action: 'archive',
-			from: 'published',
-			to: 'archived',
-			userId: null,
-			register: 'r',
-			schema: 's',
-			automatic: true,
+			move: new TransitionMove(action: 'archive', from: 'published', to: 'archived'),
+			scope: new RegisterSchemaRef(register: 'r', schema: 's'),
+			actor: new TransitionActor(userId: null, automatic: true),
 		);
 
 		self::assertNull($event->getUserId());
 		self::assertTrue($event->isAutomatic());
 		self::assertSame('archived', $event->getTo());
 	}//end testNamedConstructionCarriesNullUserAndAutomaticMove()
+	/**
+	 * Without an actor the move is a system one, and an integer scope reads back as strings.
+	 *
+	 * @return void
+	 */
+	public function testMissingActorAndIntegerScopeDefaults(): void {
+		$event = new ObjectTransitionedEvent(
+			object: new ObjectEntity(),
+			move: new TransitionMove(action: 'close', from: 'open', to: 'closed'),
+			scope: new RegisterSchemaRef(register: 3, schema: 12),
+		);
+
+		self::assertNull($event->getUserId());
+		self::assertFalse($event->isAutomatic());
+		self::assertSame('3', $event->getRegister());
+		self::assertSame('12', $event->getSchema());
+		self::assertSame('closed', $event->getTo());
+	}//end testMissingActorAndIntegerScopeDefaults()
 }//end class
