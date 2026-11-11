@@ -1,13 +1,16 @@
 <?php
 
 /**
- * OpenRegister ReferencedAddressNotifier
+ * The `email` recipient kind: an address read through a reference.
  *
- * Mails the address a notification rule reads off the object, directly or
- * through a reference: `{kind: email, field: supplierRef.contactEmail}`.
+ * A rule may address a person who has no Nextcloud account and is no party
+ * on the object, but whose address sits on an object the triggering object
+ * points at: a supplier message names its supplier, and the supplier holds
+ * the contact address. `{kind: email, field: supplierRef.contactEmail}`
+ * follows `supplierRef` to the supplier and mails its `contactEmail`.
  *
  * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
@@ -16,11 +19,9 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
- *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-rule-may-mail-an-address-it-reads-through-a-reference-req-ero-007
+ * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
  */
 
 declare(strict_types=1);
@@ -28,280 +29,452 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Calculation\ReferenceTenantGuard;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use Psr\Log\LoggerInterface;
-use Throwable;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
- * Resolves and mails the `email` recipient kind.
+ * Resolves and mails the addresses an `email` recipient entry names.
  *
- * The address is record data, so it is never trusted as an account: it is
- * mailed as a bare address, after integriq's opt-out check, exactly like a
- * party's address. A reference is read as the system (the dispatcher runs in
- * whatever session saved the object) and bounded to the object's tenant by
- * the same guard calculations use, so a reference cannot reach an address in
- * another organisation's register.
+ * The referenced object is read as the system, not as the person whose save
+ * fired the rule: a melder may not be allowed to read the supplier, and the
+ * rule still has to reach it. The read is bounded to the triggering object's
+ * own organisation instead, so a reference can never pull an address out of
+ * another tenant. It must also be an object of the schema the reference
+ * property points at (`$ref`): the value is data the person saving the
+ * triggering object controls, so without that check it could be aimed at any
+ * same-organisation object that happens to carry the named field. A reference
+ * property that declares no `$ref` names no schema to check against and is
+ * refused.
+ *
+ * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
  */
-class ReferencedAddressNotifier {
+class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 
 	/**
-	 * Outcome when the field, or the reference it goes through, holds no usable address.
-	 *
-	 * @var string
+	 * The path names no value, or an empty one.
 	 */
-	public const OUTCOME_NO_ADDRESS = 'no-address';
+	public const REASON_NO_REFERENCE = 'no-reference';
 
 	/**
-	 * Outcome when the reference names an object the tenant may not read, or none at all.
-	 *
-	 * @var string
+	 * The reference points at an object that does not exist (or cannot be read).
 	 */
-	public const OUTCOME_REFERENCE_UNRESOLVED = 'reference-unresolved';
+	public const REASON_REFERENCE_NOT_FOUND = 'reference-not-found';
 
 	/**
-	 * Outcome when integriq refused the address.
-	 *
-	 * @var string
+	 * The referenced object belongs to another organisation.
+	 */
+	public const REASON_OTHER_TENANT = 'refused-other-tenant';
+
+	/**
+	 * The value at the end of the path is not an e-mail address.
+	 */
+	public const REASON_NOT_AN_ADDRESS = 'not-an-address';
+
+	/**
+	 * integriq says the address opted out.
 	 */
 	public const OUTCOME_REFUSED_OPTED_OUT = 'refused-opted-out';
 
 	/**
-	 * Outcome when integriq did not answer.
-	 *
-	 * @var string
+	 * integriq did not answer, which is refused like an opt-out.
 	 */
-	public const OUTCOME_AUTHORITY_UNAVAILABLE = 'authority-unavailable';
+	public const OUTCOME_AUTHORITY_UNAVAILABLE = OptOutAuthorityInterface::CODE_AUTHORITY_UNAVAILABLE;
 
 	/**
-	 * Wire the collaborators.
+	 * Constructor.
 	 *
-	 * @param ObjectService        $objectService Reads the referenced object.
-	 * @param ReferenceTenantGuard $tenantGuard   Keeps the reference inside the object's tenant.
-	 * @param OptOutAuthority      $optOut        Integriq's opt-out answer.
-	 * @param EmailSender          $email         The shared mail send unit.
-	 * @param LoggerInterface      $logger        For a reference read that failed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-rule-may-mail-an-address-it-reads-through-a-reference-req-ero-007
+	 * @param ReferenceLookupServices $lookups  The object layer, schemas and `$ref` resolver references are followed with.
+	 * @param AddressDeliveryServices $delivery The email channel and integriq.
+	 * @param LoggerInterface         $logger   Logger.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
-		private readonly ReferenceTenantGuard $tenantGuard,
-		private readonly OptOutAuthority $optOut,
-		private readonly EmailSender $email,
+		private readonly ReferenceLookupServices $lookups,
+		private readonly AddressDeliveryServices $delivery,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
 	/**
-	 * Mail every `email` recipient of a rule.
+	 * Mail every `email` entry of a request that resolves to an address.
 	 *
-	 * @param array<int, mixed>    $recipientsSpec The rule's `recipients`.
-	 * @param ObjectEntity         $object         The object the rule fired on.
-	 * @param string               $subject        The rendered subject.
-	 * @param string               $body           The rendered body.
-	 * @param string               $category       The rule's message category.
+	 * Every resolved address is put to integriq in one question, under the
+	 * request's category and the triggering object's correlation id. An entry
+	 * that does not resolve, or that integriq refuses, is reported with its
+	 * reason, never dropped in silence.
 	 *
-	 * @return array<int, array{field: string, outcome: string}> What happened per recipient entry.
+	 * @param ReferenceOrigin $origin  The triggering object, its data and its schema.
+	 * @param MailingRequest  $request The rule's recipients, subject, body and category.
 	 *
-	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-rule-may-mail-an-address-it-reads-through-a-reference-req-ero-007
+	 * @return array<int, array{field: string, outcome: string}> One outcome per `email` entry.
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
-	public function notify(array $recipientsSpec, ObjectEntity $object, string $subject, string $body, string $category): array {
-		$resolved = [];
-		foreach ($recipientsSpec as $recipient) {
-			if (is_array($recipient) === false || (string)($recipient['kind'] ?? '') !== 'email') {
-				continue;
-			}
-
-			$field = trim((string)($recipient['field'] ?? ''));
-			if ($field === '') {
-				continue;
-			}
-
-			$resolved[] = ['field' => $field] + $this->addressFor(object: $object, field: $field);
-		}
-
-		if ($resolved === []) {
+	public function mail(ReferenceOrigin $origin, MailingRequest $request): array {
+		$entries = $this->emailEntries(origin: $origin, recipients: $request->recipients);
+		if ($entries === []) {
 			return [];
 		}
 
-		$askable = [];
-		foreach ($resolved as $entry) {
-			if ($entry['address'] !== null) {
-				$askable[] = $entry['address'];
-			}
-		}
-
-		$decisions = $this->optOut->ask(
-			channel: 'email',
-			category: $category,
-			addresses: $askable,
-			correlationId: 'openregister-email-field:' . (string)$object->getUuid()
+		$decisions = $this->delivery->optOut->askQuestion(
+			question: new OptOutQuestion(
+				channel: 'email',
+				category: $request->category,
+				addresses: $this->askable(entries: $entries),
+				correlationId: 'openregister-email:' . (string)($origin->object->getUuid() ?? '')
+			)
 		);
 
+		return $this->sendAll(
+			entries: $entries,
+			mailing: new ClearedMailing(subject: $request->subject, body: $request->body, decisions: $decisions)
+		);
+	}//end mail()
+
+	/**
+	 * Resolve each `email` entry of a recipients declaration; other entries are skipped.
+	 *
+	 * @param ReferenceOrigin   $origin     The triggering object, its data and its schema.
+	 * @param array<int, mixed> $recipients The rule's `recipients` declaration.
+	 *
+	 * @return array<int, array{field: string, address: string|null, reason: string|null}> One entry per `email` entry.
+	 */
+	private function emailEntries(ReferenceOrigin $origin, array $recipients): array {
+		$entries = [];
+		foreach ($recipients as $recipient) {
+			if (is_array($recipient) === false || (string)($recipient['kind'] ?? '') !== self::KIND) {
+				continue;
+			}
+
+			$path = trim((string)($recipient['field'] ?? ''));
+			$entries[] = ['field' => $path] + $this->resolveAddress(origin: $origin, path: $path);
+		}
+
+		return $entries;
+	}//end emailEntries()
+
+	/**
+	 * The resolved addresses of a set of entries, the ones integriq is asked about.
+	 *
+	 * @param array<int, array{field: string, address: string|null, reason: string|null}> $entries The entries.
+	 *
+	 * @return array<int, string>
+	 */
+	private function askable(array $entries): array {
+		return array_values(array_filter(array_column($entries, 'address'), static fn (?string $address): bool => $address !== null));
+	}//end askable()
+
+	/**
+	 * Send every entry, or name why it was not sent.
+	 *
+	 * @param array<int, array{field: string, address: string|null, reason: string|null}> $entries The entries.
+	 * @param ClearedMailing                                                               $mailing The mail and integriq's answers.
+	 *
+	 * @return array<int, array{field: string, outcome: string}> One outcome per entry.
+	 */
+	private function sendAll(array $entries, ClearedMailing $mailing): array {
 		$outcomes = [];
-		foreach ($resolved as $entry) {
+		foreach ($entries as $entry) {
 			$outcomes[] = [
 				'field' => $entry['field'],
-				'outcome' => $this->send(entry: $entry, decisions: $decisions, subject: $subject, body: $body),
+				'outcome' => $this->sendOne(entry: $entry, mailing: $mailing),
 			];
 		}
 
 		return $outcomes;
-	}//end notify()
+	}//end sendAll()
 
 	/**
-	 * The address a field path names, or why there is none.
+	 * The address a path names, or the reason it names none.
 	 *
-	 * One segment reads the address off the object itself. More segments read
-	 * the first as a reference, load that object, and read the rest of the
-	 * path inside it.
+	 * Each segment but the last is read from the current data; when its value
+	 * is a reference (a uuid string, or an object carrying `id` or `uuid`) the
+	 * referenced object's data becomes the current data. The last segment is
+	 * the address. A referenced object must be of the schema the reference
+	 * property's `$ref` names; without a schema to read that from, no
+	 * reference is followed.
 	 *
-	 * @param ObjectEntity $object The object the rule fired on.
-	 * @param string       $field  The dotted field path.
+	 * @param ReferenceOrigin $origin The triggering object, its data and its schema.
+	 * @param string          $path   The dotted path, e.g. `supplierRef.contactEmail`.
 	 *
-	 * @return array{address: string|null, outcome: string} The address, or null with the reason.
+	 * @return array{address: string|null, reason: string|null}
 	 *
-	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-rule-may-mail-an-address-it-reads-through-a-reference-req-ero-007
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
-	public function addressFor(ObjectEntity $object, string $field): array {
-		$data = ($object->getObject() ?? []);
-		$segments = explode('.', $field);
-		$head = array_shift($segments);
-
-		if ($segments === []) {
-			return $this->asAddress(value: ($data[$head] ?? null));
+	public function resolveAddress(ReferenceOrigin $origin, string $path): array {
+		$segments = array_values(array_filter(explode('.', $path), static fn (string $segment): bool => $segment !== ''));
+		if ($segments === [] || count($segments) > (self::MAX_HOPS + 1)) {
+			return ['address' => null, 'reason' => self::REASON_NO_REFERENCE];
 		}
 
-		$referenced = $this->referenced(object: $object, reference: ($data[$head] ?? null));
-		if ($referenced === null) {
-			return ['address' => null, 'outcome' => self::OUTCOME_REFERENCE_UNRESOLVED];
+		$last = array_pop($segments);
+		$followed = $this->follow(origin: $origin, segments: $segments);
+		if ($followed['reason'] !== null) {
+			return ['address' => null, 'reason' => $followed['reason']];
 		}
 
-		$value = ($referenced->getObject() ?? []);
+		$value = ($followed['data'][$last] ?? null);
+		if (is_string($value) === false || trim($value) === '') {
+			return ['address' => null, 'reason' => self::REASON_NO_REFERENCE];
+		}
+
+		$address = trim($value);
+		if (filter_var($address, FILTER_VALIDATE_EMAIL) === false) {
+			return ['address' => null, 'reason' => self::REASON_NOT_AN_ADDRESS];
+		}
+
+		return ['address' => $address, 'reason' => null];
+	}//end resolveAddress()
+
+	/**
+	 * Follow each reference segment to the object it names.
+	 *
+	 * @param ReferenceOrigin    $origin   The triggering object, its data and its schema.
+	 * @param array<int, string> $segments The reference segments, in order.
+	 *
+	 * @return array{data: array<string, mixed>, reason: string|null} The data reached, or why it was not.
+	 */
+	private function follow(ReferenceOrigin $origin, array $segments): array {
+		$current = $origin->data;
+		$currentSchema = $origin->schema;
 		foreach ($segments as $segment) {
-			if (is_array($value) === false || array_key_exists($segment, $value) === false) {
-				return ['address' => null, 'outcome' => self::OUTCOME_NO_ADDRESS];
+			$reference = $this->referenceOf(value: ($current[$segment] ?? null));
+			if ($reference === null) {
+				return ['data' => [], 'reason' => self::REASON_NO_REFERENCE];
 			}
 
-			$value = $value[$segment];
+			$related = $this->findReferenced(id: $reference);
+			if ($related === null) {
+				return ['data' => [], 'reason' => self::REASON_REFERENCE_NOT_FOUND];
+			}
+
+			if ($this->sameTenant(origin: $origin->object, related: $related) === false) {
+				return ['data' => [], 'reason' => self::REASON_OTHER_TENANT];
+			}
+
+			$declared = $this->declaredReference(schema: $currentSchema, property: $segment);
+			if ($declared === null || $this->isOfDeclaredSchema(property: $declared, related: $related) === false) {
+				return ['data' => [], 'reason' => self::REASON_REFERENCE_NOT_FOUND];
+			}
+
+			$current = $related->getObject();
+			$currentSchema = $this->schemaOf(object: $related);
 		}
 
-		return $this->asAddress(value: $value);
-	}//end addressFor()
+		return ['data' => $current, 'reason' => null];
+	}//end follow()
 
 	/**
-	 * Send one resolved entry, or say why it was not sent.
+	 * Send one resolved entry, or name why it was not sent.
 	 *
-	 * @param array{field: string, address: string|null, outcome: string} $entry     The resolved entry.
-	 * @param array<string, array<string, mixed>>                          $decisions Integriq's answers.
-	 * @param string                                                       $subject   The subject.
-	 * @param string                                                       $body      The body.
+	 * @param array{field: string, address: string|null, reason: string|null} $entry   The entry.
+	 * @param ClearedMailing                                                   $mailing The mail and integriq's answers.
 	 *
 	 * @return string The outcome.
 	 */
-	private function send(array $entry, array $decisions, string $subject, string $body): string {
+	private function sendOne(array $entry, ClearedMailing $mailing): string {
 		if ($entry['address'] === null) {
-			return $entry['outcome'];
+			return (string)$entry['reason'];
 		}
 
-		$decision = $this->optOut->decisionFor(decisions: $decisions, address: $entry['address']);
-		if ($decision['send'] !== true) {
-			if ($decision['code'] === OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE) {
-				return self::OUTCOME_AUTHORITY_UNAVAILABLE;
-			}
-
-			return self::OUTCOME_REFUSED_OPTED_OUT;
+		$decision = $this->delivery->optOut->decisionFor(decisions: $mailing->decisions, address: $entry['address']);
+		$refusal = $this->refusalOf(decision: $decision);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		return $this->email->sendToAddress(
-			address: $entry['address'],
-			displayName: '',
-			subject: $subject,
-			body: $this->optOut->withLink(body: $body, unsubscribe: $decision['unsubscribe']),
-			unsubscribe: $decision['unsubscribe']
+		return $this->delivery->email->sendMailTo(
+			addressee: new \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee(address: $entry['address'], displayName: ''),
+			content: $this->contentFor(mailing: $mailing, unsubscribe: $this->unsubscribeOf(decision: $decision))
 		);
-	}//end send()
+	}//end sendOne()
 
 	/**
-	 * The object a reference value names, read as the system and bounded to the tenant.
+	 * The outcome when the opt-out decision says not to send, or null when it may go.
 	 *
-	 * @param ObjectEntity $object    The object holding the reference.
-	 * @param mixed        $reference A uuid, a URL or path ending in one, or an object carrying `id`/`uuid`.
+	 * @param array<string, mixed> $decision The opt-out decision for the address.
 	 *
-	 * @return ObjectEntity|null The referenced object, or null when it is missing or outside the tenant.
+	 * @return string|null The refusal outcome, or null.
 	 */
-	private function referenced(ObjectEntity $object, mixed $reference): ?ObjectEntity {
-		$id = $this->referenceId(reference: $reference);
-		if ($id === null) {
+	private function refusalOf(array $decision): ?string {
+		if (($decision['send'] ?? false) === true) {
+			return null;
+		}
+
+		if (($decision['code'] ?? '') === OptOutAuthorityInterface::CODE_AUTHORITY_UNAVAILABLE) {
+			return self::OUTCOME_AUTHORITY_UNAVAILABLE;
+		}
+
+		return self::OUTCOME_REFUSED_OPTED_OUT;
+	}//end refusalOf()
+
+	/**
+	 * The unsubscribe details the decision carries, or null.
+	 *
+	 * @param array<string, mixed> $decision The opt-out decision for the address.
+	 *
+	 * @return array<string, mixed>|null The unsubscribe details.
+	 */
+	private function unsubscribeOf(array $decision): ?array {
+		if (is_array($decision['unsubscribe'] ?? null) === true) {
+			return $decision['unsubscribe'];
+		}
+
+		return null;
+	}//end unsubscribeOf()
+
+	/**
+	 * The mail content: the mailing's subject, and its body with the unsubscribe link.
+	 *
+	 * @param ClearedMailing            $mailing     The cleared mailing.
+	 * @param array<string, mixed>|null $unsubscribe The unsubscribe details, or null.
+	 *
+	 * @return \OCA\OpenRegister\Notifications\Service\Notification\MailContent The content.
+	 */
+	private function contentFor(ClearedMailing $mailing, ?array $unsubscribe): \OCA\OpenRegister\Notifications\Service\Notification\MailContent {
+		return new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
+			subject: $mailing->subject,
+			body: $this->delivery->optOut->withLink(body: $mailing->body, unsubscribe: $unsubscribe),
+			unsubscribe: $unsubscribe
+		);
+	}//end contentFor()
+
+	/**
+	 * The id a stored reference value names, or null.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return string|null
+	 */
+	private function referenceOf(mixed $value): ?string {
+		if (is_array($value) === true) {
+			$value = ($value['id'] ?? ($value['uuid'] ?? null));
+		}
+
+		if (is_string($value) === false || trim($value) === '') {
+			return null;
+		}
+
+		return trim($value);
+	}//end referenceOf()
+
+	/**
+	 * Read the referenced object as the system.
+	 *
+	 * @param string $id The reference.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function findReferenced(string $id): ?ObjectEntity {
+		try {
+			return $this->lookups->objects->find(id: $id, options: new ObjectFindOptions(render: false, audit: false), _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[ReferencedAddressNotifier] reference "%s" did not resolve: %s', $id, $e->getMessage())
+			);
+			return null;
+		}
+	}//end findReferenced()
+
+	/**
+	 * The reference a schema declares for a property, or null when it declares none.
+	 *
+	 * The property's `$ref` is the only declaration of what the reference may
+	 * name, so a property without one accepts nothing: the value is data the
+	 * person saving the object controls.
+	 *
+	 * @param Schema|null $schema   The schema that declares the property.
+	 * @param string      $property The reference property.
+	 *
+	 * @return ReferenceProperty|null
+	 */
+	private function declaredReference(?Schema $schema, string $property): ?ReferenceProperty {
+		$declared = (($schema?->getProperties() ?? [])[$property] ?? null);
+		$ref = null;
+		if (is_array($declared) === true) {
+			$ref = ($declared['$ref'] ?? null);
+		}
+
+		if (is_string($ref) === false || trim($ref) === '') {
+			$this->logger->debug(
+				sprintf('[ReferencedAddressNotifier] property "%s" declares no $ref, so its reference is not followed', $property)
+			);
+			return null;
+		}
+
+		return new ReferenceProperty(name: $property, ref: trim($ref));
+	}//end declaredReference()
+
+	/**
+	 * Whether a referenced object is of the schema its reference property points at.
+	 *
+	 * A `$ref` that does not resolve to a schema accepts nothing.
+	 *
+	 * @param ReferenceProperty $property The reference property and its `$ref`.
+	 * @param ObjectEntity      $related  The referenced object.
+	 *
+	 * @return bool
+	 */
+	private function isOfDeclaredSchema(ReferenceProperty $property, ObjectEntity $related): bool {
+		// System-side: the comparison is metadata, and a writer who cannot read the target schema (an anonymous
+		// form submit, a background job) must not silently turn the rule into one that sends nothing.
+		$expected = $this->lookups->refs->resolveSchemaReference(reference: $property->ref, scope: RelationCascadeHandler::SYSTEM_SCOPE);
+		$actual = (string)($related->getSchema() ?? '');
+		if ($expected === null || $actual === '' || $expected !== $actual) {
+			$this->logger->debug(
+				sprintf('[ReferencedAddressNotifier] reference "%s" is not an object of the schema "%s" declares', $property->name, $property->ref)
+			);
+			return false;
+		}
+
+		return true;
+	}//end isOfDeclaredSchema()
+
+	/**
+	 * The schema of a referenced object, for the next hop; null when it cannot be read.
+	 *
+	 * @param ObjectEntity $object The referenced object.
+	 *
+	 * @return Schema|null
+	 */
+	private function schemaOf(ObjectEntity $object): ?Schema {
+		$id = (string)($object->getSchema() ?? '');
+		if ($id === '') {
 			return null;
 		}
 
 		try {
-			$found = $this->objectService->find(
-				id: $id,
-				_rbac: false,
-				_multitenancy: false,
-				_render: false,
-				_audit: false
+			return $this->lookups->schemas->find(id: $id, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[ReferencedAddressNotifier] schema "%s" could not be read: %s', $id, $e->getMessage())
 			);
-		} catch (Throwable $error) {
-			$this->logger->info(
-				'[ReferencedAddressNotifier] reference ' . $id . ' on ' . (string)$object->getUuid()
-				. ' did not resolve: ' . $error->getMessage()
-			);
-
 			return null;
 		}
-
-		return $this->tenantGuard->firstAdmitted(savingOrganisation: $object->getOrganisation(), candidates: [$found]);
-	}//end referenced()
+	}//end schemaOf()
 
 	/**
-	 * The object id a reference value carries.
+	 * Whether the referenced object may be read for the triggering one.
 	 *
-	 * @param mixed $reference The stored reference.
+	 * A referenced object without an organisation is not tenant-bound and may
+	 * be read. One with an organisation is read only for an object of that
+	 * same organisation; an object without one may not reach into a tenant.
 	 *
-	 * @return string|null The id, or null when the value names nothing.
+	 * @param ObjectEntity $origin  The triggering object.
+	 * @param ObjectEntity $related The referenced object.
+	 *
+	 * @return bool
 	 */
-	private function referenceId(mixed $reference): ?string {
-		if (is_array($reference) === true) {
-			$reference = ($reference['id'] ?? $reference['uuid'] ?? $reference['value'] ?? null);
+	private function sameTenant(ObjectEntity $origin, ObjectEntity $related): bool {
+		$mine = (string)($origin->getOrganisation() ?? '');
+		$theirs = (string)($related->getOrganisation() ?? '');
+		if ($theirs === '') {
+			return true;
 		}
 
-		if (is_string($reference) === false) {
-			return null;
-		}
-
-		$reference = trim($reference);
-		if ($reference === '') {
-			return null;
-		}
-
-		// A URL or path names the object in its last segment.
-		$parts = explode('/', rtrim($reference, '/'));
-		$last = (string)end($parts);
-		if ($last === '') {
-			return null;
-		}
-
-		return $last;
-	}//end referenceId()
-
-	/**
-	 * A value as a mailable address.
-	 *
-	 * @param mixed $value The value the path reached.
-	 *
-	 * @return array{address: string|null, outcome: string} The address, or null with the reason.
-	 */
-	private function asAddress(mixed $value): array {
-		if (is_string($value) === true && filter_var(trim($value), FILTER_VALIDATE_EMAIL) !== false) {
-			return ['address' => trim($value), 'outcome' => ''];
-		}
-
-		return ['address' => null, 'outcome' => self::OUTCOME_NO_ADDRESS];
-	}//end asAddress()
+		return $mine === $theirs;
+	}//end sameTenant()
 }//end class

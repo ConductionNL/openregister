@@ -1,0 +1,344 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RegistersIndex.warmupNamesCache answers bare 1`] = `
+{
+  "error": [],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+    [
+      "Names cache warmed up successfully: {count} names loaded in {time}. {cache} {"count":0,"time":"0ms","cache":"Cache stayed the same at {size} entries. {\\"size\\":0}"}",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache answers grew 1`] = `
+{
+  "error": [],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+    [
+      "Names cache warmed up successfully: {count} names loaded in {time}. {cache} {"count":12,"time":"40ms","cache":"Cache grew from {old} to {new} entries. {\\"old\\":3,\\"new\\":9}"}",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache answers newOnly 1`] = `
+{
+  "error": [],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+    [
+      "Names cache warmed up successfully: {count} names loaded in {time}. {cache} {"count":0,"time":"0ms","cache":"Cache grew from {old} to {new} entries. {\\"old\\":0,\\"new\\":5}"}",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache answers noData 1`] = `
+{
+  "error": [],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+    [
+      "Names cache warmup completed",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache answers notSuccess 1`] = `
+{
+  "error": [],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+    [
+      "Names cache warmup completed",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache answers oldOnly 1`] = `
+{
+  "error": [],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+    [
+      "Names cache warmed up successfully: {count} names loaded in {time}. {cache} {"count":0,"time":"0ms","cache":"Cache shrunk from {old} to {new} entries. {\\"old\\":5,\\"new\\":0}"}",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache answers same 1`] = `
+{
+  "error": [],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+    [
+      "Names cache warmed up successfully: {count} names loaded in {time}. {cache} {"count":0,"time":"0ms","cache":"Cache stayed the same at {size} entries. {\\"size\\":7}"}",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache answers shrunk 1`] = `
+{
+  "error": [],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+    [
+      "Names cache warmed up successfully: {count} names loaded in {time}. {cache} {"count":2,"time":"5ms","cache":"Cache shrunk from {old} to {new} entries. {\\"old\\":9,\\"new\\":4}"}",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache fails with emptyServerMessage 1`] = `
+{
+  "error": [
+    [
+      "Failed to warmup names cache: {error} {"error":"Timeout"}",
+    ],
+  ],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache fails with nothing 1`] = `
+{
+  "error": [
+    [
+      "Failed to warmup names cache: {error} {"error":"Unknown error"}",
+    ],
+  ],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache fails with plainMessage 1`] = `
+{
+  "error": [
+    [
+      "Failed to warmup names cache: {error} {"error":"Network down"}",
+    ],
+  ],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache fails with responseWithoutData 1`] = `
+{
+  "error": [
+    [
+      "Failed to warmup names cache: {error} {"error":"Unknown error"}",
+    ],
+  ],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+  ],
+}
+`;
+
+exports[`RegistersIndex.warmupNamesCache fails with serverMessage 1`] = `
+{
+  "error": [
+    [
+      "Failed to warmup names cache: {error} {"error":"Forbidden"}",
+    ],
+  ],
+  "post": [
+    [
+      "http://localhost/index.php/apps/openregister/api/settings/cache/warmup-names",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+  ],
+  "success": [
+    [
+      "Starting names cache warmup...",
+    ],
+  ],
+}
+`;

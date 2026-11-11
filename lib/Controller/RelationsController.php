@@ -22,16 +22,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\RelationsCollaboration;
+use OCA\OpenRegister\Controller\Support\RelationsControllerServices;
+use OCA\OpenRegister\Controller\Support\RelationsObjectLookup;
+use OCA\OpenRegister\Controller\Support\RelationTypeLookup;
+use OCA\OpenRegister\Controller\Support\RelationsRecords;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
-use OCA\OpenRegister\Service\CalendarEventService;
-use OCA\OpenRegister\Service\ContactService;
-use OCA\OpenRegister\Service\DeckCardService;
-use OCA\OpenRegister\Service\EmailService;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Container\ContainerInterface;
@@ -44,9 +46,61 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Controller
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Aggregation of all relation types requires many dependencies
- * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor requires all service dependencies
  */
 class RelationsController extends Controller {
+
+	/**
+	 * The six built-in relation types, in response order. Each entry names the
+	 * services bundle and the service in it, its app-availability guard method
+	 * (or null), the per-object lookup method, and whether the result is wrapped
+	 * as `{results, total}` (`counted`) or returned as the service shapes it.
+	 *
+	 * @var array<string,array{group:string,service:string,available:?string,method:string,counted:bool}>
+	 */
+	private const CORE_RELATIONS = [
+		'notes' => [
+			'group' => 'records',
+			'service' => 'noteService',
+			'available' => null,
+			'method' => 'getNotesForObject',
+			'counted' => true,
+		],
+		'tasks' => [
+			'group' => 'records',
+			'service' => 'taskService',
+			'available' => null,
+			'method' => 'getTasksForObject',
+			'counted' => true,
+		],
+		'emails' => [
+			'group' => 'records',
+			'service' => 'emailService',
+			'available' => 'isMailAvailable',
+			'method' => 'getEmailsForObject',
+			'counted' => false,
+		],
+		'events' => [
+			'group' => 'collaboration',
+			'service' => 'calendarEventService',
+			'available' => null,
+			'method' => 'getEventsForObject',
+			'counted' => true,
+		],
+		'contacts' => [
+			'group' => 'collaboration',
+			'service' => 'contactService',
+			'available' => null,
+			'method' => 'getContactsForObject',
+			'counted' => false,
+		],
+		'deck' => [
+			'group' => 'collaboration',
+			'service' => 'deckCardService',
+			'available' => 'isDeckAvailable',
+			'method' => 'getCardsForObject',
+			'counted' => false,
+		],
+	];
 
 	/**
 	 * Pluggable leaf integrations aggregated into `/relations` beyond the core
@@ -59,120 +113,85 @@ class RelationsController extends Controller {
 	 */
 	private const LEAF_INTEGRATIONS = [
 		'talk' => [
-			'class' => \OCA\OpenRegister\Service\TalkLinkService::class,
+			'class' => \OCA\OpenRegister\Service\TalkLinkServiceInterface::class,
 			'available' => 'isTalkAvailable',
 			'method' => 'getLinkedRooms',
 		],
 		'forms' => [
-			'class' => \OCA\OpenRegister\Service\FormLinkService::class,
+			'class' => \OCA\OpenRegister\Service\FormLinkServiceInterface::class,
 			'available' => null,
 			'method' => 'getLinkedForms',
 		],
 		'maps' => [
-			'class' => \OCA\OpenRegister\Service\MapLinkService::class,
+			'class' => \OCA\OpenRegister\Service\MapLinkServiceInterface::class,
 			'available' => 'isMapsAvailable',
 			'method' => 'getLinkedPois',
 		],
 		'polls' => [
-			'class' => \OCA\OpenRegister\Service\PollLinkService::class,
+			'class' => \OCA\OpenRegister\Service\PollLinkServiceInterface::class,
 			'available' => 'isPollsAvailable',
 			'method' => 'getLinkedPolls',
 		],
 		'bookmarks' => [
-			'class' => \OCA\OpenRegister\Service\BookmarkLinkService::class,
+			'class' => \OCA\OpenRegister\Service\BookmarkLinkServiceInterface::class,
 			'available' => 'isBookmarksAvailable',
 			'method' => 'getLinkedBookmarks',
 		],
 		'collectives' => [
-			'class' => \OCA\OpenRegister\Service\CollectiveLinkService::class,
+			'class' => \OCA\OpenRegister\Service\CollectiveLinkServiceInterface::class,
 			'available' => 'isCollectivesAvailable',
 			'method' => 'getLinkedPages',
 		],
 		'photos' => [
-			'class' => \OCA\OpenRegister\Service\PhotoLinkService::class,
+			'class' => \OCA\OpenRegister\Service\PhotoLinkServiceInterface::class,
 			'available' => 'isPhotosAvailable',
 			'method' => 'getLinkedAlbums',
 		],
 		'cospend' => [
-			'class' => \OCA\OpenRegister\Service\CospendLinkService::class,
+			'class' => \OCA\OpenRegister\Service\CospendLinkServiceInterface::class,
 			'available' => 'isCospendAvailable',
 			'method' => 'getLinkedEntries',
 		],
 		'timetracker' => [
-			'class' => \OCA\OpenRegister\Service\TimeTrackerLinkService::class,
+			'class' => \OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface::class,
 			'available' => 'isTimeManagerAvailable',
 			'method' => 'getLinkedEntries',
 		],
 		'analytics' => [
-			'class' => \OCA\OpenRegister\Service\AnalyticsLinkService::class,
+			'class' => \OCA\OpenRegister\Service\AnalyticsLinkServiceInterface::class,
 			'available' => 'isAnalyticsAvailable',
 			'method' => 'getLinkedReports',
 		],
 		'flow' => [
-			'class' => \OCA\OpenRegister\Service\FlowLinkService::class,
+			'class' => \OCA\OpenRegister\Service\FlowLinkServiceInterface::class,
 			'available' => 'isFlowAvailable',
 			'method' => 'getLinkedOperations',
 		],
 		'openproject' => [
-			'class' => \OCA\OpenRegister\Service\OpenProjectLinkService::class,
+			'class' => \OCA\OpenRegister\Service\OpenProjectLinkServiceInterface::class,
 			'available' => 'isOpenConnectorAvailable',
 			'method' => 'getLinkedWorkPackages',
 		],
 		'xwiki' => [
-			'class' => \OCA\OpenRegister\Service\XwikiLinkService::class,
+			'class' => \OCA\OpenRegister\Service\XwikiLinkServiceInterface::class,
 			'available' => 'isOpenConnectorAvailable',
 			'method' => 'getLinkedPages',
 		],
 	];
 
 	/**
-	 * Object service.
+	 * The object, note, task and email services.
 	 *
-	 * @var ObjectService
+	 * @var RelationsRecords
 	 */
-	private readonly ObjectService $objectService;
+	private readonly RelationsRecords $records;
 
 	/**
-	 * Note service.
+	 * The calendar event, contact and deck card services.
 	 *
-	 * @var NoteService
+	 * @var RelationsCollaboration
 	 */
-	private readonly NoteService $noteService;
-
-	/**
-	 * Task service.
-	 *
-	 * @var TaskService
-	 */
-	private readonly TaskService $taskService;
-
-	/**
-	 * Email service.
-	 *
-	 * @var EmailService
-	 */
-	private readonly EmailService $emailService;
-
-	/**
-	 * Calendar event service.
-	 *
-	 * @var CalendarEventService
-	 */
-	private readonly CalendarEventService $calendarEventService;
-
-	/**
-	 * Contact service.
-	 *
-	 * @var ContactService
-	 */
-	private readonly ContactService $contactService;
-
-	/**
-	 * Deck card service.
-	 *
-	 * @var DeckCardService
-	 */
-	private readonly DeckCardService $deckCardService;
+	private readonly RelationsCollaboration $collaboration;
 
 	/**
 	 * Logger for surfacing per-type aggregation failures.
@@ -189,48 +208,33 @@ class RelationsController extends Controller {
 	private readonly ContainerInterface $container;
 
 	/**
+	 * Resolves the object the route names, through the object service.
+	 *
+	 * @var RelationsObjectLookup
+	 */
+	private readonly RelationsObjectLookup $lookup;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param ObjectService $objectService Object service
-	 * @param NoteService $noteService Note service
-	 * @param TaskService $taskService Task service
-	 * @param EmailService $emailService Email service
-	 * @param CalendarEventService $calendarEventService Calendar event service
-	 * @param ContactService $contactService Contact service
-	 * @param DeckCardService $deckCardService Deck card service
-	 * @param LoggerInterface $logger PSR-3 logger
-	 * @param ContainerInterface $container App container the leaf link services are resolved from
+	 * @param RelationsControllerServices $services The relations controller services.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		ObjectService $objectService,
-		NoteService $noteService,
-		TaskService $taskService,
-		EmailService $emailService,
-		CalendarEventService $calendarEventService,
-		ContactService $contactService,
-		DeckCardService $deckCardService,
-		LoggerInterface $logger,
-		ContainerInterface $container,
+		RelationsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
-		$this->objectService = $objectService;
-		$this->noteService = $noteService;
-		$this->taskService = $taskService;
-		$this->emailService = $emailService;
-		$this->calendarEventService = $calendarEventService;
-		$this->contactService = $contactService;
-		$this->deckCardService = $deckCardService;
-		$this->logger = $logger;
-		$this->container = $container;
+		$this->records = $services->records;
+		$this->collaboration = $services->collaboration;
+		$this->logger = $services->platform->logger;
+		$this->container = $services->platform->container;
+		$this->lookup = new RelationsObjectLookup(objects: $services->records->objectService);
 	}//end __construct()
 
 	/**
@@ -243,42 +247,96 @@ class RelationsController extends Controller {
 	 * @param string $schema The schema slug
 	 * @param string $id The object ID
 	 *
-	 * @return JSONResponse
+	 * @return JSONResponse 200 with the relations, 404 when the object does not exist,
+	 *                      409 when the identifier is a slug two objects of this register
+	 *                      and schema hold (#4037).
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse 200 with the relations, 404 when the object does not exist,
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
 		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
+			// A DoesNotExistException from the lookup is deliberately not caught
+			// there: "no such object" stays distinguishable from a null read.
+			$object = $this->lookup->find(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$params = $this->request->getParams();
-			$objectUuid = $object->getUuid();
-			$view = $params['view'] ?? null;
-			$typesFilter = null;
-
-			if (empty($params['types']) === false) {
-				$typesFilter = array_map('trim', explode(',', $params['types']));
-			}
-
-			$relations = $this->gatherRelations(objectUuid: $objectUuid, typesFilter: $typesFilter);
-
-			if ($view === 'timeline') {
-				return new JSONResponse($this->buildTimeline(relations: $relations));
-			}
-
-			return new JSONResponse($relations);
+			return $this->relationsOf(objectUuid: $object->getUuid());
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifier(id: $ref->id);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}//end try
-	}//end index()
+	}//end indexForObject()
+
+	/**
+	 * The relations of a resolved object, grouped or as a timeline as the request asks.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return JSONResponse The relations.
+	 */
+	private function relationsOf(string $objectUuid): JSONResponse {
+		$params = $this->request->getParams();
+		$relations = $this->gatherRelations(objectUuid: $objectUuid, typesFilter: $this->typesFilter(params: $params));
+
+		if (($params['view'] ?? null) === 'timeline') {
+			return new JSONResponse($this->buildTimeline(relations: $relations));
+		}
+
+		return new JSONResponse($relations);
+	}//end relationsOf()
+
+	/**
+	 * The relation types the request names in `types`, or null for all.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<int, string>|null The types.
+	 */
+	private function typesFilter(array $params): ?array {
+		if (empty($params['types']) === true) {
+			return null;
+		}
+
+		return array_map('trim', explode(',', $params['types']));
+	}//end typesFilter()
+
+	/**
+	 * The 409 for a slug two objects of this register and schema hold.
+	 *
+	 * Same body as ObjectsController: neither object is returned and the uuids stay in the log.
+	 *
+	 * @param string $id The identifier as the caller sent it.
+	 *
+	 * @return JSONResponse The 409.
+	 */
+	private function ambiguousIdentifier(string $id): JSONResponse {
+		$message = sprintf('Identifier "%s" matches more than one object in this register and schema', $id);
+
+		return new JSONResponse(
+			data: ['message' => $message, 'error' => 'ambiguous-identifier'],
+			statusCode: Http::STATUS_CONFLICT
+		);
+	}//end ambiguousIdentifier()
 
 	/**
 	 * Gather all relations for an object, optionally filtered by type.
@@ -297,145 +355,244 @@ class RelationsController extends Controller {
 	 *               lookups fail, the result also carries an `_errors` map
 	 *               keyed by type with `{message, exception}` entries.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-2
 	 */
 	private function gatherRelations(string $objectUuid, ?array $typesFilter): array {
 		$relations = [];
-		$errors = [];
+		$errors    = [];
+		foreach ($this->wantedTypes(typesFilter: $typesFilter) as $key) {
+			$outcome = $this->relationOutcome(key: $key, objectUuid: $objectUuid);
 
-		// Notes.
-		if ($typesFilter === null || in_array('notes', $typesFilter) === true) {
-			try {
-				$notes = $this->noteService->getNotesForObject($objectUuid);
-				$relations['notes'] = ['results' => $notes, 'total' => count($notes)];
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'notes', objectUuid: $objectUuid, exception: $e);
-				$errors['notes'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
+			if (array_key_exists('relation', $outcome) === true) {
+				$relations[$key] = $outcome['relation'];
+			}
+
+			if (isset($outcome['error']) === true) {
+				$errors[$key] = $outcome['error'];
 			}
 		}
 
-		// Tasks.
-		if ($typesFilter === null || in_array('tasks', $typesFilter) === true) {
-			try {
-				$tasks = $this->taskService->getTasksForObject($objectUuid);
-				$relations['tasks'] = ['results' => $tasks, 'total' => count($tasks)];
-			} catch (NoVtodoCalendarException $e) {
-				// A user who never opened Calendar or Tasks has no VTODO
-				// calendar, so has no tasks on this object either. That is a
-				// normal state, not a failure: logging it as an error wrote a
-				// level-3 line for every card such a user opened (#4165).
-				// TasksController::index() answers the same way.
-				$relations['tasks'] = ['results' => [], 'total' => 0];
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'tasks', objectUuid: $objectUuid, exception: $e);
-				$errors['tasks'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
+		return self::withErrors(relations: $relations, errors: $errors);
+	}//end gatherRelations()
 
-		// Emails (only if Mail app is available).
-		if (($typesFilter === null || in_array('emails', $typesFilter) === true)
-			&& $this->emailService->isMailAvailable() === true
-		) {
-			try {
-				$relations['emails'] = $this->emailService->getEmailsForObject($objectUuid);
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'emails', objectUuid: $objectUuid, exception: $e);
-				$errors['emails'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
-
-		// Calendar events.
-		if ($typesFilter === null || in_array('events', $typesFilter) === true) {
-			try {
-				$events = $this->calendarEventService->getEventsForObject($objectUuid);
-				$relations['events'] = ['results' => $events, 'total' => count($events)];
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'events', objectUuid: $objectUuid, exception: $e);
-				$errors['events'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
-
-		// Contacts.
-		if ($typesFilter === null || in_array('contacts', $typesFilter) === true) {
-			try {
-				$relations['contacts'] = $this->contactService->getContactsForObject($objectUuid);
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'contacts', objectUuid: $objectUuid, exception: $e);
-				$errors['contacts'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
-
-		// Deck cards (only if Deck app is available).
-		if (($typesFilter === null || in_array('deck', $typesFilter) === true)
-			&& $this->deckCardService->isDeckAvailable() === true
-		) {
-			try {
-				$relations['deck'] = $this->deckCardService->getCardsForObject($objectUuid);
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'deck', objectUuid: $objectUuid, exception: $e);
-				$errors['deck'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
-
-		// Additional pluggable leaf integrations. Each owning app's link service
-		// is resolved lazily through the server container and guarded by its own
-		// availability check, so a missing/disabled app is silently skipped and
-		// never breaks the core relations response. Records arrive as plain
-		// arrays (url-stamped by the service where the app exposes a canonical
-		// deep-link route). See ADR-022 — apps consume OR leaf abstractions.
-		foreach (self::LEAF_INTEGRATIONS as $key => $spec) {
-			if ($typesFilter !== null && in_array($key, $typesFilter) === false) {
-				continue;
-			}
-
-			// Resolving the owning app's service is NOT part of the lookup, and
-			// failing to resolve it is not an error to report. An app that is
-			// absent or disabled makes the container throw, and folding that
-			// into $errors put an `_errors` key on a response where every
-			// requested lookup actually succeeded — the opposite of the
-			// "silently skipped, never breaks the core response" contract above,
-			// and visible to every consumer that walks the envelope's top-level
-			// keys. Only a failure of an AVAILABLE service's own call is an
-			// error worth surfacing.
-			try {
-				$service = $this->container->get($spec['class']);
-			} catch (\Throwable $e) {
-				continue;
-			}
-
-			// The container does not always THROW when it cannot supply a
-			// service — it can hand back null. Calling the availability probe on
-			// that produced "Call to a member function isXAvailable() on null"
-			// for every leaf, which then landed in $errors.
-			if (is_object($service) === false) {
-				continue;
-			}
-
-			try {
-				if ($spec['available'] !== null && $service->{$spec['available']}() !== true) {
-					continue;
-				}
-
-				$items = $service->{$spec['method']}($objectUuid);
-				$relations[$key] = ['results' => $items, 'total' => count($items)];
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					'[RelationsController::gatherRelations] {type} lookup failed for object {uuid}: {error}',
-					['type' => $key, 'uuid' => $objectUuid, 'error' => $e->getMessage()]
-				);
-				$errors[$key] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}//end try
-		}//end foreach
-
+	/**
+	 * The relations with the failed lookups under `_errors`, when there are any.
+	 *
+	 * @param array<string, mixed> $relations The relations that were found.
+	 * @param array<string, mixed> $errors    The failures, by type.
+	 *
+	 * @return array<string, mixed> The relations.
+	 */
+	private static function withErrors(array $relations, array $errors): array {
 		if (empty($errors) === false) {
 			$relations['_errors'] = $errors;
 		}
 
 		return $relations;
-	}//end gatherRelations()
+	}//end withErrors()
+
+	/**
+	 * The relation types to look up, built in first, in response order.
+	 *
+	 * @param array|null $typesFilter Types to include, or null for all.
+	 *
+	 * @return array<int, string> The types.
+	 */
+	private function wantedTypes(?array $typesFilter): array {
+		$lookups = array_merge(array_keys(self::CORE_RELATIONS), array_keys(self::LEAF_INTEGRATIONS));
+		if ($typesFilter === null) {
+			return $lookups;
+		}
+
+		return array_values(array_filter($lookups, static fn (string $key): bool => in_array($key, $typesFilter) === true));
+	}//end wantedTypes()
+
+	/**
+	 * Look up one relation type of an object, built in or leaf integration.
+	 *
+	 * @param string $key        The relation type.
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return array{relation?: mixed, error?: array{message: string, exception: string}} The outcome, empty when skipped.
+	 */
+	private function relationOutcome(string $key, string $objectUuid): array {
+		$lookup = new RelationTypeLookup(key: $key, objectUuid: $objectUuid);
+		if (isset(self::CORE_RELATIONS[$key]) === true) {
+			return $this->coreRelation(lookup: $lookup);
+		}
+
+		return $this->leafRelation(lookup: $lookup);
+	}//end relationOutcome()
+
+	/**
+	 * Look up one built-in relation type of an object.
+	 *
+	 * The Mail and Deck types are skipped when their app is not available. A user who
+	 * never opened Calendar or Tasks has no VTODO calendar, so has no tasks on this
+	 * object either: that is a normal state, not a failure (#4165), as in
+	 * TasksController::index().
+	 *
+	 * @param RelationTypeLookup $lookup The relation type, a key of CORE_RELATIONS, and the object UUID.
+	 *
+	 * @return array{relation?: mixed, error?: array{message: string, exception: string}} The outcome, empty when skipped.
+	 */
+	private function coreRelation(RelationTypeLookup $lookup): array {
+		$spec    = self::CORE_RELATIONS[$lookup->key];
+		$service = $this->{$spec['group']}->{$spec['service']};
+		if ($spec['available'] !== null && $service->{$spec['available']}() !== true) {
+			return [];
+		}
+
+		try {
+			return ['relation' => $this->coreItems(service: $service, lookup: $lookup)];
+		} catch (NoVtodoCalendarException $e) {
+			return $this->noVtodoOutcome(lookup: $lookup, exception: $e);
+		} catch (Exception $e) {
+			return $this->coreFailure(lookup: $lookup, exception: $e);
+		}
+	}//end coreRelation()
+
+	/**
+	 * The items one built-in service holds for an object, wrapped when the type is counted.
+	 *
+	 * @param object             $service The service.
+	 * @param RelationTypeLookup $lookup  The relation type, a key of CORE_RELATIONS, and the object UUID.
+	 *
+	 * @return mixed The relation.
+	 */
+	private function coreItems(object $service, RelationTypeLookup $lookup): mixed {
+		$spec  = self::CORE_RELATIONS[$lookup->key];
+		$items = $service->{$spec['method']}($lookup->objectUuid);
+		if ($spec['counted'] === true) {
+			$items = ['results' => $items, 'total' => count($items)];
+		}
+
+		return $items;
+	}//end coreItems()
+
+	/**
+	 * The outcome of a type whose lookup found no VTODO calendar: no tasks for `tasks`, a failure otherwise.
+	 *
+	 * @param RelationTypeLookup       $lookup    The relation type and the object UUID.
+	 * @param NoVtodoCalendarException $exception The exception.
+	 *
+	 * @return array{relation?: mixed, error?: array{message: string, exception: string}} The outcome.
+	 */
+	private function noVtodoOutcome(RelationTypeLookup $lookup, NoVtodoCalendarException $exception): array {
+		if ($lookup->key === 'tasks') {
+			return ['relation' => ['results' => [], 'total' => 0]];
+		}
+
+		return $this->coreFailure(lookup: $lookup, exception: $exception);
+	}//end noVtodoOutcome()
+
+	/**
+	 * Log a failed built-in lookup and answer it as an `_errors` entry.
+	 *
+	 * @param RelationTypeLookup $lookup    The relation type and the object UUID.
+	 * @param \Throwable         $exception The failure.
+	 *
+	 * @return array{error: array{message: string, exception: string}} The outcome.
+	 */
+	private function coreFailure(RelationTypeLookup $lookup, \Throwable $exception): array {
+		$this->logRelationFailure(lookup: $lookup, exception: $exception);
+
+		return self::errorOutcome(exception: $exception);
+	}//end coreFailure()
+
+	/**
+	 * A failure as the `_errors` entry the response carries for it.
+	 *
+	 * @param \Throwable $exception The failure.
+	 *
+	 * @return array{error: array{message: string, exception: string}} The outcome.
+	 */
+	private static function errorOutcome(\Throwable $exception): array {
+		return ['error' => ['message' => $exception->getMessage(), 'exception' => get_class($exception)]];
+	}//end errorOutcome()
+
+	/**
+	 * Look up one pluggable leaf integration of an object (ADR-022).
+	 *
+	 * The owning app's link service is resolved lazily through the server container.
+	 * Resolving it is NOT part of the lookup: an app that is absent or disabled makes
+	 * the container throw or hand back null, and the type is then silently skipped, so
+	 * no `_errors` key appears on a response whose requested lookups all succeeded. Only
+	 * a failure of an AVAILABLE service's own call is an error worth surfacing.
+	 *
+	 * @param RelationTypeLookup $lookup The relation type, a key of LEAF_INTEGRATIONS, and the object UUID.
+	 *
+	 * @return array{relation?: array, error?: array{message: string, exception: string}} The outcome, empty when skipped.
+	 */
+	private function leafRelation(RelationTypeLookup $lookup): array {
+		$spec = self::LEAF_INTEGRATIONS[$lookup->key];
+		$service = $this->leafService(class: $spec['class']);
+		if ($service === null) {
+			return [];
+		}
+
+		try {
+			return $this->leafItems(service: $service, lookup: $lookup);
+		} catch (\Throwable $e) {
+			return $this->leafFailure(lookup: $lookup, exception: $e);
+		}
+	}//end leafRelation()
+
+	/**
+	 * What one leaf link service holds for an object, or nothing when its app reports itself unavailable.
+	 *
+	 * @param object             $service The service.
+	 * @param RelationTypeLookup $lookup  The relation type, a key of LEAF_INTEGRATIONS, and the object UUID.
+	 *
+	 * @return array{relation?: array} The outcome, empty when skipped.
+	 */
+	private function leafItems(object $service, RelationTypeLookup $lookup): array {
+		$spec = self::LEAF_INTEGRATIONS[$lookup->key];
+		if ($spec['available'] !== null && $service->{$spec['available']}() !== true) {
+			return [];
+		}
+
+		$items = $service->{$spec['method']}($lookup->objectUuid);
+		return ['relation' => ['results' => $items, 'total' => count($items)]];
+	}//end leafItems()
+
+	/**
+	 * The leaf link service the container holds, or null when the app is absent or disabled.
+	 *
+	 * @param string $class The service's interface.
+	 *
+	 * @return object|null The service.
+	 */
+	private function leafService(string $class): ?object {
+		try {
+			$service = $this->container->get($class);
+		} catch (\Throwable $e) {
+			$service = null;
+		}
+
+		if (is_object($service) === false) {
+			return null;
+		}
+
+		return $service;
+	}//end leafService()
+
+	/**
+	 * Log a failed leaf lookup as a warning and answer it as an `_errors` entry.
+	 *
+	 * @param RelationTypeLookup $lookup    The relation type and the object UUID.
+	 * @param \Throwable         $exception The failure.
+	 *
+	 * @return array{error: array{message: string, exception: string}} The outcome.
+	 */
+	private function leafFailure(RelationTypeLookup $lookup, \Throwable $exception): array {
+		$this->logger->warning(
+			'[RelationsController::gatherRelations] {type} lookup failed for object {uuid}: {error}',
+			['type' => $lookup->key, 'uuid' => $lookup->objectUuid, 'error' => $exception->getMessage()]
+		);
+
+		return self::errorOutcome(exception: $exception);
+	}//end leafFailure()
 
 	/**
 	 * Map of relation group keys (as returned by gatherRelations) to the
@@ -464,18 +621,17 @@ class RelationsController extends Controller {
 	 * uuid. The Throwable is passed via the `exception` context key so the
 	 * Nextcloud logger preserves the original stack trace.
 	 *
-	 * @param string $type The relation type that failed (notes, tasks, emails, …).
-	 * @param string $objectUuid The object UUID being aggregated.
-	 * @param \Throwable $exception The caught exception.
+	 * @param RelationTypeLookup $lookup    The relation type that failed (notes, tasks, emails, …) and the object UUID being aggregated.
+	 * @param \Throwable         $exception The caught exception.
 	 *
 	 * @return void
 	 */
-	private function logRelationFailure(string $type, string $objectUuid, \Throwable $exception): void {
+	private function logRelationFailure(RelationTypeLookup $lookup, \Throwable $exception): void {
 		$this->logger->error(
 			'[RelationsController::gatherRelations] {type} lookup failed for object {uuid}: {error}',
 			[
-				'type' => $type,
-				'uuid' => $objectUuid,
+				'type' => $lookup->key,
+				'uuid' => $lookup->objectUuid,
 				'error' => $exception->getMessage(),
 				'exception' => $exception,
 			]
@@ -500,20 +656,38 @@ class RelationsController extends Controller {
 			}
 
 			$singularType = (self::TIMELINE_TYPE_MAP[$type] ?? $type);
-
 			foreach ($data['results'] as $item) {
 				$item['type'] = $singularType;
-
-				// Normalize date for sorting.
-				$rawDate = ($item['date'] ?? $item['linkedAt'] ?? null);
-				$rawDate = ($rawDate ?? $item['createdAt'] ?? $item['dtstart'] ?? null);
-				$item['_sortDate'] = ($rawDate ?? $item['created'] ?? null);
-
+				$item['_sortDate'] = self::sortDate(item: $item);
 				$timeline[] = $item;
 			}
 		}
 
-		// Sort by date descending.
+		return self::newestFirst(timeline: $timeline);
+	}//end buildTimeline()
+
+	/**
+	 * The date a timeline item sorts on, whichever field its type carries it in.
+	 *
+	 * @param array<string, mixed> $item The item.
+	 *
+	 * @return mixed The date, or null when it carries none.
+	 */
+	private static function sortDate(array $item): mixed {
+		$rawDate = ($item['date'] ?? $item['linkedAt'] ?? null);
+		$rawDate = ($rawDate ?? $item['createdAt'] ?? $item['dtstart'] ?? null);
+
+		return ($rawDate ?? $item['created'] ?? null);
+	}//end sortDate()
+
+	/**
+	 * Timeline items sorted by date descending, without their sort key.
+	 *
+	 * @param array<int, array<string, mixed>> $timeline The items, each with `_sortDate`.
+	 *
+	 * @return array<int, array<string, mixed>> The sorted items.
+	 */
+	private static function newestFirst(array $timeline): array {
 		usort(
 			$timeline,
 			static function (array $a, array $b): int {
@@ -521,39 +695,11 @@ class RelationsController extends Controller {
 			}
 		);
 
-		// Remove sort key.
-		foreach ($timeline as &$item) {
+		foreach ($timeline as $index => $item) {
 			unset($item['_sortDate']);
+			$timeline[$index] = $item;
 		}
 
 		return $timeline;
-	}//end buildTimeline()
-
-	/**
-	 * Validate that the object exists.
-	 *
-	 * @param string $register The register slug
-	 * @param string $schema The schema slug
-	 * @param string $id The object ID
-	 *
-	 * @return \OCA\OpenRegister\Db\ObjectEntity|null
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(
-		string $register,
-		string $schema,
-		string $id,
-	): ?\OCA\OpenRegister\Db\ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
+	}//end newestFirst()
 }//end class

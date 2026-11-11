@@ -40,47 +40,73 @@ use JsonSerializable;
 final class ConfigurationSnapshot implements JsonSerializable {
 
 	/**
+	 * The layer read.
+	 *
+	 * @var string
+	 */
+	public readonly string $layer;
+
+	/**
+	 * The layer reference, null at instance level.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $layerRef;
+
+	/**
+	 * The configuration key.
+	 *
+	 * @var string
+	 */
+	public readonly string $configKey;
+
+	/**
+	 * The deployment that last moved it.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $deploymentUuid;
+
+	/**
+	 * Who last moved it.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $updatedBy;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string      $layer          The layer read.
-	 * @param string|null $layerRef       The layer reference, null at instance level.
-	 * @param string      $configKey      The configuration key.
-	 * @param mixed       $value          The value held, or null when none is.
-	 * @param boolean     $present        Whether the address holds a value at all.
-	 * @param string|null $deploymentUuid The deployment that last moved it.
-	 * @param string|null $updatedBy      Who last moved it.
+	 * @param ConfigurationAddress         $address    The layer, layer reference and key read.
+	 * @param mixed                        $value      The value held, or null when none is.
+	 * @param boolean                      $present    Whether the address holds a value at all.
+	 * @param ConfigurationProvenance|null $provenance The deployment and author that last moved it.
 	 */
 	public function __construct(
-		public readonly string $layer,
-		public readonly ?string $layerRef,
-		public readonly string $configKey,
+		ConfigurationAddress $address,
 		public readonly mixed $value,
 		public readonly bool $present,
-		public readonly ?string $deploymentUuid = null,
-		public readonly ?string $updatedBy = null
+		?ConfigurationProvenance $provenance=null
 	) {
+		$this->layer          = $address->layer;
+		$this->layerRef       = $address->layerRef;
+		$this->configKey      = $address->configKey;
+		$this->deploymentUuid = $provenance?->deploymentUuid;
+		$this->updatedBy      = $provenance?->updatedBy;
 
 	}//end __construct()
 
 	/**
 	 * An address holding nothing.
 	 *
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference.
-	 * @param string      $configKey The configuration key.
+	 * @param ConfigurationAddress $address The layer, layer reference and key read.
 	 *
 	 * @return self The empty snapshot.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public static function absent(string $layer, ?string $layerRef, string $configKey): self {
-		return new self(
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey,
-			value: null,
-			present: false
-		);
+	public static function absent(ConfigurationAddress $address): self {
+		return new self(address: $address, value: null, present: false);
 
 	}//end absent()
 

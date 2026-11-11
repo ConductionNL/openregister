@@ -35,19 +35,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr\Regulator;
 
+use OCA\OpenRegister\Service\Gdpr\Seam\ProviderSet;
 use Psr\Log\LoggerInterface;
 
 /**
  * Registry of all RegulatorEscalateProvider implementations on this instance.
  */
-class RegulatorEscalateRegistry {
+class RegulatorEscalateRegistry implements RegulatorEscalateRegistryInterface {
 
 	/**
 	 * Registered providers, keyed by provider id.
 	 *
-	 * @var array<string, RegulatorEscalateProvider>
+	 * @var ProviderSet<RegulatorEscalateProvider>
 	 */
-	private array $providers = [];
+	private ProviderSet $providers;
 
 	/**
 	 * Constructor.
@@ -58,12 +59,16 @@ class RegulatorEscalateRegistry {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly LoggerInterface $logger,
+		LoggerInterface $logger,
 		private readonly NullRegulatorEscalateProvider $default,
 	) {
+		$this->providers = new ProviderSet(
+			logger: $logger,
+			duplicateWarning: '[RegulatorEscalateRegistry] duplicate provider id "%s" — keeping first registration'
+		);
 		// The fail-closed default is itself registered so a pack that names it
 		// explicitly (as the default pack does) resolves through the same path.
-		$this->providers[$this->default->getProviderId()] = $this->default;
+		$this->providers->add(id: $this->default->getProviderId(), provider: $this->default);
 	}//end __construct()
 
 	/**
@@ -78,20 +83,19 @@ class RegulatorEscalateRegistry {
 	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function addProvider(RegulatorEscalateProvider $provider): bool {
-		$id = $provider->getProviderId();
-		if (isset($this->providers[$id]) === true) {
-			$this->logger->warning(
-				sprintf(
-					'[RegulatorEscalateRegistry] duplicate provider id "%s" — keeping first registration',
-					$id
-				)
-			);
-			return false;
-		}
-
-		$this->providers[$id] = $provider;
-		return true;
+		return $this->providers->add(id: $provider->getProviderId(), provider: $provider);
 	}//end addProvider()
+
+	/**
+	 * Return the ids of every registered provider.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
+	 */
+	public function listIds(): array {
+		return $this->providers->ids();
+	}//end listIds()
 
 	/**
 	 * Look up a provider by id (no fail-closed fallback).
@@ -106,7 +110,7 @@ class RegulatorEscalateRegistry {
 	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function get(string $id): ?RegulatorEscalateProvider {
-		return $this->providers[$id] ?? null;
+		return $this->providers->get(id: $id);
 	}//end get()
 
 	/**
@@ -124,19 +128,13 @@ class RegulatorEscalateRegistry {
 	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function resolve(?string $selectorId): RegulatorEscalateProvider {
-		if ($selectorId !== null && $selectorId !== '' && isset($this->providers[$selectorId]) === true) {
-			return $this->providers[$selectorId];
-		}
-
-		$this->logger->warning(
-			sprintf(
-				'[RegulatorEscalateRegistry] regulatorEscalateProvider "%s" is unset or unregistered — '
-				. 'resolving fail-closed default "%s" (escalation NOT performed)',
-				($selectorId ?? '(null)'),
-				$this->default->getProviderId()
-			)
+		return $this->providers->resolve(
+			selectorId: $selectorId,
+			default: $this->default,
+			defaultId: $this->default->getProviderId(),
+			fallbackWarning: '[RegulatorEscalateRegistry] regulatorEscalateProvider "%s" is unset or unregistered — '
+				. 'resolving fail-closed default "%s" (escalation NOT performed)'
 		);
-		return $this->default;
 	}//end resolve()
 
 	/**
@@ -147,17 +145,6 @@ class RegulatorEscalateRegistry {
 	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function list(): array {
-		return array_values($this->providers);
+		return $this->providers->all();
 	}//end list()
-
-	/**
-	 * Return the ids of every registered provider.
-	 *
-	 * @return array<int, string>
-	 *
-	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
-	 */
-	public function listIds(): array {
-		return array_keys($this->providers);
-	}//end listIds()
 }//end class

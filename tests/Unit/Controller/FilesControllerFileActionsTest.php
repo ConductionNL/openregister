@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use Exception;
-use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Files\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
+use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
@@ -25,6 +28,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\File\FileTransfer;
 
 class FilesControllerFileActionsTest extends TestCase {
 
@@ -57,8 +61,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$auditHandler = $this->createMock(FileAuditHandler::class);
 		$this->fileService->method('getAuditHandler')->willReturn($auditHandler);
 
-		$this->controller = new FilesController(
-			'openregister',
+		$this->controller = FilesControllerFactory::create(
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -103,8 +106,7 @@ class FilesControllerFileActionsTest extends TestCase {
 
 		// Rebuild the controller with the authenticated user session wired in.
 		// The audit handler is irrelevant on the denied path (never reached).
-		$this->controller = new FilesController(
-			'openregister',
+		$this->controller = FilesControllerFactory::create(
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -128,7 +130,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$file->method('getName')->willReturn('new-name.pdf');
 
 		$this->request->method('getParams')->willReturn(['name' => 'new-name.pdf']);
-		$this->fileService->method('renameFile')->willReturn($file);
+		$this->fileService->method('renameAttachedFile')->willReturn($file);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'new-name.pdf']);
 
 		$response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
@@ -145,7 +147,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$this->request->method('getParams')->willReturn(['name' => 'existing.pdf']);
-		$this->fileService->method('renameFile')
+		$this->fileService->method('renameAttachedFile')
 			->willThrowException(new Exception('A file with name "existing.pdf" already exists for this object'));
 
 		$response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
@@ -161,7 +163,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$this->request->method('getParams')->willReturn(['name' => 'file<>.pdf']);
-		$this->fileService->method('renameFile')
+		$this->fileService->method('renameAttachedFile')
 			->willThrowException(new Exception('File name contains invalid characters'));
 
 		$response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
@@ -217,7 +219,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$batchHandler = $this->createMock(FileBatchHandler::class);
-		$batchHandler->method('executeBatch')->willReturn(
+		$batchHandler->method('runBatch')->willReturn(
 			[
 				'results' => [
 					['fileId' => 42, 'success' => true],
@@ -248,7 +250,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$batchHandler = $this->createMock(FileBatchHandler::class);
-		$batchHandler->method('executeBatch')->willReturn(
+		$batchHandler->method('runBatch')->willReturn(
 			[
 				'results' => [
 					['fileId' => 42, 'success' => true],
@@ -279,7 +281,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$batchHandler = $this->createMock(FileBatchHandler::class);
-		$batchHandler->method('executeBatch')
+		$batchHandler->method('runBatch')
 			->willThrowException(new Exception('Invalid batch action. Allowed: publish, depublish, delete, label'));
 		$this->fileService->method('getBatchHandler')->willReturn($batchHandler);
 
@@ -338,12 +340,49 @@ class FilesControllerFileActionsTest extends TestCase {
 	}//end testPreviewUnsupported()
 
 	/**
+	 * Test preview streams the generated image at the requested size.
+	 */
+	public function testPreviewStreamsTheRequestedSize(): void {
+		$object = $this->createObjectMock();
+		$this->setupObjectServiceMocks($object);
+
+		$file = $this->createMock(File::class);
+		$this->fileService->method('getFile')->willReturn($file);
+
+		$image = $this->createMock(\OCP\Files\SimpleFS\ISimpleFile::class);
+		$image->method('read')->willReturn('png-bytes');
+		$image->method('getMimeType')->willReturn('image/png');
+		$image->method('getSize')->willReturn(9);
+
+		$asked = [];
+		$previewHandler = $this->createMock(FilePreviewHandler::class);
+		$previewHandler->method('getPreview')->willReturnCallback(
+			function (...$args) use (&$asked, $image) {
+				$asked = $args;
+				return $image;
+			}
+		);
+		$this->fileService->method('getPreviewHandler')->willReturn($previewHandler);
+
+		$this->request->method('getParam')->willReturnMap([['width', null, '100'], ['height', null, '50']]);
+
+		$response = $this->controller->preview('reg', 'sch', 'abc-123', 42);
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('image/png', $response->getHeaders()['Content-Type']);
+		$this->assertSame('max-age=3600, public', $response->getHeaders()['Cache-Control']);
+		$this->assertSame('9', $response->getHeaders()['Content-Length']);
+		$this->assertSame($file, $asked[0]);
+		$this->assertEquals(new PreviewSize(100, 50), $asked[1]);
+	}//end testPreviewStreamsTheRequestedSize()
+
+	/**
 	 * Test that an anonymous caller hitting preview() on an UNPUBLISHED file
 	 * gets 403 — the public-preview gate must block previewing files that
 	 * haven't been explicitly published with a public share.
 	 */
 	public function testPreviewAnonymousOnUnpublishedFileReturns403(): void {
-		$fileMapper = $this->createMock(\OCA\OpenRegister\Db\FileMapper::class);
+		$fileMapper = $this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class);
 		$fileMapper->expects($this->once())
 			->method('isFilePublished')
 			->with(42)
@@ -352,8 +391,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
-		$controller = new FilesController(
-			'openregister',
+		$controller = FilesControllerFactory::create(
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -391,7 +429,7 @@ class FilesControllerFileActionsTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn(null);
 
-		$fileMapper = $this->createMock(\OCA\OpenRegister\Db\FileMapper::class);
+		$fileMapper = $this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class);
 		$fileMapper->expects($this->once())
 			->method('isFilePublished')
 			->with(42)
@@ -400,8 +438,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
-		$controller = new FilesController(
-			'openregister',
+		$controller = FilesControllerFactory::create(
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -439,15 +476,14 @@ class FilesControllerFileActionsTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn(null);
 
-		$fileMapper = $this->createMock(\OCA\OpenRegister\Db\FileMapper::class);
+		$fileMapper = $this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class);
 		$fileMapper->expects($this->never())->method('isFilePublished');
 
 		$authedUser = $this->createMock(IUser::class);
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn($authedUser);
 
-		$controller = new FilesController(
-			'openregister',
+		$controller = FilesControllerFactory::create(
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -500,8 +536,8 @@ class FilesControllerFileActionsTest extends TestCase {
 			]
 		);
 		$this->fileService->expects($this->once())
-			->method('copyFile')
-			->with($sourceObject, 42, $targetObject)
+			->method('copyAttachedFile')
+			->with(new FileTransfer($sourceObject, 42, $targetObject))
 			->willReturn($newFile);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'copied.pdf']);
 
@@ -541,7 +577,7 @@ class FilesControllerFileActionsTest extends TestCase {
 			->method('setRegister')
 			->with($this->logicalOr('reg', 'other-register'));
 
-		$this->fileService->method('copyFile')->willReturn($newFile);
+		$this->fileService->method('copyAttachedFile')->willReturn($newFile);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'cross.pdf']);
 
 		$response = $this->controller->copy('reg', 'sch', 'source-uuid', 42);
@@ -571,8 +607,8 @@ class FilesControllerFileActionsTest extends TestCase {
 			]
 		);
 
-		// copyFile must NOT be called when target is missing.
-		$this->fileService->expects($this->never())->method('copyFile');
+		// copyAttachedFile must NOT be called when target is missing.
+		$this->fileService->expects($this->never())->method('copyAttachedFile');
 
 		$response = $this->controller->copy('reg', 'sch', 'source-uuid', 42);
 
@@ -603,8 +639,8 @@ class FilesControllerFileActionsTest extends TestCase {
 		// moveFile is the integration point that does copy+delete; assert
 		// it is called exactly once with the expected source/target.
 		$this->fileService->expects($this->once())
-			->method('moveFile')
-			->with($sourceObject, 42, $targetObject)
+			->method('moveAttachedFile')
+			->with(new FileTransfer($sourceObject, 42, $targetObject))
 			->willReturn($movedFile);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'moved.pdf']);
 
@@ -632,7 +668,7 @@ class FilesControllerFileActionsTest extends TestCase {
 			]
 		);
 
-		$this->fileService->method('moveFile')
+		$this->fileService->method('moveAttachedFile')
 			->willThrowException(new Exception('File is locked by user-2'));
 
 		$response = $this->controller->move('reg', 'sch', 'source-uuid', 42);
@@ -718,7 +754,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['labels' => ['x']]);
 
 		// The file mutation must never be reached on the denied path.
-		$this->fileService->expects($this->never())->method('updateFile');
+		$this->fileService->expects($this->never())->method('overwriteFile');
 
 		$response = $this->controller->updateLabels('reg', 'sch', 'abc-123', 42);
 
@@ -738,4 +774,61 @@ class FilesControllerFileActionsTest extends TestCase {
 
 		$this->assertEquals(403, $response->getStatus());
 	}//end testListVersionsDeniedForUnauthorizedUserReturns403()
+	/**
+	 * An anonymous files listing for a slug looks the object up within the route's
+	 * register and schema (#4037), not across every table.
+	 */
+	public function testAnAnonymousListingResolvesTheObjectWithinTheRegisterAndSchema(): void {
+		$object = $this->createObjectMock();
+		$this->objectService->expects($this->once())
+			->method('find')
+			->with(...FindCallShape::findArgs('hello-world', [], false, 'reg', 'sch', false, false, true, false))
+			->willReturn($object);
+		$this->fileService->expects($this->once())
+			->method('getFiles')
+			->with($object, true)
+			->willReturn([]);
+		$this->fileService->method('formatFiles')->willReturn(['results' => []]);
+		$this->request->method('getParams')->willReturn([]);
+
+		$response = $this->anonymousController()->index('reg', 'sch', 'hello-world');
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testAnAnonymousListingResolvesTheObjectWithinTheRegisterAndSchema()
+
+	/**
+	 * A slug two objects hold answers an anonymous listing 404 and lists no file
+	 * (file-actions REQ-OFOA-002), as it does for a signed-in reader.
+	 */
+	public function testAnAnonymousListingOfAnAmbiguousSlugIs404AndListsNoFile(): void {
+		$this->objectService->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two'));
+		$this->fileService->expects($this->never())->method('getFiles');
+
+		$response = $this->anonymousController()->index('reg', 'sch', 'dubbel');
+
+		$this->assertSame(404, $response->getStatus());
+	}//end testAnAnonymousListingOfAnAmbiguousSlugIs404AndListsNoFile()
+
+	/**
+	 * A controller whose session has no user.
+	 *
+	 * @return FilesController
+	 */
+	private function anonymousController(): FilesController {
+		$userSession = $this->createMock(IUserSession::class);
+		$userSession->method('getUser')->willReturn(null);
+
+		return FilesControllerFactory::create(
+			$this->request,
+			$this->fileService,
+			$this->objectService,
+			$this->rootFolder,
+			$this->userManager,
+			$this->eventDispatcher,
+			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
+			null,
+			$userSession
+		);
+	}//end anonymousController()
 }//end class

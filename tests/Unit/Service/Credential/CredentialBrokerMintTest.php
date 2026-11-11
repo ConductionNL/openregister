@@ -37,6 +37,11 @@ namespace Unit\Service\Credential;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -46,6 +51,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
@@ -144,6 +151,44 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->assertSame('admin-uid', $this->savedObject['owner']);
 	}
 
+	/**
+	 * A scope that is not `organisation` is stored as personal: no scope or
+	 * organisation on the object, and the vault write under the personal scope.
+	 */
+	public function testAnUnknownScopeMintsAPersonalCredential(): void {
+		$this->stubSaveObject(uuid: 'odd-scope');
+		$this->store->expects($this->once())->method('put')
+			->with('odd-scope', 'secret', 'personal');
+
+		$this->makeBroker()->mint(
+			name: 'Odd scope',
+			provider: 'github',
+			owner: 'alice',
+			secret: 'secret',
+			scope: 'tenant',
+			organisation: 'org-ignored'
+		);
+
+		$this->assertArrayNotHasKey('scope', $this->savedObject);
+		$this->assertArrayNotHasKey('organisation', $this->savedObject);
+	}
+
+	public function testMintCredentialTakesTheSameMintAsItsParts(): void {
+		$this->stubSaveObject(uuid: 'vo-mint');
+		$this->store->expects($this->once())->method('put')
+			->with('vo-mint', 'org-secret', 'organisation');
+
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: ' Tender GitHub ', provider: 'github', owner: 'admin-uid'),
+			options: new CredentialMintOptions(allowedApps: ['tender'], secret: "org-secret\n", scope: 'organisation', organisation: 'org-target')
+		);
+
+		$this->assertSame('Tender GitHub', $this->savedObject['name']);
+		$this->assertSame(['tender'], $this->savedObject['allowedApps']);
+		$this->assertSame('organisation', $this->savedObject['scope']);
+		$this->assertSame('org-target', $this->savedObject['organisation']);
+	}
+
 	public function testMintWithoutSecretNeverTouchesTheVault(): void {
 		$this->stubSaveObject(uuid: 'metadata-only');
 		$this->store->expects($this->never())->method('put');
@@ -212,7 +257,7 @@ class CredentialBrokerMintTest extends TestCase {
 
 		// The metadata object must not survive a vault write it has no secret for.
 		$this->objectService->expects($this->once())->method('deleteObject')
-			->with('doomed-uuid', CredentialBrokerService::REGISTER, CredentialBrokerService::SCHEMA)
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'doomed-uuid' && $deletion->target->register == CredentialBrokerService::REGISTER && $deletion->target->schema == CredentialBrokerService::SCHEMA))
 			->willReturn(true);
 
 		$this->expectException(RuntimeException::class);
@@ -325,15 +370,9 @@ class CredentialBrokerMintTest extends TestCase {
 	 */
 	private function stubSaveObject(string $uuid): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				$register = null,
-				$schema = null,
-				?string $incomingUuid = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-			) use ($uuid): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($uuid): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->savedObject = $object;
 				$this->savedScope = [
 					'register' => $register,
@@ -354,13 +393,19 @@ class CredentialBrokerMintTest extends TestCase {
 	 */
 	private function makeBroker(): CredentialBrokerService {
 		return new CredentialBrokerService(
-			$this->objectService,
-			$this->store,
-			$this->createMock(ProviderCatalogue::class),
-			$this->session,
-			$this->createMock(IClientService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(OrganisationService::class)
+			sources: new CredentialSources(
+				objectService: $this->objectService,
+				credentialStore: $this->store,
+				catalogue: $this->createMock(ProviderCatalogue::class)
+			),
+			principals: new CredentialPrincipals(
+				userSession: $this->session,
+				organisationService: $this->createMock(OrganisationService::class)
+			),
+			outbound: new CredentialOutbound(
+				clientService: $this->createMock(IClientService::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}
 }//end class

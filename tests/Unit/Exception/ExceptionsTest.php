@@ -202,15 +202,10 @@ class ExceptionsTest extends TestCase {
 		$this->assertSame($errors, $e->getErrors());
 	}
 
-	public function testHookStoppedCustomCode(): void {
-		$e = new HookStoppedException('msg', [], 422);
-		$this->assertSame(422, $e->getCode());
-	}
-
-	public function testHookStoppedPreviousException(): void {
-		$prev = new \RuntimeException('root');
-		$e = new HookStoppedException('msg', [], 0, $prev);
-		$this->assertSame($prev, $e->getPrevious());
+	public function testHookStoppedCodeIsAlwaysZero(): void {
+		$e = new HookStoppedException('msg', []);
+		$this->assertSame(0, $e->getCode());
+		$this->assertNull($e->getPrevious());
 	}
 
 	// --- DatabaseConstraintException ---

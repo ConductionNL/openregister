@@ -31,7 +31,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<SchemaRunEntry>
  */
-class SchemaRunEntryMapper extends QBMapper {
+class SchemaRunEntryMapper extends QBMapper implements SchemaRunEntryMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -46,30 +46,18 @@ class SchemaRunEntryMapper extends QBMapper {
 	 * Find entries for a run, optionally filtered by outcome.
 	 *
 	 * @param int $runId The run id.
-	 * @param string|null $outcome Optional outcome filter.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param OutcomeFilter|null $filter Optional outcome and page.
 	 *
 	 * @return SchemaRunEntry[] The entries.
 	 */
-	public function findByRun(int $runId, ?string $outcome = null, ?int $limit = null, ?int $offset = null): array {
+	public function findByRun(int $runId, ?OutcomeFilter $filter = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('run_id', $qb->createNamedParameter($runId, IQueryBuilder::PARAM_INT)))
 			->orderBy('id', 'ASC');
 
-		if ($outcome !== null) {
-			$qb->andWhere($qb->expr()->eq('outcome', $qb->createNamedParameter($outcome)));
-		}
-
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		$filter?->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByRun()

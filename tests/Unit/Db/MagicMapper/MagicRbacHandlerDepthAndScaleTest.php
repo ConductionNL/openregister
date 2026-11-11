@@ -35,7 +35,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -44,12 +44,14 @@ namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -61,18 +63,34 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Tasks 4.2 and 6.3: the tree of depth five, and the tree of 100,000.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\MagicMapper\RbacResolvers
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 
@@ -123,19 +141,25 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn($mode);
 
 		return new MagicRbacHandler(
-			$this->session(),
-			$this->groupManager(),
-			$this->createMock(originalClassName: IUserManager::class),
-			$appConfig,
-			$this->createMock(originalClassName: ConditionMatcher::class),
-			$this->createMock(originalClassName: ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(
+			identity: new MagicMapperIdentity(
+				userSession: $this->session(),
+				groupManager: $this->groupManager(),
+				userManager: $this->createMock(originalClassName: IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig,
+				denyEnforcementMode: new DenyEnforcementMode($appConfig, new NullLogger())
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->createMock(originalClassName: ConditionMatcher::class),
+				container: $this->createMock(originalClassName: ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(
 				objectScopeResolver: null,
 				objectGrantResolver: null,
 				denyResolver: new DenyResolver(new DenyEntryMatcher())
-			),
-			new DenyEnforcementMode($appConfig, new NullLogger())
+			)
 		);
 	}//end listHandler()
 
@@ -155,7 +179,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturn(false);
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_ENFORCING);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->session(),
 			$userManager,
 			$this->groupManager(),
@@ -264,7 +288,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 		$resolver = new DenyResolver(new DenyEntryMatcher());
 		$principals = $resolver->principalsFor(userId: self::CALLER, userGroups: [self::GROUP]);
 
-		$term = $this->listHandler()->buildRbacConditionsSql($schema, 'read')['conditions'];
+		$term = $this->listHandler()->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'))['conditions'];
 		$this->assertNotEmpty($term, 'the list emitted no condition at all, so nothing was compared');
 		$sql = implode(' ', $term);
 
@@ -281,11 +305,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 
 			// What the list term excludes, read through the same resolver the
 			// emitter built it from.
-			$listExcludes = ($resolver->unconditionalDenial(
-				authorization: ($node->getAuthorization() ?? []),
-				action: 'read',
-				principals: $principals
-			) !== null);
+			$listExcludes = ($resolver->unconditionalDenial(authorization: ($node->getAuthorization() ?? []), question: new DenyQuestion(action: 'read', principals: $principals)) !== null);
 
 			$this->assertSame(
 				$objectVerdict,
@@ -324,7 +344,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 		$handler = $this->listHandler();
 		$schema = $this->schema();
 
-		$small = $handler->buildRbacConditionsSql($schema, 'read');
+		$small = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		// The same tree, grown to the size the task names. The rows exist and
 		// none of them is passed to the emitter, which is the point: a
@@ -333,7 +353,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 		$this->assertCount(self::ROWS, $tree);
 		$this->assertSame(self::DEPTH, max(array_column($tree, 'level')));
 
-		$large = $handler->buildRbacConditionsSql($schema, 'read');
+		$large = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertSame($small['conditions'], $large['conditions']);
 		$this->assertFalse($large['bypass']);
@@ -353,7 +373,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 	 */
 	public function testAStagedTreeOfAHundredThousandKeepsItsTotal(): void {
 		$conditions = $this->listHandler(DenyEnforcementMode::MODE_STAGING)
-			->buildRbacConditionsSql($this->schema(), 'read')['conditions'];
+			->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schema()))->forAction('read'))['conditions'];
 
 		$this->assertNotEmpty($conditions);
 		$this->assertStringNotContainsString('$.deny.read', implode(' ', $conditions));

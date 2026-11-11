@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\CaseItem\CaseItemFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -131,55 +132,52 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 class CaseItem extends Entity implements JsonSerializable {
+	use HydrateKnownFieldsTrait;
 
 	/**
-	 * The six CMMN plan-item states: the same six a task carries.
+	 * The six CMMN plan-item states: the task's states, declared once on
+	 * {@see Task} (one-engine-bpmn-and-cmmn).
 	 */
-	public const STATE_AVAILABLE = 'available';
+	public const STATE_AVAILABLE = Task::STATE_AVAILABLE;
 
-	public const STATE_ENABLED = 'enabled';
+	public const STATE_ENABLED = Task::STATE_ENABLED;
 
-	public const STATE_ACTIVE = 'active';
+	public const STATE_ACTIVE = Task::STATE_ACTIVE;
 
-	public const STATE_COMPLETED = 'completed';
+	public const STATE_COMPLETED = Task::STATE_COMPLETED;
 
-	public const STATE_TERMINATED = 'terminated';
+	public const STATE_TERMINATED = Task::STATE_TERMINATED;
 
-	public const STATE_DISABLED = 'disabled';
+	public const STATE_DISABLED = Task::STATE_DISABLED;
 
 	/**
 	 * Every persistable state.
 	 *
 	 * @var array<int, string>
 	 */
-	public const STATES = [
-		self::STATE_AVAILABLE,
-		self::STATE_ENABLED,
-		self::STATE_ACTIVE,
-		self::STATE_COMPLETED,
-		self::STATE_TERMINATED,
-		self::STATE_DISABLED,
-	];
+	public const STATES = Task::STATES;
 
 	/**
 	 * States out of which no plan item of any type ever moves.
 	 *
 	 * @var array<int, string>
 	 */
-	public const TERMINAL_STATES = [
-		self::STATE_COMPLETED,
-		self::STATE_TERMINATED,
-		self::STATE_DISABLED,
-	];
+	public const TERMINAL_STATES = Task::TERMINAL_STATES;
 
 	/**
-	 * The three plan-item types.
+	 * The plan-item types.
 	 */
 	public const TYPE_STAGE = 'stage';
 
 	public const TYPE_HUMAN_TASK = 'humanTask';
 
 	public const TYPE_MILESTONE = 'milestone';
+
+	/**
+	 * A work item realised by a flow run (CMMN ProcessTask): the case layer
+	 * starting a BPMN process.
+	 */
+	public const TYPE_PROCESS_TASK = 'processTask';
 
 	/**
 	 * Every plan-item type.
@@ -189,6 +187,7 @@ class CaseItem extends Entity implements JsonSerializable {
 	public const TYPES = [
 		self::TYPE_STAGE,
 		self::TYPE_HUMAN_TASK,
+		self::TYPE_PROCESS_TASK,
 		self::TYPE_MILESTONE,
 	];
 
@@ -308,7 +307,7 @@ class CaseItem extends Entity implements JsonSerializable {
 	protected ?int $parentItemId = null;
 
 	/**
-	 * stage | humanTask | milestone.
+	 * stage | humanTask | processTask | milestone.
 	 *
 	 * @var string|null
 	 */
@@ -495,45 +494,9 @@ class CaseItem extends Entity implements JsonSerializable {
 	 * Constructor: declare field types so the mapper hydrates them correctly.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'itemKey', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'flowUuid', type: 'string');
-		$this->addType(fieldName: 'flowVersion', type: 'integer');
-		$this->addType(fieldName: 'definitionItemKey', type: 'string');
-		$this->addType(fieldName: 'origin', type: 'string');
-		$this->addType(fieldName: 'parentItemId', type: 'integer');
-		$this->addType(fieldName: 'planItemType', type: 'string');
-		$this->addType(fieldName: 'position', type: 'integer');
-		$this->addType(fieldName: 'state', type: 'string');
-		$this->addType(fieldName: 'isTerminal', type: 'boolean');
-		$this->addType(fieldName: 'enteredAt', type: 'datetime');
-		$this->addType(fieldName: 'terminatedReason', type: 'string');
-		$this->addType(fieldName: 'entryCriteria', type: 'json');
-		$this->addType(fieldName: 'exitCriteria', type: 'json');
-		$this->addType(fieldName: 'required', type: 'boolean');
-		$this->addType(fieldName: 'discretionary', type: 'boolean');
-		$this->addType(fieldName: 'repetition', type: 'json');
-		$this->addType(fieldName: 'realisationKind', type: 'string');
-		$this->addType(fieldName: 'realisationUuid', type: 'string');
-		$this->addType(fieldName: 'realisationCount', type: 'integer');
-		$this->addType(fieldName: 'authorizationRules', type: 'json');
-		$this->addType(fieldName: 'candidateUsers', type: 'json');
-		$this->addType(fieldName: 'candidateGroups', type: 'json');
-		$this->addType(fieldName: 'candidateRole', type: 'string');
-		$this->addType(fieldName: 'dueAt', type: 'datetime');
-		$this->addType(fieldName: 'expiresAt', type: 'datetime');
-		$this->addType(fieldName: 'doorlooptijd', type: 'string');
-		$this->addType(fieldName: 'servicenorm', type: 'string');
-		$this->addType(fieldName: 'planSettings', type: 'json');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'createdBy', type: 'string');
-
+		foreach (CaseItemFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -564,28 +527,6 @@ class CaseItem extends Entity implements JsonSerializable {
 	}//end isEntered()
 
 	/**
-	 * Hydrate entity from array.
-	 *
-	 * @param array<string, mixed> $object Data to hydrate from.
-	 *
-	 * @return self This item.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
-	 */
-	public function hydrate(array $object): self {
-		foreach ($object as $fieldName => $value) {
-			if (array_key_exists($fieldName, $this->getFieldTypes()) === false || $fieldName === 'id') {
-				continue;
-			}
-
-			$setter = 'set' . ucfirst($fieldName);
-			$this->$setter($value);
-		}
-
-		return $this;
-	}//end hydrate()
-
-	/**
 	 * Serialise for the API.
 	 *
 	 * @return array<string, mixed> The plan item as plain data.
@@ -593,46 +534,12 @@ class CaseItem extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'key' => $this->itemKey,
-			'name' => $this->name,
-			'description' => $this->description,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'flowUuid' => $this->flowUuid,
-			'flowVersion' => $this->flowVersion,
-			'definitionItemKey' => $this->definitionItemKey,
-			'origin' => $this->origin,
-			'parentItemId' => $this->parentItemId,
-			'type' => $this->planItemType,
-			'position' => $this->position,
-			'state' => $this->state,
-			'isTerminal' => $this->isTerminal,
-			'enteredAt' => $this->enteredAt?->format('c'),
-			'terminatedReason' => $this->terminatedReason,
-			'entryCriteria' => ($this->entryCriteria ?? []),
-			'exitCriteria' => ($this->exitCriteria ?? []),
-			'required' => $this->required,
-			'discretionary' => $this->discretionary,
-			'repetition' => $this->repetition,
-			'realisationKind' => $this->realisationKind,
-			'realisationUuid' => $this->realisationUuid,
-			'realisationCount' => $this->realisationCount,
-			'authorization' => $this->authorizationRules,
-			'candidateUsers' => $this->candidateUsers,
-			'candidateGroups' => $this->candidateGroups,
-			'candidateRole' => $this->candidateRole,
-			'dueAt' => $this->dueAt?->format('c'),
-			'expiresAt' => $this->expiresAt?->format('c'),
-			'doorlooptijd' => $this->doorlooptijd,
-			'servicenorm' => $this->servicenorm,
-			'planSettings' => $this->planSettings,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-			'createdBy' => $this->createdBy,
-		];
+		return array_merge(
+			(new TypedFieldsJson())->renamed(json: (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)), names: ['itemKey' => 'key', 'planItemType' => 'type', 'authorizationRules' => 'authorization']),
+			[
+				'entryCriteria' => ($this->entryCriteria ?? []),
+				'exitCriteria' => ($this->exitCriteria ?? []),
+			]
+		);
 	}//end jsonSerialize()
 }//end class

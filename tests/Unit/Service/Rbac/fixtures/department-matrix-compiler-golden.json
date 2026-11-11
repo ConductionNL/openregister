@@ -1,0 +1,449 @@
+{
+    "compiled": {
+        "read": [
+            {
+                "group": "future",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "x"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "a",
+                            "b",
+                            "own-1"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "c",
+                            "d"
+                        ]
+                    },
+                    "status": "open"
+                }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "f",
+                            "h"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "g"
+                        ]
+                    }
+                },
+                "crossOrganisation": true
+            }
+        ],
+        "update": [
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "b"
+                        ]
+                    }
+                }
+            }
+        ],
+        "approve": [
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "b"
+                        ]
+                    }
+                }
+            }
+        ],
+        "delete": [
+            {
+                "group": "cross",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "e"
+                        ]
+                    },
+                    "_organisation": "org-2"
+                },
+                "crossOrganisation": true
+            }
+        ],
+        "readFiles": [
+            {
+                "group": "cross",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "e"
+                        ]
+                    },
+                    "_organisation": "org-2"
+                },
+                "crossOrganisation": true
+            }
+        ],
+        "share": [
+            {
+                "group": "num",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "5",
+                            "5.5"
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "compiledOtherOwn": {
+        "read": [
+            {
+                "group": "future",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "x"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "a",
+                            "b",
+                            "own-1"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "c",
+                            "d"
+                        ]
+                    },
+                    "status": "open"
+                }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "f",
+                            "h"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "g"
+                        ]
+                    }
+                },
+                "crossOrganisation": true
+            }
+        ],
+        "update": [
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "b"
+                        ]
+                    }
+                }
+            }
+        ],
+        "approve": [
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "b"
+                        ]
+                    }
+                }
+            }
+        ],
+        "delete": [
+            {
+                "group": "cross",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "e"
+                        ]
+                    },
+                    "_organisation": "org-2"
+                },
+                "crossOrganisation": true
+            }
+        ],
+        "readFiles": [
+            {
+                "group": "cross",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "e"
+                        ]
+                    },
+                    "_organisation": "org-2"
+                },
+                "crossOrganisation": true
+            }
+        ],
+        "share": [
+            {
+                "group": "num",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "5",
+                            "5.5"
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "compiledNoOwn": {
+        "read": [
+            {
+                "group": "future",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "x"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "a",
+                            "b"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "c",
+                            "d"
+                        ]
+                    },
+                    "status": "open"
+                }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "f",
+                            "h"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "g"
+                        ]
+                    }
+                },
+                "crossOrganisation": true
+            }
+        ],
+        "update": [
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "b"
+                        ]
+                    }
+                }
+            }
+        ],
+        "approve": [
+            {
+                "group": "staff",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "b"
+                        ]
+                    }
+                }
+            }
+        ],
+        "delete": [
+            {
+                "group": "cross",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "e"
+                        ]
+                    },
+                    "_organisation": "org-2"
+                },
+                "crossOrganisation": true
+            }
+        ],
+        "readFiles": [
+            {
+                "group": "cross",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "e"
+                        ]
+                    },
+                    "_organisation": "org-2"
+                },
+                "crossOrganisation": true
+            }
+        ],
+        "share": [
+            {
+                "group": "num",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "5",
+                            "5.5"
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "noField": [],
+    "blankField": [],
+    "rowsNotArray": [],
+    "defaultClock": [
+        [],
+        {
+            "read": [
+                {
+                    "group": "g",
+                    "match": {
+                        "d": {
+                            "$in": [
+                                "x"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "mergeEmpty": {
+        "read": [
+            "x"
+        ],
+        "matrix": []
+    },
+    "mergeNull": {
+        "read": [
+            {
+                "group": "g"
+            }
+        ]
+    },
+    "merge": {
+        "read": [
+            "x",
+            {
+                "group": "g"
+            }
+        ],
+        "update": [
+            {
+                "group": "h"
+            }
+        ],
+        "delete": [
+            {
+                "group": "i"
+            }
+        ]
+    },
+    "groupsTrue": [
+        "b",
+        "a",
+        "7"
+    ],
+    "groupsTruthy": [],
+    "prefix": [
+        "a",
+        "c"
+    ],
+    "prefixPlusGroups": [
+        "dep-a",
+        "z",
+        "a"
+    ],
+    "nullSource": [],
+    "resolve": [
+        "read",
+        "update",
+        "handle",
+        "update"
+    ]
+}

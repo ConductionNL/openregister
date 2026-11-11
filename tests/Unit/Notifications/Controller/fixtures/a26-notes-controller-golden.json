@@ -1,0 +1,647 @@
+{
+    "index": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "visibility": "public"
+                }
+            ],
+            "total": 1,
+            "visibility": "public",
+            "canSetVisibility": false
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "mayManage([])",
+            "effectiveFilter([null])",
+            "getNotesForObject([\"o-1\",5,2,\"public\"])"
+        ]
+    },
+    "index manager public": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "visibility": "public"
+                }
+            ],
+            "total": 1,
+            "visibility": "public",
+            "canSetVisibility": true
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "mayManage([])",
+            "effectiveFilter([\"public\"])",
+            "getNotesForObject([\"o-1\",50,0,\"public\"])"
+        ]
+    },
+    "index visibility array": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "visibility": "public"
+                }
+            ],
+            "total": 1,
+            "visibility": "public",
+            "canSetVisibility": false
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "mayManage([])",
+            "effectiveFilter([null])",
+            "getNotesForObject([\"o-1\",50,0,\"public\"])"
+        ]
+    },
+    "index object null": {
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])"
+        ]
+    },
+    "index object missing": {
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])"
+        ]
+    },
+    "index failing": {
+        "status": 500,
+        "data": {
+            "error": "list failed"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "mayManage([])",
+            "effectiveFilter([null])",
+            "getNotesForObject([\"o-1\",50,0,\"public\"])"
+        ]
+    },
+    "create no message": {
+        "status": 400,
+        "data": {
+            "error": "Note message is required"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])"
+        ]
+    },
+    "create": {
+        "status": 201,
+        "data": {
+            "id": 12,
+            "message": "Hi"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "createNote([\"o-1\",\"Hi\",null])",
+            "projectNote([\"Hi\",{\"message\":\"Hi\",\"commentId\":12,\"visibility\":null,\"register\":\"reg\",\"schema\":\"case\"}])"
+        ]
+    },
+    "create projected": {
+        "status": 201,
+        "data": {
+            "id": 12,
+            "message": "Hi",
+            "entryId": "e-1"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "createNote([\"o-1\",\"Hi\",null])",
+            "projectNote([\"Hi\",{\"message\":\"Hi\",\"commentId\":12,\"visibility\":null,\"register\":\"reg\",\"schema\":\"case\"}])"
+        ]
+    },
+    "create visibility unknown": {
+        "status": 400,
+        "data": {
+            "error": "Visibility must be either internal or public"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "isKnownValue([\"secret\"])"
+        ]
+    },
+    "create visibility refused": {
+        "status": 403,
+        "data": {
+            "error": "You do not have permission to set the visibility of this note"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "isKnownValue([\"public\"])",
+            "mayManage([])"
+        ]
+    },
+    "create visibility nonstr": {
+        "status": 400,
+        "data": {
+            "error": "Visibility must be either internal or public"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "isKnownValue([null])"
+        ]
+    },
+    "create visibility": {
+        "status": 201,
+        "data": {
+            "id": 12,
+            "message": "Hi"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "isKnownValue([\"public\"])",
+            "mayManage([])",
+            "createNote([\"o-1\",\"Hi\",\"public\"])",
+            "projectNote([\"Hi\",{\"message\":\"Hi\",\"commentId\":12,\"visibility\":null,\"register\":\"reg\",\"schema\":\"case\"}])"
+        ]
+    },
+    "create object missing": {
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])"
+        ]
+    },
+    "create failing": {
+        "status": 400,
+        "data": {
+            "error": "create failed"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "createNote([\"o-1\",\"Hi\",null])"
+        ]
+    },
+    "update nothing": {
+        "status": 400,
+        "data": {
+            "error": "Note message is required"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])"
+        ]
+    },
+    "update message": {
+        "status": 200,
+        "data": {
+            "id": 12,
+            "visibility": "internal",
+            "versionCount": "3"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "mayManageObject([])",
+            "updateNote([12,\"New\",null,false])",
+            "auditEdit([12,3])",
+            "rewrite([12,\"New\",null])"
+        ]
+    },
+    "update visibility refused": {
+        "status": 403,
+        "data": {
+            "error": "You do not have permission to set the visibility of this note"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "isKnownValue([\"public\"])",
+            "mayManage([])"
+        ]
+    },
+    "update visibility unknown": {
+        "status": 400,
+        "data": {
+            "error": "Visibility must be either internal or public"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "isKnownValue([\"x\"])"
+        ]
+    },
+    "update visibility": {
+        "status": 200,
+        "data": {
+            "id": 12,
+            "visibility": "public",
+            "versionCount": "3"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "isKnownValue([\"public\"])",
+            "mayManage([])",
+            "getNote([12])",
+            "mayManageObject([])",
+            "updateNote([12,null,\"public\",true])",
+            "rewrite([12,null,\"public\"])",
+            "auditVisibilityChange([12,\"internal\",\"public\"])"
+        ]
+    },
+    "update both": {
+        "status": 200,
+        "data": {
+            "id": 12,
+            "visibility": "internal",
+            "versionCount": "3"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "isKnownValue([\"internal\"])",
+            "mayManage([])",
+            "getNote([12])",
+            "mayManageObject([])",
+            "updateNote([12,\"New\",\"internal\",true])",
+            "auditEdit([12,3])",
+            "rewrite([12,\"New\",\"internal\"])",
+            "auditVisibilityChange([12,\"internal\",\"internal\"])"
+        ]
+    },
+    "update locked": {
+        "status": 423,
+        "data": {
+            "error": "This note is locked and can no longer be changed"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "mayManageObject([])",
+            "updateNote([12,\"New\",null,false])"
+        ]
+    },
+    "update forbidden": {
+        "status": 403,
+        "data": {
+            "error": "Only the author of a note, or someone who manages this object, can change what it says"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "mayManageObject([])",
+            "updateNote([12,\"New\",null,false])"
+        ]
+    },
+    "update fails 404": {
+        "status": 404,
+        "data": {
+            "error": "update not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "mayManageObject([])",
+            "updateNote([12,\"New\",null,false])"
+        ]
+    },
+    "update fails": {
+        "status": 400,
+        "data": {
+            "error": "update failed"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "mayManageObject([])",
+            "updateNote([12,\"New\",null,false])"
+        ]
+    },
+    "update not of object": {
+        "status": 404,
+        "data": {
+            "error": "require not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])"
+        ]
+    },
+    "update object null": {
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])"
+        ]
+    },
+    "update object missing": {
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])"
+        ]
+    },
+    "patch": {
+        "status": 200,
+        "data": {
+            "id": 12,
+            "visibility": "internal",
+            "versionCount": "3"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "mayManageObject([])",
+            "updateNote([12,\"New\",null,false])",
+            "auditEdit([12,3])",
+            "rewrite([12,\"New\",null])"
+        ]
+    },
+    "versions": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "message": "old"
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "getNote([12])",
+            "effectiveFilter([null])",
+            "filterRows([[{\"id\":12,\"visibility\":\"internal\"}],\"public\"])",
+            "noteVersions([12])"
+        ]
+    },
+    "versions filtered out": {
+        "status": 404,
+        "data": {
+            "error": "Note not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "getNote([12])",
+            "effectiveFilter([null])",
+            "filterRows([[{\"id\":12,\"visibility\":\"internal\"}],\"public\"])"
+        ]
+    },
+    "versions not of object": {
+        "status": 404,
+        "data": {
+            "error": "Note not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])"
+        ]
+    },
+    "versions note missing": {
+        "status": 404,
+        "data": {
+            "error": "Note not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "getNote([12])"
+        ]
+    },
+    "versions failing": {
+        "status": 400,
+        "data": {
+            "error": "versions failed"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "getNote([12])",
+            "effectiveFilter([null])",
+            "filterRows([[{\"id\":12,\"visibility\":\"internal\"}],\"public\"])",
+            "noteVersions([12])"
+        ]
+    },
+    "versions object null": {
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])"
+        ]
+    },
+    "versions object missing": {
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])"
+        ]
+    },
+    "destroy": {
+        "status": 200,
+        "data": {
+            "success": true
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "entryForNote([12])",
+            "deleteNote([12])",
+            "forgetNote([12,\"e-1\"])"
+        ]
+    },
+    "destroy no entry": {
+        "status": 200,
+        "data": {
+            "success": true
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "entryForNote([12])",
+            "deleteNote([12])",
+            "forgetNote([12,null])"
+        ]
+    },
+    "destroy not of object": {
+        "status": 404,
+        "data": {
+            "error": "require not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])"
+        ]
+    },
+    "destroy failing": {
+        "status": 400,
+        "data": {
+            "error": "delete failed"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])",
+            "requireNoteOf([\"o-1\",12])",
+            "entryForNote([12])",
+            "deleteNote([12])"
+        ]
+    },
+    "destroy object null": {
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])"
+        ]
+    },
+    "destroy object missing": {
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        },
+        "calls": [
+            "setRegister([\"reg\"])",
+            "setSchema([\"case\"])",
+            "setObject([\"o-1\"])",
+            "getObject([])"
+        ]
+    }
+}

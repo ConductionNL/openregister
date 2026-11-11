@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
 class NotificationAnnotationValidatorTest extends TestCase {
@@ -101,27 +101,41 @@ class NotificationAnnotationValidatorTest extends TestCase {
 	}
 
 	/**
-	 * `kind: email` reads its address through the first segment of `field`,
-	 * which must be a property of the schema.
+	 * An `email` recipient names a declared property, possibly followed
+	 * through references, on a rule that sends e-mail.
 	 *
-	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-rule-may-mail-an-address-it-reads-through-a-reference-req-ero-007
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
-	public function testAnEmailRecipientFieldStartsWithADeclaredProperty(): void {
-		$rule = static fn (string $field): array => [
+	public function testAnEmailRecipientNeedsADeclaredFieldAndTheEmailChannel(): void {
+		$properties = ['supplierRef' => ['type' => 'string', 'format' => 'uuid', '$ref' => '#/components/schemas/supplier'], 'looseRef' => ['type' => 'string', 'format' => 'uuid'], 'blankRef' => ['type' => 'string', '$ref' => ' '], 'subject' => ['type' => 'string']];
+		$rule = static fn (array $recipient, array $channels = ['email']): array => [
 			'x-openregister-notifications' => [
 				'x' => [
 					'trigger' => ['type' => 'created'],
-					'recipients' => [['kind' => 'email', 'field' => $field]],
-					'channels' => ['email'],
+					'recipients' => [$recipient],
+					'channels' => $channels,
 					'subject' => 'Nieuw bericht',
 				],
 			],
-			'properties' => ['supplierRef' => ['type' => 'string', 'format' => 'uuid']],
+			'properties' => $properties,
 		];
 
-		$this->assertSame([], $this->v->validate($rule('supplierRef.contactEmail')));
-		$this->assertContains('notification-recipient-field-unknown', array_column($this->v->validate($rule('ownerRef.contactEmail')), 'code'));
-		$this->assertContains('notification-recipient-field-unknown', array_column($this->v->validate($rule('')), 'code'));
+		$this->assertSame([], $this->v->validate($rule(['kind' => 'email', 'field' => 'supplierRef.contactEmail'])));
+
+		$cases = [
+			'notification-recipient-field-unknown' => $rule(['kind' => 'email', 'field' => 'nope.contactEmail']),
+			'notification-recipient-email-field-missing' => $rule(['kind' => 'email']),
+			'notification-recipient-email-reference-has-no-ref' => $rule(['kind' => 'email', 'field' => 'looseRef.contactEmail']),
+			'notification-recipient-email-reference-has-no-ref (blank)' => $rule(['kind' => 'email', 'field' => 'blankRef.contactEmail']),
+			'notification-recipient-email-path-too-deep' => $rule(['kind' => 'email', 'field' => 'supplierRef.a.b.c.d']),
+			'notification-recipient-email-needs-email-channel' => $rule(['kind' => 'email', 'field' => 'supplierRef.contactEmail'], ['nc-notification']),
+		];
+		foreach ($cases as $code => $schema) {
+			$this->assertContains(explode(' ', $code)[0], array_column($this->v->validate($schema), 'code'), $code);
+		}
+
+		// An address read straight off the object goes through no reference, so it needs no `$ref`.
+		$this->assertSame([], $this->v->validate($rule(['kind' => 'email', 'field' => 'subject'])));
 	}
 
 	public function testValidNoErrors(): void {

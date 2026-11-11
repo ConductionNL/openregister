@@ -35,11 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Relation;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectRelation;
-use OCA\OpenRegister\Db\ObjectRelationMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -55,7 +52,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-class RelationGraphService {
+class RelationGraphService implements RelationGraphServiceInterface {
 	/**
 	 * The app whose settings hold the administered maximum.
 	 *
@@ -107,25 +104,29 @@ class RelationGraphService {
 	public const TRUNCATED_CAP = 'cap';
 
 	/**
+	 * Shapes the nodes and edges of the graph.
+	 *
+	 * @var RelationGraphShapes
+	 */
+	private readonly RelationGraphShapes $shapes;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectEntityMapper Mapper for object entities.
-	 * @param ObjectRelationMapper $relationMapper Mapper for stored relation rows.
-	 * @param SchemaMapper $schemaMapper Mapper for schemas.
-	 * @param RelationTypeResolver $relationTypes Resolves what a relation is called.
+	 * @param MagicObjectFinderInterface $objectEntityMapper Mapper for object entities.
+	 * @param RelationGraphSources $sources The relation-row and schema mappers and the relation-type resolver.
 	 * @param IAppConfig $appConfig Instance settings.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly ObjectRelationMapper $relationMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RelationTypeResolver $relationTypes,
+		private readonly MagicObjectFinderInterface $objectEntityMapper,
+		private readonly RelationGraphSources $sources,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->shapes = new RelationGraphShapes();
 	}//end __construct()
 
 	/**
@@ -163,128 +164,245 @@ class RelationGraphService {
 	 * of wrongness this whole method exists to avoid. The answer always says
 	 * what it is.
 	 *
-	 * @param string $rootUuid The object to walk out from.
-	 * @param int $depth The depth asked for.
-	 * @param string $language The BCP-47 tag to resolve labels in.
+	 * @param string             $rootUuid The object to walk out from.
+	 * @param GraphExportOptions $options  The depth (1 by default) and the language of the labels (Dutch by default).
 	 *
 	 * @return array{root: string, depth: int, requestedDepth: int, maxDepth: int,
 	 *     nodes: array<int, array<string, mixed>>, edges: array<int, array<string, mixed>>,
 	 *     truncated: bool, truncatedBy: string|null}
 	 *     The graph.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) A bounded breadth-first walk over two edge sources.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      The same walk; the branches are the two bounds and the two sources.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Splitting the walk across methods would hide the bound from its own loop.
-	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function graph(string $rootUuid, int $depth = 1, string $language = 'nl'): array {
-		$maxDepth = $this->maximumDepth();
-		$maxNodes = $this->maximumNodes();
-		$requested = max(1, $depth);
-		$effective = min($requested, $maxDepth);
+	public function graph(string $rootUuid, GraphExportOptions $options = new GraphExportOptions()): array {
+		$walk = $this->newWalk(depth: $options->depth, language: $options->language);
+		$this->startAt(walk: $walk, rootUuid: $rootUuid);
+		$this->walkLevels(walk: $walk);
+		$this->markDepthTruncation(walk: $walk);
 
-		$truncatedBy = null;
-		if ($requested > $maxDepth) {
-			$truncatedBy = self::TRUNCATED_DEPTH;
+		return $this->graphResult(walk: $walk);
+	}//end graph()
+
+	/**
+	 * A walk bounded at the administered maximum depth.
+	 *
+	 * @param int    $depth    The depth asked for.
+	 * @param string $language The BCP-47 tag to resolve labels in.
+	 *
+	 * @return GraphWalk The walk, not yet started.
+	 */
+	private function newWalk(int $depth, string $language): GraphWalk {
+		$walk = new GraphWalk();
+		$walk->maxDepth = $this->maximumDepth();
+		$walk->requestedDepth = max(1, $depth);
+		$walk->depth = min($walk->requestedDepth, $walk->maxDepth);
+		$walk->language = $language;
+
+		return $walk;
+	}//end newWalk()
+
+	/**
+	 * Mark a finished walk truncated by depth when the level it stopped on leads further.
+	 *
+	 * A walk that still had an UNVISITED neighbour when the requested depth
+	 * ran out is truncated by that depth, even within the administered
+	 * maximum. A non-empty frontier alone is not enough: the last level
+	 * almost always sits in it, and a flag that is always true tells a
+	 * reader nothing.
+	 *
+	 * @param GraphWalk $walk The finished walk.
+	 *
+	 * @return void
+	 */
+	private function markDepthTruncation(GraphWalk $walk): void {
+		if ($walk->truncatedBy === null && $this->hasMore(walk: $walk) === true) {
+			$walk->truncatedBy = self::TRUNCATED_DEPTH;
+		}
+	}//end markDepthTruncation()
+
+	/**
+	 * Start a walk at its root: the node cap, a depth cut when more was asked
+	 * than is allowed, and the root as the only reached node.
+	 *
+	 * @param GraphWalk $walk     The walk, with its depths set.
+	 * @param string    $rootUuid The root UUID.
+	 *
+	 * @return void
+	 */
+	private function startAt(GraphWalk $walk, string $rootUuid): void {
+		$walk->maxNodes = $this->maximumNodes();
+		if ($walk->requestedDepth > $walk->maxDepth) {
+			$walk->truncatedBy = self::TRUNCATED_DEPTH;
 		}
 
-		$nodes = [];
-		$edges = [];
-		$seenEdges = [];
-		$frontier = [$rootUuid];
-		$visited = [$rootUuid => true];
+		$walk->root = $rootUuid;
+		$walk->frontier = [$rootUuid];
+		$walk->visited = [$rootUuid => true];
+		$walk->nodes[$rootUuid] = $this->node(uuid: $rootUuid, distance: 0);
+	}//end startAt()
 
-		$root = $this->loadObject(uuid: $rootUuid);
-		$nodes[$rootUuid] = $this->node(uuid: $rootUuid, object: $root, distance: 0);
-
-		for ($level = 0; $level < $effective; $level++) {
-			if ($frontier === [] || $truncatedBy === self::TRUNCATED_CAP) {
+	/**
+	 * Walk level by level: at most the walk's depth, and no further once the node cap stopped it.
+	 *
+	 * @param GraphWalk $walk The walk.
+	 *
+	 * @return void
+	 */
+	private function walkLevels(GraphWalk $walk): void {
+		for ($walk->level = 0; $walk->level < $walk->depth; $walk->level++) {
+			if ($walk->frontier === [] || $walk->truncatedBy === self::TRUNCATED_CAP) {
 				break;
 			}
 
-			$next = [];
-			foreach ($this->edgesFrom(uuids: $frontier, language: $language) as $edge) {
-				$key = $edge['from'].'|'.$edge['to'].'|'.((string)($edge['label'] ?? '')).'|'.$edge['direction'];
-				if (isset($seenEdges[$key]) === true) {
-					continue;
-				}
+			$this->walkLevel(walk: $walk);
+		}
+	}//end walkLevels()
 
-				$seenEdges[$key] = true;
-				$edges[] = $edge;
-
-				$other = $edge['to'];
-				if ($edge['direction'] === RelationTypeResolver::DIRECTION_INCOMING) {
-					$other = $edge['from'];
-				}
-
-				if ($other === '' || isset($visited[$other]) === true) {
-					continue;
-				}
-
-				if (count($nodes) >= $maxNodes) {
-					// The cap, not the depth. Naming which one stopped the walk
-					// is the difference between "there is no more" and "there
-					// is more and you were not shown it".
-					$truncatedBy = self::TRUNCATED_CAP;
-					break;
-				}
-
-				$visited[$other] = true;
-
-				// An external address is a leaf, and it is not an object: it
-				// carries its own title on the row and loading it would fail.
-				// Passing it through node() would have thrown that title away
-				// and drawn an anonymous node, which is exactly what a graph
-				// of "what is this case linked to" must not do.
-				if (($edge['kind'] ?? null) === ObjectRelation::KIND_EXTERNAL) {
-					$nodes[$other] = [
-						'uuid' => $other,
-						'title' => ($edge['targetTitle'] ?? $other),
-						'register' => null,
-						'schema' => null,
-						'distance' => ($level + 1),
-						'resolved' => true,
-						'external' => true,
-					];
-					continue;
-				}
-
-				$nodes[$other] = $this->node(
-					uuid: $other,
-					object: $this->loadObject(uuid: $other),
-					distance: ($level + 1)
-				);
-				$next[] = $other;
-			}//end foreach
-
-			$frontier = $next;
-		}//end for
-
-		// A walk that still had somewhere to go when the requested depth ran
-		// out is truncated by that depth, even when the request was within the
-		// administered maximum.
-		//
-		// "Somewhere to go" is an unvisited neighbour, not a non-empty
-		// frontier. The last level's nodes almost always sit in the frontier
-		// whether or not they lead anywhere, so marking on the frontier alone
-		// would make `truncated` true on nearly every complete answer, and a
-		// flag that is always true tells a reader nothing.
-		if ($truncatedBy === null && $this->hasMore(frontier: $frontier, visited: $visited, language: $language) === true) {
-			$truncatedBy = self::TRUNCATED_DEPTH;
+	/**
+	 * Follow every edge of the frontier once, making the newly reached nodes the next frontier.
+	 *
+	 * @param GraphWalk $walk The walk so far.
+	 *
+	 * @return void
+	 */
+	private function walkLevel(GraphWalk $walk): void {
+		$walk->next = [];
+		foreach ($this->edgesFrom(uuids: $walk->frontier, language: $walk->language) as $edge) {
+			if ($this->followEdge(walk: $walk, edge: $edge) === false) {
+				break;
+			}
 		}
 
+		$walk->frontier = $walk->next;
+	}//end walkLevel()
+
+	/**
+	 * The graph answer of a finished walk.
+	 *
+	 * @param GraphWalk $walk The finished walk.
+	 *
+	 * @return array{root: string, depth: int, requestedDepth: int, maxDepth: int,
+	 *     nodes: list<array>, edges: array, truncated: bool, truncatedBy: string|null}
+	 */
+	private function graphResult(GraphWalk $walk): array {
 		return [
-			'root' => $rootUuid,
-			'depth' => $effective,
-			'requestedDepth' => $requested,
-			'maxDepth' => $maxDepth,
-			'nodes' => array_values($nodes),
-			'edges' => $edges,
-			'truncated' => ($truncatedBy !== null),
-			'truncatedBy' => $truncatedBy,
+			'root' => $walk->root,
+			'depth' => $walk->depth,
+			'requestedDepth' => $walk->requestedDepth,
+			'maxDepth' => $walk->maxDepth,
+			'nodes' => array_values($walk->nodes),
+			'edges' => $walk->edges,
+			'truncated' => ($walk->truncatedBy !== null),
+			'truncatedBy' => $walk->truncatedBy,
 		];
-	}//end graph()
+	}//end graphResult()
+
+	/**
+	 * Walk one edge: record it once, and reach its other end unless that is visited or the node cap is hit.
+	 *
+	 * Hitting the cap marks the walk truncated by the cap, not the depth:
+	 * naming which bound stopped the walk is the difference between "there is
+	 * no more" and "there is more and you were not shown it".
+	 *
+	 * @param GraphWalk $walk The walk, on one level.
+	 * @param array     $edge The edge.
+	 *
+	 * @return bool False when the node cap stops the level.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function followEdge(GraphWalk $walk, array $edge): bool {
+		$other = self::otherEnd(edge: $edge);
+		if (self::recordEdge(walk: $walk, edge: $edge) === false || self::isUnvisited(other: $other, visited: $walk->visited) === false) {
+			return true;
+		}
+
+		if (count($walk->nodes) >= $walk->maxNodes) {
+			$walk->truncatedBy = self::TRUNCATED_CAP;
+			return false;
+		}
+
+		$walk->visited[$other] = true;
+		$this->reachNode(walk: $walk, edge: $edge);
+		return true;
+	}//end followEdge()
+
+	/**
+	 * Record an edge the first time the walk meets it.
+	 *
+	 * @param GraphWalk            $walk The walk so far.
+	 * @param array<string, mixed> $edge The edge.
+	 *
+	 * @return bool True when the edge is new, false when it was already listed.
+	 */
+	private static function recordEdge(GraphWalk $walk, array $edge): bool {
+		$key = $edge['from'].'|'.$edge['to'].'|'.((string)($edge['label'] ?? '')).'|'.$edge['direction'];
+		if (isset($walk->seenEdges[$key]) === true) {
+			return false;
+		}
+
+		$walk->seenEdges[$key] = true;
+		$walk->edges[] = $edge;
+		return true;
+	}//end recordEdge()
+
+	/**
+	 * Whether an edge's far end is a node the walk has not visited yet.
+	 *
+	 * @param string              $other   The far end's uuid or address.
+	 * @param array<string, bool> $visited The nodes already visited.
+	 *
+	 * @return bool True when it is somewhere new.
+	 */
+	private static function isUnvisited(string $other, array $visited): bool {
+		return $other !== '' && isset($visited[$other]) === false;
+	}//end isUnvisited()
+
+	/**
+	 * Add the node an edge reaches; an external address is a leaf that keeps its own title.
+	 *
+	 * An external address is not an object: loading it would fail, and
+	 * passing it through node() would throw its title away and draw an
+	 * anonymous node. Only objects are walked out from on the next level.
+	 *
+	 * @param GraphWalk $walk The walk, on one level.
+	 * @param array     $edge The edge reaching the node.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function reachNode(GraphWalk $walk, array $edge): void {
+		$other = self::otherEnd(edge: $edge);
+
+		if ($this->shapes->isExternal(edge: $edge) === true) {
+			$walk->nodes[$other] = $this->shapes->externalNode(
+				edge: $edge,
+				node: $this->shapes->unresolvedNode(uuid: $other, distance: ($walk->level + 1))
+			);
+			return;
+		}
+
+		$walk->nodes[$other] = $this->node(uuid: $other, distance: ($walk->level + 1));
+		$walk->next[] = $other;
+	}//end reachNode()
+
+	/**
+	 * The end of an edge the walk has not come from: its source for an incoming edge, else its target.
+	 *
+	 * @param array $edge The edge.
+	 *
+	 * @return string The other end.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private static function otherEnd(array $edge): string {
+		if ($edge['direction'] === RelationTypeResolver::DIRECTION_INCOMING) {
+			return $edge['from'];
+		}
+
+		return $edge['to'];
+	}//end otherEnd()
 
 	/**
 	 * Whether the level the walk stopped on leads anywhere it has not been.
@@ -293,26 +411,19 @@ class RelationGraphService {
 	 * and you were not shown it" rather than "the walk ended", which is true
 	 * of every walk.
 	 *
-	 * @param array<int, string> $frontier The level the walk stopped on.
-	 * @param array<string, bool> $visited Every node already in the answer.
-	 * @param string $language The BCP-47 tag.
+	 * @param GraphWalk $walk The walk, with the level it stopped on as its frontier.
 	 *
 	 * @return boolean True when an unvisited neighbour exists.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function hasMore(array $frontier, array $visited, string $language): bool {
-		if ($frontier === []) {
+	private function hasMore(GraphWalk $walk): bool {
+		if ($walk->frontier === []) {
 			return false;
 		}
 
-		foreach ($this->edgesFrom(uuids: $frontier, language: $language) as $edge) {
-			$other = $edge['to'];
-			if ($edge['direction'] === RelationTypeResolver::DIRECTION_INCOMING) {
-				$other = $edge['from'];
-			}
-
-			if ($other !== '' && isset($visited[$other]) === false) {
+		foreach ($this->edgesFrom(uuids: $walk->frontier, language: $walk->language) as $edge) {
+			if (self::isUnvisited(other: self::otherEnd(edge: $edge), visited: $walk->visited) === true) {
 				return true;
 			}
 		}
@@ -328,42 +439,85 @@ class RelationGraphService {
 	 * The truncation marker rides along as a trailing row rather than a header
 	 * comment, so it survives a paste into a sheet.
 	 *
-	 * @param string $rootUuid The object to walk out from.
-	 * @param int $depth The depth asked for.
-	 * @param string $language The BCP-47 tag.
+	 * @param string                  $rootUuid The object to walk out from.
+	 * @param GraphExportOptions|null $options  The depth and the language; null is depth 1 in Dutch.
 	 *
 	 * @return array{rows: array<int, array<int, string>>, graph: array<string, mixed>}
 	 *     The export rows, header first, and the graph they came from.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function export(string $rootUuid, int $depth = 1, string $language = 'nl'): array {
-		$graph = $this->graph(rootUuid: $rootUuid, depth: $depth, language: $language);
+	public function export(string $rootUuid, ?GraphExportOptions $options = null): array {
+		$options ??= new GraphExportOptions();
+		$graph = $this->graph(rootUuid: $rootUuid, options: $options);
+
+		return ['rows' => $this->rowsOf(graph: $graph), 'graph' => $graph];
+	}//end export()
+
+	/**
+	 * The export rows of a graph, header first.
+	 *
+	 * Separate from export() so a caller that narrows the graph first (the
+	 * controller drops the nodes of schemas whose purpose was not named) writes
+	 * the rows of what it kept, not of the whole walk.
+	 *
+	 * @param array<string, mixed> $graph The graph, as graph() answers it or narrowed.
+	 *
+	 * @return array<int, array<int, string>> The rows.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function rowsOf(array $graph): array {
+		$titles = self::titlesOf(graph: $graph);
+
+		$rows = [['from', 'fromTitle', 'relation', 'direction', 'to', 'toTitle', 'origin', 'distance']];
+		foreach (($graph['edges'] ?? []) as $edge) {
+			$rows[] = self::edgeRow(edge: $edge, titles: $titles);
+		}
+
+		if (($graph['truncated'] ?? false) === true) {
+			$rows[] = ['truncated', (string)($graph['truncatedBy'] ?? ''), '', '', '', '', '', ''];
+		}
+
+		return $rows;
+	}//end rowsOf()
+
+	/**
+	 * Uuid => title of every node in a graph.
+	 *
+	 * @param array<string, mixed> $graph The graph.
+	 *
+	 * @return array<string, string> The titles.
+	 */
+	private static function titlesOf(array $graph): array {
 		$titles = [];
-		foreach ($graph['nodes'] as $node) {
+		foreach (($graph['nodes'] ?? []) as $node) {
 			$titles[(string)$node['uuid']] = (string)($node['title'] ?? $node['uuid']);
 		}
 
-		$rows = [['from', 'fromTitle', 'relation', 'direction', 'to', 'toTitle', 'origin', 'distance']];
-		foreach ($graph['edges'] as $edge) {
-			$rows[] = [
-				(string)$edge['from'],
-				($titles[(string)$edge['from']] ?? ''),
-				(string)($edge['label'] ?? ''),
-				(string)$edge['direction'],
-				(string)$edge['to'],
-				($titles[(string)$edge['to']] ?? (string)($edge['targetUrl'] ?? '')),
-				(string)($edge['origin'] ?? ''),
-				(string)($edge['distance'] ?? ''),
-			];
-		}
+		return $titles;
+	}//end titlesOf()
 
-		if ($graph['truncated'] === true) {
-			$rows[] = ['truncated', (string)$graph['truncatedBy'], '', '', '', '', '', ''];
-		}
-
-		return ['rows' => $rows, 'graph' => $graph];
-	}//end export()
+	/**
+	 * One edge as an export row.
+	 *
+	 * @param array<string, mixed>  $edge   The edge.
+	 * @param array<string, string> $titles Uuid => title.
+	 *
+	 * @return array<int, string> The row.
+	 */
+	private static function edgeRow(array $edge, array $titles): array {
+		return [
+			(string)$edge['from'],
+			($titles[(string)$edge['from']] ?? ''),
+			(string)($edge['label'] ?? ''),
+			(string)$edge['direction'],
+			(string)$edge['to'],
+			($titles[(string)$edge['to']] ?? (string)($edge['targetUrl'] ?? '')),
+			(string)($edge['origin'] ?? ''),
+			(string)($edge['distance'] ?? ''),
+		];
+	}//end edgeRow()
 
 	/**
 	 * Every edge touching a level of the walk, from both edge sources.
@@ -377,80 +531,64 @@ class RelationGraphService {
 	 */
 	private function edgesFrom(array $uuids, string $language): array {
 		$edges = [];
-
-		// Source one: the `$ref` relations already recorded on each object.
 		foreach ($uuids as $uuid) {
-			$object = $this->loadObject(uuid: $uuid);
-			if ($object === null) {
-				continue;
-			}
-
-			$schema = $this->schemaOf(schemaId: $object->getSchema());
-			foreach (($object->getRelations() ?? []) as $path => $value) {
-				foreach ($this->targetsOf(value: $value) as $target) {
-					if (is_string($path) === false || $target === $uuid) {
-						continue;
-					}
-
-					$descriptor = $this->relationTypes->descriptorFor(
-						schema: $schema,
-						property: $path,
-						language: $language
-					);
-					$row = $this->relationTypes->row(
-						descriptor: $descriptor,
-						direction: RelationTypeResolver::DIRECTION_OUTGOING,
-						path: $path
-					);
-
-					$edges[] = [
-						'from' => $uuid,
-						'to' => $target,
-						'direction' => RelationTypeResolver::DIRECTION_OUTGOING,
-						'label' => ($row['displayLabel'] ?? null),
-						'inverseLabel' => ($row['inverseLabel'] ?? null),
-						'type' => ($row['type'] ?? null),
-						'property' => ($row['property'] ?? null),
-						'origin' => 'property',
-						'kind' => ObjectRelation::KIND_OBJECT,
-					];
-				}
-			}
-		}//end foreach
+			$edges = array_merge($edges, $this->propertyEdges(uuid: $uuid, language: $language));
+		}
 
 		// Source two: the stored rows for the links no property can hold. One
 		// query for the whole level, not one per node.
-		foreach ($this->relationMapper->findTouching(uuids: $uuids) as $stored) {
-			$source = (string)$stored->getSourceUuid();
-			$outgoing = in_array($source, $uuids, true);
-			$direction = RelationTypeResolver::DIRECTION_INCOMING;
-			if ($outgoing === true) {
-				$direction = RelationTypeResolver::DIRECTION_OUTGOING;
-			}
-
-			$target = (string)($stored->getTargetUuid() ?? '');
-			$other = $target;
-			if ($target === '') {
-				$other = (string)$stored->getTargetUrl();
-			}
-
-			$edges[] = [
-				'from' => $source,
-				'to' => $other,
-				'direction' => $direction,
-				'label' => ($stored->getLabel() ?? $stored->getRelationType()),
-				'inverseLabel' => $stored->getInverseLabel(),
-				'type' => $stored->getRelationType(),
-				'property' => null,
-				'origin' => $stored->getOrigin(),
-				'kind' => $stored->getKind(),
-				'targetUrl' => $stored->getTargetUrl(),
-				'targetTitle' => $stored->getTargetTitle(),
-			];
-		}//end foreach
+		foreach ($this->sources->relationMapper->findTouching(uuids: $uuids) as $stored) {
+			$edges[] = $this->shapes->storedEdge(stored: $stored, uuids: $uuids);
+		}
 
 		return $edges;
 	}//end edgesFrom()
+
+	/**
+	 * The edges of the `$ref` relations already recorded on one object.
+	 *
+	 * @param string $uuid     The object's uuid.
+	 * @param string $language The language labels are read in.
+	 *
+	 * @return array<int, array<string, mixed>> The outgoing property edges; none when the object cannot be loaded.
+	 */
+	private function propertyEdges(string $uuid, string $language): array {
+		$object = $this->loadObject(uuid: $uuid);
+		if ($object === null) {
+			return [];
+		}
+
+		$schema = $this->schemaOf(schemaId: $object->getSchema());
+		$edges  = [];
+		foreach ($this->linksOf(relations: ($object->getRelations() ?? []), uuid: $uuid) as [$path, $target]) {
+			$descriptor = $this->sources->relationTypes->descriptorFor(schema: $schema, property: $path, language: $language);
+			$row        = $this->sources->relationTypes->row(descriptor: $descriptor, direction: RelationTypeResolver::DIRECTION_OUTGOING, path: $path);
+			$edges[]    = ['from' => $uuid, 'to' => $target] + $this->shapes->outgoingDetails(row: $row);
+		}
+
+		return $edges;
+	}//end propertyEdges()
+
+	/**
+	 * The relation path and target of each link an object records, without links to itself.
+	 *
+	 * @param array  $relations The object's recorded relations, by path.
+	 * @param string $uuid      The object's uuid.
+	 *
+	 * @return array<int, array{0: string, 1: string}> Each link as its path and target uuid.
+	 */
+	private function linksOf(array $relations, string $uuid): array {
+		$links = [];
+		foreach ($relations as $path => $value) {
+			foreach ($this->targetsOf(value: $value) as $target) {
+				if (is_string($path) === true && $target !== $uuid) {
+					$links[] = [$path, $target];
+				}
+			}
+		}
+
+		return $links;
+	}//end linksOf()
 
 	/**
 	 * The uuids a stored relation value holds.
@@ -462,22 +600,15 @@ class RelationGraphService {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function targetsOf(mixed $value): array {
-		if (is_string($value) === true && $value !== '') {
-			return [$value];
+		if (is_string($value) === true) {
+			$value = [$value];
 		}
 
 		if (is_array($value) === false) {
 			return [];
 		}
 
-		$targets = [];
-		foreach ($value as $entry) {
-			if (is_string($entry) === true && $entry !== '') {
-				$targets[] = $entry;
-			}
-		}
-
-		return $targets;
+		return array_values(array_filter($value, static fn (mixed $entry): bool => is_string($entry) === true && $entry !== ''));
 	}//end targetsOf()
 
 	/**
@@ -488,25 +619,17 @@ class RelationGraphService {
 	 * and "the link is not there" and "you may not read what it points at" are
 	 * not the same answer.
 	 *
-	 * @param string $uuid The object's uuid.
-	 * @param ObjectEntity|null $object The object, when it loaded.
-	 * @param int $distance How many steps from the root.
+	 * @param string $uuid     The object's uuid.
+	 * @param int    $distance How many steps from the root.
 	 *
 	 * @return array<string, mixed> The node.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function node(string $uuid, ?ObjectEntity $object, int $distance): array {
+	private function node(string $uuid, int $distance): array {
+		$object = $this->loadObject(uuid: $uuid);
 		if ($object === null) {
-			return [
-				'uuid' => $uuid,
-				'title' => null,
-				'register' => null,
-				'schema' => null,
-				'distance' => $distance,
-				'resolved' => false,
-				'external' => false,
-			];
+			return $this->shapes->unresolvedNode(uuid: $uuid, distance: $distance);
 		}
 
 		return [
@@ -557,7 +680,7 @@ class RelationGraphService {
 		}
 
 		try {
-			return $this->schemaMapper->find((int)$schemaId, _rbac: false, _multitenancy: false);
+			return $this->sources->schemaMapper->find((int)$schemaId, _rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			return null;
 		}

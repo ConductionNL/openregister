@@ -63,9 +63,14 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// Delegate to a guarded path and compute nothing themselves. The gate
 		// belongs where the values are produced, not at every layer that passes
 		// a request along; repeating it would multiply the places it can drift.
-		'lib/Controller/AggregationController.php' => 'delegates to AggregationRunner',
+		'lib/Search/Controller/AggregationController.php' => 'delegates to AggregationRunner',
+		'lib/Service/Aggregation/NamedAggregationRun.php' => 'holds the state of AggregationRunner::run(), which asks; computes nothing',
+		'lib/Service/Aggregation/NativeAggregationRequest.php' => 'carries the native request AggregationRunner builds after it asks; computes nothing',
+		'lib/Service/GraphQL/ListRequest.php' => 'reads the groupBy argument for ListAggregations, which goes through AggregationRunner; computes nothing',
 		'lib/Controller/ObjectsController.php' => 'delegates to ObjectService and FacetHandler',
 		'lib/Db/MagicMapper.php' => 'delegates to its handlers',
+		'lib/Db/MagicMapper/MagicObjectSearchInterface.php' => 'a role of the mapper\'s interface, declares, summarises nothing',
+		'lib/Db/MagicMapper/MagicTableMaintenanceInterface.php' => 'a role of the mapper\'s interface, declares, summarises nothing',
 		'lib/Service/ObjectService.php' => 'delegates to FacetHandler and the mappers',
 		'lib/Db/AbstractObjectMapper.php' => 'base class; concrete mappers carry the gate',
 
@@ -74,36 +79,22 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// value to anybody.
 		'lib/Db/MagicMapper/MagicSearchHandler.php' => 'filters rows; property reads are stripped by the render path',
 
+		// Reads a property's `facetable` flag to create its index. An index
+		// returns no value to anybody.
+		'lib/Db/MagicMapper/MagicTableIndexer.php' => 'creates indexes from property definitions, reads no value',
+
 		// Validate or persist a CONFIGURATION that names a property. They never
 		// read a value. `ViewService` checks a kanban groupByField exists;
 		// `TimeseriesRequestValidator` checks a request's shape.
-		'lib/Service/ViewService.php' => 'validates config naming a property, reads no value',
-		'lib/Service/Aggregation/TimeseriesRequestValidator.php' => 'validates request shape, reads no value',
+		'lib/Search/Service/ViewService.php' => 'validates config naming a property, reads no value',
+		'lib/Search/Service/Aggregation/TimeseriesRequestValidator.php' => 'validates request shape, reads no value',
 
 		// The entity and its persistence. They hold property definitions; they
 		// never summarise a value.
 		'lib/Db/Schema.php' => 'entity holding definitions, summarises nothing',
-		'lib/Db/SchemaMapper.php' => 'persistence, summarises nothing',
+		'lib/Db/SchemaMapper/FacetConfiguration.php' => 'derives the stored facet block from property definitions, reads no value',
+		'lib/Kernel/Contracts/SchemaInterface.php' => 'the entity\'s interface, declares accessors, summarises nothing',
 		'lib/Service/Schemas/SchemaCacheHandler.php' => 'caches definitions, summarises nothing',
-	];
-
-	/**
-	 * Facet handlers that match the shape's spirit but are never instantiated.
-	 *
-	 * 🔑 THESE ARE AN ASSERTION, NOT A NOTE. Listing them as "allowed" would
-	 * have excused them from a check they are not subject to, and an allowlist
-	 * entry nothing matches is dead weight that hides drift. So instead the
-	 * suite asserts they remain UNINSTANTIATED: the day one of them is wired up
-	 * it becomes a live aggregate path and has to answer the question, and this
-	 * test is what says so.
-	 *
-	 * @var array<int, string>
-	 */
-	private const DEAD_FACET_HANDLERS = [
-		'lib/Db/ObjectHandlers/HyperFacetHandler.php',
-		'lib/Db/ObjectHandlers/MariaDbFacetHandler.php',
-		'lib/Db/ObjectHandlers/MetaDataFacetHandler.php',
-		'lib/Db/ObjectHandlers/OptimizedFacetHandler.php',
 	];
 
 	/**
@@ -268,52 +259,6 @@ class AggregatePathsAskPermissionTest extends TestCase {
 			);
 		}
 	}//end testEveryAllowlistEntryIsStillMatchedByTheShape()
-
-	/**
-	 * The dead facet handlers are still dead.
-	 *
-	 * The day one is wired up it becomes a live aggregate path and owes the
-	 * read question. This is what says so.
-	 *
-	 * @return void
-	 */
-	public function testTheDeadFacetHandlersAreStillDead(): void {
-		$root = $this->root();
-
-		foreach (self::DEAD_FACET_HANDLERS as $path) {
-			$this->assertFileExists($root . '/' . $path);
-
-			$class = basename($path, '.php');
-			$references = 0;
-
-			$iterator = new RecursiveIteratorIterator(
-				new RecursiveDirectoryIterator($root . '/lib', FilesystemIterator::SKIP_DOTS)
-			);
-
-			foreach ($iterator as $file) {
-				if ($file->isFile() === false || $file->getExtension() !== 'php') {
-					continue;
-				}
-
-				if (str_ends_with($file->getPathname(), $path) === true) {
-					continue;
-				}
-
-				$source = (string)file_get_contents($file->getPathname());
-				if (str_contains($source, 'new ' . $class . '(') === true
-					|| str_contains($source, $class . '::class') === true
-				) {
-					$references++;
-				}
-			}
-
-			$this->assertSame(
-				0,
-				$references,
-				$class . ' is now instantiated, so it is a live aggregate path and owes the read question.'
-			);
-		}
-	}//end testTheDeadFacetHandlersAreStillDead()
 
 	/**
 	 * Every allowlist entry still names a file that exists.

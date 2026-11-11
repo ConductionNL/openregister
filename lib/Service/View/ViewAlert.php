@@ -65,6 +65,13 @@ final class ViewAlert implements JsonSerializable {
 	public const OPERATORS = [self::GTE, self::LTE];
 
 	/**
+	 * The prefix that names a person rather than a group among the recipients.
+	 *
+	 * @var string
+	 */
+	public const USER_PREFIX = 'user:';
+
+	/**
 	 * Waiting for the count to cross.
 	 *
 	 * @var string
@@ -90,21 +97,35 @@ final class ViewAlert implements JsonSerializable {
 	public const MIN_EVERY = 300;
 
 	/**
+	 * One of OPERATORS.
+	 *
+	 * @var string
+	 */
+	public readonly string $operator;
+
+	/**
+	 * The line.
+	 *
+	 * @var integer
+	 */
+	public readonly int $threshold;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string   $operator   One of OPERATORS.
-	 * @param int      $threshold  The line.
-	 * @param string[] $recipients Who hears about it.
-	 * @param string[] $channels   How.
-	 * @param int      $every      Seconds between evaluations.
+	 * @param ViewAlertLine $line       The direction and the threshold.
+	 * @param string[]      $recipients Who hears about it.
+	 * @param string[]      $channels   How.
+	 * @param int           $every      Seconds between evaluations.
 	 */
 	private function __construct(
-		public readonly string $operator,
-		public readonly int $threshold,
+		ViewAlertLine $line,
 		public readonly array $recipients,
 		public readonly array $channels,
 		public readonly int $every,
 	) {
+		$this->operator = $line->operator;
+		$this->threshold = $line->threshold;
 	}//end __construct()
 
 	/**
@@ -124,6 +145,35 @@ final class ViewAlert implements JsonSerializable {
 	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
 	public static function parse(mixed $raw): ?self {
+		$raw = self::declaredBlock(raw: $raw);
+		if ($raw === null) {
+			return null;
+		}
+
+		// The four field checks run in the ORDER they used to, and `channels`
+		// still sits between recipients and every, because each one throws and
+		// reordering them would change WHICH field a malformed alert names.
+		$operator = self::validOperator(raw: ($raw['operator'] ?? null));
+		$threshold = self::validThreshold(raw: ($raw['threshold'] ?? null));
+
+		return new self(
+			line: new ViewAlertLine(operator: $operator, threshold: $threshold),
+			recipients: self::validRecipients(raw: ($raw['recipients'] ?? [])),
+			channels: self::validChannels(raw: ($raw['channels'] ?? [])),
+			every: self::validEvery(raw: ($raw['every'] ?? self::MIN_EVERY))
+		);
+	}//end parse()
+
+	/**
+	 * The declared block as an object, null when none is declared.
+	 *
+	 * @param mixed $raw The declared block.
+	 *
+	 * @return array<string, mixed>|null The block.
+	 *
+	 * @throws InvalidViewAlertException When a declared alert is not an object.
+	 */
+	private static function declaredBlock(mixed $raw): ?array {
 		if ($raw === null || $raw === [] || $raw === '') {
 			return null;
 		}
@@ -132,26 +182,26 @@ final class ViewAlert implements JsonSerializable {
 			throw new InvalidViewAlertException(field: 'alert', message: 'alert: an alert is an object with an operator and a threshold.');
 		}
 
-		// The four field checks run in the ORDER they used to, and `channels`
-		// still sits between recipients and every, because each one throws and
-		// reordering them would change WHICH field a malformed alert names.
-		$operator = self::validOperator(raw: ($raw['operator'] ?? null));
-		$threshold = self::validThreshold(raw: ($raw['threshold'] ?? null));
-		$recipients = self::validRecipients(raw: ($raw['recipients'] ?? []));
+		return $raw;
+	}//end declaredBlock()
 
-		$channels = self::stringList(raw: ($raw['channels'] ?? []), field: 'alert.channels');
+	/**
+	 * The declared channels, the Nextcloud notification when none are named.
+	 *
+	 * @param mixed $raw The declared `channels`.
+	 *
+	 * @return string[] The channels.
+	 *
+	 * @throws InvalidViewAlertException When it is not a list of names.
+	 */
+	private static function validChannels(mixed $raw): array {
+		$channels = self::stringList(raw: $raw, field: 'alert.channels');
 		if ($channels === []) {
-			$channels = ['nc-notification'];
+			return ['nc-notification'];
 		}
 
-		return new self(
-			operator: $operator,
-			threshold: $threshold,
-			recipients: $recipients,
-			channels: $channels,
-			every: self::validEvery(raw: ($raw['every'] ?? self::MIN_EVERY))
-		);
-	}//end parse()
+		return $channels;
+	}//end validChannels()
 
 	/**
 	 * The alert a request body declares, as a view save takes it.
@@ -382,21 +432,9 @@ final class ViewAlert implements JsonSerializable {
 	 * @throws InvalidViewAlertException When it is not a list of strings.
 	 */
 	private static function stringList(mixed $raw, string $field): array {
-		if (is_string($raw) === true) {
-			$raw = [$raw];
-		}
-
-		if (is_array($raw) === false) {
-			throw new InvalidViewAlertException(field: $field, message: sprintf('%s: expected a list of names.', $field));
-		}
-
 		$list = [];
-		foreach ($raw as $entry) {
-			if (is_string($entry) === false) {
-				throw new InvalidViewAlertException(field: $field, message: sprintf('%s: every entry is a name; got %s.', $field, gettype($entry)));
-			}
-
-			$name = trim($entry);
+		foreach (self::asList(raw: $raw, field: $field) as $entry) {
+			$name = self::nameIn(entry: $entry, field: $field);
 			if ($name !== '' && in_array($name, $list, true) === false) {
 				$list[] = $name;
 			}
@@ -404,4 +442,44 @@ final class ViewAlert implements JsonSerializable {
 
 		return $list;
 	}//end stringList()
+
+	/**
+	 * The declared value as a list: a lone string becomes a list of one.
+	 *
+	 * @param mixed  $raw   The declared value.
+	 * @param string $field The field name, for the refusal.
+	 *
+	 * @return array<int|string, mixed> The entries, unchecked.
+	 *
+	 * @throws InvalidViewAlertException When it is neither a string nor a list.
+	 */
+	private static function asList(mixed $raw, string $field): array {
+		if (is_string($raw) === true) {
+			return [$raw];
+		}
+
+		if (is_array($raw) === false) {
+			throw new InvalidViewAlertException(field: $field, message: sprintf('%s: expected a list of names.', $field));
+		}
+
+		return $raw;
+	}//end asList()
+
+	/**
+	 * One entry of a list of names, trimmed, or a refusal naming the field.
+	 *
+	 * @param mixed  $entry The entry.
+	 * @param string $field The field name, for the refusal.
+	 *
+	 * @return string The name.
+	 *
+	 * @throws InvalidViewAlertException When the entry is not a string.
+	 */
+	private static function nameIn(mixed $entry, string $field): string {
+		if (is_string($entry) === false) {
+			throw new InvalidViewAlertException(field: $field, message: sprintf('%s: every entry is a name; got %s.', $field, gettype($entry)));
+		}
+
+		return trim($entry);
+	}//end nameIn()
 }//end class

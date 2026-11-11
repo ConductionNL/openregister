@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		:name="t('openregister', 'New {name}', { name: schemaTitle })"
-		:canClose="!saving"
+		:noClose="saving"
 		size="normal"
 		class="or-create-connected-dialog"
 		@closing="$emit('cancel')">
@@ -60,12 +60,7 @@
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="saving" @click="$emit('cancel')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="saving" @click="$emit('cancel')" />
 			<NcButton
 				:disabled="saving"
 				variant="primary"
@@ -92,8 +87,30 @@
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+
+/**
+ * The form control for a property, by the first rule that applies to its key
+ * and definition; a property no rule claims is plain text.
+ */
+const CONTROL_RULES = [
+	{
+		control: 'select',
+		applies: (key, def) => Array.isArray(def.enum) && def.enum.length > 0,
+	},
+	{ control: 'checkbox', applies: (key, def) => def.type === 'boolean' },
+	{
+		control: 'number',
+		applies: (key, def) => def.type === 'number' || def.type === 'integer',
+	},
+	{ control: 'date', applies: (key, def) => def.format === 'date' },
+	// Multi-line for the obviously long fields.
+	{
+		control: 'textarea',
+		applies: (key) => /notes|description|body|message|summary|content/i.test(key),
+	},
+]
 
 export default {
 	name: 'CreateConnectedObjectDialog',
@@ -101,7 +118,7 @@ export default {
 		NcButton,
 		NcDialog,
 		NcLoadingIcon,
-		Cancel,
+		CloseCancelButton,
 		Plus,
 	},
 
@@ -182,7 +199,7 @@ export default {
 	methods: {
 		t,
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		humanize(key) {
@@ -196,28 +213,13 @@ export default {
 		/**
 		 * Pick an input control for a property based on its schema type.
 		 *
-		 * @param key
-		 * @param def
+		 * @param {string} key
+		 * @param {object} def
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		controlFor(key, def) {
-			if (Array.isArray(def.enum) && def.enum.length) {
-				return 'select'
-			}
-			if (def.type === 'boolean') {
-				return 'checkbox'
-			}
-			if (def.type === 'number' || def.type === 'integer') {
-				return 'number'
-			}
-			if (def.format === 'date') {
-				return 'date'
-			}
-			// Multi-line for the obviously long fields.
-			if (/notes|description|body|message|summary|content/i.test(key)) {
-				return 'textarea'
-			}
-			return 'text'
+			const rule = CONTROL_RULES.find(({ applies }) => applies(key, def))
+			return rule ? rule.control : 'text'
 		},
 
 		/**

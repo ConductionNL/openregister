@@ -1,0 +1,639 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`group search of the edit modals (golden) EditApplication matches the recorded behaviour 1`] = `
+{
+  "blank": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 1,
+    "timerSet": false,
+    "warn": [],
+  },
+  "emptyString": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 1,
+    "timerSet": false,
+    "warn": [],
+  },
+  "failed": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [
+      [
+        "Error searching Nextcloud groups:",
+        "offline",
+      ],
+    ],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "found": {
+    "availableGroups": [
+      {
+        "id": "sel1",
+        "name": "Selected one",
+      },
+      {
+        "id": "admin",
+        "name": "admin",
+        "userCount": 0,
+      },
+      {
+        "id": "staff",
+        "name": "staff",
+        "userCount": 0,
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "noGroups": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "refused": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "typedThenCleared": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 1,
+    "timerSet": true,
+    "warn": [],
+  },
+  "typedTwice": {
+    "availableGroups": [
+      {
+        "id": "sel1",
+        "name": "Selected one",
+      },
+      {
+        "id": "admin",
+        "name": "admin",
+        "userCount": 0,
+      },
+      {
+        "id": "staff",
+        "name": "staff",
+        "userCount": 0,
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=adm",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "undefinedQuery": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 1,
+    "timerSet": false,
+    "warn": [],
+  },
+}
+`;
+
+exports[`group search of the edit modals (golden) EditOrganisation matches the recorded behaviour 1`] = `
+{
+  "blank": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 1,
+    "timerSet": false,
+    "warn": [],
+  },
+  "emptyString": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 1,
+    "timerSet": false,
+    "warn": [],
+  },
+  "failed": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [
+      [
+        "Error searching Nextcloud groups:",
+        "offline",
+      ],
+    ],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "found": {
+    "availableGroups": [
+      {
+        "id": "sel1",
+        "name": "Selected one",
+      },
+      {
+        "id": "admin",
+        "name": "admin",
+        "userCount": 0,
+      },
+      {
+        "id": "staff",
+        "name": "staff",
+        "userCount": 0,
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "noGroups": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "refused": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "typedThenCleared": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 1,
+    "timerSet": true,
+    "warn": [],
+  },
+  "typedTwice": {
+    "availableGroups": [
+      {
+        "id": "sel1",
+        "name": "Selected one",
+      },
+      {
+        "id": "admin",
+        "name": "admin",
+        "userCount": 0,
+      },
+      {
+        "id": "staff",
+        "name": "staff",
+        "userCount": 0,
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=adm",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "undefinedQuery": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 1,
+    "timerSet": false,
+    "warn": [],
+  },
+}
+`;
+
+exports[`group search of the edit modals (golden) EditView matches the recorded behaviour 1`] = `
+{
+  "blank": {
+    "availableGroups": [],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 0,
+    "timerSet": false,
+    "warn": [],
+  },
+  "emptyString": {
+    "availableGroups": [],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 0,
+    "timerSet": false,
+    "warn": [],
+  },
+  "failed": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [
+      [
+        "Error searching Nextcloud groups:",
+        "offline",
+      ],
+    ],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "found": {
+    "availableGroups": [
+      {
+        "id": "sel1",
+        "name": "Selected one",
+      },
+      {
+        "id": "admin",
+        "name": "admin",
+      },
+      {
+        "id": "staff",
+        "name": "staff",
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "noGroups": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "refused": {
+    "availableGroups": [
+      {
+        "id": "cached",
+        "name": "cached",
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=ad%20min%26x",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [
+      [
+        "Failed to search groups:",
+        "Forbidden",
+      ],
+    ],
+  },
+  "typedThenCleared": {
+    "availableGroups": [],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "typedTwice": {
+    "availableGroups": [
+      {
+        "id": "sel1",
+        "name": "Selected one",
+      },
+      {
+        "id": "admin",
+        "name": "admin",
+      },
+      {
+        "id": "staff",
+        "name": "staff",
+      },
+    ],
+    "error": [],
+    "fetch": [
+      [
+        "/ocs/v1.php/cloud/groups?format=json&search=adm",
+        {
+          "headers": {
+            "OCS-APIRequest": "true",
+          },
+        },
+      ],
+    ],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 1,
+    "storeLoads": 0,
+    "timerSet": true,
+    "warn": [],
+  },
+  "undefinedQuery": {
+    "availableGroups": [],
+    "error": [],
+    "fetch": [],
+    "fetchedBefore": 0,
+    "loadingGroups": false,
+    "pendingBefore": 0,
+    "storeLoads": 0,
+    "timerSet": false,
+    "warn": [],
+  },
+}
+`;

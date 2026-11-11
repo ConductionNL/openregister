@@ -24,7 +24,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -37,13 +37,17 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ScheduledReport;
-use OCA\OpenRegister\Db\ScheduledReportMapper;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
+use OCA\OpenRegister\Service\ScheduledReportDelivery;
+use OCA\OpenRegister\Service\ScheduledReportExporters;
+use OCA\OpenRegister\Service\ScheduledReportOwnerServices;
+use OCA\OpenRegister\Service\ScheduledReportStores;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IConfig;
@@ -97,19 +101,14 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 		);
 
 		return new ScheduledReportService(
-			$this->mapper,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->exportService,
-			$this->rootFolder,
-			$this->userManager,
-			$this->createMock(IUserSession::class),
-			$this->notificationManager,
-			new NullLogger(),
-			$this->createMock(IMailer::class),
-			$config,
-			$profiles,
-			$runs
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			new ScheduledReportExporters($this->exportService, $profiles, $runs),
+			new ScheduledReportDelivery(
+				new ScheduledReportOwnerServices($this->userManager, $this->createMock(IUserSession::class), $this->rootFolder, $this->notificationManager),
+				$this->createMock(IMailer::class),
+				$config
+			),
+			new NullLogger()
 		);
 	}//end service()
 
@@ -194,8 +193,8 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 		$runs->expects(self::once())->method('record')->willReturnCallback(
 			function (...$args) use (&$seen) {
 				// PHPUnit hands the declared parameters positionally;
-				// retentionSeconds is the eleventh.
-				$seen = (array_key_exists(10, $args) === true) ? $args[10] : 'absent';
+				// retentionSeconds is the fourth.
+				$seen = (array_key_exists(3, $args) === true) ? $args[3] : 'absent';
 
 				return new \OCA\OpenRegister\Db\ExportRun();
 			}
@@ -268,4 +267,35 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 		self::assertSame('failed', $report->getLastStatus());
 		self::assertStringContainsString('export profile 42', (string)$report->getLastError());
 	}//end testAProfileTheRunnerCannotLoadFailsLoudly()
+
+	/**
+	 * A profile that read a moment ago but cannot now falls back to the
+	 * default expiry rather than keeping the copy forever.
+	 *
+	 * @return void
+	 */
+	public function testAProfileThatCannotBeReadAgainFallsBackToTheDefaultExpiry(): void {
+		$this->mockOwnerFolder();
+
+		$profile = new ExportProfile();
+		$profile->setName('Maandelijkse aanlevering');
+		$profile->setFormat('json');
+		$profiles = $this->createMock(ExportProfileService::class);
+		$profiles->method('find')->willReturnOnConsecutiveCalls($profile, $this->throwException(new \RuntimeException('gone')));
+		$profiles->method('run')->willReturn(['bytes' => '{}', 'rowCount' => 3, 'metadata' => [], 'filename' => 'x.json']);
+
+		$seen = 'not called';
+		$runs = $this->createMock(ExportRunRecorder::class);
+		$runs->expects(self::once())->method('record')->willReturnCallback(
+			function (...$args) use (&$seen) {
+				$seen = (array_key_exists(3, $args) === true) ? $args[3] : 'absent';
+
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+
+		$this->service($profiles, $runs)->runOne(report: $this->report());
+
+		self::assertSame(ExportRunRecorder::DEFAULT_RETENTION_SECONDS, $seen);
+	}//end testAProfileThatCannotBeReadAgainFallsBackToTheDefaultExpiry()
 }//end class

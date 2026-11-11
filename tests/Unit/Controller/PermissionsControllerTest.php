@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\PermissionsController;
+use OCA\OpenRegister\Controller\Support\PermissionsControllerServices;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCP\IAppConfig;
@@ -56,10 +57,11 @@ class PermissionsControllerTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn($mode);
 
 		return new PermissionsController(
-			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
-			catalogue: new PermissionCatalogue(),
-			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())
+			services: new PermissionsControllerServices(
+				catalogue: new PermissionCatalogue(),
+				enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())
+			)
 		);
 	}//end controllerFor()
 
@@ -75,7 +77,7 @@ class PermissionsControllerTest extends TestCase {
 
 		$verbs = array_column($body['permissions'], 'verb');
 		$this->assertSame(
-			expected: ['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage', 'assign'],
+			expected: ['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage', 'assign', 'readFiles', 'addFiles', 'deleteFiles', 'readGrants'],
 			actual: $verbs
 		);
 

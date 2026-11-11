@@ -1,0 +1,95 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EntitiesTab golden renders grouped entities and reloads when the message changes 1`] = `
+"<div class="or-tab-entities">
+  <div>
+    <div class="or-entity-group">
+      <h4 class="or-entity-group-title">t:Email Addresses</h4>
+      <ul class="or-entity-list">
+        <li class="or-entity-item"><span class="or-entity-value">a@example.com</span>
+          <!--v-if-->
+        </li>
+      </ul>
+    </div>
+    <div class="or-entity-group">
+      <h4 class="or-entity-group-title">t:People</h4>
+      <ul class="or-entity-list">
+        <li class="or-entity-item"><span class="or-entity-value">Alice</span>
+          <!--v-if-->
+        </li>
+      </ul>
+    </div>
+    <div class="or-entity-group">
+      <h4 class="or-entity-group-title">t:Links</h4>
+      <ul class="or-entity-list">
+        <li class="or-entity-item"><span class="or-entity-value">https://example.com/x</span>
+          <!--v-if-->
+        </li>
+      </ul>
+    </div>
+    <div class="or-entity-group">
+      <h4 class="or-entity-group-title">t:Phone Numbers</h4>
+      <ul class="or-entity-list">
+        <li class="or-entity-item"><span class="or-entity-value">+31 6 12345678</span>
+          <!--v-if-->
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`EntitiesTab golden renders the empty state without a message and makes no request 1`] = `
+"<div class="or-tab-entities">
+  <div class="or-tab-empty">t:No entities detected for this email.</div>
+</div>"
+`;
+
+exports[`EntitiesTab golden renders the loading state while the body loads 1`] = `
+"<div class="or-tab-entities">
+  <div class="or-tab-loading">t:Loading entities...</div>
+</div>"
+`;
+
+exports[`ObjectsTab golden renders the empty state and counts zero without an account 1`] = `
+"<div class="or-tab-objects">
+  <div data-stub="NcEmptyContent" name="t:No connections yet" description="t:Connect this email to a case, lead, invoice and more."><i data-icon="LinkVariant" size="48"></i>
+    <div data-stub="NcButton" variant="primary"><i data-icon="Plus" size="20"></i> t:Add a connection</div>
+  </div>
+  <!---->
+</div>"
+`;
+
+exports[`ObjectsTab golden renders the linked objects and reloads when the message changes 1`] = `
+"<div class="or-tab-objects">
+  <div class="or-mail-object-list">
+    <div class="or-mail-object-card">
+      <div class="or-mail-object-card__header">
+        <div class="or-mail-object-card__title"><i data-icon="default" size="20" class="or-mail-object-card__icon"></i><a href="/index.php/apps/openregister/registers/2/5/u-1" target="_blank" title="t:Open connected item">Zaak 1</a></div>
+        <div data-stub="NcButton" variant="tertiary" aria-label="t:Remove connection to Zaak 1"><i data-icon="Close" size="20"></i></div>
+      </div>
+      <div class="or-mail-object-card__meta"><span class="or-mail-object-card__schema">Zaken</span></div>
+    </div>
+    <div class="or-mail-object-card">
+      <div class="or-mail-object-card__header">
+        <div class="or-mail-object-card__title"><i data-icon="default" size="20" class="or-mail-object-card__icon"></i><a href="/apps/pipelinq/leads/u-2" target="_blank" title="t:Open connected item">Lead 2</a></div>
+        <div data-stub="NcButton" variant="tertiary" aria-label="t:Remove connection to Lead 2"><i data-icon="Close" size="20"></i></div>
+      </div>
+      <div class="or-mail-object-card__meta"><span class="or-mail-object-card__schema">Leads</span></div>
+    </div>
+  </div>
+  <div class="or-tab-objects__actions">
+    <div data-stub="NcButton" variant="secondary" wide=""><i data-icon="Plus" size="20"></i> t:Add another connection</div>
+  </div>
+  <!---->
+</div>"
+`;
+
+exports[`ObjectsTab golden renders the loading state while the links load 1`] = `
+"<div class="or-tab-objects">
+  <div class="or-tab-loading">
+    <div data-stub="NcLoadingIcon" size="28"></div><span>t:Loading connections...</span>
+  </div>
+  <!---->
+</div>"
+`;

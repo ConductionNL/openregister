@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
+use OCA\OpenRegister\Service\Task\TaskFormResolverServices;
+use OCA\OpenRegister\Service\Task\TaskFormSources;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
@@ -44,6 +46,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\FormLink
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
  */
 class TaskFormResolverTest extends TestCase {
 
@@ -83,16 +86,17 @@ class TaskFormResolverTest extends TestCase {
 		);
 
 		$reader = new TaskFormReader(
-			schemas: $this->schemas,
-			engine: $this->engine,
+			sources: new TaskFormSources(schemas: $this->schemas, engine: $this->engine),
 			apps: $this->createMock(IAppManager::class),
 			l10n: $l10n
 		);
 		$this->resolver = new TaskFormResolver(
-			runs: $this->runs,
-			flows: $this->flows,
-			published: $this->published,
-			formLinks: $this->formLinks,
+			services: new TaskFormResolverServices(
+				runs: $this->runs,
+				flows: $this->flows,
+				published: $this->published,
+				formLinks: $this->formLinks
+			),
 			reader: $reader,
 			l10n: $l10n
 		);

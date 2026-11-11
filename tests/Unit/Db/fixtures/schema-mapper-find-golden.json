@@ -1,0 +1,815 @@
+{
+    "'7' rbac false mt false": {
+        "found": 7,
+        "cacheKeys": [
+            "7:0:0",
+            "uuid-seven:0:0",
+            "seven-slug:0:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "'7' rbac true mt false": {
+        "found": 7,
+        "cacheKeys": [
+            "7:1:0",
+            "uuid-seven:1:0",
+            "seven-slug:1:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "'7' rbac false mt true": {
+        "found": 7,
+        "cacheKeys": [
+            "7:0:1",
+            "uuid-seven:0:1",
+            "seven-slug:0:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "'7' rbac true mt true": {
+        "found": 7,
+        "cacheKeys": [
+            "7:1:1",
+            "uuid-seven:1:1",
+            "seven-slug:1:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "7 rbac false mt false": {
+        "found": 7,
+        "cacheKeys": [
+            "7:0:0",
+            "uuid-seven:0:0",
+            "seven-slug:0:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "7 rbac true mt false": {
+        "found": 7,
+        "cacheKeys": [
+            "7:1:0",
+            "uuid-seven:1:0",
+            "seven-slug:1:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "7 rbac false mt true": {
+        "found": 7,
+        "cacheKeys": [
+            "7:0:1",
+            "uuid-seven:0:1",
+            "seven-slug:0:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "7 rbac true mt true": {
+        "found": 7,
+        "cacheKeys": [
+            "7:1:1",
+            "uuid-seven:1:1",
+            "seven-slug:1:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "'Seven-Slug' rbac false mt false": {
+        "found": 7,
+        "cacheKeys": [
+            "seven-slug:0:0",
+            "7:0:0",
+            "uuid-seven:0:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = Seven-Slug, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = seven-slug, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "'Seven-Slug' rbac true mt false": {
+        "found": 7,
+        "cacheKeys": [
+            "seven-slug:1:0",
+            "7:1:0",
+            "uuid-seven:1:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = Seven-Slug, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = seven-slug, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "'Seven-Slug' rbac false mt true": {
+        "found": 7,
+        "cacheKeys": [
+            "seven-slug:0:1",
+            "7:0:1",
+            "uuid-seven:0:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = Seven-Slug, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = seven-slug, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "'Seven-Slug' rbac true mt true": {
+        "found": 7,
+        "cacheKeys": [
+            "seven-slug:1:1",
+            "7:1:1",
+            "uuid-seven:1:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = Seven-Slug, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = seven-slug, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "'uuid-seven' rbac false mt false": {
+        "found": 7,
+        "cacheKeys": [
+            "uuid-seven:0:0",
+            "7:0:0",
+            "seven-slug:0:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = uuid-seven, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = uuid-seven, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "'uuid-seven' rbac true mt false": {
+        "found": 7,
+        "cacheKeys": [
+            "uuid-seven:1:0",
+            "7:1:0",
+            "seven-slug:1:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = uuid-seven, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = uuid-seven, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "'uuid-seven' rbac false mt true": {
+        "found": 7,
+        "cacheKeys": [
+            "uuid-seven:0:1",
+            "7:0:1",
+            "seven-slug:0:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = uuid-seven, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = uuid-seven, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "'uuid-seven' rbac true mt true": {
+        "found": 7,
+        "cacheKeys": [
+            "uuid-seven:1:1",
+            "7:1:1",
+            "seven-slug:1:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = uuid-seven, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = uuid-seven, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "'7abc' rbac false mt false": {
+        "found": 7,
+        "cacheKeys": [
+            "7abc:0:0",
+            "7:0:0",
+            "uuid-seven:0:0",
+            "seven-slug:0:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7abc, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7abc, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "'7abc' rbac true mt false": {
+        "found": 7,
+        "cacheKeys": [
+            "7abc:1:0",
+            "7:1:0",
+            "uuid-seven:1:0",
+            "seven-slug:1:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7abc, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7abc, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "'7abc' rbac false mt true": {
+        "found": 7,
+        "cacheKeys": [
+            "7abc:0:1",
+            "7:0:1",
+            "uuid-seven:0:1",
+            "seven-slug:0:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7abc, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7abc, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "'7abc' rbac true mt true": {
+        "found": 7,
+        "cacheKeys": [
+            "7abc:1:1",
+            "7:1:1",
+            "uuid-seven:1:1",
+            "seven-slug:1:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7abc, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7abc, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Schema not found (id='missing', multitenancy=false, rbac=false)",
+        "cacheKeys": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = missing, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = missing, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "missing numeric": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Schema not found (id='12', multitenancy=true, rbac=true)",
+        "cacheKeys": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 12, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 12, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 12, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "missing rbac only": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Schema not found (id='13', multitenancy=false, rbac=true)",
+        "cacheKeys": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 13, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 13, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 13, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    },
+    "ambiguous slug": {
+        "found": 7,
+        "cacheKeys": [
+            "seven-slug:0:0",
+            "7:0:0",
+            "uuid-seven:0:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = Seven-Slug, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = seven-slug, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "warning",
+                "message": "[SchemaMapper] Identifier \"Seven-Slug\" matches more than one schema; resolving to #7 (\"Seven\", application \"app\"). Fix the duplicate with `occ openregister:schemas:dedup`.",
+                "context": {
+                    "identifier": "Seven-Slug",
+                    "candidates": [
+                        {
+                            "id": 7,
+                            "title": "Seven",
+                            "slug": "Seven-Slug",
+                            "application": "app"
+                        },
+                        {
+                            "id": 9,
+                            "title": "Nine",
+                            "slug": "Seven-Slug",
+                            "application": ""
+                        }
+                    ]
+                }
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "null slug and uuid": {
+        "found": 7,
+        "cacheKeys": [
+            "7:0:0"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ],
+        "logs": [],
+        "queriesOnCacheHit": 0
+    }
+}

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:openregister="https://openregister.app/schema/bpmn/1.0" id="Definitions_id_0a1b2c3d-0000-4000-8000-000000000005" targetNamespace="https://openregister.app/schema/bpmn/1.0">
+  <bpmn:process id="Process_id_0a1b2c3d-0000-4000-8000-000000000005" name="Golden mixed" isExecutable="false">
+    <bpmn:startEvent id="start" name="Start">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.trigger-manual</openregister:type>
+      </bpmn:extensionElements>
+    </bpmn:startEvent>
+    <bpmn:startEvent id="sched" name="sched">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.trigger-schedule</openregister:type>
+        <openregister:config xmlns:openregister="https://openregister.app/schema/bpmn/1.0">{"cron":" 0 2 * * * "}</openregister:config>
+      </bpmn:extensionElements>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle>0 2 * * *</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:startEvent id="sched2" name="Geen cron">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.trigger-schedule</openregister:type>
+      </bpmn:extensionElements>
+      <bpmn:timerEventDefinition/>
+    </bpmn:startEvent>
+    <bpmn:startEvent id="obj" name="Op object">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.trigger-object</openregister:type>
+        <openregister:config xmlns:openregister="https://openregister.app/schema/bpmn/1.0">{"event":"created","register":" 5 ","schema":""}</openregister:config>
+      </bpmn:extensionElements>
+      <bpmn:conditionalEventDefinition>
+        <bpmn:condition>event == "created" and register == "5"</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:startEvent id="obj2" name="Elk object">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.trigger-object</openregister:type>
+      </bpmn:extensionElements>
+      <bpmn:conditionalEventDefinition>
+        <bpmn:condition>true</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="kies" name="Kies">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.switch</openregister:type>
+      </bpmn:extensionElements>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateCatchEvent id="wacht" name="Wacht">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.await-signal</openregister:type>
+        <openregister:config xmlns:openregister="https://openregister.app/schema/bpmn/1.0">{"signal":"go"}</openregister:config>
+      </bpmn:extensionElements>
+      <bpmn:messageEventDefinition/>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="pauze" name="Pauze">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.wait</openregister:type>
+        <openregister:config xmlns:openregister="https://openregister.app/schema/bpmn/1.0">{"cron":"* * * * *"}</openregister:config>
+      </bpmn:extensionElements>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle>* * * * *</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="id_9lives" name="Cijfer">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.send-email</openregister:type>
+        <openregister:config xmlns:openregister="https://openregister.app/schema/bpmn/1.0">{"to":"a@b.nl","n":[1,2]}</openregister:config>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="with_space" name="with space">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.unknown-thing</openregister:type>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="unnamed" name="Zonder id">
+      <bpmn:extensionElements xmlns:openregister="https://openregister.app/schema/bpmn/1.0">
+        <openregister:type xmlns:openregister="https://openregister.app/schema/bpmn/1.0">openregister.end</openregister:type>
+      </bpmn:extensionElements>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="e1" sourceRef="start" targetRef="kies"/>
+    <bpmn:sequenceFlow id="edge-1" sourceRef="kies" targetRef="wacht">
+      <bpmn:conditionExpression>data.x &gt; 1</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="e4" sourceRef="wacht" targetRef="id_9lives"/>
+    <bpmn:sequenceFlow id="edge-3" sourceRef="with_space" targetRef="obj"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Process_id_0a1b2c3d-0000-4000-8000-000000000005">
+    <bpmndi:BPMNPlane id="Plane_Process_id_0a1b2c3d-0000-4000-8000-000000000005" bpmnElement="Process_id_0a1b2c3d-0000-4000-8000-000000000005">
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_start" bpmnElement="start">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="10" y="20" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_sched" bpmnElement="sched">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="300" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_sched2" bpmnElement="sched2">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="360" y="100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_obj" bpmnElement="obj">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="540" y="100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_obj2" bpmnElement="obj2">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="720" y="100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_kies" bpmnElement="kies">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="900" y="100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_wacht" bpmnElement="wacht">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="1080" y="100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_pauze" bpmnElement="pauze">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="1260" y="100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_id_9lives" bpmnElement="id_9lives">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="1440" y="100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_with_space" bpmnElement="with_space">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="1620" y="100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Shape_unnamed" bpmnElement="unnamed">
+        <dc:Bounds xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" x="1800" y="100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Edge_e1" bpmnElement="e1">
+        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="60" y="60"/>
+        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="950" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Edge_edge-1" bpmnElement="edge-1">
+        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="950" y="140"/>
+        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="1130" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Edge_e4" bpmnElement="e4">
+        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="1130" y="140"/>
+        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="1490" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Edge_edge-3" bpmnElement="edge-3">
+        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="1670" y="140"/>
+        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="590" y="140"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

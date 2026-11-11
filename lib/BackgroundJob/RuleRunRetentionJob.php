@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -28,8 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\RuleRunMapper;
-use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Db\RuleRunMapperInterface;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -44,7 +44,7 @@ use Throwable;
  * deleted a rule's last thousand rows, the inventory still reports when that
  * rule last ran and what it last errored with.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleRunRetentionJob extends TimedJob {
 
@@ -52,16 +52,16 @@ class RuleRunRetentionJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The clock.
-	 * @param RuleRunMapper $runs Deletes expired detail rows.
-	 * @param RuleRunRecorder $recorder Reads the configured retention period.
+	 * @param RuleRunMapperInterface $runs Deletes expired detail rows.
+	 * @param RuleRunRecorderInterface $recorder Reads the configured retention period.
 	 * @param LoggerInterface $logger Records what was swept.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly RuleRunMapper $runs,
-		private readonly RuleRunRecorder $recorder,
+		private readonly RuleRunMapperInterface $runs,
+		private readonly RuleRunRecorderInterface $recorder,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -79,22 +79,13 @@ class RuleRunRetentionJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	protected function run($argument): void {
 		$days = $this->recorder->retentionDays();
 
-		try {
-			$deleted = $this->runs->pruneBefore(before: new DateTime('-' . $days . ' days'));
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[RuleRunRetention] Sweep failed: ' . $e->getMessage(),
-				['file' => __FILE__, 'line' => __LINE__]
-			);
-			return;
-		}
-
-		if ($deleted === 0) {
+		$deleted = $this->prunedRows(days: $days);
+		if ($deleted === null || $deleted === 0) {
 			return;
 		}
 
@@ -103,4 +94,23 @@ class RuleRunRetentionJob extends TimedJob {
 			['file' => __FILE__, 'line' => __LINE__]
 		);
 	}//end run()
+
+	/**
+	 * Prune the rule runs older than the retention period.
+	 *
+	 * @param int $days The retention period.
+	 *
+	 * @return int|null How many rows were removed; null, logged, when the prune failed.
+	 */
+	private function prunedRows(int $days): ?int {
+		try {
+			return $this->runs->pruneBefore(before: new DateTime('-' . $days . ' days'));
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[RuleRunRetention] Sweep failed: ' . $e->getMessage(),
+				['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end prunedRows()
 }//end class

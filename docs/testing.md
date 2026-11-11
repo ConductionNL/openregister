@@ -457,6 +457,52 @@ phpcov merge --clover=coverage/api-clover.xml /tmp/openregister-coverage/
 phpcov merge --clover=coverage/combined-clover.xml coverage/
 ```
 
+### Mutation Testing (Infection)
+
+Coverage says a line ran; a mutation score says a wrong result fails a test.
+[Infection](https://infection.github.io/) lives in its own vendor-bin namespace
+(`vendor-bin/infection`), so the main `composer.lock` is untouched. It needs a
+coverage driver (PCOV or Xdebug). It is **not** a CI gate yet.
+
+```bash
+composer bin infection install
+# Mutate named files against only the unit tests that name the class:
+composer test:mutation -- lib/Service/Audit/PurposeGuard.php lib/Service/Rbac/DenyEntryMatcher.php
+# No arguments: the whole infection.json5 source against the full Unit suite (slow).
+composer test:mutation
+```
+
+Reports land in `vendor-bin/infection/vendor/run/<INFECTION_TAG or default>/`
+(`infection-log.txt`, `infection-summary.txt`, `infection-log.json`,
+`per-mutator.md`). `vendor-bin/infection/run.sh` explains its two workarounds:
+Infection runs from its own directory (the project autoloader carries
+nikic/php-parser v4 from Psalm, which shadows Infection's v5), and with
+`OPENREGISTER_TEST_SKIP_NC=1` (Infection aborts the initial run on the first
+STDERR byte, and `tests/bootstrap.php` prints a notice there).
+
+**First score (Infection 0.35.10, PCOV, 9 Nov 2026), covered-code MSI per access class:**
+
+| Class | Before | After | Mutants |
+| --- | ---: | ---: | ---: |
+| Service/Audit/PurposeGuard | 72% | 94% | 66 |
+| Service/Deletion/DestroyRightService | 50% | 89% | 57 |
+| Service/Rbac/DenyEntryMatcher | 66% | 98% | 48 |
+| Service/Party/PartyIndicatorGuard | 65% | 96% | 47 |
+| Service/Rbac/TokenGrantValidator | 67% | 97% | 67 |
+| Service/Object/ObjectReadAccess | 68% | 100% | 20 |
+| Service/Deletion/DeletedObjectAuthorizer | 80% | 98% | 47 |
+| Service/Rbac/InheritedGrantLister | 60% | 90% | 30 |
+| Service/Audit/HistoryEntryRedactor | 72% | 90% | 94 |
+| Service/Rbac/AccessReviewGate | 95% | 96% | 70 |
+| **All ten** | **71.4%** (384/538) | **94.3%** (515/546) | |
+
+Mutation code coverage is 100% for each, so MSI equals covered-code MSI. A few
+mutant counts grew because Infection only mutates covered lines and the new
+tests cover more. The survivors left are equivalent (a `(string)` cast on a
+getter that already returns a string, a `return false` whose removal falls
+through to the same `false`) or log/message wording, not decisions; the
+`*MutationTest.php` file next to each class's tests kills the rest.
+
 ### Coverage Guard
 
 The `scripts/coverage-guard.php` script prevents coverage regressions. It compares the current clover report against `.coverage-baseline` and fails if coverage dropped.

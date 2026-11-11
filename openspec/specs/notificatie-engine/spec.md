@@ -255,7 +255,7 @@ Failed notification deliveries MUST be retried with configurable backoff strateg
 
 ### Requirement: Users MUST be able to manage their notification preferences
 
-Users MUST be able to turn specific schema-declared notifications on or off (and optionally narrow channels) via a personal settings interface, without affecting other users' preferences. Preferences MUST be stored as override-only values in Nextcloud per-user app config under the `openregister` app (NOT in a `NotificationPreference` or `NotificationSubscription` table). When a user has no override for a `(schema, notification-key)` pair, the schema-declared default applies. Independently of the per-`(schema, notification)` override, a user MAY configure a global delivery window (quiet hours) via `NotificationDeliveryWindowService`, exposed through `GET`/`PUT /api/notification-delivery-window`, stored the same override-only way (a distinct per-user app-config key, `notification_delivery_window`) so a user with no configured window keeps today's immediate-delivery behaviour.
+Users MUST be able to turn specific schema-declared notifications on or off (and optionally narrow channels) via the user settings dialog, without affecting other users' preferences. Preferences MUST be stored as override-only values in Nextcloud per-user app config under the `openregister` app (NOT in a `NotificationPreference` or `NotificationSubscription` table). When a user has no override for a `(schema, notification-key)` pair, the schema-declared default applies. Independently of the per-`(schema, notification)` override, a user MAY configure a global delivery window (quiet hours) via `NotificationDeliveryWindowService`, exposed through `GET`/`PUT /api/notification-delivery-window`, stored the same override-only way (a distinct per-user app-config key, `notification_delivery_window`) so a user with no configured window keeps today's immediate-delivery behaviour.
 
 #### Scenario: User disables a specific notification
 - GIVEN schema `meldingen` declares an `object_created` notification (default on) to group `behandelaars`
@@ -1135,10 +1135,12 @@ SHALL be markable read as a whole.
 
 A `recipients` block in `x-openregister-notifications` SHALL accept
 `{"watchers": true}`. The dispatcher SHALL resolve it at dispatch time to
-the users watching the triggering object, merged and deduplicated with the
-other recipient blocks, subject to each user's preferences and to a read
-check on the object. A watcher who may no longer read the object SHALL
-receive nothing and SHALL be removed from the watcher list.
+the users following the triggering object with notifications on, merged and
+deduplicated with the other recipient blocks, subject to each user's
+preferences and to a read check on the object. A follower with notifications
+off SHALL receive nothing through this block. A watcher who may no longer
+read the object SHALL receive nothing and SHALL be removed from the watcher
+list.
 
 #### Scenario: a watcher is told about a status change
 
@@ -1146,6 +1148,13 @@ receive nothing and SHALL be removed from the watcher list.
 - **WHEN** the object's status changes
 - **THEN** the watcher receives the notification once, whether or not they are also the assignee
 - @e2e exclude {delivery runs through the queue and a background job, so an e2e assertion would be a timing race; asserted by NotificationRecipientResolverWatchersTest::testWatchersAreResolvedToUids and ::testAWatcherWhoIsAlsoTheAssigneeIsToldOnce}
+
+#### Scenario: a quiet follower hears nothing
+
+- **GIVEN** a user following an object with notifications off
+- **WHEN** a rule addressed to watchers fires
+- **THEN** the user receives nothing and still follows the object
+- @e2e exclude {same timing race; asserted by WatcherServiceTest::testWatcherUidsLeaveOutQuietFollowers}
 
 #### Scenario: a watcher who lost access hears nothing
 
@@ -1269,7 +1278,7 @@ The notification `{{prop}}` interpolation SHALL resolve a UUID-shaped field valu
 
 ### Requirement: Dispatcher resolves action targets to deeplinks
 
-For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `target` to a concrete deeplink server-side at dispatch time: `object-detail` → the triggering object's detail route; `object-detail` with `{ object: { kind: "relation", field } }` → the related object's register/schema/uuid resolved on the triggering object (the "Open client" mechanism), through OR RBAC so the deeplink is only built for objects the recipient may read; `route` → the originApp frontend route with `{{prop}}` interpolation (HTML-escaped) from object fields; `url` → the absolute URL verbatim.
+For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `target` to a concrete deeplink server-side at dispatch time: `object-detail` → the triggering object's detail route; `object-detail` with `{ object: { kind: "relation", field } }` → the related object's register/schema/uuid resolved on the triggering object (the "Open client" mechanism), through OR RBAC so the deeplink is only built for objects the recipient may read; `route` → the originApp frontend route with `{{prop}}` interpolation (HTML-escaped) from object fields; `url` → the absolute `http`, `https` or `mailto` URL verbatim.
 
 #### Scenario: object-detail deeplinks to the triggering object
 
@@ -1290,6 +1299,24 @@ For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `
 
 - **WHEN** an action declares `target: { "kind": "url", "href": "https://EXAMPLE_HOST/path" }`
 - **THEN** the dispatcher uses the absolute URL verbatim
+
+#### Scenario: url target outside the linkable schemes
+
+- **WHEN** an action declares a `url` target whose `href` is not an absolute `http`, `https` or `mailto` URL
+- **THEN** the schema save is refused with `notification-action-bad-href`, naming the rule and the action
+- **AND** a rule stored before this check keeps firing, and the dispatcher drops that one action
+
+#### Scenario: url target outside the linkable schemes in a configuration import
+
+- **WHEN** a configuration import writes a schema with such a `url` target
+- **THEN** the import stores the schema and logs a warning naming the rule and the action, as it does for every other notification fault
+- **AND** a later save of that schema by hand is refused with `notification-action-bad-href`
+
+#### Scenario: a save that keeps a stored unlinkable url action
+
+- **WHEN** a schema already stores such a `url` target and a save leaves its `x-openregister-notifications` block exactly as stored (for example an authorization change or the revocation of an account's grants)
+- **THEN** the save goes through and logs a warning naming the rule and the action
+- **AND** a save that changes the block is refused with `notification-action-bad-href` while the block still holds such a target
 
 ### Requirement: Notifier renders declared actions with the originApp icon
 
@@ -1409,6 +1436,166 @@ actions only: an action added with `addAction()` never reached the client.
 - **WHEN** the notifier prepares an object notification
 - **THEN** the link is OpenRegister's object view for that register, schema and uuid
 - @e2e exclude {notifier rendering; covered by tests/Unit/Notification/AnnotationNotifierLinkTest.php}
+
+### Requirement: The preference list names each rule once
+
+The effective notification preferences of a user SHALL list each rule of an owning app's schema slug once, read from
+the schema row with the highest version (then the highest id), whatever other rows share that app and slug.
+
+#### Scenario: An older schema row left behind
+
+- **GIVEN** dossiq's `workDigest` as version 1.0.0 (id 1515) and 1.0.1 (id 1532)
+- **THEN** `workDigestReady` is listed once, as 1.0.1 declares it
+
+### Requirement: A rule can declare a channel that is off until someone switches it on
+
+A notification rule MAY declare `optInChannels`, a list of per-recipient channels. Such a channel SHALL NOT be delivered to a recipient unless that recipient's effective preference (their own value, else their group's default) includes it. The effective channels SHALL default to the rule's `channels` (or `["nc-notification"]` when absent), and a preference layer SHALL be able to choose any channel in `channels` plus `optInChannels`, never another. The preferences list SHALL answer each entry's `availableChannels` (default channels, then opt-in ones) and `optInChannels`.
+
+#### Scenario: E-mail is off by default
+- GIVEN a rule with `channels: ["nc-notification"]` and `optInChannels: ["email"]`
+- WHEN it fires for jan and piet, neither of whom set a preference
+- THEN both get a Nextcloud notification and neither gets an e-mail
+
+#### Scenario: A person switches e-mail on
+- GIVEN jan set `channels: ["nc-notification", "email"]` for that rule
+- WHEN it fires for jan and piet
+- THEN jan gets a notification and an e-mail, piet only the notification
+
+#### Scenario: A broadcast channel cannot be opt-in
+- WHEN a rule declares `optInChannels: ["talk"]`
+- THEN the validator reports `notification-bad-opt-in-channel`
+
+### Requirement: A group or a declared role is a recipient (REQ-NRG-001)
+
+A notification rule MAY address a Nextcloud group or a role declared on
+the object, in addition to a named user. The members SHALL be resolved at
+dispatch time, and each member's own effective preference SHALL still
+apply. A group that cannot be resolved SHALL be reported as a failed
+dispatch rather than delivered to nobody silently.
+
+#### Scenario: an unassigned case warns the team
+
+- **GIVEN** a rule addressing the group that owns a register, and an object with no assignee
+- **WHEN** the rule fires
+- **THEN** every member of the group who has not switched the notification off receives it
+
+#### Scenario: a new colleague gets the warning
+
+- **GIVEN** the same rule, and a user added to the group after the rule was written
+- **WHEN** the rule fires
+- **THEN** that user receives it
+
+#### Scenario: an unresolvable group is reported
+
+- **GIVEN** a rule addressing a group that no longer exists
+- **WHEN** it fires
+- **THEN** the dispatch is recorded as failed, naming the group
+- @e2e exclude {failure path, covered by unit tests}
+
+### Requirement: A declared role assignment is writable through the schema (REQ-NRG-007)
+
+The role-to-groups assignment a rule addresses SHALL be writable on the
+schema, through the same import and save path every other schema field
+takes. A schema that declares it SHALL be accepted, and a malformed
+assignment SHALL be refused when it is written rather than at dispatch.
+
+#### Scenario: a schema declares who holds a role
+
+- **GIVEN** a schema whose authorization assigns `behandelaar` a group
+- **WHEN** the schema is saved
+- **THEN** the assignment is stored intact
+- **AND** a rule addressing that role reaches the group's members
+
+#### Scenario: a malformed assignment is refused when it is written
+
+- **GIVEN** a schema whose authorization assigns a role no group
+- **WHEN** the schema is saved
+- **THEN** the save is refused, naming the role
+- @e2e exclude {authoring-time refusal, covered by unit tests}
+
+### Requirement: The effective preference merges schema, group and user, and names the layer (REQ-NRG-002)
+
+The effective preference SHALL be the schema default, overridden by a
+group default, overridden by the user's own value. A group default SHALL
+be settable by an administrator of that group. The effective-preferences
+API SHALL name which layer decided each value.
+
+#### Scenario: a team default overrides the schema default
+
+- **GIVEN** a schema default of e-mail and a group default of in-app for one notification kind
+- **WHEN** a member of that group reads their effective preferences
+- **THEN** the value is in-app and the layer is named as the group
+
+#### Scenario: the user still wins
+
+- **GIVEN** the same group default and a user override of e-mail
+- **WHEN** the same read happens
+- **THEN** the value is e-mail and the layer is named as the user
+
+### Requirement: A preference may be scoped to a register, a schema or a declared domain (REQ-NRG-003)
+
+A user or a group MAY set a preference for one register, one schema or one
+domain a leaf app declares, which SHALL override their own global value for
+that scope only. A scope with no preference SHALL fall through to the
+global value with no migration.
+
+#### Scenario: loud for vergunningen, quiet for meldingen
+
+- **GIVEN** a user whose global preference is off and who sets e-mail for one schema
+- **WHEN** an event fires on that schema and on another
+- **THEN** they are notified for the first and not for the second
+
+### Requirement: One rule reaches a person and an integration, recorded once (REQ-NRG-004)
+
+A rule SHALL declare its transports, and one firing SHALL run all of them.
+The system SHALL record one outcome per transport under one event
+identifier, so a user notification and an outbound integration call that
+came from the same event can be read together.
+
+#### Scenario: one event, two transports, one record
+
+- **GIVEN** a rule declaring the in-app transport and an outbound call
+- **WHEN** it fires
+- **THEN** both run, and the record holds one event with two transport outcomes
+
+#### Scenario: one transport failing does not stop the other
+
+- **GIVEN** the same rule with an outbound endpoint that is down
+- **WHEN** it fires
+- **THEN** the in-app notification is delivered and the outbound outcome is recorded as failed
+- @e2e exclude {transport failure, covered by unit tests}
+
+### Requirement: A broadcast reaches every user once, recorded (REQ-NRG-005)
+
+An administrator SHALL be able to send one message to every user, with a
+subject, a body and a period it is shown for. Each user SHALL receive it
+once. The broadcast SHALL be recorded with its sender, its content and its
+period.
+
+#### Scenario: a storingsmelding reaches the desk
+
+- **GIVEN** an administrator sending a broadcast for today
+- **WHEN** users open the application
+- **THEN** each sees it once, and the record names the sender
+
+### Requirement: Every platform event ships an editable template (REQ-NRG-006)
+
+Each event the platform raises SHALL ship a named, editable message
+template with its variables documented. The system SHALL be able to list
+the events that have no template, and SHALL NOT substitute a generic body
+silently for a missing one.
+
+#### Scenario: the gaps are listable
+
+- **GIVEN** an instance where one event has no template
+- **WHEN** the template list is read
+- **THEN** that event is named as having none
+
+#### Scenario: an administrator edits the shipped text
+
+- **GIVEN** a shipped template
+- **WHEN** an administrator edits it and the event fires
+- **THEN** the edited text is used
 
 ## Current Implementation Status
 - **Partially implemented -- in-app notifications**: `NotificationService` (`lib/Service/NotificationService.php`) exists and integrates with Nextcloud's `IManager` (INotificationManager). Currently limited to `configuration_update_available` notifications. `Notifier` (`lib/Notification/Notifier.php`) implements `INotifier` for formatting notifications with translations. Registered as a notifier service in `appinfo/info.xml`.

@@ -110,7 +110,7 @@ class RouteNameUniquenessTest extends TestCase {
 	}//end testEveryDeclaredRouteRegistersUnderItsOwnName()
 
 	/**
-	 * The thirteen that were overwritten are named, not counted.
+	 * The addresses that were overwritten, and still exist, are named, not counted.
 	 *
 	 * A count moves when anything else in the file moves. These are the
 	 * addresses that answered 405 or 404 on a live instance, so each is
@@ -118,7 +118,7 @@ class RouteNameUniquenessTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testTheThirteenLostAddressesAreRoutedAgain(): void {
+	public function testTheLostAddressesAreRoutedAgain(): void {
 		$entries = $this->routeFile()['routes'];
 
 		$byAddress = [];
@@ -127,7 +127,6 @@ class RouteNameUniquenessTest extends TestCase {
 		}
 
 		$lost = [
-			'PATCH /api/settings/search-backend',
 			'PUT /api/settings/rbac',
 			'PUT /api/settings/multitenancy',
 			'PUT /api/settings/organisation',
@@ -152,6 +151,6 @@ class RouteNameUniquenessTest extends TestCase {
 				sprintf('%s must register under a name no other address shares', $address)
 			);
 		}
-	}//end testTheThirteenLostAddressesAreRoutedAgain()
+	}//end testTheLostAddressesAreRoutedAgain()
 
 }//end class

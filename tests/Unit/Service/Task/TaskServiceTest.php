@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
+use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
@@ -36,18 +37,31 @@ use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Task\TaskAct;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
 use OCA\OpenRegister\Service\Task\TaskForm;
+use OCA\OpenRegister\Service\Task\TaskFormFields;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskDelegation;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskResolution;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
 
 /**
  * Authorization ordering, concurrency, transactionality and normalisation.
@@ -64,6 +78,7 @@ use UnexpectedValueException;
  * @covers \OCA\OpenRegister\Exception\TaskConflictException
  * @uses \OCA\OpenRegister\Service\Task\TaskForm
  * @uses \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard
+ * @uses \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  */
 class TaskServiceTest extends TestCase {
 
@@ -116,15 +131,23 @@ class TaskServiceTest extends TestCase {
 	 */
 	private function service(): TaskService {
 		return new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->candidates,
-			relations: $this->relations,
-			audits: $this->audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder()
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->candidates,
+					relations: $this->relations,
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 	}//end service()
 
@@ -228,7 +251,7 @@ class TaskServiceTest extends TestCase {
 
 		$this->expectException(TaskValidationException::class);
 		$this->expectExceptionMessage("'rejected'");
-		$this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: '', actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: ''), actor: 'alice');
 	}//end testARejectionWithoutACommentMovesNothing()
 
 	/**
@@ -246,7 +269,7 @@ class TaskServiceTest extends TestCase {
 		$this->db->expects($this->never())->method('commit');
 
 		$this->expectException(RuntimeException::class);
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 	}//end testAnAuditFailureLeavesTheTaskNotCompleted()
 
 	/**
@@ -285,6 +308,43 @@ class TaskServiceTest extends TestCase {
 		$this->assertTrue($created->getIsTerminal());
 		$this->assertSame('done', $created->getOutcome());
 	}//end testCreateMapsALegacyStatusAndPreservesTheOutcome()
+
+	/**
+	 * An imported task given its creation moment carries it, and so does its create audit entry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
+	 */
+	public function testAnImportDatesTheTaskAndItsCreateAuditEntry(): void {
+		$audited = [];
+		$this->setUpAuditRecorder(audited: $audited);
+		$at = new DateTime('2026-10-05T14:20:00+00:00');
+
+		$created = $this->service()->importTask(import: new TaskImport(data: ['title' => 'Hoorzitting inplannen'], actor: 'rita', createdAt: $at));
+
+		$this->assertSame(expected: $at, actual: $created->getCreated());
+		$this->assertCount(expectedCount: 1, haystack: $audited);
+		$this->assertSame(expected: 'create', actual: $audited[0]->getAction());
+		$this->assertSame(expected: $at, actual: $audited[0]->getCreated());
+	}//end testAnImportDatesTheTaskAndItsCreateAuditEntry()
+
+	/**
+	 * Without a creation moment, the import leaves both stamps to the mappers.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 */
+	public function testAnImportWithoutAMomentLeavesTheStampsToTheMappers(): void {
+		$audited = [];
+		$this->setUpAuditRecorder(audited: $audited);
+
+		$created = $this->service()->import(data: ['title' => 'Taak'], actor: 'rita');
+
+		$this->assertNull(actual: $created->getCreated());
+		$this->assertNull(actual: $audited[0]->getCreated());
+	}//end testAnImportWithoutAMomentLeavesTheStampsToTheMappers()
 
 	/**
 	 * A checklist arriving as a STRING is refused — the procest shape.
@@ -330,6 +390,30 @@ class TaskServiceTest extends TestCase {
 		$this->assertSame(['ursula'], $created->getCandidateUsers());
 		$this->assertSame(['reviewers', 'controllers'], $created->getCandidateGroups());
 	}//end testCandidateJsonAndCandidateIndexAgree()
+
+	/**
+	 * A non-string candidate group entry is never indexed as a group name:
+	 * casting it would write the literal group "Array" to the index.
+	 *
+	 * @return void
+	 */
+	public function testANonStringCandidateGroupIsNotIndexed(): void {
+		$captured = null;
+		$this->candidates->expects($this->once())->method('replaceForTask')->willReturnCallback(
+			static function (int $taskId, array $candidates) use (&$captured): void {
+				$captured = $candidates;
+			}
+		);
+
+		$this->service()->create(
+			data: [
+				'candidateGroups' => ['reviewers', ['type' => 'group', 'id' => 'controllers']],
+			],
+			actor: 'rita'
+		);
+
+		$this->assertSame(expected: [['kind' => 'group', 'ref' => 'reviewers']], actual: $captured);
+	}//end testANonStringCandidateGroupIsNotIndexed()
 
 	/**
 	 * KILLING A RUN EMPTIES ITS INBOXES: every open task of the run is
@@ -435,7 +519,7 @@ class TaskServiceTest extends TestCase {
 		$this->tasks->expects($this->never())->method('updateIfOpen');
 
 		try {
-			$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'mallory');
+			$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'mallory');
 			$this->fail('A denied verb went through.');
 		} catch (TaskAccessDeniedException) {
 			// Expected.
@@ -468,7 +552,7 @@ class TaskServiceTest extends TestCase {
 				}
 			);
 
-			$completed = $this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: 'ok', comment: null, actor: 'alice');
+			$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', resultText: 'ok'), actor: 'alice');
 			$results[] = [
 				'state' => $completed->getState(),
 				'terminal' => $completed->getIsTerminal(),
@@ -499,8 +583,11 @@ class TaskServiceTest extends TestCase {
 			}
 		);
 
-		$this->service()->delegate(uuid: 't-7', delegate: 'dora', mandate: 'Volmacht 2026', actor: 'alice');
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'dora');
+		$this->service()->delegate(
+			ref: new TaskActorRef(uuid: 't-7', actor: 'alice'),
+			delegation: new TaskDelegation(delegate: 'dora', mandate: 'Volmacht 2026'),
+		);
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'dora');
 
 		$completion = end($entries);
 		$this->assertSame('dora', $completion->getActor());
@@ -525,7 +612,10 @@ class TaskServiceTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($task);
 		$this->audits->expects($this->once())->method('insert');
 
-		$updated = $this->service()->checkChecklistItem(uuid: 't-7', itemId: 'c2', checked: true, actor: 'alice');
+		$updated = $this->service()->checkChecklistItem(
+			ref: new TaskActorRef(uuid: 't-7', actor: 'alice'),
+			tick: new ChecklistTick(itemId: 'c2', checked: true),
+		);
 
 		$checklist = $updated->getChecklist();
 		$this->assertFalse($checklist[0]['checked']);
@@ -548,7 +638,7 @@ class TaskServiceTest extends TestCase {
 		$this->candidates->expects($this->never())->method('replaceForTask');
 
 		try {
-			$this->service()->offer(uuid: 't-7', pool: ['routingFallback' => 'mallory'], actor: 'rita');
+			$this->service()->offer(ref: new TaskActorRef(uuid: 't-7', actor: 'rita'), pool: ['routingFallback' => 'mallory']);
 			$this->fail('An assigned task accepted an offer.');
 		} catch (TaskConflictException $conflict) {
 			$this->assertStringContainsString('already assigned', $conflict->getMessage());
@@ -569,7 +659,7 @@ class TaskServiceTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($pooled);
 		$this->candidates->expects($this->once())->method('replaceForTask');
 
-		$offered = $this->service()->offer(uuid: 't-7', pool: ['candidateUsers' => ['pat', 'quinn']], actor: 'rita');
+		$offered = $this->service()->offer(ref: new TaskActorRef(uuid: 't-7', actor: 'rita'), pool: ['candidateUsers' => ['pat', 'quinn']]);
 
 		$this->assertSame(['pat', 'quinn'], $offered->getCandidateUsers());
 		$this->assertSame(Task::STATE_ENABLED, $offered->getState());
@@ -589,7 +679,7 @@ class TaskServiceTest extends TestCase {
 		$this->authorization->method('assertMay')->willThrowException(new TaskAccessDeniedException('denied'));
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'mallory');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'mallory');
 	}//end testAuthorizationRunsBeforeTheTerminalityCheck()
 
 	/**
@@ -608,7 +698,7 @@ class TaskServiceTest extends TestCase {
 		$this->db->expects($this->never())->method('commit');
 
 		$this->expectException(TaskConflictException::class);
-		$this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'no', actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'no'), actor: 'alice');
 	}//end testASecondCompletionLosesTheConditionalUpdate()
 
 	/**
@@ -633,7 +723,7 @@ class TaskServiceTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 		$this->tasks->expects($this->never())->method('updateIfOpen');
 
-		$this->service()->recordRefusedCompletion(task: $this->openTask(), reason: 'missing required input field(s): "reason"', actor: 'alice');
+		$this->service()->recordRefusedCompletion(task: $this->openTask(), attempt: new TaskAct(verb: 'complete', actor: 'alice', reason: 'missing required input field(s): "reason"'));
 	}//end testARefusedCompletionIsAuditedDistinctlyFromACompletion()
 
 	/**
@@ -649,7 +739,7 @@ class TaskServiceTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($closed);
 
 		try {
-			$this->service()->authorizedOpenTask(verb: 'complete', uuid: 't-7', actor: 'alice');
+			$this->service()->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: 'alice'), uuid: 't-7');
 			$this->fail('Expected a conflict.');
 		} catch (TaskConflictException $conflict) {
 			$this->assertStringContainsString('completed', $conflict->getMessage());
@@ -659,7 +749,7 @@ class TaskServiceTest extends TestCase {
 		$this->audits->expects($this->once())->method('insert');
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->service()->authorizedOpenTask(verb: 'complete', uuid: 't-7', actor: 'mallory');
+		$this->service()->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: 'mallory'), uuid: 't-7');
 	}//end testAuthorizedOpenTaskRefusesATerminalTaskAndAuditsADenial()
 
 	/**
@@ -671,19 +761,27 @@ class TaskServiceTest extends TestCase {
 	public function testCreateRefusesARecordFormTheReaderRefuses(): void {
 		$this->authorization->method('isAdministrator')->willReturn(false);
 		$reader = $this->createMock(TaskFormReader::class);
-		$reader->method('fromRecord')->willReturn(new TaskForm(kind: 'fields', schema: 'case', fields: [['field' => 'reasonn', 'required' => true]]));
+		$reader->method('fromRecord')->willReturn(new TaskForm(kind: 'fields', native: new TaskFormFields(schema: 'case', fields: [['field' => 'reasonn', 'required' => true]])));
 		$reader->method('validate')->willThrowException(new UnexpectedValueException('Field "reasonn" of schema "case" cannot be asked for: the schema has no such property.'));
 		$service = new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->candidates,
-			relations: $this->relations,
-			audits: $this->audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder(),
-			forms: $reader
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->candidates,
+					relations: $this->relations,
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder(),
+					forms: $reader
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 		$this->tasks->expects($this->never())->method('insert');
 
@@ -702,16 +800,24 @@ class TaskServiceTest extends TestCase {
 		$reader = $this->createMock(TaskFormReader::class);
 		$reader->expects($this->never())->method('validate');
 		$service = new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->candidates,
-			relations: $this->relations,
-			audits: $this->audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder(),
-			forms: $reader
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->candidates,
+					relations: $this->relations,
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder(),
+					forms: $reader
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 
 		$created = $service->create(data: ['title' => 'Approve'], actor: 'alice');
@@ -762,6 +868,74 @@ class TaskServiceTest extends TestCase {
 	}//end testAnAdministratorMayNameARequesterOnCreate()
 
 	/**
+	 * Sequence fields a caller of create() may not set, per caller kind.
+	 *
+	 * @return array<string, array{0: string, 1: mixed, 2: bool, 3: string}>
+	 */
+	public static function sequenceFields(): array {
+		return [
+			'sequence uuid, user' => ['sequenceUuid', 'seq-1', false, 'sequenceUuid'],
+			'sequence position, user' => ['sequencePosition', 2, false, 'sequencePosition'],
+			'legacy step, user' => ['legacyStepId', 7, false, 'legacyStepId'],
+			'approving set in the snapshot, user' => ['templateSnapshot', ['approvingOutcomes' => ['anything']], false, 'templateSnapshot.approvingOutcomes'],
+			'sequence uuid, administrator' => ['sequenceUuid', 'seq-1', true, 'sequenceUuid'],
+			'sequence position, administrator' => ['sequencePosition', 0, true, 'sequencePosition'],
+			'approving set in the snapshot, administrator' => ['templateSnapshot', ['approvingOutcomes' => []], true, 'templateSnapshot.approvingOutcomes'],
+		];
+	}//end sequenceFields()
+
+	/**
+	 * A sequence field is set by the task sequence only: create() refuses it,
+	 * naming the field, before anything is written.
+	 *
+	 * @param string $key   The payload key.
+	 * @param mixed  $value Its value.
+	 * @param bool   $admin Whether the caller is an administrator.
+	 * @param string $named The field the refusal names.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider sequenceFields
+	 */
+	public function testCreateRefusesASequenceField(string $key, mixed $value, bool $admin, string $named): void {
+		$this->authorization->method('isAdministrator')->willReturn($admin);
+		$this->tasks->expects($this->never())->method('insert');
+
+		$this->expectException(TaskValidationException::class);
+		$this->expectExceptionMessage("'".$named."'");
+		$this->service()->create(data: ['title' => 'forged step', 'state' => 'enabled', $key => $value], actor: 'mallory');
+	}//end testCreateRefusesASequenceField()
+
+	/**
+	 * A sequence field sent as null sets nothing and is not refused.
+	 *
+	 * @return void
+	 */
+	public function testCreateAcceptsANullSequenceField(): void {
+		$this->authorization->method('isAdministrator')->willReturn(false);
+
+		$created = $this->service()->create(data: ['title' => 't', 'sequenceUuid' => null, 'sequencePosition' => null], actor: 'mallory');
+
+		$this->assertNull($created->getSequenceUuid());
+	}//end testCreateAcceptsANullSequenceField()
+
+	/**
+	 * The trusted path the task sequence uses still carries sequence fields.
+	 *
+	 * @return void
+	 */
+	public function testImportStillCarriesSequenceFields(): void {
+		$created = $this->service()->import(
+			data: ['title' => 'step', 'sequenceUuid' => 'seq-1', 'sequencePosition' => 2, 'templateSnapshot' => ['order' => 2]],
+			actor: 'task-sequence:seq-1'
+		);
+
+		$this->assertSame('seq-1', $created->getSequenceUuid());
+		$this->assertSame(2, $created->getSequencePosition());
+		$this->assertSame(['order' => 2], $created->getTemplateSnapshot());
+	}//end testImportStillCarriesSequenceFields()
+
+	/**
 	 * A delegation needs a delegate, not only a mandate.
 	 *
 	 * @return void
@@ -772,7 +946,10 @@ class TaskServiceTest extends TestCase {
 
 		$this->expectException(TaskValidationException::class);
 		$this->expectExceptionMessage('delegate');
-		$this->service()->delegate(uuid: 't-7', delegate: '  ', mandate: 'Volmacht', actor: 'alice');
+		$this->service()->delegate(
+			ref: new TaskActorRef(uuid: 't-7', actor: 'alice'),
+			delegation: new TaskDelegation(delegate: '  ', mandate: 'Volmacht'),
+		);
 	}//end testDelegateRefusesAnEmptyDelegate()
 
 	/**
@@ -784,8 +961,14 @@ class TaskServiceTest extends TestCase {
 		$task = $this->openTask();
 		$this->tasks->method('findByUuid')->willReturn($task);
 
-		$this->service()->delegate(uuid: 't-7', delegate: 'dora', mandate: 'Volmacht 1', actor: 'alice');
-		$this->service()->delegate(uuid: 't-7', delegate: 'ed', mandate: 'Volmacht 2', actor: 'dora');
+		$this->service()->delegate(
+			ref: new TaskActorRef(uuid: 't-7', actor: 'alice'),
+			delegation: new TaskDelegation(delegate: 'dora', mandate: 'Volmacht 1'),
+		);
+		$this->service()->delegate(
+			ref: new TaskActorRef(uuid: 't-7', actor: 'dora'),
+			delegation: new TaskDelegation(delegate: 'ed', mandate: 'Volmacht 2'),
+		);
 
 		$this->assertSame('ed', $task->getAssignee());
 		$this->assertSame('alice', $task->getOnBehalfOf());
@@ -855,16 +1038,16 @@ class TaskServiceTest extends TestCase {
 		$task->setState(Task::STATE_ENABLED);
 		$this->tasks->method('findByUuid')->willReturn($task);
 
-		$assigned = $this->service()->assign(uuid: 't-7', assignee: 'bob', actor: 'rita');
+		$assigned = $this->service()->assign(ref: new TaskActorRef(uuid: 't-7', actor: 'rita'), assignee: 'bob');
 		$this->assertSame('bob', $assigned->getAssignee());
 		$this->assertSame(Task::STATE_ACTIVE, $assigned->getState());
 
-		$reassigned = $this->service()->reassign(uuid: 't-7', assignee: 'carol', actor: 'rita');
+		$reassigned = $this->service()->reassign(ref: new TaskActorRef(uuid: 't-7', actor: 'rita'), assignee: 'carol');
 		$this->assertSame('carol', $reassigned->getAssignee());
 		$this->assertSame('reassign', $reassigned->getLastAction());
 
 		$this->expectException(TaskValidationException::class);
-		$this->service()->assign(uuid: 't-7', assignee: ' ', actor: 'rita');
+		$this->service()->assign(ref: new TaskActorRef(uuid: 't-7', actor: 'rita'), assignee: ' ');
 	}//end testAssignAndReassignSetTheHolder()
 
 	/**
@@ -884,7 +1067,7 @@ class TaskServiceTest extends TestCase {
 			}
 		);
 
-		$cancelled = $this->service()->cancel(uuid: 't-7', reason: 'Aanvraag ingetrokken', actor: 'rita');
+		$cancelled = $this->service()->cancel(ref: new TaskActorRef(uuid: 't-7', actor: 'rita'), reason: 'Aanvraag ingetrokken');
 
 		$this->assertSame(Task::STATE_TERMINATED, $cancelled->getState());
 		$this->assertTrue($cancelled->getIsTerminal());
@@ -900,7 +1083,10 @@ class TaskServiceTest extends TestCase {
 	public function testResolveCompletesWithTheResolvedOutcome(): void {
 		$this->tasks->method('findByUuid')->willReturn($this->openTask());
 
-		$resolved = $this->service()->resolve(uuid: 't-7', resultText: 'Klaar', comment: null, actor: 'alice');
+		$resolved = $this->service()->resolve(
+			ref: new TaskActorRef(uuid: 't-7', actor: 'alice'),
+			resolution: new TaskResolution(resultText: 'Klaar', comment: null),
+		);
 
 		$this->assertSame(Task::STATE_COMPLETED, $resolved->getState());
 		$this->assertSame('resolved', $resolved->getOutcome());
@@ -926,13 +1112,13 @@ class TaskServiceTest extends TestCase {
 			}
 		);
 
-		$terminated = $this->service()->terminateAsMoot(uuid: 't-7', reason: 'Branch closed', source: 'flow-node:gateway');
+		$terminated = $this->service()->terminateAsMoot(uuid: 't-7', trigger: new TaskTrigger(source: 'flow-node:gateway', reason: 'Branch closed'));
 		$this->assertSame(Task::STATE_TERMINATED, $terminated->getState());
 		$this->assertSame('flow-node:gateway', $actor);
 
 		// Second observation: already terminal, nothing written.
 		$this->db->expects($this->never())->method('beginTransaction');
-		$again = $this->service()->terminateAsMoot(uuid: 't-7', reason: 'Branch closed', source: 'flow-node:gateway');
+		$again = $this->service()->terminateAsMoot(uuid: 't-7', trigger: new TaskTrigger(source: 'flow-node:gateway', reason: 'Branch closed'));
 		$this->assertSame(Task::STATE_TERMINATED, $again->getState());
 	}//end testTerminateAsMootIsIdempotent()
 
@@ -1080,7 +1266,10 @@ class TaskServiceTest extends TestCase {
 
 		$this->expectException(TaskValidationException::class);
 		$this->expectExceptionMessage("'c9'");
-		$this->service()->checkChecklistItem(uuid: 't-7', itemId: 'c9', checked: true, actor: 'alice');
+		$this->service()->checkChecklistItem(
+			ref: new TaskActorRef(uuid: 't-7', actor: 'alice'),
+			tick: new ChecklistTick(itemId: 'c9', checked: true),
+		);
 	}//end testAMissingChecklistItemIsRefusedById()
 
 	/**
@@ -1105,7 +1294,7 @@ class TaskServiceTest extends TestCase {
 		$this->audits->method('insert')->willThrowException(new RuntimeException('audit down'));
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->service()->cancel(uuid: 't-7', reason: null, actor: 'mallory');
+		$this->service()->cancel(ref: new TaskActorRef(uuid: 't-7', actor: 'mallory'), reason: null);
 	}//end testDenialAuditFailuresNeverChangeTheDenial()
 
 	/**
@@ -1143,7 +1332,7 @@ class TaskServiceTest extends TestCase {
 		$audited = [];
 		$this->setUpAuditRecorder(audited: $audited);
 
-		$completed = $this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'niet akkoord', actor: 'alice');
+		$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'niet akkoord'), actor: 'alice');
 
 		$this->assertSame(Task::STATE_DISABLED, $completed->getState());
 		$this->assertSame('dead_letter', $completed->getOutcome());
@@ -1166,7 +1355,7 @@ class TaskServiceTest extends TestCase {
 			$task->setOnReject($declared);
 			$this->tasks->method('findByUuid')->willReturn($task);
 
-			$completed = $this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'nee', actor: 'alice');
+			$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'nee'), actor: 'alice');
 
 			$this->assertSame(Task::STATE_COMPLETED, $completed->getState(), var_export($declared, true));
 			$this->assertSame('rejected', $completed->getOutcome(), var_export($declared, true));
@@ -1184,7 +1373,7 @@ class TaskServiceTest extends TestCase {
 		$task->setOnReject('dead_letter');
 		$this->tasks->method('findByUuid')->willReturn($task);
 
-		$completed = $this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
+		$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 
 		$this->assertSame(Task::STATE_COMPLETED, $completed->getState());
 		$this->assertSame('approved', $completed->getOutcome());
@@ -1244,4 +1433,18 @@ class TaskServiceTest extends TestCase {
 			}
 		);
 	}//end setUpAuditRecorder()
+	/**
+	 * A task is found by its external key; a blank key asks nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	public function testATaskIsFoundByItsKey(): void {
+		$task = $this->openTask();
+		$this->tasks->expects($this->once())->method('findByKey')->with('dossiq:once:rule:t:r:case-1')->willReturn([$task]);
+
+		$this->assertSame([$task], $this->service()->findByKey(key: ' dossiq:once:rule:t:r:case-1 '));
+		$this->assertSame([], $this->service()->findByKey(key: '  '));
+	}//end testATaskIsFoundByItsKey()
 }//end class

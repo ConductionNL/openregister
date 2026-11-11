@@ -1,0 +1,1541 @@
+{
+    "empty provider": {
+        "threw": "Exception",
+        "message": "Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.",
+        "code": 503,
+        "requests": [],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ]
+        ],
+        "instances": []
+    },
+    "fireworks": {
+        "response": "Answer from /v1/chat/completions",
+        "usage": [],
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer fw-test",
+                "body": {
+                    "model": "fw-model",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "fireworks",
+                    "llmConfig": {
+                        "chatProvider": "fireworks",
+                        "fireworksConfig": {
+                            "apiKey": "fw-test",
+                            "chatModel": "fw-model",
+                            "baseUrl": "{base}"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "fireworks",
+                    "model": "fw-model",
+                    "responseLength": 32
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "fireworks agent": {
+        "response": "Answer from /v1/chat/completions",
+        "usage": [],
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer fw-test",
+                "body": {
+                    "temperature": 0.3,
+                    "model": "agent-model",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are the register guide."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                true,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "fireworks",
+                    "llmConfig": {
+                        "chatProvider": "fireworks",
+                        "fireworksConfig": {
+                            "apiKey": "fw-test",
+                            "chatModel": "fw-model",
+                            "baseUrl": "{base}"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "fireworks",
+                    "model": "agent-model",
+                    "responseLength": 32
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "fireworks default url and model": {
+        "response": "Answer from /v1/chat/completions",
+        "usage": [],
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer fw",
+                "body": {
+                    "model": "accounts/fireworks/models/llama-v3p1-8b-instruct",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "fireworks",
+                    "llmConfig": {
+                        "chatProvider": "fireworks",
+                        "fireworksConfig": {
+                            "apiKey": "fw",
+                            "baseUrl": "{base}/v1/"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "fireworks",
+                    "model": "accounts/fireworks/models/llama-v3p1-8b-instruct",
+                    "responseLength": 32
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "fireworks error": {
+        "threw": "Exception",
+        "message": "Failed to generate response: HTTP error from AI engine (500): {\"error\":{\"message\":\"stub failure\",\"type\":\"server_error\",\"code\":null}}",
+        "code": 500,
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer fw",
+                "body": {
+                    "model": "model-error",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "fireworks",
+                    "llmConfig": {
+                        "chatProvider": "fireworks",
+                        "fireworksConfig": {
+                            "apiKey": "fw",
+                            "chatModel": "model-error",
+                            "baseUrl": "{base}"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "error",
+                "[ResponseGenerationHandler] Failed to generate response",
+                {
+                    "provider": "fireworks",
+                    "error": "HTTP error from AI engine (500): {\"error\":{\"message\":\"stub failure\",\"type\":\"server_error\",\"code\":null}}"
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "fireworks without key": {
+        "threw": "Exception",
+        "message": "Failed to generate response: Fireworks AI API key is not configured",
+        "code": 503,
+        "requests": [],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "fireworks",
+                    "llmConfig": {
+                        "chatProvider": "fireworks"
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "error",
+                "[ResponseGenerationHandler] Failed to generate response",
+                {
+                    "provider": "fireworks",
+                    "error": "Fireworks AI API key is not configured"
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "no provider": {
+        "threw": "Exception",
+        "message": "Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.",
+        "code": 503,
+        "requests": [],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ]
+        ],
+        "instances": []
+    },
+    "ollama agent": {
+        "response": "Answer from /api/chat",
+        "usage": {
+            "promptTokens": 11,
+            "completionTokens": 7,
+            "totalDurationMs": 5
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/api/chat",
+                "auth": null,
+                "body": {
+                    "temperature": 0.3,
+                    "model": "agent-model",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are the register guide.\n\nUse the following context to answer the user's question:\n\nCONTEXT:\nSome context\n\nIf the context doesn't contain relevant information, say so honestly. Always cite which sources you used when answering."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ],
+                    "stream": false,
+                    "tools": [],
+                    "think": false,
+                    "keep_alive": -1
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 12,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                true,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "ollama",
+                    "llmConfig": {
+                        "chatProvider": "ollama",
+                        "ollamaConfig": {
+                            "url": "{base}/",
+                            "chatModel": "llama-test"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "ollama",
+                    "model": "agent-model",
+                    "responseLength": 21
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "ollama default model": {
+        "response": "Answer from /api/chat",
+        "usage": {
+            "promptTokens": 11,
+            "completionTokens": 7,
+            "totalDurationMs": 5
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/api/chat",
+                "auth": null,
+                "body": {
+                    "model": "llama2",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ],
+                    "stream": false,
+                    "tools": [],
+                    "think": false,
+                    "keep_alive": -1
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "ollama",
+                    "llmConfig": {
+                        "chatProvider": "ollama",
+                        "ollamaConfig": {
+                            "url": "{base}"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "ollama",
+                    "model": "llama2",
+                    "responseLength": 21
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "ollama error": {
+        "threw": "Exception",
+        "message": "Failed to generate response: Server error: `POST {base}/api/chat` resulted in a `500 Internal Server Error` response:\n{\"error\":{\"message\":\"stub failure\",\"type\":\"server_error\",\"code\":null}}\n",
+        "code": 500,
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/api/chat",
+                "auth": null,
+                "body": {
+                    "model": "model-error",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ],
+                    "stream": false,
+                    "tools": [],
+                    "think": false,
+                    "keep_alive": -1
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "ollama",
+                    "llmConfig": {
+                        "chatProvider": "ollama",
+                        "ollamaConfig": {
+                            "url": "{base}",
+                            "chatModel": "model-error"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "error",
+                "[ResponseGenerationHandler] Failed to generate response",
+                {
+                    "provider": "ollama",
+                    "error": "Server error: `POST {base}/api/chat` resulted in a `500 Internal Server Error` response:\n{\"error\":{\"message\":\"stub failure\",\"type\":\"server_error\",\"code\":null}}\n"
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "ollama no agent": {
+        "response": "Answer from /api/chat",
+        "usage": {
+            "promptTokens": 11,
+            "completionTokens": 7,
+            "totalDurationMs": 5
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/api/chat",
+                "auth": null,
+                "body": {
+                    "model": "llama-test",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ],
+                    "stream": false,
+                    "tools": [],
+                    "think": false,
+                    "keep_alive": -1
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "ollama",
+                    "llmConfig": {
+                        "chatProvider": "ollama",
+                        "ollamaConfig": {
+                            "url": "{base}/",
+                            "chatModel": "llama-test"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "ollama",
+                    "model": "llama-test",
+                    "responseLength": 21
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "ollama tools with channel": {
+        "response": "Answer from /api/chat",
+        "usage": {
+            "promptTokens": 11,
+            "completionTokens": 7,
+            "totalDurationMs": 5
+        },
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/api/chat",
+                "auth": null,
+                "body": {
+                    "temperature": 0.3,
+                    "model": "agent-model",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are the register guide."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ],
+                    "stream": false,
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "lookup",
+                                "description": "Look up an object",
+                                "parameters": {
+                                    "type": "object",
+                                    "properties": [],
+                                    "required": []
+                                }
+                            }
+                        }
+                    ],
+                    "think": false,
+                    "keep_alive": -1
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                true,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Agent has tools enabled",
+                {
+                    "toolCount": 1,
+                    "tools": [
+                        "tool-a"
+                    ]
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "ollama",
+                    "llmConfig": {
+                        "chatProvider": "ollama",
+                        "ollamaConfig": {
+                            "url": "{base}/",
+                            "chatModel": "llama-test"
+                        }
+                    },
+                    "hasTools": true
+                }
+            ],
+            [
+                "convertToolsToFunctions",
+                1
+            ],
+            [
+                "convertFunctionsToFunctionInfo",
+                [
+                    {
+                        "name": "lookup",
+                        "description": "Look up an object",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "id"
+                            ]
+                        }
+                    }
+                ],
+                1
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "ollama",
+                    "model": "agent-model",
+                    "responseLength": 21
+                }
+            ]
+        ],
+        "instances": [
+            "wrapped"
+        ]
+    },
+    "ollama without url": {
+        "threw": "Exception",
+        "message": "Failed to generate response: Ollama URL is not configured",
+        "code": 0,
+        "requests": [],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "ollama",
+                    "llmConfig": {
+                        "chatProvider": "ollama",
+                        "ollamaConfig": {
+                            "url": ""
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "error",
+                "[ResponseGenerationHandler] Failed to generate response",
+                {
+                    "provider": "ollama",
+                    "error": "Ollama URL is not configured"
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "openai agent": {
+        "response": "Answer from /v1/chat/completions",
+        "usage": [],
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer sk-test",
+                "body": {
+                    "temperature": 0.3,
+                    "model": "agent-model",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are the register guide."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                true,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "openai",
+                    "llmConfig": {
+                        "chatProvider": "openai",
+                        "openaiConfig": {
+                            "apiKey": "sk-test",
+                            "chatModel": "gpt-test"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "openai",
+                    "model": "agent-model",
+                    "responseLength": 32
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "openai agent empty model": {
+        "response": "Answer from /v1/chat/completions",
+        "usage": [],
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer sk-test",
+                "body": {
+                    "model": "gpt-test",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                true,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "openai",
+                    "llmConfig": {
+                        "chatProvider": "openai",
+                        "openaiConfig": {
+                            "apiKey": "sk-test",
+                            "chatModel": "gpt-test"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "openai",
+                    "model": "gpt-test",
+                    "responseLength": 32
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "openai context and app": {
+        "response": "Answer from /v1/chat/completions",
+        "usage": [],
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer sk-test",
+                "body": {
+                    "model": "gpt-test",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data.\n\nCURRENT APP CONTEXT (this is where the user is RIGHT NOW \u2014 prefer tools that match this app):\n- app: openregister\n- objectId: 42\n- flags: {\"a\":true}\n- none: null\n\n\nUse the following context to answer the user's question:\n\nCONTEXT:\nRegister A holds 3 schemas.\n\nIf the context doesn't contain relevant information, say so honestly. Always cite which sources you used when answering."
+                        },
+                        {
+                            "role": "user",
+                            "content": "Earlier question"
+                        },
+                        {
+                            "role": "assistant",
+                            "content": "Earlier answer"
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 27,
+                    "historyCount": 2,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "openai",
+                    "llmConfig": {
+                        "chatProvider": "openai",
+                        "openaiConfig": {
+                            "apiKey": "sk-test",
+                            "chatModel": "gpt-test"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "openai",
+                    "model": "gpt-test",
+                    "responseLength": 32
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "openai default model": {
+        "response": "Answer from /v1/chat/completions",
+        "usage": [],
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer sk-test",
+                "body": {
+                    "model": "gpt-4o-mini",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "openai",
+                    "llmConfig": {
+                        "chatProvider": "openai",
+                        "openaiConfig": {
+                            "apiKey": "sk-test"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "openai",
+                    "model": "gpt-4o-mini",
+                    "responseLength": 32
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "openai error": {
+        "threw": "Exception",
+        "message": "Failed to generate response: HTTP error from AI engine (500): {\"error\":{\"message\":\"stub failure\",\"type\":\"server_error\",\"code\":null}}",
+        "code": 500,
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer sk",
+                "body": {
+                    "model": "model-error",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "openai",
+                    "llmConfig": {
+                        "chatProvider": "openai",
+                        "openaiConfig": {
+                            "apiKey": "sk",
+                            "chatModel": "model-error"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "error",
+                "[ResponseGenerationHandler] Failed to generate response",
+                {
+                    "provider": "openai",
+                    "error": "HTTP error from AI engine (500): {\"error\":{\"message\":\"stub failure\",\"type\":\"server_error\",\"code\":null}}"
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "openai no agent": {
+        "response": "Answer from /v1/chat/completions",
+        "usage": [],
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer sk-test",
+                "body": {
+                    "model": "gpt-test",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful AI assistant that helps users find and understand their data."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "openai",
+                    "llmConfig": {
+                        "chatProvider": "openai",
+                        "openaiConfig": {
+                            "apiKey": "sk-test",
+                            "chatModel": "gpt-test"
+                        }
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "openai",
+                    "model": "gpt-test",
+                    "responseLength": 32
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "openai tools": {
+        "response": "Answer from /v1/chat/completions",
+        "usage": [],
+        "requests": [
+            {
+                "method": "POST",
+                "path": "/v1/chat/completions",
+                "auth": "Bearer sk-test",
+                "body": {
+                    "temperature": 0.3,
+                    "model": "agent-model",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are the register guide."
+                        },
+                        {
+                            "role": "user",
+                            "content": "What is in register A?"
+                        }
+                    ],
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "lookup",
+                                "description": "Look up an object",
+                                "parameters": {
+                                    "type": "object",
+                                    "properties": [],
+                                    "required": []
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                true,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Agent has tools enabled",
+                {
+                    "toolCount": 1,
+                    "tools": [
+                        "tool-a"
+                    ]
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "openai",
+                    "llmConfig": {
+                        "chatProvider": "openai",
+                        "openaiConfig": {
+                            "apiKey": "sk-test",
+                            "chatModel": "gpt-test"
+                        }
+                    },
+                    "hasTools": true
+                }
+            ],
+            [
+                "convertToolsToFunctions",
+                1
+            ],
+            [
+                "convertFunctionsToFunctionInfo",
+                [
+                    {
+                        "name": "lookup",
+                        "description": "Look up an object",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "id"
+                            ]
+                        }
+                    }
+                ],
+                1
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Response generated - PERFORMANCE",
+                {
+                    "provider": "openai",
+                    "model": "agent-model",
+                    "responseLength": 32
+                }
+            ]
+        ],
+        "instances": [
+            "plain"
+        ]
+    },
+    "openai without key": {
+        "threw": "Exception",
+        "message": "Failed to generate response: OpenAI API key is not configured",
+        "code": 503,
+        "requests": [],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "openai",
+                    "llmConfig": {
+                        "chatProvider": "openai",
+                        "openaiConfig": []
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "error",
+                "[ResponseGenerationHandler] Failed to generate response",
+                {
+                    "provider": "openai",
+                    "error": "OpenAI API key is not configured"
+                }
+            ]
+        ],
+        "instances": []
+    },
+    "unsupported provider": {
+        "threw": "Exception",
+        "message": "Failed to generate response: Unsupported chat provider: mistral",
+        "code": 0,
+        "requests": [],
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Generating response",
+                {
+                    "messageLength": 22,
+                    "contextLength": 0,
+                    "historyCount": 0,
+                    "selectedTools": 1
+                }
+            ],
+            [
+                "getAgentTools",
+                false,
+                [
+                    "tool-a"
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[ResponseGenerationHandler] Using chat provider",
+                {
+                    "provider": "mistral",
+                    "llmConfig": {
+                        "chatProvider": "mistral"
+                    },
+                    "hasTools": false
+                }
+            ],
+            [
+                "log",
+                "error",
+                "[ResponseGenerationHandler] Failed to generate response",
+                {
+                    "provider": "mistral",
+                    "error": "Unsupported chat provider: mistral"
+                }
+            ]
+        ],
+        "instances": []
+    }
+}

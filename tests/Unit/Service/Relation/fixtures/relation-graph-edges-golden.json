@@ -1,0 +1,478 @@
+{
+    "0-nl": [
+        {
+            "from": "a",
+            "to": "b",
+            "direction": "outgoing",
+            "label": "ouder",
+            "inverseLabel": "kind",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "c",
+            "direction": "outgoing",
+            "label": "tags",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "tags",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "b",
+            "direction": "outgoing",
+            "label": "many",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "many",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "c",
+            "direction": "outgoing",
+            "label": "many",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "many",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "b",
+            "to": "a",
+            "direction": "outgoing",
+            "label": "parent",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "b",
+            "to": "x",
+            "direction": "outgoing",
+            "label": "loose",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "loose",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "c",
+            "to": "a",
+            "direction": "outgoing",
+            "label": "parent",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "z",
+            "direction": "outgoing",
+            "label": "verwijst",
+            "inverseLabel": "verwezen",
+            "type": "refers",
+            "property": null,
+            "origin": "manual",
+            "kind": "object",
+            "targetUrl": null,
+            "targetTitle": null
+        },
+        {
+            "from": "q",
+            "to": "b",
+            "direction": "incoming",
+            "label": "cites",
+            "inverseLabel": null,
+            "type": "cites",
+            "property": null,
+            "origin": "manual",
+            "kind": "object",
+            "targetUrl": null,
+            "targetTitle": null
+        },
+        {
+            "from": "c",
+            "to": "https://example.org/x",
+            "direction": "outgoing",
+            "label": "published",
+            "inverseLabel": null,
+            "type": null,
+            "property": null,
+            "origin": "manual",
+            "kind": "external",
+            "targetUrl": "https://example.org/x",
+            "targetTitle": "X"
+        }
+    ],
+    "0-en": [
+        {
+            "from": "a",
+            "to": "b",
+            "direction": "outgoing",
+            "label": "parent",
+            "inverseLabel": "child",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "c",
+            "direction": "outgoing",
+            "label": "tags",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "tags",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "b",
+            "direction": "outgoing",
+            "label": "many",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "many",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "c",
+            "direction": "outgoing",
+            "label": "many",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "many",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "b",
+            "to": "a",
+            "direction": "outgoing",
+            "label": "parent",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "b",
+            "to": "x",
+            "direction": "outgoing",
+            "label": "loose",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "loose",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "c",
+            "to": "a",
+            "direction": "outgoing",
+            "label": "parent",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "z",
+            "direction": "outgoing",
+            "label": "verwijst",
+            "inverseLabel": "verwezen",
+            "type": "refers",
+            "property": null,
+            "origin": "manual",
+            "kind": "object",
+            "targetUrl": null,
+            "targetTitle": null
+        },
+        {
+            "from": "q",
+            "to": "b",
+            "direction": "incoming",
+            "label": "cites",
+            "inverseLabel": null,
+            "type": "cites",
+            "property": null,
+            "origin": "manual",
+            "kind": "object",
+            "targetUrl": null,
+            "targetTitle": null
+        },
+        {
+            "from": "c",
+            "to": "https://example.org/x",
+            "direction": "outgoing",
+            "label": "published",
+            "inverseLabel": null,
+            "type": null,
+            "property": null,
+            "origin": "manual",
+            "kind": "external",
+            "targetUrl": "https://example.org/x",
+            "targetTitle": "X"
+        }
+    ],
+    "1-nl": [
+        {
+            "from": "b",
+            "to": "a",
+            "direction": "outgoing",
+            "label": "parent",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "b",
+            "to": "x",
+            "direction": "outgoing",
+            "label": "loose",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "loose",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "q",
+            "to": "b",
+            "direction": "incoming",
+            "label": "cites",
+            "inverseLabel": null,
+            "type": "cites",
+            "property": null,
+            "origin": "manual",
+            "kind": "object",
+            "targetUrl": null,
+            "targetTitle": null
+        }
+    ],
+    "1-en": [
+        {
+            "from": "b",
+            "to": "a",
+            "direction": "outgoing",
+            "label": "parent",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "b",
+            "to": "x",
+            "direction": "outgoing",
+            "label": "loose",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "loose",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "q",
+            "to": "b",
+            "direction": "incoming",
+            "label": "cites",
+            "inverseLabel": null,
+            "type": "cites",
+            "property": null,
+            "origin": "manual",
+            "kind": "object",
+            "targetUrl": null,
+            "targetTitle": null
+        }
+    ],
+    "2-nl": [
+        {
+            "from": "c",
+            "to": "a",
+            "direction": "outgoing",
+            "label": "parent",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "b",
+            "direction": "outgoing",
+            "label": "ouder",
+            "inverseLabel": "kind",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "c",
+            "direction": "outgoing",
+            "label": "tags",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "tags",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "b",
+            "direction": "outgoing",
+            "label": "many",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "many",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "c",
+            "direction": "outgoing",
+            "label": "many",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "many",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "z",
+            "direction": "outgoing",
+            "label": "verwijst",
+            "inverseLabel": "verwezen",
+            "type": "refers",
+            "property": null,
+            "origin": "manual",
+            "kind": "object",
+            "targetUrl": null,
+            "targetTitle": null
+        },
+        {
+            "from": "c",
+            "to": "https://example.org/x",
+            "direction": "outgoing",
+            "label": "published",
+            "inverseLabel": null,
+            "type": null,
+            "property": null,
+            "origin": "manual",
+            "kind": "external",
+            "targetUrl": "https://example.org/x",
+            "targetTitle": "X"
+        }
+    ],
+    "2-en": [
+        {
+            "from": "c",
+            "to": "a",
+            "direction": "outgoing",
+            "label": "parent",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "b",
+            "direction": "outgoing",
+            "label": "parent",
+            "inverseLabel": "child",
+            "type": null,
+            "property": "parent",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "c",
+            "direction": "outgoing",
+            "label": "tags",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "tags",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "b",
+            "direction": "outgoing",
+            "label": "many",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "many",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "c",
+            "direction": "outgoing",
+            "label": "many",
+            "inverseLabel": "referenced by",
+            "type": null,
+            "property": "many",
+            "origin": "property",
+            "kind": "object"
+        },
+        {
+            "from": "a",
+            "to": "z",
+            "direction": "outgoing",
+            "label": "verwijst",
+            "inverseLabel": "verwezen",
+            "type": "refers",
+            "property": null,
+            "origin": "manual",
+            "kind": "object",
+            "targetUrl": null,
+            "targetTitle": null
+        },
+        {
+            "from": "c",
+            "to": "https://example.org/x",
+            "direction": "outgoing",
+            "label": "published",
+            "inverseLabel": null,
+            "type": null,
+            "property": null,
+            "origin": "manual",
+            "kind": "external",
+            "targetUrl": "https://example.org/x",
+            "targetTitle": "X"
+        }
+    ]
+}

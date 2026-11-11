@@ -19,9 +19,9 @@ declare(strict_types=1);
 
 namespace Unit\Service\Geo;
 
-use OCA\OpenRegister\Service\Geo\GeoFilter;
-use OCA\OpenRegister\Service\Geo\GeoFilterApplier;
-use OCA\OpenRegister\Service\Geo\GeoSpatialEvaluator;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilter;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
+use OCA\OpenRegister\Search\Service\Geo\GeoSpatialEvaluator;
 use PHPUnit\Framework\TestCase;
 
 class GeoFilterApplierTest extends TestCase {
@@ -68,7 +68,7 @@ class GeoFilterApplierTest extends TestCase {
 		];
 		$filters = [
 			GeoFilter::fromBbox('5.10,52.05,5.15,52.10'),
-			GeoFilter::fromNearAndRadius(5.12, 52.09, 500),
+			GeoFilter::fromNearAndRadius(['lon' => 5.12, 'lat' => 52.09, 'radius' => 500]),
 		];
 
 		$result = $this->applier->applyAll($rows, $filters);

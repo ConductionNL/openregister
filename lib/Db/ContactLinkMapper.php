@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -29,6 +30,7 @@ use OCP\IDBConnection;
  * Class ContactLinkMapper
  *
  * @template-extends QBMapper<ContactLink>
+ * @method list<ContactLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One named query per lookup the
  *   link table answers, and the party model added four: every object a party
@@ -37,7 +39,10 @@ use OCP\IDBConnection;
  *   query builder into every caller, where the next one gets the predicate
  *   subtly wrong and nothing says so.
  */
-class ContactLinkMapper extends QBMapper {
+class ContactLinkMapper extends QBMapper implements ContactLinkMapperInterface {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
+	use CountLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -75,23 +80,6 @@ class ContactLinkMapper extends QBMapper {
 	}//end find()
 
 	/**
-	 * Find contact links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return ContactLink[] Array of contact links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
-
-	/**
 	 * Find contact links by contact UID.
 	 *
 	 * @param string $contactUid The contact UID from the vCard.
@@ -107,41 +95,6 @@ class ContactLinkMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findByContactUid()
-
-	/**
-	 * Count contact links for an object.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Count of links.
-	 */
-	public function countByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->createFunction('COUNT(*)'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countByObjectUuid()
-
-	/**
-	 * Delete all contact links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Find the single link for an (objectUuid, contactUid) pair.
@@ -178,35 +131,69 @@ class ContactLinkMapper extends QBMapper {
 	 * The upsert key since people-on-objects: a person may hold several
 	 * roles on an object, one row each.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $contactUid The contact uid, `user:<uid>` for a user.
-	 * @param string|null $role The role, null for a link without one.
+	 * @param PersonLinkRef $ref The object, the contact uid (`user:<uid>` for a user), and the role, null for a link without one.
 	 *
 	 * @return ContactLink|null The link.
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
-	public function findByObjectContactAndRole(string $objectUuid, string $contactUid, ?string $role): ?ContactLink {
+	public function findByObjectContactAndRole(PersonLinkRef $ref): ContactLink|null {
+		$qb = $this->objectContactQuery(objectUuid: $ref->objectUuid, contactUid: $ref->contactUid);
+		$this->applyRoleCondition(qb: $qb, role: $ref->role);
+
+		return $this->findOneOrNull(qb: $qb);
+	}//end findByObjectContactAndRole()
+
+	/**
+	 * At most one link of one object to one contact, before the role predicate.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $contactUid The contact UID.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function objectContactQuery(string $objectUuid, string $contactUid): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
 			->setMaxResults(1);
-		if ($role === null || $role === '') {
-			$qb->andWhere($qb->expr()->isNull('role'));
-		}
 
-		if ($role !== null && $role !== '') {
-			$qb->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role)));
-		}
+		return $qb;
+	}//end objectContactQuery()
 
+	/**
+	 * The one link a query matches, or null when it matches none.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return ContactLink|null The link.
+	 */
+	private function findOneOrNull(IQueryBuilder $qb): ContactLink|null {
 		try {
 			return $this->findEntity(query: $qb);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return null;
 		}
-	}//end findByObjectContactAndRole()
+	}//end findOneOrNull()
+
+	/**
+	 * Match the given role, or a link without a role when the role is null or empty.
+	 *
+	 * @param IQueryBuilder $qb   The query.
+	 * @param string|null   $role The role, or null / '' for "no role".
+	 *
+	 * @return void
+	 */
+	private function applyRoleCondition(IQueryBuilder $qb, string|null $role): void {
+		if ($role === null || $role === '') {
+			$qb->andWhere($qb->expr()->isNull('role'));
+			return;
+		}
+
+		$qb->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role)));
+	}//end applyRoleCondition()
 
 	/**
 	 * Every link that names a Nextcloud user, newest first.
@@ -238,7 +225,7 @@ class ContactLinkMapper extends QBMapper {
 	 *
 	 * @return ContactLink[] The links.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function findByPartyUuid(string $partyUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -257,7 +244,7 @@ class ContactLinkMapper extends QBMapper {
 	 *
 	 * @return ContactLink[] The links naming a party.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function findPartiesForObject(string $objectUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -277,7 +264,7 @@ class ContactLinkMapper extends QBMapper {
 	 *
 	 * @return ContactLink|null The primary party's link.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function findPrimaryParty(string $objectUuid): ?ContactLink {
 		$qb = $this->db->getQueryBuilder();
@@ -306,7 +293,7 @@ class ContactLinkMapper extends QBMapper {
 	 *
 	 * @return ContactLink[] The candidate links.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function findByOperationMemo(string $operationId): array {
 		$qb = $this->db->getQueryBuilder();

@@ -1,0 +1,542 @@
+{
+    "available: empty search": {
+        "return": [
+            {
+                "id": 12,
+                "name": "Bakker",
+                "category": null,
+                "lat": 0.0,
+                "lng": 0.0,
+                "url": "/apps/maps/#map=16/0/0"
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ]
+        ],
+        "maps": [
+            [
+                "getFavoritesFromDB",
+                [
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "available: list throws": {
+        "return": [],
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ],
+            [
+                "warning",
+                "MapLinkService::getAvailablePois failed: boom"
+            ]
+        ],
+        "maps": [
+            [
+                "getFavoritesFromDB",
+                [
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "available: maps off": {
+        "return": [],
+        "calls": [],
+        "maps": []
+    },
+    "available: no user": {
+        "return": [],
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ]
+        ],
+        "maps": []
+    },
+    "available: rows": {
+        "return": [
+            {
+                "id": 9,
+                "name": "Gemeentehuis",
+                "category": "12",
+                "lat": 52.1,
+                "lng": 5.0,
+                "url": "/apps/maps/#map=16/52.1/5"
+            },
+            {
+                "id": 10,
+                "name": "Bakker",
+                "category": null,
+                "lat": 1.5,
+                "lng": 0.0,
+                "url": "/apps/maps/#map=16/1.5/0"
+            },
+            {
+                "id": 11,
+                "name": "",
+                "category": null,
+                "lat": 0.0,
+                "lng": 0.0,
+                "url": "/apps/maps/#map=16/0/0"
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ]
+        ],
+        "maps": [
+            [
+                "getFavoritesFromDB",
+                [
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "available: search": {
+        "return": [
+            {
+                "id": 9,
+                "name": "Gemeentehuis",
+                "category": "12",
+                "lat": 52.1,
+                "lng": 5.0,
+                "url": "/apps/maps/#map=16/52.1/5"
+            },
+            {
+                "id": 10,
+                "name": "GEMEENTE werf",
+                "category": null,
+                "lat": 0.0,
+                "lng": 0.0,
+                "url": "/apps/maps/#map=16/0/0"
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ]
+        ],
+        "maps": [
+            [
+                "getFavoritesFromDB",
+                [
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "create: add returns zero": {
+        "exception": "Exception",
+        "message": "Failed to create Maps POI",
+        "code": 500,
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ]
+        ],
+        "maps": [
+            [
+                "addFavoriteToDB",
+                [
+                    "alice",
+                    "Stadhuis",
+                    52.37,
+                    4.89,
+                    "Werk",
+                    "Ingang links",
+                    null
+                ]
+            ]
+        ]
+    },
+    "create: add throws": {
+        "exception": "Exception",
+        "message": "Failed to create Maps POI",
+        "code": 500,
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ],
+            [
+                "warning",
+                "MapLinkService::createAndLinkPoi failed: boom"
+            ]
+        ],
+        "maps": [
+            [
+                "addFavoriteToDB",
+                [
+                    "alice",
+                    "Stadhuis",
+                    52.37,
+                    4.89,
+                    "Werk",
+                    "Ingang links",
+                    null
+                ]
+            ]
+        ]
+    },
+    "create: bare draft": {
+        "return": "inserted",
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ],
+            [
+                "insert",
+                {
+                    "id": null,
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 4,
+                    "favoriteId": 32,
+                    "name": "Plek",
+                    "category": null,
+                    "lat": 0.0,
+                    "lng": 0.0,
+                    "comment": null,
+                    "linkedBy": "alice",
+                    "linkedAt": "<NOW>"
+                },
+                [
+                    "favoriteId",
+                    "name",
+                    "lat",
+                    "lng",
+                    "objectUuid",
+                    "registerId",
+                    "schemaId",
+                    "linkedBy",
+                    "linkedAt"
+                ]
+            ]
+        ],
+        "maps": [
+            [
+                "addFavoriteToDB",
+                [
+                    "alice",
+                    "Plek",
+                    0.0,
+                    0.0,
+                    null,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "create: blank name": {
+        "exception": "Exception",
+        "message": "POI name is required",
+        "code": 400,
+        "calls": [],
+        "maps": []
+    },
+    "create: full": {
+        "return": "inserted",
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ],
+            [
+                "insert",
+                {
+                    "id": null,
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 4,
+                    "favoriteId": 31,
+                    "name": "Stadhuis",
+                    "category": "Werk",
+                    "lat": 52.37,
+                    "lng": 4.89,
+                    "comment": "Ingang links",
+                    "linkedBy": "alice",
+                    "linkedAt": "<NOW>"
+                },
+                [
+                    "favoriteId",
+                    "name",
+                    "category",
+                    "lat",
+                    "lng",
+                    "comment",
+                    "objectUuid",
+                    "registerId",
+                    "schemaId",
+                    "linkedBy",
+                    "linkedAt"
+                ]
+            ]
+        ],
+        "maps": [
+            [
+                "addFavoriteToDB",
+                [
+                    "alice",
+                    "Stadhuis",
+                    52.37,
+                    4.89,
+                    "Werk",
+                    "Ingang links",
+                    null
+                ]
+            ]
+        ]
+    },
+    "create: maps off": {
+        "exception": "Exception",
+        "message": "NC Maps is not available",
+        "code": 503,
+        "calls": [],
+        "maps": []
+    },
+    "create: no user": {
+        "exception": "Exception",
+        "message": "No user logged in",
+        "code": 401,
+        "calls": [],
+        "maps": []
+    },
+    "link: duplicate": {
+        "exception": "Exception",
+        "message": "POI already linked to this object",
+        "code": 409,
+        "calls": [],
+        "maps": []
+    },
+    "link: empty favorite": {
+        "return": "inserted",
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ],
+            [
+                "insert",
+                {
+                    "id": null,
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 4,
+                    "favoriteId": 9,
+                    "name": "",
+                    "category": null,
+                    "lat": 0.0,
+                    "lng": 0.0,
+                    "comment": null,
+                    "linkedBy": "alice",
+                    "linkedAt": "<NOW>"
+                },
+                [
+                    "favoriteId",
+                    "name",
+                    "lat",
+                    "lng",
+                    "objectUuid",
+                    "registerId",
+                    "schemaId",
+                    "linkedBy",
+                    "linkedAt"
+                ]
+            ]
+        ],
+        "maps": [
+            [
+                "getFavoriteFromDB",
+                [
+                    9,
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "link: full favorite": {
+        "return": "inserted",
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ],
+            [
+                "insert",
+                {
+                    "id": null,
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 4,
+                    "favoriteId": 9,
+                    "name": "Gemeentehuis",
+                    "category": "12",
+                    "lat": 52.1,
+                    "lng": 5.0,
+                    "comment": "7",
+                    "linkedBy": "alice",
+                    "linkedAt": "<NOW>"
+                },
+                [
+                    "favoriteId",
+                    "name",
+                    "category",
+                    "lat",
+                    "lng",
+                    "comment",
+                    "objectUuid",
+                    "registerId",
+                    "schemaId",
+                    "linkedBy",
+                    "linkedAt"
+                ]
+            ]
+        ],
+        "maps": [
+            [
+                "getFavoriteFromDB",
+                [
+                    9,
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "link: lookup not array": {
+        "exception": "Exception",
+        "message": "Maps POI not found",
+        "code": 404,
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ]
+        ],
+        "maps": [
+            [
+                "getFavoriteFromDB",
+                [
+                    9,
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "link: lookup throws": {
+        "exception": "Exception",
+        "message": "Maps POI not found",
+        "code": 404,
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ],
+            [
+                "debug",
+                "MapLinkService::fetchFavoriteInfo failed: boom"
+            ]
+        ],
+        "maps": [
+            [
+                "getFavoriteFromDB",
+                [
+                    9,
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "link: maps off": {
+        "exception": "Exception",
+        "message": "NC Maps is not available",
+        "code": 503,
+        "calls": [],
+        "maps": []
+    },
+    "link: no favorites service": {
+        "exception": "Exception",
+        "message": "Maps POI not found",
+        "code": 404,
+        "calls": [
+            [
+                "container",
+                "OCA\\Maps\\Service\\FavoritesService"
+            ],
+            [
+                "debug",
+                "MapLinkService: FavoritesService unavailable: no maps"
+            ]
+        ],
+        "maps": []
+    },
+    "link: no user": {
+        "exception": "Exception",
+        "message": "No user logged in",
+        "code": 401,
+        "calls": [],
+        "maps": []
+    },
+    "linked": {
+        "return": [
+            {
+                "id": 4,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "favoriteId": 9,
+                "name": "Gemeentehuis",
+                "category": null,
+                "lat": 52.5,
+                "lng": 4.25,
+                "comment": null,
+                "linkedBy": null,
+                "linkedAt": null,
+                "url": "/apps/maps/#map=16/52.5/4.25"
+            },
+            {
+                "id": 4,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "favoriteId": 9,
+                "name": "Gemeentehuis",
+                "category": null,
+                "lat": null,
+                "lng": null,
+                "comment": null,
+                "linkedBy": null,
+                "linkedAt": null,
+                "url": "/apps/maps/#map=16/0/0"
+            }
+        ],
+        "calls": [],
+        "maps": []
+    },
+    "unlink: done": {
+        "return": null,
+        "calls": [],
+        "maps": []
+    },
+    "unlink: missing": {
+        "exception": "Exception",
+        "message": "Map link not found",
+        "code": 404,
+        "calls": [],
+        "maps": []
+    }
+}

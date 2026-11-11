@@ -26,15 +26,20 @@ namespace Unit\Service\Timeline;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\TimelineEntry;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\Timeline\EntryMentionService;
-use OCA\OpenRegister\Service\Timeline\ReferenceService;
-use OCA\OpenRegister\Service\Timeline\TextBlockService;
-use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
-use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
-use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryDerivations;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
+use OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection;
+use OCA\OpenRegister\Notifications\Service\Timeline\NoteRewrite;
+use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
+use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceSource;
+use OCA\OpenRegister\Notifications\Service\Timeline\TextBlockService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -101,9 +106,7 @@ class TimelineWriteServiceTest extends TestCase {
 		$this->service = new TimelineWriteService(
 			$this->notes,
 			$this->entries,
-			$this->references,
-			$this->mentions,
-			$this->blocks,
+			new TimelineEntryDerivations(references: $this->references, mentions: $this->mentions, blocks: $this->blocks),
 			$this->createMock(LoggerInterface::class)
 		);
 	}
@@ -128,7 +131,7 @@ class TimelineWriteServiceTest extends TestCase {
 		$this->recordsAs('entry-a');
 		$this->notes->expects($this->once())->method('createNote');
 		$this->references->expects($this->once())->method('record')
-			->with('entry-a', 'case-1', 'zie Z-2026-0044 en @jurist');
+			->with(new ReferenceSource('entry-a', 'case-1', 'zie Z-2026-0044 en @jurist'));
 		$this->mentions->expects($this->once())->method('apply');
 
 		$entry = $this->service->write($this->object(), ['message' => 'zie Z-2026-0044 en @jurist']);
@@ -171,7 +174,7 @@ class TimelineWriteServiceTest extends TestCase {
 			)
 			->willReturn('Uw aanvraag Z-2026-0044 is ontvangen.');
 		$this->notes->expects($this->once())->method('createNote')
-			->with('case-1', 'Uw aanvraag Z-2026-0044 is ontvangen.', null)
+			->with(new NoteDraft(objectUuid: 'case-1', message: 'Uw aanvraag Z-2026-0044 is ontvangen.', visibility: null))
 			->willReturn(['id' => 41]);
 
 		$this->service->write($this->object(), ['textBlock' => 'ontvangstbevestiging']);
@@ -211,12 +214,12 @@ class TimelineWriteServiceTest extends TestCase {
 		$entry->setUuid('entry-a');
 		$this->entries->method('syncFromNote')->willReturn($entry);
 		$this->references->expects($this->once())->method('record')
-			->with('entry-a', 'case-1', 'de verwijzing is eruit');
+			->with(new ReferenceSource('entry-a', 'case-1', 'de verwijzing is eruit'));
 		// Somebody already named and subscribed stays subscribed: unsubscribing
 		// them by deleting a word is a silent act on another person's inbox.
 		$this->mentions->expects($this->never())->method('apply');
 
-		$this->service->rewrite($this->object(), 41, 'de verwijzing is eruit');
+		$this->service->rewrite($this->object(), new NoteRewrite(41, 'de verwijzing is eruit'));
 	}
 
 	public function testAVisibilityOnlyEditRewritesNoReferences(): void {
@@ -225,7 +228,7 @@ class TimelineWriteServiceTest extends TestCase {
 		$this->entries->method('syncFromNote')->willReturn($entry);
 		$this->references->expects($this->never())->method('record');
 
-		$this->service->rewrite($this->object(), 41, null, 'public');
+		$this->service->rewrite($this->object(), new NoteRewrite(41, null, 'public'));
 	}
 
 	public function testANoteThatFailsToProjectIsNotLost(): void {
@@ -233,7 +236,7 @@ class TimelineWriteServiceTest extends TestCase {
 
 		// A note that was accepted must not be lost to the index.
 		$this->assertNull(
-			$this->service->projectNote($this->object(), ['id' => 41, 'message' => 'x'])
+			$this->service->projectNote($this->object(), new NoteProjection(['id' => 41, 'message' => 'x']))
 		);
 	}
 
@@ -244,12 +247,17 @@ class TimelineWriteServiceTest extends TestCase {
 
 		$entry = $this->service->projectNote(
 			$this->object(),
-			['id' => 41, 'message' => 'zie Z-2026-0044', 'visibility' => 'internal'],
-			'zaken',
-			'zaak'
+			new NoteProjection(['id' => 41, 'message' => 'zie Z-2026-0044', 'visibility' => 'internal'], 'zaken', 'zaak')
 		);
 
 		$this->assertSame('entry-a', $entry?->getUuid());
+	}
+
+	public function testTheRecordBehindANoteComesFromTheEntries(): void {
+		$entry = new TimelineEntry();
+		$this->entries->expects($this->once())->method('entryForNote')->with(41)->willReturn($entry);
+
+		$this->assertSame($entry, $this->service->entryForNote(41));
 	}
 
 	public function testForgettingANoteForgetsWhatItPointedAt(): void {

@@ -50,8 +50,9 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\Vectorization\Handlers\EmbeddingGeneratorHandler;
-use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\EmbeddingGeneratorHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -199,7 +200,7 @@ class Version1Date20260706100000 extends SimpleMigrationStep {
 		// 1. Currently-configured embedding model (SettingsService), resolved
 		// lazily so a DI failure during upgrade degrades instead of aborting.
 		try {
-			$settingsService = $this->container->get(SettingsService::class);
+			$settingsService = $this->container->get(SettingsServiceInterface::class);
 			$generator = $this->container->get(EmbeddingGeneratorHandler::class);
 
 			if ($settingsService instanceof SettingsService

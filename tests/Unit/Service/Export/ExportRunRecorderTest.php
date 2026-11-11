@@ -38,7 +38,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Export;
 use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\File;
@@ -125,8 +129,9 @@ class ExportRunRecorderTest extends TestCase {
 				return $this->rows[$uuid];
 			}
 		);
-		$mapper->method('findForActor')->willReturnCallback(
-			function (?string $actor, array $filters = []): array {
+		$mapper->method('listForActor')->willReturnCallback(
+			function (?string $actor, ListQuery $query): array {
+				$filters = $query->filters;
 				$found = [];
 				foreach ($this->rows as $row) {
 					if ($actor !== null && $row->getActor() !== $actor) {
@@ -224,16 +229,22 @@ class ExportRunRecorderTest extends TestCase {
 	 */
 	private function recordOne(?int $retention = null, ?int $fileId = 4242, string $actor = 'alice'): ExportRun {
 		return $this->recorder->record(
-			source: 'scheduled-report',
-			actor: $actor,
-			format: 'csv',
-			rowCount: 12,
-			profile: 'weekly-cases',
-			filename: 'weekly-cases.csv',
-			registerName: 'cases',
-			schemaName: 'case',
-			fileId: $fileId,
-			filePath: 'Reports/weekly-cases.csv',
+			origin: new ExportRunOrigin(
+				source: 'scheduled-report',
+				actor: $actor,
+				profile: 'weekly-cases'
+			),
+			content: new ExportRunContent(
+				format: 'csv',
+				rowCount: 12,
+				registerName: 'cases',
+				schemaName: 'case'
+			),
+			file: new ExportRunFile(
+				filename: 'weekly-cases.csv',
+				fileId: $fileId,
+				filePath: 'Reports/weekly-cases.csv'
+			),
 			retentionSeconds: $retention
 		);
 	}//end recordOne()
@@ -461,23 +472,15 @@ class ExportRunRecorderTest extends TestCase {
 	 */
 	public function testAnAppendedFileIsOneRunWhoseCountGrows(): void {
 		$first = $this->recorder->recordAppended(
-			source: 'whole-set',
-			actor: 'eigenaar-1',
+			origin: new ExportRunOrigin(source: 'whole-set', actor: 'eigenaar-1', profile: 'Datawarehouse'),
 			format: 'csv',
-			profile: 'Datawarehouse',
-			filename: 'datawarehouse_schema-19.csv',
-			fileId: 4242,
-			filePath: '/eigenaar-1/files/Exports/datawarehouse_schema-19.csv',
+			file: new ExportRunFile(filename: 'datawarehouse_schema-19.csv', fileId: 4242, filePath: '/eigenaar-1/files/Exports/datawarehouse_schema-19.csv'),
 			retentionSeconds: null
 		);
 		$this->recorder->recordAppended(
-			source: 'whole-set',
-			actor: 'eigenaar-1',
+			origin: new ExportRunOrigin(source: 'whole-set', actor: 'eigenaar-1', profile: 'Datawarehouse'),
 			format: 'csv',
-			profile: 'Datawarehouse',
-			filename: 'datawarehouse_schema-19.csv',
-			fileId: 4242,
-			filePath: '/eigenaar-1/files/Exports/datawarehouse_schema-19.csv',
+			file: new ExportRunFile(filename: 'datawarehouse_schema-19.csv', fileId: 4242, filePath: '/eigenaar-1/files/Exports/datawarehouse_schema-19.csv'),
 			retentionSeconds: null
 		);
 
@@ -495,14 +498,29 @@ class ExportRunRecorderTest extends TestCase {
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-a-produced-export-is-recorded-as-a-run
 	 */
 	public function testAnotherFileOrAnExpiredRunStartsANewRun(): void {
-		$this->recorder->recordAppended(source: 'whole-set', actor: 'eigenaar-1', format: 'csv', profile: 'P', filename: 'a.csv', fileId: 4242, filePath: '/a.csv', retentionSeconds: 3600);
-		$this->recorder->recordAppended(source: 'whole-set', actor: 'eigenaar-1', format: 'csv', profile: 'P', filename: 'b.csv', fileId: 4343, filePath: '/b.csv', retentionSeconds: 3600);
+		$this->recorder->recordAppended(
+			origin: new ExportRunOrigin(source: 'whole-set', actor: 'eigenaar-1', profile: 'P'),
+			format: 'csv',
+			file: new ExportRunFile(filename: 'a.csv', fileId: 4242, filePath: '/a.csv'),
+			retentionSeconds: 3600
+		);
+		$this->recorder->recordAppended(
+			origin: new ExportRunOrigin(source: 'whole-set', actor: 'eigenaar-1', profile: 'P'),
+			format: 'csv',
+			file: new ExportRunFile(filename: 'b.csv', fileId: 4343, filePath: '/b.csv'),
+			retentionSeconds: 3600
+		);
 		$this->assertCount(2, $this->rows);
 
 		// The first file's run expires and the sweep removes its file.
 		$this->clock += 7200;
 		$this->recorder->sweep();
-		$this->recorder->recordAppended(source: 'whole-set', actor: 'eigenaar-1', format: 'csv', profile: 'P', filename: 'a.csv', fileId: 4242, filePath: '/a.csv', retentionSeconds: 3600);
+		$this->recorder->recordAppended(
+			origin: new ExportRunOrigin(source: 'whole-set', actor: 'eigenaar-1', profile: 'P'),
+			format: 'csv',
+			file: new ExportRunFile(filename: 'a.csv', fileId: 4242, filePath: '/a.csv'),
+			retentionSeconds: 3600
+		);
 
 		$this->assertCount(3, $this->rows, 'a run whose file is gone is history; a new row opens a new run');
 	}//end testAnotherFileOrAnExpiredRunStartsANewRun()

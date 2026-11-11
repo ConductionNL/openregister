@@ -39,21 +39,22 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FlowEmailSentEvent;
-use OCA\OpenRegister\Service\Notification\EmailSender;
-use OCA\OpenRegister\Service\Notification\NcNotificationSender;
-use OCA\OpenRegister\Service\Notification\NotificationChannelPolicy;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
-use OCA\OpenRegister\Service\Notification\NotificationTemplating;
-use OCA\OpenRegister\Service\Notification\OptOutAuthority;
-use OCA\OpenRegister\Service\Notification\RateLimiter;
-use OCA\OpenRegister\Service\Notification\TalkSender;
-use OCA\OpenRegister\Service\Notification\TalkSendException;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IAppConfig;
-use OCP\IUserManager;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
+use OCA\OpenRegister\Notifications\Service\Notification\NoticeContent;
+use OCA\OpenRegister\Notifications\Service\Notification\NoticeRule;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
+use LogicException;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * Sends on behalf of a flow run, through the notification subsystem.
@@ -122,7 +123,7 @@ class FlowMessagingService {
 
 	public const BUCKET_AUTHORITY_UNAVAILABLE = 'authorityUnavailable';
 
-	private const REFUSAL_BUCKETS = [OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE => self::BUCKET_AUTHORITY_UNAVAILABLE];
+	private const REFUSAL_BUCKETS = [OptOutAuthorityInterface::CODE_AUTHORITY_UNAVAILABLE => self::BUCKET_AUTHORITY_UNAVAILABLE];
 
 	/**
 	 * The address rules: what counts as an address, which may be mailed.
@@ -141,64 +142,42 @@ class FlowMessagingService {
 	/**
 	 * Asks integriq whether an external address may be mailed.
 	 *
-	 * @var OptOutAuthority
+	 * @var OptOutAuthorityInterface
 	 */
-	private readonly OptOutAuthority $optOut;
+	private readonly OptOutAuthorityInterface $optOut;
 
 	/**
 	 * Constructor. Every dependency is one of the subsystem's call-shared
 	 * units — the same objects the declarative dispatcher invokes.
 	 *
-	 * @param NotificationChannelPolicy $channelPolicy The subsystem's per-channel kill switches.
-	 * @param NotificationRecipientResolver $recipientResolver The subsystem's recipient resolver.
-	 * @param NotificationTemplating $templating The dialect's placeholder evaluator.
-	 * @param NcNotificationSender $ncSender The nc-notification channel sender (web-push rides along).
-	 * @param EmailSender $emailSender The email channel sender.
-	 * @param TalkSender $talkSender The Talk channel sender.
-	 * @param RateLimiter $rateLimiter The subsystem's rate limiter (shared per-recipient budget).
-	 * @param NotificationPreferenceService $preferences The recipient preference resolver.
-	 * @param IUserManager $userManager Resolves the acting user.
-	 * @param IAppConfig $appConfig App config for the recipient bound.
-	 * @param LoggerInterface $logger Logger for send diagnostics.
-	 * @param IEventDispatcher $eventDispatcher Announces each sent email (FlowEmailSentEvent).
-	 * @param FlowRunContext|null $runContext The ambient step frame, for the sending step's node id.
-	 *                                        Nullable so a caller without a run still constructs it.
-	 * @param OptOutAuthority|null $optOut The opt-out seam; null builds one on the same dispatcher.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected shared units.
+	 * @param FlowMessagingChannels $channels The per-channel kill switches and the in-app, email and Talk senders.
+	 * @param FlowMessagingRecipients $recipients The recipient resolver, preferences, rate limiter and user lookup.
+	 * @param FlowMessagingPlatform $platform The placeholder evaluator, app config, logger and event dispatcher.
+	 * @param FlowMessagingOverrides $overrides The ambient step frame and the opt-out seam; null fields build the defaults.
 	 *
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function __construct(
-		private readonly NotificationChannelPolicy $channelPolicy,
-		private readonly NotificationRecipientResolver $recipientResolver,
-		private readonly NotificationTemplating $templating,
-		private readonly NcNotificationSender $ncSender,
-		private readonly EmailSender $emailSender,
-		private readonly TalkSender $talkSender,
-		private readonly RateLimiter $rateLimiter,
-		private readonly NotificationPreferenceService $preferences,
-		private readonly IUserManager $userManager,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		IEventDispatcher $eventDispatcher,
-		?FlowRunContext $runContext = null,
-		?OptOutAuthority $optOut = null,
+		private readonly FlowMessagingChannels $channels,
+		private readonly FlowMessagingRecipients $recipients,
+		private readonly FlowMessagingPlatform $platform,
+		FlowMessagingOverrides $overrides,
 	) {
-		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipientResolver);
-		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $eventDispatcher, logger: $logger, runContext: $runContext);
-		$this->optOut    = ($optOut ?? new OptOutAuthority(eventDispatcher: $eventDispatcher, appConfig: $appConfig, logger: $logger));
+		$events          = $platform->eventDispatcher;
+		$logger          = $platform->logger;
+		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipients->recipientResolver);
+		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $events, logger: $logger, runContext: $overrides->runContext);
+		// The container always resolves the bound OptOutAuthorityInterface; a hand-built
+		// service without one could not ask integriq, so it is refused rather than guessed.
+		$this->optOut    = ($overrides->optOut ?? throw new LogicException('FlowMessagingService needs an opt-out authority.'));
 
 	}//end __construct()
 
 	/**
 	 * Send an in-app Nextcloud notification (web-push riding along) per item.
 	 *
-	 * @param array $config The step configuration (`recipients`, `title`, `message`).
-	 * @param array $items The flow items; one send per recipient per item.
-	 * @param array $context The run context (acting user, report handle).
-	 * @param string $stepName The step's type id, used as the send's rule identity.
+	 * @param MessageSend $request The step configuration, items, run context and step id.
 	 *
 	 * @return array The outcome report also written to the run log.
 	 *
@@ -207,25 +186,38 @@ class FlowMessagingService {
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
-	public function sendNotification(array $config, array $items, array $context, string $stepName): array {
-		return $this->sendPerRecipient(
-			channel: 'nc-notification',
-			config: $config,
-			items: $items,
-			context: $context,
-			stepName: $stepName,
-			titleKey: 'title',
-			bodyKey: 'message'
-		);
-	}//end sendNotification()
+	public function notify(MessageSend $request): array {
+		$send = new FlowSend(channel: 'nc-notification', config: $request->config, items: $request->items, context: $request->context);
+		$send->stepName = $request->stepName;
+		return $this->sendPerRecipient(send: $send);
+	}//end notify()
+
+	/**
+	 * The messages a step would send, composed and not sent (flow dry-run).
+	 *
+	 * Per item: the recipients the step resolves, and the subject and body its
+	 * templates give. For `talk` the recipient is the conversation and there is
+	 * no subject. Reads only: no rate budget is spent, nothing is delivered and
+	 * no report is written. Only the scalar entries of the run context reach the templates.
+	 *
+	 * @param string      $channel `email`, `notification` or `talk`.
+	 * @param MessageSend $step    The step configuration, items and run context (no step name).
+	 *
+	 * @return array<int, array{channel: string, to: array<int, string>, subject: string, body: string}>
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 */
+	public function preview(string $channel, MessageSend $step): array {
+		$preview = new FlowMessagePreview(addresses: $this->addresses, templating: $this->platform->templating);
+		$scalar  = new MessageSend(config: $step->config, items: $step->items, context: $this->scalarContext(context: $step->context));
+
+		return $preview->messages(channel: $channel, step: $scalar);
+	}//end preview()
 
 	/**
 	 * Send an email per recipient per item.
 	 *
-	 * @param array $config The step configuration (`recipients`, `subject`, `body`).
-	 * @param array $items The flow items; one send per recipient per item.
-	 * @param array $context The run context (acting user, report handle).
-	 * @param string $stepName The step's type id, used as the send's rule identity.
+	 * @param MessageSend $request The step configuration, items, run context and step id.
 	 *
 	 * @return array The outcome report also written to the run log.
 	 *
@@ -234,17 +226,13 @@ class FlowMessagingService {
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
-	public function sendEmail(array $config, array $items, array $context, string $stepName): array {
-		return $this->sendPerRecipient(
-			channel: 'email',
-			config: $config,
-			items: $items,
-			context: $context,
-			stepName: $stepName,
-			titleKey: 'subject',
-			bodyKey: 'body'
-		);
-	}//end sendEmail()
+	public function email(MessageSend $request): array {
+		$send = new FlowSend(channel: 'email', config: $request->config, items: $request->items, context: $request->context);
+		$send->stepName = $request->stepName;
+		$send->titleKey = 'subject';
+		$send->bodyKey = 'body';
+		return $this->sendPerRecipient(send: $send);
+	}//end email()
 
 	/**
 	 * Post a Talk chat message as the run's acting user, per item.
@@ -253,10 +241,7 @@ class FlowMessagingService {
 	 * MUST be a participant; "not a participant" is a step failure with that
 	 * reason, never an auto-join.
 	 *
-	 * @param array $config The step configuration (`conversation`, `message`).
-	 * @param array $items The flow items; one post per item.
-	 * @param array $context The run context (acting user, report handle).
-	 * @param string $stepName The step's type id, used as the send's rule identity.
+	 * @param MessageSend $request The step configuration, items, run context and step id.
 	 *
 	 * @return array The outcome report also written to the run log.
 	 *
@@ -264,341 +249,115 @@ class FlowMessagingService {
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
-	public function sendTalkMessage(array $config, array $items, array $context, string $stepName): array {
-		$actor = $this->resolveActingUser(context: $context);
+	public function talk(MessageSend $request): array {
+		$send = new FlowSend(channel: 'talk', config: $request->config, items: $request->items, context: $request->context);
+		$send->stepName = $request->stepName;
+		$send->actor = $this->resolveActingUser(context: $request->context);
+		foreach ($request->items as $item) {
+			$this->postTalkItem(send: $send, json: (array)($item[FlowItems::JSON] ?? []));
+		}
 
-		$outcomes = $this->emptyOutcomes();
-		$failures = [];
-
-		foreach ($items as $item) {
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			$token = $this->resolveScalarConfig(value: (string)($config['conversation'] ?? ''), json: $json, context: $context);
-			$message = $this->templating->interpolate(
-				template: (string)($config['message'] ?? ''),
-				data: $json,
-				context: $this->scalarContext(context: $context)
-			);
-
-			if ($token === '') {
-				$failures[] = 'No Talk conversation resolved for an item; nothing was posted for it.';
-				$this->addOutcome(outcomes: $outcomes, bucket: 'failed', recipient: $token);
-				continue;
-			}
-
-			// The conversation is not a person: the rate bucket key uses the
-			// broadcast pseudo-recipient convention, outside the shared
-			// per-recipient budget.
-			if ($this->rateLimiter->tryConsume(ruleId: $stepName, recipient: '__talk__:' . $token) === false) {
-				$this->addOutcome(outcomes: $outcomes, bucket: 'rateLimited', recipient: $token);
-				continue;
-			}
-
-			try {
-				$outcome = $this->talkSender->postAsUser(token: $token, message: $message, actorUid: $actor);
-			} catch (TalkSendException $e) {
-				$failures[] = $e->getMessage();
-				$this->addOutcome(outcomes: $outcomes, bucket: 'failed', recipient: $token);
-				continue;
-			}
-
-			if ($outcome === TalkSender::OUTCOME_KILL_SWITCH) {
-				$this->addOutcome(outcomes: $outcomes, bucket: 'skippedByKillSwitch', recipient: $token);
-				continue;
-			}
-
-			$this->addOutcome(outcomes: $outcomes, bucket: 'delivered', recipient: $token);
-		}//end foreach
-
-		$report = $this->buildReport(
-			channel: 'talk',
-			actor: $actor,
-			recipients: 0,
-			outcomes: $outcomes,
-			unknown: []
-		);
-		$this->writeReport(context: $context, report: $report);
-
-		if ($failures !== []) {
+		$report = $this->reportSend(send: $send);
+		if ($send->failures !== []) {
 			throw new RuntimeException(
-				sprintf('%d of %d Talk posts failed: %s', count($failures), count($items), implode(' | ', array_slice($failures, 0, 3)))
+				sprintf('%d of %d Talk posts failed: %s', count($send->failures), count($request->items), implode(' | ', array_slice($send->failures, 0, 3)))
 			);
 		}
 
 		return $report;
-	}//end sendTalkMessage()
+	}//end talk()
+
+	/**
+	 * Post one item's Talk message, recording its outcome.
+	 *
+	 * The conversation is not a person: its rate bucket uses the broadcast
+	 * pseudo-recipient convention, outside the shared per-recipient budget.
+	 *
+	 * @param FlowSend $send The Talk send.
+	 * @param array    $json The item's json.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 */
+	private function postTalkItem(FlowSend $send, array $json): void {
+		$token = $this->conversationToken(send: $send, json: $json);
+		$message = $this->platform->templating->render(
+			template: (string)($send->config['message'] ?? ''),
+			values: new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context))
+		);
+		if ($token === '') {
+			$send->failures[] = 'No Talk conversation resolved for an item; nothing was posted for it.';
+			$send->add(bucket: 'failed', recipient: $token);
+			return;
+		}
+
+		if ($this->recipients->rateLimiter->tryConsume(ruleId: $send->stepName, recipient: '__talk__:' . $token) === false) {
+			$send->add(bucket: 'rateLimited', recipient: $token);
+			return;
+		}
+
+		try {
+			$outcome = $this->channels->talkSender->postAsUser(
+				talkMessage: new TalkMessage(token: $token, message: $message),
+				actorUid: $send->actor
+			);
+		} catch (TalkSendException $e) {
+			$send->failures[] = $e->getMessage();
+			$send->add(bucket: 'failed', recipient: $token);
+			return;
+		}
+
+		if ($outcome === TalkSenderInterface::OUTCOME_KILL_SWITCH) {
+			$send->add(bucket: 'skippedByKillSwitch', recipient: $token);
+			return;
+		}
+
+		$send->add(bucket: 'delivered', recipient: $token);
+	}//end postTalkItem()
 
 	/**
 	 * The shared per-recipient pipeline for nc-notification and email.
 	 *
 	 * Order of guards, each sufficient alone: channel kill switch, the
-	 * recipient's preference, the post-expansion recipient bound, the shared
-	 * rate-limit budget — then the send, through the subsystem's own sender.
+	 * recipient's preference, the post-expansion recipient bound, the
+	 * external-address opt-out, the shared rate-limit budget — then the send,
+	 * through the subsystem's own sender. Nothing is sent until every
+	 * step-wide guard has passed.
 	 *
-	 * @param string $channel The channel (`nc-notification` or `email`).
-	 * @param array $config The step configuration.
-	 * @param array $items The flow items.
-	 * @param array $context The run context.
-	 * @param string $stepName The step's type id.
-	 * @param string $titleKey The config key holding the title/subject template.
-	 * @param string $bodyKey The config key holding the body template.
+	 * @param FlowSend $send The send.
 	 *
 	 * @return array The outcome report.
 	 *
 	 * @throws RuntimeException Missing actor, exceeded bound, or failed sends.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The guard chain is the spec's own
-	 * order; each branch is one guard with its own outcome bucket.
-	 * @SuppressWarnings(PHPMD.NPathComplexity) Guards multiply; all are required.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The chain reads top to bottom in
-	 * the order the spec states it; splitting it would hide the order.
-	 *
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
-	private function sendPerRecipient(
-		string $channel,
-		array $config,
-		array $items,
-		array $context,
-		string $stepName,
-		string $titleKey,
-		string $bodyKey,
-	): array {
-		$actor = $this->resolveActingUser(context: $context);
-
-		// Addresses are an email-channel concept. Every other channel keeps
-		// reading an address as an unknown recipient, as it always did.
-		$acceptAddresses = ($channel === 'email');
-		$mode = $this->addresses->externalRecipientMode(config: $config);
-
-		// Resolve recipients per item, post-expansion, before anything sends.
-		$perItem = [];
-		$unknown = [];
-		$refused = [];
-		$distinct = [];
-		$distinctAddresses = [];
-		foreach ($items as $index => $item) {
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			$resolved = $this->resolveRecipients(
-				recipients: ($config['recipients'] ?? []),
-				json: $json,
-				acceptAddresses: $acceptAddresses
-			);
-			$screened = $this->addresses->screenAddresses(addresses: $resolved['addresses'], json: $json, mode: $mode);
-			$perItem[$index] = ['json' => $json, 'uids' => $resolved['uids'], 'addresses' => $screened['allowed']];
-			foreach ($resolved['uids'] as $uid) {
-				$distinct[$uid] = true;
-			}
-
-			foreach (array_keys($screened['allowed']) as $address) {
-				$distinctAddresses[$address] = true;
-			}
-
-			foreach ($resolved['unknown'] as $bad) {
-				$unknown[$bad] = true;
-			}
-
-			foreach ($screened['refused'] as $key => $entry) {
-				$refused[$key] = $entry;
-			}
-		}//end foreach
-
-		$refused = array_values($refused);
-
-		if ($unknown !== []) {
-			$this->logger->info(
-				sprintf(
-					'[FlowMessagingService] %d recipient entries did not resolve to a user or group: %s',
-					count($unknown),
-					implode(', ', array_slice(array_keys($unknown), 0, self::REPORT_SAMPLE))
-				)
-			);
-		}
-
-		$outcomes = $this->emptyOutcomes();
-		if ($acceptAddresses === true) {
-			$outcomes[self::BUCKET_OPTED_OUT] = [];
-			$outcomes[self::BUCKET_AUTHORITY_UNAVAILABLE] = [];
-		}
-
-		$failures = [];
-		$recipientCount = (count($distinct) + count($distinctAddresses));
+	private function sendPerRecipient(FlowSend $send): array {
+		$send->actor = $this->resolveActingUser(context: $send->context);
+		$this->resolveSendRecipients(send: $send);
 
 		// KILL SWITCH, first and channel-wide: a silenced channel is a skip
 		// recorded per recipient, never a failure and never a silent no-op.
-		if ($this->channelPolicy->isChannelEnabled(channel: $channel) === false) {
-			foreach (array_merge(array_keys($distinct), array_keys($distinctAddresses)) as $recipient) {
-				$this->addOutcome(outcomes: $outcomes, bucket: 'skippedByKillSwitch', recipient: (string)$recipient);
-			}
-
-			$report = $this->buildReport(
-				channel: $channel,
-				actor: $actor,
-				recipients: $recipientCount,
-				outcomes: $outcomes,
-				unknown: array_keys($unknown),
-				refused: $refused
-			);
-			$this->writeReport(context: $context, report: $report);
-
-			return $report;
-		}//end if
-
-		// PREFERENCE, per recipient: a user who turned the channel off stays
-		// not-messaged on it, flow or no flow. Applied before the bound so a
-		// preference-skipped user still counts toward the resolved total the
-		// bound judges (the config addressed them; their settings vetoed it).
-		// An external address has no preferences to consult: the step's
-		// `externalRecipients` allowlist is its gate.
-		$sendable = [];
-		foreach (array_keys($distinct) as $uid) {
-			if ($this->preferenceAllows(uid: (string)$uid, channel: $channel) === false) {
-				$this->addOutcome(outcomes: $outcomes, bucket: 'skippedByPreference', recipient: (string)$uid);
-				continue;
-			}
-
-			$sendable[(string)$uid] = true;
+		if ($this->channels->channelPolicy->isChannelEnabled(channel: $send->channel) === false) {
+			$send->addAll(bucket: 'skippedByKillSwitch');
+			return $this->reportSend(send: $send);
 		}
 
-		// RECIPIENT BOUND, post-expansion: bounding the resolved people, not
-		// the config entries. Refusal is a step failure naming the count and
-		// the bound, routed through the step's `onError` policy — and nothing
-		// has been sent yet.
-		$bound = $this->recipientBound();
-		if ($recipientCount > $bound) {
-			$report = $this->buildReport(
-				channel: $channel,
-				actor: $actor,
-				recipients: $recipientCount,
-				outcomes: $outcomes,
-				unknown: array_keys($unknown),
-				refused: $refused
-			);
-			$this->writeReport(context: $context, report: $report);
-
-			throw new RuntimeException(
-				sprintf(
-					'The recipient list resolved to %d recipients, above the bound of %d; nothing was sent. Narrow the recipients, or raise "%s" in app config.',
-					$recipientCount,
-					$bound,
-					self::CONFIG_RECIPIENT_BOUND
-				)
-			);
-		}//end if
-
-		// OPT-OUT, once for the whole step, before anything is sent.
-		$decisions = $this->optOut->ask(
-			channel: 'email',
-			category: (string)($this->scalarContext(context: $config)['messageCategory'] ?? ''),
-			addresses: array_map('strval', array_keys($distinctAddresses)),
-			correlationId: 'openregister-flow:' . (string)($this->scalarContext(context: $context)[FlowRunContext::CONTEXT_RUN] ?? '') . ':' . $stepName
-		);
+		$this->filterByPreference(send: $send);
+		$this->assertWithinBound(send: $send);
+		$this->askOptOut(send: $send);
 
 		// RATE LIMIT then SEND, per recipient per item. The limiter's buckets
 		// are the subsystem's own — a shared budget with declarative sends.
-		foreach ($perItem as $entry) {
-			$title = $this->templating->interpolate(
-				template: (string)($config[$titleKey] ?? ''),
-				data: $entry['json'],
-				context: $this->scalarContext(context: $context)
-			);
-			$body = $this->templating->interpolate(
-				template: (string)($config[$bodyKey] ?? ''),
-				data: $entry['json'],
-				context: $this->scalarContext(context: $context)
-			);
+		foreach ($send->perItem as $item) {
+			$this->sendItem(send: $send, item: $item);
+		}
 
-			$deliveredThisItem = [];
-			foreach ($entry['uids'] as $uid) {
-				if (isset($sendable[$uid]) === false) {
-					continue;
-				}
-
-				if ($this->rateLimiter->tryConsume(ruleId: $stepName, recipient: $uid) === false) {
-					$this->addOutcome(outcomes: $outcomes, bucket: 'rateLimited', recipient: $uid);
-					continue;
-				}
-
-				$outcome = $this->deliver(
-					channel: $channel,
-					uid: $uid,
-					title: $title,
-					body: $body,
-					json: $entry['json'],
-					stepName: $stepName
-				);
-
-				if ($outcome === 'dispatched') {
-					$this->addOutcome(outcomes: $outcomes, bucket: 'delivered', recipient: $uid);
-					$deliveredThisItem[] = $uid;
-					if ($channel === 'email') {
-						$this->announcer->announce(
-							recipient: $uid,
-							kind: FlowEmailSentEvent::KIND_USER,
-							subject: $title,
-							body: $body,
-							json: $entry['json'],
-							context: $context,
-							stepName: $stepName,
-							actor: $actor
-						);
-					}
-
-					continue;
-				}//end if
-
-				if ($outcome === 'kill-switch') {
-					$this->addOutcome(outcomes: $outcomes, bucket: 'skippedByKillSwitch', recipient: $uid);
-					continue;
-				}
-
-				$this->addOutcome(outcomes: $outcomes, bucket: 'failed', recipient: $uid);
-				$failures[] = sprintf('%s to "%s" failed (%s)', $channel, $uid, $outcome);
-			}//end foreach
-
-			foreach ($this->sendToAddresses(
-				addresses: $entry['addresses'],
-				decisions: $decisions,
-				title: $title,
-				body: $body,
-				json: $entry['json'],
-				context: $context,
-				stepName: $stepName,
-				actor: $actor,
-				outcomes: $outcomes
-			) as $failure) {
-				$failures[] = $failure;
-			}
-
-			// WEB-PUSH rides along with the nc-notification send under the
-			// dispatcher's existing rules, with no flow-side configuration:
-			// the job re-resolves each recipient to their stored
-			// subscriptions, so a user without one simply gets nothing.
-			if ($channel === 'nc-notification' && $deliveredThisItem !== []) {
-				$this->ncSender->enqueueWebPush(
-					recipients: $deliveredThisItem,
-					ruleId: $stepName,
-					originApp: 'openregister',
-					subject: $title,
-					message: $body,
-					actions: [],
-					object: $this->objectFromItem(json: $entry['json'])
-				);
-			}
-		}//end foreach
-
-		$report = $this->buildReport(
-			channel: $channel,
-			actor: $actor,
-			recipients: $recipientCount,
-			outcomes: $outcomes,
-			unknown: array_keys($unknown),
-			refused: $refused
-		);
-		$this->writeReport(context: $context, report: $report);
-
-		if ($failures !== []) {
+		$report = $this->reportSend(send: $send);
+		if ($send->failures !== []) {
 			throw new RuntimeException(
-				sprintf('%d %s send(s) failed: %s', count($failures), $channel, implode(' | ', array_slice($failures, 0, 3)))
+				sprintf('%d %s send(s) failed: %s', count($send->failures), $send->channel, implode(' | ', array_slice($send->failures, 0, 3)))
 			);
 		}
 
@@ -606,125 +365,322 @@ class FlowMessagingService {
 	}//end sendPerRecipient()
 
 	/**
+	 * Resolve every item's recipients, post-expansion, before anything sends.
+	 *
+	 * An email step also accepts addresses, screened by the step's external
+	 * recipient mode; every other channel reads an address as an unknown
+	 * recipient, as it always did. The outcome buckets of an email step also
+	 * hold the opt-out refusals.
+	 *
+	 * @param FlowSend $send The send.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function resolveSendRecipients(FlowSend $send): void {
+		$mode = $this->addresses->externalRecipientMode(config: $send->config);
+		foreach ($send->items as $index => $item) {
+			$json = (array)($item[FlowItems::JSON] ?? []);
+			$resolved = $this->addresses->resolveAll(
+				recipients: ($send->config['recipients'] ?? []),
+				lookup: new RecipientLookup(json: $json, acceptAddresses: $send->acceptsAddresses())
+			);
+			$screened = $this->addresses->screenAddresses(addresses: $resolved['addresses'], json: $json, mode: $mode);
+			$send->perItem[$index] = new FlowSendItem(json: $json, uids: $resolved['uids'], addresses: $screened['allowed']);
+			$send->note(resolved: $resolved, screened: $screened);
+		}
+
+		$this->logUnknownRecipients(send: $send);
+		if ($send->acceptsAddresses() === true) {
+			$send->outcomes[self::BUCKET_OPTED_OUT] = [];
+			$send->outcomes[self::BUCKET_AUTHORITY_UNAVAILABLE] = [];
+		}
+	}//end resolveSendRecipients()
+
+	/**
+	 * Log the recipient entries that resolved to no user or group.
+	 *
+	 * @param FlowSend $send The send, its recipients resolved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 */
+	private function logUnknownRecipients(FlowSend $send): void {
+		if ($send->unknown === []) {
+			return;
+		}
+
+		$this->platform->logger->info(
+			sprintf(
+				'[FlowMessagingService] %d recipient entries did not resolve to a user or group: %s',
+				count($send->unknown),
+				implode(', ', array_slice(array_keys($send->unknown), 0, self::REPORT_SAMPLE))
+			)
+		);
+	}//end logUnknownRecipients()
+
+	/**
+	 * Keep the users whose own preference allows the channel; record the rest as skipped.
+	 *
+	 * A user who turned the channel off stays not-messaged on it, flow or no
+	 * flow. Applied before the bound, so a preference-skipped user still
+	 * counts toward the total the bound judges. An external address has no
+	 * preferences: the step's `externalRecipients` allowlist is its gate.
+	 *
+	 * @param FlowSend $send The send, its recipients resolved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	private function filterByPreference(FlowSend $send): void {
+		foreach (array_keys($send->distinct) as $uid) {
+			if ($this->preferenceAllows(uid: (string)$uid, channel: $send->channel) === false) {
+				$send->add(bucket: 'skippedByPreference', recipient: (string)$uid);
+				continue;
+			}
+
+			$send->sendable[(string)$uid] = true;
+		}
+	}//end filterByPreference()
+
+	/**
+	 * Refuse the step when its resolved recipients exceed the bound; nothing has been sent yet.
+	 *
+	 * The bound judges the resolved people, not the config entries. The
+	 * refusal is a step failure naming the count and the bound, routed
+	 * through the step's `onError` policy, with the report written first.
+	 *
+	 * @param FlowSend $send The send, its recipients resolved.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the recipients exceed the bound.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 */
+	private function assertWithinBound(FlowSend $send): void {
+		$bound = $this->recipientBound();
+		if ($send->recipientCount() <= $bound) {
+			return;
+		}
+
+		$this->reportSend(send: $send);
+		throw new RuntimeException(
+			sprintf(
+				'The recipient list resolved to %d recipients, above the bound of %d; nothing was sent. Narrow the recipients, or raise "%s" in app config.',
+				$send->recipientCount(),
+				$bound,
+				self::CONFIG_RECIPIENT_BOUND
+			)
+		);
+	}//end assertWithinBound()
+
+	/**
+	 * Ask the opt-out authority about every external address, once for the whole step.
+	 *
+	 * @param FlowSend $send The send, its recipients resolved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 */
+	private function askOptOut(FlowSend $send): void {
+		$runId = (string)($this->scalarContext(context: $send->context)[FlowRunContext::CONTEXT_RUN] ?? '');
+		$send->decisions = $this->optOut->askQuestion(
+			question: new OptOutQuestion(
+				channel: 'email',
+				category: (string)($this->scalarContext(context: $send->config)['messageCategory'] ?? ''),
+				addresses: array_map('strval', array_keys($send->distinctAddresses)),
+				correlationId: 'openregister-flow:' . $runId . ':' . $send->stepName
+			)
+		);
+	}//end askOptOut()
+
+	/**
+	 * Send one item to its users and its allowed addresses, then enqueue its web push.
+	 *
+	 * Web push rides along with the nc-notification send under the
+	 * dispatcher's existing rules: the job re-resolves each recipient to their
+	 * stored subscriptions, so a user without one simply gets nothing.
+	 *
+	 * @param FlowSend     $send The send.
+	 * @param FlowSendItem $item The item.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	private function sendItem(FlowSend $send, FlowSendItem $item): void {
+		$values = new PlaceholderValues(data: $item->json, context: $this->scalarContext(context: $send->context));
+		$templating = $this->platform->templating;
+		$item->title = $templating->render(template: (string)($send->config[$send->titleKey] ?? ''), values: $values);
+		$item->body = $templating->render(template: (string)($send->config[$send->bodyKey] ?? ''), values: $values);
+		$item->kind = FlowEmailSentEvent::KIND_USER;
+		foreach ($item->uids as $uid) {
+			$item->recipient = $uid;
+			$this->sendToUser(send: $send, item: $item);
+		}
+
+		$this->sendToAddresses(send: $send, item: $item);
+		if ($send->channel === 'nc-notification' && $item->delivered !== []) {
+			$this->channels->ncSender->enqueuePush(
+				push: new PushRideAlong(
+					recipients: $item->delivered,
+					object: $item->objectReference(),
+					rule: new NoticeRule(name: $send->stepName),
+					content: new NoticeContent(subjectKey: '', subject: $item->title, message: $item->body)
+				)
+			);
+		}
+	}//end sendItem()
+
+	/**
+	 * Send an item to one of its users, when their preference allows it and the rate budget has room.
+	 *
+	 * A dispatched email is announced with a {@see FlowEmailSentEvent}.
+	 *
+	 * @param FlowSend     $send The send.
+	 * @param FlowSendItem $item The item, its recipient the user.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	private function sendToUser(FlowSend $send, FlowSendItem $item): void {
+		$uid = $item->recipient;
+		if (isset($send->sendable[$uid]) === false) {
+			return;
+		}
+
+		if ($this->recipients->rateLimiter->tryConsume(ruleId: $send->stepName, recipient: $uid) === false) {
+			$send->add(bucket: 'rateLimited', recipient: $uid);
+			return;
+		}
+
+		$outcome = $this->deliver(send: $send, item: $item);
+		if ($outcome === 'dispatched') {
+			$send->add(bucket: 'delivered', recipient: $uid);
+			$item->delivered[] = $uid;
+			$this->announceEmail(send: $send, item: $item);
+			return;
+		}
+
+		$send->undelivered(recipient: $item->recipient, outcome: $outcome);
+	}//end sendToUser()
+
+	/**
 	 * Send one item's email to its allowed external addresses.
 	 *
 	 * The same rate limiter and the same channel sender as a user send; the
-	 * address simply skips the user lookup. Each dispatched email is
-	 * announced with a {@see FlowEmailSentEvent}.
+	 * address simply skips the user lookup. A refused address is skipped
+	 * before the rate limiter: no budget, no event.
 	 *
-	 * A refused address is skipped before the rate limiter: no budget, no
-	 * event. The announced body leaves out the link line, a personal token.
+	 * @param FlowSend     $send The send.
+	 * @param FlowSendItem $item The item.
 	 *
-	 * @param array<string, string> $addresses The allowed addresses, address => display name.
-	 * @param array<string, array{send: bool, code: string, unsubscribe: array|null}> $decisions Integriq's decisions, by address.
-	 * @param string $title The rendered subject.
-	 * @param string $body The rendered body.
-	 * @param array $json The item's json.
-	 * @param array $context The run context.
-	 * @param string $stepName The step's type id.
-	 * @param string $actor The acting user.
-	 * @param array<string, array<int, string>> $outcomes The outcome buckets, by reference.
-	 *
-	 * @return array<int, string> The failure descriptions, empty when every send went out.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The send's full context; bundling it
-	 * into an array would only move the list into an untyped shape.
+	 * @return void
 	 *
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
-	private function sendToAddresses(
-		array $addresses,
-		array $decisions,
-		string $title,
-		string $body,
-		array $json,
-		array $context,
-		string $stepName,
-		string $actor,
-		array &$outcomes,
-	): array {
-		$failures = [];
-		foreach ($addresses as $address => $name) {
-			$address = (string)$address;
-			$decision = $this->optOut->decisionFor(decisions: $decisions, address: $address);
+	private function sendToAddresses(FlowSend $send, FlowSendItem $item): void {
+		$item->kind = FlowEmailSentEvent::KIND_EXTERNAL;
+		foreach ($item->addresses as $address => $name) {
+			$item->recipient = (string)$address;
+			$item->name = $name;
+			$decision = $this->optOut->decisionFor(decisions: $send->decisions, address: $item->recipient);
 			if ($decision['send'] !== true) {
-				$this->addOutcome(outcomes: $outcomes, bucket: (self::REFUSAL_BUCKETS[$decision['code']] ?? self::BUCKET_OPTED_OUT), recipient: $address);
+				$send->add(bucket: (self::REFUSAL_BUCKETS[$decision['code']] ?? self::BUCKET_OPTED_OUT), recipient: $item->recipient);
 				continue;
 			}
 
-			if ($this->rateLimiter->tryConsume(ruleId: $stepName, recipient: $address) === false) {
-				$this->addOutcome(outcomes: $outcomes, bucket: 'rateLimited', recipient: $address);
+			if ($this->recipients->rateLimiter->tryConsume(ruleId: $send->stepName, recipient: $item->recipient) === false) {
+				$send->add(bucket: 'rateLimited', recipient: $item->recipient);
 				continue;
 			}
 
-			$outcome = $this->emailSender->sendToAddress(
-				address: $address,
-				displayName: $name,
-				subject: $title,
-				body: $this->optOut->withLink(body: $body, unsubscribe: $decision['unsubscribe']),
-				unsubscribe: $decision['unsubscribe']
-			);
-
-			if ($outcome === EmailSender::OUTCOME_DISPATCHED) {
-				$this->addOutcome(outcomes: $outcomes, bucket: 'delivered', recipient: $address);
-				$this->announcer->announce(
-					recipient: $address,
-					kind: FlowEmailSentEvent::KIND_EXTERNAL,
-					subject: $title,
-					body: $body,
-					json: $json,
-					context: $context,
-					stepName: $stepName,
-					actor: $actor
-				);
-				continue;
-			}
-
-			if ($outcome === EmailSender::OUTCOME_KILL_SWITCH) {
-				$this->addOutcome(outcomes: $outcomes, bucket: 'skippedByKillSwitch', recipient: $address);
-				continue;
-			}
-
-			$this->addOutcome(outcomes: $outcomes, bucket: 'failed', recipient: $address);
-			$failures[] = sprintf('email to "%s" failed (%s)', $address, $outcome);
-		}//end foreach
-
-		return $failures;
+			$this->mailAddress(send: $send, item: $item);
+		}
 	}//end sendToAddresses()
 
 	/**
-	 * Deliver one message to one recipient over one channel, via the
-	 * subsystem's own sender.
+	 * Mail one external address and record the outcome; a dispatched email is announced.
 	 *
-	 * @param string $channel The channel.
-	 * @param string $uid The recipient.
-	 * @param string $title The rendered title/subject.
-	 * @param string $body The rendered body.
-	 * @param array $json The item's json, for the notification's object reference.
-	 * @param string $stepName The step's type id.
+	 * The announced body leaves out the link line, a personal token.
+	 *
+	 * The unsubscribe link is the one the opt-out authority gave for the
+	 * address in this send's decisions, if any.
+	 *
+	 * @param FlowSend     $send The send.
+	 * @param FlowSendItem $item The item, its recipient the address.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 */
+	private function mailAddress(FlowSend $send, FlowSendItem $item): void {
+		$unsubscribe = $this->optOut->decisionFor(decisions: $send->decisions, address: $item->recipient)['unsubscribe'];
+		$outcome = $this->channels->emailSender->sendMailTo(
+			addressee: new \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee(address: $item->recipient, displayName: $item->name),
+			content: new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
+				subject: $item->title,
+				body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
+				unsubscribe: $unsubscribe
+			)
+		);
+		if ($outcome === EmailSenderInterface::OUTCOME_DISPATCHED) {
+			$send->add(bucket: 'delivered', recipient: $item->recipient);
+			$this->announceEmail(send: $send, item: $item);
+			return;
+		}
+
+		$send->undelivered(recipient: $item->recipient, outcome: $outcome);
+	}//end mailAddress()
+
+	/**
+	 * Announce a dispatched email with a {@see FlowEmailSentEvent}; other channels announce nothing.
+	 *
+	 * @param FlowSend     $send The send.
+	 * @param FlowSendItem $item The item, its recipient the one mailed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function announceEmail(FlowSend $send, FlowSendItem $item): void {
+		if ($send->channel !== 'email') {
+			return;
+		}
+
+		$this->announcer->announce(send: $send, item: $item);
+	}//end announceEmail()
+
+	/**
+	 * Deliver an item to its current user over the send's channel, via the subsystem's own sender.
+	 *
+	 * @param FlowSend     $send The send.
+	 * @param FlowSendItem $item The item, its recipient the user.
 	 *
 	 * @return string The sender's outcome.
 	 */
-	private function deliver(string $channel, string $uid, string $title, string $body, array $json, string $stepName): string {
-		if ($channel === 'email') {
-			return $this->emailSender->send(uid: $uid, subject: $title, body: $body);
+	private function deliver(FlowSend $send, FlowSendItem $item): string {
+		if ($send->channel === 'email') {
+			return $this->channels->emailSender->send(uid: $item->recipient, subject: $item->title, body: $item->body);
 		}
 
-		return $this->ncSender->send(
-			uid: $uid,
-			object: $this->objectFromItem(json: $json),
-			subjectKey: 'flow_message',
-			name: $stepName,
-			subject: $title,
-			message: $body,
-			context: [],
-			originApp: 'openregister',
-			actions: [],
-			// Web-push rides along (enqueued after this item's sends), so the
-			// foreground popup is suppressed for the tag exactly as the
-			// declarative dispatcher suppresses it.
-			webPushActive: true
+		// Web-push rides along (enqueued after this item's sends), so the
+		// foreground popup is suppressed for the tag exactly as the
+		// declarative dispatcher suppresses it.
+		return $this->channels->ncSender->notify(
+			notice: new InAppNotice(
+				uid: $item->recipient,
+				object: $item->objectReference(),
+				rule: new NoticeRule(name: $send->stepName, webPushActive: true),
+				content: new NoticeContent(subjectKey: 'flow_message', subject: $item->title, message: $item->body)
+			)
 		);
 	}//end deliver()
 
@@ -744,7 +700,7 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	private function resolveActingUser(array $context): string {
-		$uid = ($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? null);
+		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
 				'This flow run has no acting identity (runAs); a message must have a sender, so nothing was sent.'
@@ -752,7 +708,7 @@ class FlowMessagingService {
 		}
 
 		$uid = trim($uid);
-		$user = $this->userManager->get($uid);
+		$user = $this->recipients->userManager->get($uid);
 		if ($user === null) {
 			throw new RuntimeException(
 				sprintf('This flow run\'s acting identity "%s" (runAs) is not a user account; nothing was sent.', $uid)
@@ -769,70 +725,6 @@ class FlowMessagingService {
 	}//end resolveActingUser()
 
 	/**
-	 * Resolve a node's recipients config against one item.
-	 *
-	 * Entries are literal user or group ids, or a template resolving a field
-	 * on the item (`{{ assignee }}` / `{{ item.assignee }}`). Resolution goes
-	 * through the subsystem's recipient resolver — groups expanded, every uid
-	 * verified — and unknown ids are returned for the run log rather than
-	 * silently dropped.
-	 *
-	 * With `$acceptAddresses` (the email channel), an entry that is not a
-	 * user or group but holds an `@` is a candidate address, and so is a
-	 * field value that is one, or an object carrying `email` /
-	 * `emailAddress`. Candidates are screened by the caller; this method only
-	 * sorts them out.
-	 *
-	 * @param mixed $recipients The config value.
-	 * @param array $json The item's json.
-	 * @param bool $acceptAddresses Whether addresses are candidates (email) or unknowns.
-	 *
-	 * @return array{uids: array<int, string>, addresses: array<int, array{address: string, name: string}>, unknown: array<int, string>}
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the channel takes addresses is a
-	 * fact about the channel, not a mode of this method's own.
-	 *
-	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
-	 */
-	private function resolveRecipients(mixed $recipients, array $json, bool $acceptAddresses = false): array {
-		$uids = [];
-		$addresses = [];
-		$unknown = [];
-
-		if (is_string($recipients) === true) {
-			$recipients = [$recipients];
-		}
-
-		foreach ((array)$recipients as $entry) {
-			if (is_string($entry) === false || trim($entry) === '') {
-				continue;
-			}
-
-			$entry = trim($entry);
-
-			$matches = [];
-			if (preg_match('/^\{\{\s*(?:item\.)?([a-zA-Z0-9_.-]+)\s*\}\}$/', $entry, $matches) === 1) {
-				$resolved = $this->addresses->resolveTemplate(field: $matches[1], json: $json, acceptAddresses: $acceptAddresses);
-				array_push($uids, ...$resolved['uids']);
-				array_push($addresses, ...$resolved['addresses']);
-				array_push($unknown, ...$resolved['unknown']);
-				continue;
-			}
-
-			$resolved = $this->addresses->resolveLiteral(entry: $entry, acceptAddresses: $acceptAddresses);
-			array_push($uids, ...$resolved['uids']);
-			array_push($addresses, ...$resolved['addresses']);
-			array_push($unknown, ...$resolved['unknown']);
-		}//end foreach
-
-		return [
-			'uids' => array_values(array_unique($uids)),
-			'addresses' => $addresses,
-			'unknown' => array_values(array_unique($unknown)),
-		];
-	}//end resolveRecipients()
-
-	/**
 	 * Whether the recipient's own preference allows this channel.
 	 *
 	 * Resolved through the subsystem's preference service under the flow
@@ -847,14 +739,15 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function preferenceAllows(string $uid, string $channel): bool {
-		$effective = $this->preferences->resolveEffective(
-			schemaDefault: [
-				'enabled' => true,
-				'channels' => [$channel],
-			],
-			userId: $uid,
-			schemaSlug: self::PREFERENCE_SLUG,
-			notificationKey: self::PREFERENCE_KEY
+		$effective = $this->recipients->preferences->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: [
+					'enabled' => true,
+					'channels' => [$channel],
+				],
+				userId: $uid,
+				topic: new PreferenceTopic(schemaSlug: self::PREFERENCE_SLUG, notificationKey: self::PREFERENCE_KEY)
+			)
 		);
 
 		if ($effective['enabled'] === false) {
@@ -875,8 +768,8 @@ class FlowMessagingService {
 	 */
 	private function recipientBound(): int {
 		try {
-			$configured = (int)$this->appConfig->getValueInt(
-				NotificationChannelPolicy::APP_ID,
+			$configured = (int)$this->platform->appConfig->getValueInt(
+				NotificationChannelPolicyInterface::APP_ID,
 				self::CONFIG_RECIPIENT_BOUND,
 				self::DEFAULT_RECIPIENT_BOUND
 			);
@@ -886,31 +779,6 @@ class FlowMessagingService {
 
 		return max(1, $configured);
 	}//end recipientBound()
-
-	/**
-	 * A lightweight object reference for an item, for the notification's
-	 * object link. An item read from a register carries its uuid; an item
-	 * built mid-flow may not, and then the notification simply carries no
-	 * object deeplink.
-	 *
-	 * @param array $json The item's json.
-	 *
-	 * @return ObjectEntity The reference.
-	 */
-	private function objectFromItem(array $json): ObjectEntity {
-		$object = new ObjectEntity();
-		$uuid = ($json['uuid'] ?? ($json['id'] ?? null));
-		if (is_string($uuid) === true && $uuid !== '') {
-			$object->setUuid($uuid);
-		}
-
-		$name = ($json['name'] ?? ($json['title'] ?? null));
-		if (is_string($name) === true && $name !== '') {
-			$object->setName($name);
-		}
-
-		return $object;
-	}//end objectFromItem()
 
 	/**
 	 * The context's scalar values, for template interpolation. The node
@@ -927,136 +795,40 @@ class FlowMessagingService {
 	}//end scalarContext()
 
 	/**
-	 * The empty outcome buckets.
+	 * The send's bounded report, written onto the run log via the context's report handle.
 	 *
-	 * @return array<string, array<int, string>>
-	 */
-	private function emptyOutcomes(): array {
-		return [
-			'delivered' => [],
-			'skippedByPreference' => [],
-			'skippedByKillSwitch' => [],
-			'rateLimited' => [],
-			'failed' => [],
-		];
-	}//end emptyOutcomes()
-
-	/**
-	 * Record one outcome.
-	 *
-	 * @param array<string, array<int, string>> $outcomes The buckets, by reference.
-	 * @param string $bucket The outcome bucket.
-	 * @param string $recipient The recipient (or conversation token).
-	 *
-	 * @return void
-	 */
-	private function addOutcome(array &$outcomes, string $bucket, string $recipient): void {
-		$outcomes[$bucket][] = $recipient;
-	}//end addOutcome()
-
-	/**
-	 * The bounded outcome report for the run log.
-	 *
-	 * Bounded by the log's sampling rule: each bucket carries its true count
-	 * and at most REPORT_SAMPLE entries — a mail archive is not what a run
-	 * log is for, and neither is a recipient directory.
-	 *
-	 * @param string $channel The channel.
-	 * @param string $actor The acting user.
-	 * @param int $recipients The resolved distinct recipient count.
-	 * @param array<string, array<int, string>> $outcomes The outcome buckets.
-	 * @param array<int, string> $unknown Unresolvable recipient entries.
-	 * @param array<int, array{recipient: string, reason: string}> $refused Addresses the step's allowlist refused.
+	 * @param FlowSend $send The send.
 	 *
 	 * @return array The report.
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
-	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
-	private function buildReport(
-		string $channel,
-		string $actor,
-		int $recipients,
-		array $outcomes,
-		array $unknown,
-		array $refused = [],
-	): array {
-		$report = [
-			'channel' => $channel,
-			'actor' => $actor,
-			'recipients' => $recipients,
-		];
-
-		$truncated = false;
-		foreach ($outcomes as $bucket => $entries) {
-			$report[$bucket] = [
-				'count' => count($entries),
-				'sample' => array_slice(array_values($entries), 0, self::REPORT_SAMPLE),
-			];
-			if (count($entries) > self::REPORT_SAMPLE) {
-				$truncated = true;
-			}
+	private function reportSend(FlowSend $send): array {
+		$report = $send->report(sample: self::REPORT_SAMPLE);
+		$handle = ($send->context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if ($handle instanceof FlowStepReport) {
+			$handle->put(key: 'messaging', value: $report);
 		}
-
-		if ($unknown !== []) {
-			$report['unknownRecipients'] = [
-				'count' => count($unknown),
-				'sample' => array_slice(array_values($unknown), 0, self::REPORT_SAMPLE),
-			];
-			if (count($unknown) > self::REPORT_SAMPLE) {
-				$truncated = true;
-			}
-		}
-
-		// Refused is not unknown: the address resolved, and the step's
-		// allowlist declined it. Each entry names why.
-		if ($refused !== []) {
-			$report['refusedRecipients'] = [
-				'count' => count($refused),
-				'sample' => array_slice(array_values($refused), 0, self::REPORT_SAMPLE),
-			];
-			if (count($refused) > self::REPORT_SAMPLE) {
-				$truncated = true;
-			}
-		}
-
-		$report['truncated'] = $truncated;
 
 		return $report;
-	}//end buildReport()
+	}//end reportSend()
 
 	/**
-	 * Write the report onto the run log via the context's report handle.
+	 * The Talk conversation an item posts to: the step's `conversation`, a
+	 * literal token or a single-field template.
 	 *
-	 * @param array $context The run context.
-	 * @param array $report The report.
+	 * @param FlowSend $send The Talk send.
+	 * @param array    $json The item's json.
 	 *
-	 * @return void
+	 * @return string The resolved token.
 	 */
-	private function writeReport(array $context, array $report): void {
-		$handle = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
-		if (($handle instanceof FlowStepReport) === false) {
-			return;
-		}
-
-		$handle->put(key: 'messaging', value: $report);
-	}//end writeReport()
-
-	/**
-	 * Resolve a config value that is a literal or a single-field template.
-	 *
-	 * @param string $value The config value.
-	 * @param array $json The item's json.
-	 * @param array $context The run context.
-	 *
-	 * @return string The resolved value.
-	 */
-	private function resolveScalarConfig(string $value, array $json, array $context): string {
-		$value = trim($value);
+	private function conversationToken(FlowSend $send, array $json): string {
+		$value = trim((string)($send->config['conversation'] ?? ''));
 		if (str_contains($value, '{{') === false) {
 			return $value;
 		}
 
-		return trim($this->templating->interpolate(template: $value, data: $json, context: $this->scalarContext(context: $context)));
-	}//end resolveScalarConfig()
+		$values = new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context));
+		return trim($this->platform->templating->render(template: $value, values: $values));
+	}//end conversationToken()
 }//end class

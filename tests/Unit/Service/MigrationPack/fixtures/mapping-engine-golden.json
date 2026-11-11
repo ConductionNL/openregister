@@ -1,0 +1,361 @@
+{
+    "identity": {
+        "data": {
+            "naam": "  Jan  ",
+            "getal": 7
+        },
+        "errors": []
+    },
+    "missing and empty optional": {
+        "data": [],
+        "errors": []
+    },
+    "zero string is a value": {
+        "data": {
+            "nul": "0"
+        },
+        "errors": []
+    },
+    "required missing": {
+        "data": [],
+        "errors": [
+            {
+                "row": 3,
+                "source": "Nope",
+                "target": "a",
+                "transform": "trim",
+                "message": "Required source field \"%s\" is missing or empty <[\"Nope\"]>"
+            }
+        ]
+    },
+    "required empty": {
+        "data": [],
+        "errors": [
+            {
+                "row": 3,
+                "source": "Leeg",
+                "target": "a",
+                "transform": null,
+                "message": "Required source field \"%s\" is missing or empty <[\"Leeg\"]>"
+            }
+        ]
+    },
+    "required truthy but not true": {
+        "data": [],
+        "errors": []
+    },
+    "defaults seeded and kept": {
+        "data": {
+            "a": "standaard",
+            "b": "  Jan  ",
+            "c": 1
+        },
+        "errors": []
+    },
+    "later mapping overwrites": {
+        "data": {
+            "x": "Jansen"
+        },
+        "errors": []
+    },
+    "mapping without target": {
+        "data": {
+            "": "Jan"
+        },
+        "errors": []
+    },
+    "trim": {
+        "data": {
+            "t": "Jan"
+        },
+        "errors": []
+    },
+    "trim integer": {
+        "data": {
+            "t": "7"
+        },
+        "errors": []
+    },
+    "const on empty source": {
+        "data": {
+            "c": "vast"
+        },
+        "errors": []
+    },
+    "const on missing source": {
+        "data": {
+            "c": null
+        },
+        "errors": []
+    },
+    "const required and empty": {
+        "data": [],
+        "errors": [
+            {
+                "row": 3,
+                "source": "Leeg",
+                "target": "c",
+                "transform": "const",
+                "message": "Required source field \"%s\" is missing or empty <[\"Leeg\"]>"
+            }
+        ]
+    },
+    "const with value": {
+        "data": {
+            "t": {
+                "a": 1
+            }
+        },
+        "errors": []
+    },
+    "const without value on a filled source": {
+        "data": {
+            "t": null
+        },
+        "errors": []
+    },
+    "const null value on a filled source": {
+        "data": {
+            "t": null
+        },
+        "errors": []
+    },
+    "date with source format": {
+        "data": {
+            "t": "2024-03-05"
+        },
+        "errors": []
+    },
+    "date with target format": {
+        "data": {
+            "t": "05/03/2024"
+        },
+        "errors": []
+    },
+    "date free form": {
+        "data": {
+            "t": "2024-03-05"
+        },
+        "errors": []
+    },
+    "date empty source format": {
+        "data": {
+            "t": "2024-03-05"
+        },
+        "errors": []
+    },
+    "date non string source format": {
+        "data": {
+            "t": "2024-03-05"
+        },
+        "errors": []
+    },
+    "date wrong format": {
+        "data": [],
+        "errors": [
+            {
+                "row": 3,
+                "source": "Datum",
+                "target": "t",
+                "transform": "date",
+                "message": "Could not parse date \"%1$s\" with format \"%2$s\" <[\"05-03-2024\",\"Y/m/d\"]>"
+            }
+        ]
+    },
+    "bool-map hit": {
+        "data": {
+            "t": true
+        },
+        "errors": []
+    },
+    "bool-map default": {
+        "data": {
+            "t": true
+        },
+        "errors": []
+    },
+    "bool-map null default": {
+        "data": {
+            "t": false
+        },
+        "errors": []
+    },
+    "bool-map miss": {
+        "data": [],
+        "errors": [
+            {
+                "row": 3,
+                "source": "Status",
+                "target": "t",
+                "transform": "bool-map",
+                "message": "Value \"%s\" has no mapping and no default is configured <[\"open\"]>"
+            }
+        ]
+    },
+    "lookup hit": {
+        "data": {
+            "t": "OPEN"
+        },
+        "errors": []
+    },
+    "lookup numeric key": {
+        "data": {
+            "t": "zeven"
+        },
+        "errors": []
+    },
+    "lookup null mapped": {
+        "data": {
+            "t": null
+        },
+        "errors": []
+    },
+    "lookup default": {
+        "data": {
+            "t": 0
+        },
+        "errors": []
+    },
+    "lookup miss": {
+        "data": [],
+        "errors": [
+            {
+                "row": 3,
+                "source": "Status",
+                "target": "t",
+                "transform": "lookup",
+                "message": "Value \"%s\" has no mapping and no default is configured <[\"open\"]>"
+            }
+        ]
+    },
+    "concat": {
+        "data": {
+            "t": "Jan Jansen  Kerkstraat"
+        },
+        "errors": []
+    },
+    "concat separator": {
+        "data": {
+            "t": "Jan, Jansen"
+        },
+        "errors": []
+    },
+    "concat no fields": {
+        "data": {
+            "t": "Jan"
+        },
+        "errors": []
+    },
+    "unknown type": {
+        "data": [],
+        "errors": [
+            {
+                "row": 3,
+                "source": "Status",
+                "target": "t",
+                "transform": "nope",
+                "message": "Unknown transform type \"%s\" <[\"nope\"]>"
+            }
+        ]
+    },
+    "missing type": {
+        "data": [],
+        "errors": [
+            {
+                "row": 3,
+                "source": "Status",
+                "target": "t",
+                "transform": null,
+                "message": "Unknown transform type \"%s\" <[\"\"]>"
+            }
+        ]
+    },
+    "boolean true type": {
+        "data": {
+            "t": "Jan"
+        },
+        "errors": []
+    },
+    "pointer paths": {
+        "data": {
+            "a": "Kerkstraat",
+            "b": "slash",
+            "c": "tilde",
+            "f": "y"
+        },
+        "errors": [
+            {
+                "row": 3,
+                "source": "/Adres/Leeg",
+                "target": "g",
+                "transform": null,
+                "message": "Required source field \"%s\" is missing or empty <[\"/Adres/Leeg\"]>"
+            }
+        ]
+    },
+    "id from source field": {
+        "data": {
+            "naam": "  Jan  ",
+            "id": "42"
+        },
+        "errors": []
+    },
+    "id from pointer": {
+        "data": {
+            "id": "Kerkstraat"
+        },
+        "errors": []
+    },
+    "id source empty": {
+        "data": [],
+        "errors": []
+    },
+    "id overrides mapped id": {
+        "data": {
+            "id": "42"
+        },
+        "errors": []
+    },
+    "id without field": {
+        "data": {
+            "id": "Jan"
+        },
+        "errors": []
+    },
+    "id generate": {
+        "data": {
+            "id": "Jan"
+        },
+        "errors": []
+    },
+    "id strategy without type": {
+        "data": [],
+        "errors": []
+    },
+    "no mappings": {
+        "data": [],
+        "errors": []
+    },
+    "errors and values mixed": {
+        "data": {
+            "b": "Jan",
+            "d": "Jansen"
+        },
+        "errors": [
+            {
+                "row": 3,
+                "source": "Nope",
+                "target": "a",
+                "transform": null,
+                "message": "Required source field \"%s\" is missing or empty <[\"Nope\"]>"
+            },
+            {
+                "row": 3,
+                "source": "Status",
+                "target": "c",
+                "transform": "lookup",
+                "message": "Value \"%s\" has no mapping and no default is configured <[\"open\"]>"
+            }
+        ]
+    }
+}

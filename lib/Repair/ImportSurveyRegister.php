@@ -39,46 +39,37 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\ConfigurationService;
-use OCP\App\IAppManager;
-use OCP\Migration\IOutput;
-use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
-use Throwable;
-
 /**
  * Imports the survey register descriptor idempotently on upgrade/install.
  */
-class ImportSurveyRegister implements IRepairStep {
+class ImportSurveyRegister extends AbstractRegisterImportStep {
 	/**
 	 * App-relative path to the register descriptor imported by this step.
 	 *
 	 * @var string
 	 */
-	private const REGISTER_PATH = '/lib/Settings/survey_register.json';
+	protected const REGISTER_PATH = '/lib/Settings/survey_register.json';
 
 	/**
 	 * Descriptor version passed to the importer's version_compare gate.
 	 *
 	 * @var string
 	 */
-	private const REGISTER_VERSION = '1.0.0';
+	protected const REGISTER_VERSION = '1.0.0';
 
 	/**
-	 * Constructor.
+	 * Name of the register in the step's output lines.
 	 *
-	 * @param ConfigurationService $configurationService The OR configuration importer.
-	 * @param IAppManager $appManager Resolves the openregister app path on disk.
-	 * @param LoggerInterface $logger Logger for import diagnostics.
-	 *
-	 * @return void
+	 * @var string
 	 */
-	public function __construct(
-		private readonly ConfigurationService $configurationService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
-	) {
-	}//end __construct()
+	protected const LABEL = 'Survey';
+
+	/**
+	 * Output line after a successful import.
+	 *
+	 * @var string
+	 */
+	protected const IMPORTED = 'Survey register imported (surveys register + survey, surveyQuestion, surveyInvitation and surveyAnswerSet)';
 
 	/**
 	 * Get the name of this repair step.
@@ -90,44 +81,4 @@ class ImportSurveyRegister implements IRepairStep {
 	public function getName(): string {
 		return 'Import OpenRegister survey register (surveys register + its four schemas)';
 	}//end getName()
-
-	/**
-	 * Run the repair step, importing the survey register descriptor.
-	 *
-	 * @param IOutput $output Output interface for status messages.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md#requirement-req-surv-001-a-survey-is-its-own-object-with-its-own-questions
-	 */
-	public function run(IOutput $output): void {
-		try {
-			$path = $this->appManager->getAppPath('openregister') . self::REGISTER_PATH;
-			if (is_file($path) === false) {
-				$output->warning('Survey register descriptor not found: ' . $path);
-				return;
-			}
-
-			// Import the DECODED descriptor via importFromApp() — not
-			// importFromFilePath(), which expects a Nextcloud-root-relative path
-			// and would fail closed on this absolute one.
-			$data = json_decode((string)file_get_contents($path), true);
-			if (is_array($data) === false) {
-				$output->warning('Survey register descriptor is not valid JSON: ' . $path);
-				return;
-			}
-
-			$this->configurationService->importFromApp(
-				appId: 'openregister',
-				data: $data,
-				version: self::REGISTER_VERSION,
-				force: false
-			);
-
-			$output->info('Survey register imported (surveys register + survey, surveyQuestion, surveyInvitation and surveyAnswerSet)');
-		} catch (Throwable $e) {
-			$this->logger->warning('[ImportSurveyRegister] import failed: ' . $e->getMessage());
-			$output->warning('Survey register import skipped: ' . $e->getMessage());
-		}//end try
-	}//end run()
 }//end class

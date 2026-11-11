@@ -45,8 +45,9 @@ both with HTTP 422.
 ### Requirement: An archived object refuses writes to its data (REQ-OAS-002)
 
 A write to the data of an archived object SHALL be refused with a message
-naming the archive, the archiving user and the time. Restoring SHALL be
-accepted. The retention machinery SHALL keep working on an archived
+naming the archive, the archiving user and the time. A delete of an archived
+object SHALL be refused the same way, on the single and the bulk path and for
+a cascade that reaches it. Restoring SHALL be accepted. The retention machinery SHALL keep working on an archived
 object: setting a destruction date, placing a legal hold and destroying on
 the date SHALL behave exactly as on an open object.
 
@@ -56,6 +57,13 @@ the date SHALL behave exactly as on an open object.
 - **WHEN** a user saves a change to one of its fields
 - **THEN** the write is refused and the message names the archive, Anna and that date
 - **AND** the object is unchanged
+
+#### Scenario: an archived object is not deleted
+
+- **GIVEN** an object archived by Anna on 12 September
+- **WHEN** a user deletes it, alone, in a bulk delete, or through a cascade from its parent
+- **THEN** the delete is refused and the message names the archive, Anna and that date
+- @e2e exclude {guard-internal, covered by ObjectStateDeleteGuardListenerTest}
 
 #### Scenario: a flow writing to an object archived under it is refused the same way
 
@@ -186,13 +194,21 @@ withdrawing and locking SHALL be audit facts.
 
 ### Requirement: File writes honour the frozen and archived marker (REQ-OAS-007)
 
-Every write to a file attached to a frozen or archived object SHALL be refused: creating, replacing, updating, renaming, moving out or in, deleting, locking and unlocking, through the OpenRegister file API and through Nextcloud Files or WebDAV in the object's folder. The refusal SHALL use `ObjectStateWriteException` and SHALL name the state, the actor, the moment and the reason from the marker; the API SHALL answer 409 (`423` is not used, so clients keep one code for a state refusal). Reading, downloading and previewing SHALL stay allowed. When the owning object of a node inside the register folder tree cannot be resolved, the write SHALL be refused.
+Every write to a file attached to a frozen or archived object SHALL be refused: creating, replacing, updating, renaming, moving out or in, deleting, locking and unlocking, through the OpenRegister file API, through the object-folder endpoints (`POST/PUT/DELETE .../folder`, `POST .../folder/upload`) and through Nextcloud Files or WebDAV in the object's folder. The refusal SHALL use `ObjectStateWriteException` and SHALL name the state, the actor, the moment and the reason from the marker; the API SHALL answer 409 (`423` is not used, so clients keep one code for a state refusal). Reading, downloading and previewing SHALL stay allowed. When the owning object of a node inside the register folder tree cannot be resolved, the write SHALL be refused.
 
 #### Scenario: a withdrawn publication's attachment cannot be replaced
 - **GIVEN** a publication frozen on withdrawal by `functioneel-beheer` with reason "ingetrokken, besluit 2026-114"
 - **WHEN** an officer tries to upload a new version of its attachment in the publication's files tab
 - **THEN** the upload is refused with a message naming the freeze, who froze it, when and the reason
 - **AND** the attachment can still be downloaded
+
+#### Scenario: the object-folder endpoints refuse a frozen object
+<!-- @e2e exclude Covered by PHPUnit ObjectFolderControllerTest::testEveryChangeOnAFrozenOrArchivedObjectIs409. -->
+
+- **GIVEN** a frozen or archived object and a person who may update it
+- **WHEN** they create a folder, upload, rename or delete in its object folder through the folder endpoints
+- **THEN** the answer is 409 with `state`, `by`, `at` and `reason`, and nothing in the folder is touched
+- **AND** a person who may not update it still gets 403, and listing the folder still works
 
 #### Scenario: a WebDAV write into the frozen folder is aborted
 <!-- @e2e exclude WebDAV door; covered by PHPUnit FrozenNodeWriteListenerTest::testAWriteIntoAFrozenObjectFolderIsAborted with the real BeforeNodeWrittenEvent, and by a Newman PUT to remote.php/dav. -->

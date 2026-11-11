@@ -8,9 +8,11 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IAppConfig;
@@ -70,7 +72,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			}
 		);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
@@ -112,10 +114,10 @@ class PermissionHandlerRbacTest extends TestCase {
 	private function setupRegisterForSchema(int $schemaId, Register $register): void {
 		$this->container->method('get')
 			->willReturnCallback(function (string $class) use ($register) {
-				if ($class === RegisterMapper::class) {
+				if ($class === RegisterMapperInterface::class) {
 					return $this->registerMapper;
 				}
-				if ($class === 'OCA\OpenRegister\Service\OrganisationService') {
+				if ($class === 'OCA\OpenRegister\Service\OrganisationServiceInterface') {
 					throw new \RuntimeException('Not available');
 				}
 				throw new \RuntimeException('Unknown class: ' . $class);
@@ -303,10 +305,13 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())
 			->method('warning');
 
-		// With empty authorization (only unknown roles), all actions should be permitted
-		// because the effective authorization ends up empty after role expansion.
+		// Only unknown roles: the block grants nobody anything. It used to come
+		// back empty, and an empty block is "no authorization", which permitted
+		// every action to every signed in account (roles-block-that-resolves-to-
+		// nothing-grants-nothing). It now names the canonical verbs with nobody.
 		$result = $this->handler->resolveAuthorization($schema);
-		$this->assertEmpty($result);
+		$this->assertSame(['read' => [], 'create' => [], 'update' => [], 'delete' => []], $result);
+		$this->assertFalse($this->handler->hasPermission($schema, 'read'));
 	}
 
 	// === Manage Action Tests ===
@@ -657,7 +662,7 @@ class PermissionHandlerRbacTest extends TestCase {
 	private function buildHandlerWithRealMatcher(): PermissionHandler {
 		$operatorEvaluator = new OperatorEvaluator($this->logger);
 		$realMatcher = new ConditionMatcher(
-			$this->userSession,
+			new ConditionUserResolvers($this->userSession),
 			$this->container,
 			$operatorEvaluator,
 			$this->logger
@@ -675,7 +680,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			}
 		);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
@@ -789,7 +794,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$register = $this->createRegister(10, null);
 		$this->setupRegisterForSchema(1, $register);
 
-		$object = $this->createObjectEntity(['publishedAt' => '2099-01-01 00:00:00']);
+		$object = $this->createObjectEntity(['publishedAt' => date('Y-m-d H:i:s', strtotime('+10 years'))]);
 		$handler = $this->buildHandlerWithRealMatcher();
 
 		$this->assertFalse(
@@ -958,7 +963,7 @@ class PermissionHandlerRbacTest extends TestCase {
 				$schema, 'read', null, null, true,
 				$this->createObjectEntity([
 					'publicatiedatum' => '2025-01-01 00:00:00',
-					'depublicatiedatum' => '2099-01-01 00:00:00',
+					'depublicatiedatum' => date('Y-m-d H:i:s', strtotime('+10 years')),
 				])
 			),
 			'Published, within window: allow'
@@ -993,7 +998,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			$handler->hasPermission(
 				$schema, 'read', null, null, true,
 				$this->createObjectEntity([
-					'publicatiedatum' => '2099-01-01 00:00:00',
+					'publicatiedatum' => date('Y-m-d H:i:s', strtotime('+10 years')),
 					'depublicatiedatum' => null,
 				])
 			),

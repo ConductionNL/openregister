@@ -1,0 +1,503 @@
+{
+    "block not an array": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            },
+            {
+                "id": "or",
+                "type": "orAvailable",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "check invalid": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": [
+            "Unknown health check type \"nope\" (allowed: database, filesystem, appEnabled, appConfig, orAvailable)."
+        ]
+    },
+    "check not an object": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": [
+            "Health check #1 is not an object."
+        ]
+    },
+    "checks empty": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            },
+            {
+                "id": "or",
+                "type": "orAvailable",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "checks keyed": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "cfg",
+                "type": "appConfig",
+                "severity": "degraded",
+                "app": null,
+                "key": "k",
+                "assert": "present"
+            },
+            {
+                "id": "database_0",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "checks not an array": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": [
+            "observability.health.checks must be an array."
+        ]
+    },
+    "cors truthy string": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "cfg",
+                "type": "appConfig",
+                "severity": "degraded",
+                "app": null,
+                "key": "k",
+                "assert": "present"
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "empty block": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "empty block, config registers": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            },
+            {
+                "id": "or",
+                "type": "orAvailable",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "everything wrong": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": [
+            "Invalid statusCodePolicy \"x\"; defaulting to adr006.",
+            "Health check #0 is not an object.",
+            "Metric #0 is not an object.",
+            "Metric \"name\" must be a valid Prometheus metric name."
+        ]
+    },
+    "health not an array": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "metric invalid": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [
+            {
+                "name": "app_items_total",
+                "type": "gauge",
+                "kind": "appConfig",
+                "source": {
+                    "kind": "appConfig",
+                    "app": "demo",
+                    "key": "items"
+                },
+                "help": null,
+                "cacheTtl": 0
+            }
+        ],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": [
+            "Metric \"name\" must be a valid Prometheus metric name."
+        ]
+    },
+    "metric not an object": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [
+            {
+                "name": "app_items_total",
+                "type": "gauge",
+                "kind": "appConfig",
+                "source": {
+                    "kind": "appConfig",
+                    "app": "demo",
+                    "key": "items"
+                },
+                "help": null,
+                "cacheTtl": 0
+            }
+        ],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": [
+            "Metric #1 is not an object."
+        ]
+    },
+    "metrics not an array": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": [
+            "observability.metrics must be an array."
+        ]
+    },
+    "metrics valid": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [
+            {
+                "name": "app_items_total",
+                "type": "gauge",
+                "kind": "appConfig",
+                "source": {
+                    "kind": "appConfig",
+                    "app": "demo",
+                    "key": "items"
+                },
+                "help": null,
+                "cacheTtl": 0
+            }
+        ],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "no block": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "no block, registers": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            },
+            {
+                "id": "or",
+                "type": "orAvailable",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "policy array": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": [
+            "Invalid statusCodePolicy \"array\"; defaulting to adr006."
+        ]
+    },
+    "policy int": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": [
+            "Invalid statusCodePolicy \"418\"; defaulting to adr006."
+        ]
+    },
+    "policy null": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "policy unknown string": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "database",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": [
+            "Invalid statusCodePolicy \"teapot\"; defaulting to adr006."
+        ]
+    },
+    "second check without id": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "cfg",
+                "type": "appConfig",
+                "severity": "degraded",
+                "app": null,
+                "key": "k",
+                "assert": "present"
+            },
+            {
+                "id": "database_1",
+                "type": "database",
+                "severity": "critical",
+                "app": null,
+                "key": null,
+                "assert": null
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "adr006",
+        "cors": false,
+        "diagnostics": []
+    },
+    "valid policy and cors": {
+        "appId": "demo",
+        "checks": [
+            {
+                "id": "cfg",
+                "type": "appConfig",
+                "severity": "degraded",
+                "app": null,
+                "key": "k",
+                "assert": "present"
+            }
+        ],
+        "metrics": [],
+        "statusCodePolicy": "always200",
+        "cors": true,
+        "diagnostics": []
+    }
+}

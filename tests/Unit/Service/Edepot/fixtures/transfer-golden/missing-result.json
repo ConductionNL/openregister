@@ -1,0 +1,199 @@
+{
+    "list": {
+        "uuid": "list-1",
+        "status": "partially_failed",
+        "objectReferences": [
+            {
+                "uuid": "a",
+                "schema": 1,
+                "register": 2
+            },
+            {
+                "uuid": "b",
+                "schema": 1,
+                "register": 2
+            }
+        ],
+        "transferResult": {
+            "completedAt": "<now>",
+            "objectResults": {
+                "a": {
+                    "accepted": true,
+                    "reference": null,
+                    "error": null
+                }
+            }
+        },
+        "attempts": [
+            {
+                "attempt": 1,
+                "timestamp": "<now>",
+                "transport": "rest_api",
+                "outcome": "partially_failed",
+                "error": null
+            }
+        ]
+    },
+    "calls": [
+        [
+            "info",
+            "[EdepotTransferService] Transfer attempt",
+            {
+                "transferId": "list-1",
+                "transport": "rest_api",
+                "attempt": 1
+            }
+        ],
+        [
+            "info",
+            "[EdepotTransferService] Audit: archival.transfer_initiated",
+            {
+                "action": "archival.transfer_initiated",
+                "transferUuid": "list-1",
+                "objectCount": 2,
+                "transport": "rest_api",
+                "targetArchive": "archive-x"
+            }
+        ],
+        [
+            "find",
+            "a"
+        ],
+        [
+            "find",
+            "b"
+        ],
+        [
+            "find",
+            "a"
+        ],
+        [
+            "find",
+            "b"
+        ],
+        [
+            "build",
+            "list-1",
+            [
+                "a",
+                "b"
+            ],
+            [
+                0,
+                0
+            ],
+            0,
+            "zip"
+        ],
+        [
+            "warning",
+            "[EdepotTransferService] neither edepot_sftp_key_path nor edepot_sftp_password is configured; SFTP transfers are refused",
+            []
+        ],
+        [
+            "send",
+            "/nonexistent/sip-1.zip",
+            "api_key",
+            "k",
+            "archive-x"
+        ],
+        [
+            "update",
+            "a",
+            {
+                "archiefstatus": "transferred",
+                "eDepotReferentie": "",
+                "transferDate": "<now>"
+            }
+        ],
+        [
+            "audit",
+            "a",
+            "a",
+            "archival.transferred"
+        ],
+        [
+            "info",
+            "[EdepotTransferService] Audit: archival.transferred",
+            {
+                "action": "archival.transferred",
+                "objectUuid": "a",
+                "transferUuid": "list-1",
+                "eDepotReference": ""
+            }
+        ],
+        [
+            "proof",
+            {
+                "objectUuid": "a",
+                "transferUuid": "list-1",
+                "eDepotReference": "",
+                "transportReceipt": "",
+                "transportName": "rest_api",
+                "packageId": "list-1",
+                "packageFormat": "zip",
+                "packageManifestSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "fileChecksums": [],
+                "confirmedAt": "<now>"
+            }
+        ],
+        [
+            "update",
+            "a",
+            {
+                "archiefstatus": "transferred",
+                "eDepotReferentie": "",
+                "transferDate": "<now>",
+                "transferProof": "proof-a"
+            }
+        ],
+        [
+            "update",
+            "b",
+            {
+                "transferErrors": [
+                    {
+                        "error": "earlier",
+                        "timestamp": "then"
+                    },
+                    {
+                        "error": "No result",
+                        "timestamp": "<now>"
+                    }
+                ]
+            }
+        ],
+        [
+            "setApp",
+            [
+                "openregister"
+            ]
+        ],
+        [
+            "setUser",
+            [
+                "admin"
+            ]
+        ],
+        [
+            "setObject",
+            [
+                "transfer_result",
+                "list-1"
+            ]
+        ],
+        [
+            "setSubject",
+            [
+                "edepot_transfer_completed",
+                {
+                    "uuid": "list-1",
+                    "status": "partially_failed"
+                }
+            ]
+        ],
+        [
+            "notify"
+        ]
+    ]
+}

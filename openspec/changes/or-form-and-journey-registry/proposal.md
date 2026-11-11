@@ -48,10 +48,13 @@ the two can drift, they will.
 `next` rules using `$defs.visibleWhen` verbatim, `writes[]` per step, and
 `access` (`anonymous` | `authenticated` | `minTrust`).
 
-**A `journeyRun` stages everything.** Answers accumulate there; objects are
-written only at steps declaring `writes[]`. This preserves the property the
-React wizards have by accident — an abandoned registration leaves no
-half-built organisation — while adding the resumability they lack.
+**There is no `journeyRun`** (amended by `form-destination-validator`,
+decisions 179 and 180, ADR-117). A saved journey is its destination objects in
+lifecycle status `draft`, owned by the filer. Objects leave draft only at steps
+declaring `writes[]`, through `FormSubmitService`, all or none, so an abandoned
+registration still leaves no active half-built organisation. The `journeyRun`
+schema, its resume API and its retention below are superseded and are rewritten
+when this change is built.
 
 **Retention ships with the schema, not after it.** A `journeyRun` holds names,
 addresses, e-mail, phone numbers and uploads before any of it is a record.

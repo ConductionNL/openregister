@@ -31,11 +31,13 @@ namespace OCA\OpenRegister\Tests\Support;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Query\QueryBuilder as DoctrineQueryBuilder;
 use Doctrine\DBAL\Schema\Schema;
 use OCP\DB\IResult;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
+use OCP\DB\QueryBuilder\IFunctionBuilder;
 use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
@@ -52,15 +54,26 @@ class MigratedSqliteDatabase {
 	private const BRIDGED = [
 		'select', 'from', 'where', 'andWhere', 'orWhere', 'orderBy', 'addOrderBy',
 		'setMaxResults', 'setFirstResult', 'groupBy', 'createNamedParameter', 'createFunction',
-		'expr', 'executeQuery', 'getSQL', 'insert', 'setValue', 'executeStatement', 'getLastInsertId',
+		'expr', 'func', 'executeQuery', 'getSQL', 'insert', 'setValue', 'executeStatement', 'getLastInsertId',
+		'update', 'set',
 	];
 
 	/**
 	 * Expression-builder methods forwarded to Doctrine. Everything else throws.
 	 */
-	private const BRIDGED_EXPR = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'isNull', 'isNotNull', 'in', 'like', 'orX', 'andX'];
+	private const BRIDGED_EXPR = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'isNull', 'isNotNull', 'in', 'notIn', 'like', 'orX', 'andX'];
+
+	/**
+	 * Function-builder methods rendered as SQL. Everything else throws.
+	 */
+	private const BRIDGED_FUNC = ['lower'];
 
 	private Connection $connection;
+
+	/**
+	 * Whether a unique-constraint failure names the violated index, as MySQL and PostgreSQL do.
+	 */
+	private bool $uniqueErrorsNameTheIndex = false;
 
 	/**
 	 * Run the migrations and create the named tables in a fresh in-memory database.
@@ -121,6 +134,18 @@ class MigratedSqliteDatabase {
 
 		$this->connection->insert($table, $quoted);
 	}//end insert()
+
+	/**
+	 * Report unique-constraint failures the way MySQL and PostgreSQL do: with the index name.
+	 *
+	 * SQLite names only the column, so code that recognises a violation by its
+	 * index name behaves here as it does on those servers only after this call.
+	 *
+	 * @return void
+	 */
+	public function nameTheIndexInUniqueErrors(): void {
+		$this->uniqueErrorsNameTheIndex = true;
+	}//end nameTheIndexInUniqueErrors()
 
 	/**
 	 * An IDBConnection whose getQueryBuilder() runs real SQL on this database.
@@ -204,6 +229,9 @@ class MigratedSqliteDatabase {
 	 *
 	 * @param \Doctrine\DBAL\Schema\Table $table The Doctrine table.
 	 *
+	 * Without a Nextcloud server in scope `OC\DB\Schema\Table` is absent, and
+	 * the test-side DoctrineTable adapter gives the same contract.
+	 *
 	 * @return object The Doctrine table, or its NC 35 wrapper.
 	 */
 	private static function table(\Doctrine\DBAL\Schema\Table $table): object {
@@ -218,9 +246,7 @@ class MigratedSqliteDatabase {
 		}
 
 		if (class_exists(\OC\DB\Schema\Table::class) === false) {
-			throw new \RuntimeException(
-				'ISchemaWrapper returns ' . $wants . ' but OC\\DB\\Schema\\Table is not loadable to wrap the Doctrine table.'
-			);
+			return new \OCA\OpenRegister\Tests\Support\Schema\DoctrineTable($table);
 		}
 
 		return new \OC\DB\Schema\Table($table);
@@ -278,6 +304,9 @@ class MigratedSqliteDatabase {
 		}
 
 		$qb->method('expr')->willReturn($expr);
+		$func = self::mock(test: $this->test, class: IFunctionBuilder::class, bridged: self::BRIDGED_FUNC);
+		$func->method('lower')->willReturnCallback(fn ($x) => self::func(call: 'LOWER(' . self::sql(value: $x) . ')'));
+		$qb->method('func')->willReturn($func);
 		$qb->method('createNamedParameter')->willReturnCallback(
 			fn ($value, $type = IQueryBuilder::PARAM_STR) => self::parameter($inner->createNamedParameter($value, $type))
 		);
@@ -298,8 +327,20 @@ class MigratedSqliteDatabase {
 				return $qb;
 			}
 		);
+		$qb->method('update')->willReturnCallback(
+			function (string $table) use ($inner, $qb) {
+				$inner->update(self::unprefix($table));
+				return $qb;
+			}
+		);
+		$qb->method('set')->willReturnCallback(
+			function (string $column, $value) use ($inner, $qb) {
+				$inner->set($this->connection->quoteIdentifier($column), self::sql($value));
+				return $qb;
+			}
+		);
 		$qb->method('executeStatement')->willReturnCallback(
-			fn () => (int) $this->connection->executeStatement(self::unprefix($inner->getSQL()), $inner->getParameters(), $inner->getParameterTypes())
+			fn () => $this->executeStatement(inner: $inner)
 		);
 		$qb->method('getLastInsertId')->willReturnCallback(fn () => (int) $this->connection->lastInsertId());
 		$qb->method('executeQuery')->willReturnCallback(
@@ -308,6 +349,53 @@ class MigratedSqliteDatabase {
 
 		return $qb;
 	}//end queryBuilder()
+
+	/**
+	 * Run a write, translating a unique-constraint failure when asked to name the index.
+	 *
+	 * @param DoctrineQueryBuilder $inner The Doctrine builder holding the statement.
+	 *
+	 * @return int The affected row count.
+	 *
+	 * @throws \OCP\DB\Exception When a unique index is violated and the index is to be named.
+	 */
+	private function executeStatement(DoctrineQueryBuilder $inner): int {
+		try {
+			return (int) $this->connection->executeStatement(self::unprefix($inner->getSQL()), $inner->getParameters(), $inner->getParameterTypes());
+		} catch (UniqueConstraintViolationException $e) {
+			if ($this->uniqueErrorsNameTheIndex === false) {
+				throw $e;
+			}
+
+			throw new \OCP\DB\Exception(
+				'SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry for key \'' . $this->violatedIndex(message: $e->getMessage()) . '\'',
+				0,
+				$e
+			);
+		}//end try
+	}//end executeStatement()
+
+	/**
+	 * The unique index on the columns a SQLite "UNIQUE constraint failed: t.a, t.b" message names.
+	 *
+	 * @param string $message The SQLite error message.
+	 *
+	 * @return string The index name, or the column list when no unique index matches.
+	 */
+	private function violatedIndex(string $message): string {
+		preg_match('/UNIQUE constraint failed: (.+)$/m', $message, $match);
+		$pairs = array_map('trim', explode(',', $match[1] ?? ''));
+		$table = explode('.', $pairs[0])[0];
+		$columns = array_map(fn (string $pair): string => (string) substr(strrchr($pair, '.'), 1), $pairs);
+
+		foreach ($this->connection->createSchemaManager()->listTableIndexes($table) as $index) {
+			if ($index->isUnique() === true && $index->getColumns() === $columns) {
+				return $table . '.' . $index->getName();
+			}
+		}
+
+		return implode(', ', $pairs);
+	}//end violatedIndex()
 
 	/**
 	 * An expression builder that forwards the bridged methods to Doctrine's.
@@ -326,14 +414,15 @@ class MigratedSqliteDatabase {
 		$expr->method('isNull')->willReturnCallback(fn ($x) => $doctrine->isNull(self::sql($x)));
 		$expr->method('isNotNull')->willReturnCallback(fn ($x) => $doctrine->isNotNull(self::sql($x)));
 		$expr->method('in')->willReturnCallback(fn ($x, $y) => $doctrine->in(self::sql($x), self::sql($y)));
+		$expr->method('notIn')->willReturnCallback(fn ($x, $y) => $doctrine->notIn(self::sql(value: $x), self::sql(value: $y)));
 		// As Nextcloud's SqliteExpressionBuilder::like(): the backslash escapes `_` and `%`.
 		$expr->method('like')->willReturnCallback(fn ($x, $y) => $doctrine->like(self::sql($x), self::sql($y))." ESCAPE '\\'");
-		// Nextcloud's own composite, which renders `(a) OR (b)` like Doctrine's.
+		// Renders `(a) OR (b)` like Nextcloud's own composite and Doctrine's.
 		$expr->method('orX')->willReturnCallback(
-			fn (...$parts) => new \OC\DB\QueryBuilder\CompositeExpression('OR', array_map(static fn ($part): string => (string) self::sql($part), $parts))
+			fn (...$parts) => new SqlComposite('OR', array_map(static fn ($part): string => (string) self::sql($part), $parts))
 		);
 		$expr->method('andX')->willReturnCallback(
-			fn (...$parts) => new \OC\DB\QueryBuilder\CompositeExpression('AND', array_map(static fn ($part): string => (string) self::sql($part), $parts))
+			fn (...$parts) => new SqlComposite('AND', array_map(static fn ($part): string => (string) self::sql($part), $parts))
 		);
 
 		return $expr;
@@ -352,7 +441,7 @@ class MigratedSqliteDatabase {
 		// test runs against both.
 		$single = array_values(array_filter(['fetch', 'fetchAssociative'], fn ($m) => method_exists(IResult::class, $m)));
 		$all    = array_values(array_filter(['fetchAll', 'fetchAllAssociative'], fn ($m) => method_exists(IResult::class, $m)));
-		$result = self::mock(test: $this->test, class: IResult::class, bridged: array_merge($single, $all, ['closeCursor']));
+		$result = self::mock(test: $this->test, class: IResult::class, bridged: array_merge($single, $all, ['fetchOne', 'closeCursor']));
 		foreach ($single as $method) {
 			$result->method($method)->willReturnCallback(
 				function () use (&$rows) {
@@ -371,6 +460,13 @@ class MigratedSqliteDatabase {
 				}
 			);
 		}
+
+		$result->method('fetchOne')->willReturnCallback(
+			function () use (&$rows) {
+				$row = array_shift($rows);
+				return $row === null ? false : reset($row);
+			}
+		);
 
 		$result->method('closeCursor')->willReturn(true);
 

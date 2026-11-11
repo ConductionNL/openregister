@@ -8,14 +8,10 @@ SPDX-License-Identifier: EUPL-1.2
 			<NcLoadingIcon :size="44" />
 		</div>
 
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'The referencing records could not be read')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<NcEmptyContent
 			v-else-if="groups.length === 0"
@@ -67,11 +63,11 @@ SPDX-License-Identifier: EUPL-1.2
 <script>
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent, NcListItem, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import { relationTab } from './relationTab.js'
 
 /**
  * ReferencedByTab — the records that point at this object, grouped by schema.
@@ -83,92 +79,49 @@ import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
  * caller's access inside the query, so a caller who may read one of three sees
  * one of three and a total of one.
  *
- * Spec: openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+ * Spec: openspec/specs/linked-entity-types/spec.md
  */
 export default {
 	name: 'ReferencedByTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcListItem,
 		NcLoadingIcon,
-		AlertCircleOutline,
 		CubeOutline,
 		LinkVariantOff,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
+	mixins: [relationTab],
 
 	data() {
 		return {
 			loading: false,
-			error: false,
-			errorMessage: '',
 			groups: [],
 			total: 0,
 		}
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param {string} newId The object now being read.
-			 * @spec exclude watcher refetching the reverse view on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchReferencedBy()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
 		/**
 		 * Read the records that reference this object, grouped by schema.
 		 *
-		 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+		 * @spec openspec/specs/linked-entity-types/spec.md
 		 * @return {Promise<void>}
 		 */
-		async fetchReferencedBy() {
+		async load() {
 			this.loading = true
-			this.error = false
-			this.errorMessage = ''
+			this.clearFailure()
 
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/referenced-by',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-				},
-			)
+			const url = this.objectApiUrl('/referenced-by')
 
 			try {
 				const response = await axios.get(url)
 				this.groups = response.data?.groups || []
 				this.total = response.data?.total || 0
 			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
+				this.showFailure(err)
 			} finally {
 				this.loading = false
 			}

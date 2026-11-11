@@ -141,7 +141,7 @@ trait FluentQueryBuilderTrait {
 			}
 		};
 		$expr = $this->createMock(originalClassName: IExpressionBuilder::class);
-		foreach (['eq', 'neq', 'lt', 'gt', 'in', 'notIn', 'like', 'isNull', 'isNotNull'] as $method) {
+		foreach (['eq', 'neq', 'lt', 'gt', 'gte', 'lte', 'in', 'notIn', 'like', 'isNull', 'isNotNull'] as $method) {
 			$expr->method($method)->willReturnCallback(
 				function (mixed ...$args) use ($method): string {
 					$this->calls[] = ['expr.' . $method, ($args[0] ?? null)];

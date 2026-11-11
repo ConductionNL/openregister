@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\EntityRelation\EntityRelationFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -65,6 +66,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setBases(?array $bases)
  * @method bool getSkipAnonymization()
  * @method void setSkipAnonymization(bool $skipAnonymization)
+ * @method string|null getDecisionUuid()
+ * @method void setDecisionUuid(?string $decisionUuid)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  *
@@ -211,7 +214,7 @@ class EntityRelation extends Entity implements JsonSerializable {
 	/**
 	 * Operator decision: skip this occurrence from the anonymise pass.
 	 *
-	 * When `true`, `EntityRelationMapper::markAsAnonymized` excludes this row
+	 * When `true`, `EntityRelationMapper::markAsAnonymizedWithPlaceholders` excludes this row
 	 * from the file-scoped flip, the redaction text-replacement skips it, and
 	 * the row retains `anonymized = false`. Set via the same audited
 	 * `updateDecisionMetadata` write path as `bases`.
@@ -219,6 +222,16 @@ class EntityRelation extends Entity implements JsonSerializable {
 	 * @var boolean
 	 */
 	protected bool $skipAnonymization = false;
+
+	/**
+	 * The uuid of this occurrence's current decision, or null while undecided.
+	 *
+	 * The decision is its own object (`openregister_decisions`): who decided,
+	 * when, the verdict and a note. The relation only links it (decision 197).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $decisionUuid = null;
 
 	/**
 	 * Created at timestamp.
@@ -231,25 +244,9 @@ class EntityRelation extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'entityId', type: 'integer');
-		$this->addType(fieldName: 'chunkId', type: 'integer');
-		$this->addType(fieldName: 'role', type: 'string');
-		$this->addType(fieldName: 'fileId', type: 'integer');
-		$this->addType(fieldName: 'objectId', type: 'integer');
-		$this->addType(fieldName: 'emailId', type: 'integer');
-		$this->addType(fieldName: 'registerId', type: 'string');
-		$this->addType(fieldName: 'schemaId', type: 'string');
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'positionStart', type: 'integer');
-		$this->addType(fieldName: 'positionEnd', type: 'integer');
-		$this->addType(fieldName: 'confidence', type: 'float');
-		$this->addType(fieldName: 'detectionMethod', type: 'string');
-		$this->addType(fieldName: 'context', type: 'string');
-		$this->addType(fieldName: 'anonymized', type: 'boolean');
-		$this->addType(fieldName: 'anonymizedValue', type: 'string');
-		$this->addType(fieldName: 'bases', type: 'json');
-		$this->addType(fieldName: 'skipAnonymization', type: 'boolean');
-		$this->addType(fieldName: 'createdAt', type: 'datetime');
+		foreach (EntityRelationFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -264,30 +261,10 @@ class EntityRelation extends Entity implements JsonSerializable {
 	 *     confidence: float, detectionMethod: null|string,
 	 *     context: null|string, anonymized: bool,
 	 *     anonymizedValue: null|string, bases: array|null,
-	 *     skipAnonymization: bool, createdAt: null|string}
+	 *     skipAnonymization: bool, decision: null|string,
+ *     createdAt: null|string}
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'entityId' => $this->entityId,
-			'chunkId' => $this->chunkId,
-			'role' => $this->role,
-			'fileId' => $this->fileId,
-			'objectId' => $this->objectId,
-			'emailId' => $this->emailId,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'objectUuid' => $this->objectUuid,
-			'positionStart' => $this->positionStart,
-			'positionEnd' => $this->positionEnd,
-			'confidence' => $this->confidence,
-			'detectionMethod' => $this->detectionMethod,
-			'context' => $this->context,
-			'anonymized' => $this->anonymized,
-			'anonymizedValue' => $this->anonymizedValue,
-			'bases' => $this->bases,
-			'skipAnonymization' => $this->skipAnonymization,
-			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
-		];
+		return (new TypedFieldsJson())->renamed(json: (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)), names: ['decisionUuid' => 'decision']);
 	}//end jsonSerialize()
 }//end class

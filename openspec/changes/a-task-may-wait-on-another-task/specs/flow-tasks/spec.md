@@ -11,12 +11,18 @@ NOT be stored. A create that carries `blocked`, or a state of `blocked`, SHALL
 be refused.
 
 A create SHALL be refused when `blockedBy` names the task itself, names no
-existing task, or closes a loop of blockers.
+existing task, or closes a loop of blockers. A caller who is not an administrator
+SHALL be refused a blocker they may not read in the words of one that does not exist,
+so `blockedBy` is no way to probe for a task.
 
 An inbox read SHALL leave out every blocked task, in its results and in its
 total. A read anchored to an object or a run SHALL still list blocked tasks,
 carrying `blocked` and `blockedBy`. A read with `includeBlocked=true` SHALL
 list them in any scope.
+
+The portal list of an external task SHALL leave out a blocked task, in its results
+and in its total, and a portal party SHALL NOT be able to read or complete one by its
+uuid: it answers like a task that does not exist, until the blocker is terminal.
 
 When a blocker reaches a terminal state, every open task it blocked SHALL be
 released with no person acting: it SHALL get an audit entry `released` naming
@@ -60,3 +66,18 @@ return to the inbox.
 - **GIVEN** task A blocked by task B
 - **WHEN** a task is created blocked by itself, by a uuid no task has, or as B's blocker with A's chain leading back to it
 - **THEN** the create SHALL be refused
+
+#### Scenario: A blocked portal task waits out of sight in the portal too
+@e2e exclude unit; TaskMapperExternalTest covers the predicate, PortalTaskServiceTest the read and the completion
+
+- **GIVEN** an external task assigned to a party, blocked by an open task
+- **WHEN** the party lists their portal tasks, reads it by its uuid, or tries to complete it
+- **THEN** it SHALL NOT be listed or counted, and reading or completing it SHALL answer as for a task that does not exist
+- **AND** once the blocker is completed the task SHALL be listed and completable again
+
+#### Scenario: A blocker the caller may not read is refused like a missing one
+@e2e exclude unit; TaskBlockedByCreateTest
+
+- **GIVEN** a task of another organisation that the caller may not read
+- **WHEN** the caller creates a task blocked by it
+- **THEN** the create SHALL be refused with the same message as for a uuid no task has

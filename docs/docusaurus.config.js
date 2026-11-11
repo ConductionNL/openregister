@@ -67,6 +67,10 @@ const config = createConfig({
              Track properly in a follow-up MDX-cleanup PR. */
           exclude: [
             '**/node_modules/**',
+            // Build output: the nl pass would otherwise re-scan the .md files
+            // the default-locale pass copied from static/ into build/, which
+            // Docusaurus >=3.9 rejects as duplicate sidebar translation keys.
+            'build/**',
             'src/**',
             'Features/faceting.md',
             'Features/endpoints.md',

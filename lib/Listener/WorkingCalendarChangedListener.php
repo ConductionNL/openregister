@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob;
+use OCA\OpenRegister\BackgroundJob\CalendarRecomputeJobInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCP\BackgroundJob\IJobList;
@@ -79,48 +79,107 @@ class WorkingCalendarChangedListener implements IEventListener {
 	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
 	 */
 	public function handle(Event $event): void {
-		if (($event instanceof ObjectUpdatedEvent) === false) {
+		if (($event instanceof ObjectUpdatedEvent) === false
+			|| $this->isWorkingCalendar(object: $event->getNewObject()) === false
+		) {
 			return;
 		}
 
-		$object = $event->getNewObject();
-		if ($this->isWorkingCalendar(object: $object) === false) {
-			return;
+		$key = $this->recomputeKeyOf(object: $event->getNewObject());
+		if ($key !== null) {
+			$this->queueRecompute(key: $key);
+		}
+	}//end handle()
+
+	/**
+	 * The slug and version that identify one recompute, or null when the
+	 * calendar lacks either (which is logged, not ignored).
+	 *
+	 * @param ObjectEntity $object The working calendar.
+	 *
+	 * @return array{slug: string, version: string}|null The job argument.
+	 */
+	private function recomputeKeyOf(ObjectEntity $object): ?array {
+		$slug = $this->requiredSlug(object: $object);
+		if ($slug === null) {
+			return null;
 		}
 
+		$version = $this->requiredVersion(object: $object, slug: $slug);
+		if ($version === null) {
+			return null;
+		}
+
+		return ['slug' => $slug, 'version' => $version];
+	}//end recomputeKeyOf()
+
+	/**
+	 * The calendar's slug, or null after warning that it has none.
+	 *
+	 * A calendar with no slug is one nothing can resolve BY, so there is no
+	 * dependency set to recompute. Logged rather than ignored: the save itself
+	 * is the thing that should have been refused.
+	 *
+	 * @param ObjectEntity $object The working calendar.
+	 *
+	 * @return string|null The slug.
+	 */
+	private function requiredSlug(ObjectEntity $object): ?string {
 		$slug = $this->slugOf(object: $object);
 		if ($slug === '') {
-			// A calendar with no slug is one nothing can resolve BY, so there
-			// is no dependency set to recompute. Logged rather than ignored:
-			// the save itself is the thing that should have been refused.
 			$this->logger->warning('[WorkingCalendarChangedListener] a working calendar was saved with no slug; nothing queued');
-			return;
+			return null;
 		}
 
-		// 🔴 THE VERSION IS THE IDEMPOTENCY KEY, so a calendar with none gets
-		// no job rather than a job that can never be deduplicated. A recompute
-		// that runs again on every save of an unchanged calendar would
-		// supersede nothing — the moments would not move — but it would walk
-		// every open timer each time, which is the shape of a job that is
-		// quietly switched off six months later.
+		return $slug;
+	}//end requiredSlug()
+
+	/**
+	 * The calendar's version, or null after warning that it has none.
+	 *
+	 * 🔴 THE VERSION IS THE IDEMPOTENCY KEY, so a calendar with none gets no
+	 * job rather than a job that can never be deduplicated. A recompute that
+	 * runs again on every save of an unchanged calendar would supersede
+	 * nothing — the moments would not move — but it would walk every open
+	 * timer each time, which is the shape of a job that is quietly switched
+	 * off six months later.
+	 *
+	 * @param ObjectEntity $object The working calendar.
+	 * @param string       $slug   The calendar's slug, for the warning.
+	 *
+	 * @return string|null The version.
+	 */
+	private function requiredVersion(ObjectEntity $object, string $slug): ?string {
 		$version = $this->versionOf(object: $object);
 		if ($version === '') {
 			$this->logger->warning(
 				sprintf('[WorkingCalendarChangedListener] calendar "%s" carries no version; nothing queued', $slug)
 			);
-			return;
+			return null;
 		}
 
+		return $version;
+	}//end requiredVersion()
+
+	/**
+	 * Queue the recompute for one calendar version.
+	 *
+	 * The calendar has already been saved, so a queue failure is logged:
+	 * failing here would report a failed save for a write that happened.
+	 *
+	 * @param array{slug: string, version: string} $key The job argument.
+	 *
+	 * @return void
+	 */
+	private function queueRecompute(array $key): void {
 		try {
-			$this->jobs->add(RecomputeTimersForCalendarJob::class, ['slug' => $slug, 'version' => $version]);
+			$this->jobs->add(CalendarRecomputeJobInterface::JOB, $key);
 		} catch (Throwable $e) {
-			// The calendar has already been saved. Failing here would report a
-			// failed save for a write that happened.
 			$this->logger->error(
-				sprintf('[WorkingCalendarChangedListener] could not queue a recompute for "%s": %s', $slug, $e->getMessage())
+				sprintf('[WorkingCalendarChangedListener] could not queue a recompute for "%s": %s', $key['slug'], $e->getMessage())
 			);
 		}
-	}//end handle()
+	}//end queueRecompute()
 
 	/**
 	 * Whether the saved object is a working calendar.

@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the administered purpose table and the audit trail's purpose column.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class Version1Date20260916223000 extends SimpleMigrationStep {
 	/**
@@ -58,7 +58,7 @@ class Version1Date20260916223000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The changed schema.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*

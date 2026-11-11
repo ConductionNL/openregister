@@ -1,0 +1,208 @@
+{
+    "pg scalar": [
+        "eq(t.title,:p1[\"Hallo\",2])"
+    ],
+    "pg camel": [
+        "eq(t.first_name,:p1[\"Jan\",2])"
+    ],
+    "pg is null": [
+        "isNull(t.title)"
+    ],
+    "pg is not null": [
+        "isNotNull(t.count)"
+    ],
+    "pg number": [
+        "eq(t.count,:p1[3,2])"
+    ],
+    "pg numeric string": [
+        "eq(t.count,:p1[\"3\",2])"
+    ],
+    "pg uuid on number": [
+        "eq(t.count::text,:p1[\"0a1b2c3d-1111-2222-3333-444455556666\",2])"
+    ],
+    "pg boolean true": [
+        "eq(t.flag,:p1[\"1\",2])"
+    ],
+    "pg boolean false": [
+        "eq(t.flag,:p1[\"0\",2])"
+    ],
+    "pg list": [
+        "in(t.title,:p1[[\"a\",\"b\"],102])"
+    ],
+    "pg list on number": [
+        "in(t.count::text,:p1[[\"1\",\"x\"],102])"
+    ],
+    "pg range": [
+        "gte(t.amount,:p1[1,2])",
+        "lte(t.amount,:p2[9,2])"
+    ],
+    "pg gt lt": [
+        "gt(t.count,:p1[\"1\",2])",
+        "lt(t.count::text,:p2[\"z\",2])"
+    ],
+    "pg in scalar": [
+        "in(t.title,:p1[[\"a\"],102])"
+    ],
+    "pg in list": [
+        "in(t.count::text,:p1[[1,\"u\"],102])"
+    ],
+    "pg notIn list": [
+        "notIn(t.title,:p1[[\"a\",\"b\"],102])"
+    ],
+    "pg notIn empty": [],
+    "pg notIn scalar": [
+        "notIn(t.count::text,:p1[[\"x\"],102])"
+    ],
+    "pg ne": [
+        "neq(t.count::text,:p1[\"x\",2])"
+    ],
+    "pg isnull true": [
+        "isNull(t.title)"
+    ],
+    "pg isnull false": [
+        "isNotNull(t.title)"
+    ],
+    "pg everything": [
+        "gte(t.amount,:p1[1,2])",
+        "lt(t.amount,:p2[5,2])",
+        "in(t.amount,:p3[[2],102])",
+        "notIn(t.amount,:p4[[3],102])",
+        "neq(t.amount,:p5[4,2])",
+        "isNotNull(t.amount)"
+    ],
+    "pg like": [
+        "(CAST(t.title AS TEXT) ILIKE :p1[\"%foo%\",2])"
+    ],
+    "pg like and gte": [
+        "(CAST(t.count AS TEXT) ILIKE :p1[\"%1%\",2])",
+        "gte(t.count,:p2[2,2])"
+    ],
+    "pg like empty": [],
+    "pg or null": [
+        "((in(t.title,:p1[{\"eq\":\"a\"},102])) OR t.title IS NULL)"
+    ],
+    "pg array": [
+        "COALESCE(t.tags, '[]')::jsonb @> :p1[\"[\\\"x\\\"]\",2]"
+    ],
+    "pg array list": [
+        "composite(COALESCE(t.tags, '[]')::jsonb @> :p1[\"[\\\"x\\\"]\",2] | COALESCE(t.tags, '[]')::jsonb @> :p2[\"[\\\"y\\\"]\",2])"
+    ],
+    "pg object": [
+        "(t.owner::text = :p1[\"abc\",2] OR t.owner::text LIKE :p2[\"%\\\"value\\\": \\\"abc\\\"%\",2])"
+    ],
+    "pg object list": [
+        "composite((t.owner::text = :p1[\"abc\",2] OR t.owner::text LIKE :p2[\"%\\\"value\\\": \\\"abc\\\"%\",2]) | (t.owner::text = :p3[\"def\",2] OR t.owner::text LIKE :p4[\"%\\\"value\\\": \\\"def\\\"%\",2]))"
+    ],
+    "pg missing": [
+        "1 = 0",
+        "eq(t.title,:p1[\"x\",2])"
+    ],
+    "pg several": [
+        "eq(t.title,:p1[\"a\",2])",
+        "gte(t.count,:p2[2,2])",
+        "eq(t.flag,:p3[\"1\",2])"
+    ],
+    "mysql scalar": [
+        "eq(t.title,:p1[\"Hallo\",2])"
+    ],
+    "mysql camel": [
+        "eq(t.first_name,:p1[\"Jan\",2])"
+    ],
+    "mysql is null": [
+        "isNull(t.title)"
+    ],
+    "mysql is not null": [
+        "isNotNull(t.count)"
+    ],
+    "mysql number": [
+        "eq(t.count,:p1[3,2])"
+    ],
+    "mysql numeric string": [
+        "eq(t.count,:p1[\"3\",2])"
+    ],
+    "mysql uuid on number": [
+        "eq(CAST(t.count AS CHAR),:p1[\"0a1b2c3d-1111-2222-3333-444455556666\",2])"
+    ],
+    "mysql boolean true": [
+        "eq(t.flag,:p1[\"1\",2])"
+    ],
+    "mysql boolean false": [
+        "eq(t.flag,:p1[\"0\",2])"
+    ],
+    "mysql list": [
+        "in(t.title,:p1[[\"a\",\"b\"],102])"
+    ],
+    "mysql list on number": [
+        "in(CAST(t.count AS CHAR),:p1[[\"1\",\"x\"],102])"
+    ],
+    "mysql range": [
+        "gte(t.amount,:p1[1,2])",
+        "lte(t.amount,:p2[9,2])"
+    ],
+    "mysql gt lt": [
+        "gt(t.count,:p1[\"1\",2])",
+        "lt(CAST(t.count AS CHAR),:p2[\"z\",2])"
+    ],
+    "mysql in scalar": [
+        "in(t.title,:p1[[\"a\"],102])"
+    ],
+    "mysql in list": [
+        "in(CAST(t.count AS CHAR),:p1[[1,\"u\"],102])"
+    ],
+    "mysql notIn list": [
+        "notIn(t.title,:p1[[\"a\",\"b\"],102])"
+    ],
+    "mysql notIn empty": [],
+    "mysql notIn scalar": [
+        "notIn(CAST(t.count AS CHAR),:p1[[\"x\"],102])"
+    ],
+    "mysql ne": [
+        "neq(CAST(t.count AS CHAR),:p1[\"x\",2])"
+    ],
+    "mysql isnull true": [
+        "isNull(t.title)"
+    ],
+    "mysql isnull false": [
+        "isNotNull(t.title)"
+    ],
+    "mysql everything": [
+        "gte(t.amount,:p1[1,2])",
+        "lt(t.amount,:p2[5,2])",
+        "in(t.amount,:p3[[2],102])",
+        "notIn(t.amount,:p4[[3],102])",
+        "neq(t.amount,:p5[4,2])",
+        "isNotNull(t.amount)"
+    ],
+    "mysql like": [
+        "(LOWER(CAST(t.title AS CHAR)) LIKE LOWER(:p1[\"%foo%\",2]))"
+    ],
+    "mysql like and gte": [
+        "(LOWER(CAST(t.count AS CHAR)) LIKE LOWER(:p1[\"%1%\",2]))",
+        "gte(t.count,:p2[2,2])"
+    ],
+    "mysql like empty": [],
+    "mysql or null": [
+        "((in(t.title,:p1[{\"eq\":\"a\"},102])) OR t.title IS NULL)"
+    ],
+    "mysql array": [
+        "COALESCE(t.tags, '[]')::jsonb @> :p1[\"[\\\"x\\\"]\",2]"
+    ],
+    "mysql array list": [
+        "composite(COALESCE(t.tags, '[]')::jsonb @> :p1[\"[\\\"x\\\"]\",2] | COALESCE(t.tags, '[]')::jsonb @> :p2[\"[\\\"y\\\"]\",2])"
+    ],
+    "mysql object": [
+        "(CAST(t.owner AS CHAR) = :p1[\"abc\",2] OR CAST(t.owner AS CHAR) LIKE :p2[\"%\\\"value\\\": \\\"abc\\\"%\",2])"
+    ],
+    "mysql object list": [
+        "composite((CAST(t.owner AS CHAR) = :p1[\"abc\",2] OR CAST(t.owner AS CHAR) LIKE :p2[\"%\\\"value\\\": \\\"abc\\\"%\",2]) | (CAST(t.owner AS CHAR) = :p3[\"def\",2] OR CAST(t.owner AS CHAR) LIKE :p4[\"%\\\"value\\\": \\\"def\\\"%\",2]))"
+    ],
+    "mysql missing": [
+        "1 = 0",
+        "eq(t.title,:p1[\"x\",2])"
+    ],
+    "mysql several": [
+        "eq(t.title,:p1[\"a\",2])",
+        "gte(t.count,:p2[2,2])",
+        "eq(t.flag,:p3[\"1\",2])"
+    ]
+}

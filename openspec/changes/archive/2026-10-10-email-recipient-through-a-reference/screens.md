@@ -1,0 +1,1 @@
+- No screen: a notification recipient kind evaluated on the server; the mail it sends is not a board.

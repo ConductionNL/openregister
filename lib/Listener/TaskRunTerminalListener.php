@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -51,11 +51,11 @@ class TaskRunTerminalListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $tasks The task lifecycle.
+	 * @param TaskManagerInterface $tasks The task lifecycle.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly TaskService $tasks,
+		private readonly TaskManagerInterface $tasks,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -75,30 +75,48 @@ class TaskRunTerminalListener implements IEventListener {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof FlowRunTerminalEvent === false) {
-			return;
+		if ($event instanceof FlowRunTerminalEvent) {
+			$this->propagate(event: $event);
 		}
+	}//end handle()
 
+	/**
+	 * Terminate the run's tasks; a failure is logged, never rethrown into the run's write.
+	 *
+	 * @param FlowRunTerminalEvent $event The terminal-run event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
+	 */
+	private function propagate(FlowRunTerminalEvent $event): void {
 		try {
-			$terminated = $this->tasks->terminateForRun(
-				runUuid: $event->getRunUuid(),
-				runStatus: $event->getStatus()
-			);
-			if ($terminated > 0) {
-				$this->logger->info(
-					sprintf(
-						'[TaskRunTerminalListener] Terminated %d task(s) of run %s (%s).',
-						$terminated,
-						$event->getRunUuid(),
-						$event->getStatus()
-					)
-				);
-			}
+			$this->terminateTasksOf(event: $event);
 		} catch (Throwable $failure) {
 			$this->logger->error(
 				'[TaskRunTerminalListener] Cancellation propagation failed: ' . $failure->getMessage(),
 				['run' => $event->getRunUuid(), 'exception' => $failure]
 			);
 		}
-	}//end handle()
+	}//end propagate()
+
+	/**
+	 * Terminate the run's open tasks and note how many there were.
+	 *
+	 * @param FlowRunTerminalEvent $event The terminal-run event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
+	 */
+	private function terminateTasksOf(FlowRunTerminalEvent $event): void {
+		$runUuid = $event->getRunUuid();
+		$status = $event->getStatus();
+		$terminated = $this->tasks->terminateForRun(runUuid: $runUuid, runStatus: $status);
+		if ($terminated > 0) {
+			$this->logger->info(
+				sprintf('[TaskRunTerminalListener] Terminated %d task(s) of run %s (%s).', $terminated, $runUuid, $status)
+			);
+		}
+	}//end terminateTasksOf()
 }//end class

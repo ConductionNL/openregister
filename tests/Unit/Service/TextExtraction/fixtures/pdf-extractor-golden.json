@@ -1,0 +1,82 @@
+{
+    "content-refused": {
+        "result": {
+            "threw": "Exception: PDF extraction failed: cannot read"
+        },
+        "log": [
+            "debug: [PdfExtractor] Extracting PDF {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"name\":\"report.pdf\"}",
+            "error: [PdfExtractor] PDF extraction failed {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"error\":\"cannot read\"}"
+        ]
+    },
+    "empty": {
+        "result": {
+            "returned": null
+        },
+        "log": [
+            "debug: [PdfExtractor] Extracting PDF {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"name\":\"report.pdf\"}",
+            "warning: [PdfExtractor] PDF extraction returned empty text {\"file\":\"PdfExtractor.php\",\"fileId\":42}"
+        ]
+    },
+    "parser-errors": {
+        "result": {
+            "threw": "Error: parser crashed"
+        },
+        "log": [
+            "debug: [PdfExtractor] Extracting PDF {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"name\":\"report.pdf\"}"
+        ]
+    },
+    "parser-throws": {
+        "result": {
+            "threw": "Exception: PDF extraction failed: Secured pdf file are currently not supported."
+        },
+        "log": [
+            "debug: [PdfExtractor] Extracting PDF {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"name\":\"report.pdf\"}",
+            "error: [PdfExtractor] PDF extraction failed {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"error\":\"Secured pdf file are currently not supported.\"}"
+        ]
+    },
+    "real-empty": {
+        "result": {
+            "threw": "Exception: PDF extraction failed: Empty PDF data given."
+        },
+        "log": [
+            "debug: [PdfExtractor] Extracting PDF {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"name\":\"report.pdf\"}",
+            "error: [PdfExtractor] PDF extraction failed {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"error\":\"Empty PDF data given.\"}"
+        ]
+    },
+    "real-garbage": {
+        "result": {
+            "threw": "Exception: PDF extraction failed: Invalid PDF data: Missing `%PDF-` header."
+        },
+        "log": [
+            "debug: [PdfExtractor] Extracting PDF {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"name\":\"report.pdf\"}",
+            "error: [PdfExtractor] PDF extraction failed {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"error\":\"Invalid PDF data: Missing `%PDF-` header.\"}"
+        ]
+    },
+    "text": {
+        "result": {
+            "returned": "Hello PDF"
+        },
+        "log": [
+            "debug: [PdfExtractor] Extracting PDF {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"name\":\"report.pdf\"}",
+            "debug: [PdfExtractor] PDF extracted successfully {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"length\":9}"
+        ]
+    },
+    "text-whitespace": {
+        "result": {
+            "returned": "  \n "
+        },
+        "log": [
+            "debug: [PdfExtractor] Extracting PDF {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"name\":\"report.pdf\"}",
+            "debug: [PdfExtractor] PDF extracted successfully {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"length\":4}"
+        ]
+    },
+    "text-zero": {
+        "result": {
+            "returned": "0"
+        },
+        "log": [
+            "debug: [PdfExtractor] Extracting PDF {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"name\":\"report.pdf\"}",
+            "debug: [PdfExtractor] PDF extracted successfully {\"file\":\"PdfExtractor.php\",\"fileId\":42,\"length\":1}"
+        ]
+    }
+}

@@ -32,30 +32,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
+use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
 
 /**
  * A pass-through node whose outgoing edges carry the routing conditions.
  */
-class SwitchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
-
+class SwitchNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree, SwitchNodeInterface {
 	/**
 	 * The step type.
 	 *
@@ -93,17 +79,6 @@ class SwitchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	}//end getIcon()
 
 	/**
-	 * Branching grants no privilege.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
 	 * A switch reads NO config — its conditions live on its outgoing edges.
 	 *
 	 * The empty list is a real statement, not a stub: any key at all on a
@@ -135,13 +110,12 @@ class SwitchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	/**
 	 * Pass items through untouched; the engine routes them.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, unchanged.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
 		return $items;
 	}//end execute()
 
@@ -156,16 +130,4 @@ class SwitchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 		return IFlowNodeTaxonomy::KIND_GATEWAY;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

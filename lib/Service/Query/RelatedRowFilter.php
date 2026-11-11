@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 /**
- * One `_related[<schema>][<fk>]` block, parsed.
+ * One `_related[<schema>][<fk>]` or `_referenced[<schema>][<property>]` block, parsed.
  *
  * An object matches when AT LEAST ONE row of the related schema, whose foreign
  * key points at that object, satisfies EVERY condition in the block. That
@@ -36,16 +36,34 @@ namespace OCA\OpenRegister\Service\Query;
  * existence clauses rather than one with more conditions. `_related[p][case]`
  * written twice is how a caller asks for a case carrying both properties.
  *
+ * A `_referenced` block runs the other way: the object's OWN property holds
+ * the uuid of a row of the named schema, and the object matches when that row
+ * satisfies every condition (a beschikking whose subsidieaanvraag belongs to
+ * one case).
+ *
  * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
  */
 final class RelatedRowFilter {
+
+	/**
+	 * Rows of the named schema point at the object (`_related`).
+	 */
+	public const DIRECTION_INVERSE = 'inverse';
+
+	/**
+	 * The object's property points at a row of the named schema (`_referenced`).
+	 */
+	public const DIRECTION_FORWARD = 'forward';
 
 	/**
 	 * Constructor.
 	 *
 	 * @param string                                                     $schema     The related schema's slug.
-	 * @param string                                                     $foreignKey The property on it pointing back.
+	 * @param string                                                     $foreignKey The property holding the reference:
+	 *                                                                               on the related row (inverse) or the object (forward).
 	 * @param array<int, array{field: string, operator: string, value: mixed}> $conditions The row conditions.
+	 * @param string                                                     $direction  DIRECTION_INVERSE or DIRECTION_FORWARD.
 	 *
 	 * @return void
 	 */
@@ -53,6 +71,7 @@ final class RelatedRowFilter {
 		public readonly string $schema,
 		public readonly string $foreignKey,
 		public readonly array $conditions,
+		public readonly string $direction = self::DIRECTION_INVERSE,
 	) {
 	}//end __construct()
 }//end class

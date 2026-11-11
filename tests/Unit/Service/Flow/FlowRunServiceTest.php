@@ -15,16 +15,20 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -32,6 +36,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Workflow\Marking;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /** Subject carrying nothing — the marking lives on the run, not here. */
 class RunSubject {
@@ -70,7 +77,9 @@ class WaitingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$context = $call->context;
 		$this->calls++;
 		if (($context['resuming'] ?? false) !== true) {
 			throw new FlowSuspension(new DateTime('@1900000000'), 'waiting for the clock');
@@ -124,7 +133,8 @@ class BranchRecordingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
 		$this->calls++;
 
 		return $items;
@@ -165,7 +175,9 @@ class AskingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$context = $call->context;
 		$slot = $context[FlowNodeResumeState::CONTEXT_KEY];
 		$signal = ($context[FlowRunService::SIGNAL_CONTEXT_KEY] ?? null);
 		$this->sawSignal[$slot->nodeId()][] = $signal;
@@ -214,14 +226,53 @@ class ContextCapturingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$context = $call->context;
 		$this->seenContext = $context;
 
 		return $items;
 	}
 }
 
+class CopyPinNode implements IFlowNode {
+	public function getId(): string {
+		return 'test.copy-pin';
+	}
+
+	public function getDisplayName(): string {
+		return 'Copy pin';
+	}
+
+	public function getDescription(): string {
+		return 'Copies inputs.pin to code.';
+	}
+
+	public function getIcon(): string {
+		return 'i.svg';
+	}
+
+	public function isAvailableForScope(int $scope): bool {
+		return true;
+	}
+
+	public function validateConfig(array $config): void {
+	}
+
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		foreach ($items as $index => $item) {
+			$items[$index]['json']['code'] = ($item['json']['inputs']['pin'] ?? null);
+		}
+
+		return $items;
+	}
+}
+
 class FlowRunServiceTest extends TestCase {
+
+	private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
+
 	use \OCA\OpenRegister\Tests\Unit\Service\Flow\PublishedVersionDouble;
 
 	private FlowRunMapper $mapper;
@@ -257,6 +308,13 @@ class FlowRunServiceTest extends TestCase {
 					$event->registerNode($this->doneBranch);
 					$event->registerNode($this->retryBranch);
 					$event->registerNode($this->asker);
+					$event->registerNode(new CopyPinNode());
+					$event->registerNode(
+						new \OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode(
+							$this->createMock(\OCP\IL10N::class),
+							$this->createMock(\OCP\IURLGenerator::class)
+						)
+					);
 				}
 			}
 		);
@@ -274,7 +332,7 @@ class FlowRunServiceTest extends TestCase {
 		$pin = $this->pinReturning();
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($versions, $pin): object {
-				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 
@@ -286,13 +344,15 @@ class FlowRunServiceTest extends TestCase {
 			}
 		);
 
+		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->service = new FlowRunService(
-			$this->mapper,
-			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-			$engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container
+			stores: new FlowRunStores(
+				mapper: $this->mapper,
+				stateMapper: $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $engine, registry: $registry),
+			logger: $this->logger,
+			container: $container
 		);
 	}
 
@@ -309,7 +369,7 @@ class FlowRunServiceTest extends TestCase {
 		// An object event carries the user whose action raised it — the real
 		// listener reads it off the session and passes it here — so the fixture
 		// names one rather than dispatching anonymously.
-		$run = $this->service->queue('f1', ['uuid' => 'u1'], 'object.created', user: 'alice');
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(subject: ['uuid' => 'u1'], trigger: 'object.created', user: 'alice'));
 
 		$this->assertSame(FlowRun::STATUS_QUEUED, $run->getStatus());
 		$this->assertSame(0, $this->waiter->calls);
@@ -320,8 +380,8 @@ class FlowRunServiceTest extends TestCase {
 	 * The property the whole issue exists for: a step can pause the run.
 	 */
 	public function testAStepThatSuspendsLeavesTheRunResumable(): void {
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertInstanceOf(DateTime::class, $run->getResumeAt());
@@ -333,8 +393,8 @@ class FlowRunServiceTest extends TestCase {
 	 * would skip the very step that asked to wait.
 	 */
 	public function testASuspendedRunKeepsItsPlaceInTheGraph(): void {
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		// The marking names the NODE the run is paused on. A suspending step
 		// does not advance the token, so it waits on its own place — which is
@@ -343,14 +403,14 @@ class FlowRunServiceTest extends TestCase {
 	}
 
 	public function testResumingCarriesTheStoredItemsRatherThanReseeding(): void {
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		// Something the subject could never produce — proves the items came
 		// from storage and not from re-seeding.
 		$run->setItems([FlowItems::item(json: ['carried' => 'through-the-pause'])]);
 
-		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_COMPLETED, $run->getStatus());
 		$this->assertSame('through-the-pause', $run->getItems()[0]['json']['carried']);
@@ -391,12 +451,8 @@ class FlowRunServiceTest extends TestCase {
 			],
 		];
 
-		$run = $this->service->queue('f1', ['uuid' => 'case-1'], 'object.created', user: 'alice');
-		$run = $this->service->execute(
-			$run,
-			$flow,
-			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => null])
-		);
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(subject: ['uuid' => 'case-1'], trigger: 'object.created', user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => null])), origin: new FlowRunOrigin());
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 
 		// What the earlier steps produced must survive the refresh.
@@ -405,11 +461,7 @@ class FlowRunServiceTest extends TestCase {
 		$run->setItems($items);
 
 		// The human answers: the SUBJECT changes while the run sits suspended.
-		$run = $this->service->execute(
-			$run,
-			$flow,
-			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => 'now supplied'])
-		);
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => 'now supplied'])), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_COMPLETED, $run->getStatus());
 		$this->assertSame(1, $this->doneBranch->calls, 'the branch decision must read the LIVE subject');
@@ -453,27 +505,61 @@ class FlowRunServiceTest extends TestCase {
 			],
 		];
 
-		$run = $this->service->queue('f1', ['uuid' => 'case-1'], 'object.created', user: 'alice');
-		$run = $this->service->execute(
-			$run,
-			$flow,
-			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => null])
-		);
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(subject: ['uuid' => 'case-1'], trigger: 'object.created', user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => null])), origin: new FlowRunOrigin());
 
 		// The first pass checked, found nothing, asked, and parked.
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertSame(1, $this->retryBranch->calls);
 
-		$run = $this->service->execute(
-			$run,
-			$flow,
-			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => 'now supplied'])
-		);
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => 'now supplied'])), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_COMPLETED, $run->getStatus(), 'the loop must terminate, not strand at the ceiling');
 		$this->assertSame(2, $this->retryBranch->calls, 'exactly one re-check, which sees the answer');
 		$this->assertSame(1, $this->doneBranch->calls);
 	}//end testAReAskLoopThatReceivesTheAnswerTerminates()
+
+	/**
+	 * Two signals on one suspended run keep the keys of both; a key both carry keeps the answer already waiting.
+	 *
+	 * @return void
+	 */
+	public function testTwoSignalsOnASuspendedRunAreMerged(): void {
+		$flow = ['id' => 'f1', 'nodes' => [['id' => 'first', 'type' => 'test.ask']], 'edges' => []];
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new RunSubject()), origin: new FlowRunOrigin());
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
+
+		$run = $this->service->signal($run, ['decision' => 'approved', 'taskId' => 'task-1']);
+		$run = $this->service->signal($run, ['completedBy' => 'alice', 'decision' => 'approved-later']);
+
+		$this->assertNotNull($run);
+		$signal = $run->getContext()[FlowRunService::SIGNAL_CONTEXT_KEY];
+		$this->assertSame('task-1', $signal['taskId'], 'the first listener\'s key survives');
+		$this->assertSame('alice', $signal['completedBy'], 'the second listener\'s key is added');
+		$this->assertSame('approved', $signal['decision'], 'a key both set keeps the answer already waiting, never the later value');
+	}//end testTwoSignalsOnASuspendedRunAreMerged()
+
+	/**
+	 * A conflicting key is logged once with the key name (not the values); the same value twice is no conflict.
+	 *
+	 * @return void
+	 */
+	public function testAConflictingSignalKeyIsLoggedAndASameValueIsNot(): void {
+		$flow = ['id' => 'f1', 'nodes' => [['id' => 'first', 'type' => 'test.ask']], 'edges' => []];
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new RunSubject()), origin: new FlowRunOrigin());
+		$this->logger->expects($this->once())->method('warning')->with(
+			$this->stringContains('first answer stands'),
+			$this->callback(static fn (array $context): bool => $context['keys'] === ['decision'])
+		);
+
+		$run = $this->service->signal($run, ['decision' => 'approved', 'taskId' => 'task-1']);
+		$run = $this->service->signal($run, ['taskId' => 'task-1']);
+		$run = $this->service->signal($run, ['decision' => 'rejected']);
+
+		$this->assertSame(['decision' => 'approved', 'taskId' => 'task-1'], $run->getContext()[FlowRunService::SIGNAL_CONTEXT_KEY]);
+	}//end testAConflictingSignalKeyIsLoggedAndASameValueIsNot()
 
 	/**
 	 * THE RESUME ANSWER IS SCOPED TO THE NODE THAT SUSPENDED — through the
@@ -498,8 +584,8 @@ class FlowRunServiceTest extends TestCase {
 			],
 		];
 
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, $flow, new RunSubject());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new RunSubject()), origin: new FlowRunOrigin());
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertArrayHasKey(
 			'first',
@@ -511,7 +597,7 @@ class FlowRunServiceTest extends TestCase {
 		$answer = ['decision' => 'approved', 'node' => 'first', 'taskId' => 'task-1'];
 		$run = $this->service->signal($run, $answer);
 		$this->assertNotNull($run, 'a suspended run accepts its signal');
-		$run = $this->service->execute($run, $flow, new RunSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(
 			FlowRun::STATUS_SUSPENDED,
@@ -543,7 +629,7 @@ class FlowRunServiceTest extends TestCase {
 		// carries each answer under its OWN node.
 		$secondAnswer = ['decision' => 'approved', 'node' => 'second'];
 		$run = $this->service->signal($run, $secondAnswer);
-		$run = $this->service->execute($run, $flow, new RunSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_COMPLETED, $run->getStatus());
 		$item = ($run->getItems()[0]['json'] ?? []);
@@ -565,8 +651,8 @@ class FlowRunServiceTest extends TestCase {
 			'edges' => [],
 		];
 
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, $flow, new RunSubject());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertSame([null], $this->asker->sawSignal['only'] ?? []);
@@ -615,7 +701,7 @@ class FlowRunServiceTest extends TestCase {
 		$pin = $this->pinReturning();
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($versions, $pin): object {
-				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 
@@ -628,23 +714,24 @@ class FlowRunServiceTest extends TestCase {
 		);
 
 		$service = new FlowRunService(
-			$this->mapper,
-			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-			$engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container
+			stores: new FlowRunStores(
+				mapper: $this->mapper,
+				stateMapper: $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $engine, registry: $registry),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container
 		);
 
-		$run = $service->queue('f1', user: 'alice');
-		$run = $service->execute($run, $this->waitFlow(), new RunSubject());
+		$run = $service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 
 		// The operator throws the switch and nudges the parked run.
 		$thrown = true;
 		$run = $service->signal($run, []);
 		$this->assertNotNull($run);
-		$run = $service->execute($run, $this->waitFlow(), new RunSubject());
+		$run = $service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(
 			FlowRun::STATUS_STOPPED,
@@ -671,21 +758,13 @@ class FlowRunServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheResumeRefreshAlsoRewritesThePerPlaceBuffers(): void {
-		$run = $this->service->queue('f1', ['uuid' => 'case-1'], 'object.created', user: 'alice');
-		$run = $this->service->execute(
-			$run,
-			$this->waitFlow(),
-			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => null])
-		);
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(subject: ['uuid' => 'case-1'], trigger: 'object.created', user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => null])), origin: new FlowRunOrigin());
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 
 		$run->setPlaceItems(['hop' => [FlowItems::item(json: ['id' => 'case-1', 'description' => null, 'stepProduced' => 'kept'])]]);
 
-		$run = $this->service->execute(
-			$run,
-			$this->waitFlow(),
-			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => 'now supplied'])
-		);
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => 'now supplied'])), origin: new FlowRunOrigin());
 
 		$buffer = $run->getPlaceItems()['hop'];
 		$this->assertSame('now supplied', $buffer[0]['json']['description'], 'the per-place buffer reads the live subject');
@@ -693,22 +772,125 @@ class FlowRunServiceTest extends TestCase {
 	}//end testTheResumeRefreshAlsoRewritesThePerPlaceBuffers()
 
 	public function testResumeAtIsClearedOnceTheRunIsNoLongerSuspended(): void {
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 		$this->assertNotNull($run->getResumeAt());
 
-		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		// Otherwise the due-runs query keeps picking up a finished run.
 		$this->assertNull($run->getResumeAt());
 	}
 
+	/**
+	 * A writeOnly action input reaches the steps but never the stored run:
+	 * not its log of step inputs and outputs, not its final items.
+	 *
+	 * @return void
+	 */
+	public function testAWriteOnlyInputIsNotStoredInTheRunLogOrItems(): void {
+		$ref = ObjectActionSecrets::hold(values: ['pin' => '4321-9876']);
+		try {
+			$run = $this->service->queueRun(
+				flowId: 'f1',
+				options: new FlowRunQueueOptions(
+					user: 'alice',
+					context: ['action' => 'sign', 'inputs' => ['reason' => 'approved'], ObjectActionSecrets::CONTEXT_KEY => $ref]
+				)
+			);
+			$flow = ['id' => 'f1', 'nodes' => [['id' => 'inputs', 'type' => 'openregister.action-inputs']], 'edges' => []];
+			$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new RunSubject()), origin: new FlowRunOrigin());
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: FlowRun::STATUS_COMPLETED, actual: $run->getStatus());
+		$this->assertStringNotContainsString(needle: '4321-9876', haystack: (string)json_encode(value: $run->getLog()));
+		$this->assertStringNotContainsString(needle: '4321-9876', haystack: (string)json_encode(value: $run->getItems()));
+		$this->assertStringNotContainsString(needle: '4321-9876', haystack: (string)json_encode(value: $run->getContext()));
+		// The control: the storable input is still there, so the step did run.
+		$this->assertStringContainsString(needle: 'approved', haystack: (string)json_encode(value: $run->getItems()));
+	}//end testAWriteOnlyInputIsNotStoredInTheRunLogOrItems()
+
+	/**
+	 * Redaction is by key: a secret that equals a counter or sits inside the
+	 * subject uuid changes nothing but the named input, and a run that
+	 * suspends resumes on the subject it stored.
+	 *
+	 * @return void
+	 */
+	public function testAShortSecretRedactsOnlyTheInputAndTheResumeKeepsTheSubject(): void {
+		$uuid = '2026aaaa-1111-4111-8111-000000002026';
+		$ref  = ObjectActionSecrets::hold(values: ['pin' => '2026', 'digit' => '1']);
+		$flow = [
+			'id' => 'f1',
+			'nodes' => [['id' => 'inputs', 'type' => 'openregister.action-inputs'], ['id' => 'hop', 'type' => 'test.wait']],
+			'edges' => [['id' => 'e1', 'from' => 'inputs', 'to' => 'hop']],
+		];
+		try {
+			$run = $this->service->queueRun(
+				flowId: 'f1',
+				options: new FlowRunQueueOptions(
+					subject: ['uuid' => $uuid],
+					user: 'alice',
+					context: ['action' => 'sign', 'inputs' => [], ObjectActionSecrets::CONTEXT_KEY => $ref]
+				)
+			);
+			$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new IdentifiedSubject(fields: ['uuid' => $uuid, 'count' => 1])), origin: new FlowRunOrigin());
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: FlowRun::STATUS_SUSPENDED, actual: $run->getStatus());
+		$json = $run->getItems()[0]['json'];
+		$this->assertSame(expected: $uuid, actual: $json['uuid']);
+		$this->assertSame(expected: 1, actual: $json['count']);
+		$this->assertSame(expected: ObjectActionSecrets::REDACTED, actual: $json['inputs']['pin']);
+		$this->assertSame(expected: 1, actual: $run->getLog()[0]['itemsIn']);
+
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new IdentifiedSubject(fields: ['uuid' => $uuid, 'count' => 1])), origin: new FlowRunOrigin());
+
+		$this->assertSame(expected: FlowRun::STATUS_COMPLETED, actual: $run->getStatus());
+		$this->assertSame(expected: $uuid, actual: $run->getItems()[0]['json']['uuid']);
+	}//end testAShortSecretRedactsOnlyTheInputAndTheResumeKeepsTheSubject()
+
+	/**
+	 * A later step that copies the input to another field does not store it
+	 * either: not in the log, the items or the context.
+	 *
+	 * @return void
+	 */
+	public function testACopiedWriteOnlyInputIsNotStored(): void {
+		$ref = ObjectActionSecrets::hold(values: ['pin' => '4321']);
+		$flow = [
+			'id' => 'f1',
+			'nodes' => [['id' => 'inputs', 'type' => 'openregister.action-inputs'], ['id' => 'copy', 'type' => 'test.copy-pin']],
+			'edges' => [['id' => 'e1', 'from' => 'inputs', 'to' => 'copy']],
+		];
+		try {
+			$run = $this->service->queueRun(
+				flowId: 'f1',
+				options: new FlowRunQueueOptions(
+					user: 'alice',
+					context: ['action' => 'sign', 'inputs' => [], ObjectActionSecrets::CONTEXT_KEY => $ref]
+				)
+			);
+			$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: new RunSubject()), origin: new FlowRunOrigin());
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: FlowRun::STATUS_COMPLETED, actual: $run->getStatus());
+		$this->assertSame(expected: ObjectActionSecrets::REDACTED, actual: $run->getItems()[0]['json']['code']);
+		$this->assertStringNotContainsString(needle: '"4321"', haystack: (string)json_encode(value: $run->getLog()));
+	}//end testACopiedWriteOnlyInputIsNotStored()
+
 	public function testTheLogAccumulatesAcrossASuspension(): void {
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 		$afterSuspend = count($run->getLog());
 
-		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertGreaterThan($afterSuspend, count($run->getLog()));
 		$this->assertSame('suspended', $run->getLog()[0]['status']);
@@ -718,17 +900,17 @@ class FlowRunServiceTest extends TestCase {
 	 * Re-executing a finished run would repeat every side effect it performed.
 	 */
 	public function testATerminalRunIsNeverReExecuted(): void {
-		$run = $this->service->queue('f1', user: 'alice');
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
 		$run->setStatus(FlowRun::STATUS_COMPLETED);
 
-		$this->service->execute($run, $this->waitFlow(), new RunSubject());
+		$this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->waitFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(0, $this->waiter->calls);
 	}
 
 	public function testAMalformedFlowFailsTheRunRatherThanLeavingItRunning(): void {
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, ['nodes' => []], new RunSubject());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: ['nodes' => []], subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_FAILED, $run->getStatus());
 		$this->assertNotNull($run->getError());
@@ -758,9 +940,9 @@ class FlowRunServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRunsOwnerReachesTheNodeContext(): void {
-		$run = $this->service->queue('f1', ['uuid' => 'u1'], 'object.created', [], 'alice');
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(subject: ['uuid' => 'u1'], trigger: 'object.created', context: [], user: 'alice'));
 
-		$this->service->execute($run, $this->captureFlow(), new RunSubject());
+		$this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->captureFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame('alice', ($this->capturer->seenContext['triggeredBy'] ?? null));
 	}
@@ -775,9 +957,9 @@ class FlowRunServiceTest extends TestCase {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function testTheRunsFlowIdReachesTheNodeContext(): void {
-		$run = $this->service->queue('f1', ['uuid' => 'u1'], 'object.created', ['flowId' => 'forged'], 'alice');
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(subject: ['uuid' => 'u1'], trigger: 'object.created', context: ['flowId' => 'forged'], user: 'alice'));
 
-		$this->service->execute($run, $this->captureFlow(), new RunSubject());
+		$this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->captureFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame('f1', ($this->capturer->seenContext[FlowRunService::FLOW_ID_CONTEXT_KEY] ?? null));
 	}
@@ -789,9 +971,9 @@ class FlowRunServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnExplicitContextOwnerIsNotOverwrittenByTheRunsOwner(): void {
-		$run = $this->service->queue('f1', ['uuid' => 'u1'], 'object.created', ['triggeredBy' => 'bob'], 'alice');
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(subject: ['uuid' => 'u1'], trigger: 'object.created', context: ['triggeredBy' => 'bob'], user: 'alice'));
 
-		$this->service->execute($run, $this->captureFlow(), new RunSubject());
+		$this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->captureFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame('bob', ($this->capturer->seenContext['triggeredBy'] ?? null));
 	}
@@ -813,15 +995,9 @@ class FlowRunServiceTest extends TestCase {
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 */
 	public function testAContextSuppliedActingIdentityIsIgnored(): void {
-		$run = $this->service->queue(
-			'f1',
-			['uuid' => 'u1'],
-			'object.created',
-			['runAs' => 'mallory'],
-			'alice'
-		);
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(subject: ['uuid' => 'u1'], trigger: 'object.created', context: ['runAs' => 'mallory'], user: 'alice'));
 
-		$this->service->execute($run, $this->captureFlow(), new RunSubject());
+		$this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->captureFlow(), subject: new RunSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(
 			'alice',

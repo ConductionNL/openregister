@@ -1,0 +1,426 @@
+{
+    "create full": [
+        [
+            "events.create",
+            [
+                3,
+                4,
+                "obj-1",
+                "Zaak 1",
+                {
+                    "objectTitle": "Zaak 1",
+                    "summary": "Meeting"
+                }
+            ]
+        ],
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "link.insert",
+            {
+                "id": "new.ics",
+                "uid": "new-uid",
+                "calendarId": "7",
+                "calendarUri": "personal",
+                "summary": "Meeting",
+                "dtstart": "2026-06-01T10:00:00+00:00",
+                "dtend": "2026-06-01T11:00:00+00:00",
+                "location": "HQ",
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "taggedWithXor": true,
+                "dtstartClass": "DateTime"
+            }
+        ]
+    ],
+    "create title falls back to uuid": [
+        [
+            "events.create",
+            [
+                3,
+                4,
+                "obj-1",
+                "obj-1",
+                {
+                    "summary": "S"
+                }
+            ]
+        ],
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "link.insert",
+            {
+                "id": "new.ics",
+                "uid": "new-uid",
+                "calendarId": "7",
+                "calendarUri": "personal",
+                "summary": "Meeting",
+                "dtstart": "2026-06-01T10:00:00+00:00",
+                "dtend": "2026-06-01T11:00:00+00:00",
+                "location": "HQ",
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "taggedWithXor": true,
+                "dtstartClass": "DateTime"
+            }
+        ]
+    ],
+    "create non-string title": [
+        [
+            "events.create",
+            [
+                3,
+                4,
+                "obj-1",
+                "42",
+                {
+                    "objectTitle": 42
+                }
+            ]
+        ],
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "link.insert",
+            {
+                "id": "new.ics",
+                "uid": "new-uid",
+                "calendarId": "7",
+                "calendarUri": "personal",
+                "summary": "Meeting",
+                "dtstart": "2026-06-01T10:00:00+00:00",
+                "dtend": "2026-06-01T11:00:00+00:00",
+                "location": "HQ",
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "taggedWithXor": true,
+                "dtstartClass": "DateTime"
+            }
+        ]
+    ],
+    "create sparse event": [
+        [
+            "events.create",
+            [
+                3,
+                4,
+                "obj-1",
+                "obj-1",
+                []
+            ]
+        ],
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "link.insert",
+            {
+                "id": "",
+                "uid": "",
+                "calendarId": "9",
+                "calendarUri": "",
+                "summary": "",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "taggedWithXor": true,
+                "dtstartClass": null
+            }
+        ]
+    ],
+    "create empty event": [
+        [
+            "events.create",
+            [
+                3,
+                4,
+                "obj-1",
+                "obj-1",
+                []
+            ]
+        ],
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "link.insert",
+            {
+                "id": "",
+                "uid": "",
+                "calendarId": "0",
+                "calendarUri": "",
+                "summary": "",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "taggedWithXor": true,
+                "dtstartClass": null
+            }
+        ]
+    ],
+    "create bad dates and numeric location": [
+        [
+            "events.create",
+            [
+                3,
+                4,
+                "obj-1",
+                "obj-1",
+                []
+            ]
+        ],
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "link.insert",
+            {
+                "id": "new.ics",
+                "uid": "new-uid",
+                "calendarId": "7",
+                "calendarUri": "personal",
+                "summary": "Meeting",
+                "dtstart": null,
+                "dtend": null,
+                "location": "12",
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "taggedWithXor": true,
+                "dtstartClass": null
+            }
+        ]
+    ],
+    "create null location": [
+        [
+            "events.create",
+            [
+                3,
+                4,
+                "obj-1",
+                "obj-1",
+                []
+            ]
+        ],
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "link.insert",
+            {
+                "id": "new.ics",
+                "uid": "new-uid",
+                "calendarId": "7",
+                "calendarUri": "personal",
+                "summary": "Meeting",
+                "dtstart": "2026-06-01T10:00:00+00:00",
+                "dtend": "2026-06-01T11:00:00+00:00",
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "taggedWithXor": true,
+                "dtstartClass": "DateTime"
+            }
+        ]
+    ],
+    "create calendar not resolvable": [
+        [
+            "events.create",
+            [
+                3,
+                4,
+                "obj-1",
+                "obj-1",
+                []
+            ]
+        ],
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "link.insert",
+            {
+                "id": "new.ics",
+                "uid": "new-uid",
+                "calendarId": "7",
+                "calendarUri": "",
+                "summary": "Meeting",
+                "dtstart": "2026-06-01T10:00:00+00:00",
+                "dtend": "2026-06-01T11:00:00+00:00",
+                "location": "HQ",
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "taggedWithXor": true,
+                "dtstartClass": "DateTime"
+            }
+        ]
+    ],
+    "create returns null": [
+        [
+            "events.create",
+            [
+                3,
+                4,
+                "obj-1",
+                "obj-1",
+                []
+            ]
+        ],
+        [
+            "thrown",
+            "Exception",
+            "Failed to create calendar event",
+            0
+        ]
+    ],
+    "create no user": [
+        [
+            "thrown",
+            "Exception",
+            "No user logged in",
+            0
+        ]
+    ],
+    "link found": [
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "dav.objects",
+            8
+        ],
+        [
+            "dav.object",
+            8,
+            "one.ics"
+        ],
+        [
+            "link.insert",
+            {
+                "id": "one.ics",
+                "uid": "ev-1",
+                "calendarId": "8",
+                "calendarUri": "work",
+                "summary": "Kickoff",
+                "dtstart": "2026-06-01T10:00:00+00:00",
+                "dtend": "2026-06-01T11:00:00+00:00",
+                "location": "HQ",
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "taggedWithXor": false,
+                "dtstartClass": "DateTime"
+            }
+        ]
+    ],
+    "link not found": [
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "dav.objects",
+            8
+        ],
+        [
+            "dav.object",
+            8,
+            "one.ics"
+        ],
+        [
+            "thrown",
+            "Exception",
+            "Calendar event ev-2 not found on calendar work",
+            0
+        ]
+    ],
+    "link unknown calendar": [
+        [
+            "dav.calendars",
+            "principals/users/alice"
+        ],
+        [
+            "thrown",
+            "Exception",
+            "Calendar event ev-1 not found on calendar nope",
+            0
+        ]
+    ],
+    "link no user": [
+        [
+            "thrown",
+            "Exception",
+            "No user logged in",
+            0
+        ]
+    ]
+}

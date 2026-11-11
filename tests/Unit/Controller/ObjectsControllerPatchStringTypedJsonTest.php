@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -37,6 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
@@ -49,6 +51,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Unit tests for the string-typed JSON restore on both PATCH doors.
@@ -81,7 +84,7 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 		// controller also asks the container for 'userId' after a save.
 		$this->container->method('get')->willReturnCallback(
 			static function (string $id): mixed {
-				if ($id === SchemaTypeConverter::class) {
+				if ($id === SchemaTypeConverterInterface::class) {
 					return new SchemaTypeConverter();
 				}
 
@@ -89,7 +92,7 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 			}
 		);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
@@ -153,7 +156,8 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 			// `object` is saveObject()'s first parameter; the controller calls
 			// it with named arguments, which PHP binds onto the mock's own
 			// signature, so position 0 is still the payload.
-			static function (mixed ...$arguments) use (&$captured, $saved): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured, $saved): ObjectEntity {
+				$arguments = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$captured = $arguments[0];
 
 				return $saved;
@@ -239,7 +243,7 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 		$emptyContainer = $this->createMock(ContainerInterface::class);
 		$emptyContainer->method('get')->willReturn(null);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),

@@ -1,0 +1,650 @@
+{
+    "empty": {
+        "ast": {
+            "type": "all",
+            "clauses": []
+        },
+        "errors": []
+    },
+    "scalars": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "leaf",
+                    "field": "status",
+                    "operator": "equals",
+                    "operand": "open"
+                },
+                {
+                    "type": "leaf",
+                    "field": "count",
+                    "operator": "equals",
+                    "operand": 3
+                },
+                {
+                    "type": "leaf",
+                    "field": "flag",
+                    "operator": "equals",
+                    "operand": true
+                },
+                {
+                    "type": "leaf",
+                    "field": "none",
+                    "operator": "equals",
+                    "operand": null
+                },
+                {
+                    "type": "leaf",
+                    "field": "7",
+                    "operator": "equals",
+                    "operand": "numeric-key"
+                }
+            ]
+        },
+        "errors": []
+    },
+    "bare-list": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "leaf",
+                    "field": "status",
+                    "operator": "in",
+                    "operand": [
+                        "open",
+                        "closed"
+                    ]
+                }
+            ]
+        },
+        "errors": []
+    },
+    "empty-list": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-empty-list",
+                "ruleKey": "rule-empty-list",
+                "field": "status",
+                "value": [],
+                "message": "Notification \"rule-empty-list\" trigger.filter.status is an empty list; a membership test over no values can never match."
+            }
+        ]
+    },
+    "op-key": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-operator-key",
+                "ruleKey": "rule-op-key",
+                "field": "trigger.filter.status",
+                "value": "equals",
+                "message": "Notification \"rule-op-key\" trigger.filter.status names the operator under \"op\"; the expected key is \"operator\" (got \"op\": 'equals')."
+            }
+        ]
+    },
+    "op-key-array": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-operator-key",
+                "ruleKey": "rule-op-key-array",
+                "field": "trigger.filter.status",
+                "value": [
+                    "a"
+                ],
+                "message": "Notification \"rule-op-key-array\" trigger.filter.status names the operator under \"op\"; the expected key is \"operator\" (got \"op\": array (\n  0 => 'a',\n))."
+            }
+        ]
+    },
+    "no-operator": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-shape",
+                "ruleKey": "rule-no-operator",
+                "field": "trigger.filter.status",
+                "value": {
+                    "value": "x"
+                },
+                "message": "Notification \"rule-no-operator\" trigger.filter.status is a map without an \"operator\" key; it is neither a scalar, a list, nor an operator object."
+            }
+        ]
+    },
+    "unknown-operator": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-operator",
+                "ruleKey": "rule-unknown-operator",
+                "field": "trigger.filter.status.operator",
+                "value": "like",
+                "message": "Notification \"rule-unknown-operator\" trigger.filter.status.operator must be one of [equals, notEquals, withinNext, olderThan, in, notIn, before, after]; got \"like\"."
+            }
+        ]
+    },
+    "numeric-operator": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-operator",
+                "ruleKey": "rule-numeric-operator",
+                "field": "trigger.filter.status.operator",
+                "value": "5",
+                "message": "Notification \"rule-numeric-operator\" trigger.filter.status.operator must be one of [equals, notEquals, withinNext, olderThan, in, notIn, before, after]; got \"5\"."
+            }
+        ]
+    },
+    "missing-value": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-missing-value",
+                "ruleKey": "rule-missing-value",
+                "field": "trigger.filter.status.value",
+                "value": null,
+                "message": "Notification \"rule-missing-value\" trigger.filter.status uses operator \"equals\" and therefore requires a \"value\" key."
+            }
+        ]
+    },
+    "missing-values": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-missing-value",
+                "ruleKey": "rule-missing-values",
+                "field": "trigger.filter.status.values",
+                "value": null,
+                "message": "Notification \"rule-missing-values\" trigger.filter.status uses operator \"in\" and therefore requires a \"values\" key."
+            }
+        ]
+    },
+    "equals-ok": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "leaf",
+                    "field": "status",
+                    "operator": "equals",
+                    "operand": "open"
+                }
+            ]
+        },
+        "errors": []
+    },
+    "not-equals-array": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-value",
+                "ruleKey": "rule-not-equals-array",
+                "field": "trigger.filter.status.value",
+                "value": [
+                    "a"
+                ],
+                "message": "Notification \"rule-not-equals-array\" trigger.filter.status uses operator \"notEquals\" and therefore requires a scalar \"value\"; got an array."
+            }
+        ]
+    },
+    "equals-null": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "leaf",
+                    "field": "status",
+                    "operator": "equals",
+                    "operand": null
+                }
+            ]
+        },
+        "errors": []
+    },
+    "in-ok": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "leaf",
+                    "field": "status",
+                    "operator": "in",
+                    "operand": [
+                        "a",
+                        "b"
+                    ]
+                }
+            ]
+        },
+        "errors": []
+    },
+    "in-empty": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-values",
+                "ruleKey": "rule-in-empty",
+                "field": "trigger.filter.status.values",
+                "value": [],
+                "message": "Notification \"rule-in-empty\" trigger.filter.status uses operator \"in\" and therefore requires \"values\" to be a non-empty list."
+            }
+        ]
+    },
+    "not-in-map": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-values",
+                "ruleKey": "rule-not-in-map",
+                "field": "trigger.filter.status.values",
+                "value": {
+                    "a": 1
+                },
+                "message": "Notification \"rule-not-in-map\" trigger.filter.status uses operator \"notIn\" and therefore requires \"values\" to be a non-empty list."
+            }
+        ]
+    },
+    "not-in-scalar": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-values",
+                "ruleKey": "rule-not-in-scalar",
+                "field": "trigger.filter.status.values",
+                "value": "a",
+                "message": "Notification \"rule-not-in-scalar\" trigger.filter.status uses operator \"notIn\" and therefore requires \"values\" to be a non-empty list."
+            }
+        ]
+    },
+    "within-ok": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "leaf",
+                    "field": "due",
+                    "operator": "withinNext",
+                    "operand": "P7D"
+                }
+            ]
+        },
+        "errors": []
+    },
+    "within-negative": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "leaf",
+                    "field": "due",
+                    "operator": "withinNext",
+                    "operand": "-PT24H"
+                }
+            ]
+        },
+        "errors": []
+    },
+    "within-bad": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-duration",
+                "ruleKey": "rule-within-bad",
+                "field": "trigger.filter.due.value",
+                "value": "7 days",
+                "message": "Notification \"rule-within-bad\" trigger.filter.due uses operator \"withinNext\" and therefore requires an ISO-8601 duration (e.g. \"P7D\", \"PT24H\"); got '7 days'."
+            }
+        ]
+    },
+    "older-int": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-duration",
+                "ruleKey": "rule-older-int",
+                "field": "trigger.filter.due.value",
+                "value": 7,
+                "message": "Notification \"rule-older-int\" trigger.filter.due uses operator \"olderThan\" and therefore requires an ISO-8601 duration (e.g. \"P7D\", \"PT24H\"); got 7."
+            }
+        ]
+    },
+    "older-empty": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-duration",
+                "ruleKey": "rule-older-empty",
+                "field": "trigger.filter.due.value",
+                "value": "",
+                "message": "Notification \"rule-older-empty\" trigger.filter.due uses operator \"olderThan\" and therefore requires an ISO-8601 duration (e.g. \"P7D\", \"PT24H\"); got ''."
+            }
+        ]
+    },
+    "before-now": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "leaf",
+                    "field": "due",
+                    "operator": "before",
+                    "operand": "now"
+                }
+            ]
+        },
+        "errors": []
+    },
+    "before-date": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "leaf",
+                    "field": "due",
+                    "operator": "before",
+                    "operand": "2026-01-01"
+                }
+            ]
+        },
+        "errors": []
+    },
+    "after-duration": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "leaf",
+                    "field": "due",
+                    "operator": "after",
+                    "operand": "-P7D"
+                }
+            ]
+        },
+        "errors": []
+    },
+    "after-bad": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-instant",
+                "ruleKey": "rule-after-bad",
+                "field": "trigger.filter.due.value",
+                "value": "not a date at all",
+                "message": "Notification \"rule-after-bad\" trigger.filter.due uses operator \"after\" and therefore requires \"now\", an ISO-8601 date/date-time, or a signed ISO-8601 duration (\"P7D\" future, \"-P7D\" past); got 'not a date at all'."
+            }
+        ]
+    },
+    "after-array": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-instant",
+                "ruleKey": "rule-after-array",
+                "field": "trigger.filter.due.value",
+                "value": [
+                    "x"
+                ],
+                "message": "Notification \"rule-after-array\" trigger.filter.due uses operator \"after\" and therefore requires \"now\", an ISO-8601 date/date-time, or a signed ISO-8601 duration (\"P7D\" future, \"-P7D\" past); got array (\n  0 => 'x',\n)."
+            }
+        ]
+    },
+    "combinator-ok": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "any",
+                    "clauses": [
+                        {
+                            "type": "leaf",
+                            "field": "a",
+                            "operator": "equals",
+                            "operand": 1
+                        },
+                        {
+                            "type": "leaf",
+                            "field": "b",
+                            "operator": "in",
+                            "operand": [
+                                1
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "errors": []
+    },
+    "combinator-map": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-combinator",
+                "ruleKey": "rule-combinator-map",
+                "field": "trigger.filter.all",
+                "value": {
+                    "a": 1
+                },
+                "message": "Notification \"rule-combinator-map\" trigger.filter.all must be a list of clauses."
+            }
+        ]
+    },
+    "combinator-scalar": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-combinator",
+                "ruleKey": "rule-combinator-scalar",
+                "field": "trigger.filter.any",
+                "value": "x",
+                "message": "Notification \"rule-combinator-scalar\" trigger.filter.any must be a list of clauses."
+            }
+        ]
+    },
+    "combinator-empty": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "all",
+                    "clauses": []
+                }
+            ]
+        },
+        "errors": []
+    },
+    "clause-not-array": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-clause",
+                "ruleKey": "rule-clause-not-array",
+                "field": "trigger.filter.all[0]",
+                "value": "x",
+                "message": "Notification \"rule-clause-not-array\" trigger.filter.all[0] must be a clause object."
+            },
+            {
+                "code": "notification-scheduled-bad-clause",
+                "ruleKey": "rule-clause-not-array",
+                "field": "trigger.filter.all[1]",
+                "value": 3,
+                "message": "Notification \"rule-clause-not-array\" trigger.filter.all[1] must be a clause object."
+            }
+        ]
+    },
+    "clause-no-field": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-clause-field",
+                "ruleKey": "rule-clause-no-field",
+                "field": "trigger.filter.all[0].field",
+                "value": null,
+                "message": "Notification \"rule-clause-no-field\" trigger.filter.all[0] requires a string \"field\"."
+            }
+        ]
+    },
+    "clause-int-field": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-clause-field",
+                "ruleKey": "rule-clause-int-field",
+                "field": "trigger.filter.all[0].field",
+                "value": 4,
+                "message": "Notification \"rule-clause-int-field\" trigger.filter.all[0] requires a string \"field\"."
+            }
+        ]
+    },
+    "clause-bad-operator": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-operator",
+                "ruleKey": "rule-clause-bad-operator",
+                "field": "trigger.filter.any[0].operator",
+                "value": "nope",
+                "message": "Notification \"rule-clause-bad-operator\" trigger.filter.any[0].operator must be one of [equals, notEquals, withinNext, olderThan, in, notIn, before, after]; got \"nope\"."
+            }
+        ]
+    },
+    "clause-op-key": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-filter-operator-key",
+                "ruleKey": "rule-clause-op-key",
+                "field": "trigger.filter.any[0]",
+                "value": "equals",
+                "message": "Notification \"rule-clause-op-key\" trigger.filter.any[0] names the operator under \"op\"; the expected key is \"operator\" (got \"op\": 'equals')."
+            }
+        ]
+    },
+    "nested": {
+        "ast": {
+            "type": "all",
+            "clauses": [
+                {
+                    "type": "all",
+                    "clauses": [
+                        {
+                            "type": "any",
+                            "clauses": [
+                                {
+                                    "type": "leaf",
+                                    "field": "a",
+                                    "operator": "equals",
+                                    "operand": 1
+                                }
+                            ]
+                        },
+                        {
+                            "type": "all",
+                            "clauses": [
+                                {
+                                    "type": "leaf",
+                                    "field": "b",
+                                    "operator": "before",
+                                    "operand": "now"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "errors": []
+    },
+    "nested-errors": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-bad-clause",
+                "ruleKey": "rule-nested-errors",
+                "field": "trigger.filter.all[0].any[0]",
+                "value": "bad",
+                "message": "Notification \"rule-nested-errors\" trigger.filter.all[0].any[0] must be a clause object."
+            },
+            {
+                "code": "notification-scheduled-bad-filter-shape",
+                "ruleKey": "rule-nested-errors",
+                "field": "trigger.filter.all[0].any[1]",
+                "value": {
+                    "field": "a"
+                },
+                "message": "Notification \"rule-nested-errors\" trigger.filter.all[0].any[1] is a map without an \"operator\" key; it is neither a scalar, a list, nor an operator object."
+            }
+        ]
+    },
+    "too-deep": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-filter-too-deep",
+                "ruleKey": "rule-too-deep",
+                "field": "trigger.filter.all[0].all[0].all[0].all[0].all[0].all",
+                "value": 6,
+                "message": "Notification \"rule-too-deep\" trigger.filter.all[0].all[0].all[0].all[0].all[0].all nests combinators deeper than 5 levels."
+            }
+        ]
+    },
+    "mixed": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-empty-list",
+                "ruleKey": "rule-mixed",
+                "field": "bad",
+                "value": [],
+                "message": "Notification \"rule-mixed\" trigger.filter.bad is an empty list; a membership test over no values can never match."
+            }
+        ]
+    },
+    "many-errors": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-empty-list",
+                "ruleKey": "rule-many-errors",
+                "field": "a",
+                "value": [],
+                "message": "Notification \"rule-many-errors\" trigger.filter.a is an empty list; a membership test over no values can never match."
+            },
+            {
+                "code": "notification-scheduled-bad-filter-operator",
+                "ruleKey": "rule-many-errors",
+                "field": "trigger.filter.b.operator",
+                "value": "x",
+                "message": "Notification \"rule-many-errors\" trigger.filter.b.operator must be one of [equals, notEquals, withinNext, olderThan, in, notIn, before, after]; got \"x\"."
+            },
+            {
+                "code": "notification-scheduled-bad-combinator",
+                "ruleKey": "rule-many-errors",
+                "field": "trigger.filter.all",
+                "value": "y",
+                "message": "Notification \"rule-many-errors\" trigger.filter.all must be a list of clauses."
+            },
+            {
+                "code": "notification-scheduled-bad-filter-values",
+                "ruleKey": "rule-many-errors",
+                "field": "trigger.filter.c.values",
+                "value": [],
+                "message": "Notification \"rule-many-errors\" trigger.filter.c uses operator \"in\" and therefore requires \"values\" to be a non-empty list."
+            }
+        ]
+    },
+    "no-rule-key": {
+        "ast": null,
+        "errors": [
+            {
+                "code": "notification-scheduled-empty-list",
+                "ruleKey": "",
+                "field": "status",
+                "value": [],
+                "message": "Notification \"\" trigger.filter.status is an empty list; a membership test over no values can never match."
+            }
+        ]
+    }
+}

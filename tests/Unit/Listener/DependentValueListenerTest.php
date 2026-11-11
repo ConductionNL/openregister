@@ -30,13 +30,18 @@ use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Service\Rules\DependentValueTable;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * REQ-REO-005 on the one evaluation point.
  *
  * @package OCA\OpenRegister\Tests\Unit\Listener
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class DependentValueListenerTest extends TestCase {
 
@@ -97,8 +102,7 @@ class DependentValueListenerTest extends TestCase {
 
 		return new DependentValueListener(
 			tables: new DependentValueTable(),
-			schemas: $mapper,
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
+			lookup: $this->eventSchemaLookup($mapper, $this->createMock(originalClassName: LoggerInterface::class))
 		);
 	}//end listener()
 
@@ -107,7 +111,7 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testACreateOutsideTheTableIsRefused(): void {
 		$event = new ObjectCreatingEvent($this->entity(['zaaktype' => 'bezwaar', 'resultaat' => 'verleend']));
@@ -124,7 +128,7 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testACreateInsideTheTableProceeds(): void {
 		$event = new ObjectCreatingEvent($this->entity(['zaaktype' => 'bezwaar', 'resultaat' => 'gegrond']));
@@ -140,7 +144,7 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnUpdateIsJudgedAgainstTheStoredControllingValue(): void {
 		$event = new ObjectUpdatingEvent(
@@ -158,7 +162,7 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASchemaWithNoTableIsUntouched(): void {
 		$event = new ObjectCreatingEvent($this->entity(['zaaktype' => 'klacht', 'resultaat' => 'verleend']));
@@ -176,7 +180,7 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheGuardFailingDoesNotStopTheSave(): void {
 		$mapper = $this->createMock(originalClassName: SchemaMapper::class);
@@ -187,8 +191,7 @@ class DependentValueListenerTest extends TestCase {
 
 		$listener = new DependentValueListener(
 			tables: new DependentValueTable(),
-			schemas: $mapper,
-			logger: $logger
+			lookup: $this->eventSchemaLookup($mapper, $logger)
 		);
 
 		$event = new ObjectCreatingEvent($this->entity(['zaaktype' => 'bezwaar', 'resultaat' => 'verleend']));
@@ -205,10 +208,10 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheListenerIsSubscribedToBothWriteEvents(): void {
-		$application = file_get_contents(__DIR__ . '/../../../lib/AppInfo/Application.php');
+		$application = file_get_contents(__DIR__ . '/../../../lib/Listener/ListenerRegistrar.php');
 
 		$this->assertIsString($application);
 		$this->assertStringContainsString(
@@ -220,4 +223,14 @@ class DependentValueListenerTest extends TestCase {
 			$application
 		);
 	}//end testTheListenerIsSubscribedToBothWriteEvents()
+
+	/**
+	 * The schema lookup a listener under test resolves through.
+	 */
+	private function eventSchemaLookup(SchemaMapperInterface $schemas, LoggerInterface $logger): EventSchemaLookup {
+		return new EventSchemaLookup(
+			new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemas, $this->createMock(MagicMapperInterface::class)),
+			$logger
+		);
+	}
 }//end class

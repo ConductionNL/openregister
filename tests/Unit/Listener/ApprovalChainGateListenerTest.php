@@ -40,15 +40,23 @@ use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\ApprovalChainGateListener;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
+use OCA\OpenRegister\Service\Task\ResolvedChain;
+use OCA\OpenRegister\Service\Task\SequenceAnchor;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
+ * @uses \OCA\OpenRegister\Listener\ChainGateRun
+ * @uses \OCA\OpenRegister\Listener\LifecycleAttempt
+ * @uses \OCA\OpenRegister\Listener\LifecycleDeclaration
+ * @uses \OCA\OpenRegister\Listener\LifecycleEdit
+ * @uses \OCA\OpenRegister\Listener\LifecycleEditReader
  * @covers \OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
@@ -56,6 +64,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
  */
 class ApprovalChainGateListenerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
@@ -68,6 +78,12 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->sequenceMapper = $this->createMock(TaskSequenceMapper::class);
 		$this->sequenceService = $this->createMock(TaskSequenceService::class);
+		$this->sequenceService->method('chain')->willReturnCallback(
+			static fn (array $template, ?array $tierPositions = null): ResolvedChain => new ResolvedChain(template: $template, tierPositions: $tierPositions)
+		);
+		$this->sequenceService->method('anchorOf')->willReturnCallback(
+			static fn (string $objectUuid, ?string $requesterId, ?int $registerId = null): SequenceAnchor => new SequenceAnchor(objectUuid: $objectUuid, requesterId: $requesterId, registerId: $registerId)
+		);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$logger = $this->createMock(LoggerInterface::class);
 
@@ -76,13 +92,10 @@ class ApprovalChainGateListenerTest extends TestCase {
 		// The REAL compiler on purpose: it is a pure function of the schema,
 		// and the gate's contract includes what the compiler derives.
 		$this->listener = new ApprovalChainGateListener(
-			$this->schemaMapper,
-			$this->sequenceMapper,
-			$this->sequenceService,
-			new ApprovalChainAnnotationInstaller(logger: $logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())),
+			new ApprovalChainSequences($this->sequenceMapper, $this->sequenceService, new ApprovalChainAnnotationInstaller(logger: $logger)),
 			$this->userSession,
-			$logger,
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
+			$logger
 		);
 	}//end setUp()
 
@@ -191,13 +204,9 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->sequenceService->expects($this->once())
 			->method('provision')
 			->with(
-				$this->callback(
-					static fn (array $template): bool => ($template['name'] === 'submit-approval')
-						&& (count($template['positions']) === 2)
-				),
-				'obj-1',
-				'requester1',
-				[['order' => 1, 'role' => 'finance-clerks', 'min' => 1, 'minAmount' => 0]]
+				$this->callback(static fn (ResolvedChain $chain): bool => $chain->template['name'] === 'submit-approval'
+					&& count($chain->template['positions']) === 2 && $chain->tierPositions === [['order' => 1, 'role' => 'finance-clerks', 'min' => 1, 'minAmount' => 0]]),
+				$this->callback(static fn (SequenceAnchor $anchor): bool => $anchor->objectUuid === 'obj-1' && $anchor->requesterId === 'requester1')
 			);
 
 		$this->listener->handle($event);
@@ -245,6 +254,47 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->assertSame('approval-chain-pending', $event->getErrors()['code']);
 	}//end testARejectedSequenceIsKeptAndANewOneOpens()
 
+	public function testAnUndecidedSequenceIsKeptAndANewOneOpens(): void {
+		$this->gatedSchema();
+		$event = $this->event('test-commitment', 'draft', 'submitted');
+
+		$this->sequenceMapper->method('findNewestForAnchor')->willReturn($this->sequence(TaskSequence::STATUS_UNDECIDED));
+		$this->sequenceService->expects($this->once())->method('provision');
+
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('approval-chain-pending', $event->getErrors()['code']);
+	}//end testAnUndecidedSequenceIsKeptAndANewOneOpens()
+
+	public function testADeclaredApprovingSetIsCompiledTrimmedAndLowercased(): void {
+		$schema = $this->gatedSchema();
+		$config = $schema->getConfiguration();
+		$config['x-openregister-approval-chains']['submit-approval']['approvingOutcomes'] = [' Approved ', '', 7, 'SIGNED'];
+		$schema->setConfiguration($config);
+
+		$template = (new ApprovalChainAnnotationInstaller(logger: $this->createMock(LoggerInterface::class)))
+			->compile(schema: $schema, chainKey: 'submit-approval');
+
+		$this->assertSame(['approved', 'signed'], $template['approvingOutcomes']);
+	}//end testADeclaredApprovingSetIsCompiledTrimmedAndLowercased()
+
+	public function testAChainWithoutAUsableApprovingSetCompilesWithoutTheKey(): void {
+		$installer = new ApprovalChainAnnotationInstaller(logger: $this->createMock(LoggerInterface::class));
+		$schema = $this->gatedSchema();
+
+		$this->assertArrayNotHasKey('approvingOutcomes', $installer->compile(schema: $schema, chainKey: 'submit-approval'));
+
+		$config = $schema->getConfiguration();
+		$config['x-openregister-approval-chains']['submit-approval']['approvingOutcomes'] = ['  ', ''];
+		$schema->setConfiguration($config);
+		$this->assertArrayNotHasKey('approvingOutcomes', $installer->compile(schema: $schema, chainKey: 'submit-approval'));
+
+		$config['x-openregister-approval-chains']['submit-approval']['approvingOutcomes'] = 'approved';
+		$schema->setConfiguration($config);
+		$this->assertArrayNotHasKey('approvingOutcomes', $installer->compile(schema: $schema, chainKey: 'submit-approval'));
+	}//end testAChainWithoutAUsableApprovingSetCompilesWithoutTheKey()
+
 	public function testHighAmountObjectFreezesTheHigherTier(): void {
 		$this->gatedSchema();
 		$event = $this->event('test-commitment', 'draft', 'submitted', amount: 250000);
@@ -253,10 +303,8 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->sequenceService->expects($this->once())
 			->method('provision')
 			->with(
-				$this->anything(),
-				'obj-1',
-				'requester1',
-				[['order' => 1, 'role' => 'finance-directors', 'min' => 1, 'minAmount' => 100000]]
+				$this->callback(static fn (ResolvedChain $chain): bool => $chain->tierPositions === [['order' => 1, 'role' => 'finance-directors', 'min' => 1, 'minAmount' => 100000]]),
+				$this->callback(static fn (SequenceAnchor $anchor): bool => $anchor->objectUuid === 'obj-1' && $anchor->requesterId === 'requester1')
 			);
 
 		$this->listener->handle($event);
@@ -285,13 +333,11 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->sequenceService->expects($this->once())
 			->method('provision')
 			->with(
-				$this->anything(),
-				'obj-1',
-				'requester1',
-				[
+				$this->callback(static fn (ResolvedChain $chain): bool => $chain->tierPositions === [
 					['order' => 1, 'role' => 'teamleider', 'min' => 1, 'minAmount' => 1],
 					['order' => 2, 'role' => 'facility_manager', 'min' => 1, 'minAmount' => 1000000],
-				]
+				]),
+				$this->callback(static fn (SequenceAnchor $anchor): bool => $anchor->objectUuid === 'obj-1' && $anchor->requesterId === 'requester1')
 			);
 
 		$this->listener->handle($event);

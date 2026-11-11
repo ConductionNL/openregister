@@ -43,7 +43,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
  */
-class AccessLinkMapper extends QBMapper {
+class AccessLinkMapper extends QBMapper implements AccessLinkMapperInterface {
 
 	/**
 	 * Constructor.

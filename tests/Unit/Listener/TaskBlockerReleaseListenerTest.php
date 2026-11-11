@@ -29,6 +29,7 @@ use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
 
 /**
  * The release is post-event work on the committed terminal event.
@@ -69,10 +70,10 @@ class TaskBlockerReleaseListenerTest extends TestCase {
 		$recorded = [];
 		$service = $this->createMock(TaskService::class);
 		$service->method('record')->willReturnCallback(
-			function (string $uuid, string $action, ?string $actor, string $reason) use (&$recorded): Task {
-				$recorded[] = [$uuid, $action, $actor, $reason];
+			function (TaskAuditEntry $entry) use (&$recorded): Task {
+				$recorded[] = [$entry->uuid, $entry->action, $entry->actor, $entry->reason];
 
-				return $this->task(uuid: $uuid, state: Task::STATE_ACTIVE);
+				return $this->task(uuid: $entry->uuid, state: Task::STATE_ACTIVE);
 			}
 		);
 
@@ -113,7 +114,8 @@ class TaskBlockerReleaseListenerTest extends TestCase {
 		$recorded = [];
 		$service = $this->createMock(TaskService::class);
 		$service->method('record')->willReturnCallback(
-			function (string $uuid) use (&$recorded): Task {
+			function (TaskAuditEntry $entry) use (&$recorded): Task {
+				$uuid = $entry->uuid;
 				if ($uuid === 'task-advice') {
 					throw new RuntimeException('database went away');
 				}
@@ -142,4 +144,19 @@ class TaskBlockerReleaseListenerTest extends TestCase {
 		$listener = new TaskBlockerReleaseListener(tasks: $tasks, service: $this->createMock(TaskService::class), logger: new NullLogger());
 		$listener->handle(event: new Event());
 	}//end testAnotherEventIsIgnored()
+
+	/**
+	 * A failing dependants lookup is logged and releases nothing.
+	 *
+	 * @return void
+	 */
+	public function testAFailingLookupReleasesNothing(): void {
+		$tasks = $this->createMock(TaskMapper::class);
+		$tasks->method('findOpenBlockedBy')->willThrowException(new RuntimeException('database went away'));
+		$service = $this->createMock(TaskService::class);
+		$service->expects($this->never())->method('record');
+
+		$listener = new TaskBlockerReleaseListener(tasks: $tasks, service: $service, logger: new NullLogger());
+		$listener->handle(event: new TaskTerminalEvent(task: $this->task(uuid: 'task-visit')));
+	}//end testAFailingLookupReleasesNothing()
 }//end class
