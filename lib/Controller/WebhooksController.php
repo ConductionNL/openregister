@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\RequestListPage;
 use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
@@ -493,6 +494,30 @@ class WebhooksController extends Controller {
 	}//end forbiddenResponse()
 
 	/**
+	 * The 404 answer for a webhook id that does not exist.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function webhookNotFound(): JSONResponse {
+		return new JSONResponse(data: ['error' => 'Webhook not found'], statusCode: 404);
+	}//end webhookNotFound()
+
+	/**
+	 * Log a failed webhook action as an error and answer 500.
+	 *
+	 * @param string               $logMessage The error line to log.
+	 * @param array<string, mixed> $context    The log context after the file and line.
+	 * @param array<string, mixed> $data       The 500 response body.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function loggedFailure(string $logMessage, array $context, array $data): JSONResponse {
+		$this->logger->error(message: $logMessage, context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context));
+
+		return new JSONResponse(data: $data, statusCode: 500);
+	}//end loggedFailure()
+
+	/**
 	 * List all webhooks
 	 *
 	 * Returns a JSON response containing an array of all webhooks in the system.
@@ -531,32 +556,9 @@ class WebhooksController extends Controller {
 			// Get request parameters for filtering and searching.
 			$params = $this->request->getParams();
 
-			// Extract pagination and search parameters.
-			$limit = null;
-			if (isset($params['_limit']) === true) {
-				$limit = (int)$params['_limit'];
-			}
-
-			$offset = null;
-			if (isset($params['_offset']) === true) {
-				$offset = (int)$params['_offset'];
-			}
-
-			$page = null;
-			if (isset($params['_page']) === true) {
-				$page = (int)$params['_page'];
-			}
-
-			// Extract extend parameter for additional properties.
-			$extend = $params['_extend'] ?? [];
-			if (is_string($extend) === true) {
-				$extend = [$extend];
-			}
-
-			// Convert page to offset if provided (page-based pagination).
-			if ($page !== null && $limit !== null) {
-				$offset = ($page - 1) * $limit;
-			}
+			$listPage = new RequestListPage(params: $params);
+			$limit = $listPage->limit();
+			$offset = $listPage->offset();
 
 			// Extract filters from request parameters.
 			$filters = $params['filters'] ?? [];
@@ -586,20 +588,14 @@ class WebhooksController extends Controller {
 				statusCode: 200
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error listing webhooks: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error listing webhooks: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to list webhooks',
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end index()
@@ -640,28 +636,17 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: $webhook);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error retrieving webhook: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error retrieving webhook: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to retrieve webhook',
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end show()
@@ -731,21 +716,15 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: $webhook, statusCode: 201);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error creating webhook: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error creating webhook: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'fields' => array_keys($this->request->getParams()),
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to create webhook: ' . $e->getMessage(),
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end create()
@@ -791,29 +770,18 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: $webhook);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error updating webhook: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error updating webhook: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'fields' => array_keys($this->request->getParams()),
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to update webhook: ' . $e->getMessage(),
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end update()
@@ -865,28 +833,17 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: null, statusCode: 204);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error deleting webhook: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error deleting webhook: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to delete webhook',
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end destroy()
@@ -1002,46 +959,29 @@ class WebhooksController extends Controller {
 
 			return $this->failedDeliveryResponse(webhookId: $id, message: 'Test webhook delivery failed');
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (GuzzleException $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error testing webhook: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error testing webhook: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'success' => false,
 					'message' => 'Test webhook delivery failed: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error testing webhook: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'trace' => $e->getTraceAsString(),
 				]
 			);
-
-			return new JSONResponse(
+		} catch (\Exception $e) {
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error testing webhook: ' . $e->getMessage(),
+				context: [
+					'id' => $id,
+					'trace' => $e->getTraceAsString(),
+				],
 				data: [
 					'error' => 'Failed to test webhook: ' . $e->getMessage(),
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end test()
@@ -1120,28 +1060,17 @@ class WebhooksController extends Controller {
 				statusCode: 200
 			);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error retrieving webhook logs: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error retrieving webhook logs: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to retrieve webhook logs',
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end logs()
@@ -1185,28 +1114,17 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: $stats);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error retrieving webhook log statistics: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error retrieving webhook log statistics: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to retrieve webhook log statistics',
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end logStats()
@@ -1324,11 +1242,11 @@ class WebhooksController extends Controller {
 	 * @return JSONResponse The 500 response.
 	 */
 	private function logsFailed(\Exception $e): JSONResponse {
-		$this->logger->error(
-			message: '[WebhooksController] Error retrieving webhook logs: ' . $e->getMessage(),
-			context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTraceAsString()]
+		return $this->loggedFailure(
+			logMessage: '[WebhooksController] Error retrieving webhook logs: ' . $e->getMessage(),
+			context: ['trace' => $e->getTraceAsString()],
+			data: ['error' => 'Failed to retrieve webhook logs: ' . $e->getMessage()]
 		);
-		return new JSONResponse(data: ['error' => 'Failed to retrieve webhook logs: ' . $e->getMessage()], statusCode: 500);
 	}//end logsFailed()
 
 	/**
@@ -1362,11 +1280,11 @@ class WebhooksController extends Controller {
 			);
 			return new JSONResponse(data: ['error' => 'Webhook log not found'], statusCode: 404);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error retrying webhook: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'log_id' => $logId, 'trace' => $e->getTraceAsString()]
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error retrying webhook: ' . $e->getMessage(),
+				context: ['log_id' => $logId, 'trace' => $e->getTraceAsString()],
+				data: ['error' => 'Failed to retry webhook']
 			);
-			return new JSONResponse(data: ['error' => 'Failed to retry webhook'], statusCode: 500);
 		}
 	}//end retry()
 

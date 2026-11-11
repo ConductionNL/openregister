@@ -47,10 +47,12 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaLookup;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaRegisterReads;
 use OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
@@ -169,44 +171,86 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private bool $warnUnlinkable = false;
 
 	/**
+	 * Event dispatcher for schema events.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Schema property validator for validation.
+	 *
+	 * @var PropertyValidatorHandlerInterface
+	 */
+	private readonly PropertyValidatorHandlerInterface $validator;
+
+	/**
+	 * Organisation mapper for multi-tenancy.
+	 *
+	 * @var OrganisationMapperInterface
+	 */
+	protected readonly OrganisationMapperInterface $organisationMapper;
+
+	/**
+	 * User session for current user context.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for RBAC checks.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Structured logger (R07: surfaces unknown annotation keys).
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Verifies every declared action; a Closure returns it on first use, which
+	 * breaks the construction cycle through the flow services. Null only in a
+	 * hand-built test: the shape refusals still fire, only the questions about
+	 * other records are skipped.
+	 *
+	 * @var ObjectActionValidatorInterface|Closure|null
+	 */
+	private readonly ObjectActionValidatorInterface|Closure|null $objectActions;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes mapper with database connection and required dependencies
 	 * for multi-tenancy, RBAC, validation, and event dispatching.
 	 *
-	 * @param IDBConnection $db Database connection for queries
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for schema events
-	 * @param PropertyValidatorHandlerInterface $validator Schema property validator for validation
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IGroupManager $groupManager Group manager for RBAC checks
-	 * @param IAppConfig $appConfig App configuration for multitenancy settings
-	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
-	 * @param ObjectActionValidatorInterface|Closure|null $objectActions Verifies every declared action, the flows macros bind to included;
-	 *                                                         a Closure returns it on first use, which breaks the
-	 *                                                         construction cycle through the flow services.
+	 * @param IDBConnection        $db        Database connection for queries
+	 * @param TenancyServices      $tenancy   The organisation mapper, user session and group manager the tenancy and RBAC checks read
+	 * @param IAppConfig           $appConfig App configuration for multitenancy settings
+	 * @param SchemaMapperServices $services  The event dispatcher, property validator, logger and action checks
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly PropertyValidatorHandlerInterface $validator,
-		protected readonly OrganisationMapperInterface $organisationMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		// LAST AND NULLABLE so every existing construction of this mapper keeps
-		// working. Nextcloud's container always supplies it; null happens only
-		// in a hand-built test, and then the SHAPE refusals below still fire —
-		// only the questions about other records (the bound flow, the step
-		// nodes, the saver) are skipped, which the save says out loud rather
-		// than passing over in silence.
-		private readonly ObjectActionValidatorInterface|Closure|null $objectActions = null,
+		SchemaMapperServices $services,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
+
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession        = $tenancy->userSession;
+		$this->groupManager       = $tenancy->groupManager;
+		$this->eventDispatcher    = $services->eventDispatcher;
+		$this->validator          = $services->validator;
+		$this->logger             = $services->logger;
+		$this->objectActions      = $services->objectActions;
 
 		// Assign appConfig to trait's protected property.
 		$this->appConfig = $appConfig;

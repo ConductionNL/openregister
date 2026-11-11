@@ -402,7 +402,7 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	 */
 	private function submit(CaseTimerArmRun $run): bool {
 		try {
-			$this->timers->arm(config: $run->config, actor: $run->actor);
+			$this->timers->arm(config: $run->config, act: FlowTimerAct::of(actor: $run->actor));
 
 			return true;
 		} catch (Throwable $failure) {

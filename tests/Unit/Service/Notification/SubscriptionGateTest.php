@@ -35,6 +35,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCP\Activity\IManager as IActivityManager;
@@ -70,9 +71,9 @@ class SubscriptionGateTest extends TestCase {
 
 		$sent       = [];
 		$ncSender   = $this->createMock(NcNotificationSender::class);
-		$ncSender->method('send')->willReturnCallback(
-			static function (string $uid) use (&$sent): string {
-				$sent[] = $uid;
+		$ncSender->method('notify')->willReturnCallback(
+			static function (InAppNotice $notice) use (&$sent): string {
+				$sent[] = $notice->uid;
 				return 'dispatched';
 			}
 		);

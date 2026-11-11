@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -66,16 +67,27 @@ final class MapperWiring {
 	 * @return SchemaMapper The mapper.
 	 */
 	private static function schemaMapper(ContainerInterface $container): SchemaMapper {
-		return new SchemaMapper(
-			db: $container->get('OCP\IDBConnection'),
-			eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-			validator: $container->get(PropertyValidatorHandlerInterface::class),
+		// Resolved in constructor order: the registrar test pins the order the container is asked.
+		$db              = $container->get('OCP\IDBConnection');
+		$eventDispatcher = $container->get('OCP\EventDispatcher\IEventDispatcher');
+		$validator       = $container->get(PropertyValidatorHandlerInterface::class);
+		$tenancy         = new TenancyServices(
 			organisationMapper: $container->get(OrganisationMapperInterface::class),
 			userSession: $container->get('OCP\IUserSession'),
-			groupManager: $container->get('OCP\IGroupManager'),
-			appConfig: $container->get('OCP\IAppConfig'),
-			logger: $container->get('Psr\Log\LoggerInterface'),
-			objectActions: static fn (): ObjectActionValidatorInterface => $container->get(ObjectActionValidatorInterface::class)
+			groupManager: $container->get('OCP\IGroupManager')
+		);
+		$appConfig       = $container->get('OCP\IAppConfig');
+
+		return new SchemaMapper(
+			db: $db,
+			tenancy: $tenancy,
+			appConfig: $appConfig,
+			services: new SchemaMapperServices(
+				eventDispatcher: $eventDispatcher,
+				validator: $validator,
+				logger: $container->get('Psr\Log\LoggerInterface'),
+				objectActions: static fn (): ObjectActionValidatorInterface => $container->get(ObjectActionValidatorInterface::class)
+			)
 		);
 	}//end schemaMapper()
 
@@ -87,22 +99,31 @@ final class MapperWiring {
 	 * @return RegisterMapper The mapper.
 	 */
 	private static function registerMapper(ContainerInterface $container): RegisterMapper {
+		// Resolved in constructor order: the registrar test pins the order the container is asked.
+		$db              = $container->get('OCP\IDBConnection');
+		$schemaMapper    = $container->get(SchemaMapperInterface::class);
+		$eventDispatcher = $container->get('OCP\EventDispatcher\IEventDispatcher');
+		$tenancy         = new TenancyServices(
+			organisationMapper: $container->get(OrganisationMapperInterface::class),
+			userSession: $container->get('OCP\IUserSession'),
+			groupManager: $container->get('OCP\IGroupManager')
+		);
+		$appConfig       = $container->get('OCP\IAppConfig');
+
 		return new RegisterMapper(
-			db: $container->get('OCP\IDBConnection'),
-			schemaMapper: $container->get(SchemaMapperInterface::class),
-			eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-			container: $container,
-			tenancy: new TenancyServices(
-				organisationMapper: $container->get(OrganisationMapperInterface::class),
-				userSession: $container->get('OCP\IUserSession'),
-				groupManager: $container->get('OCP\IGroupManager')
-			),
-			appConfig: $container->get('OCP\IAppConfig'),
-			// Explicitly wired: this factory overrides autowiring, so an
-			// argument omitted here is never supplied at all. That is how
-			// RegisterMapper ran with four dead logging branches
-			// (openregister#2820).
-			logger: $container->get('Psr\Log\LoggerInterface')
+			db: $db,
+			tenancy: $tenancy,
+			appConfig: $appConfig,
+			services: new RegisterMapperServices(
+				schemaMapper: $schemaMapper,
+				container: $container,
+				eventDispatcher: $eventDispatcher,
+				// Explicitly wired: this factory overrides autowiring, so an
+				// argument omitted here is never supplied at all. That is how
+				// RegisterMapper ran with four dead logging branches
+				// (openregister#2820).
+				logger: $container->get('Psr\Log\LoggerInterface')
+			)
 		);
 	}//end registerMapper()
 

@@ -74,6 +74,19 @@ class ShippedConfigurationGuard {
 	public const ACTION_DECIDED = 'configuration.conflict.decided';
 
 	/**
+	 * The divergence answer for a schema with no shipped baseline recorded.
+	 *
+	 * @var array{baseline: false, app: '', appVersion: '', recordedAt: '', divergences: array{}}
+	 */
+	private const NO_BASELINE_DIVERGENCE = [
+		'baseline' => false,
+		'app' => '',
+		'appVersion' => '',
+		'recordedAt' => '',
+		'divergences' => [],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ShippedBaselineStore   $baselines  Where the shipped definitions are kept.
@@ -388,13 +401,7 @@ class ShippedConfigurationGuard {
 		$baseline = $this->baselines->read(subject: $this->baselines->schemaSubject(slug: $slug));
 
 		if ($this->comparator->hasBaseline(baseline: ($baseline['definition'] ?? null)) === false) {
-			return [
-				'baseline' => false,
-				'app' => '',
-				'appVersion' => '',
-				'recordedAt' => '',
-				'divergences' => [],
-			];
+			return self::NO_BASELINE_DIVERGENCE;
 		}
 
 		return [

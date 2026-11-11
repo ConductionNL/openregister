@@ -13,8 +13,12 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\BackgroundJob\WebPushDispatchJob;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NoticeContent;
+use OCA\OpenRegister\Notifications\Service\Notification\NoticeRule;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUserManager;
 use OCP\Notification\IManager as INotificationManager;
@@ -100,21 +104,17 @@ class NcNotificationSenderCharacterisationTest extends TestCase
         return $object;
     }
 
-    public function testSendPersistsTheFullNotificationKeyedByTheObject(): void
+    public function testNotifyPersistsTheFullNotificationKeyedByTheObject(): void
     {
         $sender = new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class));
 
-        $outcome = $sender->send(
-            'alice',
-            $this->object('obj-1', 'Case 1'),
-            'object_updated',
-            'rule-a',
-            'Title',
-            'Body',
-            ['action' => 'update'],
-            'procest',
-            [['label' => ['en' => 'Open']]],
-            true
+        $outcome = $sender->notify(
+            new InAppNotice(
+                uid: 'alice',
+                object: $this->object('obj-1', 'Case 1'),
+                rule: new NoticeRule(name: 'rule-a', originApp: 'procest', actions: [['label' => ['en' => 'Open']]], webPushActive: true),
+                content: new NoticeContent(subjectKey: 'object_updated', subject: 'Title', message: 'Body', context: ['action' => 'update'])
+            )
         );
 
         $this->assertSame(NcNotificationSender::OUTCOME_DISPATCHED, $outcome);
@@ -147,11 +147,18 @@ class NcNotificationSenderCharacterisationTest extends TestCase
         );
     }
 
-    public function testSendWithoutUuidFallsBackToTheRuleNameAndDefaults(): void
+    public function testNotifyWithoutUuidFallsBackToTheRuleNameAndDefaults(): void
     {
         $sender = new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), null, null, $this->policy(true));
 
-        $sender->send('bob', $this->object(null, null), 'object_created', 'rule-b', 'T', '', ['objectTitle' => 'ctx', '_text' => 'ctx']);
+        $sender->notify(
+            new InAppNotice(
+                uid: 'bob',
+                object: $this->object(null, null),
+                rule: new NoticeRule(name: 'rule-b'),
+                content: new NoticeContent(subjectKey: 'object_created', subject: 'T', message: '', context: ['objectTitle' => 'ctx', '_text' => 'ctx'])
+            )
+        );
 
         $this->assertSame(['setObject', 'object', 'rule-b'], $this->calls[2]);
         $subject = $this->calls[3][2];
@@ -164,18 +171,25 @@ class NcNotificationSenderCharacterisationTest extends TestCase
         $this->assertSame('T', $subject['_text']);
     }
 
-    public function testSendWithTheChannelSwitchedOffDoesNothing(): void
+    public function testNotifyWithTheChannelSwitchedOffDoesNothing(): void
     {
         $sender = new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), null, null, $this->policy(false));
 
         $this->assertSame(
             NcNotificationSender::OUTCOME_KILL_SWITCH,
-            $sender->send('a', $this->object('o', 'n'), 'k', 'r', 's', 'm', [])
+            $sender->notify(
+                new InAppNotice(
+                    uid: 'a',
+                    object: $this->object('o', 'n'),
+                    rule: new NoticeRule(name: 'r'),
+                    content: new NoticeContent(subjectKey: 'k', subject: 's', message: 'm', context: [])
+                )
+            )
         );
         $this->assertSame([], $this->calls);
     }
 
-    public function testSendFailureIsLoggedAndReported(): void
+    public function testNotifyFailureIsLoggedAndReported(): void
     {
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects($this->once())->method('warning')->with('Notification "rule-c" to "carol" failed: boom');
@@ -183,7 +197,14 @@ class NcNotificationSenderCharacterisationTest extends TestCase
 
         $this->assertSame(
             NcNotificationSender::OUTCOME_FAILED,
-            $sender->send('carol', $this->object('o', 'n'), 'k', 'rule-c', 's', 'm', [])
+            $sender->notify(
+                new InAppNotice(
+                    uid: 'carol',
+                    object: $this->object('o', 'n'),
+                    rule: new NoticeRule(name: 'rule-c'),
+                    content: new NoticeContent(subjectKey: 'k', subject: 's', message: 'm', context: [])
+                )
+            )
         );
     }
 
@@ -205,7 +226,7 @@ class NcNotificationSenderCharacterisationTest extends TestCase
         return $jobList;
     }
 
-    public function testEnqueueWebPushAddsOneJobPerExistingRecipient(): void
+    public function testEnqueuePushAddsOneJobPerExistingRecipient(): void
     {
         $jobs  = [];
         $users = $this->createMock(IUserManager::class);
@@ -220,7 +241,14 @@ class NcNotificationSenderCharacterisationTest extends TestCase
         );
         $sender = new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), $users, $this->jobList($jobs), $this->policy(true));
 
-        $sender->enqueueWebPush(['alice', '', 'ghost', 'broken', 'bob'], 'rule-a', 'procest', 'Title', 'Body', [['x' => 1]], $this->object('obj-1', 'n'));
+        $sender->enqueuePush(
+            new PushRideAlong(
+                recipients: ['alice', '', 'ghost', 'broken', 'bob'],
+                object: $this->object('obj-1', 'n'),
+                rule: new NoticeRule(name: 'rule-a', originApp: 'procest', actions: [['x' => 1]]),
+                content: new NoticeContent(subjectKey: '', subject: 'Title', message: 'Body')
+            )
+        );
 
         $payload = ['ruleId' => 'rule-a', 'originApp' => 'procest', 'title' => 'Title', 'body' => 'Body', 'tag' => 'openregister-rule-a-obj-1', 'actions' => [['x' => 1]]];
         $this->assertSame(
@@ -232,24 +260,45 @@ class NcNotificationSenderCharacterisationTest extends TestCase
         );
     }
 
-    public function testEnqueueWebPushWithoutUserManagerTrustsTheRecipientsAndTagsByRule(): void
+    public function testEnqueuePushWithoutUserManagerTrustsTheRecipientsAndTagsByRule(): void
     {
         $jobs   = [];
         $sender = new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), null, $this->jobList($jobs));
 
-        $sender->enqueueWebPush(['zed'], 'rule-z', 'openregister', 'T', 'B', [], $this->object(null, null));
+        $sender->enqueuePush(
+            new PushRideAlong(
+                recipients: ['zed'],
+                object: $this->object(null, null),
+                rule: new NoticeRule(name: 'rule-z', originApp: 'openregister', actions: []),
+                content: new NoticeContent(subjectKey: '', subject: 'T', message: 'B')
+            )
+        );
 
         $this->assertCount(1, $jobs);
         $this->assertSame('openregister-rule-z-rule-z', $jobs[0][1]['tag']);
     }
 
-    public function testEnqueueWebPushIsSkippedWithoutJobListOrWithTheSwitchOff(): void
+    public function testEnqueuePushIsSkippedWithoutJobListOrWithTheSwitchOff(): void
     {
         $jobs = [];
         (new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), null, null))
-            ->enqueueWebPush(['a'], 'r', 'o', 't', 'b', [], $this->object('o', 'n'));
+            ->enqueuePush(
+                new PushRideAlong(
+                    recipients: ['a'],
+                    object: $this->object('o', 'n'),
+                    rule: new NoticeRule(name: 'r', originApp: 'o', actions: []),
+                    content: new NoticeContent(subjectKey: '', subject: 't', message: 'b')
+                )
+            );
         (new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), null, $this->jobList($jobs), $this->policy(false)))
-            ->enqueueWebPush(['a'], 'r', 'o', 't', 'b', [], $this->object('o', 'n'));
+            ->enqueuePush(
+                new PushRideAlong(
+                    recipients: ['a'],
+                    object: $this->object('o', 'n'),
+                    rule: new NoticeRule(name: 'r', originApp: 'o', actions: []),
+                    content: new NoticeContent(subjectKey: '', subject: 't', message: 'b')
+                )
+            );
 
         $this->assertSame([], $jobs);
     }
