@@ -58,6 +58,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Golden record of searchObjectsPaginated() over every branch: the object-source short-circuit and
@@ -363,7 +364,7 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 			);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->createMock(DataManipulationHandler::class),
 			deleteHandler: $this->createMock(DeleteObject::class),
 			getHandler: $this->createMock(GetObject::class),
@@ -402,6 +403,6 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
 			container: $container,
 			objectSourceRegistry: $objectSourceRegistry
-		);
+		));
 	}//end service()
 }//end class

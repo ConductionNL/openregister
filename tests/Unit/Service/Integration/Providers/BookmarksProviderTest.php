@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription;
 use OCA\OpenRegister\Db\BookmarkLink;
 use OCA\OpenRegister\Db\BookmarkLinkMapper;
@@ -82,7 +83,7 @@ class BookmarksProviderTest extends TestCase {
 
 		$provider = new BookmarksProvider(new AppProviderDescription($this->buildAppManager(false), $this->buildL10n()), $mapper);
 
-		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 	}//end testListReturnsEmptyWhenBookmarksUninstalled()
 
 	public function testListReturnsEmptyWhenNoLinks(): void {
@@ -91,7 +92,7 @@ class BookmarksProviderTest extends TestCase {
 
 		$provider = new BookmarksProvider(new AppProviderDescription($this->buildAppManager(true), $this->buildL10n()), $mapper);
 
-		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 	}//end testListReturnsEmptyWhenNoLinks()
 
 	public function testListNormalisesLinkRows(): void {
@@ -109,7 +110,7 @@ class BookmarksProviderTest extends TestCase {
 
 		$provider = new BookmarksProvider(new AppProviderDescription($this->buildAppManager(true), $this->buildL10n()), $mapper);
 
-		$rows = $provider->list('reg', 'sch', 'obj-uuid');
+		$rows = $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'));
 
 		$this->assertCount(1, $rows);
 		$this->assertSame('42', $rows[0]['id']);

@@ -28,7 +28,6 @@ namespace OCA\OpenRegister\Command;
 use OCA\OpenRegister\Service\RegisterSchemaLinkageRepairServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -66,19 +65,8 @@ class RelinkRegisterSchemasCommand extends Command {
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:registers:relink-schemas')
-			->setDescription('Rebuild a register\'s schemas list from its physical object tables (dry run by default)')
-			->addOption(
-				'write',
-				null,
-				InputOption::VALUE_NONE,
-				'Apply the changes. Without this flag nothing is modified.'
-			)
-			->addOption(
-				'register',
-				null,
-				InputOption::VALUE_REQUIRED,
-				'Limit to a single register id.'
-			);
+			->setDescription('Rebuild a register\'s schemas list from its physical object tables (dry run by default)');
+		RegisterRepairOptions::declareOn(command: $this, registerDescription: 'Limit to a single register id.');
 	}//end configure()
 
 	/**
@@ -90,19 +78,35 @@ class RelinkRegisterSchemasCommand extends Command {
 	 * @return int The exit code.
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$write      = (bool)$input->getOption('write');
-		$registerId = $input->getOption('register');
-		if ($registerId !== null) {
-			$registerId = (int)$registerId;
-		}
-
-		$report = $this->repair->inspect(registerId: $registerId);
+		$report = $this->repair->inspect(registerId: RegisterRepairOptions::registerId(input: $input));
 
 		if ($report === []) {
 			$output->writeln('<info>No register has recoverable schema linkage. Nothing to do.</info>');
 			return Command::SUCCESS;
 		}
 
+		$this->renderReport(output: $output, report: $report);
+
+		if ((bool)$input->getOption('write') === false) {
+			$output->writeln('');
+			RegisterRepairOptions::writeDryRunNotice(output: $output);
+			return Command::SUCCESS;
+		}
+
+		$this->applyReport(output: $output, report: $report);
+
+		return Command::SUCCESS;
+	}//end execute()
+
+	/**
+	 * Print how many registers can be repaired, then each one's findings.
+	 *
+	 * @param OutputInterface                  $output The console output.
+	 * @param array<int, array<string, mixed>> $report The inspect() report.
+	 *
+	 * @return void
+	 */
+	private function renderReport(OutputInterface $output, array $report): void {
 		$output->writeln(
 			sprintf('<comment>%d register(s) have recoverable schema linkage:</comment>', count($report))
 		);
@@ -111,34 +115,48 @@ class RelinkRegisterSchemasCommand extends Command {
 		foreach ($report as $entry) {
 			$this->renderRegister(output: $output, entry: $entry);
 		}
+	}//end renderReport()
 
-		if ($write === false) {
-			$output->writeln('');
-			$output->writeln('<comment>DRY RUN — nothing was changed. Re-run with --write to apply.</comment>');
-			return Command::SUCCESS;
-		}
-
+	/**
+	 * Repair every reported register and print the tally.
+	 *
+	 * @param OutputInterface                  $output The console output.
+	 * @param array<int, array<string, mixed>> $report The inspect() report.
+	 *
+	 * @return void
+	 */
+	private function applyReport(OutputInterface $output, array $report): void {
 		$changed = 0;
 		foreach ($report as $entry) {
-			$merged = $this->repair->apply(
-				registerId: $entry['registerId'],
-				schemaIds: array_keys($entry['recoverable'])
-			);
-			$output->writeln(
-				sprintf(
-					'  <info>repaired</info> register %d -> schemas [%s]',
-					$entry['registerId'],
-					implode(', ', $merged)
-				)
-			);
+			$this->applyRegister(output: $output, entry: $entry);
 			$changed++;
 		}
 
 		$output->writeln('');
 		$output->writeln(sprintf('<info>%d register(s) changed.</info>', $changed));
+	}//end applyReport()
 
-		return Command::SUCCESS;
-	}//end execute()
+	/**
+	 * Add one register's recoverable schema ids and print its new list.
+	 *
+	 * @param OutputInterface $output The console output.
+	 * @param array           $entry  One inspect() report entry.
+	 *
+	 * @return void
+	 */
+	private function applyRegister(OutputInterface $output, array $entry): void {
+		$merged = $this->repair->apply(
+			registerId: $entry['registerId'],
+			schemaIds: array_keys($entry['recoverable'])
+		);
+		$output->writeln(
+			sprintf(
+				'  <info>repaired</info> register %d -> schemas [%s]',
+				$entry['registerId'],
+				implode(', ', $merged)
+			)
+		);
+	}//end applyRegister()
 
 	/**
 	 * Render one register's findings.
@@ -163,16 +181,26 @@ class RelinkRegisterSchemasCommand extends Command {
 		);
 
 		foreach ($entry['recoverable'] as $schemaId => $rowCount) {
-			$evidence = 'table exists but is empty';
-			if ($rowCount > 0) {
-				$evidence = sprintf('%d row(s)', $rowCount);
-			}
-
-			if ($rowCount < 0) {
-				$evidence = 'row count unavailable';
-			}
-
-			$output->writeln(sprintf('      + schema %d  (%s)', $schemaId, $evidence));
+			$output->writeln(sprintf('      + schema %d  (%s)', $schemaId, self::describeEvidence(rowCount: $rowCount)));
 		}
 	}//end renderRegister()
+
+	/**
+	 * Describe a recoverable schema's evidence by its table's row count.
+	 *
+	 * @param int $rowCount The row count, or a negative number when it is unavailable.
+	 *
+	 * @return string The evidence.
+	 */
+	private static function describeEvidence(int $rowCount): string {
+		if ($rowCount < 0) {
+			return 'row count unavailable';
+		}
+
+		if ($rowCount > 0) {
+			return sprintf('%d row(s)', $rowCount);
+		}
+
+		return 'table exists but is empty';
+	}//end describeEvidence()
 }//end class

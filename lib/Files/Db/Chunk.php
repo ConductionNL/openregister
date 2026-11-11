@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Files\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\TypedFieldsJson;
+use OCA\OpenRegister\Files\Db\Chunk\ChunkFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -79,6 +81,35 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Chunk extends Entity implements JsonSerializable {
+
+	/**
+	 * The serialised fields, in response order: the text content and the
+	 * detection method are stored but not served.
+	 *
+	 * @var list<string>
+	 */
+	private const JSON_FIELDS = [
+		'id',
+		'uuid',
+		'sourceType',
+		'sourceId',
+		'chunkIndex',
+		'startOffset',
+		'endOffset',
+		'language',
+		'languageLevel',
+		'languageConfidence',
+		'indexed',
+		'vectorized',
+		'embeddingProvider',
+		'overlapSize',
+		'owner',
+		'organisation',
+		'checksum',
+		'createdAt',
+		'updatedAt',
+		'positionReference',
+	];
 
 	/**
 	 * UUID.
@@ -231,27 +262,9 @@ class Chunk extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'sourceType', type: 'string');
-		$this->addType(fieldName: 'sourceId', type: 'integer');
-		$this->addType(fieldName: 'textContent', type: 'string');
-		$this->addType(fieldName: 'startOffset', type: 'integer');
-		$this->addType(fieldName: 'endOffset', type: 'integer');
-		$this->addType(fieldName: 'chunkIndex', type: 'integer');
-		$this->addType(fieldName: 'positionReference', type: 'json');
-		$this->addType(fieldName: 'language', type: 'string');
-		$this->addType(fieldName: 'languageLevel', type: 'string');
-		$this->addType(fieldName: 'languageConfidence', type: 'float');
-		$this->addType(fieldName: 'detectionMethod', type: 'string');
-		$this->addType(fieldName: 'indexed', type: 'boolean');
-		$this->addType(fieldName: 'vectorized', type: 'boolean');
-		$this->addType(fieldName: 'embeddingProvider', type: 'string');
-		$this->addType(fieldName: 'overlapSize', type: 'integer');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'checksum', type: 'string');
-		$this->addType(fieldName: 'createdAt', type: 'datetime');
-		$this->addType(fieldName: 'updatedAt', type: 'datetime');
+		foreach (ChunkFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -269,27 +282,6 @@ class Chunk extends Entity implements JsonSerializable {
 	 *     positionReference: array|null}
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'sourceType' => $this->sourceType,
-			'sourceId' => $this->sourceId,
-			'chunkIndex' => $this->chunkIndex,
-			'startOffset' => $this->startOffset,
-			'endOffset' => $this->endOffset,
-			'language' => $this->language,
-			'languageLevel' => $this->languageLevel,
-			'languageConfidence' => $this->languageConfidence,
-			'indexed' => $this->indexed,
-			'vectorized' => $this->vectorized,
-			'embeddingProvider' => $this->embeddingProvider,
-			'overlapSize' => $this->overlapSize,
-			'owner' => $this->owner,
-			'organisation' => $this->organisation,
-			'checksum' => $this->checksum,
-			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
-			'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
-			'positionReference' => $this->positionReference,
-		];
+		return (new TypedFieldsJson())->pick(values: get_object_vars($this), names: self::JSON_FIELDS);
 	}//end jsonSerialize()
 }//end class

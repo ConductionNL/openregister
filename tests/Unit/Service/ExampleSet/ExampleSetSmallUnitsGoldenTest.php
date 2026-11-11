@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use DateTime;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountDirectory;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccounts;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns;
@@ -209,18 +210,18 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 		$values = new ExampleSetValues();
 
 		$gaps = [];
-		$this->assertSame(7, $values->fill(value: 7, context: [], gaps: $gaps));
-		$this->assertSame(null, $values->fill(value: null, context: [], gaps: $gaps));
-		$this->assertSame('plain {text}', $values->fill(value: 'plain {text}', context: [], gaps: $gaps));
-		$this->assertSame(['a', 1, ['b' => true]], $values->fill(value: ['a', 1, ['b' => true]], context: [], gaps: $gaps));
+		$this->assertSame(7, $values->fill(value: 7, scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
+		$this->assertSame(null, $values->fill(value: null, scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
+		$this->assertSame('plain {text}', $values->fill(value: 'plain {text}', scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
+		$this->assertSame(['a', 1, ['b' => true]], $values->fill(value: ['a', 1, ['b' => true]], scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
 		$this->assertSame([], $gaps);
 
 		$gaps = [];
-		$this->assertSame('{{nope:thing}}', $values->fill(value: '{{nope:thing}}', context: [], gaps: $gaps));
+		$this->assertSame('{{nope:thing}}', $values->fill(value: '{{nope:thing}}', scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
 		$this->assertSame(['{{nope:thing}}'], $gaps);
 
 		$gaps = [];
-		$this->assertSame(['x {{nope:thing}} y'], $values->fill(value: ['x {{nope:thing}} y'], context: [], gaps: $gaps));
+		$this->assertSame(['x {{nope:thing}} y'], $values->fill(value: ['x {{nope:thing}} y'], scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
 		$this->assertSame(['{{nope:thing}}'], $gaps);
 	}//end testFillBranches()
 

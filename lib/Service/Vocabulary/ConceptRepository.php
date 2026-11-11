@@ -119,29 +119,56 @@ class ConceptRepository implements ConceptRepositoryInterface {
 		$this->resolutionAttempted = true;
 
 		try {
-			$register = $this->catalog->registers()->find(
-				id: VocabularyImportService::REGISTER,
-				_rbac: false,
-				_multitenancy: false
-			);
-			$scheme = $this->catalog->schemas()->find(
-				id: VocabularyImportService::SCHEMA_SCHEME,
-				_rbac: false,
-				_multitenancy: false
-			);
-			$concept = $this->catalog->schemas()->find(
-				id: VocabularyImportService::SCHEMA_CONCEPT,
-				_rbac: false,
-				_multitenancy: false
-			);
+			$ids = $this->lookUpIds();
 		} catch (Throwable $missing) {
 			return null;
 		}
 
-		$this->resolvedIds = [(int)$register->getId(), (int)$scheme->getId(), (int)$concept->getId()];
+		$this->resolvedIds = $ids;
 
 		return $this->resolvedIds;
 	}//end ids()
+
+	/**
+	 * Look up the vocabulary register, scheme schema and concept schema ids.
+	 *
+	 * @return array{0:int,1:int,2:int} The ids.
+	 *
+	 * @throws Throwable When one of them does not exist.
+	 */
+	private function lookUpIds(): array {
+		return [
+			$this->registerIdOf(slug: VocabularyImportService::REGISTER),
+			$this->schemaIdOf(slug: VocabularyImportService::SCHEMA_SCHEME),
+			$this->schemaIdOf(slug: VocabularyImportService::SCHEMA_CONCEPT),
+		];
+	}//end lookUpIds()
+
+	/**
+	 * The id of a register, read without RBAC or multitenancy (vocabularies are public reference data).
+	 *
+	 * @param string $slug The register's slug.
+	 *
+	 * @return int The id.
+	 *
+	 * @throws Throwable When the register does not exist.
+	 */
+	private function registerIdOf(string $slug): int {
+		return (int)$this->catalog->registers()->find(id: $slug, _rbac: false, _multitenancy: false)->getId();
+	}//end registerIdOf()
+
+	/**
+	 * The id of a schema, read without RBAC or multitenancy (vocabularies are public reference data).
+	 *
+	 * @param string $slug The schema's slug.
+	 *
+	 * @return int The id.
+	 *
+	 * @throws Throwable When the schema does not exist.
+	 */
+	private function schemaIdOf(string $slug): int {
+		return (int)$this->catalog->schemas()->find(id: $slug, _rbac: false, _multitenancy: false)->getId();
+	}//end schemaIdOf()
 
 	/**
 	 * The `@self` scope of a read against the vocabulary register, whose ids the caller has resolved.
@@ -224,10 +251,9 @@ class ConceptRepository implements ConceptRepositoryInterface {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function schemeByReference(string $reference): ?array {
-		foreach ($this->schemeCache as $cached) {
-			if (is_array($cached) === true && (string)($cached['@uuid'] ?? '') === $reference) {
-				return $cached;
-			}
+		$cached = $this->cachedSchemeWithUuid(reference: $reference);
+		if ($cached !== null) {
+			return $cached;
 		}
 
 		$data = $this->firstScheme(filters: [], metadata: ['uuid' => $reference]);
@@ -242,6 +268,23 @@ class ConceptRepository implements ConceptRepositoryInterface {
 
 		return $data;
 	}//end schemeByReference()
+
+	/**
+	 * A scheme already read this request whose uuid is the reference, or null.
+	 *
+	 * @param string $reference The scheme's uuid.
+	 *
+	 * @return array<string, mixed>|null The cached scheme.
+	 */
+	private function cachedSchemeWithUuid(string $reference): ?array {
+		foreach ($this->schemeCache as $cached) {
+			if (is_array($cached) === true && (string)($cached['@uuid'] ?? '') === $reference) {
+				return $cached;
+			}
+		}
+
+		return null;
+	}//end cachedSchemeWithUuid()
 
 	/**
 	 * The first scheme object matching the filters, as decoded data carrying its `@uuid`; null when none.
@@ -263,19 +306,7 @@ class ConceptRepository implements ConceptRepositoryInterface {
 			query: array_merge($filters, ['@self' => $this->scope(schemaId: $ids[1], metadata: $metadata), '_limit' => 1])
 		);
 
-		$entity = ($results[0] ?? null);
-		if ($entity instanceof ObjectEntity === false) {
-			return null;
-		}
-
-		$data = ($entity->getObject() ?? []);
-		if (is_array($data) === false) {
-			return null;
-		}
-
-		$data['@uuid'] = (string)$entity->getUuid();
-
-		return $data;
+		return self::entityData(entity: ($results[0] ?? null));
 	}//end firstScheme()
 
 	/**
@@ -321,7 +352,20 @@ class ConceptRepository implements ConceptRepositoryInterface {
 		}
 
 		$this->conceptCache[$schemeUri] = [];
+		$this->conceptCache[$schemeUri] = $this->readConcepts(schemeUri: $schemeUri);
 
+		return $this->conceptCache[$schemeUri];
+	}//end conceptsOf()
+
+	/**
+	 * Read a scheme's concepts from the vocabulary register.
+	 *
+	 * @param string $schemeUri The scheme's URI.
+	 *
+	 * @return array<string, array<string, mixed>> Concepts keyed by URI; empty when the
+	 *                                             register or the scheme is not there.
+	 */
+	private function readConcepts(string $schemeUri): array {
 		$ids = $this->ids();
 		if ($ids === null) {
 			return [];
@@ -332,40 +376,82 @@ class ConceptRepository implements ConceptRepositoryInterface {
 			return [];
 		}
 
+		return self::keyedByUri(results: $this->search(query: $this->conceptQuery(scheme: $scheme, conceptSchemaId: $ids[2])));
+	}//end readConcepts()
+
+	/**
+	 * The query for a scheme's concepts: in the scheme, scoped to the concept schema, capped.
+	 *
+	 * @param array<string, mixed> $scheme          The scheme object.
+	 * @param int                  $conceptSchemaId The concept schema's id.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private function conceptQuery(array $scheme, int $conceptSchemaId): array {
 		$schemeRef = trim((string)($scheme['@uuid'] ?? ($scheme['id'] ?? ($scheme['uuid'] ?? ''))));
 		$filters = [];
 		if ($schemeRef !== '') {
 			$filters['inScheme'] = $schemeRef;
 		}
 
-		$results = $this->search(
-			query: array_merge($filters, ['@self' => $this->scope(schemaId: $ids[2], metadata: []), '_limit' => self::MAX_SCHEME_CONCEPTS])
-		);
+		return array_merge($filters, ['@self' => $this->scope(schemaId: $conceptSchemaId, metadata: []), '_limit' => self::MAX_SCHEME_CONCEPTS]);
+	}//end conceptQuery()
 
+	/**
+	 * The concepts among the search results, keyed by their trimmed URI.
+	 *
+	 * @param array<int, mixed> $results The search results.
+	 *
+	 * @return array<string, array<string, mixed>> The concepts.
+	 */
+	private static function keyedByUri(array $results): array {
 		$byUri = [];
 		foreach ($results as $entity) {
-			if ($entity instanceof ObjectEntity === false) {
-				continue;
+			$data = self::conceptData(entity: $entity);
+			if ($data !== null) {
+				$byUri[trim((string)$data['uri'])] = $data;
 			}
-
-			$data = ($entity->getObject() ?? []);
-			if (is_array($data) === false) {
-				continue;
-			}
-
-			$uri = trim((string)($data['uri'] ?? ''));
-			if ($uri === '') {
-				continue;
-			}
-
-			$data['@uuid'] = (string)$entity->getUuid();
-			$byUri[$uri] = $data;
-		}//end foreach
-
-		$this->conceptCache[$schemeUri] = $byUri;
+		}
 
 		return $byUri;
-	}//end conceptsOf()
+	}//end keyedByUri()
+
+	/**
+	 * A result's concept data with its uuid added, or null when it is not a concept with a URI.
+	 *
+	 * @param mixed $entity One search result.
+	 *
+	 * @return array<string, mixed>|null The concept data.
+	 */
+	private static function conceptData(mixed $entity): ?array {
+		$data = self::entityData(entity: $entity);
+		if ($data === null || trim((string)($data['uri'] ?? '')) === '') {
+			return null;
+		}
+
+		return $data;
+	}//end conceptData()
+
+	/**
+	 * A result's object data with its uuid added, or null when it is not an object with array data.
+	 *
+	 * @param mixed $entity One search result.
+	 *
+	 * @return array<string, mixed>|null The data.
+	 */
+	private static function entityData(mixed $entity): ?array {
+		if ($entity instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		$data = ($entity->getObject() ?? []);
+		if (is_array($data) === false) {
+			return null;
+		}
+
+		$data['@uuid'] = (string)$entity->getUuid();
+		return $data;
+	}//end entityData()
 
 	/**
 	 * Resolve a stored value to its concept, in either storage form.

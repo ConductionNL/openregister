@@ -30,6 +30,8 @@ use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
@@ -59,6 +61,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Golden record of find() over every branch: the scope each retrieval runs in, the cross-schema
@@ -75,7 +78,7 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses   \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses   \OCA\OpenRegister\Service\Object\ObjectFindScope
- * @uses   \OCA\OpenRegister\Service\Object\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -333,8 +336,18 @@ class ObjectServiceFindGoldenTest extends TestCase {
 
 		$getHandler = $this->createMock(GetObject::class);
 		$getHandler->method('find')->willReturnCallback(
-			function (string $id, ?Register $register = null, ?Schema $schema = null, ?array $_extend = [], bool $files = false, bool $_rbac = true, bool $_multitenancy = true, bool $_audit = true): ObjectEntity {
-				$this->calls[] = ['get' => $id, 'register' => $register?->getId(), 'schema' => $schema?->getId(), 'extend' => $_extend, 'files' => $files, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'audit' => $_audit];
+			function (ObjectFindRequest $request, ReadScope $scope): ObjectEntity {
+				[$id, $register, $schema] = [$request->id, $scope->register, $scope->schema];
+				$this->calls[] = [
+					'get' => $id,
+					'register' => $register?->getId(),
+					'schema' => $schema?->getId(),
+					'extend' => $request->extend,
+					'files' => $request->files,
+					'rbac' => $request->rbac,
+					'multitenancy' => $request->multitenancy,
+					'audit' => $request->audit,
+				];
 				$answer = ($this->answers[$id . '|' . ($schema?->getId() ?? '-')] ?? 'miss');
 				if ($answer === 'miss') {
 					throw new DoesNotExistException('not found: ' . $id);
@@ -400,7 +413,7 @@ class ObjectServiceFindGoldenTest extends TestCase {
 			);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->createMock(DataManipulationHandler::class),
 			deleteHandler: $this->createMock(DeleteObject::class),
 			getHandler: $getHandler,
@@ -439,6 +452,6 @@ class ObjectServiceFindGoldenTest extends TestCase {
 			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
 			container: $container,
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end service()
 }//end class

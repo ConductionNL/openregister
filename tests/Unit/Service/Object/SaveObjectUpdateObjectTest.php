@@ -21,9 +21,12 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectUpdateOptions;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\StoredObjectUpdate;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -123,12 +126,13 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 		}
 
 		$updated = $handler->updateObject(
-			register: (($case['ids'] ?? false) === true) ? 3 : $register,
-			schema: (($case['ids'] ?? false) === true) ? '7' : $schema,
-			data: $case['data'],
-			existingObject: $existing,
-			silent: ($case['silent'] ?? false),
-			oldObject: $old
+			update: new StoredObjectUpdate(
+				register: (($case['ids'] ?? false) === true) ? 3 : $register,
+				schema: (($case['ids'] ?? false) === true) ? '7' : $schema,
+				data: $case['data'],
+				existingObject: $existing
+			),
+			options: new ObjectUpdateOptions(silent: ($case['silent'] ?? false), oldObject: $old)
 		);
 
 		$lines = array_values(array_filter($logger->lines, static fn (string $l): bool => str_contains($l, 'updateInverseRelations') || str_contains($l, 'archive')));
@@ -184,9 +188,9 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
 		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
-		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName): void {
-			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
-			$object[$propertyName] = 42;
+		$files->method('handleFileProperty')->willReturnCallback(function (ObjectFileWrite $write, string $propertyName): void {
+			$this->trace[] = ['file', $propertyName, $write->data[$propertyName]];
+			$write->data[$propertyName] = 42;
 		});
 		$retention = $this->createMock(RetentionService::class);
 		$retention->method('recalculateActionDate')->willReturnCallback(function (RecordUpdate $update): ObjectEntity {

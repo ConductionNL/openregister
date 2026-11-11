@@ -75,22 +75,6 @@ interface LinkedEntityServiceInterface {
 	/**
 	 * Remove a linked entity ID from an object's metadata column.
 	 *
-	 * @param string $objectUuid The object UUID
-	 * @param string $type The linked entity type
-	 * @param string $entityId The entity ID to remove
-	 *
-	 * @throws Exception If the type is invalid or the object is not found
-	 *
-	 * @return array The updated linked IDs array
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	public function removeLink(string $objectUuid, string $type, string $entityId): array;
-
-	/**
-	 * Remove a linked entity ID from an object's metadata column.
-	 *
 	 * @param string     $objectUuid The object UUID
 	 * @param EntityLink $link       The linked entity type and id to remove
 	 *
@@ -100,7 +84,7 @@ interface LinkedEntityServiceInterface {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
 	 */
-	public function removeLinkFrom(string $objectUuid, EntityLink $link): array;
+	public function removeLink(string $objectUuid, EntityLink $link): array;
 
 	/**
 	 * Reverse lookup: find all objects and entities linked to a specific entity.

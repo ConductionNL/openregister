@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 
@@ -194,9 +195,11 @@ class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 		}
 
 		$items = $provider->list(
-			$this->requireText(arguments: $arguments, param: 'register'),
-			$this->requireText(arguments: $arguments, param: 'schema'),
-			$this->requireText(arguments: $arguments, param: 'objectId'),
+			new ObjectRef(
+				register: $this->requireText(arguments: $arguments, param: 'register'),
+				schema: $this->requireText(arguments: $arguments, param: 'schema'),
+				id: $this->requireText(arguments: $arguments, param: 'objectId')
+			),
 			$filters
 		);
 
@@ -214,9 +217,11 @@ class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 		$provider = $this->resolveProvider(arguments: $arguments);
 
 		return $provider->get(
-			$this->requireText(arguments: $arguments, param: 'register'),
-			$this->requireText(arguments: $arguments, param: 'schema'),
-			$this->requireText(arguments: $arguments, param: 'objectId'),
+			new ObjectRef(
+				register: $this->requireText(arguments: $arguments, param: 'register'),
+				schema: $this->requireText(arguments: $arguments, param: 'schema'),
+				id: $this->requireText(arguments: $arguments, param: 'objectId')
+			),
 			$this->requireText(arguments: $arguments, param: 'entityId')
 		);
 	}//end getLinked()
@@ -240,9 +245,11 @@ class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 		}
 
 		return $provider->create(
-			$this->requireText(arguments: $arguments, param: 'register'),
-			$this->requireText(arguments: $arguments, param: 'schema'),
-			$this->requireText(arguments: $arguments, param: 'objectId'),
+			new ObjectRef(
+				register: $this->requireText(arguments: $arguments, param: 'register'),
+				schema: $this->requireText(arguments: $arguments, param: 'schema'),
+				id: $this->requireText(arguments: $arguments, param: 'objectId')
+			),
 			$payload
 		);
 	}//end createLinked()

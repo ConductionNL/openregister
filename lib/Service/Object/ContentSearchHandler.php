@@ -27,6 +27,7 @@ use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -78,6 +79,42 @@ class ContentSearchHandler {
 	 * the same deferred batch-resolve refactor above.
 	 */
 	private const CHUNK_CANDIDATE_LIMIT = 50;
+
+	/**
+	 * The paging, facet, field and scope keys the metadata-arm probe drops.
+	 *
+	 * @var list<string>
+	 */
+	private const PROBE_DROPPED_KEYS = [
+		'_limit',
+		'_offset',
+		'_page',
+		'_facetable',
+		'_facets',
+		'_aggregations',
+		'_extend',
+		'_fields',
+		'_content_search',
+		'_register',
+		'_registers',
+		'_schema',
+		'_schemas',
+		'register',
+		'schema',
+		'_ids',
+	];
+
+	/**
+	 * The scope keys the metadata-arm probe drops from `@self`.
+	 *
+	 * @var list<string>
+	 */
+	private const PROBE_DROPPED_SELF_KEYS = [
+		'register',
+		'registers',
+		'schema',
+		'schemas',
+	];
 
 	/**
 	 * Request-scoped memo of the resolved chunk candidates, keyed by search
@@ -408,26 +445,14 @@ class ContentSearchHandler {
 	 * @spec openspec/specs/search-index/spec.md
 	 */
 	private function probeQuery(array $query): array {
-		unset(
-			$query['_limit'],
-			$query['_offset'],
-			$query['_page'],
-			$query['_facetable'],
-			$query['_facets'],
-			$query['_aggregations'],
-			$query['_extend'],
-			$query['_fields'],
-			$query['_content_search'],
-			$query['_register'],
-			$query['_registers'],
-			$query['_schema'],
-			$query['_schemas'],
-			$query['register'],
-			$query['schema'],
-			$query['_ids'],
-		);
+		foreach (self::PROBE_DROPPED_KEYS as $key) {
+			unset($query[$key]);
+		}
+
 		if (is_array($query['@self'] ?? null) === true) {
-			unset($query['@self']['register'], $query['@self']['registers'], $query['@self']['schema'], $query['@self']['schemas']);
+			foreach (self::PROBE_DROPPED_SELF_KEYS as $key) {
+				unset($query['@self'][$key]);
+			}
 		}
 
 		$query['_offset'] = 0;
@@ -463,10 +488,7 @@ class ContentSearchHandler {
 		}
 
 		$chunkHits = $this->chunkMapper->searchByKeyword(
-			query: $term,
-			limit: self::CHUNK_CANDIDATE_LIMIT,
-			filters: [],
-			allowUnrankedFallback: true
+			search: new KeywordChunkSearch(query: $term, limit: self::CHUNK_CANDIDATE_LIMIT, allowUnrankedFallback: true)
 		);
 
 		$owners = [];

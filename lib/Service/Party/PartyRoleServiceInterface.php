@@ -64,9 +64,8 @@ interface PartyRoleServiceInterface {
 	/**
 	 * Take a party off an object: every role, or the one named.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $partyUuid The party.
-	 * @param string|null $role Only this role, or null for all.
+	 * @param string       $objectUuid The object uuid.
+	 * @param PartyHolding $holding    The party, and only this role or null for all.
 	 *
 	 * @return int How many roles went.
 	 *
@@ -74,7 +73,7 @@ interface PartyRoleServiceInterface {
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
-	public function removeParty(string $objectUuid, string $partyUuid, ?string $role = null): int;
+	public function removeParty(string $objectUuid, PartyHolding $holding): int;
 
 	/**
 	 * Replace the party the object is filed against, and record it.

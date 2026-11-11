@@ -69,14 +69,47 @@ class ObjectFolderResponder {
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	public function failure(Throwable $e): JSONResponse {
-		if ($e instanceof ObjectFileAccessDeniedException === true) {
-			if ($e->getHttpStatus() === ObjectFileAccessDeniedException::NOT_READABLE) {
-				return new JSONResponse(data: ['error' => $this->l10n->t('Object not found')], statusCode: 404);
-			}
-
-			return new JSONResponse(data: ['error' => $this->l10n->t('You do not have access to this object')], statusCode: 403);
+		$answer = ($this->accessAnswer(e: $e) ?? $this->requestAnswer(e: $e) ?? $this->conflictAnswer(e: $e));
+		if ($answer !== null) {
+			return $answer;
 		}
 
+		// Logged in full here, answered without detail.
+		$this->logger->error(
+			message: '[ObjectFolder] ' . $e->getMessage(),
+			context: ['exception' => $e]
+		);
+
+		return new JSONResponse(data: ['error' => $this->l10n->t('Internal server error')], statusCode: 500);
+	}//end failure()
+
+	/**
+	 * Answer a refused access: 404 when the object may not be read, else 403.
+	 *
+	 * @param Throwable $e The failure.
+	 *
+	 * @return JSONResponse|null Null when the failure is not an access refusal.
+	 */
+	private function accessAnswer(Throwable $e): ?JSONResponse {
+		if ($e instanceof ObjectFileAccessDeniedException === false) {
+			return null;
+		}
+
+		if ($e->getHttpStatus() === ObjectFileAccessDeniedException::NOT_READABLE) {
+			return new JSONResponse(data: ['error' => $this->l10n->t('Object not found')], statusCode: 404);
+		}
+
+		return new JSONResponse(data: ['error' => $this->l10n->t('You do not have access to this object')], statusCode: 403);
+	}//end accessAnswer()
+
+	/**
+	 * Answer a bad request: 400 for a bad path or name, 404 for a node not found.
+	 *
+	 * @param Throwable $e The failure.
+	 *
+	 * @return JSONResponse|null Null when the failure is neither.
+	 */
+	private function requestAnswer(Throwable $e): ?JSONResponse {
 		if ($e instanceof InvalidArgumentException === true) {
 			$message = $this->l10n->t('This name cannot be used');
 			if ($e->getCode() === ObjectFolderBrowser::BAD_PATH) {
@@ -90,6 +123,17 @@ class ObjectFolderResponder {
 			return new JSONResponse(data: ['error' => $this->l10n->t('Not found')], statusCode: 404);
 		}
 
+		return null;
+	}//end requestAnswer()
+
+	/**
+	 * Answer a conflict: the object's state refusing the write, or a taken name or locked file.
+	 *
+	 * @param Throwable $e The failure.
+	 *
+	 * @return JSONResponse|null Null when the failure is not a conflict.
+	 */
+	private function conflictAnswer(Throwable $e): ?JSONResponse {
 		if ($e instanceof ObjectStateWriteException === true) {
 			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
 		}
@@ -98,14 +142,8 @@ class ObjectFolderResponder {
 			return new JSONResponse(data: ['error' => $this->conflictMessage(code: (int)$e->getCode())], statusCode: 409);
 		}
 
-		// Logged in full here, answered without detail.
-		$this->logger->error(
-			message: '[ObjectFolder] ' . $e->getMessage(),
-			context: ['exception' => $e]
-		);
-
-		return new JSONResponse(data: ['error' => $this->l10n->t('Internal server error')], statusCode: 500);
-	}//end failure()
+		return null;
+	}//end conflictAnswer()
 
 	/**
 	 * Answer an upload request that carried no file.
@@ -132,32 +170,10 @@ class ObjectFolderResponder {
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	public function uploaded(array $outcome, int $total): JSONResponse {
-		$conflicts = 0;
-		$rejected = [];
-		foreach ($outcome['rejected'] as $refusal) {
-			$error = $refusal['error'];
-			if ($refusal['conflict'] === true) {
-				$conflicts++;
-				$error = $this->conflictMessage(code: ObjectFolderBrowser::TAKEN);
-			}
-
-			$rejected[] = ['name' => $refusal['name'], 'error' => $error];
-		}
+		$rejected = $this->rejectedRows(outcome: $outcome);
 
 		if ($outcome['stored'] === []) {
-			$status = 400;
-			if ($conflicts === $total) {
-				$status = 409;
-			}
-
-			return new JSONResponse(
-				data: [
-					'error' => ($rejected[0]['error'] ?? $this->l10n->t('The upload failed')),
-					'stored' => [],
-					'rejected' => $rejected,
-				],
-				statusCode: $status
-			);
+			return $this->nothingStored(rejected: $rejected, allTaken: (self::conflicts(outcome: $outcome) === $total));
 		}
 
 		$status = 201;
@@ -167,6 +183,69 @@ class ObjectFolderResponder {
 
 		return new JSONResponse(data: ['stored' => $outcome['stored'], 'rejected' => $rejected], statusCode: $status);
 	}//end uploaded()
+
+	/**
+	 * The refused files as answered: name and error, a taken name with the translated conflict message.
+	 *
+	 * @param array $outcome What was stored and refused.
+	 *
+	 * @return list<array{name: string, error: string}>
+	 */
+	private function rejectedRows(array $outcome): array {
+		$rejected = [];
+		foreach ($outcome['rejected'] as $refusal) {
+			$error = $refusal['error'];
+			if ($refusal['conflict'] === true) {
+				$error = $this->conflictMessage(code: ObjectFolderBrowser::TAKEN);
+			}
+
+			$rejected[] = ['name' => $refusal['name'], 'error' => $error];
+		}
+
+		return $rejected;
+	}//end rejectedRows()
+
+	/**
+	 * How many files were refused because the name was taken.
+	 *
+	 * @param array $outcome What was stored and refused.
+	 *
+	 * @return int
+	 */
+	private static function conflicts(array $outcome): int {
+		$conflicts = 0;
+		foreach ($outcome['rejected'] as $refusal) {
+			if ($refusal['conflict'] === true) {
+				$conflicts++;
+			}
+		}
+
+		return $conflicts;
+	}//end conflicts()
+
+	/**
+	 * Answer a batch where nothing was stored: 409 when every file was a taken name, else 400.
+	 *
+	 * @param list<array{name: string, error: string}> $rejected The refused files as answered.
+	 * @param bool                                     $allTaken Whether every file sent was a taken name.
+	 *
+	 * @return JSONResponse
+	 */
+	private function nothingStored(array $rejected, bool $allTaken): JSONResponse {
+		$status = 400;
+		if ($allTaken === true) {
+			$status = 409;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => ($rejected[0]['error'] ?? $this->l10n->t('The upload failed')),
+				'stored' => [],
+				'rejected' => $rejected,
+			],
+			statusCode: $status
+		);
+	}//end nothingStored()
 
 	/**
 	 * The message for a conflict.

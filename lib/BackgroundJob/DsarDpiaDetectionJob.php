@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
 use OCA\OpenRegister\Service\Gdpr\DpiaDetectionRequest;
@@ -315,16 +316,18 @@ class DsarDpiaDetectionJob extends TimedJob {
 					_multitenancy: false
 				);
 
-				$this->auditTrailMapper->createAuditTrailEntry(
-					object: $saved,
-					action: self::AUDIT_ACTION,
-					context: [
-						'rule' => 'dpia-pattern-detection',
-						'groupKey' => $group['key'],
-						'windowDays' => (int)($config['windowDays'] ?? 0),
-						'threshold' => (int)($config['threshold'] ?? 0),
-						'count' => $group['count'],
-					]
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(
+						object: $saved,
+						action: self::AUDIT_ACTION,
+						context: [
+							'rule' => 'dpia-pattern-detection',
+							'groupKey' => $group['key'],
+							'windowDays' => (int)($config['windowDays'] ?? 0),
+							'threshold' => (int)($config['threshold'] ?? 0),
+							'count' => $group['count'],
+						]
+					)
 				);
 
 				$outcome['flagged']++;

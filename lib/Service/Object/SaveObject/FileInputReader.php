@@ -185,8 +185,7 @@ final class FileInputReader {
 	 * @return void
 	 */
 	private function logUploadError(string $fieldName, array $fileInfo): void {
-		$this->log->write(
-			level: 'warning',
+		$this->log->warning(
 			message: '[FilePropertyHandler] File upload error for field {field}: {error}',
 			context: ['field' => $fieldName, 'error' => $fileInfo['error'], 'filename' => $fileInfo['name'] ?? 'unknown']
 		);

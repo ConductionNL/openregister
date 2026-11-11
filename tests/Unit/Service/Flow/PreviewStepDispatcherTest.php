@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
@@ -57,7 +58,8 @@ class DryRunCountingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
 		$this->runs++;
 		return array_map(
 			static fn (array $item): array => FlowItems::item(json: array_merge((array)($item['json'] ?? []), ['touched' => true])),
@@ -76,7 +78,8 @@ class DryRunPureNode extends DryRunCountingNode implements IFlowSideEffectFree {
  * A node that says what it would do.
  */
 class DryRunPreviewingNode extends DryRunCountingNode implements IFlowNodePreview {
-	public function preview(array $items, array $config, array $context): array {
+	public function preview(FlowNodeCall $call): array {
+		$config = $call->config;
 		return ['summary' => 'Would write', 'changes' => [['field' => 'status', 'value' => (string)($config['status'] ?? '')]]];
 	}
 }

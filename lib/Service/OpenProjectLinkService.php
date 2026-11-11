@@ -52,6 +52,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use Exception;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Db\OpenProjectLinkMapperInterface;
@@ -265,9 +266,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	private function createWorkPackage(LinkTarget $target, array $payload): array {
 		try {
 			return $this->provider->create(
-				register: (string)$target->registerId,
-				schema: (string)$target->schemaId(),
-				objectId: $target->objectUuid,
+				ref: new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
 				payload: $payload
 			);
 		} catch (ProviderUnavailableException $e) {
@@ -432,7 +431,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 */
 	private function callPicker(array $options): array {
 		try {
-			return $this->router->call(provider: $this->provider, method: 'GET', path: '', options: $options);
+			return $this->router->call(provider: $this->provider, request: new UpstreamRequest(method: 'GET', path: '', options: $options));
 		} catch (ProviderUnavailableException $e) {
 			throw $this->unavailable(exception: $e);
 		} catch (Throwable $e) {
@@ -514,7 +513,10 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 		}
 
 		try {
-			$row = $this->provider->get(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, entityId: (string)$workPackageId);
+			$row = $this->provider->get(
+				ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				entityId: (string)$workPackageId
+			);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('OpenProjectLinkService::fetchWorkPackage failed: ' . $e->getMessage());
 			return null;

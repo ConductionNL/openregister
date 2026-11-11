@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowLifecycleRefusalTrait;
 use OCA\OpenRegister\Controller\Support\FlowControllerServices;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapperInterface;
@@ -66,6 +67,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\WorkflowEngine\IManager;
 use Throwable;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 
 /**
  * Catalog and CRUD endpoints for flows.
@@ -118,6 +120,8 @@ use Throwable;
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
 class FlowController extends Controller {
+	use FlowLifecycleRefusalTrait;
+
 	/**
 	 * The flow trigger catalog.
 	 *
@@ -985,35 +989,9 @@ class FlowController extends Controller {
 			// what refuses it, and that state can change — the author creates
 			// a draft and the identical request then succeeds. A 400 would
 			// tell the editor to fix the payload, which is the wrong advice.
-			return $this->refusal(refusal: $e);
+			return $this->lifecycleRefusal(refusal: $e);
 		}
 	}//end saveOrRefuse()
-
-	/**
-	 * A lifecycle refusal as a 409 the editor can act on.
-	 *
-	 * 🔑 THE REASON IS A FIELD, NOT PROSE. "This version is published, create a
-	 * draft" and "this flow has no published version, publish one" want
-	 * opposite buttons from the author; parsing an English sentence to tell
-	 * them apart is how a UI ends up offering the wrong one.
-	 *
-	 * @param FlowLifecycleRefusedInterface $refusal The refusal.
-	 *
-	 * @return JSONResponse The 409.
-	 *
-	 * @spec openspec/specs/flow-definition-versioning/spec.md
-	 */
-	private function refusal(FlowLifecycleRefusedInterface $refusal): JSONResponse {
-		return new JSONResponse(
-			[
-				'error' => $refusal->getMessage(),
-				'reason' => $refusal->getReason(),
-				'lifecycleStatus' => $refusal->getState(),
-				'flowId' => $refusal->getFlowId(),
-			],
-			Http::STATUS_CONFLICT
-		);
-	}//end refusal()
 
 	/**
 	 * The stored flow, plus any warning the author should see about it.
@@ -1184,7 +1162,7 @@ class FlowController extends Controller {
 				sync: $input['sync'], trigger: FlowRunVersionPinInterface::TRIGGER_TEST);
 		} catch (FlowLifecycleRefusedInterface $e) {
 			// Carries `reason` and `lifecycleStatus` so the editor can offer the right button.
-			return $this->refusal(refusal: $e);
+			return $this->lifecycleRefusal(refusal: $e);
 		} catch (FlowRunRefused $e) {
 			// "Run now" on an imported flow (which arrives with no owner).
 			return $this->runRefusal(refusal: $e);
@@ -1406,18 +1384,20 @@ class FlowController extends Controller {
 		try {
 			$version = $this->flowVersionService->publish(
 				flow: $flow,
-				// From FlowAccess, which already holds the session — a second
-				// IUserSession here would push this constructor past the
-				// parameter limit for one string.
-				publishedBy: $this->access->currentUser()?->getUID(),
-				// The author may RAISE the derived verdict and never lower it.
-				// A refusal to call a removal minor is an
-				// UnexpectedValueException rather than a lifecycle refusal:
-				// the flow's state is fine, the request is not.
-				bump: $this->request->getParam('bump')
+				options: new FlowPublishOptions(
+					// From FlowAccess, which already holds the session — a second
+					// IUserSession here would push this constructor past the
+					// parameter limit for one string.
+					publishedBy: $this->access->currentUser()?->getUID(),
+					// The author may RAISE the derived verdict and never lower it.
+					// A refusal to call a removal minor is an
+					// UnexpectedValueException rather than a lifecycle refusal:
+					// the flow's state is fine, the request is not.
+					bump: $this->request->getParam('bump')
+				)
 			);
 		} catch (FlowLifecycleRefusedInterface $e) {
-			return $this->refusal(refusal: $e);
+			return $this->lifecycleRefusal(refusal: $e);
 		} catch (\UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage(), 'kind' => 'version-bump-refused'], Http::STATUS_CONFLICT);
 		}
@@ -1461,7 +1441,7 @@ class FlowController extends Controller {
 		try {
 			$version = $step();
 		} catch (FlowLifecycleRefusedInterface $e) {
-			return $this->refusal(refusal: $e);
+			return $this->lifecycleRefusal(refusal: $e);
 		}
 
 		return new JSONResponse($version->jsonSerialize(), $status);

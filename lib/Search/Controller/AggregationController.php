@@ -274,15 +274,7 @@ class AggregationController extends Controller {
 				continue;
 			}
 
-			$entryField = ($entry['field'] ?? null);
-			if ($entryField === '') {
-				$entryField = null;
-			}
-
-			$metrics[] = [
-				'metric' => (string)($entry['metric'] ?? ''),
-				'field' => $entryField,
-			];
+			$metrics[] = $this->metricEntry(entry: $entry);
 		}
 
 		if (count($metrics) === 0) {
@@ -291,6 +283,25 @@ class AggregationController extends Controller {
 
 		return $metrics;
 	}//end parseMetricsParam()
+
+	/**
+	 * One `metrics[...]` entry as the query expects it; a blank field means none.
+	 *
+	 * @param array<string, mixed> $entry The raw entry.
+	 *
+	 * @return array{metric: string, field: mixed}
+	 */
+	private function metricEntry(array $entry): array {
+		$entryField = ($entry['field'] ?? null);
+		if ($entryField === '') {
+			$entryField = null;
+		}
+
+		return [
+			'metric' => (string)($entry['metric'] ?? ''),
+			'field' => $entryField,
+		];
+	}//end metricEntry()
 
 	/**
 	 * Surface the `X-OR-Cache: hit|miss` header on an ad-hoc envelope
@@ -476,17 +487,8 @@ class AggregationController extends Controller {
 	 * @return array<int, string> Ordered, non-empty field names.
 	 */
 	private function parseGroupByParam(): array {
-		$raw = $this->request->getParam('groupBy', '');
-
-		$candidates = [];
-		if (is_array($raw) === true) {
-			$candidates = $raw;
-		} else {
-			$candidates = explode(',', (string)$raw);
-		}
-
 		$fields = [];
-		foreach ($candidates as $candidate) {
+		foreach ($this->groupByCandidates() as $candidate) {
 			if (is_string($candidate) === false) {
 				continue;
 			}
@@ -501,6 +503,21 @@ class AggregationController extends Controller {
 
 		return $fields;
 	}//end parseGroupByParam()
+
+	/**
+	 * The raw `groupBy` entries: the repeated-param array as given, else the comma-separated parts.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function groupByCandidates(): array {
+		$raw = $this->request->getParam('groupBy', '');
+
+		if (is_array($raw) === true) {
+			return $raw;
+		}
+
+		return explode(',', (string)$raw);
+	}//end groupByCandidates()
 
 	/**
 	 * Ad-hoc time-bucket aggregation entry point.
@@ -552,19 +569,7 @@ class AggregationController extends Controller {
 
 		$run = new AggregationRun(register: $register, schema: $schema, schemaEntity: $schemaEntity);
 
-		// Pull the request shape from the active IRequest. The filter
-		// map comes through as a nested array because PHP parses
-		// `filter[x][op]=y` into `$_GET['filter']['x']['op']='y'`.
-		$input = [
-			'field' => $this->request->getParam('field', ''),
-			'interval' => $this->request->getParam('interval'),
-			'from' => $this->request->getParam('from'),
-			'to' => $this->request->getParam('to'),
-			'metric' => $this->request->getParam('metric', 'count'),
-			'metricField' => $this->request->getParam('metricField'),
-			'filter' => $this->resolveFilter(run: $run, action: 'timeseries'),
-			'cumulative' => $this->request->getParam('cumulative', false),
-		];
+		$input = $this->timeseriesInput(run: $run);
 
 		try {
 			$query = $this->services->validator->validate(input: $input, schema: $schemaEntity);
@@ -574,4 +579,29 @@ class AggregationController extends Controller {
 
 		return $this->runAndRespond(run: $run, query: $query);
 	}//end timeseries()
+
+	/**
+	 * The time-bucket request as the validator reads it, from the active request.
+	 *
+	 * @param AggregationRun $run The register and schema references, with the resolved schema.
+	 *
+	 * @return array<string, mixed> field, interval, from, to, metric, metricField, filter and cumulative.
+	 *
+	 * @throws RuntimeException When the schema cannot be resolved for the filter.
+	 */
+	private function timeseriesInput(AggregationRun $run): array {
+		// Pull the request shape from the active IRequest. The filter
+		// map comes through as a nested array because PHP parses
+		// `filter[x][op]=y` into `$_GET['filter']['x']['op']='y'`.
+		return [
+			'field' => $this->request->getParam('field', ''),
+			'interval' => $this->request->getParam('interval'),
+			'from' => $this->request->getParam('from'),
+			'to' => $this->request->getParam('to'),
+			'metric' => $this->request->getParam('metric', 'count'),
+			'metricField' => $this->request->getParam('metricField'),
+			'filter' => $this->resolveFilter(run: $run, action: 'timeseries'),
+			'cumulative' => $this->request->getParam('cumulative', false),
+		];
+	}//end timeseriesInput()
 }//end class

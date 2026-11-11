@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -84,7 +85,7 @@ class DraftRemovalRecordTest extends TestCase {
 	 */
 	private function auditTrail(bool $fails = false): AuditTrailMapper {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('createAuditTrailEntry')->willReturnCallback(
+		$mapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null) use ($fails): AuditTrail {
 				if ($fails === true) {
 					throw new RuntimeException('audit table locked');
@@ -94,7 +95,7 @@ class DraftRemovalRecordTest extends TestCase {
 
 				return new AuditTrail();
 			}
-		);
+		));
 		// The change-style writers would serialise the object, content and all. A removed draft must never go through them.
 		$mapper->expects($this->never())->method('createAuditTrail');
 		$mapper->expects($this->never())->method('buildEntry');

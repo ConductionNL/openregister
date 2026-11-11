@@ -43,6 +43,7 @@ use OCA\OpenRegister\Controller\Support\GdprRegisterReplies;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityAuditCounts;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityHydrator;
+use OCA\OpenRegister\Controller\Support\ProcessingActivityViewer;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityVisibility;
 use OCA\OpenRegister\Controller\Support\VerwerkingsactiviteitenControllerServices;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
@@ -152,7 +153,10 @@ class VerwerkingsactiviteitenController extends Controller {
 		// Enforce tenant scoping in-controller: the mapper filter accepts
 		// a single org while a user may belong to several, and a
 		// caller-supplied `organisation` must never widen visibility.
-		$visible = $this->visibility->filter(activities: $rows, accessibleOrgs: $scope['orgs'], isAdmin: $scope['admin']);
+		$visible = $this->visibility->visibleTo(
+			activities: $rows,
+			viewer: new ProcessingActivityViewer(isAdmin: $scope['admin'], accessibleOrgs: $scope['orgs'])
+		);
 
 		$results = array_map(static fn (Verwerkingsactiviteit $activity): array => $activity->jsonSerialize(), $visible);
 
@@ -320,7 +324,10 @@ class VerwerkingsactiviteitenController extends Controller {
 		}
 
 		$all = $this->services->vrwMapper->findAll();
-		$activities = $this->visibility->filter(activities: $all, accessibleOrgs: $scope['orgs'], isAdmin: $scope['admin']);
+		$activities = $this->visibility->visibleTo(
+			activities: $all,
+			viewer: new ProcessingActivityViewer(isAdmin: $scope['admin'], accessibleOrgs: $scope['orgs'])
+		);
 
 		$payload = $this->withAuditCounts(activities: $activities);
 

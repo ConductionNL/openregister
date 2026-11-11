@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Bootstrap;
+use OCA\OpenRegister\AppHost\LeafAdoption;
 use OCA\OpenRegister\AppHost\Controller\GenericStoreController;
 use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices;
 use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreInstall;
@@ -57,7 +58,7 @@ class BootstrapBehaviourTest extends TestCase {
 	 */
 	public function testStoreControllerFactoryBuildsTheGenericControllerForTheLeafApp(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::aliasStoreController($context, 'decidiq', 'OCA\\DecidiqFixture\\Controller');
+		Bootstrap::aliasStoreController(context: $context, adoption: new LeafAdoption(appId: 'decidiq', options: ['namespace' => 'OCA\\DecidiqFixture']));
 
 		$services = new GenericStoreControllerServices(
 			sources: new GenericStoreSources(

@@ -60,6 +60,9 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Golden record of deleteObject() over every branch: the scope it resolves, every object lookup
@@ -212,14 +215,15 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 		$this->sweeping = ($call['sweep'] ?? false);
 		try {
 			$result = ['returned' => $service->deleteObject(
-				uuid: self::U1,
-				register: $resolve($call['register'] ?? null, $this->registers),
-				schema: $resolve($call['schema'] ?? null, $this->schemas),
+				deletion: new ObjectDeletion(
+					uuid: self::U1,
+					target: new ObjectFindTarget(register: $resolve($call['register'] ?? null, $this->registers), schema: $resolve($call['schema'] ?? null, $this->schemas)),
+					currentUser: $currentUser,
+					permanent: ($call['permanent'] ?? false)
+				),
 				_rbac: ($call['rbac'] ?? true),
 				_multitenancy: ($call['multitenancy'] ?? true),
-				_retentionSweep: ($call['sweep'] ?? false),
-				currentUser: $currentUser,
-				permanent: ($call['permanent'] ?? false)
+				_retentionSweep: ($call['sweep'] ?? false)
 			)];
 		} catch (\Throwable $e) {
 			$result = ['exception' => [get_class($e), $e->getMessage()]];
@@ -390,7 +394,7 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 			);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->createMock(DataManipulationHandler::class),
 			deleteHandler: $deleteHandler,
 			getHandler: $this->createMock(GetObject::class),
@@ -429,6 +433,6 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
 			container: $this->createMock(IAppContainer::class),
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end service()
 }//end class

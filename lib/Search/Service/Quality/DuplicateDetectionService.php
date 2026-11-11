@@ -186,10 +186,10 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * of a candidate is empty also when no blocking keys are declared, and
 	 * then every stored object is compared.
 	 *
-	 * @param int|string $register Register id, uuid or slug — the boundary the schema resolves inside.
-	 * @param int|string $schema Schema id, uuid or slug.
+	 * @param DedupRun             $request   The register (id, uuid or slug: the boundary the schema resolves inside),
+	 *                                        the schema (id, uuid or slug) and the optional cut-off (the annotation's,
+	 *                                        then {@see DedupRuleResolver::DEFAULT_THRESHOLD}, when null), unresolved.
 	 * @param array<string, mixed> $candidate The unsaved body.
-	 * @param float|null $threshold Optional cut-off; the annotation's, then {@see DedupRuleResolver::DEFAULT_THRESHOLD}, when null.
 	 *
 	 * @return array<int, array{
 	 *   uuid: string,
@@ -200,22 +200,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
-	public function checkCandidate($register, $schema, array $candidate, ?float $threshold = null): array {
-		return $this->matchesFor(
-			request: new DedupRun(register: $register, schema: $schema, threshold: $threshold),
-			candidate: $candidate
-		);
-	}//end checkCandidate()
-
-	/**
-	 * The stored objects an unsaved body matches; see checkCandidate().
-	 *
-	 * @param DedupRun             $request   The register, schema and optional cut-off, unresolved.
-	 * @param array<string, mixed> $candidate The unsaved body.
-	 *
-	 * @return array<int, array<string, mixed>> Matches, highest score first.
-	 */
-	private function matchesFor(DedupRun $request, array $candidate): array {
+	public function checkCandidate(DedupRun $request, array $candidate): array {
 		$run = $this->ruleResolver->resolve(request: $request);
 		if ($run === null) {
 			return [];
@@ -227,7 +212,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 		}
 
 		return $this->byScoreDescending(rows: $this->candidateMatches(candidate: $candidate, run: $run));
-	}//end matchesFor()
+	}//end checkCandidate()
 
 	/**
 	 * The run narrowed to the stored objects in the candidate's blocking bucket.

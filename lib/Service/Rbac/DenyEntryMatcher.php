@@ -159,23 +159,30 @@ class DenyEntryMatcher {
 
 		foreach ($entries as $entry) {
 			$named = $this->entryNames(entry: $entry, principals: $question->principals);
-			if ($named === null) {
-				continue;
+			if ($named !== null) {
+				$matches[] = [
+					'rule' => $entry,
+					'principal' => $named,
+					'action' => $question->action,
+					'conditional' => self::isConditional(entry: $entry),
+				];
 			}
-
-			$conditional = (is_array($entry) === true
-				&& isset($entry['match']) === true
-				&& is_array($entry['match']) === true
-				&& $entry['match'] !== []);
-
-			$matches[] = [
-				'rule' => $entry,
-				'principal' => $named,
-				'action' => $question->action,
-				'conditional' => $conditional,
-			];
 		}
 
 		return $matches;
 	}//end matchingDenials()
+
+	/**
+	 * Whether a deny entry carries a non-empty `match` clause.
+	 *
+	 * @param mixed $entry The entry as written.
+	 *
+	 * @return bool True when the deny holds only on matching records.
+	 */
+	private static function isConditional(mixed $entry): bool {
+		return (is_array($entry) === true
+			&& isset($entry['match']) === true
+			&& is_array($entry['match']) === true
+			&& $entry['match'] !== []);
+	}//end isConditional()
 }//end class

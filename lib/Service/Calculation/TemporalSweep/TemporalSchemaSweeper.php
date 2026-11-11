@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Calculation\TemporalSweep;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -114,7 +115,7 @@ final class TemporalSchemaSweeper {
 	 */
 	private function objects(SweepTarget $target, MagicTableRowReaderInterface $rows): ?array {
 		try {
-			return $rows->findAllInRegisterSchemaTable(register: $target->register, schema: $target->schema);
+			return $rows->findAllInRegisterSchemaTable(table: new RegisterSchema(register: $target->register, schema: $target->schema));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[TemporalCalculationSweep] object enumeration failed for schema ' . (string)$target->schema->getSlug() . ': ' . $e->getMessage(),

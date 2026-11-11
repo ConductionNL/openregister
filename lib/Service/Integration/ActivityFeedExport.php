@@ -84,17 +84,7 @@ class ActivityFeedExport {
 				continue;
 			}
 
-			fputcsv(
-				$handle,
-				[
-					$this->moment(timestamp: (int)($row['timestamp'] ?? 0), timezone: $timezone),
-					$this->cell(value: (string)($row['kind'] ?? '')),
-					$this->cell(value: (string)($row['actor'] ?? '')),
-					$this->cell(value: (string)($row['action'] ?? '')),
-					$this->cell(value: (string)($row['summary'] ?? '')),
-					$this->cell(value: (string)($row['url'] ?? '')),
-				]
-			);
+			fputcsv($handle, $this->csvLine(row: $row, timezone: $timezone));
 		}
 
 		rewind($handle);
@@ -103,6 +93,25 @@ class ActivityFeedExport {
 
 		return $csv;
 	}//end toCsv()
+
+	/**
+	 * The cells of one feed row, in the order of COLUMNS.
+	 *
+	 * @param array<string, mixed> $row      The feed row.
+	 * @param string               $timezone The zone the moment is written in.
+	 *
+	 * @return array<int, string>
+	 */
+	private function csvLine(array $row, string $timezone): array {
+		return [
+			$this->moment(timestamp: (int)($row['timestamp'] ?? 0), timezone: $timezone),
+			$this->cell(value: (string)($row['kind'] ?? '')),
+			$this->cell(value: (string)($row['actor'] ?? '')),
+			$this->cell(value: (string)($row['action'] ?? '')),
+			$this->cell(value: (string)($row['summary'] ?? '')),
+			$this->cell(value: (string)($row['url'] ?? '')),
+		];
+	}//end csvLine()
 
 	/**
 	 * One moment a reader can compare to their own calendar.

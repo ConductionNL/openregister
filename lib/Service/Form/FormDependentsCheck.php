@@ -171,7 +171,7 @@ class FormDependentsCheck implements FormDependentsCheckInterface {
 	 * @return array<string, mixed>|null The entry: id, app, title, break, findings, form.
 	 */
 	private function judged(FormDependent $form, Schema $schema): ?array {
-		$findings = $this->validator->validate(mapping: $form->mapping, schema: $schema, options: $this->optionsOf(form: $form));
+		$findings = $this->validator->validate(mapping: $form->mapping, destination: new FormDestination(schema: $schema, audience: $form->audience));
 		if ($findings === []) {
 			return null;
 		}
@@ -180,22 +180,6 @@ class FormDependentsCheck implements FormDependentsCheckInterface {
 
 		return ['id' => $form->id, 'app' => $form->app, 'title' => $form->title, 'break' => $break, 'findings' => $findings, 'form' => $form];
 	}//end judged()
-
-	/**
-	 * The validator options of a form: its audience, when it is not internal.
-	 *
-	 * @param FormDependent $form The form.
-	 *
-	 * @return array<string, string> The options.
-	 */
-	private function optionsOf(FormDependent $form): array {
-		$options = [];
-		if ($form->audience !== null) {
-			$options['audience'] = $form->audience;
-		}
-
-		return $options;
-	}//end optionsOf()
 
 	/**
 	 * What the owning app wants when a schema change breaks its form: `refuse`, else `unpublish`.

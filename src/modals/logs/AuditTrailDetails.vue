@@ -132,6 +132,7 @@ import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import AuditActionBadge from './AuditActionBadge.vue'
 import auditTrailModal from '../../services/auditTrailModal.js'
+import { printableValue } from './auditValues.js'
 
 export default {
 	name: 'AuditTrailDetails',
@@ -158,19 +159,7 @@ export default {
 		additionalFields() {
 			if (!auditTrailStore.auditTrailItem) return []
 
-			const mainFields = [
-				'id',
-				'action',
-				'created',
-				'object',
-				'register',
-				'schema',
-				'user',
-				'userName',
-				'size',
-				'changed',
-				'request',
-			]
+			const mainFields = mainFieldNames()
 
 			return Object.entries(auditTrailStore.auditTrailItem)
 				.filter(([key]) => !mainFields.includes(key))
@@ -236,15 +225,7 @@ export default {
 		formatFieldValue(value) {
 			if (value === null || value === undefined) return '-'
 
-			if (typeof value === 'object') {
-				try {
-					return JSON.stringify(value, null, 2)
-				} catch {
-					return String(value)
-				}
-			}
-
-			return String(value)
+			return printableValue(value)
 		},
 
 		/**
@@ -269,6 +250,28 @@ export default {
 			}
 		},
 	},
+}
+
+/**
+ * The fields of an audit trail entry the modal shows on their own, rather
+ * than among the additional fields.
+ *
+ * @return {Array<string>} The field names
+ */
+function mainFieldNames() {
+	return [
+		'id',
+		'action',
+		'created',
+		'object',
+		'register',
+		'schema',
+		'user',
+		'userName',
+		'size',
+		'changed',
+		'request',
+	]
 }
 </script>
 

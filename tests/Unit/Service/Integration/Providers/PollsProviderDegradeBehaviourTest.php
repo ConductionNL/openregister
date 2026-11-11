@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Db\PollLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\PollLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
@@ -121,7 +122,7 @@ class PollsProviderDegradeBehaviourTest extends TestCase {
 		$failure = new RuntimeException('no polls tables');
 		$this->answers = ['polls_polls' => $failure, 'polls_options' => $failure, 'polls_votes:voters' => $failure];
 
-		$rows = $this->provider(self::link())->list('r', 's', 'obj-1');
+		$rows = $this->provider(self::link())->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame(
 			[
@@ -151,7 +152,7 @@ class PollsProviderDegradeBehaviourTest extends TestCase {
 			'polls_votes:voters' => [['user_id' => 'a'], ['user_id' => 'b']],
 		];
 
-		$row = $this->provider(self::link())->list('r', 's', 'obj-1')[0];
+		$row = $this->provider(self::link())->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'))[0];
 
 		$this->assertSame([['id' => 1, 'text' => 'Yes please', 'votes' => 0]], $row['options']);
 		$this->assertSame(2, $row['voterCount']);
