@@ -2467,3 +2467,4 @@ larpinq	971	b02cc5d39bb55ac036405a7ee34c2d64eacf346f	GREEN	FXL	resolver test no 
 thematiq	1616	5c5ecb3cd2748f0a070fac663d23cd522b5a57a5	GREEN	FXL	unit bootstrap maps OCA\Thematiq\Tests to tests/ (inherited FileList autoload gap); merged
 thematiq	1583	288fb7d9812943ff4719514aaf2cd79a0e5c7027	GREEN	FXL	development merged in (carries the bootstrap autoload fix from #1616); RuntimeFile tests 44/44; merged
 stackiq	1539	7e9277186a170cf444ca7cea5124fcbffa430fa3	CONFLICT	vm1:18168	conflicts with the tree on adb463af44
+stackiq	1542	3d74e71d7bd1a27c64924cbfea5a2a3b6061a33e	CONFLICT	vm1:18168	conflicts with the tree on adb463af44
