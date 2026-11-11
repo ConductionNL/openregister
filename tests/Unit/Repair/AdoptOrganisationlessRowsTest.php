@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Repair;
 
+use OCA\OpenRegister\Command\AdoptOrganisationlessRowsCommand;
 use OCA\OpenRegister\Command\MagicTableSelection;
 use OCA\OpenRegister\Command\MagicTableTarget;
 use OCA\OpenRegister\Db\Register;
@@ -34,6 +35,7 @@ use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Symfony\Component\Console\Tester\CommandTester;
 
 final class AdoptOrganisationlessRowsTest extends TestCase {
 
@@ -78,19 +80,41 @@ final class AdoptOrganisationlessRowsTest extends TestCase {
 		$this->assertNull($this->adoption()->organisationFor(target: self::target(registerOrg: null, schemaOrg: null, table: 't')));
 	}//end testTheLegacyDefaultOrganisationSettingIsRead()
 
-	public function testOnlyTablesWithOrgLessRowsAndAKnownOrganisationAreWritten(): void {
-		$targets = [
+	/**
+	 * A selection of tables: rows to give, rows already done, no organisation to give, (broken,) rows to give.
+	 *
+	 * @param bool $withBroken Whether a table whose count fails is among them.
+	 *
+	 * @return MagicTableSelection The selection.
+	 */
+	private function selection(bool $withBroken = false): MagicTableSelection {
+		$tables = [
 			self::target(registerOrg: 'org-a', schemaOrg: null, table: 'with_rows'),
 			self::target(registerOrg: 'org-b', schemaOrg: null, table: 'already_done'),
 			self::target(registerOrg: null, schemaOrg: null, table: 'no_owner'),
-			self::target(registerOrg: 'org-c', schemaOrg: null, table: 'broken'),
-			self::target(registerOrg: null, schemaOrg: 'org-d', table: 'after_broken'),
 		];
-		$selection = $this->createMock(MagicTableSelection::class);
-		$selection->method('registers')->willReturn([]);
-		$selection->method('schemas')->willReturn([]);
-		$selection->method('tables')->willReturn($targets);
+		if ($withBroken === true) {
+			$tables[] = self::target(registerOrg: 'org-c', schemaOrg: null, table: 'broken');
+		}
 
+		$tables[] = self::target(registerOrg: null, schemaOrg: 'org-d', table: 'after_broken');
+
+		$selection = $this->createMock(MagicTableSelection::class);
+		$selection->method('registers')->willReturn([new Register()]);
+		$selection->method('schemas')->willReturn([new Schema()]);
+		$selection->method('tables')->willReturn($tables);
+
+		return $selection;
+	}//end selection()
+
+	/**
+	 * An adoption whose writes land in $written.
+	 *
+	 * @param array<string, string> $written The tables written, with the organisation given.
+	 *
+	 * @return OrganisationlessRowAdoption The adoption.
+	 */
+	private function recordingAdoption(array &$written): OrganisationlessRowAdoption {
 		$adoption = $this->getMockBuilder(OrganisationlessRowAdoption::class)
 			->setConstructorArgs([$this->createMock(IDBConnection::class), $this->createMock(IAppConfig::class)])
 			->onlyMethods(['count', 'adopt'])
@@ -102,23 +126,62 @@ final class AdoptOrganisationlessRowsTest extends TestCase {
 
 			return ($tableName === 'already_done') ? 0 : 3;
 		});
-		$written = [];
 		$adoption->method('adopt')->willReturnCallback(static function (string $tableName, string $organisation) use (&$written): int {
 			$written[$tableName] = $organisation;
 			return 3;
 		});
 
+		return $adoption;
+	}//end recordingAdoption()
+
+	public function testTheUpgradeStepReportsAndWritesNothing(): void {
+		$written = [];
 		$warnings = [];
+		$infos = [];
 		$output = $this->createMock(IOutput::class);
 		$output->method('warning')->willReturnCallback(static function (string $message) use (&$warnings): void {
 			$warnings[] = $message;
 		});
+		$output->method('info')->willReturnCallback(static function (string $message) use (&$infos): void {
+			$infos[] = $message;
+		});
 
-		(new AdoptOrganisationlessRows(selection: $selection, adoption: $adoption, logger: $this->createMock(LoggerInterface::class)))->run($output);
+		(new AdoptOrganisationlessRows(
+			selection: $this->selection(withBroken: true),
+			adoption: $this->recordingAdoption($written),
+			logger: $this->createMock(LoggerInterface::class)
+		))->run($output);
 
-		$this->assertSame(['with_rows' => 'org-a', 'after_broken' => 'org-d'], $written);
+		$this->assertSame([], $written);
 		$this->assertCount(2, $warnings);
 		$this->assertStringContainsString('no_owner', $warnings[0]);
 		$this->assertStringContainsString('broken', $warnings[1]);
-	}//end testOnlyTablesWithOrgLessRowsAndAKnownOrganisationAreWritten()
+		$this->assertStringContainsString('org-a', $infos[0]);
+		$this->assertStringContainsString('--apply', end($infos));
+	}//end testTheUpgradeStepReportsAndWritesNothing()
+
+	public function testTheCommandIsADryRunWithoutApply(): void {
+		$written = [];
+		$tester = new CommandTester(new AdoptOrganisationlessRowsCommand(selection: $this->selection(), adoption: $this->recordingAdoption($written)));
+
+		$this->assertSame(0, $tester->execute([]));
+		$this->assertSame([], $written);
+		$this->assertStringContainsString('dry run', $tester->getDisplay());
+	}//end testTheCommandIsADryRunWithoutApply()
+
+	public function testTheCommandWritesOnlyWithApply(): void {
+		$written = [];
+		$tester = new CommandTester(new AdoptOrganisationlessRowsCommand(selection: $this->selection(), adoption: $this->recordingAdoption($written)));
+
+		$this->assertSame(0, $tester->execute(['--apply' => true]));
+		$this->assertSame(['with_rows' => 'org-a', 'after_broken' => 'org-d'], $written);
+	}//end testTheCommandWritesOnlyWithApply()
+
+	public function testDryRunWinsOverApply(): void {
+		$written = [];
+		$tester = new CommandTester(new AdoptOrganisationlessRowsCommand(selection: $this->selection(), adoption: $this->recordingAdoption($written)));
+
+		$tester->execute(['--apply' => true, '--dry-run' => true]);
+		$this->assertSame([], $written);
+	}//end testDryRunWinsOverApply()
 }//end class

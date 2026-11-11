@@ -1,7 +1,7 @@
 <?php
 
 /**
- * AdoptOrganisationlessRows: gives the stored rows that carry no organisation one.
+ * AdoptOrganisationlessRows: reports the stored rows that carry no organisation.
  *
  * @category Repair
  * @package  OCA\OpenRegister\Repair
@@ -31,15 +31,13 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Repair step: give every magic-table row without an organisation the register's,
- * else the schema's, else the default organisation.
+ * Repair step: report, per magic table, the rows without an organisation and the
+ * organisation `occ openregister:adopt-organisationless-rows --apply` would give them.
  *
- * Once it has run, a row without an organisation is one written since, and
- * the rule that only an administrator reads such rows holds for the data as
- * well as for the code. `occ openregister:adopt-organisationless-rows --dry-run`
- * reports what this step would write.
+ * Writes nothing. Giving those rows an organisation changes who may read them,
+ * so it is left to an administrator running the command.
  *
- * Idempotent, and never throws: one unreadable table must not abort an upgrade.
+ * Never throws: one unreadable table must not abort an upgrade.
  *
  * @spec openspec/specs/saas-multi-tenant/spec.md
  */
@@ -67,11 +65,11 @@ class AdoptOrganisationlessRows implements IRepairStep {
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
 	public function getName(): string {
-		return 'Give stored objects without an organisation the organisation of their register, schema or instance';
+		return 'Report stored objects without an organisation';
 	}//end getName()
 
 	/**
-	 * Walk every magic table and give its org-less rows an organisation.
+	 * Walk every magic table and report its org-less rows.
 	 *
 	 * @param IOutput $output Upgrade output.
 	 *
@@ -90,10 +88,10 @@ class AdoptOrganisationlessRows implements IRepairStep {
 			return;
 		}
 
-		$adopted = 0;
+		$found = 0;
 		foreach ($tables as $target) {
 			try {
-				$adopted += $this->adoptTable(target: $target, output: $output);
+				$found += $this->reportTable(target: $target, output: $output);
 			} catch (Throwable $e) {
 				$this->logger->warning(
 					message: '[AdoptOrganisationlessRows] Skipped a table',
@@ -103,33 +101,42 @@ class AdoptOrganisationlessRows implements IRepairStep {
 			}
 		}
 
-		$output->info(sprintf('Gave %d stored object(s) an organisation.', $adopted));
+		if ($found > 0) {
+			$output->info(
+				sprintf(
+					'%d stored object(s) have no organisation; run occ openregister:adopt-organisationless-rows --apply to give them one.',
+					$found
+				)
+			);
+		}
 	}//end run()
 
 	/**
-	 * Give one table's org-less rows its organisation.
+	 * Report one table's org-less rows and the organisation the command would give them.
 	 *
 	 * @param MagicTableTarget $target The table.
 	 * @param IOutput          $output Upgrade output.
 	 *
-	 * @return int The rows written.
+	 * @return int The rows without an organisation.
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
-	private function adoptTable(MagicTableTarget $target, IOutput $output): int {
-		if ($this->adoption->count(tableName: $target->tableName) === 0) {
+	private function reportTable(MagicTableTarget $target, IOutput $output): int {
+		$count = $this->adoption->count(tableName: $target->tableName);
+		if ($count === 0) {
 			return 0;
 		}
 
 		$organisation = $this->adoption->organisationFor(target: $target);
 		if ($organisation === null) {
-			$output->warning($target->label() . ': rows without an organisation stay, no register, schema or default organisation is set');
-			return 0;
+			$output->warning(
+				sprintf('%s: %d row(s) without an organisation, no register, schema or default organisation is set', $target->label(), $count)
+			);
+			return $count;
 		}
 
-		$written = $this->adoption->adopt(tableName: $target->tableName, organisation: $organisation);
-		$output->info(sprintf('%s: gave %d row(s) organisation %s', $target->label(), $written, $organisation));
+		$output->info(sprintf('%s: %d row(s) without an organisation, the command would give them %s', $target->label(), $count, $organisation));
 
-		return $written;
-	}//end adoptTable()
+		return $count;
+	}//end reportTable()
 }//end class

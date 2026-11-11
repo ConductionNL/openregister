@@ -24,10 +24,18 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Service\Organisation\OrganisationlessRowAdoption;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * `occ openregister:adopt-organisationless-rows [--dry-run]`: the repair step
- * AdoptOrganisationlessRows on demand, with a report of what it would write.
+ * `occ openregister:adopt-organisationless-rows [--apply]`: give stored objects
+ * without an organisation the organisation of their register, else schema, else
+ * the instance default.
+ *
+ * A dry run unless `--apply` is given: the write widens who may read those rows
+ * (members of the organisation they get) and narrows it for reads that admit
+ * org-less rows only, so an administrator chooses to run it.
  *
  * @spec openspec/specs/saas-multi-tenant/spec.md
  */
@@ -66,7 +74,24 @@ class AdoptOrganisationlessRowsCommand extends MagicTableCommand {
 				'Give stored objects without an organisation the organisation of their register, schema or instance.'
 			);
 		$this->addSelectionOptions();
+		$this->addOption(name: 'apply', mode: InputOption::VALUE_NONE, description: 'Write the organisations; without it the run is a dry run');
 	}//end configure()
+
+	/**
+	 * Make the run a dry run unless --apply is given.
+	 *
+	 * @param InputInterface  $input  The input.
+	 * @param OutputInterface $output The output.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 */
+	protected function initialize(InputInterface $input, OutputInterface $output): void {
+		if ($input->getOption('apply') !== true) {
+			$input->setOption('dry-run', true);
+		}
+	}//end initialize()
 
 	/**
 	 * Say what the run does.
@@ -133,7 +158,7 @@ class AdoptOrganisationlessRowsCommand extends MagicTableCommand {
 				$run->scanned,
 				$run->changed,
 				$this->unassigned,
-				$run->dryRunNote(words: ' (dry run, nothing written)')
+				$run->dryRunNote(words: ' (dry run, nothing written; add --apply to write)')
 			)
 		);
 

@@ -321,23 +321,32 @@ One exception remains in the code: a grant that reaches a schema through its
 register's cascade also admits such objects, because shared reference data was
 stored that way.
 
-The repair step `AdoptOrganisationlessRows` closes that gap in the data. On
-upgrade it gives every object without an organisation the organisation of its
-register, else of its schema, else the instance's default organisation. Once
-it has run, no stored object is without an organisation, so the cascade has
-nothing extra to admit and the admin-only rule holds for every object. A table
-for which none of the three is set keeps its objects as they are, and the step
-names that table in the upgrade output.
+The command `occ openregister:adopt-organisationless-rows` closes that gap in
+the data. It gives every object without an organisation the organisation of its
+register, else of its schema, else the instance's default organisation. It only
+writes with `--apply`; without it, it reports per table how many objects lack an
+organisation and which organisation they would get. On upgrade the repair step
+`AdoptOrganisationlessRows` only reports the same counts and writes nothing.
 
-To see what the step writes before you upgrade, or to run it again later:
+Writing the organisation changes who may read those objects:
+
+- members of the organisation an object gets can now read it under the usual
+  organisation rules, where before only an administrator (or a register
+  cascade grant) could;
+- reads that admit objects without an organisation only, such as anonymous
+  reads that follow an inverse relation, no longer return them.
+
+A table for which none of the three is set keeps its objects as they are, and
+the command names that table.
 
 ```bash
-occ openregister:adopt-organisationless-rows --dry-run
-occ openregister:adopt-organisationless-rows --register <slug> --schema <slug>
+occ openregister:adopt-organisationless-rows
+occ openregister:adopt-organisationless-rows --apply
+occ openregister:adopt-organisationless-rows --apply --register <slug> --schema <slug>
 ```
 
-The step and the command only fill an empty organisation, so running either
-twice changes nothing the second time.
+The command only fills an empty organisation, so running it twice changes
+nothing the second time.
 
 ### The action vocabulary: closed by default, extensible by declaration
 

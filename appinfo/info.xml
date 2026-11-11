@@ -232,8 +232,8 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
 			<step>OCA\OpenRegister\Repair\MarkImplicitCrossOrganisationReadRules</step>
-			<!-- Gives stored objects without an organisation the register's, schema's or default
-			     organisation, so only rows written since stay org-less (admin-only). -->
+			<!-- Reports stored objects without an organisation; writes nothing
+			     (occ openregister:adopt-organisationless-rows with apply writes). -->
 			<step>OCA\OpenRegister\Repair\AdoptOrganisationlessRows</step>
 			<!-- The flows register must EXIST before any step reads flows.
 			     ImportFlowRegister was written, and named here zero times, so
