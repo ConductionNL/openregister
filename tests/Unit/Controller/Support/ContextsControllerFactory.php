@@ -21,6 +21,8 @@ final class ContextsControllerFactory {
 	 * @param IRequest $request Constructor argument.
 	 * @param SchemaCatalogInterface $catalog Constructor argument.
 	 * @param JsonLdContextServiceInterface $contextService Constructor argument.
+	 * @param IUserSession $userSession Constructor argument.
+	 * @param PermissionCheckInterface $permissions Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -28,12 +30,16 @@ final class ContextsControllerFactory {
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Db\SchemaCatalogInterface $catalog,
 		\OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface $contextService,
+		\OCP\IUserSession $userSession,
+		\OCA\OpenRegister\Service\Object\PermissionCheckInterface $permissions,
 	): array {
 		return [
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ContextsControllerServices(
 				catalog: $catalog,
 				contextService: $contextService,
+				userSession: $userSession,
+				permissions: $permissions,
 			),
 		];
 	}//end args()
