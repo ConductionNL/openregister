@@ -469,6 +469,6 @@ class ExportProfileWriter implements ExportProfileWriterInterface {
 	 * @return string The quoted cell.
 	 */
 	private function csvCell(string $value): string {
-		return '"' . str_replace('"', '""', $value) . '"';
+		return '"' . str_replace('"', '""', (string)SpreadsheetCell::csvValue(value: $value)) . '"';
 	}//end csvCell()
 }//end class

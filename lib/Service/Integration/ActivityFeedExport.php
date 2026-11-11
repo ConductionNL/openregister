@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -57,13 +58,6 @@ class ActivityFeedExport {
 	 * @var array<int,string>
 	 */
 	public const COLUMNS = ['when', 'kind', 'actor', 'action', 'summary', 'url'];
-
-	/**
-	 * The characters a spreadsheet treats as the start of a formula.
-	 *
-	 * @var array<int,string>
-	 */
-	private const FORMULA_STARTS = ['=', '+', '-', '@'];
 
 	/**
 	 * The filtered page as CSV.
@@ -152,17 +146,6 @@ class ActivityFeedExport {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-feed-filters-by-kind-and-period-and-exports
 	 */
 	private function cell(string $value): string {
-		if ($value === '') {
-			return '';
-		}
-
-		if (in_array($value[0], self::FORMULA_STARTS, true) === true) {
-			// The apostrophe is what Excel and LibreOffice both read as "this
-			// is text". Stripping the character instead would change what a
-			// summary says.
-			return "'" . $value;
-		}
-
-		return $value;
+		return (string)SpreadsheetCell::csvValue(value: $value);
 	}//end cell()
 }//end class
