@@ -70,6 +70,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * Golden test for ObjectService::saveObject().
@@ -292,7 +294,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			]);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->recorder(DataManipulationHandler::class, 'dataManip', []),
 			deleteHandler: $this->recorder(DeleteObject::class, 'deleteHandler', []),
 			getHandler: $this->recorder(GetObject::class, 'getHandler', []),
@@ -375,7 +377,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			container: $container,
 			objectSourceRegistry: $this->recorder(ObjectSourceRegistry::class, 'objectSources', []),
 			autoTransitions: $autoTransitions
-		);
+		));
 	}//end service()
 
 	/**
@@ -415,6 +417,10 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 
 		if (in_array($method, ['logger.debug', 'logger.info', 'logger.warning', 'logger.error'], true) === true && is_array($args[1] ?? null) === true) {
 			unset($args[1]['file'], $args[1]['line']);
+		}
+
+		if (($args[0] ?? null) instanceof WriteConstraintCheck) {
+			$args = [$args[0]->incoming, $args[0]->stored, ...array_slice($args, 1)];
 		}
 
 		$this->calls[] = [$method, $this->describe($args)];

@@ -196,28 +196,8 @@ class HardeningController extends Controller {
 			// A stolen session is not a confirmed password, and this write
 			// weakens the instance. REQ-IHC-002.
 			$this->elevation->requireElevated();
-			$controls = [];
-			$requested = ($body['controls'] ?? []);
-			if (is_array($requested) === true) {
-				foreach ($requested as $control => $value) {
-					$controls[$control] = $this->settingsService->setControl(
-						control: (string)$control,
-						value: (int)$value
-					);
-				}
-			}
 
-			$origins = null;
-			if (array_key_exists('allowedOrigins', $body) === true && is_array($body['allowedOrigins']) === true) {
-				$origins = $this->settingsService->setAllowedOrigins(origins: $body['allowedOrigins']);
-			}
-
-			$answer = ['controls' => $controls];
-			if ($origins !== null) {
-				$answer['allowedOrigins'] = $origins;
-			}
-
-			return new JSONResponse(data: $answer);
+			return new JSONResponse(data: $this->appliedHardening(body: $body));
 		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (HardeningFloorExceptionInterface $refusal) {
@@ -227,6 +207,50 @@ class HardeningController extends Controller {
 		}//end try
 
 	}//end updateControls()
+
+	/**
+	 * Apply the requested controls, then the allowed origins when the body names them.
+	 *
+	 * @param array<string, mixed> $body The request body
+	 *
+	 * @return array<string, mixed> The controls as stored, and the origins when they were set
+	 *
+	 * @throws HardeningFloorExceptionInterface When a value would breach a floor
+	 * @throws InvalidArgumentException When a control or origin is not valid
+	 */
+	private function appliedHardening(array $body): array {
+		$answer = ['controls' => $this->appliedControls(requested: ($body['controls'] ?? []))];
+
+		if (array_key_exists('allowedOrigins', $body) === true && is_array($body['allowedOrigins']) === true) {
+			$answer['allowedOrigins'] = $this->settingsService->setAllowedOrigins(origins: $body['allowedOrigins']);
+		}
+
+		return $answer;
+	}//end appliedHardening()
+
+	/**
+	 * Store each requested control value; a body without a controls map sets none.
+	 *
+	 * @param mixed $requested The `controls` of the body
+	 *
+	 * @return array<string, int> Each control with the value as stored
+	 *
+	 * @throws HardeningFloorExceptionInterface When a value would breach a floor
+	 * @throws InvalidArgumentException When a control is not valid
+	 */
+	private function appliedControls(mixed $requested): array {
+		$controls = [];
+		if (is_array($requested) === true) {
+			foreach ($requested as $control => $value) {
+				$controls[$control] = $this->settingsService->setControl(
+					control: (string)$control,
+					value: (int)$value
+				);
+			}
+		}
+
+		return $controls;
+	}//end appliedControls()
 
 	/**
 	 * Declare a floor for one or more controls.
@@ -256,15 +280,7 @@ class HardeningController extends Controller {
 			// down is what lets the next control be weakened. REQ-IHC-002.
 			$this->elevation->requireElevated();
 
-			$applied = [];
-			foreach ($requested as $control => $floor) {
-				$applied[$control] = $this->settingsService->setFloor(
-					control: (string)$control,
-					floor: (int)$floor
-				);
-			}
-
-			return new JSONResponse(data: ['floors' => $applied]);
+			return new JSONResponse(data: ['floors' => $this->appliedFloors(requested: $requested)]);
 		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (HardeningFloorExceptionInterface $refusal) {
@@ -274,6 +290,28 @@ class HardeningController extends Controller {
 		}//end try
 
 	}//end updateFloors()
+
+	/**
+	 * Store each requested floor.
+	 *
+	 * @param array<string, mixed> $requested The floors of the body, by control
+	 *
+	 * @return array<string, int> Each control with the floor as stored
+	 *
+	 * @throws HardeningFloorExceptionInterface When a floor would breach the declared minimum
+	 * @throws InvalidArgumentException When a control is not valid
+	 */
+	private function appliedFloors(array $requested): array {
+		$applied = [];
+		foreach ($requested as $control => $floor) {
+			$applied[$control] = $this->settingsService->setFloor(
+				control: (string)$control,
+				floor: (int)$floor
+			);
+		}
+
+		return $applied;
+	}//end appliedFloors()
 	/**
 	 * Start an elevated administration period by confirming the password.
 	 *

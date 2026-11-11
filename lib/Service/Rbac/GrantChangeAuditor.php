@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\AuditRecording;
@@ -199,7 +200,7 @@ class GrantChangeAuditor implements GrantChangeAuditorInterface {
 	 */
 	private function write(ObjectEntity $object, GrantAuditEntry $entry): void {
 		try {
-			$this->mapper->createAuditTrailEntry(object: $object, action: $entry->action, context: $entry->changed);
+			$this->mapper->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: $entry->action, context: $entry->changed));
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[GrantChangeAuditor] Could not record a change of who may reach a record; the change itself was stored',

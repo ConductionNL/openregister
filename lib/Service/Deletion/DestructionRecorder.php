@@ -35,6 +35,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Deletion;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IUserSession;
@@ -85,12 +88,13 @@ class DestructionRecorder {
 		$record = array_merge($this->statement(command: $command, actor: $actor), $command->context);
 
 		try {
-			$this->auditTrailMapper->createAuditTrailEntry(
-				object: $command->object,
-				action: DestructionScope::DESTRUCTION_ACTION,
-				context: $record,
-				actorId: $actor['id'],
-				actorName: $actor['name']
+			$this->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $command->object,
+					action: DestructionScope::DESTRUCTION_ACTION,
+					context: $record,
+					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $actor['id'], name: $actor['name']))
+				)
 			);
 		} catch (Throwable $e) {
 			throw $this->unrecordable(object: $command->object, error: $e);

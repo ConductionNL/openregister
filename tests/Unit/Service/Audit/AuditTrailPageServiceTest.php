@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Audit;
 
 use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\Db\AuditTrail\AuditPageRequest;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\AuditTrailQuery;
@@ -53,7 +55,7 @@ class AuditTrailPageServiceTest extends TestCase {
 
 	public function testAPageCarriesTheBoundedLimitAndBothCursors(): void {
 		$this->pageQuery->expects($this->once())->method('page')
-			->with(['action' => 'create'], 'x', 5000, 40)
+			->with(new AuditPageRequest(new AuditTrailCriteria(['action' => 'create'], 'x'), 5000, 40))
 			->willReturn(['results' => [['id' => 1]], 'nextCursor' => 7]);
 
 		$page = $this->service->page(new AuditTrailQuery(['action' => 'create'], 'x'), 5000, 40);
@@ -67,7 +69,7 @@ class AuditTrailPageServiceTest extends TestCase {
 	public function testAnExportUnderTheCeilingIsRenderedInline(): void {
 		$rows = [['id' => 1], ['id' => 2]];
 		$this->pageQuery->expects($this->once())->method('collect')
-			->with(['user' => 'u'], null, JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT)
+			->with(new AuditTrailCriteria(['user' => 'u'], null), JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT)
 			->willReturn(['results' => $rows, 'truncated' => false]);
 		$this->logService->expects($this->once())->method('exportRows')
 			->with('csv', $rows, ['includeChanges' => true])

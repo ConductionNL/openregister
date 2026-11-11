@@ -9,6 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -136,10 +137,10 @@ class RegistersControllerIndexGoldenTest extends TestCase {
 			return ['total' => 1, 'size' => 2];
 		});
 		$auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-		$auditTrailMapper->method('getStatistics')->willReturnCallback(function (...$args) {
+		$auditTrailMapper->method('statisticsTotals')->willReturnCallback(AuditStatisticsCalls::positional(function (...$args) {
 			$this->calls[] = ['auditTrailMapper.getStatistics' => $args];
 			return ['total' => 3];
-		});
+		}));
 
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturn($case['admin'] ?? true);

@@ -83,7 +83,7 @@ class UserLinkWriter {
 		$linker = $this->linker();
 
 		$contactUid = ContactLink::USER_UID_PREFIX . $user->getUID();
-		$link = $this->links->findByObjectContactAndRole(objectUuid: $request->objectUuid, contactUid: $contactUid, role: $role);
+		$link = $this->links->findByObjectContactAndRole(ref: new PersonLinkRef(objectUuid: $request->objectUuid, contactUid: $contactUid, role: $role));
 		$isNew = ($link === null);
 		$link = ($link ?? $this->newLink(objectUuid: $request->objectUuid, contactUid: $contactUid));
 

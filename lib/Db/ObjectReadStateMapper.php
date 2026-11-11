@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectReadState\ReadStateScope;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -348,6 +349,21 @@ class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInt
 			return [];
 		}
 
+		$seen = $this->seenAmong(userId: $userId, objectUuids: $objectUuids);
+
+		return array_values(array_filter($objectUuids, static fn (string $uuid): bool => isset($seen[$uuid]) === false));
+
+	}//end unreadAmong()
+
+	/**
+	 * The objects among some that a user has a read row for, as a set keyed by uuid.
+	 *
+	 * @param string             $userId      The user.
+	 * @param array<int, string> $objectUuids The objects.
+	 *
+	 * @return array<string, true> The seen uuids.
+	 */
+	private function seenAmong(string $userId, array $objectUuids): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('object_uuid')
 			->from($this->getTableName())
@@ -359,7 +375,17 @@ class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInt
 				)
 			);
 
-		$result = $qb->executeQuery();
+		return $this->seenUuidsOf(result: $qb->executeQuery());
+	}//end seenAmong()
+
+	/**
+	 * The uuids a read-state result holds, as a set; the result is closed after.
+	 *
+	 * @param IResult $result The result.
+	 *
+	 * @return array<string, true> The seen uuids.
+	 */
+	private function seenUuidsOf(IResult $result): array {
 		$seen = [];
 		while (($row = $result->fetch()) !== false) {
 			$seen[(string)($row['object_uuid'] ?? '')] = true;
@@ -367,7 +393,6 @@ class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInt
 
 		$result->closeCursor();
 
-		return array_values(array_filter($objectUuids, static fn (string $uuid): bool => isset($seen[$uuid]) === false));
-
-	}//end unreadAmong()
+		return $seen;
+	}//end seenUuidsOf()
 }//end class

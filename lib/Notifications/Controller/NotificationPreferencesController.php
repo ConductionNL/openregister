@@ -45,6 +45,8 @@ namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -164,13 +166,13 @@ class NotificationPreferencesController extends Controller {
 	 * @return JSONResponse The stored override.
 	 */
 	private function writeOverride(string $userId, array $target): JSONResponse {
-		[$schema, $notification, $scope] = [$target['schema'], $target['notification'], $target['scope']];
+		$address = new PreferenceAddress(schemaSlug: $target['schema'], notificationKey: $target['notification'], scope: $target['scope']);
 		$override = $this->requestedSetting(params: $this->request->getParams());
-		$this->preferenceService->setOverride(userId: $userId, schemaSlug: $schema, notificationKey: $notification, override: $override, scope: $scope);
+		$this->preferenceService->storeOverride(write: new PreferenceWrite(party: $userId, address: $address, value: $override));
 
 		$stored = null;
 		if ($override !== null) {
-			$stored = $this->preferenceService->getOverride(userId: $userId, schemaSlug: $schema, notificationKey: $notification, scope: $scope);
+			$stored = $this->preferenceService->overrideAt(userId: $userId, address: $address);
 		}
 
 		return $this->settingResponse(target: $target, stored: ['override' => $stored]);

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Service\Organisation\NewOrganisation;
 
 /**
  * Every public method of OrganisationService. Callers depend on this interface, not on the class.
@@ -151,10 +152,8 @@ interface OrganisationServiceInterface {
 	/**
 	 * Create a new organisation
 	 *
-	 * @param string $name Organisation name
-	 * @param string $description Organisation description
-	 * @param bool $addCurrentUser Whether to add current user as owner and member
-	 * @param string $uuid Optional specific UUID to use
+	 * @param NewOrganisation $details        The name, description and optional UUID.
+	 * @param bool            $addCurrentUser Whether to add current user as owner and member
 	 *
 	 * @return Organisation The created organisation
 	 *
@@ -167,7 +166,7 @@ interface OrganisationServiceInterface {
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
-	public function createOrganisation(string $name, string $description = '', bool $addCurrentUser = true, string $uuid = ''): Organisation;
+	public function createOrganisation(NewOrganisation $details, bool $addCurrentUser = true): Organisation;
 
 	/**
 	 * Check if current user has access to an organisation

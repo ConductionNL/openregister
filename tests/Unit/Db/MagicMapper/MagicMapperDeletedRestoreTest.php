@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
@@ -487,7 +488,7 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 		$mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_2');
 		// Only the original slug is taken; its suffixed variant is free.
 		$mapper->method('findSlugHolders')->willReturnCallback(
-			static fn (Register $r, Schema $sc, string $slug): array => (($slug === 'hello-world') ? $holders : [])
+			static fn (RegisterSchema $table, string $slug): array => (($slug === 'hello-world') ? $holders : [])
 		);
 
 		$qb = $this->createMock(IQueryBuilder::class);

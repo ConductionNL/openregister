@@ -190,31 +190,33 @@ class ContextsController extends Controller {
 	 * @return string The ETag value (quoted).
 	 */
 	private function buildEtag(Register $register, array $schemas): string {
-		$parts = [];
-		$updated = $register->getUpdated();
-		if ($updated !== null) {
-			$parts[] = $updated->format('U');
-		} else {
-			$parts[] = '0';
-		}
+		$parts = [self::updatedStamp(updated: $register->getUpdated())];
 
 		foreach ($schemas as $schema) {
 			if (($schema instanceof Schema) === false) {
 				continue;
 			}
 
-			$schemaUpdated = $schema->getUpdated();
-			if ($schemaUpdated !== null) {
-				$schemaStamp = $schemaUpdated->format('U');
-			} else {
-				$schemaStamp = '0';
-			}
-
-			$parts[] = ((string)$schema->getId()) . '-' . $schemaStamp;
+			$parts[] = ((string)$schema->getId()) . '-' . self::updatedStamp(updated: $schema->getUpdated());
 		}
 
 		return '"' . hash(algo: 'xxh128', data: implode(':', $parts)) . '"';
 	}//end buildEtag()
+
+	/**
+	 * An update moment as epoch seconds, or '0' for one never updated.
+	 *
+	 * @param \DateTimeInterface|null $updated The moment
+	 *
+	 * @return string The stamp
+	 */
+	private static function updatedStamp(?\DateTimeInterface $updated): string {
+		if ($updated !== null) {
+			return $updated->format('U');
+		}
+
+		return '0';
+	}//end updatedStamp()
 
 	/**
 	 * Build a JSON-LD context DataResponse with ETag/Cache-Control headers,

@@ -429,45 +429,11 @@ class MagicBulkHandler {
 	}//end initializeMaxPacketSize()
 
 	/**
-	 * Perform bulk upsert operation on dynamic table
-	 *
-	 * This method provides high-performance INSERT...ON CONFLICT DO UPDATE (PostgreSQL)
-	 * or INSERT...ON DUPLICATE KEY UPDATE (MySQL/MariaDB) operations for dynamic tables.
-	 * It returns complete objects with database-computed classification (created/updated/unchanged).
-	 *
-	 * @param array $objects Array of object data in standard format
-	 * @param Register $register Register context
-	 * @param Schema $schema Schema context
-	 * @param string $tableName Target table name
-	 * @param bool $needsPreUpdateState Whether anything downstream will read the
-	 *                                  pre-update rows (audit changeset or update
-	 *                                  event). False narrows the fetch to the uuid.
-	 *                                  See the SuppressWarnings note below.
-	 *
-	 * @return array Array of complete objects with object_status field
-	 *
-	 * @throws \OCP\DB\Exception If a database error occurs
-	 *
-	 * @psalm-return list<array<string, mixed>>
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $needsPreUpdateState reports a
-	 * FACT about the caller — whether anything will read the pre-update rows —
-	 * rather than switching this method between two behaviours. The rows are
-	 * fetched for an audit changeset or an update event; a caller with both off
-	 * reads only the uuid, and this is how that reaches the query. Inverting it
-	 * into two methods would duplicate the whole chunk path to vary one column
-	 * list.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function bulkUpsert(array $objects, Register $register, Schema $schema, string $tableName, bool $needsPreUpdateState = true): array {
-		$table = new RegisterSchema(register: $register, schema: $schema);
-		$command = new BulkUpsertCommand(objects: $objects, table: $table, tableName: $tableName, needsPreUpdateState: $needsPreUpdateState);
-		return $this->upsert(command: $command);
-	}//end bulkUpsert()
-
-	/**
 	 * Run one bulk upsert, chunk by chunk, each chunk in its own transaction.
+	 *
+	 * INSERT...ON CONFLICT DO UPDATE (PostgreSQL) or INSERT...ON DUPLICATE KEY UPDATE
+	 * (MySQL/MariaDB), returning complete objects with their database-computed
+	 * classification (created/updated/unchanged).
 	 *
 	 * @param BulkUpsertCommand $command The upsert.
 	 *

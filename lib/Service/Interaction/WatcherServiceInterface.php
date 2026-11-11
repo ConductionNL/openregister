@@ -132,10 +132,8 @@ interface WatcherServiceInterface {
 	 * mention uses). Public, so an app whose assignment is not an object
 	 * property (a task, a workflow step) can call it.
 	 *
-	 * @param ObjectEntity $object The assigned object.
-	 * @param string $userId The assignee, already checked for read access.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The assigned object and how the caller addressed it.
+	 * @param string          $userId The assignee, already checked for read access.
 	 *
 	 * @return Watcher The follow.
 	 *
@@ -143,12 +141,7 @@ interface WatcherServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
 	 */
-	public function followAssigned(
-		ObjectEntity $object,
-		string $userId,
-		?string $register = null,
-		?string $schema = null,
-	): Watcher;
+	public function followAssigned(AddressedObject $target, string $userId): Watcher;
 
 	/**
 	 * Remove another user's subscription.

@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -155,7 +156,8 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		);
 		$written = [];
 		$this->magicMapper->method('updateSlugColumn')->willReturnCallback(
-			function (...$args) use (&$written): int {
+			function (RegisterSchema $table, mixed ...$rest) use (&$written): int {
+				$args = [$table->register, $table->schema, ...$rest];
 				$written[] = $args['slug'] ?? $args[3];
 				return 1;
 			}

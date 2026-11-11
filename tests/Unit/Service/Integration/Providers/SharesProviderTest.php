@@ -48,6 +48,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -329,7 +331,7 @@ class SharesProviderTest extends TestCase {
 			container: $container,
 		);
 
-		$rows = $provider->list('reg', 'sch', 'obj-uuid');
+		$rows = $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'));
 
 		$this->assertCount(2, $rows, 'one user share + one link share expected');
 
@@ -377,7 +379,7 @@ class SharesProviderTest extends TestCase {
 			container: $container,
 		);
 
-		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 	}//end testListReturnsEmptyWhenFolderMissing()
 
 	/**
@@ -395,7 +397,7 @@ class SharesProviderTest extends TestCase {
 			container: $container,
 		);
 
-		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 	}//end testListReturnsEmptyWhenShareManagerUnreachable()
 
 	/**
@@ -467,7 +469,7 @@ class SharesProviderTest extends TestCase {
 			container: $container,
 		);
 
-		$provider->delete('reg', 'sch', 'obj-uuid', 's-1');
+		$provider->delete(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'), 's-1');
 		$this->assertSame(['obj-uuid', 's-1'], $service->revoked);
 	}//end testDeleteGoesThroughTheObjectScopedRevoke()
 
@@ -487,7 +489,7 @@ class SharesProviderTest extends TestCase {
 		);
 
 		$this->expectException(NotImplementedException::class);
-		$provider->delete('reg', 'sch', 'obj-uuid', 's-1');
+		$provider->delete(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'), 's-1');
 	}//end testDeleteThrowsNotImplementedWhenShareManagerUnreachable()
 
 	/**
@@ -545,7 +547,7 @@ class SharesProviderTest extends TestCase {
 			container: $container,
 		);
 
-		$rows = $provider->list('reg', 'sch', 'obj-uuid');
+		$rows = $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'));
 
 		$this->assertCount(1, $rows, 'real share row expected when entity resolves');
 		$this->assertSame('s-real', $rows[0]['id']);
@@ -570,22 +572,16 @@ class SharesProviderTest extends TestCase {
 			 */
 			public array $lastArgs = [];
 
-			public function mint(
-				string $objectUuid,
-				?int $registerId = null,
-				?int $schemaId = null,
-				?string $label = null,
-				?int $ttlSeconds = null,
-			): array {
+			public function mintFor(CaseTokenTarget $target, ?int $ttlSeconds = null): array {
 				$this->lastArgs = [
-					'objectUuid' => $objectUuid,
-					'registerId' => $registerId,
-					'schemaId' => $schemaId,
-					'label' => $label,
+					'objectUuid' => $target->objectUuid,
+					'registerId' => $target->registerId,
+					'schemaId' => $target->schemaId,
+					'label' => $target->label,
 					'ttlSeconds' => $ttlSeconds,
 				];
 				return ['token' => 'MINTED', 'url' => 'https://nc/x/MINTED'];
-			}//end mint()
+			}//end mintFor()
 		};
 
 		$container = $this->buildContainer([
@@ -597,7 +593,7 @@ class SharesProviderTest extends TestCase {
 			container: $container,
 		);
 
-		$result = $provider->create('3', '9', 'obj-uuid', [
+		$result = $provider->create(new ObjectRef(register: '3', schema: '9', id: 'obj-uuid'), [
 			'type' => 'public-token',
 			'label' => 'Track your case',
 			'ttlSeconds' => 7200,
@@ -625,7 +621,7 @@ class SharesProviderTest extends TestCase {
 		);
 
 		$this->expectException(NotImplementedException::class);
-		$provider->create('reg', 'sch', 'obj-uuid', ['type' => 'public-token']);
+		$provider->create(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'), ['type' => 'public-token']);
 	}//end testCreateFallsBackToNotImplementedWhenServiceMissing()
 
 	/**
@@ -659,7 +655,7 @@ class SharesProviderTest extends TestCase {
 			container: $container,
 		);
 
-		$provider->delete('reg', 'sch', 'obj-uuid', 'token:abc123');
+		$provider->delete(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'), 'token:abc123');
 		$this->assertSame(['obj-uuid', 'abc123'], $tokenService->revoked);
 	}//end testDeleteRevokesCaseToken()
 
@@ -689,7 +685,7 @@ class SharesProviderTest extends TestCase {
 			container: $container,
 		);
 
-		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 		$this->assertSame('obj-uuid', $folderHandler->lastArg, 'falls back to uuid string when entity null');
 	}//end testListFallsBackToUuidWhenEntityMissing()
 

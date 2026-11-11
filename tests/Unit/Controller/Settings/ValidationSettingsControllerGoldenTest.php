@@ -30,6 +30,7 @@ use OCA\OpenRegister\Controller\Support\ValidationSettingsControllerServices;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Settings\ValidationSettingsController;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -161,10 +162,10 @@ class ValidationSettingsControllerGoldenTest extends TestCase {
 			$throw();
 			return ['total_objects' => 3, 'valid_objects' => 2];
 		});
-		$settings->method('massValidateObjects')->willReturnCallback(function (int $max, int $batch, string $mode, bool $collect) use ($throw) {
-			$this->calls[] = ['settings.massValidateObjects' => [$max, $batch, $mode, $collect]];
+		$settings->method('massValidate')->willReturnCallback(function (MassValidationRequest $request) use ($throw) {
+			$this->calls[] = ['settings.massValidateObjects' => [$request->maxObjects, $request->batchSize, $request->mode, $request->collectErrors]];
 			$throw();
-			return ['success' => true, 'processed' => $max];
+			return ['success' => true, 'processed' => $request->maxObjects];
 		});
 		$settings->method('convertToBytes')->willReturnCallback(function (string $limit) use ($case, $throw) {
 			$this->calls[] = ['settings.convertToBytes' => ['(memory_limit)']];

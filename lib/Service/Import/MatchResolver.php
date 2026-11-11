@@ -91,16 +91,27 @@ class MatchResolver {
 			$matchKey = explode(',', $matchKey);
 		}
 
-		$normalised = [];
-		foreach ($matchKey as $part) {
+		return array_values(array_unique(self::trimmedParts(parts: $matchKey)));
+	}//end normaliseKey()
+
+	/**
+	 * The parts trimmed, blanks dropped, in order.
+	 *
+	 * @param array<int, mixed> $parts The key parts.
+	 *
+	 * @return array<int, string> The parts.
+	 */
+	private static function trimmedParts(array $parts): array {
+		$trimmed = [];
+		foreach ($parts as $part) {
 			$part = trim((string)$part);
 			if ($part !== '') {
-				$normalised[] = $part;
+				$trimmed[] = $part;
 			}
 		}
 
-		return array_values(array_unique($normalised));
-	}//end normaliseKey()
+		return $trimmed;
+	}//end trimmedParts()
 
 	/**
 	 * The uuids of every object the row matches.

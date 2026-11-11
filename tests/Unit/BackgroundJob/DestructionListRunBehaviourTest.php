@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -218,12 +219,12 @@ class DestructionListRunBehaviourTest extends TestCase {
 		$settingsReader->method('getArchivalSettingsOnly')->willReturn($settings);
 
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->audits[] = [$object->getUuid(), $action, $context, ($object->getRetention()['archiefstatus'] ?? null)];
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$delete = $this->createMock(DeleteObject::class);
 		$delete->method('deleteObject')->willReturnCallback(
