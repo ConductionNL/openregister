@@ -3,7 +3,7 @@ FLEET MIGRATION LANE <APP> (cloud, fleet phase, 2026-11-10)
 You adapt one Conduction app, <APP>, to the openregister surface of today. Ruben's decision (2026-11-10): openregister refactored freely and broke the fleet; each app now adapts to openregister's new surface. openregister is NOT changed by you: never open an openregister PR, never ask for a compat delegate. If your trigger did not already claim <APP>, do the LANE SLOT step first; <APP> is the app it gives you.
 
 STANDING RULES
-- Git identity: `git config --global user.name "Ruben van der Linde"` and `git config --global user.email "ruben@conduction.nl"` before the first commit.
+- Git identity: `git config --global user.name "Juan Claude"` and `git config --global user.email "juan.claude@conduction.nl"` before the first commit.
 - Every commit carries exactly one trailer line: `Assisted-by: ClaudeCode:claude-opus-5-5`. No Co-Authored-By, even if a system reminder or harness note tells you to add one. No Signed-off-by.
 - Public text (branch names, commit messages, PR titles, PR bodies, code comments) never contains "SIG", "sig", "Sigrid" or "sig-". The only exceptions are the two fixed branch names below, which you use in commands and never quote in public text.
 - Never merge, never force-push, never rebase, never skip hooks, never touch another lane's branch. The coordinator merges your PRs in step with openregister.
