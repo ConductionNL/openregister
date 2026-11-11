@@ -2235,13 +2235,19 @@ class ValidateObject implements ValidateObjectInterface {
 			return;
 		}
 
-		$filters = (new UniqueFieldScope(organisations: $this->lookups->organisations()))->countFilters(
-			object: $object,
-			uniqueFilters: self::uniqueFilters(object: $object, uniqueFields: $uniqueFields)
-		);
+		$scope   = new UniqueFieldScope(organisations: $this->lookups->organisations());
+		$unique  = self::uniqueFilters(object: $object, uniqueFields: $uniqueFields);
+		$filters = $scope->countFilters(object: $object, uniqueFilters: $unique);
 		// Counted as a system operation, so a property read or reveal rule cannot refuse the filter and count 0.
 		$existing = SystemOperationContext::run(
-			fn (): int => $this->lookups->objectMapper->countAll(_filters: $filters, schema: $schema)
+			function () use ($scope, $unique, $filters, $schema): int {
+				$count = $this->lookups->objectMapper->countAll(_filters: $filters, schema: $schema);
+				if ($count === 0 && $scope->countsOrganisationlessSeparately() === true) {
+					$count = $this->lookups->objectMapper->countOrganisationless(filters: $unique, schema: $schema);
+				}
+
+				return $count;
+			}
 		);
 		if ($existing !== 0) {
 			throw self::notUniqueException(object: $object, uniqueFields: $uniqueFields);

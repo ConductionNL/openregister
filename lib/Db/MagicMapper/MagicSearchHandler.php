@@ -263,6 +263,13 @@ class MagicSearchHandler {
 	private array $ignoredFilters = [];
 
 	/**
+	 * Whether the current count reads past an active organisation context (see countOrganisationless()).
+	 *
+	 * @var bool
+	 */
+	private bool $outsideOrganisationContext = false;
+
+	/**
 	 * The pg_trgm probe, built on first use.
 	 *
 	 * @var MagicPgTrgmProbe|null
@@ -479,6 +486,45 @@ class MagicSearchHandler {
 
 		return $objects;
 	}//end searchTable()
+
+	/**
+	 * Count the rows with no organisation that match a query, ignoring RBAC and any active organisation context.
+	 *
+	 * Org-less rows belong to no tenant, so reading past the context here
+	 * reaches no other organisation's rows. The organisation filter is forced
+	 * to IS NULL whatever the query says.
+	 *
+	 * @param array       $query       The filters.
+	 * @param TableSearch $tableSearch The table to count in.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/specs/object-validation/spec.md
+	 */
+	public function countOrganisationless(array $query, TableSearch $tableSearch): int {
+		$query['@self']         = array_merge((array) ($query['@self'] ?? []), ['organisation' => 'IS NULL']);
+		$query['_rbac']         = false;
+		$query['_multitenancy'] = false;
+		$query['_count']        = true;
+
+		$this->outsideOrganisationContext = true;
+		try {
+			return (int) $this->searchTable(query: $query, tableSearch: $tableSearch);
+		} finally {
+			$this->outsideOrganisationContext = false;
+		}
+	}//end countOrganisationless()
+
+	/**
+	 * Whether an active organisation context bounds this read.
+	 *
+	 * @return bool True inside an organisation context, unless countOrganisationless() is running.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
+	 */
+	private function organisationContextBounds(): bool {
+		return $this->outsideOrganisationContext === false && OrganisationContext::isActive() === true;
+	}//end organisationContextBounds()
 
 	/**
 	 * Apply the SAME multitenancy + RBAC access-control filters used by the
@@ -1361,7 +1407,7 @@ class MagicSearchHandler {
 		bool $multitenancyExplicit,
 	): bool {
 		// Code acting for an organisation always reads inside it.
-		if (OrganisationContext::isActive() === true) {
+		if ($this->organisationContextBounds() === true) {
 			return true;
 		}
 
@@ -2815,7 +2861,7 @@ class MagicSearchHandler {
 		bool $multitenancyExplicit,
 		Schema $schema,
 	): bool {
-		if (OrganisationContext::isActive() === true) {
+		if ($this->organisationContextBounds() === true) {
 			return true;
 		}
 

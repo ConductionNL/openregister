@@ -72,6 +72,23 @@ final class UniqueFieldScope {
 	}//end countFilters()
 
 	/**
+	 * Whether the org-less rows need a count of their own.
+	 *
+	 * Inside an organisation context the context bounds every read to its
+	 * organisation, so the count from countFilters() misses the rows with no
+	 * organisation; those are counted outside the context instead.
+	 *
+	 * @return bool True inside an organisation context.
+	 *
+	 * @spec openspec/specs/object-validation/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
+	 */
+	public function countsOrganisationlessSeparately(): bool {
+		return OrganisationContext::isActive();
+	}//end countsOrganisationlessSeparately()
+
+	/**
 	 * The organisation the write lands in.
 	 *
 	 * An organisation context wins. A `@self.organisation` counts only when the

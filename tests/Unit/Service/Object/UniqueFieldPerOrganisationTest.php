@@ -42,8 +42,9 @@ use ReflectionMethod;
  * The mapper here keeps rows in memory and applies the count filters the way
  * the search handler does: RBAC hides the rows the caller cannot read unless
  * `_rbac` is off, multitenancy keeps the caller's organisation unless
- * `_multitenancy` is off, a system operation lifts both, and
- * `@self.organisation` narrows by organisation.
+ * `_multitenancy` is off, a system operation lifts both, an organisation
+ * context keeps its own organisation only, and `@self.organisation` narrows
+ * by organisation. The org-less count reads past the context.
  *
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
  * @covers \OCA\OpenRegister\Service\Object\UniqueFieldScope
@@ -141,6 +142,38 @@ class UniqueFieldPerOrganisationTest extends TestCase {
 	}//end testAnOrganisationContextCountsThatOrganisation()
 
 	/**
+	 * Inside an organisation context a duplicate in a row without an organisation is refused.
+	 *
+	 * @return void
+	 */
+	public function testAnOrganisationlessDuplicateIsRefusedInsideAContext(): void {
+		$validator = $this->validator(rows: [['org' => null, 'code' => 'A-1', 'readable' => false]]);
+
+		$refusal = OrganisationContext::run(
+			organisationUuid: self::CALLER_ORG,
+			operation: fn (): ?CustomValidationException => $this->refusal(validator: $validator)
+		);
+
+		self::assertNotNull(actual: $refusal);
+	}//end testAnOrganisationlessDuplicateIsRefusedInsideAContext()
+
+	/**
+	 * Inside an organisation context another organisation's rows stay uncounted.
+	 *
+	 * @return void
+	 */
+	public function testAnotherOrganisationsRowsAreNotCountedInsideAContext(): void {
+		$validator = $this->validator(rows: [['org' => self::OTHER_ORG, 'code' => 'A-1', 'readable' => true]]);
+
+		$refusal = OrganisationContext::run(
+			organisationUuid: self::CALLER_ORG,
+			operation: fn (): ?CustomValidationException => $this->refusal(validator: $validator)
+		);
+
+		self::assertNull(actual: $refusal);
+	}//end testAnotherOrganisationsRowsAreNotCountedInsideAContext()
+
+	/**
 	 * Run the unique-field check and return its refusal, or null when the value is unique.
 	 *
 	 * @param ValidateObject $validator The validator.
@@ -187,6 +220,11 @@ class UniqueFieldPerOrganisationTest extends TestCase {
 				array_filter($rows, static fn (array $row): bool => self::counted(row: $row, filters: ($_filters ?? [])))
 			)
 		);
+		$mapper->method('countOrganisationless')->willReturnCallback(
+			static fn (array $filters): int => count(
+				array_filter($rows, static fn (array $row): bool => $row['org'] === null && ($filters['code'] ?? null) === $row['code'])
+			)
+		);
 
 		$organisations = $this->createMock(originalClassName: OrganisationServiceInterface::class);
 		$organisations->method('getOrganisationForNewEntity')->willReturn(self::CALLER_ORG);
@@ -219,6 +257,11 @@ class UniqueFieldPerOrganisationTest extends TestCase {
 	 * @return bool True when the row is counted.
 	 */
 	private static function counted(array $row, array $filters): bool {
+		$context = OrganisationContext::current();
+		if ($context !== null && $row['org'] !== $context) {
+			return false;
+		}
+
 		$system = SystemOperationContext::isActive();
 		if ($system === false && ($filters['_rbac'] ?? true) !== false && $row['readable'] === false) {
 			return false;
