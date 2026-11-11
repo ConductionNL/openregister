@@ -29,6 +29,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Organisation\OrganisationEdit as AuditedOrganisationEdit;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
@@ -45,6 +46,7 @@ use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
+use OCA\OpenRegister\Service\Organisation\NewOrganisation;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
@@ -473,10 +475,8 @@ class OrganisationController extends Controller {
 			$uuid = $requestData['uuid'] ?? '';
 
 			$organisation = $this->organisationService->createOrganisation(
-				name: $name,
-				description: $description,
-				addCurrentUser: true,
-				uuid: $uuid
+				details: new NewOrganisation(name: $name, description: $description, uuid: $uuid),
+				addCurrentUser: true
 			);
 
 			return new JSONResponse(
@@ -859,8 +859,7 @@ class OrganisationController extends Controller {
 			$response = $this->saveAndReturnOrganisation(organisation: $organisation);
 			$this->lifecycleAuditor?->recordUpdate(
 				organisation: $organisation,
-				before: $detailsBefore,
-				after: $this->auditedDetailsOf(organisation: $organisation)
+				edit: new AuditedOrganisationEdit(before: $detailsBefore, after: $this->auditedDetailsOf(organisation: $organisation))
 			);
 
 			// Who holds the right to decide who reads a record is the one change

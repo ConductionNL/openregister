@@ -235,15 +235,7 @@ class ArchivalController extends Controller {
 		// so a records officer had no way to tell the two apart, and neither
 		// did anything built on top.
 		if ($this->lists->isConfigured() === false) {
-			return new JSONResponse(
-				data: [
-					'results' => [],
-					'total' => 0,
-					'configured' => false,
-					'error' => 'No destruction list register and schema are configured',
-				],
-				statusCode: Http::STATUS_OK
-			);
+			return $this->notConfigured(empty: ['results' => [], 'total' => 0]);
 		}
 
 		$status = $this->request->getParam('status');
@@ -322,10 +314,7 @@ class ArchivalController extends Controller {
 		try {
 			$list = $this->lists->find(uuid: $id);
 			if ($list === null) {
-				return new JSONResponse(
-					data: ['error' => 'Destruction list not found'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
+				return $this->listNotFound();
 			}
 
 			$listData = ($list->getObject() ?? []);
@@ -631,16 +620,7 @@ class ArchivalController extends Controller {
 		}
 
 		if ($this->lists->isConfigured() === false) {
-			return new JSONResponse(
-				data: [
-					'results' => [],
-					'total' => 0,
-					'missing' => [],
-					'configured' => false,
-					'error' => 'No destruction list register and schema are configured',
-				],
-				statusCode: Http::STATUS_OK
-			);
+			return $this->notConfigured(empty: ['results' => [], 'total' => 0, 'missing' => []]);
 		}
 
 		$listUuid = $this->request->getParam('destructionList');
@@ -773,10 +753,7 @@ class ArchivalController extends Controller {
 
 		$list = $this->lists->find(uuid: $id);
 		if ($list === null) {
-			return new JSONResponse(
-				data: ['error' => 'Destruction list not found'],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return $this->listNotFound();
 		}
 
 		$reviewer = $this->request->getParam('reviewer');
@@ -863,10 +840,7 @@ class ArchivalController extends Controller {
 	public function decideEntry(string $id, string $entryId): JSONResponse {
 		$userId = $this->currentUserId();
 		if ($userId === null) {
-			return new JSONResponse(
-				data: ['error' => 'Niet geauthenticeerd'],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
+			return $this->notAuthenticated();
 		}
 
 		$read = $this->readEntry(id: $id, entryId: $entryId);
@@ -903,10 +877,7 @@ class ArchivalController extends Controller {
 		}
 
 		if ($list === null) {
-			return new JSONResponse(
-				data: ['error' => 'Destruction list not found'],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return $this->listNotFound();
 		}
 
 		if ($entry === null) {
@@ -1232,6 +1203,50 @@ class ArchivalController extends Controller {
 	}//end recompute()
 
 	/**
+	 * The 404 for a destruction list that does not exist.
+	 *
+	 * @return JSONResponse
+	 */
+	private function listNotFound(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Destruction list not found'],
+			statusCode: Http::STATUS_NOT_FOUND
+		);
+	}//end listNotFound()
+
+	/**
+	 * The 401 for a caller who is not signed in.
+	 *
+	 * @return JSONResponse
+	 */
+	private function notAuthenticated(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Niet geauthenticeerd'],
+			statusCode: Http::STATUS_UNAUTHORIZED
+		);
+	}//end notAuthenticated()
+
+	/**
+	 * The answer of a listing while no destruction-list register and schema are configured.
+	 *
+	 * @param array<string,mixed> $empty The listing's empty fields, in the order the response lists them.
+	 *
+	 * @return JSONResponse A 200 saying the listing is not configured.
+	 */
+	private function notConfigured(array $empty): JSONResponse {
+		return new JSONResponse(
+			data: array_merge(
+				$empty,
+				[
+					'configured' => false,
+					'error' => 'No destruction list register and schema are configured',
+				]
+			),
+			statusCode: Http::STATUS_OK
+		);
+	}//end notConfigured()
+
+	/**
 	 * The user id of whoever is asking, or null when nobody is signed in.
 	 *
 	 * @return string|null The user id.
@@ -1255,10 +1270,7 @@ class ArchivalController extends Controller {
 	private function checkArchivistRole(): ?JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Niet geauthenticeerd'],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
+			return $this->notAuthenticated();
 		}
 
 		// Check if user is in the archivaris group or is an admin.

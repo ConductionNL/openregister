@@ -103,6 +103,34 @@ final class TaskConfigCommon {
 	}//end renderedTitle()
 
 	/**
+	 * A templated string, or null when it is absent or renders to nothing.
+	 *
+	 * @param mixed                $value The configured value.
+	 * @param array<string, mixed> $json  The representative record.
+	 *
+	 * @return string|null The rendered string, or null.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	public function renderedOrNull(mixed $value, array $json): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		$rendered = FlowValueTemplate::render(value: $value, json: $json);
+		if (is_scalar($rendered) === false) {
+			return null;
+		}
+
+		$rendered = trim((string)$rendered);
+		if ($rendered === '') {
+			return null;
+		}
+
+		return $rendered;
+	}//end renderedOrNull()
+
+	/**
 	 * When to wake up and re-ask, absent a wake. Never null.
 	 *
 	 * @param array<string, mixed> $config The step configuration.

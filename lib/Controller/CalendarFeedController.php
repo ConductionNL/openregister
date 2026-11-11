@@ -39,6 +39,7 @@ use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
 use OCA\OpenRegister\Controller\Support\TrimmedRequestParam;
 use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeServiceInterface;
+use OCA\OpenRegister\Service\Calendar\AttendeeResponse;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
@@ -321,11 +322,13 @@ class CalendarFeedController extends Controller {
 		}
 
 		try {
-			$responses = $this->attendees->recordResponse(
-				objectUuid: $id,
-				attendee: (string)$this->request->getParam('attendee', ''),
-				status: (string)$this->request->getParam('status', ''),
-				respondedBy: $this->stringParam(name: 'respondedBy')
+			$responses = $this->attendees->recordAttendeeResponse(
+				response: new AttendeeResponse(
+					objectUuid: $id,
+					attendee: (string)$this->request->getParam('attendee', ''),
+					status: (string)$this->request->getParam('status', ''),
+					respondedBy: $this->stringParam(name: 'respondedBy')
+				)
 			);
 		} catch (InvalidArgumentException $refused) {
 			return new JSONResponse(['message' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);

@@ -78,7 +78,7 @@ class CalculationPayloadBuilderGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testPayloadWithoutReferenceBlocks(): void {
-		$this->references->expects($this->never())->method('resolveAllWithOutcome');
+		$this->references->expects($this->never())->method('resolveReferences');
 		$this->aggregates->expects($this->never())->method('resolveAll');
 		$schema = $this->schema(configuration: ['x-openregister-references' => [], 'x-openregister-aggregate-refs' => 'x']);
 
@@ -109,10 +109,10 @@ class CalculationPayloadBuilderGoldenTest extends TestCase {
 	public function testPayloadWithReferenceBlocks(): void {
 		$refs = ['owner' => ['schema' => 's', 'mode' => 'lookup']];
 		$aggs = ['total' => ['schema' => 's', 'metric' => 'count']];
-		$this->references->expects($this->once())->method('resolveAllWithOutcome')->willReturnCallback(
-			function (array $payload, array $references, mixed $register, ?string $organisation) use ($refs): array {
-				$this->assertSame('2026-01-02T03:04:05+00:00', $payload['@self']['created']);
-				$this->assertSame([$refs, '7', 'org-1'], [$references, $register, $organisation]);
+		$this->references->expects($this->once())->method('resolveReferences')->willReturnCallback(
+			function (ReferringObject $referrer, array $references) use ($refs): array {
+				$this->assertSame('2026-01-02T03:04:05+00:00', $referrer->payload['@self']['created']);
+				$this->assertSame([$refs, '7', 'org-1'], [$references, $referrer->register, $referrer->organisation]);
 				return ['refs' => ['owner' => ['n' => 1]], 'unresolved' => ['gone']];
 			}
 		);
