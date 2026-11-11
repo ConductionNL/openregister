@@ -114,6 +114,18 @@ final class SyncConflictResolver {
 			return self::APPLY_SOURCE;
 		}
 
+		return $this->conflictOutcome(strategy: $strategy, conflict: $conflict);
+	}//end resolve()
+
+	/**
+	 * The outcome of a real conflict under a known strategy.
+	 *
+	 * @param string       $strategy The configured strategy, known to be valid.
+	 * @param SyncConflict $conflict When each side was modified.
+	 *
+	 * @return string One of APPLY_SOURCE, KEEP_LOCAL, DEFER
+	 */
+	private function conflictOutcome(string $strategy, SyncConflict $conflict): string {
 		switch ($strategy) {
 			case self::SOURCE_WINS:
 				return self::APPLY_SOURCE;
@@ -125,7 +137,7 @@ final class SyncConflictResolver {
 			default:
 				return self::DEFER;
 		}//end switch
-	}//end resolve()
+	}//end conflictOutcome()
 
 	/**
 	 * Compare timestamps for the newest-wins strategy.
