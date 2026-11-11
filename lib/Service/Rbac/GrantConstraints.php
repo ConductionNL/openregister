@@ -267,6 +267,18 @@ class GrantConstraints {
 			return false;
 		}
 
+		return $this->areaCovered(scopedTo: $scopedTo, area: $area);
+	}//end covers()
+
+	/**
+	 * Whether every list a `scopedTo` names reaches the area, and it names at least one.
+	 *
+	 * @param array<string, mixed> $scopedTo The entry's area.
+	 * @param array<string, mixed> $area     Where the question is asked.
+	 *
+	 * @return bool True when the area is covered.
+	 */
+	private function areaCovered(array $scopedTo, array $area): bool {
 		$named = false;
 		foreach (['registers' => 'register', 'schemas' => 'schema'] as $listKey => $areaKey) {
 			$list = ($scopedTo[$listKey] ?? null);
@@ -275,15 +287,13 @@ class GrantConstraints {
 			}
 
 			$named = true;
-			if ($this->names(list: $list, value: ($area[$areaKey] ?? null)) === true) {
-				continue;
+			if ($this->names(list: $list, value: ($area[$areaKey] ?? null)) === false) {
+				return false;
 			}
-
-			return false;
 		}
 
 		return $named;
-	}//end covers()
+	}//end areaCovered()
 
 	/**
 	 * Whether a list names one area, by slug or by id.
