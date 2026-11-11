@@ -98,6 +98,27 @@ class SchemaService implements SchemaExplorationInterface {
 	];
 
 	/**
+	 * Property names that are internal or metadata, never suggested (compared lower-case).
+	 *
+	 * @var list<string>
+	 */
+	private const INTERNAL_PROPERTY_NAMES = [
+		'id',
+		'uuid',
+		'_id',
+		'_uuid',
+		'created',
+		'updated',
+		'created_at',
+		'updated_at',
+		'deleted',
+		'deleted_at',
+		'@self',
+		'$schema',
+		'$id',
+	];
+
+	/**
 	 * Simple string formats, in detection order, after dates and identifiers.
 	 *
 	 * @var array<string, string>
@@ -1724,6 +1745,17 @@ class SchemaService implements SchemaExplorationInterface {
 			return null;
 		}
 
+		return self::missingFormat(detected: $detected);
+	}//end formatFinding()
+
+	/**
+	 * The finding of a schema without a format for values that follow one.
+	 *
+	 * @param mixed $detected The detected format.
+	 *
+	 * @return array
+	 */
+	private static function missingFormat(mixed $detected): array {
 		return [
 			'missing_format',
 			[
@@ -1734,7 +1766,7 @@ class SchemaService implements SchemaExplorationInterface {
 				'description' => "Objects appear to have '{$detected}' format pattern",
 			],
 		];
-	}//end formatFinding()
+	}//end missingFormat()
 
 	/**
 	 * A missing pattern when the strings follow one.
@@ -2062,24 +2094,8 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return bool True if the property should be considered internal
 	 */
 	private function isInternalProperty(string $propertyName): bool {
-		$internalPatterns = [
-			'id',
-			'uuid',
-			'_id',
-			'_uuid',
-			'created',
-			'updated',
-			'created_at',
-			'updated_at',
-			'deleted',
-			'deleted_at',
-			'@self',
-			'$schema',
-			'$id',
-		];
-
 		$lowerPropertyName = strtolower($propertyName);
-		return in_array($lowerPropertyName, $internalPatterns, true);
+		return in_array($lowerPropertyName, self::INTERNAL_PROPERTY_NAMES, true);
 	}//end isInternalProperty()
 
 	/**
@@ -2229,23 +2245,34 @@ class SchemaService implements SchemaExplorationInterface {
 
 		// Special handling for string-dominated fields.
 		if ($dominantType === 'string') {
-			// If most values are consistently numeric strings, recommend the numeric type.
-			if (in_array('integer_string', $patterns, true) === true
-				&& in_array('float_string', $patterns, true) === false
-			) {
-				return 'integer';
-			} elseif (in_array('float_string', $patterns, true) === true) {
-				return 'number';
-			} elseif (in_array('boolean_string', $patterns, true) === true) {
-				return 'boolean';
-			}
-
-			return 'string';
+			return self::stringPatternType(patterns: $patterns);
 		}
 
 		// For other dominant types, normalize them.
 		return $this->normalizeSingleType(phpType: $dominantType, patterns: $patterns);
 	}//end getDominantType()
+
+	/**
+	 * The type a string-dominated field is recommended: numeric or boolean when its values consistently are.
+	 *
+	 * @param array $patterns The string patterns seen.
+	 *
+	 * @return string
+	 */
+	private static function stringPatternType(array $patterns): string {
+		// If most values are consistently numeric strings, recommend the numeric type.
+		if (in_array('integer_string', $patterns, true) === true
+			&& in_array('float_string', $patterns, true) === false
+		) {
+			return 'integer';
+		} elseif (in_array('float_string', $patterns, true) === true) {
+			return 'number';
+		} elseif (in_array('boolean_string', $patterns, true) === true) {
+			return 'boolean';
+		}
+
+		return 'string';
+	}//end stringPatternType()
 
 	/**
 	 * Detect if a property appears to be enum-like
