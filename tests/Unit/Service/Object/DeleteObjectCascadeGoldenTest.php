@@ -94,10 +94,10 @@ class DeleteObjectCascadeGoldenTest extends TestCase {
 			$this->createMock(CacheHandler::class),
 			new AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			new DeletionIntegrity(integrity: $integrity, db: $this->createMock(originalClassName: IDBConnection::class)),
+			new DeletionIntegrity(integrity: $integrity, db: $this->createMock(IDBConnection::class)),
 			new DeletionAttribution(
 				userSession: $userSession,
-				organisationMapper: $this->createMock(originalClassName: OrganisationMapper::class),
+				organisationMapper: $this->createMock(OrganisationMapper::class),
 				logger: $this->logger
 			)
 		);
