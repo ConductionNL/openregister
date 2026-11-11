@@ -2556,3 +2556,28 @@ hermiq	1492	985a071e13a0dfd1a5635beff72fdf33c51ff293	CONFLICT	vm1:21314	conflict
 hermiq	1495	c1d26235bbbda61415d5305961c936171a65d762	CONFLICT	vm1:21314	conflicts with the tree on 2244877ae6
 hermiq	1489	4bbef0b22676a8a57666f9e15cd10e6ca154b5ab	RED	vm1:21314	unit tests fail beyond development: npm:registers the skill type and loads the route skill, npm:tests/vitest/route-skill-widgets.spec.js > SkillLearnings > registers the skill type and loads the route skill
 portaliq	2312	8d44449e9bb49bf62eeb88a9f9f7c06f817f46ac	CONFLICT	FV9-07:1	conflicts with the tree in src/shared/portalApi.js (merges cleanly on development alone)
+dossiq	5911	6950b4258ef8e01dbccc0b3f13dd5e401440445f	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5912	1e6646fc05cc482595bf6070081d0e87dda136d0	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5913	475094f3712e7038a161a8fa305d788be82720e5	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5914	3624dd87f2858dad97b51ad92b742c1ecd9ca773	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5915	30928da1661b93c60f3893f13f72c9069bb65540	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5916	186c899bcf56d431232b12b4a2624f72f6ff84c9	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5917	198c9bbd8272c7952a5bed0ae4785b2e3b14b077	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5918	3b268e059fbd130ed4002340df1e79b1e27425ed	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5919	45257e40009a1843dc4eda28e262dc66f3b3c3af	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5920	11bedeba14b7b614c0e4e589692cbd0d08d78a6e	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5921	18480b84a8b6637751c8d981281147eff9becc77	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5922	e59caa0706296dc1a322424c634ac3c555686e85	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5923	da2f8c27cd99f453cf076ae1c569fce20ca41a83	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5924	c21674709aee3821309c597d8f4b4ef48641f589	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5925	d75c7ad561b475594ddfc60fbc3a45173c471c95	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5926	b34a5127e585442be07474d565d077b5507d4cc5	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5927	982707562f2ce5ec24181ae8e1ae67174cf69a8d	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5928	8e69174ad131a26cc4ecfc54f4b9891cc6974b25	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5929	9d9406a06d37e7fe930b776e27f1fbbe646aee77	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5930	e910f86bd925a6bfc2c9ddaac5d74118221bd285	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5931	177d244c45198b0213fbb0d250afc7dbefa09de3	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5932	1065af39cd2c09b63f7066eb8b666d973a4f06f3	BLOCK	FV9-05:1	HearingCalendarServiceTest rewrite drops the participant-calendar write and identical-ICS checks and deletes the no-addressable-participant test without replacement
+dossiq	5933	51a19dfe2a35d9d2f328527f2252ca56cb19ad50	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5934	606d73c7a45b75a5caa13cbed035f1632f2c591d	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5935	4f334aa29ea144e6ec14478dd72dddb05e11e0c1	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
