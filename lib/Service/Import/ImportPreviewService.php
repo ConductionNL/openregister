@@ -52,6 +52,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Previews an import, then commits the preview.
@@ -526,10 +530,11 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		try {
 			$this->targets->objectService->saveObject(
 				object: ($row->getPayload() ?? []),
-				register: $run->destination->register,
-				schema: $run->destination->schema,
-				_validation: false,
-				currentUser: $run->currentUser
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $run->destination->register, schema: $run->destination->schema),
+					policy: new SavePolicy(validation: false),
+					actor: new SaveActor(currentUser: $run->currentUser)
+				)
 			);
 
 			$this->stampApplied(preview: $run->preview, rows: [$row]);

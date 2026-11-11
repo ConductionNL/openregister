@@ -51,6 +51,7 @@ use PHPUnit\Framework\TestCase;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
@@ -287,7 +288,8 @@ final class ObjectWriteBulkGoldenTest extends TestCase {
 			}
 		);
 		$store->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, mixed ...$rest): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$rest = [$options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->calls[] = ['saveObject' => $object, 'uuid' => ($rest[3] ?? null), 'failIfExists' => ($rest[10] ?? null)];
 				return $this->entity(data: (array)$object);
 			}

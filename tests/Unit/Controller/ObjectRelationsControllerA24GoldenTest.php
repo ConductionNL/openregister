@@ -54,6 +54,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectRelationsController
@@ -375,7 +376,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 			->with($this->callback(fn (ParentInheritance $i): bool => $i->parent instanceof ObjectEntity && $i->childData === ['t' => 1] && $i->inherits === ['zaaktype']))
 			->willReturn(['data' => ['t' => 1, 'zaaktype' => 'z'], 'inherited' => ['zaaktype' => 'z']]);
 		$created = $this->object(uuid: 'child');
-		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1, 'zaaktype' => 'z'], [], 'r', 's')->willReturn($created);
+		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1, 'zaaktype' => 'z'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'r' && $options->target->schema == 's'))->willReturn($created);
 		$this->relations->expects($this->never())->method('recordSplit');
 		$this->relations->expects($this->once())->method('recordDerived')
 			->with($this->callback(fn (Derivation $derivation): bool => $derivation->parent instanceof ObjectEntity

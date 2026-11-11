@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -2291,10 +2292,7 @@ class ObjectsControllerTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(static fn (ObjectSaveOptions $options): bool => true),
 				true,
 				true
 			)
@@ -7805,10 +7803,7 @@ class ObjectsControllerTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(static fn (ObjectSaveOptions $options): bool => true),
 				true,
 				true
 			)

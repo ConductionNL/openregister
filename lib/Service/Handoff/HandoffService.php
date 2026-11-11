@@ -59,6 +59,8 @@ use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\WriteCause;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Execute declared semantic-object handoffs on top of SemanticTypeResolver.
@@ -320,8 +322,7 @@ class HandoffService implements HandoffServiceInterface {
 		// target, no relation, no handoff audit row, and no source mutation.
 		$target = $this->objects->objectService->saveObject(
 			object: $targetData,
-			register: $targetRegister,
-			schema: $provider
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $targetRegister, schema: $provider))
 		);
 
 		$handoff = new HandoffRun(plan: $plan, target: new HandoffTarget(object: $target, register: $targetRegister, schema: $provider));
@@ -836,9 +837,10 @@ class HandoffService implements HandoffServiceInterface {
 		try {
 			$this->objects->objectService->saveObject(
 				object: $restore->snapshot,
-				register: $restore->registerRef,
-				schema: $restore->schemaRef,
-				uuid: (string)$restore->source->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $restore->registerRef, schema: $restore->schemaRef),
+					uuid: (string)$restore->source->getUuid()
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->ledger->logger->error(
@@ -879,9 +881,10 @@ class HandoffService implements HandoffServiceInterface {
 		$data = array_merge($plan->source->getObject(), $set);
 		$this->objects->objectService->saveObject(
 			object: $data,
-			register: $plan->request->source->register,
-			schema: $plan->request->source->schema,
-			uuid: (string)$plan->source->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $plan->request->source->register, schema: $plan->request->source->schema),
+				uuid: (string)$plan->source->getUuid()
+			)
 		);
 
 	}//end applyOnSuccess()
