@@ -2184,3 +2184,4 @@
 9116 9662216485b05d966577cd99beb7c47b4d0192c1 REREVIEW merged main; RecentLensLookupCallSitesTest recognises ObjectFindOptions(... audit: false) as the same decision as _audit: false (regex limited to the options' own argument list), undecided list empty again; recogniser pinned by testTheAuditOptOutIsRecognisedInBothSpellings; ContractIsALeafTest green
 9116 d6559e28d7ebe5349a8ee0a28537f27306751e10 REREVIEW same fix as the line above, plus positional PHPUnit assertions (phpstan clean on the touched test)
 5484 f88e090721e243664c7b916200e2fb078a69018c APPROVE lock-only dev-tool bump, merges cleanly with main 2933261ca4; full phpstan over main: 2.3.4 reports a subset of 2.2.16's findings (28 vs 29 sites, no new one; main is already red there, inherited); no runtime code or test input changes
+9007 d7a1991bbe86b6aaefe191cf84a1036ad60c6594 REREVIEW same fix as the line above, plus a positional expectException (phpstan clean on the touched files)
