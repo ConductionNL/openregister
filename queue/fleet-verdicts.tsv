@@ -282,3 +282,4 @@ pipelinq	3176	19b3465c55e799efdd77d85e1738190a14c82de7	GREEN	FV07:1	tree green: 
 pipelinq	3177	1480f92bc5aebe4a36e7dec2be9ae60130b5c8ba	GREEN	FV07:1	tree green: phpunit 0 new failures, vitest 0 new failures
 pipelinq	3178	3f8f34a61b50449a077416a91f25244b276295d2	GREEN	FV07:1	tree green: phpunit 0 new failures, vitest 0 new failures
 pipelinq	3179	b53e02bc19f1fc5cb8bda36656e5c47a2ae7af46	GREEN	FV07:1	tree green: phpunit 0 new failures, vitest 0 new failures
+humaniq	893	dff1cd155b8f2938844107d7f49fcbd52bfaf6d0	RED	FV14:1	phpunit HoursRegisterGatewayCollaboratorsTest::testEveryCollaboratorStillAcceptsTheGateway
