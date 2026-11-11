@@ -28,6 +28,7 @@ use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Service\Organisation\NewOrganisation;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -473,8 +474,7 @@ class OrganisationService implements OrganisationServiceInterface {
 	private function createDefaultOrganisation(): Organisation {
 		try {
 			return $this->createOrganisation(
-				name: 'Default Organisation',
-				description: 'Auto-generated default organisation',
+				details: new NewOrganisation(name: 'Default Organisation', description: 'Auto-generated default organisation'),
 				addCurrentUser: false
 			);
 		} catch (OrganisationSlugConflictException $e) {
@@ -917,10 +917,8 @@ class OrganisationService implements OrganisationServiceInterface {
 	/**
 	 * Create a new organisation
 	 *
-	 * @param string $name Organisation name
-	 * @param string $description Organisation description
-	 * @param bool $addCurrentUser Whether to add current user as owner and member
-	 * @param string $uuid Optional specific UUID to use
+	 * @param NewOrganisation $details        The name, description and optional UUID.
+	 * @param bool            $addCurrentUser Whether to add current user as owner and member
 	 *
 	 * @return Organisation The created organisation
 	 *
@@ -933,12 +931,9 @@ class OrganisationService implements OrganisationServiceInterface {
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
-	public function createOrganisation(
-		string $name,
-		string $description = '',
-		bool $addCurrentUser = true,
-		string $uuid = '',
-	): Organisation {
+	public function createOrganisation(NewOrganisation $details, bool $addCurrentUser = true): Organisation {
+		$name = $details->name;
+		$uuid = $details->uuid;
 		$user = $this->getCurrentUser();
 		$userId = null;
 
@@ -949,7 +944,7 @@ class OrganisationService implements OrganisationServiceInterface {
 
 		$organisation = new Organisation();
 		$organisation->setName($name);
-		$organisation->setDescription($description);
+		$organisation->setDescription($details->description);
 
 		// Auto-generate slug from name if not provided.
 		$organisation->setSlug($this->generateSlug(name: $name));
