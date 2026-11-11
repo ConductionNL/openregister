@@ -88,6 +88,7 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
@@ -100,6 +101,8 @@ use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
+use OCA\OpenRegister\Service\Object\MoveAddress;
+use OCA\OpenRegister\Service\Object\ObjectMove;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
@@ -147,6 +150,8 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
@@ -2923,10 +2928,7 @@ class ObjectsController extends Controller {
 	private function storedForOptions(ReferenceOptionsAsk $ask): ?ObjectEntity {
 		return WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $ask->id,
-			files: false,
-			register: $ask->register,
-			schema: $ask->schema,
-			_render: false
+			options: new ObjectFindOptions(register: $ask->register, schema: $ask->schema, render: false)
 		));
 	}//end storedForOptions()
 
@@ -3069,13 +3071,9 @@ class ObjectsController extends Controller {
 	private function foundForShow(ObjectShow $show, ObjectReadOptions $read): ?ObjectEntity {
 		return $this->objectService->find(
 			id: $show->id,
-			_extend: $read->extend,
-			files: false,
-			register: $show->path[0],
-			schema: $show->path[1],
+			options: new ObjectFindOptions(register: $show->path[0], schema: $show->path[1], extend: $read->extend, render: false),
 			_rbac: $read->scoped,
-			_multitenancy: $read->scoped,
-			_render: false
+			_multitenancy: $read->scoped
 		);
 	}//end foundForShow()
 
@@ -3269,10 +3267,7 @@ class ObjectsController extends Controller {
 	private function silentPatchRead(ObjectUpdate $patch): ObjectEntity {
 		return $this->objectService->findSilent(
 			id: $patch->target->id,
-			_extend: [],
-			files: false,
-			register: $patch->target->resolved['registerEntity'],
-			schema: $patch->target->resolved['schemaEntity'],
+			options: new ObjectFindOptions(register: $patch->target->resolved['registerEntity'], schema: $patch->target->resolved['schemaEntity']),
 			_rbac: $patch->caller->scoped,
 			_multitenancy: $patch->caller->scoped
 		);
@@ -3825,10 +3820,7 @@ class ObjectsController extends Controller {
 	private function silentlyRead(ObjectUpdate $update): ObjectEntity {
 		return $this->objectService->findSilent(
 			id: $update->target->id,
-			_extend: [],
-			files: false,
-			register: $update->target->resolved['register'],
-			schema: $update->target->resolved['schema'],
+			options: new ObjectFindOptions(register: $update->target->resolved['register'], schema: $update->target->resolved['schema']),
 			_rbac: $update->caller->scoped,
 			_multitenancy: $update->caller->scoped
 		);
@@ -4267,9 +4259,10 @@ class ObjectsController extends Controller {
 		// It also meant the URL's scope was never enforced: an object could
 		// be deleted through a register/schema it does not belong to.
 		$deleteResult = $route->objectService->deleteObject(
-			uuid: $route->id,
-			register: $route->register,
-			schema: $route->schema,
+			deletion: new ObjectDeletion(
+				uuid: $route->id,
+				target: new ObjectFindTarget(register: $route->register, schema: $route->schema)
+			),
 			_rbac: $scoped,
 			_multitenancy: $scoped
 		);
@@ -4494,8 +4487,7 @@ class ObjectsController extends Controller {
 		$scoped = ($this->isCurrentUserAdmin() === false);
 		$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 			id: $route->id,
-			register: $route->register,
-			schema: $route->schema,
+			options: new ObjectFindOptions(register: $route->register, schema: $route->schema),
 			_rbac: $scoped,
 			_multitenancy: $scoped
 		));
@@ -5245,13 +5237,13 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'You may not move this object there.'], statusCode: 403);
 		}
 
-		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObjectInterface::class)->move(
-			object: $object,
-			sourceRegister: $ends['from']['register'],
-			sourceSchema: $ends['from']['schema'],
-			targetRegister: $ends['to']['register'],
-			targetSchema: $ends['to']['schema'],
-			actor: $this->userSession->getUser()->getUID(),
+		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObjectInterface::class)->perform(
+			move: new ObjectMove(
+				object: $object,
+				source: new MoveAddress(register: $ends['from']['register'], schema: $ends['from']['schema']),
+				target: new MoveAddress(register: $ends['to']['register'], schema: $ends['to']['schema']),
+				actor: $this->userSession->getUser()->getUID()
+			)
 		);
 
 		return self::moveResponse(outcome: $outcome);
@@ -7150,12 +7142,9 @@ class ObjectsController extends Controller {
 		try {
 			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $ref->id,
-				files: false,
-				register: $ref->register,
-				schema: $ref->schema,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema, render: false),
 				_rbac: $rbac,
-				_multitenancy: $rbac,
-				_render: false
+				_multitenancy: $rbac
 			));
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $ref->id);

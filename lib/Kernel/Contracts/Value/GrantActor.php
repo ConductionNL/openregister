@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Db
- * @package  OCA\OpenRegister\Db\Schema
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -16,7 +16,7 @@
  * @link https://OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Db\Schema;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 
 /**

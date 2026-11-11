@@ -30,9 +30,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Case;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Load + audited-save helper for data-subject-request case objects.
@@ -72,8 +75,7 @@ class CaseObjectAccessor implements CaseObjectAccessorInterface {
 	public function load(string $caseUuid): ?ObjectEntity {
 		return WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $caseUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::SCHEMA_SLUG,
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG),
 			_rbac: true,
 			_multitenancy: true
 		));
@@ -140,9 +142,10 @@ class CaseObjectAccessor implements CaseObjectAccessorInterface {
 	 */
 	public function deleteForSweep(string $caseUuid): bool {
 		return $this->objectService->deleteObject(
-			uuid: $caseUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::SCHEMA_SLUG,
+			deletion: new ObjectDeletion(
+				uuid: $caseUuid,
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG)
+			),
 			_rbac: true,
 			_multitenancy: true,
 			_retentionSweep: true

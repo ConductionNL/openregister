@@ -39,6 +39,8 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
@@ -46,6 +48,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Resolves GraphQL queries, mutations, and fields by delegating to OpenRegister services.
@@ -123,7 +126,10 @@ class GraphQLResolver {
 			$this->objects->objectService->setRegister($register);
 			$this->objects->objectService->setSchema($schema);
 
-			$object = $this->objects->getObject->find($id, $register, $schema);
+			$object = $this->objects->getObject->find(
+				request: new ObjectFindRequest(id: $id, extend: [], files: false, rbac: true, multitenancy: true, audit: true),
+				scope: new ReadScope(register: $register, schema: $schema)
+			);
 
 			// Apply property-level RBAC filtering.
 			return $this->filterProperties(schema: $schema, item: $object);
@@ -250,7 +256,10 @@ class GraphQLResolver {
 
 		try {
 			// Check property-level write RBAC against the stored record.
-			$stored = $this->objects->getObject->find(id: $id, register: $register, schema: $schema, _audit: false);
+			$stored = $this->objects->getObject->find(
+				request: new ObjectFindRequest(id: $id, extend: [], files: false, rbac: true, multitenancy: true, audit: false),
+				scope: new ReadScope(register: $register, schema: $schema)
+			);
 			$this->refuseForbiddenFields(
 				fields: $this->rights->propertyRbac->getUnauthorizedProperties(
 					new PropertyWriteCheck($schema, new PropertyAccessRequest($stored->getMatchEnvelope(), false), $input)
@@ -309,7 +318,7 @@ class GraphQLResolver {
 		$this->checkSchemaPermission(schema: $schema, action: 'delete');
 
 		try {
-			return $this->objects->objectService->deleteObject($args['id']);
+			return $this->objects->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $args['id']));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $args['id']);
 		}

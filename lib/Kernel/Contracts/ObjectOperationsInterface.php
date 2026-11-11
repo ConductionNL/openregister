@@ -29,6 +29,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\IUser;
 
@@ -213,22 +218,16 @@ interface ObjectOperationsInterface {
     /**
      * Finds an object by ID or UUID and renders it.
      *
-     * @param int|string               $id            The object ID or UUID.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Whether to include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $_render       Whether to render the entity before returning (default: true).
-     *                                                Pass false when the caller performs its own single render
-     *                                                (e.g. ObjectsController::show()) so the object is not
-     *                                                rendered twice; permission checks and read logging still run.
-     * @param bool                     $_audit        Whether this read is worth an audit-trail row (default: true).
-     *                                                Pass false for machine-to-machine reads inside one
-     *                                                operation; the instance setting is all-or-nothing.
+     * @param int|string             $id            The object ID or UUID.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files, plus `render`
+     *                                              (false when the caller performs its own single render,
+     *                                              e.g. ObjectsController::show(); permission checks and
+     *                                              read logging still run) and `audit` (false for
+     *                                              machine-to-machine reads inside one operation).
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
-     * @return ObjectEntity|null The rendered object (or the raw entity when $_render is false) or null.
+     * @return ObjectEntity|null The rendered object (or the raw entity when `render` is false) or null.
      *
      * @throws Exception If the object is not found.
      *
@@ -240,8 +239,7 @@ interface ObjectOperationsInterface {
      *   read/RBAC/render behavior owned by object-interactions / rbac-scopes / files-render-extension.
      */
     public function find(
-    	int | string $id, ?array $_extend=[], bool $files=false, Register | string | int | null $register=null,
-    	Schema | string | int | null $schema=null, bool $_rbac=true, bool $_multitenancy=true, bool $_render=true, bool $_audit=true
+    	int | string $id, ?ObjectFindOptions $options=null, bool $_rbac=true, bool $_multitenancy=true
     ): ?ObjectEntity;
 
     /**
@@ -250,13 +248,10 @@ interface ObjectOperationsInterface {
      * This method is used internally by other operations (like UPDATE) that need to
      * retrieve an object without logging the read action.
      *
-     * @param string                   $id            The ID of the object to get.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param string                 $id            The ID of the object to get.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -267,8 +262,7 @@ interface ObjectOperationsInterface {
      * @spec exclude Facade variant of find() that skips audit logging; read behavior owned by object-interactions / audit-trail-immutable.
      */
     public function findSilent(
-    	string $id, ?array $_extend=[], bool $files=false, Register | string | int | null $register=null,
-    	Schema | string | int | null $schema=null, bool $_rbac=true, bool $_multitenancy=true
+    	string $id, ?ObjectFindOptions $options=null, bool $_rbac=true, bool $_multitenancy=true
     ): ObjectEntity;
 
     /**
@@ -440,40 +434,28 @@ interface ObjectOperationsInterface {
      * call sites so the storage layer can refuse cross-scope deletes by
      * construction.
      *
-     * @param string                   $uuid            The UUID of the object to delete.
-     * @param Register|string|int|null $register        Optional register scope (object, ID, UUID, or slug).
-     *                                                  When non-null AND `$schema` is non-null, the lookup
-     *                                                  targets exactly that magic table.
-     * @param Schema|string|int|null   $schema          Optional schema scope (object, ID, UUID, or slug).
-     *                                                  See `$register` — both must be supplied for the
-     *                                                  scoped path.
-     * @param bool                     $_rbac           Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy   Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $_retentionSweep Internal flag set by ArchivalRetentionTask
-     *                                                  to bypass the archival-immutability gate.
-     *                                                  Reachable only via PHP DI; no HTTP surface
-     *                                                  exposes it. Defaults to false.
-     * @param IUser|null               $currentUser     Explicit acting user for the RBAC `delete`
-     *                                                  check. Defaults to null → the permission
-     *                                                  subject is resolved from `IUserSession`,
-     *                                                  which is today's behaviour for every HTTP
-     *                                                  caller. A sessionless caller (flow run, cron,
-     *                                                  import pipeline) MUST pass one: anonymous is
-     *                                                  default-deny, so without it the delete is
-     *                                                  neither attributable nor permitted.
-     * @param bool                     $permanent       Destroy the row rather than tombstone it, so
-     *                                                  its identifier becomes reusable. Defaults to
-     *                                                  false — the soft delete every existing caller
-     *                                                  already gets, and the thing that makes a
-     *                                                  mistaken delete recoverable. Reserve it for
-     *                                                  rows that are a CLAIM rather than a record;
-     *                                                  see the parameter's full note on
-     *                                                  `DeleteObject::deleteObject()` and
-     *                                                  openregister#2459.
+     * @param ObjectDeletion $deletion        The UUID of the object to delete; the optional register and
+     *                                        schema scope (object, ID, UUID, or slug; when both are set
+     *                                        the lookup targets exactly that magic table); the explicit
+     *                                        acting user for the RBAC `delete` check (null resolves the
+     *                                        subject from `IUserSession`, today's behaviour for every
+     *                                        HTTP caller; a sessionless caller such as a flow run, cron
+     *                                        or import pipeline MUST set one, because anonymous is
+     *                                        default-deny); and `permanent`, which destroys the row
+     *                                        rather than tombstoning it. Soft delete stays the default;
+     *                                        reserve `permanent` for rows that are a CLAIM rather than a
+     *                                        record, see `DeleteObject::deleteObject()` and
+     *                                        openregister#2459.
+     * @param bool           $_rbac           Whether to apply RBAC checks (default: true).
+     * @param bool           $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool           $_retentionSweep Internal flag set by ArchivalRetentionTask
+     *                                        to bypass the archival-immutability gate.
+     *                                        Reachable only via PHP DI; no HTTP surface
+     *                                        exposes it. Defaults to false.
      *
      * @return bool Whether the deletion was successful
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If `$register` and `$schema` are both supplied
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the register and schema are both supplied
      *                                                    and the UUID is not present in that scope (even
      *                                                    if it exists in another magic table).
      * @throws \Exception If user does not have delete permission.
@@ -483,10 +465,7 @@ interface ObjectOperationsInterface {
      * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
-    public function deleteObject(
-    	string $uuid, Register | string | int | null $register=null, Schema | string | int | null $schema=null, bool $_rbac=true,
-    	bool $_multitenancy=true, bool $_retentionSweep=false, ?IUser $currentUser=null, bool $permanent=false
-    ): bool;
+    public function deleteObject(ObjectDeletion $deletion, bool $_rbac=true, bool $_multitenancy=true, bool $_retentionSweep=false): bool;
 
     /**
      * Build a search query from request parameters for faceting-enabled methods
@@ -1335,22 +1314,20 @@ interface ObjectOperationsInterface {
      *    merge corrupts any reordered list.
      *
      * The identifier is NOT cast to int. It is resolved as a uuid, a slug or a
-     * numeric id, scoped to exactly one magic table when both `$register` and
-     * `$schema` are supplied (the #1638 defect class).
+     * numeric id, scoped to exactly one magic table when both the register and
+     * the schema of the patch target are supplied (the #1638 defect class).
      *
      * The merged result goes through `saveObject()`, so schema validation, the
      * audit trail and event dispatch all apply — a patch is a save of a
      * different shape, not a privileged shortcut around one.
      *
-     * @param string                   $objectId      Object id, uuid or slug.
-     * @param array                    $data          Partial object data to merge.
-     * @param Register|string|int|null $register      Optional register scope (object, id, uuid or slug).
-     * @param Schema|string|int|null   $schema        Optional schema scope (object, id, uuid or slug).
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param IUser|null               $currentUser   Explicit acting user, forwarded to `saveObject()`.
-     *                                                Non-HTTP callers (cron, flow runs, import pipelines)
-     *                                                MUST pass one to avoid the default-deny fall-through.
+     * @param ObjectPatch $patch         The object id, uuid or slug, the partial data to merge, the
+     *                                   optional register and schema scope, and the explicit acting
+     *                                   user forwarded to `saveObject()`. Non-HTTP callers (cron, flow
+     *                                   runs, import pipelines) MUST set one to avoid the default-deny
+     *                                   fall-through.
+     * @param bool        $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity Patched object entity
      *
@@ -1358,10 +1335,7 @@ interface ObjectOperationsInterface {
      *
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
-    public function patchObject(
-    	string $objectId, array $data, Register | string | int | null $register=null, Schema | string | int | null $schema=null,
-    	bool $_rbac=true, bool $_multitenancy=true, ?IUser $currentUser=null
-    ): ObjectEntity;
+    public function patchObject(ObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity;
 
     /**
      * Merge objects using MergeHandler.

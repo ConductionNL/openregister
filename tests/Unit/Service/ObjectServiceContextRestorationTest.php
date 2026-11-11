@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -72,6 +73,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -539,9 +542,10 @@ class ObjectServiceContextRestorationTest extends TestCase {
 		$this->deleteHandler->method('deleteObject')->willReturn(true);
 
 		$this->service->deleteObject(
-			uuid: 'a2e21c1c-4b71-4a5a-9f0e-2f7b4a1c1f11',
-			register: self::BROKER_REGISTER,
-			schema: self::BROKER_SCHEMA,
+			deletion: new ObjectDeletion(
+				uuid: 'a2e21c1c-4b71-4a5a-9f0e-2f7b4a1c1f11',
+				target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -595,8 +599,7 @@ class ObjectServiceContextRestorationTest extends TestCase {
 
 		$this->service->findSilent(
 			id: 'a2e21c1c-4b71-4a5a-9f0e-2f7b4a1c1f11',
-			register: self::BROKER_REGISTER,
-			schema: self::BROKER_SCHEMA,
+			options: new ObjectFindOptions(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA),
 			_rbac: false,
 			_multitenancy: false
 		);

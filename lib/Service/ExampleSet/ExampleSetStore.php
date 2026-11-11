@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\PlannedAccountsCheck;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -44,6 +45,8 @@ use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Register access for the example-set loader.
@@ -285,7 +288,12 @@ class ExampleSetStore {
 		}
 
 		try {
-			$row = $service->find(id: $ref->id, register: $ref->register, schema: $ref->schema, _rbac: false, _multitenancy: false);
+			$row = $service->find(
+				id: $ref->id,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException) {
 			return ['row' => null, 'error' => ''];
 		} catch (Throwable $e) {
@@ -378,7 +386,7 @@ class ExampleSetStore {
 	public function ownerOf(ObjectRef $ref): ?string {
 		try {
 			return $this->objectService()
-				?->find(id: $ref->id, register: $ref->register, schema: $ref->schema, _rbac: false, _multitenancy: false)
+				?->find(id: $ref->id, options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema), _rbac: false, _multitenancy: false)
 				?->getOwner();
 		} catch (Throwable) {
 			return null;
@@ -540,7 +548,12 @@ class ExampleSetStore {
 		// Only a row OpenRegister says is not there is gone; a read that failed
 		// proves nothing, so the row stays in the record and the reason is named.
 		try {
-			$row = $service->find(id: $ref->id, register: $ref->register, schema: $ref->schema, _rbac: false, _multitenancy: false);
+			$row = $service->find(
+				id: $ref->id,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException) {
 			$row = null;
 		} catch (Throwable $e) {
@@ -561,9 +574,10 @@ class ExampleSetStore {
 
 		try {
 			$deleted = $service->deleteObject(
-				uuid: $ref->id,
-				register: $ref->register,
-				schema: $ref->schema,
+				deletion: new ObjectDeletion(
+					uuid: $ref->id,
+					target: new ObjectFindTarget(register: $ref->register, schema: $ref->schema)
+				),
 				_rbac: false,
 				_multitenancy: false,
 				_retentionSweep: true

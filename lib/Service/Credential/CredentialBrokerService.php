@@ -70,6 +70,7 @@ namespace OCA\OpenRegister\Service\Credential;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Sharing\ShareGrantee;
@@ -79,6 +80,8 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Constrained, host-locked, secret-injecting outbound broker.
@@ -640,9 +643,10 @@ class CredentialBrokerService {
 	private function discardOrphanedCredential(string $uuid): void {
 		try {
 			$this->sources->objectService->deleteObject(
-				uuid: $uuid,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
+				deletion: new ObjectDeletion(
+					uuid: $uuid,
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)
+				),
 				_rbac: false
 			);
 		} catch (Throwable $e) {
@@ -728,8 +732,7 @@ class CredentialBrokerService {
 		try {
 			$credential = WriteCause::asLookup(fn () => $this->sources->objectService->find(
 				id: $credentialId,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
 				_rbac: false
 			));
 		} catch (Throwable $e) {

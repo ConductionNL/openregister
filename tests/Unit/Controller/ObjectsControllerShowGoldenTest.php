@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -196,7 +197,7 @@ class ObjectsControllerShowGoldenTest extends TestCase {
 		$entity->setUuid('object-uuid');
 		$service = $this->createMock(ObjectService::class);
 		$service->method('find')->willReturnCallback(function (...$args) use ($entity, $setup) {
-			$this->calls[] = ['find' => $args];
+			$this->calls[] = ['find' => FindCallShape::find(args: $args)];
 			return match ($setup['find'] ?? 'found') {
 				'found' => $entity,
 				'null' => null,

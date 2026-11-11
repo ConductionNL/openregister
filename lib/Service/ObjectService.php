@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use Adbar\Dot;
@@ -79,12 +80,13 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\ObjectSaveRun;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\BulkSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderRequest;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
@@ -117,7 +119,6 @@ use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\ObjectListRequest;
 use OCA\OpenRegister\Service\Object\ObjectSelection;
-use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\LockRequest;
@@ -158,10 +159,12 @@ use OCA\OpenRegister\Service\Object\DraftSubject;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices;
+use TypeError;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -1482,22 +1485,16 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Finds an object by ID or UUID and renders it.
      *
-     * @param int|string               $id            The object ID or UUID.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Whether to include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $_render       Whether to render the entity before returning (default: true).
-     *                                                Pass false when the caller performs its own single render
-     *                                                (e.g. ObjectsController::show()) so the object is not
-     *                                                rendered twice; permission checks and read logging still run.
-     * @param bool                     $_audit        Whether this read is worth an audit-trail row (default: true).
-     *                                                Pass false for machine-to-machine reads inside one
-     *                                                operation; the instance setting is all-or-nothing.
+     * @param int|string             $id            The object ID or UUID.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files, plus `render`
+     *                                              (false when the caller performs its own single render,
+     *                                              e.g. ObjectsController::show(); permission checks and
+     *                                              read logging still run) and `audit` (false for
+     *                                              machine-to-machine reads inside one operation).
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
-     * @return ObjectEntity|null The rendered object (or the raw entity when $_render is false) or null.
+     * @return ObjectEntity|null The rendered object (or the raw entity when `render` is false) or null.
      *
      * @throws Exception If the object is not found.
      *
@@ -1510,18 +1507,21 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function find(
         int | string $id,
-        ?array $_extend=[],
-        bool $files=false,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
+        ?ObjectFindOptions $options=null,
         bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_render=true,
-        bool $_audit=true
+        bool $_multitenancy=true
     ): ?ObjectEntity {
-        $request = new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: $_audit);
-        $target  = new ObjectFindTarget(register: $register, schema: $schema);
-        if ($_render === false) {
+        $options ??= new ObjectFindOptions();
+        $request   = new ObjectFindRequest(
+            id: $id,
+            extend: $options->extend,
+            files: $options->files,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
+            audit: $options->audit
+        );
+        $target    = ObjectFindTarget::fromFindOptions(options: $options);
+        if ($options->render === false) {
             return $this->findUnrendered(request: $request, target: $target);
         }
 
@@ -1787,21 +1787,17 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @return ObjectEntity The object.
      *
      * @throws OcpDoesNotExistException When the object is not found in that scope.
+     * @throws TypeError                When the id is not a string: the get handler reads by string id only.
      *
      * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
      */
     private function getForFind(ObjectFindRequest $request, ObjectFindScope $scope): ObjectEntity
     {
-        return $this->getHandler->find(
-            id: $request->id,
-            register: $scope->register,
-            schema: $scope->schema,
-            _extend: $request->extend,
-            files: $request->files,
-            _rbac: $request->rbac,
-            _multitenancy: $request->multitenancy,
-            _audit: $request->audit
-        );
+        if (is_string($request->id) === false) {
+            throw new TypeError('GetObject::find(): Argument #1 ($id) must be of type string, '.get_debug_type($request->id).' given');
+        }
+
+        return $this->getHandler->find(request: $request, scope: new ReadScope(register: $scope->register, schema: $scope->schema));
     }//end getForFind()
 
     /**
@@ -1973,13 +1969,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * This method is used internally by other operations (like UPDATE) that need to
      * retrieve an object without logging the read action.
      *
-     * @param string                   $id            The ID of the object to get.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param string                 $id            The ID of the object to get.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -1991,15 +1984,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function findSilent(
         string $id,
-        ?array $_extend=[],
-        bool $files=false,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
+        ?ObjectFindOptions $options=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        $request = new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: false);
-        return $this->findWithoutAudit(request: $request, target: new ObjectFindTarget(register: $register, schema: $schema));
+        $options ??= new ObjectFindOptions();
+        $request   = new ObjectFindRequest(
+            id: $id,
+            extend: $options->extend,
+            files: $options->files,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
+            audit: false
+        );
+        return $this->findWithoutAudit(request: $request, target: ObjectFindTarget::fromFindOptions(options: $options));
     }//end findSilent()
 
     /**
@@ -2025,13 +2023,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 $this->applyScope(register: $target->register, schema: $target->schema);
 
                 return $this->getHandler->findSilent(
-                    id: (string) $request->id,
-                    register: $this->currentRegister,
-                    schema: $this->currentSchema,
-                    _extend: $request->extend,
-                    files: $request->files,
-                    _rbac: $request->rbac,
-                    _multitenancy: $request->multitenancy
+                    request: new ObjectFindRequest(
+                        id: (string) $request->id,
+                        extend: $request->extend,
+                        files: $request->files,
+                        rbac: $request->rbac,
+                        multitenancy: $request->multitenancy,
+                        audit: false
+                    ),
+                    scope: new ReadScope(register: $this->currentRegister, schema: $this->currentSchema)
                 );
             }
         );
@@ -4043,40 +4043,28 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * call sites so the storage layer can refuse cross-scope deletes by
      * construction.
      *
-     * @param string                   $uuid            The UUID of the object to delete.
-     * @param Register|string|int|null $register        Optional register scope (object, ID, UUID, or slug).
-     *                                                  When non-null AND `$schema` is non-null, the lookup
-     *                                                  targets exactly that magic table.
-     * @param Schema|string|int|null   $schema          Optional schema scope (object, ID, UUID, or slug).
-     *                                                  See `$register` — both must be supplied for the
-     *                                                  scoped path.
-     * @param bool                     $_rbac           Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy   Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $_retentionSweep Internal flag set by ArchivalRetentionTask
-     *                                                  to bypass the archival-immutability gate.
-     *                                                  Reachable only via PHP DI; no HTTP surface
-     *                                                  exposes it. Defaults to false.
-     * @param IUser|null               $currentUser     Explicit acting user for the RBAC `delete`
-     *                                                  check. Defaults to null → the permission
-     *                                                  subject is resolved from `IUserSession`,
-     *                                                  which is today's behaviour for every HTTP
-     *                                                  caller. A sessionless caller (flow run, cron,
-     *                                                  import pipeline) MUST pass one: anonymous is
-     *                                                  default-deny, so without it the delete is
-     *                                                  neither attributable nor permitted.
-     * @param bool                     $permanent       Destroy the row rather than tombstone it, so
-     *                                                  its identifier becomes reusable. Defaults to
-     *                                                  false — the soft delete every existing caller
-     *                                                  already gets, and the thing that makes a
-     *                                                  mistaken delete recoverable. Reserve it for
-     *                                                  rows that are a CLAIM rather than a record;
-     *                                                  see the parameter's full note on
-     *                                                  `DeleteObject::deleteObject()` and
-     *                                                  openregister#2459.
+     * @param ObjectDeletion $deletion        The UUID of the object to delete; the optional register and
+     *                                        schema scope (object, ID, UUID, or slug; when both are set
+     *                                        the lookup targets exactly that magic table); the explicit
+     *                                        acting user for the RBAC `delete` check (null resolves the
+     *                                        subject from `IUserSession`, today's behaviour for every
+     *                                        HTTP caller; a sessionless caller such as a flow run, cron
+     *                                        or import pipeline MUST set one, because anonymous is
+     *                                        default-deny); and `permanent`, which destroys the row
+     *                                        rather than tombstoning it. Soft delete stays the default;
+     *                                        reserve `permanent` for rows that are a CLAIM rather than a
+     *                                        record, see `DeleteObject::deleteObject()` and
+     *                                        openregister#2459.
+     * @param bool           $_rbac           Whether to apply RBAC checks (default: true).
+     * @param bool           $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool           $_retentionSweep Internal flag set by ArchivalRetentionTask
+     *                                        to bypass the archival-immutability gate.
+     *                                        Reachable only via PHP DI; no HTTP surface
+     *                                        exposes it. Defaults to false.
      *
      * @return bool Whether the deletion was successful
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If `$register` and `$schema` are both supplied
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the register and schema are both supplied
      *                                                    and the UUID is not present in that scope (even
      *                                                    if it exists in another magic table).
      * @throws \Exception If user does not have delete permission.
@@ -4087,26 +4075,22 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
     public function deleteObject(
-        string $uuid,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
+        ObjectDeletion $deletion,
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $_retentionSweep=false,
-        ?IUser $currentUser=null,
-        bool $permanent=false
+        bool $_retentionSweep=false
     ): bool {
         $request = new ObjectDeleteRequest(
-            uuid: $uuid,
+            uuid: $deletion->uuid,
             rbac: $_rbac,
             multitenancy: $_multitenancy,
             retentionSweep: $_retentionSweep,
-            currentUser: $currentUser,
-            scoped: ($register !== null && $schema !== null)
+            currentUser: $deletion->currentUser,
+            scoped: $deletion->isScoped()
         );
-        return $this->preservingScope(operation: function () use ($request, $register, $schema, $permanent): bool {
-            $this->enterDeleteScope(register: $register, schema: $schema);
-            return $this->deleteRequested(request: $request, permanent: $permanent);
+        return $this->preservingScope(operation: function () use ($request, $deletion): bool {
+            $this->enterDeleteScope(register: $deletion->target->register, schema: $deletion->target->schema);
+            return $this->deleteRequested(request: $request, permanent: $deletion->permanent);
         });
     }//end deleteObject()
 
@@ -7699,22 +7683,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *    merge corrupts any reordered list.
      *
      * The identifier is NOT cast to int. It is resolved as a uuid, a slug or a
-     * numeric id, scoped to exactly one magic table when both `$register` and
-     * `$schema` are supplied (the #1638 defect class).
+     * numeric id, scoped to exactly one magic table when both the register and
+     * the schema of the patch target are supplied (the #1638 defect class).
      *
      * The merged result goes through `saveObject()`, so schema validation, the
      * audit trail and event dispatch all apply — a patch is a save of a
      * different shape, not a privileged shortcut around one.
      *
-     * @param string                   $objectId      Object id, uuid or slug.
-     * @param array                    $data          Partial object data to merge.
-     * @param Register|string|int|null $register      Optional register scope (object, id, uuid or slug).
-     * @param Schema|string|int|null   $schema        Optional schema scope (object, id, uuid or slug).
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param IUser|null               $currentUser   Explicit acting user, forwarded to `saveObject()`.
-     *                                                Non-HTTP callers (cron, flow runs, import pipelines)
-     *                                                MUST pass one to avoid the default-deny fall-through.
+     * @param ObjectPatch $patch         The object id, uuid or slug, the partial data to merge, the
+     *                                   optional register and schema scope, and the explicit acting
+     *                                   user forwarded to `saveObject()`. Non-HTTP callers (cron, flow
+     *                                   runs, import pipelines) MUST set one to avoid the default-deny
+     *                                   fall-through.
+     * @param bool        $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity Patched object entity
      *
@@ -7722,17 +7704,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
-    public function patchObject(
-        string $objectId,
-        array $data,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        ?IUser $currentUser=null
-    ): ObjectEntity {
-        $target = new ObjectFindTarget(register: $register, schema: $schema);
-        $patch  = new ObjectPatch(objectId: $objectId, data: $data, target: $target, currentUser: $currentUser);
+    public function patchObject(ObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
+    {
         $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
         return $this->preservingScope(operation: fn (): ObjectEntity => $this->patchWithinScope(patch: $patch, access: $access));
     }//end patchObject()

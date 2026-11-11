@@ -20,7 +20,10 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Adapter that exposes a mapper-like API over ObjectService.
@@ -57,9 +60,7 @@ class ObjectServiceMapperAdapter {
 	public function find(int|string $identifier, ?array $extend = null): ?ObjectEntity {
 		return $this->objectService->find(
 			id: $identifier,
-			_extend: $extend ?? [],
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectFindOptions(register: $this->register, schema: $this->schema, extend: $extend ?? [])
 		);
 	}//end find()
 
@@ -223,8 +224,7 @@ class ObjectServiceMapperAdapter {
 	private function existingObject(int|string $id): ObjectEntity {
 		$existing = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: (string)$id,
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectFindOptions(register: $this->register, schema: $this->schema)
 		));
 		if ($existing === null) {
 			throw new ValidationException(
@@ -284,9 +284,10 @@ class ObjectServiceMapperAdapter {
 		}
 
 		return $this->objectService->deleteObject(
-			uuid: (string)$id,
-			register: $this->register,
-			schema: $this->schema
+			deletion: new ObjectDeletion(
+				uuid: (string)$id,
+				target: new ObjectFindTarget(register: $this->register, schema: $this->schema)
+			)
 		);
 	}//end delete()
 

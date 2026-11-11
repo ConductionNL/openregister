@@ -11,6 +11,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCP\IUser;
 
 /**
@@ -187,28 +190,18 @@ interface ObjectServiceInterface {
 	/**
 	 * Find a single object by id, UUID or slug.
 	 *
-	 * @param int|string      $id            Object id, UUID or slug.
-	 * @param ?array          $_extend       Relations to expand on the result.
-	 * @param bool            $files         Include file metadata.
-	 * @param string|int|null $register      Register id, UUID or slug.
-	 * @param string|int|null $schema        Schema id, UUID or slug.
-	 * @param bool            $_rbac         Apply register RBAC.
-	 * @param bool            $_multitenancy Apply organisation scoping.
-	 * @param bool            $_render       Render the entity before returning it.
-	 * @param bool            $_audit        Write an audit-trail entry.
+	 * @param int|string             $id            Object id, UUID or slug.
+	 * @param ObjectFindOptions|null $options       Register, schema, extend, files, render and audit.
+	 * @param bool                   $_rbac         Apply register RBAC.
+	 * @param bool                   $_multitenancy Apply organisation scoping.
 	 *
 	 * @return ?ObjectEntityInterface The object, or null when absent or not permitted.
 	 */
 	public function find(
 		int|string $id,
-		?array $_extend=[],
-		bool $files=false,
-		string|int|null $register=null,
-		string|int|null $schema=null,
+		?ObjectFindOptions $options=null,
 		bool $_rbac=true,
-		bool $_multitenancy=true,
-		bool $_render=true,
-		bool $_audit=true
+		bool $_multitenancy=true
 	): ?ObjectEntityInterface;
 
 	/**
@@ -259,26 +252,20 @@ interface ObjectServiceInterface {
 	/**
 	 * Delete an object by UUID.
 	 *
-	 * @param string          $uuid            The object UUID.
-	 * @param string|int|null $register        Register id, UUID or slug.
-	 * @param string|int|null $schema          Schema id, UUID or slug.
-	 * @param bool            $_rbac           Apply register RBAC.
-	 * @param bool            $_multitenancy   Apply organisation scoping.
-	 * @param bool            $_retentionSweep Run as part of a retention sweep.
-	 * @param ?IUser          $currentUser     Explicit acting user; null uses the session.
-	 * @param bool            $permanent       Delete permanently instead of soft-deleting.
+	 * @param ObjectDeletion $deletion        The object UUID, the optional register and schema scope,
+	 *                                        the explicit acting user (null uses the session) and
+	 *                                        whether to delete permanently instead of soft-deleting.
+	 * @param bool           $_rbac           Apply register RBAC.
+	 * @param bool           $_multitenancy   Apply organisation scoping.
+	 * @param bool           $_retentionSweep Run as part of a retention sweep.
 	 *
 	 * @return bool True when the object was deleted.
 	 */
 	public function deleteObject(
-		string $uuid,
-		string|int|null $register=null,
-		string|int|null $schema=null,
+		ObjectDeletion $deletion,
 		bool $_rbac=true,
 		bool $_multitenancy=true,
-		bool $_retentionSweep=false,
-		?IUser $currentUser=null,
-		bool $permanent=false
+		bool $_retentionSweep=false
 	): bool;
 
 	/**
@@ -571,15 +558,13 @@ interface ObjectServiceInterface {
 	 * The merged result goes through the same save path as `saveObject()`, so
 	 * schema validation, the audit trail and event dispatch all still apply.
 	 *
-	 * @param string          $objectId      Object id, UUID or slug.
-	 * @param array           $data          The partial data to merge. Omitted keys are PRESERVED.
-	 * @param string|int|null $register      Register id, UUID or slug.
-	 * @param string|int|null $schema        Schema id, UUID or slug.
-	 * @param bool            $_rbac         Apply register RBAC.
-	 * @param bool            $_multitenancy Apply organisation scoping.
-	 * @param ?IUser          $currentUser   Explicit acting user; null uses the session.
-	 *                                       Non-HTTP callers (cron, flow runs, imports)
-	 *                                       should pass one to avoid a default-deny.
+	 * @param ObjectPatch $patch         The object id, UUID or slug, the partial data to merge
+	 *                                   (omitted keys are PRESERVED), the optional register and
+	 *                                   schema scope, and the explicit acting user (null uses the
+	 *                                   session; non-HTTP callers such as cron, flow runs and
+	 *                                   imports should pass one to avoid a default-deny).
+	 * @param bool        $_rbac         Apply register RBAC.
+	 * @param bool        $_multitenancy Apply organisation scoping.
 	 *
 	 * @return ObjectEntityInterface The patched object.
 	 *
@@ -598,15 +583,7 @@ interface ObjectServiceInterface {
 	 * not on this merge, because leaf apps read it from vendor/: land those
 	 * three doubles before the release, or pin.
 	 */
-	public function patchObject(
-		string $objectId,
-		array $data,
-		string|int|null $register=null,
-		string|int|null $schema=null,
-		bool $_rbac=true,
-		bool $_multitenancy=true,
-		?IUser $currentUser=null
-	): ObjectEntityInterface;
+	public function patchObject(ObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntityInterface;
 
 	/**
 	 * The objects this object refers to.
@@ -655,22 +632,16 @@ interface ObjectServiceInterface {
 	/**
 	 * Find an object without emitting audit or read events.
 	 *
-	 * @param string          $id            Object id, UUID or slug.
-	 * @param ?array          $_extend       Relations to expand on the result.
-	 * @param bool            $files         Include file metadata.
-	 * @param string|int|null $register      Register id, UUID or slug.
-	 * @param string|int|null $schema        Schema id, UUID or slug.
-	 * @param bool            $_rbac         Apply register RBAC.
-	 * @param bool            $_multitenancy Apply organisation scoping.
+	 * @param string                 $id            Object id, UUID or slug.
+	 * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
+	 * @param bool                   $_rbac         Apply register RBAC.
+	 * @param bool                   $_multitenancy Apply organisation scoping.
 	 *
 	 * @return ObjectEntityInterface The object.
 	 */
 	public function findSilent(
 		string $id,
-		?array $_extend=[],
-		bool $files=false,
-		string|int|null $register=null,
-		string|int|null $schema=null,
+		?ObjectFindOptions $options=null,
 		bool $_rbac=true,
 		bool $_multitenancy=true
 	): ObjectEntityInterface;

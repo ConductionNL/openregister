@@ -24,9 +24,11 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for ObjectService
@@ -626,12 +628,9 @@ class ObjectServiceIntegrationTest extends TestCase {
 
 		$found = $this->service->find(
 			$saved->getUuid(),
-			[],
-			false,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false
+			options: new ObjectFindOptions(register: $this->testRegister, schema: $this->testSchema),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $found);
@@ -648,12 +647,9 @@ class ObjectServiceIntegrationTest extends TestCase {
 
 		$found = $this->service->find(
 			(string)$saved->getId(),
-			[],
-			false,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false
+			options: new ObjectFindOptions(register: $this->testRegister, schema: $this->testSchema),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $found);
@@ -670,12 +666,9 @@ class ObjectServiceIntegrationTest extends TestCase {
 
 		$found = $this->service->findSilent(
 			$saved->getUuid(),
-			[],
-			false,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false
+			options: new ObjectFindOptions(register: $this->testRegister, schema: $this->testSchema),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $found);
@@ -693,12 +686,9 @@ class ObjectServiceIntegrationTest extends TestCase {
 		// Find without specifying schema - should derive from object
 		$found = $this->service->find(
 			$saved->getUuid(),
-			[],
-			false,
-			$this->testRegister,
-			null,
-			false,
-			false
+			options: new ObjectFindOptions(register: $this->testRegister, schema: null),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $found);
@@ -810,7 +800,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$this->service->setRegister($this->testRegister);
 		$this->service->setSchema($this->testSchema);
 
-		$result = $this->service->deleteObject($uuid, _rbac: false, _multitenancy: false);
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 
@@ -831,7 +821,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$uuid = $saved->getUuid();
 
 		// Don't set schema context - let delete derive it
-		$result = $this->service->deleteObject($uuid, _rbac: false, _multitenancy: false);
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 

@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -114,7 +115,7 @@ class ObjectPreviewFormatterBuildReferenceGoldenTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturnCallback(
 			function (...$args) use ($object, &$record) {
-				$record['find'][] = $args;
+				$record['find'][] = FindCallShape::find(args: $args);
 				if ($object === 'throw') {
 					throw new \RuntimeException('Access denied');
 				}
