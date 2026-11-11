@@ -73,6 +73,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -285,6 +286,6 @@ class ViewBackedTypeTest extends TestCase {
 
 		$this->expectException(ReadOnlyTypeException::class);
 
-		$this->objectService($this->createMock(SaveObject::class), $delete)->deleteObject(uuid: 'p-1');
+		$this->objectService($this->createMock(SaveObject::class), $delete)->deleteObject(deletion: new ObjectDeletion(uuid: 'p-1'));
 	}//end testDeletingAnObjectOfTheTypeIsRefused()
 }//end class

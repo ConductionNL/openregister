@@ -41,6 +41,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionSources;
 use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionPlatform;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 class ArchivalRetentionTaskTest extends TestCase {
 	private ArchivalRetentionTask $task;
@@ -234,12 +235,10 @@ class ArchivalRetentionTaskTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('deleteObject')
 			->with(
-				'expired-uuid-aaa',
-				null,
-				null,
+				$this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'expired-uuid-aaa' && $deletion->target->register === null && $deletion->target->schema === null),
 				false,
 				false,
-				true,
+				true
 			)
 			->willReturn(true);
 
@@ -408,7 +407,7 @@ class ArchivalRetentionTaskTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('deleteObject')
-			->with('free-uuid', null, null, false, false, true)
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'free-uuid' && $deletion->target->register === null && $deletion->target->schema === null), false, false, true)
 			->willReturn(true);
 
 		$user = $this->createMock(IUser::class);

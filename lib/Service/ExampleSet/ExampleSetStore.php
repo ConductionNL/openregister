@@ -44,6 +44,8 @@ use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Register access for the example-set loader.
@@ -561,9 +563,10 @@ class ExampleSetStore {
 
 		try {
 			$deleted = $service->deleteObject(
-				uuid: $ref->id,
-				register: $ref->register,
-				schema: $ref->schema,
+				deletion: new ObjectDeletion(
+					uuid: $ref->id,
+					target: new ObjectFindTarget(register: $ref->register, schema: $ref->schema)
+				),
 				_rbac: false,
 				_multitenancy: false,
 				_retentionSweep: true
