@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\RunSignal;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowRunControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowTestRunControllerFactory;
@@ -346,7 +347,7 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 		$this->signIn('alice', false);
 		$this->mapper->method('findSuspendedByCorrelationKey')->with('k-1')->willReturn([$this->suspendedRun()]);
 		$this->flows->method('find')->willThrowException(new \RuntimeException('gone'));
-		$this->signals->expects($this->never())->method('signalRunAs');
+		$this->signals->expects($this->never())->method('answer');
 
 		$response = $this->runs()->signalByKey('  k-1 ');
 
@@ -360,8 +361,8 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 		$this->params = ['key' => 'k-1', '_route' => 'r', 'answer' => 'yes'];
 		$this->mapper->method('findSuspendedByCorrelationKey')->willReturn([$run]);
 		$this->flows->method('find')->willReturn(new Flow());
-		$this->signals->expects($this->once())->method('signalRunAs')
-			->with($run, ['answer' => 'yes'], 'alice')->willReturn($run);
+		$this->signals->expects($this->once())->method('answer')
+			->with($run, new RunSignal(payload: ['answer' => 'yes'], actorUid: 'alice'))->willReturn($run);
 
 		$this->assertSame(200, $this->runs()->signalByKey('k-1')->getStatus());
 	}

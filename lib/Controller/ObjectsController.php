@@ -408,10 +408,9 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	private function jsonLdObjectResponse(array $renderedObject, array $resolved): JSONResponse {
-		$document = $this->linkedData->jsonLdSerializer->serialize(
+		$document = $this->linkedData->jsonLdSerializer->serializeIn(
 			renderedObject: $renderedObject,
-			schema: $resolved['schemaEntity'],
-			register: $resolved['registerEntity']
+			table: new RegisterSchema(register: $resolved['registerEntity'], schema: $resolved['schemaEntity'])
 		);
 
 		return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
@@ -428,10 +427,9 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	private function jsonLdCollectionResponse(array $result, array $resolved): JSONResponse {
-		$document = $this->linkedData->jsonLdSerializer->serializeCollection(
+		$document = $this->linkedData->jsonLdSerializer->serializeCollectionIn(
 			paginatedResult: $result,
-			schema: $resolved['schemaEntity'],
-			register: $resolved['registerEntity']
+			table: new RegisterSchema(register: $resolved['registerEntity'], schema: $resolved['schemaEntity'])
 		);
 
 		return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
@@ -5743,6 +5741,22 @@ class ObjectsController extends Controller {
 	}//end exportFilenameBase()
 
 	/**
+	 * The export-service request for an export run as the signed-in caller.
+	 *
+	 * @param ObjectExport $export What to export.
+	 *
+	 * @return ObjectExportRequest
+	 */
+	private function callerExportRequest(ObjectExport $export): ObjectExportRequest {
+		return new ObjectExportRequest(
+			register: $export->register,
+			schema: $export->schema,
+			filters: $export->filters,
+			currentUser: $this->userSession->getUser(),
+		);
+	}//end callerExportRequest()
+
+	/**
 	 * Export as CSV.
 	 *
 	 * @param ObjectExport $export The export.
@@ -5753,12 +5767,7 @@ class ObjectsController extends Controller {
 	 */
 	private function csvExport(ObjectExport $export): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->exportToCsv(
-			request: new ObjectExportRequest(
-				register: $export->register,
-				schema: $export->schema,
-				filters: $export->filters,
-				currentUser: $this->userSession->getUser(),
-			),
+			request: $this->callerExportRequest(export: $export),
 		);
 
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'csv', rowCount: $this->countCsvExportRows(csv: $content)));
@@ -5797,12 +5806,7 @@ class ObjectsController extends Controller {
 	private function pdfExport(ObjectExport $export): DataDownloadResponse|JSONResponse {
 		try {
 			$content = $this->services->transfer->exportService->exportToPdf(
-				request: new ObjectExportRequest(
-					register: $export->register,
-					schema: $export->schema,
-					filters: $export->filters,
-					currentUser: $this->userSession->getUser(),
-				),
+				request: $this->callerExportRequest(export: $export),
 			);
 		} catch (ExportTooLargeException $e) {
 			return self::exportTooLargeResponse(exception: $e);
@@ -5863,12 +5867,7 @@ class ObjectsController extends Controller {
 	 */
 	private function excelExport(ObjectExport $export): DataDownloadResponse {
 		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
-			request: new ObjectExportRequest(
-				register: $export->register,
-				schema: $export->schema,
-				filters: $export->filters,
-				currentUser: $this->userSession->getUser(),
-			),
+			request: $this->callerExportRequest(export: $export),
 		);
 
 		// Create Excel writer and get content.

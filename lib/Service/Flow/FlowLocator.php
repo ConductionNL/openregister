@@ -218,7 +218,10 @@ class FlowLocator implements FlowLocatorInterface {
 	private function triggerIndex(string $event, RegisterSchemaRef $table): array {
 		$indexed = [];
 		try {
-			$indexed = $this->stores->triggerMapper->flowUuidsFor(event: $event, register: (string)$table->register, schema: (string)$table->schema);
+			$indexed = $this->stores->triggerMapper->flowUuidsSubscribedTo(
+				event: $event,
+				table: new RegisterSchemaRef(register: (string)$table->register, schema: (string)$table->schema)
+			);
 			$converted = array_flip($this->stores->triggerMapper->representedFlowUuids());
 		} catch (Throwable $e) {
 			$this->logger->warning(

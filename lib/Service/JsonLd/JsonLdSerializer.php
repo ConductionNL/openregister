@@ -32,9 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\JsonLd;
 
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
-use OCA\OpenRegister\Db\Schema;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 
@@ -208,21 +206,6 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	}//end outranks()
 
 	/**
-	 * Serialize a single rendered object array as a JSON-LD node document.
-	 *
-	 * @param array<string, mixed> $renderedObject The rendered object (top-level data + `@self`).
-	 * @param Schema $schema The object's schema.
-	 * @param Register $register The object's register.
-	 *
-	 * @return array<string, mixed> The JSON-LD document.
-	 *
-	 * @spec openspec/specs/json-ld-output/spec.md
-	 */
-	public function serialize(array $renderedObject, Schema $schema, Register $register): array {
-		return $this->serializeIn(renderedObject: $renderedObject, table: new RegisterSchema(register: $register, schema: $schema));
-	}//end serialize()
-
-	/**
 	 * Serialize a single rendered object of one register and schema as a JSON-LD node document.
 	 *
 	 * @param array<string, mixed> $renderedObject The rendered object (top-level data + `@self`).
@@ -241,21 +224,6 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 			$node
 		);
 	}//end serializeIn()
-
-	/**
-	 * Serialize a paginated collection result as a JSON-LD `@graph` document.
-	 *
-	 * @param array<string, mixed> $paginatedResult The `index()` result (results/total/page/...).
-	 * @param Schema $schema The collection's schema.
-	 * @param Register $register The collection's register.
-	 *
-	 * @return array<string, mixed> The JSON-LD `@graph` document.
-	 *
-	 * @spec openspec/specs/json-ld-output/spec.md
-	 */
-	public function serializeCollection(array $paginatedResult, Schema $schema, Register $register): array {
-		return $this->serializeCollectionIn(paginatedResult: $paginatedResult, table: new RegisterSchema(register: $register, schema: $schema));
-	}//end serializeCollection()
 
 	/**
 	 * Serialize a paginated collection of one register and schema as a JSON-LD `@graph` document.

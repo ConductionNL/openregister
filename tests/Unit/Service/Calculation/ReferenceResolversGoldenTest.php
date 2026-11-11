@@ -137,7 +137,14 @@ class ReferenceResolversGoldenTest extends TestCase {
 				],
 				'unresolved' => [],
 			],
-			$this->references->resolveAllWithOutcome(['f' => 1.5, 'e' => ''], $declarations, 'reg', 'org-a')
+			$this->references->resolveReferences(
+				referrer: new ReferringObject(
+					payload: ['f' => 1.5, 'e' => ''],
+					register: 'reg',
+					organisation: 'org-a'
+				),
+				references: $declarations
+			)
 		);
 
 	}//end testDeclarationsWithNothingToResolve()
@@ -157,7 +164,10 @@ class ReferenceResolversGoldenTest extends TestCase {
 		);
 		$declaration = ['r' => ['schema' => 'target', 'mode' => 'relatedObject', 'field' => 'id', 'register' => 'other']];
 
-		$outcome = $this->references->resolveAllWithOutcome(['id' => 42], $declaration, 'reg', 'org-a');
+		$outcome = $this->references->resolveReferences(
+			referrer: new ReferringObject(payload: ['id' => 42], register: 'reg', organisation: 'org-a'),
+			references: $declaration
+		);
 
 		$self = ['id' => 'ref', 'uuid' => 'ref', 'register' => '1', 'schema' => '2', 'owner' => 'o'];
 		$this->assertSame(['id' => 'ref', 'v' => 1, '@self' => $self], $outcome['refs']['r']);
@@ -182,11 +192,13 @@ class ReferenceResolversGoldenTest extends TestCase {
 		$dated = ['schema' => 's', 'mode' => 'lookup', 'effectiveDate' => ['field' => 'validFrom']];
 		$undated = ['schema' => 's', 'mode' => 'lookup', 'effectiveDate' => ['op' => '<=']];
 
-		$outcome = $this->references->resolveAllWithOutcome(
-			['code' => 'c', '@self' => []],
-			['plain' => $plain, 'dated' => $dated, 'undated' => $undated],
-			null,
-			'org-a'
+		$outcome = $this->references->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['code' => 'c', '@self' => []],
+				register: null,
+				organisation: 'org-a'
+			),
+			references: ['plain' => $plain, 'dated' => $dated, 'undated' => $undated]
 		);
 
 		$this->assertSame(['refs' => ['plain' => null, 'dated' => null, 'undated' => null], 'unresolved' => ['plain', 'dated', 'undated']], $outcome);
@@ -227,7 +239,7 @@ class ReferenceResolversGoldenTest extends TestCase {
 			'noMetric' => ['schema' => 'scalar'],
 		];
 
-		$outcome = $this->aggregates->resolveAllWithOutcome(['x' => 'xv', '@self' => ['x' => 'self-x']], $declarations, 'reg');
+		$outcome = $this->aggregates->resolveOutcome(referrer: new ReferringObject(payload: ['x' => 'xv', '@self' => ['x' => 'self-x']], register: 'reg'), aggregates: $declarations);
 
 		$this->assertSame(
 			[

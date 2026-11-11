@@ -342,7 +342,7 @@ class MergeService implements ObjectMergerInterface {
 	 * The resolver overrides a decision map stands for, or null without one.
 	 *
 	 * A decision map is turned into resolver OVERRIDES, which is the whole
-	 * of design D-1: `SurvivorshipResolver::resolveGoldenRecord()` has
+	 * of design D-1: `SurvivorshipResolver::resolve()` has
 	 * always taken an `$overrides` argument and nothing ever passed one, so
 	 * the human's choice rides the mechanism that already existed rather
 	 * than a second execution path beside it. The overrides are also
