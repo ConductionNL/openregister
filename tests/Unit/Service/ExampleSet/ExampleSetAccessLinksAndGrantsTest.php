@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapper;
 use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetActingAs;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
@@ -173,10 +174,10 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->caseWith(links: [$this->sanneLink()]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->links, message: 'the check mints nothing');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertCount(expectedCount: 1, haystack: $this->links);
 		$link = array_values($this->links)[0];
@@ -204,15 +205,15 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	public function testASecondInstallMintsNothingAndARevokedLinkIsMissing(): void {
 		$this->caseWith(links: [$this->sanneLink()]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $again['ok'], message: (string) json_encode($again));
 		$this->assertSame(expected: ['alpha/link-sanne' => 'kept'], actual: $again['accessLinks']);
 		$this->assertCount(expectedCount: 1, haystack: $this->links);
 
 		array_values($this->links)[0]->setRevokedAt(new DateTime());
-		$revoked = $this->installer->install(plan: $plan, today: $this->today());
+		$revoked = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertContains(needle: 'access link alpha/link-sanne', haystack: $revoked['missing']);
 		$this->assertCount(expectedCount: 1, haystack: $this->links, message: 'without --refresh nothing is minted again');
 	}//end testASecondInstallMintsNothingAndARevokedLinkIsMissing()
@@ -227,11 +228,11 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	public function testARefreshMintsTheLinkAgainFromTheRefreshDay(): void {
 		$this->caseWith(links: [$this->sanneLink()]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$old = array_values($this->links)[0];
 		$old->setRevokedAt(new DateTime());
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+5 days'));
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+5 days')));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['alpha/link-sanne' => 'refreshed'], actual: $report['accessLinks']);
 		$this->assertCount(expectedCount: 1, haystack: $this->links, message: 'the old row is deleted, one live link stands');
@@ -251,7 +252,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	 */
 	public function testRemoveDeletesExactlyTheHeldLinks(): void {
 		$this->caseWith(links: [$this->sanneLink()]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$outside = $this->services[AccessLinkService::class]->mint(
 			new LinkMintRequest(
 				minter: 'esra.demir',
@@ -279,9 +280,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	public function testAChangeQuotesTheMintedLink(): void {
 		$this->caseWith(links: [$this->sanneLink()], share: true);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$link  = array_values($this->links)[0];
 		$share = $this->shareRow();
@@ -290,10 +291,10 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'https://cloud.example.test/index.php/apps/openregister/api/access-links/'.$link->getAnchor(), actual: $share['accessLinkUrl']);
 		$this->assertStringNotContainsString(needle: (string) $link->getAnchor(), haystack: (string) json_encode($this->config));
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $again['ok'], message: 'the proof reads the fingerprinted address: '.json_encode($again));
 
-		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 		$fresh = array_values($this->links)[0];
 		$this->assertNotSame(expected: $link->getId(), actual: $fresh->getId());
 		$this->assertSame(expected: $fresh->getId(), actual: $this->shareRow()['accessLinkId']);
@@ -309,7 +310,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	 */
 	public function testACheckRefusesAnUndeclaredLink(): void {
 		$this->caseWith(links: [], share: true);
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertNotSame(expected: [], actual: $refusals);
 		$this->assertStringContainsString(needle: 'accessLink:link-sanne.id', haystack: implode("\n", $refusals));
@@ -345,7 +346,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			]
 		);
 
-		$refusals = implode("\n", $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals']);
+		$refusals = implode("\n", $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals']);
 		foreach ([
 			'access link "extra-field": field "password"',
 			'access link "no-expiry": an access link needs an expiry',
@@ -378,9 +379,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	public function testAGrantIsMadeAsItsAccountAndKeptRefreshedAndRemoved(): void {
 		$this->caseWith(grants: [$this->staffGrant()]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertCount(expectedCount: 1, haystack: $this->shares);
 		$share = array_values($this->shares)[0];
@@ -397,14 +398,14 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			actual: $this->record->read(set: 'demo')['grants']['alpha/grant-staff']
 		);
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(expected: ['alpha/grant-staff' => 'kept'], actual: $again['grants']);
 		$this->assertCount(expectedCount: 1, haystack: $this->shares);
 
 		unset($this->shares[$first]);
-		$this->assertContains(needle: 'grant alpha/grant-staff', haystack: $this->installer->install(plan: $plan, today: $this->today())['missing']);
+		$this->assertContains(needle: 'grant alpha/grant-staff', haystack: $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['missing']);
 
-		$refreshed = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$refreshed = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 		$this->assertSame(expected: ['alpha/grant-staff' => 'refreshed'], actual: $refreshed['grants']);
 		$this->assertCount(expectedCount: 1, haystack: $this->shares);
 		$this->assertNotSame(expected: $first, actual: array_keys($this->shares)[0]);
@@ -426,7 +427,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	public function testAGrantTheGuardRefusesIsReportedAndTheSetGoesOn(): void {
 		$this->caseWith(links: [$this->sanneLink()], grants: [['key' => 'grant-staff', 'data' => ['sharedBy' => '{{cast:sanne.uid}}'] + $this->staffGrant()['data']]]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertSame(expected: 'failed', actual: $report['grants']['alpha/grant-staff']);
 		$this->assertStringContainsString(
 			needle: 'grant "grant-staff": Only the owner or an administrator may change sharing on this object',
@@ -450,7 +451,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->readers = [];
 		$this->caseWith(links: [$this->sanneLink()]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertSame(expected: 'failed', actual: $report['accessLinks']['alpha/link-sanne']);
 		$this->assertStringContainsString(needle: 'may not publish it at a link', haystack: implode("\n", $report['dropped']));
 		$this->assertSame(expected: [], actual: $this->links);
@@ -473,11 +474,11 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$refused = $this->installer->install(plan: $plan, today: $this->today());
+		$refused = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertStringContainsString(needle: 'only from occ or the background job', haystack: implode("\n", $refused['dropped']));
 		$this->assertSame(expected: [], actual: $this->shares, message: 'outside occ and the job nothing is shared');
 
-		$report = ExampleSetActingAs::inBackgroundJob(run: fn (): array => $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()));
+		$report = ExampleSetActingAs::inBackgroundJob(run: fn (): array => $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today())));
 		$this->assertSame(expected: ['alpha/grant-staff' => 'created', 'alpha/grant-sanne' => 'created'], actual: $report['grants'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['esra.demir', 'sanne.devries'], actual: $this->sharedAs);
 		$this->assertNull(actual: $this->activeUser, message: 'no session is left behind');
@@ -494,12 +495,12 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	public function testOutsideTheCommandLineNothingIsDeleted(): void {
 		$this->caseWith(links: [$this->sanneLink()], grants: [$this->staffGrant()]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$link  = array_keys($this->links);
 		$share = array_keys($this->shares);
 
 		$this->services[ExampleSetActingAs::class] = new ExampleSetActingAs(userSession: $this->session, userManager: $this->users, cli: false);
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 		$this->assertStringContainsString(needle: 'access link "link-sanne": not refreshed', haystack: implode("\n", $report['dropped']));
 		$this->assertStringContainsString(needle: 'grant "grant-staff": not refreshed', haystack: implode("\n", $report['dropped']));
 
@@ -571,7 +572,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	public function testAnotherShareUnderTheRecordedIdIsNeverTakenForTheSets(): void {
 		$this->caseWith(grants: [$this->staffGrant()]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$id    = array_keys($this->shares)[0];
 		$entry = $this->record->read(set: 'demo')['grants']['alpha/grant-staff'];
 		$this->assertSame(expected: [55, 'esra.demir', 'demo-staff', IShare::TYPE_GROUP], actual: [$entry['node'], $entry['sharedBy'], $entry['sharedWith'], $entry['shareType']]);
@@ -580,11 +581,11 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			$foreign = new ArrayObject(['id' => (int) substr($id, 11), 'node' => null, 'nodeId' => 55, 'sharedBy' => 'esra.demir', 'sharedWith' => 'demo-staff', 'shareType' => IShare::TYPE_GROUP]);
 			$foreign[$field]   = $value;
 			$this->shares[$id] = $foreign;
-			$this->assertContains(needle: 'grant alpha/grant-staff', haystack: $this->installer->install(plan: $plan, today: $this->today())['missing'], message: $field);
+			$this->assertContains(needle: 'grant alpha/grant-staff', haystack: $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['missing'], message: $field);
 		}
 
 		$this->shares[$id]['nodeId'] = 77;
-		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 		$this->assertSame(expected: 77, actual: $this->shares[$id]['nodeId'], message: 'a refresh leaves the other share');
 		$this->remover->remove(set: 'demo');
 		$this->assertArrayHasKey(key: $id, array: $this->shares, message: 'remove leaves the other share');
@@ -609,12 +610,12 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		];
 		foreach ($cases as $case => $extra) {
 			$this->caseWith(links: [$this->sanneLink()], share: true, extra: $extra);
-			$refusals = implode("\n", $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals']);
+			$refusals = implode("\n", $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals']);
 			$this->assertStringContainsString(needle: 'quotes an access link address', haystack: $refusals, message: $case);
 		}
 
 		$this->caseWith(links: [$this->sanneLink()], share: true, extra: ['changes' => [$this->namingChange(set: ['accessLinkUrl' => 'Open: '.$url])]]);
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 		$this->assertSame(expected: [], actual: $refusals, message: 'text around the address in a set field is fine');
 	}//end testALinkAddressIsQuotedOnlyAsTheTextOfASetField()
 
@@ -630,7 +631,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->caseWith(grants: [$this->staffGrant()]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$refusals = implode("\n", $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$refusals = implode("\n", $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertStringContainsString(needle: 'grant "grant-staff": shareWith "demo-staff" is no group of the set', haystack: $refusals);
 		$this->assertSame(expected: [], actual: $this->shares);
 	}//end testAGroupGrantGoesOnlyToAGroupTheSetCreated()
@@ -647,9 +648,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->accounts->unseenGroups = ['demo-staff'];
 		$this->caseWith(grants: [$this->staffGrant()]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $this->accounts->groupExists(gid: 'demo-staff'), message: 'the group is on the instance now');
 		$this->assertNotContains(needle: 'demo-staff', haystack: $this->record->read(set: 'demo')['groups']);
 		$this->assertSame(expected: 'failed', actual: $report['grants']['alpha/grant-staff']);
@@ -668,7 +669,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	public function testAGrantKeepsTheIdentityOfTheShareItMade(): void {
 		$this->unreadable = true;
 		$this->caseWith(grants: [$this->staffGrant()]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$entry = $this->record->read(set: 'demo')['grants']['alpha/grant-staff'];
 		$this->assertSame(expected: [55, 'esra.demir', 'demo-staff', IShare::TYPE_GROUP], actual: [$entry['node'], $entry['sharedBy'], $entry['sharedWith'], $entry['shareType']]);
 		$this->unreadable = false;

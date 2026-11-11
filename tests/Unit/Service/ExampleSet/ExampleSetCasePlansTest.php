@@ -17,6 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
@@ -127,16 +128,16 @@ class ExampleSetCasePlansTest extends ExampleSetTestCase {
 		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->caseItems, message: 'the check writes no item');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['alpha'], actual: $this->casePlanActors);
 		$states = array_map(static fn (CaseItem $item): string => (string) $item->getState(), array_values($this->caseItems));
 		$this->assertSame(expected: ['active', 'completed', 'active', 'available', 'available'], actual: $states);
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(expectedCount: 5, haystack: $this->caseItems, message: 'a kept plan is brought in once');
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -153,14 +154,14 @@ class ExampleSetCasePlansTest extends ExampleSetTestCase {
 	public function testARefreshPutsThePlanBackInItsDeclaredStates(): void {
 		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		foreach ($this->caseItems as $item) {
 			if ($item->getItemKey() === 'besluit-opstellen') {
 				$item->setState('active');
 			}
 		}
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('refreshed', $report['casePlans']['alpha/woo-plan']);
@@ -185,10 +186,10 @@ class ExampleSetCasePlansTest extends ExampleSetTestCase {
 	public function testARefreshTakesAwayTheTaskOfAnItemItPutsBack(): void {
 		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->realiseAsTask(itemKey: 'besluit-opstellen', taskUuid: 'task-besluit');
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertArrayNotHasKey(key: 'task-besluit', array: $this->engineTasks, message: 'the realisation of the item put back is gone');
@@ -203,7 +204,7 @@ class ExampleSetCasePlansTest extends ExampleSetTestCase {
 	 */
 	public function testRemovingTheSetTakesAwayTheTasksItsItemsMade(): void {
 		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->realiseAsTask(itemKey: 'besluit-opstellen', taskUuid: 'task-besluit');
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -246,7 +247,7 @@ class ExampleSetCasePlansTest extends ExampleSetTestCase {
 	 */
 	public function testACheckRefusesAFaultyPlan(array $data, string $reason): void {
 		$this->caseWithPlans(rows: [['key' => 'bad', 'data' => $data]]);
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: $reason, haystack: $refusals[0]);

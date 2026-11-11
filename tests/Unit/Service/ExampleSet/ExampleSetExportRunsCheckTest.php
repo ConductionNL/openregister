@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
@@ -71,7 +73,7 @@ class ExampleSetExportRunsCheckTest extends ExampleSetTestCase {
 			['key' => 'export-2', 'data' => ['user' => '{{cast:esra.uid}}', 'fileName' => 'b.csv', 'format' => 'csv', 'content' => 'x', 'producedAt' => '{{datetime:-2 14:05}}']],
 		]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(1, $refusals);
 		$this->assertStringContainsString('export "export-1"', $refusals[0]);

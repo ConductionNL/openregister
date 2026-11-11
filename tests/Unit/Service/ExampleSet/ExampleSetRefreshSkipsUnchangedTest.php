@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
@@ -101,11 +103,11 @@ class ExampleSetRefreshSkipsUnchangedTest extends ExampleSetTestCase {
 	public function testASameDayRefreshWritesNothing(): void {
 		$this->incident();
 		$plan = ($this->catalogue->gather(set: 'demo') + ['refresh' => true]);
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$updates = $this->store->updates;
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame($updates, $this->store->updates, 'no kept object is written');
@@ -124,10 +126,10 @@ class ExampleSetRefreshSkipsUnchangedTest extends ExampleSetTestCase {
 	public function testAMovedDateIsStillWritten(): void {
 		$this->incident();
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 		$updates = $this->store->updates;
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days')));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame($updates + 1, $this->store->updates, 'only the incident is written');
@@ -146,12 +148,12 @@ class ExampleSetRefreshSkipsUnchangedTest extends ExampleSetTestCase {
 	public function testAnInstanceEditIsWrittenBack(): void {
 		$this->incident();
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 		$id = $this->store->ids(register: 'pub', schema: 'incident')[0];
 		$this->store->rows['pub incident'][$id]['title'] = 'Lamp gerepareerd';
 		$updates = $this->store->updates;
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame($updates + 1, $this->store->updates);

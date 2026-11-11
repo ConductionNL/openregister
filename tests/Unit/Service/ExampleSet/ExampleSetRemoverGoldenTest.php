@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  */
@@ -74,7 +76,7 @@ class ExampleSetRemoverGoldenTest extends ExampleSetTestCase {
 	 */
 	public function testRemoveReportsExactlyWhatWentAndWhatStays(): void {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Sanne', 'email' => '', 'password' => 'theirs'];
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), adopt: ['sanne.devries'], today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), adopt: ['sanne.devries'], today: $this->today()));
 		$this->assertTrue($report['ok']);
 		$ids                      = array_column($this->record->read(set: 'demo')['objects'], 'id');
 		$this->store->undeletable = [$ids[0]];

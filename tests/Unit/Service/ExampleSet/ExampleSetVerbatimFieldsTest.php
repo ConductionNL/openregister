@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
@@ -98,8 +99,8 @@ class ExampleSetVerbatimFieldsTest extends ExampleSetTestCase {
 		$this->template(template: ['verbatimFields' => ['subject', 'body']]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$row = $this->store->find(table: new RegisterSchemaRef(register: 'mail', schema: 'emailTemplate'), filters: [])[0];
@@ -118,12 +119,12 @@ class ExampleSetVerbatimFieldsTest extends ExampleSetTestCase {
 	 */
 	public function testEveryOtherFieldStillRefusesAnUnresolvedPlaceholder(): void {
 		$this->template();
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 		$this->assertCount(1, $refusals);
 		$this->assertStringContainsString('{{zaakNummer}}', $refusals[0]);
 
 		$this->template(template: ['verbatimFields' => ['subject', 'body']], data: ['owner' => '{{cast:esraa.uid}}']);
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 		$this->assertCount(1, $refusals);
 		$this->assertStringContainsString('{{cast:esraa.uid}}', $refusals[0]);
 		$this->assertSame([], $this->store->ids(register: 'mail', schema: 'emailTemplate'));

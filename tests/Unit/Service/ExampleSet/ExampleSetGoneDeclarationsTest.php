@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * A change or read state the set no longer declares is neither proved nor removed; a field that reads back null
  * counts as not set.
@@ -106,11 +108,11 @@ class ExampleSetGoneDeclarationsTest extends ExampleSetTestCase {
 		$this->store->offer(register: 'crm', schema: 'ticket');
 		$id = $this->store->seed(register: 'crm', schema: 'ticket', data: ['key' => 'afvalpas', 'slaDeadline' => '2026-10-20T17:00:00+00:00']);
 		$this->ticketChange(set: ['slaDeadline' => '2026-10-15T17:00:00+00:00']);
-		$this->assertTrue(condition: $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['ok']);
+		$this->assertTrue(condition: $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['ok']);
 
 		$this->ticketChange(set: null);
 		$this->store->rows['crm ticket'][$id]['slaDeadline'] = '2026-10-16T17:00:00+00:00';
-		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertContains(needle: 'change alpha/ticket-eerst: the set no longer declares it', haystack: $report['left']);
@@ -131,11 +133,11 @@ class ExampleSetGoneDeclarationsTest extends ExampleSetTestCase {
 		$case = ['key' => 'case-1', 'register' => 'cases', 'schema' => 'case', 'data' => ['title' => 'Zaak']];
 		$read = ['key' => 'esra-opende', 'data' => ['user' => '{{cast:esra.uid}}', 'objectUuid' => '{{object:case-1.id}}']];
 		$this->app(app: 'alpha', fragment: ['objects' => [$case], 'readStates' => [$read]]);
-		$this->assertTrue(condition: $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['ok']);
+		$this->assertTrue(condition: $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['ok']);
 
 		$this->app(app: 'alpha', fragment: ['objects' => [$case], 'readStates' => []]);
 		$this->readStates = [];
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertNotContains(needle: 'read state alpha/esra-opende', haystack: $report['missing']);
@@ -154,10 +156,10 @@ class ExampleSetGoneDeclarationsTest extends ExampleSetTestCase {
 		$this->store->seed(register: 'crm', schema: 'ticket', data: ['key' => 'afvalpas', 'slaDeadline' => null]);
 		$this->ticketChange(set: ['slaDeadline' => '2026-10-15T17:00:00+00:00']);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue(condition: $this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue(condition: $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 
 		$plan['fragments'] = array_values(array_filter($plan['fragments'], static fn (array $fragment): bool => $fragment['app'] !== 'alpha'));
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame(expected: [], actual: $report['left']);
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
@@ -176,10 +178,10 @@ class ExampleSetGoneDeclarationsTest extends ExampleSetTestCase {
 		$id = $this->store->seed(register: 'crm', schema: 'ticket', data: ['key' => 'afvalpas']);
 		$this->ticketChange(set: ['contactRef' => 'c32e7c7a-470d-42e4-9c07-e673bfce516e']);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue(condition: $this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue(condition: $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 
 		$this->store->rows['crm ticket'][$id]['contactRef'] = null;
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: 'c32e7c7a-470d-42e4-9c07-e673bfce516e', actual: $this->store->rows['crm ticket'][$id]['contactRef']);

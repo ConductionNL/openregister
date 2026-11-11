@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
@@ -109,10 +110,10 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'omgevingsvergunning', 'data' => self::flow()]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->flows, message: 'the check writes no flow');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['alpha/omgevingsvergunning' => 'created'], actual: $report['flows']);
 
@@ -124,7 +125,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: ['x' => 30, 'y' => 130], actual: $flow->getNodes()[1]['position']);
 		$this->assertSame(expected: [$flow->getUuid()], actual: $this->publishedFlows);
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(expected: ['alpha/omgevingsvergunning' => 'kept'], actual: $again['flows']);
 		$this->assertCount(expectedCount: 1, haystack: $this->flows);
 
@@ -158,9 +159,9 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$flow = array_values($this->flows)[0];
 		$type = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'caseType'), filters: [])[0];
@@ -187,7 +188,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 			]],
 		]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: 'cannot resolve', haystack: $refusals[0]);
 	}//end testAChangeQuotingAnUnknownFlowIsRefused()
@@ -208,10 +209,10 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'bevestiging', 'data' => self::flow(extra: ['runs' => $runs])]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->flowRuns, message: 'the check writes no run');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 
 		$flow   = array_values($this->flows)[0];
@@ -225,7 +226,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: '2026-10-03 14:32', actual: $stored[0]->getCreated()->format('Y-m-d H:i'));
 		$this->assertSame(expected: 'Berichtenbox niet bereikbaar', actual: $stored[1]->getError());
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(expectedCount: 2, haystack: $this->flowRuns, message: 'a kept flow writes its runs once');
 
 		$this->remover->remove(set: 'demo');
@@ -241,11 +242,11 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	public function testADraftFlowIsNotPublishedAndALostOneIsReportedMissing(): void {
 		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'concept', 'data' => self::flow(extra: ['publish' => false])]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(expected: [], actual: $this->publishedFlows);
 
 		$this->flows = [];
-		$report      = $this->installer->install(plan: $plan, today: $this->today());
+		$report      = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertContains(needle: 'flow alpha/concept', haystack: $report['missing']);
 		$this->assertFalse(condition: $report['ok']);
 	}//end testADraftFlowIsNotPublishedAndALostOneIsReportedMissing()
@@ -261,7 +262,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	 */
 	public function testARefreshUpdatesAHeldFlowWhereItIs(): void {
 		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'omgevingsvergunning', 'data' => self::flow()]]]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$uuid = array_key_first($this->flows);
 		$this->flows[$uuid]->setEnabled(true);
 
@@ -274,7 +275,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 			],
 		])]]]);
 		$plan   = ($this->catalogue->gather(set: 'demo') + ['refresh' => true]);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame(expected: ['alpha/omgevingsvergunning' => 'refreshed'], actual: $report['flows']);
 		$this->assertSame(expected: [$uuid], actual: array_keys($this->flows), message: 'the flow keeps its uuid');
@@ -283,11 +284,11 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		$this->assertTrue(condition: (bool) $this->flows[$uuid]->getEnabled(), message: 'a refresh leaves the flow on or off');
 		$this->assertSame(expected: [$uuid, $uuid], actual: $this->publishedFlows, message: 'the changed flow is published again');
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(expected: [$uuid, $uuid], actual: $this->publishedFlows, message: 'an unchanged flow is not published again');
 
 		$this->flows = [];
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(expectedCount: 1, haystack: $this->flows, message: 'a flow that is gone is written again');
 	}//end testARefreshUpdatesAHeldFlowWhereItIs()
 
@@ -303,7 +304,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	 */
 	public function testACheckRefusesAFaultyFlowAndWritesNothing(array $data, string $reason): void {
 		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'bad', 'data' => $data]]]);
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: '"bad"', haystack: $refusals[0]);
@@ -327,8 +328,8 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$flow = array_values($this->flows)[0];
@@ -350,7 +351,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	 */
 	public function testAFlowThatDoesNotSayItIsOnStaysOff(): void {
 		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'k', 'data' => self::flow(extra: ['enabled' => false])]]]);
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertFalse(condition: (bool) array_values($this->flows)[0]->getEnabled());
@@ -374,15 +375,15 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'reeks', 'data' => self::flow(extra: ['nodes' => $nodes])]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$flow = array_values($this->flows)[0];
 		$uuid = (string) $flow->getUuid();
 		$this->assertSame(expected: ['handoffSource' => 'planned-series:'.$uuid, 'series' => $uuid], actual: $flow->getNodes()[1]['config']);
 
-		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 		$refreshed = $this->flows[$uuid]->getNodes()[1]['config']['handoffSource'];
 		$this->assertSame(expected: 'planned-series:'.$uuid, actual: $refreshed, message: 'a refresh keeps it');
 		$this->assertSame(expected: [$uuid], actual: $this->publishedFlows, message: 'the refresh found nothing changed');
@@ -403,7 +404,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 			'changes' => [['key' => 'c', 'register' => 'cases', 'schema' => 'caseType', 'object' => 'woo', 'set' => ['startableFlows' => ['{{flow:self}}']]]],
 		]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: 'cannot resolve {{flow:self}}', haystack: $refusals[0]);

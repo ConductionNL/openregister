@@ -33,6 +33,7 @@ use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\AppRegisterImportRunner;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\ConfigurationService;
@@ -229,7 +230,7 @@ class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 		$cast['requires'] = [['register' => 'brp', 'mock' => true]];
 		$this->app(app: 'openregister', fragment: $cast);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(['brp' => 'imported'], $report['registers']);

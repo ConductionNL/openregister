@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
@@ -118,11 +120,11 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 		);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->notes, message: 'the check writes no note');
 		$this->assertSame(expected: [], actual: $this->readStates, message: 'the check writes no read state');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['alpha/esra-noteert' => 'created'], actual: $report['notes']);
 		$this->assertSame(expected: ['alpha/esra-opende' => 'created'], actual: $report['readStates']);
@@ -135,7 +137,7 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 		$this->assertSame(expected: '2026-10-13 15:40', actual: $this->local(moment: $note['createdAt']));
 		$this->assertSame(expected: '2026-10-13 09:12', actual: $this->local(moment: $this->readStates['esra.demir '.$caseId]));
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(expected: ['alpha/esra-noteert' => 'kept'], actual: $again['notes']);
 		$this->assertSame(expected: ['alpha/esra-opende' => 'kept'], actual: $again['readStates']);
 		$this->assertCount(expectedCount: 1, haystack: $this->notes);
@@ -171,9 +173,9 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$task = array_values($this->engineTasks)[0];
 		$this->assertSame(expected: $task->getUuid(), actual: array_values($this->notes)[0]['object']);
@@ -189,7 +191,7 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 	public function testANoteQuotingAnUnknownTaskIsRefused(): void {
 		$this->caseWith(notes: [['key' => 'n', 'data' => ['user' => '{{cast:esra.uid}}', 'objectUuid' => '{{task:nope.uuid}}', 'message' => 'x']]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: 'cannot resolve', haystack: $refusals[0]);
 	}//end testANoteQuotingAnUnknownTaskIsRefused()
@@ -207,10 +209,10 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 			readStates: [['key' => 'r', 'data' => ['user' => '{{cast:esra.uid}}', 'objectUuid' => '{{object:case-1.id}}', 'register' => 'cases', 'schema' => 'case', 'seenAt' => '{{datetime:0 09:12}}']]]
 		);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$later  = $this->today()->modify('+3 days');
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $later);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $later));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['alpha/n' => 'refreshed'], actual: $report['notes']);
@@ -231,11 +233,11 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 			readStates: [['key' => 'r', 'data' => ['user' => '{{cast:esra.uid}}', 'objectUuid' => '{{object:case-1.id}}']]]
 		);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->notes      = [];
 		$this->readStates = [];
-		$report           = $this->installer->install(plan: $plan, today: $this->today());
+		$report           = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertContains(needle: 'note alpha/n', haystack: $report['missing']);
 		$this->assertContains(needle: 'read state alpha/r', haystack: $report['missing']);
@@ -261,7 +263,7 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 			$this->caseWith(readStates: $row);
 		}
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: '"bad"', haystack: $refusals[0]);

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
@@ -87,7 +88,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->registers->behind['brp']     = true;
 		$this->app(app: 'openregister', fragment: $this->castRequiringBrp());
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(expected: ['brp' => 'imported'], actual: $report['registers']);
 		$this->assertSame(expected: 1, actual: $this->registers->imports);
@@ -111,12 +112,12 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->app(app: 'openregister', fragment: $this->castRequiringBrp());
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$check = $this->installer->check(plan: $plan, today: $this->today());
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(['brp' => 'imported'], $check['registers']);
 		$this->assertSame([], $check['refusals']);
 		$this->assertSame(0, $this->store->creates, 'the check writes none of the set\'s objects');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok']);
 		$this->assertSame(['brp' => 'kept'], $report['registers'], 'imported once, then already there');
 		$this->assertSame(1, $this->registers->imports);
@@ -133,12 +134,12 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->registers->importable['brp'] = true;
 		$this->app(app: 'openregister', fragment: $this->castRequiringBrp());
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->remover->remove(set: 'demo');
 		$this->assertSame([], $this->registers->jobs, 'the data of the first import is gone');
 		$this->assertTrue($this->registers->exists(slug: 'brp'), 'the register and its schemas stay');
 
-		$second = $this->installer->install(plan: $plan, today: $this->today());
+		$second = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($second['ok'], json_encode($second));
 		$this->assertSame(2, $this->registers->imports, 'the data is imported again, not skipped because the register exists');
@@ -155,7 +156,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->registers->jobs['someone-elses'] = 'brp';
 		$this->app(app: 'openregister', fragment: $this->castRequiringBrp());
 
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$removed = $this->remover->remove(set: 'demo');
 
 		$this->assertSame(0, $this->registers->imports);
@@ -166,7 +167,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 	public function testARequiredRegisterThatCannotBeImportedRefusesTheSet(): void {
 		$this->app(app: 'openregister', fragment: $this->castRequiringBrp());
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertStringContainsString('register "brp" is required and could not be imported', $report['refusals'][0]);
 		$this->assertSame(0, $this->store->creates);
@@ -197,7 +198,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 			$this->app(app: 'alpha', fragment: ['groups' => [['group' => 'Admin', 'members' => ['esra']]]]);
 		}
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertStringContainsString('never adds anyone to Nextcloud\'s administrators', implode("\n", $report['refusals']));
 		$this->assertSame([], $this->accounts->groups);
@@ -229,7 +230,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->app(app: 'site', fragment: $this->signInChange());
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertSame(['site/sign-in' => 'created'], $report['changes']);
 		$row = $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $portal));
@@ -237,7 +238,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->assertSame('sanne.devries', $row['authentication']['modeLabels']['nextcloud']['who']);
 
 		$updates = $this->store->updates;
-		$again   = $this->installer->install(plan: $plan, today: $this->today());
+		$again   = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(['site/sign-in' => 'kept'], $again['changes']);
 		$this->assertSame($updates, $this->store->updates, 'a second install changes nothing');
 
@@ -257,7 +258,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$portal = $this->store->seed(register: 'site', schema: 'portal', data: ['slug' => 'demo', 'title' => 'Demo', 'authentication' => ['modes' => ['password']]]);
 		$this->app(app: 'openregister', fragment: $this->castFile());
 		$this->app(app: 'site', fragment: $this->signInChange());
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		// A user rewrites the card the set wrote; the appended mode is still the set's.
 		$this->store->rows['site portal'][$portal]['authentication']['modeLabels']['nextcloud'] = ['title' => 'Mijn eigen kaart'];
@@ -279,7 +280,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$portal = $this->store->seed(register: 'site', schema: 'portal', data: ['slug' => 'demo', 'title' => 'Demo', 'authentication' => ['modes' => ['password']]]);
 		$this->app(app: 'openregister', fragment: $this->castFile());
 		$this->app(app: 'site', fragment: $this->signInChange());
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		// A database that is down says nothing about the object: the change is still on it and still recorded.
 		$this->store->unreadable = [$portal];
@@ -306,7 +307,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->app(app: 'openregister', fragment: $this->castFile());
 		$this->app(app: 'site', fragment: $this->signInChange());
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->remover->remove(set: 'demo');
 
 		$this->assertSame(['site/sign-in' => 'kept'], $report['changes']);
@@ -321,13 +322,13 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->app(app: 'site', fragment: $this->signInChange());
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$check = $this->installer->check(plan: $plan, today: $this->today());
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(
 			['site/lib/Settings/example-sets/demo.json: change "sign-in" (site portal): 2 site portal rows match {"slug":"demo"}; a change needs exactly one to change'],
 			$check['refusals']
 		);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(1, $report['refusals']);
 		$this->assertSame(0, $this->store->updates);
 		$this->assertSame(['password'], $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $first))['authentication']['modes']);
@@ -339,7 +340,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->app(app: 'openregister', fragment: $this->castFile());
 		$this->app(app: 'site', fragment: $this->signInChange());
 
-		$result = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$result = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(
 			['site/lib/Settings/example-sets/demo.json: change "sign-in" (site portal): no site portal with {"slug":"demo"} to change'],
@@ -361,7 +362,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 			]]]
 		);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertSame('[{"at":"2026-10-12"}]', $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0]['history']);

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
@@ -109,7 +110,7 @@ class ExampleSetFileIdsTest extends ExampleSetTestCase {
 	 * @return void
 	 */
 	public function testARecordNamesTheIdOfAFileAnEarlierObjectCarries(): void {
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode(value: $report));
 
 		$dossier  = $this->store->ids(register: 'docs', schema: 'dossier')[0];
@@ -124,7 +125,7 @@ class ExampleSetFileIdsTest extends ExampleSetTestCase {
 	 * @return void
 	 */
 	public function testACheckStandsInAWholeNumberForAFileNotYetAttached(): void {
-		$checked = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$checked = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(expected: [], actual: $checked['refusals']);
 	}

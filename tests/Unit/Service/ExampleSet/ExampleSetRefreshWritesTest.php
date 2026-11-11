@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
@@ -105,16 +106,16 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	public function testARewriteMovesTheReferencesRecordAlong(): void {
 		$this->incidentWith();
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 
 		// The theme is written again with a new id, so the kept incident's references are refreshed and recorded.
 		$this->store->undeletable = $this->store->ids(register: 'pub', schema: 'incident');
 		$this->remover->remove(set: 'demo');
 		$this->store->undeletable = [];
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame('refreshed', $again['changes']['alpha/incident-1#references'], (string) json_encode($again));
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days')));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$incident = $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'incident', id: $this->store->ids(register: 'pub', schema: 'incident')[0]));
@@ -136,9 +137,9 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 		$this->store->keptFields['pub incident'] = ['since'];
 		$this->store->lensFields['pub incident'] = ['objectTitle'];
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days')));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(1, $report['types']['pub incident']['refreshed']);
@@ -160,10 +161,10 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 		$this->incidentWith();
 		$this->store->appendOnly['pub incident'] = true;
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 		$updates = $this->store->updates;
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days')));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertArrayNotHasKey('refreshed', $report['types']['pub incident']);
@@ -200,9 +201,9 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 		$this->incidentWith();
 		$this->store->nonNullFields['pub incident'] = ['intakeChannel'];
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days')));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(1, $report['types']['pub incident']['refreshed']);

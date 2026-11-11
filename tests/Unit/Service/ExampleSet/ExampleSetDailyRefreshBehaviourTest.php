@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
@@ -114,7 +115,7 @@ class ExampleSetDailyRefreshBehaviourTest extends TestCase {
 		$this->record->method('isEmpty')->willReturn(false);
 		$this->catalogue->method('gather')->with('demo')->willReturn(['set' => 'demo', 'refresh' => false]);
 		$this->installer->expects($this->once())->method('install')
-			->with(['set' => 'demo', 'refresh' => false], [], '', $today)
+			->with(new ExampleSetInstallInput(plan: ['set' => 'demo', 'refresh' => false], today: $today))
 			->willReturn(['ok' => true, 'refusals' => [], 'dropped' => ['x'], 'missing' => [], 'lost' => [], 'extra' => 'not reported']);
 
 		$report = $this->daily()->run($today);
@@ -128,7 +129,7 @@ class ExampleSetDailyRefreshBehaviourTest extends TestCase {
 		$this->record->method('read')->willReturn([]);
 		$this->catalogue->method('gather')->willReturn(['set' => 'demo']);
 		$this->installer->expects($this->once())->method('install')
-			->with(['set' => 'demo', 'refresh' => true], [], '', null)
+			->with(new ExampleSetInstallInput(plan: ['set' => 'demo', 'refresh' => true]))
 			->willReturn(['ok' => false, 'refusals' => ['r'], 'dropped' => [], 'missing' => [], 'lost' => []]);
 
 		$this->assertFalse($this->daily()->run()['demo']['ok']);
