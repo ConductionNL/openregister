@@ -911,3 +911,4 @@ pipelinq	3287	c1deaef8907cab901bdd22588b54552e95209be7	GREEN	FV07:5	tree green: 
 pipelinq	3288	eb6037db0703ff23ca24a4da8e9154569f132386	GREEN	FV07:5	tree green: phpunit 0 new failures, vitest 0 new failures
 pipelinq	3289	51f0b01f90eade154f563d7d5691d07ae7fdb55c	GREEN	FV07:5	tree green: phpunit 0 new failures, vitest 0 new failures
 pipelinq	3290	e630d62d8f2591f0ed553868445137aaef5ba969	GREEN	FV07:5	tree green: phpunit 0 new failures, vitest 0 new failures
+integriq	3127	8f0759d3b4e3b44caec5367909d6a7316d6c0d0b	RED	FV09:3	phpunit AppOwnedInterfaceBindingTest::testEveryBareAppOwnedInterfaceIsBound (BrokeredCallRefusals injected by BrokeredJsonDispatch.php is not bound)
