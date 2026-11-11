@@ -68,24 +68,37 @@ class UnknownMetadataFieldException extends Exception {
 		int $code = 400,
 		?Throwable $previous = null,
 	) {
-		// Report the caller-facing names (no leading underscore), sorted, so the
-		// message is a usable correction rather than an internal column dump.
+		parent::__construct(
+			message: $this->messageFor(field: $field, known: $known),
+			code: $code,
+			previous: $previous
+		);
+	}//end __construct()
+
+	/**
+	 * The refusal message: the unknown field and the filterable metadata fields.
+	 *
+	 * Reports the caller-facing names (no leading underscore), sorted, so the
+	 * message is a usable correction rather than an internal column dump.
+	 *
+	 * @param string             $field The unknown field.
+	 * @param array<int, string> $known The known metadata columns.
+	 *
+	 * @return string The message.
+	 */
+	private function messageFor(string $field, array $known): string {
 		$names = array_map(
 			static fn (string $column): string => ltrim($column, '_'),
 			$known
 		);
 		sort($names);
 
-		parent::__construct(
-			message: sprintf(
-				'Unknown "@self" metadata field "%s". Filterable metadata fields are: %s.',
-				$field,
-				implode(', ', $names)
-			),
-			code: $code,
-			previous: $previous
+		return sprintf(
+			'Unknown "@self" metadata field "%s". Filterable metadata fields are: %s.',
+			$field,
+			implode(', ', $names)
 		);
-	}//end __construct()
+	}//end messageFor()
 
 	/**
 	 * The `@self` field name that triggered this exception.
