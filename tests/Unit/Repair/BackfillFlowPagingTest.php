@@ -48,6 +48,8 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\BackfillFlowTriggerIndex;
 use OCA\OpenRegister\Repair\BackfillFlowVersions;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface;
@@ -101,18 +103,11 @@ final class BackfillFlowPagingTest extends TestCase {
 	private function pagingMapper(array $uuids, array &$seenRef): FlowMapper {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findAllFlows')->willReturnCallback(
-			function (
-				?string $app = null,
-				?string $applicationSlug = null,
-				?string $organisation = null,
-				?bool $enabled = null,
-				int $limit = 100,
-				int $offset = 0,
-			) use ($uuids, &$seenRef): array {
-				$seenRef[] = ['limit' => $limit, 'offset' => $offset];
+			function (FlowSelection $selection, ListQuery $query) use ($uuids, &$seenRef): array {
+				$seenRef[] = ['limit' => $query->limit, 'offset' => $query->offset];
 
 				$page = [];
-				foreach (array_slice($uuids, $offset, $limit) as $uuid) {
+				foreach (array_slice($uuids, (int)$query->offset, $query->limit) as $uuid) {
 					$flow = new Flow();
 					$flow->setUuid($uuid);
 					$flow->setNodes([]);

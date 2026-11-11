@@ -42,6 +42,8 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventActor;
 use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventLookup;
 use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventPlatform;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -92,25 +94,9 @@ class DeferredObjectEventJob extends QueuedJob {
 
 		$restored = $this->restoreActingUser(uid: (string)(((array)$argument)['user'] ?? ''), uuid: $uuid);
 		try {
-			$this->dispatchCreated(
-				ref: new ObjectRef(
-					register: (int)(((array)$argument)['registerId'] ?? 0),
-					schema: (int)(((array)$argument)['schemaId'] ?? 0),
-					id: $uuid
-				)
-			);
+			$this->dispatchCreated(ref: self::refOf(argument: $argument, uuid: $uuid));
 		} catch (Throwable $e) {
-			// The object may legitimately be gone by now — a create followed by
-			// a delete before the queue drained — so this is not an error. It is
-			// logged at WARNING rather than INFO deliberately: a deferred event
-			// that never fires is silent by construction, every listener simply
-			// does not run, and the default loglevel (2 = warning) would hide an
-			// INFO line. A side effect that vanished must be visible at the
-			// level operators actually keep.
-			$this->platform->logger->warning(
-				message: '[DeferredObjectEventJob] Could not dispatch deferred event for ' . $uuid . ': ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
-			);
+			$this->logUndispatched(uuid: $uuid, error: $e);
 		} finally {
 			// Do not leave the impersonation standing for whatever job the
 			// worker runs next out of the same process.
@@ -120,6 +106,44 @@ class DeferredObjectEventJob extends QueuedJob {
 		}//end try
 
 	}//end run()
+
+	/**
+	 * The reference of the object a job is for.
+	 *
+	 * @param mixed  $argument The job arguments.
+	 * @param string $uuid     The object's UUID.
+	 *
+	 * @return ObjectRef
+	 */
+	private static function refOf(mixed $argument, string $uuid): ObjectRef {
+		return new ObjectRef(
+			register: (int)(((array)$argument)['registerId'] ?? 0),
+			schema: (int)(((array)$argument)['schemaId'] ?? 0),
+			id: $uuid
+		);
+	}//end refOf()
+
+	/**
+	 * Log a deferred event that could not be dispatched.
+	 *
+	 * The object may legitimately be gone by now — a create followed by a
+	 * delete before the queue drained — so this is not an error. It is logged
+	 * at WARNING rather than INFO deliberately: a deferred event that never
+	 * fires is silent by construction, every listener simply does not run, and
+	 * the default loglevel (2 = warning) would hide an INFO line. A side effect
+	 * that vanished must be visible at the level operators actually keep.
+	 *
+	 * @param string    $uuid  The object's UUID.
+	 * @param Throwable $error Why it could not be dispatched.
+	 *
+	 * @return void
+	 */
+	private function logUndispatched(string $uuid, Throwable $error): void {
+		$this->platform->logger->warning(
+			message: '[DeferredObjectEventJob] Could not dispatch deferred event for ' . $uuid . ': ' . $error->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+		);
+	}//end logUndispatched()
 
 	/**
 	 * Restore the acting user for the dispatch.
@@ -168,22 +192,12 @@ class DeferredObjectEventJob extends QueuedJob {
 	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
 	 */
 	private function dispatchCreated(ObjectRef $ref): void {
-		$register = null;
-		$schema = null;
-		if ((int)$ref->register > 0) {
-			$register = $this->lookup->registerMapper->find((int)$ref->register);
-		}
-
-		if ((int)$ref->schema > 0) {
-			$schema = $this->lookup->schemaMapper->find((int)$ref->schema);
-		}
-
 		// Scoped read: the register and schema are known, so this never
 		// reaches the cross-table fan-out.
 		$object = $this->lookup->objectMapper->find(
 			identifier: $ref->id,
-			register: $register,
-			schema: $schema,
+			register: $this->registerOf(ref: $ref),
+			schema: $this->schemaOf(ref: $ref),
 			includeDeleted: false,
 			_rbac: false,
 			_multitenancy: false
@@ -191,4 +205,34 @@ class DeferredObjectEventJob extends QueuedJob {
 
 		(new ObjectEventGate(events: $this->platform->eventDispatcher))->created(object: $object);
 	}//end dispatchCreated()
+
+	/**
+	 * The register of a reference; null when it names none.
+	 *
+	 * @param ObjectRef $ref The object reference.
+	 *
+	 * @return Register|null
+	 */
+	private function registerOf(ObjectRef $ref): ?Register {
+		if ((int)$ref->register > 0) {
+			return $this->lookup->registerMapper->find((int)$ref->register);
+		}
+
+		return null;
+	}//end registerOf()
+
+	/**
+	 * The schema of a reference; null when it names none.
+	 *
+	 * @param ObjectRef $ref The object reference.
+	 *
+	 * @return Schema|null
+	 */
+	private function schemaOf(ObjectRef $ref): ?Schema {
+		if ((int)$ref->schema > 0) {
+			return $this->lookup->schemaMapper->find((int)$ref->schema);
+		}
+
+		return null;
+	}//end schemaOf()
 }//end class

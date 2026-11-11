@@ -23,9 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -34,6 +32,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<CaseToken>
  */
 class CaseTokenMapper extends QBMapper implements CaseTokenMapperInterface {
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -55,16 +55,12 @@ class CaseTokenMapper extends QBMapper implements CaseTokenMapperInterface {
 	 * @return CaseToken|null The token row, or null when unknown.
 	 */
 	public function findByToken(string $token): ?CaseToken {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('token', $qb->createNamedParameter($token)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findOneOrNull(query: $this->selectWhere(column: new LinkColumn(name: 'token', value: $token)));
+		if ($found instanceof CaseToken) {
+			return $found;
 		}
+
+		return null;
 	}//end findByToken()
 
 	/**
@@ -93,15 +89,11 @@ class CaseTokenMapper extends QBMapper implements CaseTokenMapperInterface {
 	 * @return CaseToken|null The token, or null when unknown.
 	 */
 	public function findById(int $id): ?CaseToken {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findOneOrNull(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
+		if ($found instanceof CaseToken) {
+			return $found;
 		}
+
+		return null;
 	}//end findById()
 }//end class

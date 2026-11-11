@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Files\Controller\FileSearchController;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -129,12 +131,11 @@ class FileSearchControllerTest extends TestCase {
 		$this->vectorService->expects($this->once())
 			->method('semanticSearch')
 			->with(
-				'scoped query',
-				10,
 				$this->callback(
-					function (array $filters): bool {
-						return ($filters['entity_type'] ?? null) === 'file'
-							&& array_key_exists('entityType', $filters) === false;
+					function (SemanticSearchRequest $request): bool {
+						return $request->query === 'scoped query' && $request->limit === 10
+							&& ($request->filters['entity_type'] ?? null) === 'file'
+							&& array_key_exists('entityType', $request->filters) === false;
 					}
 				)
 			)
@@ -242,10 +243,11 @@ class FileSearchControllerTest extends TestCase {
 		$this->chunkMapper->expects($this->once())
 			->method('searchByKeyword')
 			->with(
-				'quarterly report',
-				20,
 				$this->callback(
-					fn (array $filters): bool => ($filters['source_type'] ?? null) === 'file'
+					fn (KeywordChunkSearch $search): bool => $search->query === 'quarterly report'
+						&& $search->limit === 20
+						&& ($search->filters['source_type'] ?? null) === 'file'
+						&& $search->allowUnrankedFallback === false
 				)
 			)
 			->willReturn($keywordResults);

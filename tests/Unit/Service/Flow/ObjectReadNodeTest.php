@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\ObjectService;
@@ -183,11 +184,11 @@ final class ObjectReadNodeTest extends TestCase {
 			[$this->entity('uuid-1', ['holder' => 'issue-7'])]
 		);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
-			$this->config(['output' => 'locks']),
-			$this->ownedContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
+			config: $this->config(['output' => 'locks']),
+			context: $this->ownedContext
+		));
 
 		$this->assertSame('ConductionNL/hydra', $out[0]['json']['repo']);
 		$this->assertCount(1, $out[0]['json']['locks']);
@@ -209,11 +210,11 @@ final class ObjectReadNodeTest extends TestCase {
 			[$this->entity('uuid-1', ['holder' => 'a']), $this->entity('uuid-2', ['holder' => 'b'])]
 		);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: [])],
-			$this->config(),
-			$this->ownedContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: [])],
+			config: $this->config(),
+			context: $this->ownedContext
+		));
 
 		$this->assertSame(['uuid-1', 'uuid-2'], array_column($out[0]['json']['objects'], 'uuid'));
 
@@ -233,11 +234,11 @@ final class ObjectReadNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
-			[FlowItems::item(json: ['ref' => 'hydra-410']), FlowItems::item(json: ['ref' => 'hydra-411'])],
-			$this->config(['filters' => ['holder' => '{{ref}}']]),
-			$this->ownedContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['ref' => 'hydra-410']), FlowItems::item(json: ['ref' => 'hydra-411'])],
+			config: $this->config(['filters' => ['holder' => '{{ref}}']]),
+			context: $this->ownedContext
+		));
 
 		$this->assertSame('hydra-410', $seen[0]['filters']['holder']);
 		$this->assertSame('hydra-411', $seen[1]['filters']['holder']);
@@ -261,10 +262,10 @@ final class ObjectReadNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute([FlowItems::item(json: [])], $this->config(), $this->ownedContext);
-		$this->node->execute([FlowItems::item(json: [])], $this->config(['limit' => 5]), $this->ownedContext);
-		$this->node->execute([FlowItems::item(json: [])], $this->config(['limit' => 999999]), $this->ownedContext);
-		$this->node->execute([FlowItems::item(json: [])], $this->config(['limit' => 0]), $this->ownedContext);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(), context: $this->ownedContext));
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(['limit' => 5]), context: $this->ownedContext));
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(['limit' => 999999]), context: $this->ownedContext));
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(['limit' => 0]), context: $this->ownedContext));
 
 		$this->assertSame([100, 5, 1000, 100], $seen);
 
@@ -285,7 +286,7 @@ final class ObjectReadNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/runAs/');
 
-		$this->node->execute([FlowItems::item(json: [])], $this->config(), ['runAs' => null]);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(), context: ['runAs' => null]));
 
 	}//end testARunWithNoOwnerReadsNothing()
 
@@ -299,7 +300,7 @@ final class ObjectReadNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute([FlowItems::item(json: [])], $this->config(), ['runAs' => 'mallory']);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(), context: ['runAs' => 'mallory']));
 
 	}//end testAnUnknownOwnerAlsoFailsClosed()
 
@@ -323,7 +324,7 @@ final class ObjectReadNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/disabled/');
 
-		$this->node->execute([FlowItems::item(json: [])], $this->config(), ['runAs' => 'dormant']);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(), context: ['runAs' => 'dormant']));
 
 	}//end testADisabledActingIdentityFailsClosed()
 
@@ -341,7 +342,7 @@ final class ObjectReadNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute([FlowItems::item(json: [])], $this->config(), $this->ownedContext);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(), context: $this->ownedContext));
 
 	}//end testAFailedReadIsNotAnEmptyResult()
 
@@ -355,7 +356,7 @@ final class ObjectReadNodeTest extends TestCase {
 	public function testAnEmptyBranchReadsNothing(): void {
 		$this->objects->expects($this->never())->method('findAll');
 
-		$this->assertSame([], $this->node->execute([], $this->config(), []));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: $this->config(), context: [])));
 
 	}//end testAnEmptyBranchReadsNothing()
 
@@ -397,11 +398,11 @@ final class ObjectReadNodeTest extends TestCase {
 			[$this->entity('uuid-1', ['holder' => 'a']), $this->entity('uuid-2', ['holder' => 'b'])]
 		);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
-			$this->config(['fanOut' => true]),
-			$this->ownedContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
+			config: $this->config(['fanOut' => true]),
+			context: $this->ownedContext
+		));
 
 		$this->assertCount(2, $out);
 		$this->assertSame(['uuid-1', 'uuid-2'], array_column(array_column($out, 'json'), 'uuid'));
@@ -423,11 +424,11 @@ final class ObjectReadNodeTest extends TestCase {
 	public function testFanOutOverNoMatchesEndsTheBranch(): void {
 		$this->objects->method('findAll')->willReturn([]);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
-			$this->config(['fanOut' => true]),
-			$this->ownedContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
+			config: $this->config(['fanOut' => true]),
+			context: $this->ownedContext
+		));
 
 		$this->assertSame([], $out);
 	}
@@ -446,11 +447,11 @@ final class ObjectReadNodeTest extends TestCase {
 			[$this->entity('uuid-1', ['holder' => 'a']), $this->entity('uuid-2', ['holder' => 'b'])]
 		);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
-			$this->config(),
-			$this->ownedContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
+			config: $this->config(),
+			context: $this->ownedContext
+		));
 
 		$this->assertCount(1, $out);
 		$this->assertCount(2, $out[0]['json']['objects']);
@@ -477,11 +478,11 @@ final class ObjectReadNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/could not be rendered: repo resolved to nothing/');
 
-		$this->node->execute(
-			[FlowItems::item(json: ['flowId' => 'f-1', 'scheduledAt' => '2026-08-02T15:00:00+00:00'])],
-			$this->config(['filters' => ['name' => 'ZZ issue-lock {{repo}}']]),
-			$this->ownedContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['flowId' => 'f-1', 'scheduledAt' => '2026-08-02T15:00:00+00:00'])],
+			config: $this->config(['filters' => ['name' => 'ZZ issue-lock {{repo}}']]),
+			context: $this->ownedContext
+		));
 
 	}//end testAFilterThatRendersEmptyFailsTheStep()
 
@@ -501,11 +502,11 @@ final class ObjectReadNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/could not be rendered: cutoff resolved to nothing/');
 
-		$this->node->execute(
-			[FlowItems::item(json: ['cutoff' => null])],
-			$this->config(['filters' => ['@self' => ['created' => ['lt' => '{{cutoff}}']]]]),
-			$this->ownedContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['cutoff' => null])],
+			config: $this->config(['filters' => ['@self' => ['created' => ['lt' => '{{cutoff}}']]]]),
+			context: $this->ownedContext
+		));
 
 	}//end testAFilterPlaceholderResolvingToNullIsAlsoRefused()
 
@@ -529,9 +530,9 @@ final class ObjectReadNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
-			[FlowItems::item(json: ['cutoff' => '2026-08-02 14:30:00', 'wanted' => false, 'attempts' => 0])],
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['cutoff' => '2026-08-02 14:30:00', 'wanted' => false, 'attempts' => 0])],
+			config: $this->config(
 				[
 					'filters' => [
 						'name' => 'ZZ issue-lock',
@@ -541,8 +542,8 @@ final class ObjectReadNodeTest extends TestCase {
 					],
 				]
 			),
-			$this->ownedContext
-		);
+			context: $this->ownedContext
+		));
 
 		$this->assertSame('ZZ issue-lock', $seen[0]['name']);
 		$this->assertFalse($seen[0]['enabled']);

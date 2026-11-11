@@ -1,0 +1,143 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the search store exposes the same state, in the same order, and the same actions: actions 1`] = `
+[
+  "setSearch",
+  "setSearchResults",
+  "getSearchResults",
+  "clearSearch",
+  "searchObjects",
+  "reDoSearch",
+  "clearObjectSearchResults",
+  "_hotUpdate",
+]
+`;
+
+exports[`the search store exposes the same state, in the same order, and the same actions: initial state 1`] = `
+{
+  "search": "",
+  "searchError": "",
+  "searchObjectsDataPagination": 1,
+  "searchObjectsDataPaginationLimit": 14,
+  "searchObjectsDataRegister": null,
+  "searchObjectsDataSchema": null,
+  "searchObjectsError": "",
+  "searchObjectsLoading": false,
+  "searchObjectsResult": [],
+  "searchObjectsSuccess": false,
+  "searchResults": "",
+}
+`;
+
+exports[`the search store exposes the same state, in the same order, and the same actions: state 1`] = `
+[
+  "search",
+  "searchResults",
+  "searchError",
+  "searchObjectsSuccess",
+  "searchObjectsLoading",
+  "searchObjectsResult",
+  "searchObjectsError",
+  "searchObjectsDataRegister",
+  "searchObjectsDataSchema",
+  "searchObjectsDataPagination",
+  "searchObjectsDataPaginationLimit",
+]
+`;
+
+exports[`the search store runs a legacy search for a failure 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/search?_search=a b",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "offline",
+  "logged": [
+    [
+      "offline",
+    ],
+  ],
+  "results": "",
+}
+`;
+
+exports[`the search store runs a legacy search for a failure without a message 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/search?_search=a b",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "An error occurred",
+  "logged": [
+    [
+      {},
+    ],
+  ],
+  "results": "",
+}
+`;
+
+exports[`the search store runs a legacy search for a refusal with a message 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/search?_search=a b",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "Denied",
+  "logged": [],
+  "results": {
+    "code": 403,
+    "message": "Denied",
+  },
+}
+`;
+
+exports[`the search store runs a legacy search for a refusal without a message 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/search?_search=a b",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "logged": [],
+  "results": {
+    "code": 403,
+  },
+}
+`;
+
+exports[`the search store runs a legacy search for an answer 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/search?_search=a b",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "logged": [],
+  "results": {
+    "results": [
+      1,
+    ],
+  },
+}
+`;

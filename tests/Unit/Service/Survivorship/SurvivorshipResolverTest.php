@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Unit\Service\Survivorship;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
@@ -61,7 +62,13 @@ class SurvivorshipResolverTest extends TestCase {
 			['entityType' => 'organisation', 'attribute' => 'legalName', 'sourceSystem' => 'registry', 'trustTier' => 'gold', 'effectiveFrom' => '2026-01-01'],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $this->baseConfig, new SurvivorshipTrustLookup('organisation', $trustRows, $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', $trustRows, $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertSame('Gold Co', $result['goldenRecord']['legalName']);
 		$this->assertSame('gold', $result['attributeProvenance']['legalName']['trustTier']);
@@ -76,7 +83,13 @@ class SurvivorshipResolverTest extends TestCase {
 			['entityType' => 'organisation', 'attribute' => 'legalName', 'sourceSystem' => 'stale-import', 'trustTier' => 'discard', 'effectiveFrom' => '2026-01-01'],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $this->baseConfig, new SurvivorshipTrustLookup('organisation', $trustRows, $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', $trustRows, $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertArrayNotHasKey('legalName', $result['goldenRecord']);
 	}//end testDiscardTierValueIsNeverSelected()
@@ -86,7 +99,13 @@ class SurvivorshipResolverTest extends TestCase {
 			['sourceSystem' => 'unknown-source', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Lone Co']],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $this->baseConfig, new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertSame('Lone Co', $result['goldenRecord']['legalName']);
 		$this->assertSame('bronze', $result['attributeProvenance']['legalName']['trustTier']);
@@ -99,7 +118,13 @@ class SurvivorshipResolverTest extends TestCase {
 			['sourceSystem' => 'crm', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => null]],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $this->baseConfig, new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertSame([], $result['goldenRecord']);
 	}//end testWithdrawnAndEmptySourcesAreExcluded()
@@ -118,7 +143,13 @@ class SurvivorshipResolverTest extends TestCase {
 
 		$this->assertTrue('2026-1-9' > '2026-01-10', 'Precondition: lexical compare must disagree with chronological order.');
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $this->baseConfig, new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertSame('B-number', $result['goldenRecord']['phone']);
 	}//end testTieBrokenByMostRecentDateNotLexical()
@@ -129,7 +160,13 @@ class SurvivorshipResolverTest extends TestCase {
 			['sourceSystem' => 'b', 'lastUpdated' => '2026-01-10', 'values' => ['phone' => 'B-number']],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $this->baseConfig, new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertSame('B-number', $result['goldenRecord']['phone']);
 	}//end testTieBrokenByMostRecentDateSimpleIsoCase()
@@ -141,7 +178,13 @@ class SurvivorshipResolverTest extends TestCase {
 			['sourceSystem' => 'crm', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Good Co']],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $this->baseConfig, new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertSame('Good Co', $result['goldenRecord']['legalName']);
 	}//end testMalformedSourceIsSkippedNeverThrows()
@@ -158,14 +201,26 @@ class SurvivorshipResolverTest extends TestCase {
 			['entityType' => 'organisation', 'attribute' => 'legalName', 'sourceSystem' => 'fresh-gold-source', 'trustTier' => 'gold', 'freshnessDecayDays' => 90, 'effectiveFrom' => '2026-01-01'],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $config, new SurvivorshipTrustLookup('organisation', $trustRows, $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $config,
+				trust: new SurvivorshipTrustLookup('organisation', $trustRows, $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertSame('Fresh Gold Co', $result['goldenRecord']['legalName']);
 		$this->assertSame('gold', $result['attributeProvenance']['legalName']['trustTier']);
 	}//end testFreshnessDecayStepsWinnerDownAndLosesToGenuineGold()
 
 	public function testEmptySourceListYieldsEmptyGoldenRecord(): void {
-		$result = $this->resolver->resolveGoldenRecord([], $this->baseConfig, new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: [],
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertSame([], $result['goldenRecord']);
 		$this->assertSame([], $result['attributeProvenance']);
@@ -179,7 +234,13 @@ class SurvivorshipResolverTest extends TestCase {
 			['sourceSystem' => 'crm', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Co']],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $config, new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $config,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertSame('Co', $result['goldenRecord']['legalName']);
 		$this->assertSame('bronze', $result['attributeProvenance']['legalName']['trustTier']);
@@ -191,7 +252,13 @@ class SurvivorshipResolverTest extends TestCase {
 			['sourceSystem' => 'crm', 'lastUpdated' => '2026-05-01', 'mappedAttributes' => ['legalName' => 'Legacy Co']],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $this->baseConfig, new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf));
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf)
+			)
+		);
 
 		$this->assertSame('Legacy Co', $result['goldenRecord']['legalName']);
 	}//end testMappedAttributesKeyIsAlsoSupported()
@@ -207,11 +274,13 @@ class SurvivorshipResolverTest extends TestCase {
 			'legalName' => ['value' => 'Steward Co', 'overriddenBy' => 'alice', 'rationale' => 'Confirmed with client'],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord(
-			$sources,
-			$this->baseConfig,
-			new SurvivorshipTrustLookup('organisation', $trustRows, $this->trustResolver, $this->asOf),
-			$overrides
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', $trustRows, $this->trustResolver, $this->asOf),
+				overrides: $overrides
+			)
 		);
 
 		$this->assertSame('Steward Co', $result['goldenRecord']['legalName']);
@@ -227,11 +296,13 @@ class SurvivorshipResolverTest extends TestCase {
 		];
 		$overrides = ['website' => ['value' => 'https://example.test', 'overriddenBy' => 'bob']];
 
-		$result = $this->resolver->resolveGoldenRecord(
-			$sources,
-			$this->baseConfig,
-			new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf),
-			$overrides
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf),
+				overrides: $overrides
+			)
 		);
 
 		$this->assertSame('https://example.test', $result['goldenRecord']['website']);
@@ -245,11 +316,13 @@ class SurvivorshipResolverTest extends TestCase {
 		];
 		$overrides = ['legalName' => 'Shorthand Co'];
 
-		$result = $this->resolver->resolveGoldenRecord(
-			$sources,
-			$this->baseConfig,
-			new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf),
-			$overrides
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf),
+				overrides: $overrides
+			)
 		);
 
 		$this->assertSame('Shorthand Co', $result['goldenRecord']['legalName']);
@@ -263,11 +336,13 @@ class SurvivorshipResolverTest extends TestCase {
 		];
 
 		// Non-array override map entirely.
-		$result = $this->resolver->resolveGoldenRecord(
-			$sources,
-			$this->baseConfig,
-			new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf),
-			'not-an-array'
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf),
+				overrides: 'not-an-array'
+			)
 		);
 		$this->assertSame('Gold Co', $result['goldenRecord']['legalName']);
 		$this->assertArrayNotHasKey('override', $result['attributeProvenance']['legalName']);
@@ -286,11 +361,13 @@ class SurvivorshipResolverTest extends TestCase {
 			'phone' => ['value' => '555-9999', 'overriddenBy' => 'alice'],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord(
-			$sources,
-			$this->baseConfig,
-			new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf),
-			$overrides
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf),
+				overrides: $overrides
+			)
 		);
 
 		// legalName falls back to the tier-selected source value.
@@ -307,7 +384,14 @@ class SurvivorshipResolverTest extends TestCase {
 			['sourceSystem' => 'registry', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Gold Co']],
 		];
 
-		$result = $this->resolver->resolveGoldenRecord($sources, $this->baseConfig, new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf), null);
+		$result = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $this->baseConfig,
+				trust: new SurvivorshipTrustLookup('organisation', [], $this->trustResolver, $this->asOf),
+				overrides: null
+			)
+		);
 
 		$this->assertSame('Gold Co', $result['goldenRecord']['legalName']);
 		$this->assertArrayNotHasKey('override', $result['attributeProvenance']['legalName']);

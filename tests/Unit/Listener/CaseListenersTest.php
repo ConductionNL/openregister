@@ -26,10 +26,12 @@ use OCA\OpenRegister\Event\FlowRunTerminalEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\CaseObjectEventListener;
 use OCA\OpenRegister\Listener\CaseRunTerminalListener;
 use OCA\OpenRegister\Listener\CaseTaskTerminalListener;
 use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Service\Case\CasePlanTrigger;
@@ -102,7 +104,7 @@ class CaseListenersTest extends TestCase {
 		$listener = new CaseObjectEventListener(plans: $plans);
 
 		$listener->handle(new ObjectUpdatedEvent(newObject: $object, oldObject: new ObjectEntity()));
-		$listener->handle(new ObjectTransitionedEvent(object: $object, action: 'x', from: 'a', to: 'b', userId: null, register: '1', schema: '1'));
+		$listener->handle(new ObjectTransitionedEvent(object: $object, move: new TransitionMove(action: 'x', from: 'a', to: 'b'), scope: new RegisterSchemaRef(register: '1', schema: '1')));
 		$listener->handle(new ObjectUpdatedEvent(newObject: new ObjectEntity(), oldObject: new ObjectEntity()));
 		$listener->handle(new Event());
 	}//end testObjectEventsAreForwarded()

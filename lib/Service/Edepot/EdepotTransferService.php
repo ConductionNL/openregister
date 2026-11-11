@@ -332,6 +332,7 @@ class EdepotTransferService implements EdepotTransferServiceInterface, EdepotTra
 		foreach ($sipFiles as $sipFile) {
 			$results[] = $transport->send($sipFile, $config);
 			if (file_exists($sipFile) === true) {
+				// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is a package file this service generated.
 				unlink($sipFile);
 			}
 		}

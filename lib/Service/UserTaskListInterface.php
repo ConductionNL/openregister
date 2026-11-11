@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Lists the VTODO tasks of every calendar of the logged-in user.
@@ -30,15 +31,14 @@ use Exception;
 interface UserTaskListInterface {
 
 	/**
-	 * Get all tasks of the current user across their calendars, sorted by due date.
+	 * One page of the current user's tasks across their calendars, sorted by due date.
 	 *
 	 * @param string|null $status Optional status filter (e.g. 'needs-action', 'completed')
-	 * @param int         $limit  Maximum number of tasks to return
-	 * @param int         $offset Number of tasks to skip
+	 * @param ListQuery   $query  The page: limit and offset
 	 *
 	 * @return array{results: array, total: int} Task results with total count
 	 *
 	 * @throws Exception If no user is logged in
 	 */
-	public function getAllUserTasks(?string $status=null, int $limit=50, int $offset=0): array;
+	public function listUserTasks(?string $status, ListQuery $query): array;
 }//end interface

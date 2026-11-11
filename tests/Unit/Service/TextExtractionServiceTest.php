@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Files\Service\FileExtractionOptions;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
@@ -130,8 +131,9 @@ class TextExtractionServiceTest extends TestCase {
 	}
 
 	public function testChunkDocumentReturnsEmptyArrayForEmptyText(): void {
-		$chunks = $this->service->chunkDocument('');
-		$this->assertIsArray($chunks);
+		$this->assertSame([], $this->service->chunkDocument(''));
+		$this->assertSame([], $this->service->chunkDocument(" \n\t "));
+		$this->assertSame([], $this->service->chunkDocument('', ['strategy' => 'FIXED_SIZE']));
 	}
 
 	public function testChunkDocumentRespectsChunkSizeOption(): void {
@@ -852,7 +854,7 @@ class TextExtractionServiceTest extends TestCase {
 		// Should NOT call rootFolder (no extraction happens).
 		$this->rootFolder->expects($this->never())->method('getById');
 
-		$this->service->extractFile(1, false);
+		$this->service->extractFile(1, new FileExtractionOptions(forceReExtract: false));
 	}
 
 	public function testExtractFileProcessesTextFile(): void {
@@ -914,7 +916,7 @@ class TextExtractionServiceTest extends TestCase {
 			'entityRecognitionEnabled' => false,
 		]);
 
-		$this->service->extractFile(1, true);
+		$this->service->extractFile(1, new FileExtractionOptions(forceReExtract: true));
 	}
 
 	public function testExtractFileWithEntityRecognitionEnabled(): void {
@@ -2943,9 +2945,7 @@ class TextExtractionServiceTest extends TestCase {
 			1, ['mimetype' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'path' => '/empty.xlsx'],
 		]);
 
-		// "Sheet: Empty\n\n" — after trim this is "Sheet: Empty" which is not empty,
-		// so it returns the text. Let's just verify it's a string.
-		$this->assertIsString($result);
+		$this->assertNull($result);
 	}
 
 	// ────────────────────────────────────────────────────────
@@ -3134,11 +3134,8 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testChunkDocumentWithOnlyNullBytes(): void {
 		$text = "\0\0\0\0\0";
-		$chunks = $this->service->chunkDocument($text);
-		// After cleanText strips null bytes, text = '' — chunkRecursive returns one empty chunk.
-		$this->assertIsArray($chunks);
-		$this->assertCount(1, $chunks);
-		$this->assertSame('', $chunks[0]['text']);
+		// After cleanText strips null bytes nothing is left to chunk.
+		$this->assertSame([], $this->service->chunkDocument($text));
 	}
 
 	// ────────────────────────────────────────────────────────

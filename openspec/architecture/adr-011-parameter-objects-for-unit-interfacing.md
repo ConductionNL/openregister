@@ -73,7 +73,7 @@ cluster appears:
   plus an object identifier, as the strings or integers a request carries
   before resolution. They live beside `AppIdentity` because other apps may
   build them. `ObjectRef` has `registerSchema(): RegisterSchemaRef`.
-- `OCA\OpenRegister\Db\ListQuery`: `limit`, `offset`, `filters`, `sort` and
+- `OCA\OpenRegister\Kernel\Contracts\ListQuery`: `limit`, `offset`, `filters`, `sort` and
   `search` for one listing, with the defaults the controllers apply today.
   A listing without a page size is `ListQuery::unbounded()`; mappers read
   `limitOrNull()`.

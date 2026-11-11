@@ -79,7 +79,10 @@ class DraftDiscard {
 			return false;
 		}
 
-		$draft = (new DraftFinder(objects: $this->objects))->own(register: $register, schema: $schema, draftId: $draftId, owner: $request->owner);
+		$draft = (new DraftFinder(objects: $this->objects))->own(
+			address: new DraftAddress(register: $register, schema: $schema, draftId: $draftId),
+			owner: $request->owner
+		);
 		if ($draft === null) {
 			return false;
 		}

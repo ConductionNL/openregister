@@ -260,20 +260,31 @@ class PersonLinkService implements PersonLinkServiceInterface {
 			throw new Exception('Either userId or addressbookId+contactUri is required', 400);
 		}
 
-		$target = $placement->target;
-
 		$contacts = $this->targets->contacts;
 
 		return $contacts->linkCard(
 			card: new ContactCardRef(addressbookId: $contact[0], contactUri: $contact[1]),
-			placement: new ContactPlacement(
-				objectUuid: $target->objectUuid,
-				registerId: $target->registerId,
-				schemaId: $target->schemaId,
-				role: $placement->role
-			)
+			placement: $this->contactPlacement(placement: $placement)
 		);
 	}//end linkAddressbookContact()
+
+	/**
+	 * Where an addressbook contact is linked: the person link's object and role.
+	 *
+	 * @param PersonLinkPlacement $placement The object and the role.
+	 *
+	 * @return ContactPlacement
+	 */
+	private function contactPlacement(PersonLinkPlacement $placement): ContactPlacement {
+		$target = $placement->target;
+
+		return new ContactPlacement(
+			objectUuid: $target->objectUuid,
+			registerId: $target->registerId,
+			schemaId: $target->schemaId,
+			role: $placement->role
+		);
+	}//end contactPlacement()
 
 	/**
 	 * Set validity and note from a payload; a key absent is left alone, null or '' clears.
@@ -368,7 +379,7 @@ class PersonLinkService implements PersonLinkServiceInterface {
 		$role       = $ref->role;
 		$link       = null;
 		if ($role !== null) {
-			$link = $this->links->findByObjectContactAndRole(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
+			$link = $this->links->findByObjectContactAndRole(ref: $ref);
 		}
 
 		if ($role === null) {

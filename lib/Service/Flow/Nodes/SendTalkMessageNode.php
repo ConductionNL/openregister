@@ -146,12 +146,13 @@ class SendTalkMessageNode extends MessagingNodeBase implements
 	 */
 	public function configForm(): array {
 		return [
-			$this->requiredField(key: 'conversation', label: $this->l10n->t('Conversation'), type: 'text', help: $this->l10n->t(
+			$this->requiredField(field: new NodeFormField(
+				key: 'conversation', label: $this->l10n->t('Conversation'), type: 'text', help: $this->l10n->t(
 				'A conversation token, or a field on the item such as {{ conversationToken }}. The acting user must be a participant.'
-			)),
-			$this->requiredField(key: 'message', label: $this->l10n->t('Message'), type: 'textarea', help: $this->l10n->t(
+			))),
+			$this->requiredField(field: new NodeFormField(key: 'message', label: $this->l10n->t('Message'), type: 'textarea', help: $this->l10n->t(
 				'What the message says. Placeholders such as {{ name }} read fields from the item.'
-			)),
+			))),
 		];
 	}//end configForm()
 

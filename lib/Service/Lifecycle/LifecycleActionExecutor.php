@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCA\OpenRegister\Lifecycle\LifecycleActionContext;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -107,10 +108,12 @@ class LifecycleActionExecutor implements LifecycleActionExecutorInterface {
 		}
 
 		$objectData = $this->registry->resolve($actionName)->execute(
-			objectData: $payload->objectData,
-			previousData: $payload->previousData,
-			parameters: $this->parametersOf(envelope: $envelope),
-			actionName: $actionName
+			new LifecycleActionContext(
+				objectData: $payload->objectData,
+				previousData: $payload->previousData,
+				parameters: $this->parametersOf(envelope: $envelope),
+				actionName: $actionName
+			)
 		);
 
 		$this->logger->debug(sprintf('[LifecycleActionExecutor] ran action "%s" on transition "%s".', $actionName, $payload->transition));

@@ -48,10 +48,11 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Support\FleetAppId;
@@ -299,7 +300,10 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 			// The OpenConnector source resolves `{ space, title }` to a new
 			// remote xWiki page and returns the normalised row.
 			$page = ['space' => $draft->space, 'title' => $draft->title];
-			$row  = $provider->create((string)$target->registerId, (string)$target->schemaId(), $target->objectUuid, $page);
+			$row  = $provider->create(
+				new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
+				$page
+			);
 		} catch (ProviderUnavailableException $e) {
 			throw $this->toServiceException(exception: $e);
 		} catch (Throwable $e) {
@@ -466,7 +470,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		try {
 			// Browse uses the same list() surface with empty OR context —
 			// the OpenConnector source returns the matching remote pages.
-			$rows = $provider->list('', '', '', $filters);
+			$rows = $provider->list(new ObjectRef(register: '', schema: '', id: ''), $filters);
 		} catch (ProviderUnavailableException $e) {
 			return ['cause' => $e->getCause(), 'results' => []];
 		} catch (Throwable $e) {
@@ -566,7 +570,10 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	private function resolveRemotePage(string $pageReference, LinkTarget $target): array {
 		$provider = $this->requireProvider();
 		try {
-			$row = $provider->get((string)$target->registerId, (string)$target->schemaId(), $target->objectUuid, $pageReference);
+			$row = $provider->get(
+				new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
+				$pageReference
+			);
 		} catch (ProviderUnavailableException $e) {
 			throw $this->toServiceException(exception: $e);
 		} catch (Throwable $e) {
@@ -673,7 +680,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		$register = (string)(int)$link->getRegisterId();
 		$schema   = (string)(int)($link->getSchemaId() ?? 0);
 		try {
-			return $provider->get($register, $schema, (string)$link->getObjectUuid(), (string)$link->getPageReference());
+			return $provider->get(new ObjectRef(register: $register, schema: $schema, id: (string)$link->getObjectUuid()), (string)$link->getPageReference());
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('XwikiLinkService::refreshLink fetch failed: ' . $e->getMessage());
 			return null;

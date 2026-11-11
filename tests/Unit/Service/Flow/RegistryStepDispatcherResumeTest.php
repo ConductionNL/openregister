@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
@@ -31,13 +32,15 @@ class RegistryStepDispatcherResumeTest extends TestCase {
 	 * A node that records the context it was called with, and optionally
 	 * suspends the way a real awaiting node does.
 	 *
-	 * @param callable $onExecute What the node does when called.
+	 * @param callable $onExecute What the node does with the call's items, config and context.
 	 *
 	 * @return IFlowNode The stub.
 	 */
 	private function node(callable $onExecute): IFlowNode {
 		$node = $this->createMock(IFlowNode::class);
-		$node->method('execute')->willReturnCallback($onExecute);
+		$node->method('execute')->willReturnCallback(
+			static fn (FlowNodeCall $call): array => $onExecute($call->items, $call->config, $call->context)
+		);
 
 		return $node;
 	}

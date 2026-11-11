@@ -220,6 +220,73 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 	 *
 	 * @return array{valid: bool, entriesVerified: int, brokenAt: int|null, skippedNullHashes: int, purgedTombstones: int}
 	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
+	 */
+	private function verifyUnderV1(): array {
+		$walk = new V1ChainVerificationRun();
+
+		while ($walk->brokenAt === null) {
+			$rows = $this->auditWindow(afterId: $walk->afterId);
+			if ($rows === []) {
+				break;
+			}
+
+			$this->walkWindow(rows: $rows, walk: $walk);
+		}
+
+		return $walk->verdict();
+	}//end verifyUnderV1()
+
+	/**
+	 * The next window of audit rows, in id order, after the given id.
+	 *
+	 * @param int $afterId The last id already read.
+	 *
+	 * @return array<int, array<string, mixed>> The raw rows.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
+	 */
+	private function auditWindow(int $afterId): array {
+		$qb = $this->platform->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_audit_trails')
+			->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults(self::WINDOW);
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return $rows;
+	}//end auditWindow()
+
+	/**
+	 * Verify one window of rows, stopping at the first break.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The raw rows.
+	 * @param V1ChainVerificationRun           $walk The walk so far.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
+	 */
+	private function walkWindow(array $rows, V1ChainVerificationRun $walk): void {
+		foreach ($rows as $row) {
+			if ($this->verifyRow(row: $row, walk: $walk) === false) {
+				return;
+			}
+		}
+	}//end walkWindow()
+
+	/**
+	 * Verify one row's link under v1; unsealed rows and tombstones carry the chain.
+	 *
+	 * @param array<string, mixed>   $row  The raw row.
+	 * @param V1ChainVerificationRun $walk The walk so far.
+	 *
+	 * @return boolean False when the row breaks the chain.
+	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) AuditCanonicalV1 is deliberately static and
 	 * deliberately FROZEN. Injecting it would present it as a collaborator that could be
 	 * swapped or updated, which is the one thing it must never be: it describes the audit
@@ -228,69 +295,55 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 	 *
 	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
 	 */
-	private function verifyUnderV1(): array {
-		$previousHash = AuditCanonicalV1::genesisHash();
-		$entriesVerified = 0;
-		$skippedNullHashes = 0;
-		$purgedTombstones = 0;
-		$brokenAt = null;
-		$afterId = 0;
+	private function verifyRow(array $row, V1ChainVerificationRun $walk): bool {
+		$walk->afterId = (int)$row['id'];
 
-		while ($brokenAt === null) {
-			$qb = $this->platform->db->getQueryBuilder();
-			$qb->select('*')
-				->from('openregister_audit_trails')
-				->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
-				->orderBy('id', 'ASC')
-				->setMaxResults(self::WINDOW);
+		$entity = $this->hydrate(row: $row);
+		if ($this->carriesLinkUnchecked(entity: $entity, walk: $walk) === true) {
+			return true;
+		}
 
-			$result = $qb->executeQuery();
-			$rows = $result->fetchAll();
-			$result->closeCursor();
+		$expected = AuditCanonicalV1::computeHash(entry: $entity, previousHash: ($walk->previousHash ?? AuditCanonicalV1::genesisHash()));
+		if (hash_equals($expected, (string)$entity->getHash()) === false) {
+			$walk->brokenAt = (int)$row['id'];
+			return false;
+		}
 
-			if ($rows === []) {
-				break;
-			}
+		$walk->entriesVerified++;
+		$walk->previousHash = $entity->getHash();
+		return true;
+	}//end verifyRow()
 
-			foreach ($rows as $row) {
-				$afterId = (int)$row['id'];
+	/**
+	 * Count an unsealed row or a purged tombstone, which the walk carries without re-deriving.
+	 *
+	 * An unsealed row (null or empty hash) keeps the previous link; a declared
+	 * tombstone's stored hash becomes the link without re-deriving its blanked content.
+	 *
+	 * @param AuditTrail             $entity The hydrated row.
+	 * @param V1ChainVerificationRun $walk   The walk so far.
+	 *
+	 * @return boolean True when the row was carried and needs no hash check.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
+	 */
+	private function carriesLinkUnchecked(AuditTrail $entity, V1ChainVerificationRun $walk): bool {
+		$storedHash = $entity->getHash();
+		if ($storedHash === null || $storedHash === '') {
+			$walk->skippedNullHashes++;
+			return true;
+		}
 
-				$entity = $this->hydrate(row: $row);
-				$storedHash = $entity->getHash();
+		if ($entity->isPurged() === true) {
+			// A declared tombstone: carry its stored hash forward as
+			// the chain link without re-deriving its blanked content.
+			$walk->purgedTombstones++;
+			$walk->previousHash = $storedHash;
+			return true;
+		}
 
-				if ($storedHash === null || $storedHash === '') {
-					$skippedNullHashes++;
-					continue;
-				}
-
-				if ($entity->isPurged() === true) {
-					// A declared tombstone: carry its stored hash forward as
-					// the chain link without re-deriving its blanked content.
-					$purgedTombstones++;
-					$previousHash = $storedHash;
-					continue;
-				}
-
-				$expected = AuditCanonicalV1::computeHash(entry: $entity, previousHash: $previousHash);
-
-				if (hash_equals($expected, $storedHash) === false) {
-					$brokenAt = (int)$row['id'];
-					break;
-				}
-
-				$entriesVerified++;
-				$previousHash = $storedHash;
-			}//end foreach
-		}//end while
-
-		return [
-			'valid' => ($brokenAt === null),
-			'entriesVerified' => $entriesVerified,
-			'brokenAt' => $brokenAt,
-			'skippedNullHashes' => $skippedNullHashes,
-			'purgedTombstones' => $purgedTombstones,
-		];
-	}//end verifyUnderV1()
+		return false;
+	}//end carriesLinkUnchecked()
 
 	/**
 	 * Hydrate a raw row exactly the way the live verifier does.
@@ -341,14 +394,7 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
 	 */
 	private function recordVerdict(array $verdict, IOutput $output): bool {
-		$payload = json_encode(
-			array_merge($verdict, [
-				'seedFrom' => AuditCanonicalV1::GENESIS_SEED,
-				'seedTo' => 'openregister-genesis-v2',
-				'verifiedAt' => (new DateTime())->format('c'),
-			])
-		);
-
+		$payload = $this->verdictPayload(verdict: $verdict);
 		if ($payload === false) {
 			return false;
 		}
@@ -358,6 +404,39 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
 		);
 
+		return $this->storeVerdict(payload: $payload, output: $output);
+	}//end recordVerdict()
+
+	/**
+	 * Encode the verdict with the seed change and the verification time.
+	 *
+	 * @param array $verdict The pre-verification result.
+	 *
+	 * @return string|false The JSON payload, or false when it cannot be encoded.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
+	 */
+	private function verdictPayload(array $verdict): string|false {
+		return json_encode(
+			array_merge($verdict, [
+				'seedFrom' => AuditCanonicalV1::GENESIS_SEED,
+				'seedTo' => 'openregister-genesis-v2',
+				'verifiedAt' => (new DateTime())->format('c'),
+			])
+		);
+	}//end verdictPayload()
+
+	/**
+	 * Write the verdict payload to the app config and read it back.
+	 *
+	 * @param string  $payload The JSON verdict.
+	 * @param IOutput $output  Progress output.
+	 *
+	 * @return boolean True when the stored value reads back as the payload.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
+	 */
+	private function storeVerdict(string $payload, IOutput $output): bool {
 		try {
 			$this->platform->config->setValueString('openregister', self::VERDICT_KEY, $payload);
 		} catch (Throwable $e) {
@@ -368,5 +447,5 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 		// Read it back. "The setter did not throw" is not evidence the value is
 		// there, and this is the one fact the whole step exists to preserve.
 		return ($this->platform->config->getValueString('openregister', self::VERDICT_KEY, '') === $payload);
-	}//end recordVerdict()
+	}//end storeVerdict()
 }//end class

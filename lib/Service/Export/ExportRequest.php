@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Service\Export;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 use OCP\IUser;
 
 /**
@@ -55,4 +57,24 @@ final class ExportRequest {
 		public readonly ?IUser $currentUser = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The request over the stored rows behind an exporter-contract request.
+	 *
+	 * @param ObjectExportRequest $request The request the contract received.
+	 *
+	 * @return self
+	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public static function fromContract(ObjectExportRequest $request): self {
+		return new self(
+			register: StoredEntity::register(register: $request->register),
+			schema: StoredEntity::schema(schema: $request->schema),
+			filters: $request->filters,
+			currentUser: $request->currentUser,
+		);
+	}//end fromContract()
 }//end class

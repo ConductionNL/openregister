@@ -38,6 +38,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 class TaskServiceAnnouncementTest extends TestCase {
 	private TaskMapper&MockObject $tasks;
@@ -115,7 +116,7 @@ class TaskServiceAnnouncementTest extends TestCase {
 			}
 		);
 
-		$this->service()->reassign(uuid: 't-1', assignee: 'next', actor: 'manager');
+		$this->service()->reassign(ref: new TaskActorRef(uuid: 't-1', actor: 'manager'), assignee: 'next');
 
 		$this->assertSame(['commit', 'announce'], $this->order);
 		$this->assertSame('former', $announced->getPreviousAssignee());
@@ -176,6 +177,6 @@ class TaskServiceAnnouncementTest extends TestCase {
 			)
 		);
 
-		$this->assertSame(Task::STATE_TERMINATED, $service->cancel(uuid: 't-1', reason: null, actor: 'former')->getState());
+		$this->assertSame(Task::STATE_TERMINATED, $service->cancel(ref: new TaskActorRef(uuid: 't-1', actor: 'former'), reason: null)->getState());
 	}
 }

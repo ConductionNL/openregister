@@ -51,6 +51,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Throwable;
@@ -136,22 +137,9 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	 * @return array<int, array{id: int, holder: string, consumers: array<int, string>, title: ?string}> The declarations.
 	 */
 	private function readDeclarations(string $table): array {
-		$rows = [];
-
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id', 'title', 'organisation', 'shared_with')
-				->from($table)
-				->where($qb->expr()->isNotNull('shared_with'));
-
-			$result = $qb->executeQuery();
-			while (($row = $result->fetch()) !== false) {
-				$declaration = $this->parseRow(row: $row);
-				if ($declaration !== null) {
-					$rows[] = $declaration;
-				}
-			}
-
+			$result = $this->declarationsQuery(table: $table)->executeQuery();
+			$rows = $this->declarationsOf(result: $result);
 			$result->closeCursor();
 		} catch (Throwable $e) {
 			// An instance that has not run the migration yet has no column, and
@@ -165,6 +153,41 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	}//end readDeclarations()
 
 	/**
+	 * The query for the rows of a table that declare a share.
+	 *
+	 * @param string $table The table.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function declarationsQuery(string $table): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id', 'title', 'organisation', 'shared_with')
+			->from($table)
+			->where($qb->expr()->isNotNull('shared_with'));
+
+		return $qb;
+	}//end declarationsQuery()
+
+	/**
+	 * The usable declarations among a result's rows, in row order.
+	 *
+	 * @param IResult $result The query result.
+	 *
+	 * @return array<int, array{id: int, holder: string, consumers: array<int, string>, title: string}>
+	 */
+	private function declarationsOf(IResult $result): array {
+		$rows = [];
+		while (($row = $result->fetch()) !== false) {
+			$declaration = $this->parseRow(row: $row);
+			if ($declaration !== null) {
+				$rows[] = $declaration;
+			}
+		}
+
+		return $rows;
+	}//end declarationsOf()
+
+	/**
 	 * Turn one database row into a declaration, or into null when it declares nothing.
 	 *
 	 * @param array<string, mixed> $row The raw row.
@@ -172,15 +195,8 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	 * @return array{id: int, holder: string, consumers: array<int, string>, title: ?string}|null The declaration.
 	 */
 	private function parseRow(array $row): ?array {
-		$holder = ($row['organisation'] ?? null);
-		if (is_string($holder) === false || $holder === '') {
-			// A row with no holder is not shared BY anyone, so it cannot be
-			// shared WITH anyone either. Treating it as shared would make an
-			// org-less legacy row readable across every tenant at once.
-			return null;
-		}
-
-		$consumers = $this->parseConsumers(raw: ($row['shared_with'] ?? null), holder: $holder);
+		$holder = self::holderOf(row: $row);
+		$consumers = $this->consumersOf(row: $row, holder: $holder);
 		if ($consumers === []) {
 			return null;
 		}
@@ -193,6 +209,42 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 		];
 
 	}//end parseRow()
+
+	/**
+	 * The organisation a row belongs to.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return string|null Null when the row has no holder.
+	 */
+	private static function holderOf(array $row): ?string {
+		$holder = ($row['organisation'] ?? null);
+		if (is_string($holder) === false || $holder === '') {
+			return null;
+		}
+
+		return $holder;
+	}//end holderOf()
+
+	/**
+	 * The organisations a row is shared with.
+	 *
+	 * A row with no holder is not shared BY anyone, so it cannot be
+	 * shared WITH anyone either. Treating it as shared would make an
+	 * org-less legacy row readable across every tenant at once.
+	 *
+	 * @param array<string, mixed> $row    The row.
+	 * @param string|null          $holder The organisation the row belongs to.
+	 *
+	 * @return array<int, string> The consumers, none for a row without a holder.
+	 */
+	private function consumersOf(array $row, ?string $holder): array {
+		if ($holder === null) {
+			return [];
+		}
+
+		return $this->parseConsumers(raw: ($row['shared_with'] ?? null), holder: $holder);
+	}//end consumersOf()
 
 	/**
 	 * The row's title, when it is a string.
@@ -499,13 +551,7 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 		// to save a query nobody makes twice is a cache that only adds a way to
 		// be stale.
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('name')
-				->from('openregister_organisations')
-				->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)))
-				->setMaxResults(1);
-
-			$result = $qb->executeQuery();
+			$result = $this->holderNameQuery(uuid: $uuid)->executeQuery();
 			$name = $result->fetchOne();
 			$result->closeCursor();
 		} catch (Throwable $e) {
@@ -519,4 +565,21 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 		return $name;
 
 	}//end holderName()
+
+	/**
+	 * The query for the name of an organisation.
+	 *
+	 * @param string $uuid The organisation uuid.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function holderNameQuery(string $uuid): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('name')
+			->from('openregister_organisations')
+			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)))
+			->setMaxResults(1);
+
+		return $qb;
+	}//end holderNameQuery()
 }//end class

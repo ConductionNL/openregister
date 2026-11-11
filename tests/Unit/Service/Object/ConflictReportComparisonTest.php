@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ConflictReport;
+use OCA\OpenRegister\Service\Object\RefusedWrite;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -54,7 +55,7 @@ class ConflictReportComparisonTest extends TestCase {
 		$entry->setUser('bram');
 		$entry->setCreated(new DateTime('2026-09-18T12:00:00+00:00'));
 
-		return (new ConflictReport($rbac))->build($object, new Schema(), $sent, [$entry]);
+		return (new ConflictReport($rbac))->build(new RefusedWrite(stored: $object, schema: new Schema(), sent: $sent), [$entry]);
 
 	}//end report()
 
@@ -145,7 +146,7 @@ class ConflictReportComparisonTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setObject(['status' => 'a']);
 
-		$body = (new ConflictReport($rbac))->build($object, new Schema(), ['status' => 'b'], []);
+		$body = (new ConflictReport($rbac))->build(new RefusedWrite(stored: $object, schema: new Schema(), sent: ['status' => 'b']), []);
 
 		$this->assertNull($body['changedBy']);
 		$this->assertNull($body['changedAt']);

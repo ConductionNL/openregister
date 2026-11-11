@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStateHandle;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
 use OCP\IL10N;
@@ -112,7 +113,7 @@ class FlowStateNodeGoldenTest extends TestCase {
 		}
 
 		try {
-			$out = $this->node->execute($case['items'], $case['config'], $context);
+			$out = $this->node->execute(new FlowNodeCall(items: $case['items'], config: $case['config'], context: $context));
 		} catch (Throwable $e) {
 			return ['error' => get_class($e) . ': ' . $e->getMessage()];
 		}

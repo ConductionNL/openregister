@@ -234,16 +234,28 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 			return array_merge($item, $ground, ['bucket' => ErasureBucket::PROTECTED, 'counts' => [ErasureBucket::OBJECTS => 1]]);
 		}
 
+		return array_merge($item, $this->erasureCost(match: $match, run: $run));
+	}//end classify()
+
+	/**
+	 * The bucket and counts of an unprotected object under the requested mode.
+	 *
+	 * @param SubjectMatch      $match The object and the PII hits that pulled it in.
+	 * @param ErasurePreviewRun $run   The subject value and the requested mode.
+	 *
+	 * @return array<string, mixed> The `bucket` and `counts` of the preview item.
+	 */
+	private function erasureCost(SubjectMatch $match, ErasurePreviewRun $run): array {
 		if ($run->eraseMode === DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT) {
-			return array_merge($item, $this->wholeObject(match: $match, subjectId: $run->subjectId));
+			return $this->wholeObject(match: $match, subjectId: $run->subjectId);
 		}
 
 		// Pseudonymisation leaves the object, its folder and its timeline where
 		// they are: only the subject's values inside the payload move.
 		$parties = $this->countPartyRecords(match: $match, subjectId: $run->subjectId);
 
-		return array_merge($item, ['bucket' => ErasureBucket::PSEUDONYMISED, 'counts' => $this->scrubCounts(parties: $parties)]);
-	}//end classify()
+		return ['bucket' => ErasureBucket::PSEUDONYMISED, 'counts' => $this->scrubCounts(parties: $parties)];
+	}//end erasureCost()
 
 	/**
 	 * What every preview item says about its object, whatever its bucket.

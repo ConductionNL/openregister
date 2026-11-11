@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Service\ContactPlacement;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ContactsControllerFactory;
 use OCA\OpenRegister\Controller\ContactsController;
@@ -358,7 +359,7 @@ class ContactsControllerTest extends TestCase {
 			});
 
 		$this->matchingService->method('matchContact')
-			->with('test@example.nl', null, null)
+			->with(new ContactDetails(email: 'test@example.nl'))
 			->willReturn([]);
 
 		$this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
