@@ -166,11 +166,80 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			);
 		}
 
+		if ($cascade === true) {
+			$this->requireMayEditFamily(record: $record);
+		}
+
 		return $this->transfer(
 			record: $record,
 			handover: new OwnershipHandover(newOwner: $actor, cascade: $cascade)
 		);
 	}//end claim()
+
+	/**
+	 * Require that the caller may edit every child a claim cascade would carry.
+	 *
+	 * Walks the same family the cascade moves (records that reference the parent
+	 * and share its owner, up to the depth cap) before anything is written, so a
+	 * refused child fails the whole claim instead of leaving half a family moved.
+	 *
+	 * @param OwnedRecord $record The record being claimed.
+	 *
+	 * @throws NotAuthorizedException When the rules refuse the caller the edit of any child.
+	 *
+	 * @return void
+	 */
+	private function requireMayEditFamily(OwnedRecord $record): void {
+		$rootUuid = $record->object->getUuid();
+		$owner = $record->previousOwner;
+		if ($this->isCascadable(uuid: $rootUuid, previousOwner: $owner) === false) {
+			return;
+		}
+
+		$seen = [(string)$rootUuid => true];
+		$frontier = [[(string)$rootUuid, $record->depth]];
+		while ($frontier !== []) {
+			[$uuid, $depth] = array_shift($frontier);
+			if ($depth >= self::MAX_CASCADE_DEPTH) {
+				continue;
+			}
+
+			foreach ($this->childCandidates(uuid: $uuid) as $candidate) {
+				$child = $this->wholeChild(child: $candidate);
+				$childUuid = $child?->getUuid();
+				if ($child === null || $childUuid === null || isset($seen[$childUuid]) === true || $child->getOwner() !== $owner) {
+					continue;
+				}
+
+				$seen[$childUuid] = true;
+				$this->requireMayEditChild(child: $child);
+				$frontier[] = [$childUuid, ($depth + 1)];
+			}
+		}
+	}//end requireMayEditFamily()
+
+	/**
+	 * Require that the caller may edit one child of a claim cascade.
+	 *
+	 * @param ObjectEntity $child The child.
+	 *
+	 * @throws NotAuthorizedException When the child's schema cannot be read or the rules refuse the edit.
+	 *
+	 * @return void
+	 */
+	private function requireMayEditChild(ObjectEntity $child): void {
+		try {
+			$schema = $this->sources->lookup->schemaMapper->find((int)$child->getSchema());
+		} catch (Throwable $e) {
+			$schema = null;
+		}
+
+		if ($schema === null || $this->mayEdit(schema: $schema, object: $child) === false) {
+			throw new NotAuthorizedException(
+				message: 'Only somebody who may edit every related record can take ownership of this record with its related records'
+			);
+		}
+	}//end requireMayEditChild()
 
 	/**
 	 * Assign one record to a named owner.
