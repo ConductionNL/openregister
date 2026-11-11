@@ -315,8 +315,8 @@ class FileAccessGuardsGoldenTest extends TestCase {
 
 	private function shareMapper(): FileMapper {
 		$mapper = $this->createMock(FileMapper::class);
-		$mapper->method('publishFile')->willReturnCallback(function (int $fileId, string $sharedBy): array {
-			$this->trace[] = 'share ' . $fileId . ' by ' . $sharedBy;
+		$mapper->method('publishFile')->willReturnCallback(function (\OCA\OpenRegister\Files\Db\PublicShareRequest $request): array {
+			$this->trace[] = 'share ' . $request->fileId . ' by ' . $request->sharedBy;
 			return ['id' => 1, 'token' => 't', 'accessUrl' => 'https://x/s/t'];
 		});
 		$mapper->method('depublishFile')->willReturnCallback(function (int $fileId): array {

@@ -182,8 +182,8 @@ class FilePublishingHandlerGoldenTest extends TestCase {
 		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileRestrictionGuardInterface::class ? $restrictions : $guard);
 
 		$fileMapper = $this->createMock(FileMapper::class);
-		$fileMapper->method('publishFile')->willReturnCallback(function (int $fileId, string $sharedBy) use ($share): array {
-			$this->calls[] = ['share.publish' => [$fileId, $sharedBy]];
+		$fileMapper->method('publishFile')->willReturnCallback(function (\OCA\OpenRegister\Files\Db\PublicShareRequest $request) use ($share): array {
+			$this->calls[] = ['share.publish' => [$request->fileId, $request->sharedBy]];
 			if ($share['fails'] === true) {
 				throw new Exception('db down');
 			}

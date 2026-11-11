@@ -819,10 +819,7 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	/**
 	 * Publish a file by creating a public share directly in the database.
 	 *
-	 * @param int $fileId The file ID to publish
-	 * @param string $sharedBy The user who is sharing the file
-	 * @param string $shareOwner The owner of the file
-	 * @param \DateTime|null $depublished When the share stops working, or null for no end date
+	 * @param PublicShareRequest $request The file, who shares it, who owns it, and when the link stops working.
 	 *
 	 * @return (int|string)[]
 	 *
@@ -830,29 +827,18 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	 *
 	 * @throws \Exception If the share creation fails
 	 *
-	 * @phpstan-param int $fileId
-	 * @phpstan-param string $sharedBy
-	 * @phpstan-param string $shareOwner
-	 *
 	 * @phpstan-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
 	 *
 	 * @psalm-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
 	 */
-	public function publishFile(
-		int $fileId,
-		string $sharedBy,
-		string $shareOwner,
-		?\DateTime $depublished = null
-	): array {
+	public function publishFile(PublicShareRequest $request): array {
 		// Check if a public share already exists for this file.
-		$existingShare = $this->getPublicShare(fileId: $fileId);
+		$existingShare = $this->getPublicShare(fileId: $request->fileId);
 		if ($existingShare !== null) {
 			return $this->shareInfo(share: $existingShare);
 		}
 
-		return $this->createPublicShare(
-			request: new PublicShareRequest(fileId: $fileId, sharedBy: $sharedBy, shareOwner: $shareOwner, depublished: $depublished)
-		);
+		return $this->createPublicShare(request: $request);
 	}//end publishFile()
 
 	/**

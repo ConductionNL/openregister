@@ -244,10 +244,7 @@ interface FileMapperInterface {
 	/**
 	 * Publish a file by creating a public share directly in the database.
 	 *
-	 * @param int $fileId The file ID to publish
-	 * @param string $sharedBy The user who is sharing the file
-	 * @param string $shareOwner The owner of the file
-	 * @param \DateTime|null $depublished When the share stops working, or null for no end date
+	 * @param PublicShareRequest $request The file, who shares it, who owns it, and when the link stops working.
 	 *
 	 * @return (int|string)[]
 	 *
@@ -255,15 +252,11 @@ interface FileMapperInterface {
 	 *
 	 * @throws \Exception If the share creation fails
 	 *
-	 * @phpstan-param int $fileId
-	 * @phpstan-param string $sharedBy
-	 * @phpstan-param string $shareOwner
-	 *
 	 * @phpstan-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
 	 *
 	 * @psalm-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
 	 */
-	public function publishFile(int $fileId, string $sharedBy, string $shareOwner, ?\DateTime $depublished = null): array;
+	public function publishFile(PublicShareRequest $request): array;
 
 	/**
 	 * Depublish a file by removing all public shares directly from the database.

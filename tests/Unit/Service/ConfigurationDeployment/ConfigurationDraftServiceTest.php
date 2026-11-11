@@ -101,7 +101,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 
 		$draftMapper = $this->createMock(ConfigurationDraftMapper::class);
 		$draftMapper->method('findBySet')->willReturn($drafts);
-		$draftMapper->method('findAtAddress')->willReturn(null);
+		$draftMapper->method('findAt')->willReturn(null);
 		$draftMapper->method('createFromArray')->willReturnCallback(
 			static function (array $data): ConfigurationDraft {
 				$created = new ConfigurationDraft();
@@ -168,7 +168,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		$sets = $this->createMock(ConfigurationDraftSetMapper::class);
 		$sets->method('findByUuid')->willReturn($this->set());
 
-		$draftMapper->method('findAtAddress')->willReturn($existing);
+		$draftMapper->method('findAt')->willReturn($existing);
 		$draftMapper->method('save')->willReturnArgument(0);
 		$draftMapper->expects($this->never())->method('createFromArray');
 

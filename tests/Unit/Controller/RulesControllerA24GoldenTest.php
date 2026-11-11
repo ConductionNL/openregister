@@ -263,7 +263,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 
 	public function testRunsRefusesAnUnknownVerdict(): void {
 		$this->params = ['verdict' => 'maybe'];
-		$this->runs->expects($this->never())->method('findByRule');
+		$this->runs->expects($this->never())->method('findRuns');
 
 		$this->assertSame(
 			[422, ['ok' => false, 'error' => ['code' => 'rule-runs-unknown-verdict', 'message' => '"maybe" is not a verdict this engine reaches.']]],
@@ -273,18 +273,22 @@ class RulesControllerA24GoldenTest extends TestCase {
 
 	public function testRunsWithoutAVerdictAndWithBadMomentsListsEverything(): void {
 		$this->params = ['verdict' => '', 'since' => 'not a date', 'until' => ' ', 'limit' => '5', 'offset' => '2'];
-		$this->runs->expects($this->once())->method('findByRule')->with('r', null, null, null, 5, 2)->willReturn([]);
-		$this->runs->expects($this->once())->method('countByRule')->with('r', null, null, null)->willReturn(0);
+		$selection = new \OCA\OpenRegister\Db\RuleRunSelection(ruleId: 'r', filter: new \OCA\OpenRegister\Db\RuleRunFilter());
+		$this->runs->expects($this->once())->method('findRuns')->with($selection, new \OCA\OpenRegister\Kernel\Contracts\ListQuery(limit: 5, offset: 2))->willReturn([]);
+		$this->runs->expects($this->once())->method('countRuns')->with($selection)->willReturn(0);
 
 		$this->assertSame([200, ['ruleId' => 'r', 'total' => 0, 'runs' => []]], $this->pair($this->controller->runs('r')));
 	}
 
 	public function testRunsWithAKnownVerdictAndMomentsPassesThem(): void {
 		$this->params = ['verdict' => 'fired', 'since' => '2020-01-01T00:00:00+00:00'];
-		$this->runs->expects($this->once())->method('findByRule')
-			->with('r', 'fired', $this->isInstanceOf(\DateTime::class), null, RuleRunMapper::DEFAULT_LIMIT, 0)
+		$this->runs->expects($this->once())->method('findRuns')
+			->with(
+				new \OCA\OpenRegister\Db\RuleRunSelection(ruleId: 'r', filter: new \OCA\OpenRegister\Db\RuleRunFilter(verdict: 'fired', since: new \DateTime('2020-01-01T00:00:00+00:00'))),
+				new \OCA\OpenRegister\Kernel\Contracts\ListQuery(limit: RuleRunMapper::DEFAULT_LIMIT, offset: 0)
+			)
 			->willReturn([]);
-		$this->runs->method('countByRule')->willReturn(3);
+		$this->runs->method('countRuns')->willReturn(3);
 
 		$this->assertSame(3, $this->controller->runs('r')->getData()['total']);
 	}

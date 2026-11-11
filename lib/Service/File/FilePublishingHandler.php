@@ -24,6 +24,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\PublicShareRequest;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
@@ -245,9 +246,11 @@ class FilePublishingHandler {
 		try {
 			$openRegisterUser = $this->fileService->getUser();
 			$shareInfo = $this->fileMapper->publishFile(
-				fileId: $fileNode->getId(),
-				sharedBy: $openRegisterUser->getUID(),
-				shareOwner: $openRegisterUser->getUID(),
+				request: new PublicShareRequest(
+					fileId: $fileNode->getId(),
+					sharedBy: $openRegisterUser->getUID(),
+					shareOwner: $openRegisterUser->getUID(),
+				)
 			);
 
 			$message = '[FilePublishingHandler] publishFile: Successfully created public share via FileMapper';

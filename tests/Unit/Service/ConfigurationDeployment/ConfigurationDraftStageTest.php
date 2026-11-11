@@ -75,9 +75,9 @@ final class ConfigurationDraftStageTest extends TestCase {
 		);
 
 		$drafts = $this->createMock(ConfigurationDraftMapper::class);
-		$drafts->method('findAtAddress')->willReturnCallback(
-			function (string $setUuid, string $layer, ?string $layerRef, string $configKey) use ($existing): ?ConfigurationDraft {
-				$this->calls[] = 'drafts.findAtAddress:' . $setUuid . '/' . $layer . '/' . var_export($layerRef, true) . '/' . $configKey;
+		$drafts->method('findAt')->willReturnCallback(
+			function (string $setUuid, \OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress $address) use ($existing): ?ConfigurationDraft {
+				$this->calls[] = 'drafts.findAt:' . $setUuid . '/' . $address->layer . '/' . var_export($address->layerRef, true) . '/' . $address->configKey;
 				return $existing;
 			}
 		);
@@ -137,7 +137,7 @@ final class ConfigurationDraftStageTest extends TestCase {
 			[
 				'sets.findByUuid:set-1',
 				'store.read:instance/NULL/rbac',
-				'drafts.findAtAddress:set-1/instance/NULL/rbac',
+				'drafts.findAt:set-1/instance/NULL/rbac',
 				'drafts.save:draftValue,baseValue,basePresent,removes',
 			],
 			$this->calls
@@ -170,7 +170,7 @@ final class ConfigurationDraftStageTest extends TestCase {
 			[
 				'sets.findByUuid:set-1',
 				'store.read:instance/NULL/rbac',
-				'drafts.findAtAddress:set-1/instance/NULL/rbac',
+				'drafts.findAt:set-1/instance/NULL/rbac',
 				'drafts.createFromArray',
 			],
 			$this->calls
