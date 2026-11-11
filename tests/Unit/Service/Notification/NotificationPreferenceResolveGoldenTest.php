@@ -21,6 +21,8 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic;
 use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -191,7 +193,14 @@ final class NotificationPreferenceResolveGoldenTest extends TestCase {
 			userGroups: new UserGroupServices(groupManager: $groupManager, userManager: $userManager)
 		);
 
-		$out = $service->resolveEffective($schemaDefault, 'alice', 'meldingen', 'created', $scopes, $groupIds);
+		$out = $service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: $schemaDefault,
+				userId: 'alice',
+				topic: new PreferenceTopic(schemaSlug: 'meldingen', notificationKey: 'created', scopes: $scopes),
+				groupIds: $groupIds
+			)
+		);
 
 		return json_decode((string)json_encode(['out' => $out, 'calls' => $this->calls]), true);
 	}//end runCase()

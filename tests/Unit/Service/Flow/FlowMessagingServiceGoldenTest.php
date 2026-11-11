@@ -28,6 +28,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
@@ -376,7 +377,7 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 	 */
 	private function preferences(): NotificationPreferenceService {
 		$preferences = $this->createMock(NotificationPreferenceService::class);
-		$preferences->method('resolveEffective')->willReturnCallback(fn (array $schemaDefault, string $userId): array => match ($userId) {
+		$preferences->method('resolve')->willReturnCallback(fn (PreferenceResolution $resolution): array => match ($resolution->userId) {
 			'dave' => ['enabled' => false, 'channels' => null],
 			'carol' => ['enabled' => true, 'channels' => ['talk']],
 			default => ['enabled' => true, 'channels' => null],
