@@ -1845,8 +1845,45 @@ class ImportServiceTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Private method testing via Reflection: validateObjectProperties
+	// validateObjectProperties, through transformCsvRow
 	// =========================================================================
+
+	/**
+	 * The warning messages a CSV row transform logs.
+	 *
+	 * @param array  $row    The CSV row.
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int, array{0: string, 1: array}> Message and context per warning.
+	 */
+	private function warningsForRow(array $row, Schema $schema): array {
+		$warnings = [];
+		$this->logger->method('warning')->willReturnCallback(
+			static function (string $message, array $context = []) use (&$warnings): void {
+				$warnings[] = [$message, $context];
+			}
+		);
+		$this->service->transformCsvRow($row, new RowImportTarget(new RegisterSchema($this->createRegister(1), $schema)));
+
+		return $warnings;
+	}
+
+	public function testValidateObjectPropertiesWarnsForUndeclaredReservedColumn(): void {
+		$schema = $this->createSchema(7, ['title' => ['type' => 'string']]);
+
+		$warnings = $this->warningsForRow(['title' => 'A', 'payload' => '{}'], $schema);
+
+		$this->assertCount(1, $warnings);
+		$this->assertStringContainsString('payload', $warnings[0][0]);
+		$this->assertSame('payload', $warnings[0][1]['property']);
+		$this->assertSame('7', $warnings[0][1]['schema']);
+	}
+
+	public function testValidateObjectPropertiesAcceptsOrdinaryAndDeclaredColumns(): void {
+		$schema = $this->createSchema(7, ['title' => ['type' => 'string'], 'body' => ['type' => 'string']]);
+
+		$this->assertSame([], $this->warningsForRow(['title' => 'A', 'body' => 'text', 'other' => 'x'], $schema));
+	}
 
 	// =========================================================================
 	// Private method testing via Reflection: transformObjectBySchema

@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\Object
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,7 +21,7 @@
  * @spec openspec/specs/object-lifecycle/spec.md
  */
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
  * How one SaveObjects::saveObjects() call saves its rows, apart from its RBAC and multitenancy flags.
@@ -43,10 +43,10 @@ final class BulkSaveOptions {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		public readonly BulkBatchDefaults $defaults,
-		public readonly bool $validation,
-		public readonly bool $events,
-		public readonly bool $audit,
+		public readonly BulkBatchDefaults $defaults=new BulkBatchDefaults(),
+		public readonly bool $validation=false,
+		public readonly bool $events=false,
+		public readonly bool $audit=true,
 	) {
 	}//end __construct()
 }//end class

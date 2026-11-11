@@ -52,6 +52,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
@@ -460,10 +462,11 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		try {
 			$result = $this->targets->objectService->saveObjects(
 				objects: $objects,
-				register: $destination->register,
-				schema: $destination->schema,
-				validation: false,
-				events: false
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $destination->register, schema: $destination->schema),
+					validation: false,
+					events: false
+				)
 			);
 
 			$refused = $this->refusalsIn(batch: $batch, invalid: ($result['invalid'] ?? []));

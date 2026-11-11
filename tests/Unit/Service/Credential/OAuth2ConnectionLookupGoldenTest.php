@@ -192,7 +192,7 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 		$http = $this->createMock(IClientService::class);
 		$http->method('newClient')->willReturn($client);
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->expects($this->never())->method('mint');
+		$broker->expects($this->never())->method('mintCredential');
 
 		$service = new OAuth2InstanceClient(broker: $broker, objectService: $this->objects(stored: null), clientService: $http);
 
@@ -237,7 +237,7 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 		$minted = new ObjectEntity();
 		$minted->setUuid('minted');
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->method('mint')->willReturn($minted);
+		$broker->method('mintCredential')->willReturn($minted);
 
 		return new OAuth2InstanceClient(broker: $broker, objectService: $this->objects(stored: $stored), clientService: $http);
 	}

@@ -9,7 +9,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\Object
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
  * @spec openspec/specs/rbac-zaaktype/spec.md
  */
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -41,8 +41,8 @@ final class BulkBatchDefaults {
 	 * @param Schema|string|int|null   $schema   Default schema context (null = mixed-schema).
 	 */
 	public function __construct(
-		public readonly Register|string|int|null $register,
-		public readonly Schema|string|int|null $schema,
+		public readonly Register|string|int|null $register=null,
+		public readonly Schema|string|int|null $schema=null,
 	) {
 	}//end __construct()
 }//end class

@@ -44,6 +44,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequestInterface;
@@ -355,7 +357,7 @@ class CredentialController extends Controller {
 	 *
 	 * This method owns only the REQUEST half — parsing, provider-catalogue validation,
 	 * and the organisation-administrator gate. The mint itself (metadata object + vault
-	 * secret, atomic) belongs to {@see CredentialBrokerService::mint()} so an in-process
+	 * secret, atomic) belongs to {@see CredentialBrokerService::mintCredential()} so an in-process
 	 * caller without an HTTP session mints through the exact same path (ADR-022).
 	 *
 	 * Personal (scope absent / `personal`): unchanged — any authenticated user may
@@ -451,15 +453,19 @@ class CredentialController extends Controller {
 		try {
 			// The single mint path (metadata object + vault secret) lives in the broker so
 			// an in-process caller can mint identically without an HTTP session.
-			$saved = $this->services->vault->broker->mint(
-				name: $mint['name'],
-				provider: $mint['provider'],
-				owner: $mint['owner'],
-				allowedApps: $mint['allowedApps'],
-				secret: $mint['secret'],
-				scope: $mint['scope'],
-				organisation: $mint['organisation'],
-				metadata: $this->connectionMetadataParams()
+			$saved = $this->services->vault->broker->mintCredential(
+				mint: new CredentialMint(
+					name: $mint['name'],
+					provider: $mint['provider'],
+					owner: $mint['owner'],
+					metadata: $this->connectionMetadataParams()
+				),
+				options: new CredentialMintOptions(
+					allowedApps: $mint['allowedApps'],
+					secret: $mint['secret'],
+					scope: $mint['scope'],
+					organisation: $mint['organisation']
+				)
 			);
 		} catch (InvalidArgumentException $invalid) {
 			// The only InvalidArgumentException a mint raises for a well-formed

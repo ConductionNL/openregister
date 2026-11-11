@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
@@ -299,7 +301,7 @@ class CredentialControllerCharacterisationTest extends TestCase {
 	 */
 	public function testAnInvalidCreateIs400AndMintsNothing(): void {
 		$this->catalogue->method('get')->willReturnCallback(static fn (string $id): ?array => ($id === 'gh' ? ['identifier' => 'gh'] : null));
-		$this->broker->expects($this->never())->method('mint');
+		$this->broker->expects($this->never())->method('mintCredential');
 
 		foreach ([['name' => '  ', 'provider' => 'gh'], ['name' => 'n', 'provider' => 'nope']] as $params) {
 			$this->params = $params;
@@ -323,8 +325,11 @@ class CredentialControllerCharacterisationTest extends TestCase {
 			'kind' => ' secret ',
 			'clientId' => '',
 		];
-		$this->broker->expects($this->once())->method('mint')
-			->with('My token', 'gh', 'alice', ['hermiq', 'pipelinq'], null, 'personal', null, ['kind' => 'secret'])
+		$this->broker->expects($this->once())->method('mintCredential')
+			->with(
+				new CredentialMint(name: 'My token', provider: 'gh', owner: 'alice', metadata: ['kind' => 'secret']),
+				new CredentialMintOptions(allowedApps: ['hermiq', 'pipelinq'], secret: null, scope: 'personal', organisation: null)
+			)
 			->willReturn($this->credential('alice', ['name' => 'My token']));
 
 		$response = $this->controller()->create();
@@ -351,7 +356,7 @@ class CredentialControllerCharacterisationTest extends TestCase {
 		$this->assertSame(400, $this->controller()->create()->getStatus());
 
 		$this->params = ['name' => 'n', 'provider' => 'gh', 'scope' => 'organisation', 'organisation' => 'org-1', 'secret' => 's3'];
-		$this->broker->method('mint')->willReturnOnConsecutiveCalls(
+		$this->broker->method('mintCredential')->willReturnOnConsecutiveCalls(
 			$this->throwException(new InvalidArgumentException('host')),
 			$this->throwException(new RuntimeException('vault')),
 			$this->credential('alice', ['scope' => 'organisation'])
