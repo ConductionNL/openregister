@@ -2247,3 +2247,4 @@ dossiq	5813	a8035fbb7ae0ac7a4adaf71b1645d45ee63a3181	GREEN	FV02:16	tree of 25 gr
 dossiq	5814	30123f52a0d35a802e5f09e594b3b16e434acf6f	GREEN	FV02:16	tree of 25 green on php+js unit suites (54 inherited php failures)
 dossiq	5815	4f43cd62c9ba135faf463f328e790ef62a7eb75d	GREEN	FV02:16	tree of 25 green on php+js unit suites (54 inherited php failures)
 dossiq	5816	5612e873e93a23c1d0fababa2e2a2e4b4689769a	GREEN	FV02:16	tree of 25 green on php+js unit suites (54 inherited php failures)
+portaliq	2272	bd579b48885b521a082d9104c47c5947e9460222	GREEN	FV05:1	unit suite matches development baseline (85 inherited); diff reviewed, behaviour-preserving split
