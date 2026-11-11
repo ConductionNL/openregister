@@ -214,7 +214,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	public function testAnUntypedRevertPointIsRefused(mixed $until): void {
 		$this->audit->expects($this->never())->method('revertObjectWith');
 
-		$this->expectException(exception: \TypeError::class);
+		$this->expectException(\TypeError::class);
 
 		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: $until));
 	}//end testAnUntypedRevertPointIsRefused()
