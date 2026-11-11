@@ -867,10 +867,8 @@ class OrganisationCrudTest extends TestCase {
 		$this->expectExceptionMessage('Invalid UUID format');
 
 		$this->organisationService->createOrganisation(
-			'Test Org',
-			'Description',
-			true,
-			'not-a-valid-uuid'
+			new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Test Org', description: 'Description', uuid: 'not-a-valid-uuid'),
+			true
 		);
 	}
 
@@ -901,7 +899,7 @@ class OrganisationCrudTest extends TestCase {
 			->willReturn('existing-default-uuid');
 
 		// Act: Create without user - should succeed but with no owner.
-		$result = $this->organisationService->createOrganisation('No User Org', 'test');
+		$result = $this->organisationService->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'No User Org', description: 'test'));
 
 		// Assert: Organisation created without owner.
 		$this->assertInstanceOf(Organisation::class, $result);
@@ -943,7 +941,7 @@ class OrganisationCrudTest extends TestCase {
 			->with('openregister', 'defaultOrganisation', 'first-org-uuid');
 
 		// Act.
-		$result = $this->organisationService->createOrganisation('First Org', 'desc');
+		$result = $this->organisationService->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'First Org', description: 'desc'));
 
 		// Assert.
 		$this->assertEquals('first-org-uuid', $result->getUuid());
@@ -986,10 +984,8 @@ class OrganisationCrudTest extends TestCase {
 
 		// Act.
 		$result = $this->organisationService->createOrganisation(
-			'UUID Org',
-			'desc',
-			true,
-			$specificUuid
+			new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'UUID Org', description: 'desc', uuid: $specificUuid),
+			true
 		);
 
 		// Assert.
@@ -1044,7 +1040,7 @@ class OrganisationCrudTest extends TestCase {
 			->willReturn('existing-default');
 
 		// Act.
-		$result = $this->organisationService->createOrganisation('Admin Org', 'desc');
+		$result = $this->organisationService->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Admin Org', description: 'desc'));
 
 		// Assert.
 		$this->assertInstanceOf(Organisation::class, $result);
