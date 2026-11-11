@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Files\Service\File\WordReplacementRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;

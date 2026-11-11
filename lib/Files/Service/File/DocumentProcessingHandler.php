@@ -41,6 +41,8 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use ZipArchive;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest;
 
 /**
  * Handles document processing operations.

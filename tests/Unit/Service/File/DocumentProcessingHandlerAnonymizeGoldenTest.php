@@ -32,8 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Files\Service\File\DocumentAnonymisationRequest;
-use OCA\OpenRegister\Files\Service\File\DocumentAnonymisationOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform;

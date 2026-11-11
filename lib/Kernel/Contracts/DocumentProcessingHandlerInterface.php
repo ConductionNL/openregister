@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts;
 
 use Exception;
-use OCA\OpenRegister\Files\Service\File\DocumentAnonymisationRequest;
-use OCA\OpenRegister\Files\Service\File\WordReplacementRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest;
 use OCP\Files\File;
 
 /**
