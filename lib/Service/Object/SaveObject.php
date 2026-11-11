@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
@@ -4901,50 +4902,85 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	private function delegateObjectSourceWrite(ObjectSaveCall $call, array $objectSource): ObjectEntity {
-		$register = $call->register;
-		$schema   = $call->schema;
-		$data     = $call->data;
-		$uuid     = $call->uuid;
-		$silent   = $call->flags->silent;
+		$provider = $this->writableObjectSourceProvider(call: $call, objectSource: $objectSource);
+		$source   = self::sourcedTableFor(call: $call, objectSource: $objectSource);
+
+		if ($call->uuid === null || $call->uuid === '') {
+			$entity = $provider->insert(source: $source, data: $call->data);
+			$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'create', old: null, new: $entity), silent: $call->flags->silent);
+			return $entity;
+		}
+
+		$old = $provider->find(source: $source, id: $call->uuid);
+		$entity = $provider->update(source: $source, id: $call->uuid, data: $call->data);
+		$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'update', old: $old, new: $entity), silent: $call->flags->silent);
+
+		return $entity;
+	}//end delegateObjectSourceWrite()
+
+	/**
+	 * The writable provider of an explicit, currently-valid write opt-in; the v1 read-only rejection otherwise.
+	 *
+	 * @param ObjectSaveCall       $call         The save call: the resolved register and the sourced schema.
+	 * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
+	 *
+	 * @return WritableObjectSourceProvider The provider.
+	 *
+	 * @throws \RuntimeException When the schema is not writable (v1 rejection).
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function writableObjectSourceProvider(ObjectSaveCall $call, array $objectSource): WritableObjectSourceProvider {
 		$provider = null;
 		if ($this->objectSourceRegistry !== null) {
 			$provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
 		}
 
 		$writableOptIn = (($objectSource['readOnly'] ?? true) === false);
-		$writable = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
-
-		if ($writableOptIn === false || $writable === false || $register instanceof Register === false) {
-			throw new RuntimeException(
-				sprintf(
-					'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
-					(string)$schema->getSlug(),
-					$objectSource['provider']
-				)
-			);
+		$writable = ($provider instanceof WritableObjectSourceProvider);
+		if ($writableOptIn === false || $writable === false || $call->register instanceof Register === false) {
+			throw self::readOnlyProjectionRefusal(call: $call, objectSource: $objectSource);
 		}
 
-		$config = ($objectSource['config'] ?? []);
+		return $provider;
+	}//end writableObjectSourceProvider()
 
-		if ($uuid === null || $uuid === '') {
-			$entity = $provider->insert(
-				source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config),
-				data: $data
-			);
-			$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'create', old: null, new: $entity), silent: $silent);
-			return $entity;
-		}
-
-		$old = $provider->find(source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config), id: $uuid);
-		$entity = $provider->update(
-			source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config),
-			id: $uuid,
-			data: $data
+	/**
+	 * The v1 rejection of a write to a read-only object-source projection.
+	 *
+	 * @param ObjectSaveCall       $call         The save call: the sourced schema.
+	 * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
+	 *
+	 * @return RuntimeException The rejection.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private static function readOnlyProjectionRefusal(ObjectSaveCall $call, array $objectSource): RuntimeException {
+		return new RuntimeException(
+			sprintf(
+				'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
+				(string)$call->schema->getSlug(),
+				$objectSource['provider']
+			)
 		);
-		$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'update', old: $old, new: $entity), silent: $silent);
+	}//end readOnlyProjectionRefusal()
 
-		return $entity;
-	}//end delegateObjectSourceWrite()
+	/**
+	 * The register, the sourced schema and the annotation's `config` block, as the provider takes them.
+	 *
+	 * @param ObjectSaveCall       $call         The save call: the resolved register and the sourced schema.
+	 * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
+	 *
+	 * @return SourcedTable The sourced table.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private static function sourcedTableFor(ObjectSaveCall $call, array $objectSource): SourcedTable {
+		return new SourcedTable(
+			table: new RegisterSchema(register: $call->register, schema: $call->schema),
+			config: ($objectSource['config'] ?? [])
+		);
+	}//end sourcedTableFor()
 
 	/**
 	 * Record an audit-trail row for an external write (best effort, design D6).
