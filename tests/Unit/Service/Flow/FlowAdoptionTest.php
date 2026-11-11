@@ -206,7 +206,7 @@ class FlowAdoptionTest extends TestCase {
 
 		foreach ([['flow' => $imported, 'expected' => []], ['flow' => $adopted, 'expected' => ['flow-imported']]] as $case) {
 			$triggerMapper = $this->createMock(FlowTriggerMapper::class);
-			$triggerMapper->method('flowUuidsFor')->willReturn(['flow-imported']);
+			$triggerMapper->method('flowUuidsSubscribedTo')->willReturn(['flow-imported']);
 			$triggerMapper->method('representedFlowUuids')->willReturn(['flow-imported']);
 
 			$flowMapper = $this->createMock(FlowMapper::class);

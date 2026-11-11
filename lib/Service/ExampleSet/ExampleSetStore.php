@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Object\PlannedAccountsCheck;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
@@ -43,6 +44,8 @@ use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Register access for the example-set loader.
@@ -118,7 +121,10 @@ class ExampleSetStore {
 
 		try {
 			$validator = $this->container->get(ValidateObject::class);
-			$result    = $validator->validateObjectWithPlannedUsers(object: $check->object, schema: $schemaId, plannedUsers: $check->plannedUsers);
+			$result    = $validator->validateWithPlannedAccounts(
+				object: $check->object,
+				check: new PlannedAccountsCheck(schema: $schemaId, plannedUsers: $check->plannedUsers)
+			);
 			if ($result->isValid() === true) {
 				return [];
 			}
@@ -557,9 +563,10 @@ class ExampleSetStore {
 
 		try {
 			$deleted = $service->deleteObject(
-				uuid: $ref->id,
-				register: $ref->register,
-				schema: $ref->schema,
+				deletion: new ObjectDeletion(
+					uuid: $ref->id,
+					target: new ObjectFindTarget(register: $ref->register, schema: $ref->schema)
+				),
 				_rbac: false,
 				_multitenancy: false,
 				_retentionSweep: true

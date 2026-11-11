@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ObjectCheck;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
@@ -60,8 +61,8 @@ class ExampleSetStoreTest extends TestCase {
 
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->expects($this->once())
-			->method('validateObjectWithPlannedUsers')
-			->with(['assignee' => 'daan.verbeek'], 42, $this->anything(), ['daan.verbeek'])
+			->method('validateWithPlannedAccounts')
+			->with(['assignee' => 'daan.verbeek'], new \OCA\OpenRegister\Service\Object\PlannedAccountsCheck(schema: 42, plannedUsers: ['daan.verbeek']))
 			->willReturn(new ValidationResult(null));
 		$validator->expects($this->never())->method('validateObject');
 
@@ -128,7 +129,7 @@ class ExampleSetStoreTest extends TestCase {
 		$objects->method('find')->willReturn($row);
 		$objects->expects($this->once())
 			->method('deleteObject')
-			->with('case-1', 'dossiq', 'case', false, false, true)
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'case-1' && $deletion->target->register == 'dossiq' && $deletion->target->schema == 'case'), false, false, true)
 			->willReturn(true);
 
 		$this->assertSame('', $this->storeOver(objects: $objects)->deleteRecorded(ref: new ObjectRef(register: 'dossiq', schema: 'case', id: 'case-1')));

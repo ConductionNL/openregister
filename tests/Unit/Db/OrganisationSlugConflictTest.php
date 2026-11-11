@@ -290,7 +290,7 @@ class OrganisationSlugConflictTest extends TestCase {
 		$this->actAs(userId: 'mallory');
 
 		$this->expectException(DbalException::class);
-		$this->service()->createOrganisation(name: 'Gemeente A', uuid: self::SECOND_UUID);
+		$this->service()->createOrganisation(details: new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Gemeente A', uuid: self::SECOND_UUID));
 	}//end testTheServiceDoesNotAdoptTheOrganisationHoldingTheSlug()
 
 	/**
@@ -318,7 +318,7 @@ class OrganisationSlugConflictTest extends TestCase {
 	 */
 	private function existingOrganisation(): Organisation {
 		$this->actAs(userId: 'alice');
-		$organisation = $this->service()->createOrganisation(name: 'Gemeente A', uuid: self::FIRST_UUID);
+		$organisation = $this->service()->createOrganisation(details: new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Gemeente A', uuid: self::FIRST_UUID));
 		$organisation->addUser('bob');
 
 		return $this->mapper->save($organisation);

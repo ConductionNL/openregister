@@ -82,6 +82,7 @@ use OCA\OpenRegister\Service\File\FileMetadataChange;
 use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileRename;
 use OCA\OpenRegister\Service\File\FileTransfer as AttachedFileTransfer;
+use OCA\OpenRegister\Support\ContentDisposition;
 
 /**
  * FilesController handles file operations for objects in registers
@@ -1048,7 +1049,7 @@ class FilesController extends Controller {
 	private function streamInline(File $file, ?ObjectEntity $object): StreamResponse {
 		$response = new StreamResponse($file->fopen('r'));
 		$response->addHeader('Content-Type', $file->getMimeType());
-		$response->addHeader('Content-Disposition', $this->buildContentDisposition(disposition: 'inline', filename: $file->getName()));
+		$response->addHeader('Content-Disposition', (new ContentDisposition(disposition: 'inline', filename: $file->getName()))->headerValue());
 		$response->addHeader('Content-Length', (string)$file->getSize());
 
 		// Record download (counter + audit). Best-effort.
@@ -1910,39 +1911,6 @@ class FilesController extends Controller {
 
 		return $this->objectFileAccess->mayRead(object: $object);
 	}//end mayReadObject()
-
-	/**
-	 * Build an RFC 6266 compliant Content-Disposition header value.
-	 *
-	 * SEC-CTRL-9: a raw filename can contain quotes, control chars, or non-ASCII
-	 * bytes that break the header or allow header/response splitting. This emits a
-	 * sanitised ASCII `filename="..."` fallback plus a UTF-8 `filename*` parameter.
-	 *
-	 * @param string $disposition Either 'inline' or 'attachment'.
-	 * @param string $filename The raw file name.
-	 *
-	 * @return string The encoded Content-Disposition header value.
-	 */
-	private function buildContentDisposition(string $disposition, string $filename): string {
-		// Strip control characters (incl. CR/LF) that could split headers.
-		$clean = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
-		if ($clean === null) {
-			$clean = '';
-		}
-
-		// ASCII fallback: replace non-ASCII and quote/backslash with underscore.
-		$ascii = preg_replace('/[^\x20-\x7E]/', '_', $clean);
-		if ($ascii === null) {
-			$ascii = '';
-		}
-
-		$ascii = str_replace(['\\', '"'], '_', $ascii);
-
-		// RFC 5987 / 6266 UTF-8 encoded form for capable clients.
-		$encoded = rawurlencode($clean);
-
-		return $disposition . '; filename="' . $ascii . '"; filename*=UTF-8\'\'' . $encoded;
-	}//end buildContentDisposition()
 
 	/**
 	 * Get a human-readable error message for PHP file upload errors

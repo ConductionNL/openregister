@@ -41,6 +41,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DsarControllerServices;
 use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
 use OCA\OpenRegister\Service\DsarServiceInterface;
+use OCA\OpenRegister\Service\DsarSubjectQuery;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -201,9 +202,8 @@ class DsarController extends Controller {
 			FILTER_VALIDATE_BOOLEAN
 		);
 
-		$summary = $this->dsarService->eraseObjectsForSubject(
-			subject: $subject,
-			type: $this->typeParam(),
+		$summary = $this->dsarService->eraseObjectsFor(
+			query: new DsarSubjectQuery(subject: $subject, type: $this->typeParam(), mode: 'exact'),
 			dryRun: $dryRun
 		);
 
@@ -284,10 +284,8 @@ class DsarController extends Controller {
 	private function objectsForSubject(string $subject): array {
 		$mode = (string)($this->request->getParam(key: 'mode') ?? 'exact');
 
-		return $this->dsarService->findObjectsForSubject(
-			subject: $subject,
-			type: $this->typeParam(),
-			mode: $mode
+		return $this->dsarService->findObjectsFor(
+			query: new DsarSubjectQuery(subject: $subject, type: $this->typeParam(), mode: $mode)
 		);
 	}//end objectsForSubject()
 
