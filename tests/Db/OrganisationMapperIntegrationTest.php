@@ -12,7 +12,7 @@
 
 namespace OCA\OpenRegister\Tests\Db;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;

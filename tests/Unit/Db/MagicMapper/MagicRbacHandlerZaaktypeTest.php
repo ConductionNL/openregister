@@ -29,6 +29,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * User-override parity tests for the MagicRbacHandler PHP path.
@@ -56,13 +59,19 @@ class MagicRbacHandlerZaaktypeTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$userManager,
-			$appConfig,
-			$this->conditionMatcher,
-			$container,
-			$logger
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->conditionMatcher,
+				container: $container,
+				logger: $logger
+			)
 		);
 	}
 

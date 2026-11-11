@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
@@ -97,7 +98,25 @@ class HistoryEntryRedactor {
 	 * @return array<int, string> The withheld property names.
 	 */
 	private function hiddenProperties(ReadableObject $readable, array $rows): array {
-		$object = $readable->object;
+		$probe = $this->changedKeyProbe(object: $readable->object, rows: $rows);
+
+		// Property rules match on the record's own metadata, as on the object read.
+		$probe['@self'] = $readable->object->getObjectArray();
+
+		$visible = $this->properties->filterReadableProperties(schema: $readable->schema, object: $probe);
+
+		return $this->keysNotVisible(probe: $probe, visible: $visible);
+	}//end hiddenProperties()
+
+	/**
+	 * The object's data, plus every property a history row changed that the object no longer carries (as null).
+	 *
+	 * @param ObjectEntity           $object The object the rows are about.
+	 * @param array<int, AuditTrail> $rows   The history rows.
+	 *
+	 * @return array<string, mixed> The probe the property rules are run against.
+	 */
+	private function changedKeyProbe(ObjectEntity $object, array $rows): array {
 		$probe = ($object->getObject() ?? []);
 		foreach ($rows as $row) {
 			foreach (array_keys($row->getChanged()) as $key) {
@@ -108,11 +127,18 @@ class HistoryEntryRedactor {
 			}
 		}
 
-		// Property rules match on the record's own metadata, as on the object read.
-		$probe['@self'] = $object->getObjectArray();
+		return $probe;
+	}//end changedKeyProbe()
 
-		$visible = $this->properties->filterReadableProperties(schema: $readable->schema, object: $probe);
-
+	/**
+	 * The probe's own properties (not `@` metadata) the property rules did not leave visible.
+	 *
+	 * @param array<string, mixed> $probe   The probe.
+	 * @param array<string, mixed> $visible What the property rules left readable.
+	 *
+	 * @return array<int, string> The hidden property names.
+	 */
+	private function keysNotVisible(array $probe, array $visible): array {
 		$hidden = [];
 		foreach (array_keys($probe) as $key) {
 			$key = (string)$key;
@@ -122,7 +148,7 @@ class HistoryEntryRedactor {
 		}
 
 		return $hidden;
-	}//end hiddenProperties()
+	}//end keysNotVisible()
 
 	/**
 	 * One entry as a reader is given it.
@@ -169,6 +195,18 @@ class HistoryEntryRedactor {
 			$changed['cascadeContext'] = $this->filterCascade(cascade: $changed['cascadeContext'], hidden: $run->hidden);
 		}
 
+		return $this->withFilteredSelf(run: $run, changed: $changed);
+	}//end filterChanged()
+
+	/**
+	 * Filter the old and new `@self` metadata of a change, when it carries any.
+	 *
+	 * @param HistoryRedactionRun  $run     The redaction run.
+	 * @param array<string, mixed> $changed The change, its properties already filtered.
+	 *
+	 * @return array<string, mixed> The change with each `@self` side filtered.
+	 */
+	private function withFilteredSelf(HistoryRedactionRun $run, array $changed): array {
 		if (is_array($changed['@self'] ?? null) === false) {
 			return $changed;
 		}
@@ -180,7 +218,7 @@ class HistoryEntryRedactor {
 		}
 
 		return $changed;
-	}//end filterChanged()
+	}//end withFilteredSelf()
 
 	/**
 	 * The cascade context of a referential-integrity entry, as a reader is given it.
@@ -222,37 +260,62 @@ class HistoryEntryRedactor {
 	 * @return array The change set without nested write-only values.
 	 */
 	private function stripNestedWriteOnly(array $changed, Schema $schema): array {
-		$before = [];
-		$after = [];
-		foreach ($changed as $key => $value) {
-			if ($this->isPropertyChange(key: (string)$key, value: $value) === true) {
-				$before[$key] = $value['old'];
-				$after[$key] = $value['new'];
-			}
-		}
-
-		if ($before === []) {
+		$sides = $this->changeSides(changed: $changed);
+		if ($sides['old'] === []) {
 			return $changed;
 		}
 
-		$before = $this->properties->stripWriteOnlyProperties(schema: $schema, object: $before);
-		$after = $this->properties->stripWriteOnlyProperties(schema: $schema, object: $after);
+		$stripped = [
+			'old' => $this->properties->stripWriteOnlyProperties(schema: $schema, object: $sides['old']),
+			'new' => $this->properties->stripWriteOnlyProperties(schema: $schema, object: $sides['new']),
+		];
 
+		return $this->withStrippedSides(changed: $changed, stripped: $stripped);
+	}//end stripNestedWriteOnly()
+
+	/**
+	 * The before and after values of a row's property changes, as two objects.
+	 *
+	 * @param array<string, mixed> $changed The row's changed map.
+	 *
+	 * @return array{old: array<string, mixed>, new: array<string, mixed>} The before and after sides.
+	 */
+	private function changeSides(array $changed): array {
+		$sides = ['old' => [], 'new' => []];
+		foreach ($changed as $key => $value) {
+			if ($this->isPropertyChange(key: (string)$key, value: $value) === true) {
+				$sides['old'][$key] = $value['old'];
+				$sides['new'][$key] = $value['new'];
+			}
+		}
+
+		return $sides;
+	}//end changeSides()
+
+	/**
+	 * Rewrite a row's property changes from their stripped sides; a change stripped from both sides is dropped.
+	 *
+	 * @param array<string, mixed>                                         $changed  The row's changed map.
+	 * @param array{old: array<string, mixed>, new: array<string, mixed>} $stripped The sides with write-only properties removed.
+	 *
+	 * @return array<string, mixed> The changed map.
+	 */
+	private function withStrippedSides(array $changed, array $stripped): array {
 		foreach (array_keys($changed) as $key) {
 			if ($this->isPropertyChange(key: (string)$key, value: $changed[$key]) === false) {
 				continue;
 			}
 
-			if (array_key_exists($key, $before) === false && array_key_exists($key, $after) === false) {
+			if (array_key_exists($key, $stripped['old']) === false && array_key_exists($key, $stripped['new']) === false) {
 				unset($changed[$key]);
 				continue;
 			}
 
-			$changed[$key] = ['old' => ($before[$key] ?? null), 'new' => ($after[$key] ?? null)];
+			$changed[$key] = ['old' => ($stripped['old'][$key] ?? null), 'new' => ($stripped['new'][$key] ?? null)];
 		}
 
 		return $changed;
-	}//end stripNestedWriteOnly()
+	}//end withStrippedSides()
 
 	/**
 	 * Whether a change-set entry is a property's old and new value.
@@ -287,6 +350,18 @@ class HistoryEntryRedactor {
 			$self['relations'] = $this->filterRelations(run: $run, relations: $self['relations']);
 		}
 
+		return $this->withoutWithheldCopies(run: $run, self: $self);
+	}//end filterSelf()
+
+	/**
+	 * Null each metadata field that the schema copies from a property the reader may not see.
+	 *
+	 * @param HistoryRedactionRun  $run  The redaction run.
+	 * @param array<string, mixed> $self One side of the `@self` metadata.
+	 *
+	 * @return array<string, mixed> That side, withheld copies set to null.
+	 */
+	private function withoutWithheldCopies(HistoryRedactionRun $run, array $self): array {
 		$hidden = $run->withheld();
 		$configuration = ($run->schema->getConfiguration() ?? []);
 		foreach (RenderObject::METADATA_COPIES as $configKey => $field) {
@@ -299,7 +374,7 @@ class HistoryEntryRedactor {
 		}
 
 		return $self;
-	}//end filterSelf()
+	}//end withoutWithheldCopies()
 
 	/**
 	 * The relations mirror without write-only paths and withheld properties.

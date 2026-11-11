@@ -32,6 +32,7 @@ use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\UnarmedTimerMarkers;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
+use OCA\OpenRegister\Service\Flow\Timer\TimerFiring;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -90,8 +91,8 @@ class CasePlanItemTimersTest extends TestCase {
 
 		$armed = [];
 		$this->timers->expects($this->exactly(2))->method('arm')->willReturnCallback(
-			static function (array $config, ?string $actor) use (&$armed): FlowTimer {
-				$armed[] = [$config, $actor];
+			static function (array $config, FlowTimerAct $act) use (&$armed): FlowTimer {
+				$armed[] = [$config, $act->actor];
 
 				return new FlowTimer();
 			}
@@ -286,12 +287,7 @@ class CasePlanItemTimersTest extends TestCase {
 
 		$fire = static fn (FlowTimer $t, string $kind): FlowTimerFiredEvent => new FlowTimerFiredEvent(
 			timer: $t,
-			kind: $kind,
-			transition: 'expiry',
-			rungKey: null,
-			recipients: [],
-			priority: null,
-			message: null
+			firing: new TimerFiring(kind: $kind, transition: 'expiry'),
 		);
 
 		$this->assertSame('item-5', $this->service()->itemToTerminate(event: $fire($timer, FlowTimerFiredEvent::KIND_EXPIRY)));

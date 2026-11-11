@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCA\OpenRegister\Service\UserTaskListInterface;

@@ -9,7 +9,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Db\MagicMapper;

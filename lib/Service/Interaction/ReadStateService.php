@@ -172,15 +172,30 @@ class ReadStateService implements ReadStateServiceInterface {
 	 */
 	public function readStateFor(ObjectEntity $object, ?string $userId = null): ?ObjectReadState {
 		$uid = $this->requireCaller();
+		$this->refuseAnotherUser(userId: $userId, uid: $uid);
+
+		return $this->mapper->findOne(userId: $uid, objectUuid: $this->requireUuid(object: $object));
+
+	}//end readStateFor()
+
+	/**
+	 * Refuse a question about somebody other than the caller.
+	 *
+	 * @param string|null $userId The user asked about, or null (or '') for the caller.
+	 * @param string      $uid    The caller's uid.
+	 *
+	 * @throws NotAuthorizedException When another user is named.
+	 *
+	 * @return void
+	 */
+	private function refuseAnotherUser(?string $userId, string $uid): void {
 		if ($userId !== null && $userId !== '' && $userId !== $uid) {
 			throw new NotAuthorizedException(
 				message: 'A read state is private to the user it belongs to'
 			);
 		}
 
-		return $this->mapper->findOne(userId: $uid, objectUuid: $this->requireUuid(object: $object));
-
-	}//end readStateFor()
+	}//end refuseAnotherUser()
 
 	/**
 	 * Whether an object is unread for the calling user.

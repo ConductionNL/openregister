@@ -30,6 +30,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * The raw-SQL emitter carries the draft clause beside the owner admit; an admin and an opted-in schema do not.
@@ -62,16 +65,22 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
 		return new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher())),
-			null,
-			$healer
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class),
+				denyEnforcementMode: null,
+				metadataColumns: $healer
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->createMock(ConditionMatcher::class),
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher()))
 		);
 	}//end handlerFor()
 

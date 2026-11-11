@@ -190,19 +190,10 @@ class ActivityFeedMerge {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
 	public function normalise(array $row, string $kind): array {
-		$timestamp = $row['timestamp'] ?? ($row['created'] ?? ($row['date'] ?? 0));
-		if (is_string($timestamp) === true) {
-			// A source that writes an ISO moment is not wrong; it just speaks
-			// the other spelling. An unparseable one sorts as 0, which puts it
-			// at the bottom rather than at the top: a row with no time must
-			// never head a feed that is read as a sequence.
-			$timestamp = (int)max(0, (int)strtotime($timestamp));
-		}
-
 		return [
 			'id' => (string)($row['id'] ?? ''),
 			'kind' => $kind,
-			'timestamp' => (int)$timestamp,
+			'timestamp' => self::timestampOf(row: $row),
 			'actor' => (string)($row['actor'] ?? ($row['actor_id'] ?? ($row['user'] ?? ($row['affecteduser'] ?? '')))),
 			'summary' => (string)($row['summary'] ?? ($row['title'] ?? ($row['subject'] ?? ''))),
 			'action' => (string)($row['action'] ?? ($row['type'] ?? '')),
@@ -213,6 +204,26 @@ class ActivityFeedMerge {
 			'visibility' => (string)($row['visibility'] ?? ''),
 		];
 	}//end normalise()
+
+	/**
+	 * When a source row happened, as an epoch.
+	 *
+	 * @param array<string, mixed> $row The source row.
+	 *
+	 * @return int
+	 */
+	private static function timestampOf(array $row): int {
+		$timestamp = $row['timestamp'] ?? ($row['created'] ?? ($row['date'] ?? 0));
+		if (is_string($timestamp) === true) {
+			// A source that writes an ISO moment is not wrong; it just speaks
+			// the other spelling. An unparseable one sorts as 0, which puts it
+			// at the bottom rather than at the top: a row with no time must
+			// never head a feed that is read as a sequence.
+			$timestamp = (int)max(0, (int)strtotime($timestamp));
+		}
+
+		return (int)$timestamp;
+	}//end timestampOf()
 
 	/**
 	 * Whether a normalised row belongs on this page.
@@ -347,25 +358,32 @@ class ActivityFeedMerge {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
 	private function newestFirst(array $rows): array {
-		usort(
-			$rows,
-			static function (array $left, array $right): int {
-				$byTime = ($right['timestamp'] <=> $left['timestamp']);
-				if ($byTime !== 0) {
-					return $byTime;
-				}
-
-				$byKind = (array_search($left['kind'], self::KINDS, true) <=> array_search($right['kind'], self::KINDS, true));
-				if ($byKind !== 0) {
-					return $byKind;
-				}
-
-				return ($left['id'] <=> $right['id']);
-			}
-		);
+		usort($rows, self::compareNewestFirst(...));
 
 		return $rows;
 	}//end newestFirst()
+
+	/**
+	 * Order two feed rows: newest first, then by the order of KINDS, then by id.
+	 *
+	 * @param array<string, mixed> $left  One row.
+	 * @param array<string, mixed> $right The other row.
+	 *
+	 * @return int
+	 */
+	private static function compareNewestFirst(array $left, array $right): int {
+		$byTime = ($right['timestamp'] <=> $left['timestamp']);
+		if ($byTime !== 0) {
+			return $byTime;
+		}
+
+		$byKind = (array_search($left['kind'], self::KINDS, true) <=> array_search($right['kind'], self::KINDS, true));
+		if ($byKind !== 0) {
+			return $byKind;
+		}
+
+		return ($left['id'] <=> $right['id']);
+	}//end compareNewestFirst()
 
 	/**
 	 * How many rows this page holds.

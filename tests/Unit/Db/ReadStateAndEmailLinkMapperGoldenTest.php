@@ -30,7 +30,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MailMessageKey;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;

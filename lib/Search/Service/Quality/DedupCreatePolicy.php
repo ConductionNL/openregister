@@ -213,16 +213,30 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 			return false;
 		}
 
+		return $this->isInAnyGroup(uid: $user->getUID(), groups: $groups);
+	}//end mayOverride()
+
+	/**
+	 * Whether a user is in one of the named groups; a blank or non-string entry names none.
+	 *
+	 * @param string       $uid    The user.
+	 * @param array<mixed> $groups The declared override groups.
+	 *
+	 * @return bool True when the user is in at least one of them.
+	 *
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	private function isInAnyGroup(string $uid, array $groups): bool {
 		foreach ($groups as $group) {
 			if (is_string($group) === false || $group === '') {
 				continue;
 			}
 
-			if ($this->groupManager->isInGroup($user->getUID(), $group) === true) {
+			if ($this->groupManager->isInGroup($uid, $group) === true) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end mayOverride()
+	}//end isInAnyGroup()
 }//end class

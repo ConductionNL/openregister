@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\Authentication\Token\IToken;
 use OCP\ISession;
+use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
 
@@ -184,12 +185,7 @@ class TokenResolver {
 			return null;
 		}
 
-		try {
-			$user = $this->userSession->getUser();
-		} catch (Throwable $sessionUnavailable) {
-			return null;
-		}
-
+		$user = $this->sessionUser();
 		if ($user === null || $user->getUID() !== $ownerUid) {
 			return null;
 		}
@@ -201,6 +197,19 @@ class TokenResolver {
 
 		return $displayName;
 	}//end ownerName()
+
+	/**
+	 * The user of the current session, or null when there is none or the session cannot be read.
+	 *
+	 * @return IUser|null The user.
+	 */
+	private function sessionUser(): ?IUser {
+		try {
+			return $this->userSession->getUser();
+		} catch (Throwable $sessionUnavailable) {
+			return null;
+		}
+	}//end sessionUser()
 
 	/**
 	 * Add the registered consumer the token belongs to, when there is one.
@@ -245,12 +254,7 @@ class TokenResolver {
 			return null;
 		}
 
-		try {
-			$consumers = $this->consumerMapper->findAll(filters: ['user_id' => $ownerUid]);
-		} catch (Throwable $lookupFailed) {
-			return null;
-		}
-
+		$consumers = $this->consumersOf(ownerUid: $ownerUid);
 		if (count($consumers) !== 1) {
 			return null;
 		}
@@ -262,4 +266,19 @@ class TokenResolver {
 
 		return $consumer;
 	}//end findConsumer()
+
+	/**
+	 * The consumers registered for a user, or none when the lookup fails.
+	 *
+	 * @param string $ownerUid The token owner.
+	 *
+	 * @return array<int, mixed> The consumers.
+	 */
+	private function consumersOf(string $ownerUid): array {
+		try {
+			return $this->consumerMapper->findAll(filters: ['user_id' => $ownerUid]);
+		} catch (Throwable $lookupFailed) {
+			return [];
+		}
+	}//end consumersOf()
 }//end class

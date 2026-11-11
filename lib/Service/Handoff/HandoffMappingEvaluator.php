@@ -101,24 +101,48 @@ class HandoffMappingEvaluator {
 			);
 		}
 
+		return $this->evaluateReference(expression: $expression, data: $source->data);
+	}//end evaluateExpression()
+
+	/**
+	 * Evaluate an expression that reads a source property: a carried semantic reference or a plain `from`.
+	 *
+	 * @param array<string, mixed> $expression The expression.
+	 * @param array<string, mixed> $data       The source object's data.
+	 *
+	 * @return mixed The value, or null when the expression reads nothing.
+	 */
+	private function evaluateReference(array $expression, array $data): mixed {
 		if (array_key_exists('semanticRef', $expression) === true) {
 			return $this->carryReference(
 				property: (string)$expression['semanticRef'],
-				sourceData: $source->data
+				sourceData: $data
 			);
 		}
 
 		if (array_key_exists('from', $expression) === true) {
-			$value = ($source->data[(string)$expression['from']] ?? null);
-			if ($value === null && array_key_exists('default', $expression) === true) {
-				return $expression['default'];
-			}
-
-			return $value;
+			return $this->fromValue(expression: $expression, data: $data);
 		}
 
 		return null;
-	}//end evaluateExpression()
+	}//end evaluateReference()
+
+	/**
+	 * The value a `from` expression reads, or its default when the source has none.
+	 *
+	 * @param array<string, mixed> $expression The expression, with its `from` key.
+	 * @param array<string, mixed> $data       The source object's data.
+	 *
+	 * @return mixed The value.
+	 */
+	private function fromValue(array $expression, array $data): mixed {
+		$value = ($data[(string)$expression['from']] ?? null);
+		if ($value === null && array_key_exists('default', $expression) === true) {
+			return $expression['default'];
+		}
+
+		return $value;
+	}//end fromValue()
 
 	/**
 	 * Carry an ADR-048 semantic reference across as a reference.

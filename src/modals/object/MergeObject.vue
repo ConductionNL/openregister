@@ -806,21 +806,32 @@ export default {
 
 			this.loading = true
 			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/objects/${registerStore.registerItem.id}/${schemaStore.schemaItem.id}?_search=${this.searchTerm}`,
-				)
-				const data = await response.json()
-
-				// Filter out the source object
-				this.availableObjects = data.results.filter(
-					(obj) => obj['@self'].id !== this.sourceObject['@self'].id,
-				)
+				this.availableObjects = await this.fetchMergeCandidates()
 			} catch (error) {
 				console.error('Error searching objects:', error)
 				this.availableObjects = []
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The objects matching the search in the current register and schema,
+		 * without the source object.
+		 *
+		 * @return {Promise<Array<object>>} The candidates
+		 * @spec exclude Fetches candidate merge-target objects (excluding the source); UI search plumbing.
+		 */
+		async fetchMergeCandidates() {
+			const response = await fetch(
+				`/index.php/apps/openregister/api/objects/${registerStore.registerItem.id}/${schemaStore.schemaItem.id}?_search=${this.searchTerm}`,
+			)
+			const data = await response.json()
+
+			// Filter out the source object
+			return data.results.filter(
+				(obj) => obj['@self'].id !== this.sourceObject['@self'].id,
+			)
 		},
 
 		/**
@@ -864,40 +875,49 @@ export default {
 					// ID always uses target value
 					this.mergedData[property] = this.selectedTargetObject[property]
 				} else {
-					// Default selection logic:
-					// 1. Target value if it exists
-					// 2. Source value if target doesn't exist but source does
-					// 3. 'custom' if neither exists
-					const targetValue = this.selectedTargetObject[property]
-					const sourceValue = this.sourceObject[property]
-
-					let selectedValue
-					// Always store the actual value, never the option object
-					if (
-						targetValue !== undefined
-						&& targetValue !== null
-						&& targetValue !== ''
-					) {
-						selectedValue = targetValue
-					} else if (
-						sourceValue !== undefined
-						&& sourceValue !== null
-						&& sourceValue !== ''
-					) {
-						selectedValue = sourceValue
-					} else {
-						selectedValue = 'custom'
-						this.customValues[property] = ''
-					}
-
-					this.mergedData[property] = selectedValue
-
-					// Set up the selection object for the dropdown
-					const options = this.getMergeOptions(property)
-					this.propertySelections[property] =
-						options.find((opt) => opt.value === selectedValue) || null
+					this.seedMergeChoice(property)
 				}
 			})
+		},
+
+		/**
+		 * Choose a property's merged value and its dropdown selection: the
+		 * target value if it exists, else the source value if that does, else
+		 * a custom value.
+		 *
+		 * @param {string} property The property
+		 * @spec exclude Seeds per-property merge defaults and dropdown selections; UI form-init plumbing.
+		 */
+		seedMergeChoice(property) {
+			const targetValue = this.selectedTargetObject[property]
+			const sourceValue = this.sourceObject[property]
+
+			let selectedValue
+			// Always store the actual value, never the option object
+			if (isFilled(targetValue)) {
+				selectedValue = targetValue
+			} else if (isFilled(sourceValue)) {
+				selectedValue = sourceValue
+			} else {
+				selectedValue = 'custom'
+				this.customValues[property] = ''
+			}
+
+			this.mergedData[property] = selectedValue
+			this.selectDefaultOption(property, selectedValue)
+		},
+
+		/**
+		 * Set up the selection object for a property's dropdown.
+		 *
+		 * @param {string} property The property
+		 * @param {unknown} selectedValue The value chosen for it
+		 * @spec exclude Seeds per-property merge defaults and dropdown selections; UI form-init plumbing.
+		 */
+		selectDefaultOption(property, selectedValue) {
+			const options = this.getMergeOptions(property)
+			this.propertySelections[property] =
+				options.find((opt) => opt.value === selectedValue) || null
 		},
 
 		/**
@@ -906,36 +926,35 @@ export default {
 		 */
 		getMergeOptions(property) {
 			const options = []
+			const sourceValue = this.sourceObject[property]
+			const targetValue = this.selectedTargetObject[property]
 
-			if (
-				this.sourceObject[property] !== undefined
-				&& this.sourceObject[property] !== null
-				&& this.sourceObject[property] !== ''
-			) {
-				options.push({
-					label: `From Source: ${this.displayValue(this.sourceObject[property])}`,
-					value: this.sourceObject[property],
-				})
+			if (isFilled(sourceValue)) {
+				options.push(this.mergeOption('From Source', sourceValue))
 			}
 
-			if (
-				this.selectedTargetObject[property] !== undefined
-				&& this.selectedTargetObject[property] !== null
-				&& this.selectedTargetObject[property] !== ''
-			) {
-				options.push({
-					label: `From Target: ${this.displayValue(this.selectedTargetObject[property])}`,
-					value: this.selectedTargetObject[property],
-				})
+			if (isFilled(targetValue)) {
+				options.push(this.mergeOption('From Target', targetValue))
 			}
 
 			// Always add the custom option
-			options.push({
-				label: 'Other/Custom',
-				value: 'custom',
-			})
+			options.push(customOption())
 
 			return options
+		},
+
+		/**
+		 * A dropdown option for a value from the source or the target.
+		 *
+		 * @param {string} origin Where the value comes from, as the label says it
+		 * @param {unknown} value The value
+		 * @return {{label: string, value: unknown}} The option
+		 */
+		mergeOption(origin, value) {
+			return {
+				label: `${origin}: ${this.displayValue(value)}`,
+				value,
+			}
 		},
 
 		/**
@@ -1133,23 +1152,7 @@ export default {
 		getFileType(filename) {
 			if (!filename) return 'Unknown'
 			const ext = filename.split('.').pop()?.toLowerCase()
-			const types = {
-				pdf: 'PDF',
-				doc: 'Word',
-				docx: 'Word',
-				xls: 'Excel',
-				xlsx: 'Excel',
-				ppt: 'PowerPoint',
-				pptx: 'PowerPoint',
-				txt: 'Text',
-				jpg: 'Image',
-				jpeg: 'Image',
-				png: 'Image',
-				gif: 'Image',
-				zip: 'Archive',
-				rar: 'Archive',
-			}
-			return types[ext] || ext?.toUpperCase() || 'Unknown'
+			return fileTypeNames()[ext] || ext?.toUpperCase() || 'Unknown'
 		},
 
 		/**
@@ -1185,11 +1188,7 @@ export default {
 				return
 			}
 			try {
-				const response = await fetch(url)
-				const data = await response.json()
-				this.sourceIncomingReferences = (data.results || []).map(
-					incomingReference,
-				)
+				this.sourceIncomingReferences = await fetchIncomingReferences(url)
 			} catch (error) {
 				console.error('Error loading incoming references:', error)
 				this.sourceIncomingReferences = []
@@ -1220,6 +1219,83 @@ export default {
 			navigationStore.setModal(false)
 		},
 	},
+}
+
+/**
+ * The file type named for each extension.
+ *
+ * @return {object} The type per extension
+ */
+function fileTypeNames() {
+	return { ...documentTypeNames(), ...imageAndArchiveTypeNames() }
+}
+
+/**
+ * The document file types, per extension.
+ *
+ * @return {object} The type per extension
+ */
+function documentTypeNames() {
+	return {
+		pdf: 'PDF',
+		doc: 'Word',
+		docx: 'Word',
+		xls: 'Excel',
+		xlsx: 'Excel',
+		ppt: 'PowerPoint',
+		pptx: 'PowerPoint',
+		txt: 'Text',
+	}
+}
+
+/**
+ * The image and archive file types, per extension.
+ *
+ * @return {object} The type per extension
+ */
+function imageAndArchiveTypeNames() {
+	return {
+		jpg: 'Image',
+		jpeg: 'Image',
+		png: 'Image',
+		gif: 'Image',
+		zip: 'Archive',
+		rar: 'Archive',
+	}
+}
+
+/**
+ * The dropdown option for a custom value.
+ *
+ * @return {{label: string, value: string}} The option
+ */
+function customOption() {
+	return {
+		label: 'Other/Custom',
+		value: 'custom',
+	}
+}
+
+/**
+ * The objects that refer to the source object, as the merge lists them.
+ *
+ * @param {string} url The used-by endpoint
+ * @return {Promise<Array<object>>} The references
+ */
+async function fetchIncomingReferences(url) {
+	const response = await fetch(url)
+	const data = await response.json()
+	return (data.results || []).map(incomingReference)
+}
+
+/**
+ * Whether a value is filled in: not undefined, null or empty.
+ *
+ * @param {unknown} value The value
+ * @return {boolean} True when filled in
+ */
+function isFilled(value) {
+	return value !== undefined && value !== null && value !== ''
 }
 </script>
 

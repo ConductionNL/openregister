@@ -59,3 +59,97 @@ exports[`EditWebhook form plumbing (golden) saveWebhook matches the recorded pay
   "{"state":{"loading":false,"error":"Failed to save webhook","activeTab":0,"webhookItem":null,"selectedMethod":null,"selectedEvent":null,"selectedEventProperty":null,"selectedRetryPolicy":null,"selectedMapping":null,"loadingMappings":false,"preview":null,"previewError":null,"previewing":false,"configuration":{"sendCloudEvent":true,"waitForResponse":false,"allowPrivateTargets":false,"eventProperty":null,"responseMapping":{}},"availableEvents":[],"loadingEvents":false},"thrown":null,"logged":[["Failed to save webhook:","Error:Cannot read properties of null (reading 'name')"]],"configurationShared":false,"saved":[],"success":[],"modal":[]}",
 ]
 `;
+
+exports[`EditWebhook payload preview (golden) keeps a null mapping 1`] = `
+{
+  "during": {
+    "previewError": null,
+    "previewing": true,
+  },
+  "posted": [
+    [
+      "/apps/openregister/api/webhooks/preview",
+      {
+        "configuration": {},
+        "event": undefined,
+        "mapping": null,
+      },
+    ],
+  ],
+  "preview": "p",
+  "previewError": null,
+  "previewing": false,
+}
+`;
+
+exports[`EditWebhook payload preview (golden) previews with a mapping, configuration and event 1`] = `
+{
+  "during": {
+    "previewError": null,
+    "previewing": true,
+  },
+  "posted": [
+    [
+      "/apps/openregister/api/webhooks/preview",
+      {
+        "configuration": {
+          "a": 1,
+        },
+        "event": "object.created",
+        "mapping": 3,
+      },
+    ],
+  ],
+  "preview": {
+    "body": {},
+  },
+  "previewError": null,
+  "previewing": false,
+}
+`;
+
+exports[`EditWebhook payload preview (golden) previews without them 1`] = `
+{
+  "during": {
+    "previewError": null,
+    "previewing": true,
+  },
+  "posted": [
+    [
+      "/apps/openregister/api/webhooks/preview",
+      {
+        "configuration": {},
+        "event": undefined,
+        "mapping": null,
+      },
+    ],
+  ],
+  "preview": {
+    "body": null,
+  },
+  "previewError": null,
+  "previewing": false,
+}
+`;
+
+exports[`EditWebhook payload preview (golden) reports a failed preview 1`] = `
+{
+  "during": {
+    "previewError": null,
+    "previewing": true,
+  },
+  "posted": [
+    [
+      "/apps/openregister/api/webhooks/preview",
+      {
+        "configuration": {},
+        "event": "e",
+        "mapping": 1,
+      },
+    ],
+  ],
+  "preview": "old",
+  "previewError": "Could not preview the payload",
+  "previewing": false,
+}
+`;

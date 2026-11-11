@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Calendar;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
+use OCA\OpenRegister\Service\Calendar\AttendeeResponse;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -85,11 +86,13 @@ class AppointmentAttendeeServiceTest extends TestCase {
 		$this->objects->method('find')->willReturn($this->object());
 		$this->captureSaves();
 
-		$responses = $this->service->recordResponse(
-			objectUuid: 'object-uuid',
-			attendee: 'ana@example.org',
-			status: 'accepted',
-			respondedBy: 'ana'
+		$responses = $this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'object-uuid',
+				attendee: 'ana@example.org',
+				status: 'accepted',
+				respondedBy: 'ana'
+			)
 		);
 
 		$this->assertCount(1, $responses);
@@ -113,11 +116,13 @@ class AppointmentAttendeeServiceTest extends TestCase {
 		);
 		$this->captureSaves();
 
-		$responses = $this->service->recordResponse(
-			objectUuid: 'object-uuid',
-			attendee: 'chris@example.org',
-			status: 'DECLINED',
-			respondedBy: 'chris'
+		$responses = $this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'object-uuid',
+				attendee: 'chris@example.org',
+				status: 'DECLINED',
+				respondedBy: 'chris'
+			)
 		);
 
 		$this->assertCount(3, $responses);
@@ -134,10 +139,12 @@ class AppointmentAttendeeServiceTest extends TestCase {
 		);
 		$this->captureSaves();
 
-		$responses = $this->service->recordResponse(
-			objectUuid: 'object-uuid',
-			attendee: 'ana@example.org',
-			status: 'DECLINED'
+		$responses = $this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'object-uuid',
+				attendee: 'ana@example.org',
+				status: 'DECLINED'
+			)
 		);
 
 		$this->assertCount(1, $responses);
@@ -150,13 +157,21 @@ class AppointmentAttendeeServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/is not an attendee answer/');
 
-		$this->service->recordResponse(objectUuid: 'object-uuid', attendee: 'ana@example.org', status: 'MAYBE');
+		$this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'object-uuid',
+				attendee: 'ana@example.org',
+				status: 'MAYBE'
+			)
+		);
 	}
 
 	public function testAnAnswerWithNoAttendeeIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->service->recordResponse(objectUuid: 'object-uuid', attendee: '  ', status: 'ACCEPTED');
+		$this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(objectUuid: 'object-uuid', attendee: '  ', status: 'ACCEPTED')
+		);
 	}
 
 	public function testAnUnknownObjectIsRefused(): void {
@@ -164,7 +179,13 @@ class AppointmentAttendeeServiceTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->service->recordResponse(objectUuid: 'missing', attendee: 'ana@example.org', status: 'ACCEPTED');
+		$this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'missing',
+				attendee: 'ana@example.org',
+				status: 'ACCEPTED'
+			)
+		);
 	}
 
 	public function testMalformedStoredEntriesAreIgnoredOnRead(): void {

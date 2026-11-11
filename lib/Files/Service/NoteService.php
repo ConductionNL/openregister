@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Files\Service;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;

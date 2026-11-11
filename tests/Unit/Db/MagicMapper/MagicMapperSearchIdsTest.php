@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
@@ -254,6 +254,18 @@ class MagicMapperSearchIdsTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testASearchNamingSeveralSchemasLeavesTheSingleTablePath(): void {
+		$results = $this->mapper()->searchObjects(query: ['@self' => ['register' => 7, 'schema' => [9, 10]]], ids: ['a']);
+
+		$this->assertSame([[], 0], [$this->tableIds(), count($results)]);
+	}//end testASearchNamingSeveralSchemasLeavesTheSingleTablePath()
+
+	public function testACountNamingSeveralSchemasLeavesTheSingleTablePath(): void {
+		$total = $this->mapper()->countSearchObjects(query: ['@self' => ['register' => 7, 'schema' => [9, 10]]], ids: ['a']);
+
+		$this->assertSame([[], 0], [$this->tableIds(), $total]);
+	}//end testACountNamingSeveralSchemasLeavesTheSingleTablePath()
+
 	public function testIdsNarrowTheQuerysOwnIds(): void {
 		$this->mapper()->searchObjects(query: (self::SCOPE + ['_ids' => ['a', 'b']]), ids: ['b', 'c']);
 

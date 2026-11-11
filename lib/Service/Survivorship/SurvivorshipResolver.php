@@ -81,31 +81,6 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	 * abort the whole resolution. Likewise a malformed override map (or
 	 * malformed override entry) is skipped without throwing.
 	 *
-	 * @param array<int, array<string, mixed>> $sourceRecords Linked source records.
-	 * @param array<string, mixed> $config The `x-openregister-survivorship` annotation.
-	 * @param SurvivorshipTrustLookup $trust Entity type (never hardcoded), trust rows, trust engine
-	 *                                       and reference instant for effectiveFrom + decay.
-	 * @param mixed $overrides Optional per-object attribute-override map
-	 *                         (`attribute => {value, overriddenBy, rationale?}`
-	 *                         or a bare `attribute => value` shorthand);
-	 *                         untrusted input, validated defensively.
-	 *
-	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
-	 *
-	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
-	 */
-	public function resolveGoldenRecord(
-		array $sourceRecords,
-		array $config,
-		SurvivorshipTrustLookup $trust,
-		mixed $overrides = null,
-	): array {
-		return $this->resolve(request: new GoldenRecordRequest(sourceRecords: $sourceRecords, config: $config, trust: $trust, overrides: $overrides));
-	}//end resolveGoldenRecord()
-
-	/**
-	 * Resolve the golden record for one request; what {@see self::resolveGoldenRecord()} describes.
-	 *
 	 * @param GoldenRecordRequest $request The source records, annotation, trust lookup and overrides.
 	 *
 	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
@@ -141,29 +116,35 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
 	 */
 	private function tierWinners(array $candidates, SurvivorshipRun $run): array {
-		$goldenRecord = [];
-		$provenance   = [];
-
+		$provenance = [];
 		foreach ($candidates as $attribute => $options) {
 			$winner = $this->pickWinner(options: $options, run: $run);
-			if ($winner === null) {
-				continue;
+			if ($winner !== null) {
+				$provenance[$attribute] = self::provenanceOf(winner: $winner);
 			}
-
-			$goldenRecord[$attribute] = $winner['value'];
-			$provenance[$attribute]   = [
-				'value' => $winner['value'],
-				'sourceSystem' => $winner['sourceSystem'],
-				'trustTier' => $winner['trustTier'],
-				'lastUpdated' => $winner['lastUpdated'],
-			];
 		}
 
 		return [
-			'goldenRecord' => $goldenRecord,
+			'goldenRecord' => array_map(static fn (array $entry): mixed => $entry['value'], $provenance),
 			'attributeProvenance' => $provenance,
 		];
 	}//end tierWinners()
+
+	/**
+	 * The provenance an attribute's winning candidate records.
+	 *
+	 * @param array<string, mixed> $winner The winning candidate.
+	 *
+	 * @return array{value: mixed, sourceSystem: mixed, trustTier: mixed, lastUpdated: mixed} The provenance.
+	 */
+	private static function provenanceOf(array $winner): array {
+		return [
+			'value' => $winner['value'],
+			'sourceSystem' => $winner['sourceSystem'],
+			'trustTier' => $winner['trustTier'],
+			'lastUpdated' => $winner['lastUpdated'],
+		];
+	}//end provenanceOf()
 
 	/**
 	 * The result with every override applied over the tier-selected values.
@@ -411,7 +392,7 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 			$anchorValue = ($record[$anchorField] ?? null);
 		}
 
-		return $this->parseDate(value: $anchorValue);
+		return SurvivorshipDate::parse(value: $anchorValue);
 	}//end recordAnchor()
 
 	/**
@@ -482,7 +463,7 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 				continue;
 			}
 
-			$candidate = new CandidateStanding(rank: $rank, date: $this->parseDate(value: ($option['lastUpdated'] ?? null)));
+			$candidate = new CandidateStanding(rank: $rank, date: SurvivorshipDate::parse(value: ($option['lastUpdated'] ?? null)));
 			if ($this->displaces(candidate: $candidate, winner: $standing) === true) {
 				$winner   = $option;
 				$standing = $candidate;
@@ -638,24 +619,4 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 
 		return true;
 	}//end isPresent()
-
-	/**
-	 * Parse a date-ish value into a DateTimeImmutable, never throwing.
-	 * Unparseable/absent values return null (sorted as oldest by callers).
-	 *
-	 * @param mixed $value Candidate date value.
-	 *
-	 * @return DateTimeImmutable|null Parsed date, or null when absent/unparseable.
-	 */
-	private function parseDate(mixed $value): ?DateTimeImmutable {
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		try {
-			return new DateTimeImmutable($value);
-		} catch (Throwable) {
-			return null;
-		}
-	}//end parseDate()
 }//end class

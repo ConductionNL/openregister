@@ -48,7 +48,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;

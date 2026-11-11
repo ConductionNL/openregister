@@ -54,9 +54,6 @@ use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
-use OCP\App\IAppManager;
-use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -121,27 +118,6 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	private string $targetSource = self::SOURCE_ID;
 
 	/**
-	 * External-call router.
-	 *
-	 * @var ExternalIntegrationRouterInterface
-	 */
-	private ExternalIntegrationRouterInterface $router;
-
-	/**
-	 * NC app manager.
-	 *
-	 * @var IAppManager
-	 */
-	private IAppManager $appManager;
-
-	/**
-	 * Localisation.
-	 *
-	 * @var IL10N
-	 */
-	private IL10N $l10n;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ConnectorRouting $routing The router, app manager (isEnabled check) and localisation.
@@ -153,9 +129,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 		ConnectorRouting $routing,
 		private LoggerInterface $logger,
 	) {
-		$this->router     = $routing->router;
-		$this->appManager = $routing->appManager;
-		$this->l10n       = $routing->l10n;
+		$this->useRouting(routing: $routing);
 	}//end __construct()
 
 	/**

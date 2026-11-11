@@ -26,7 +26,9 @@ use OCA\OpenRegister\AppHost\Observability\AppProviderResolver;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\LocalHealthChecks;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricSources;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
+use OCA\OpenRegister\AppHost\Observability\MetricsRuntime;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
 use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
@@ -251,14 +253,18 @@ final class ObservabilityWiring {
 	 */
 	private static function metricsEngine(ContainerInterface $container): MetricsEngine {
 		return new MetricsEngine(
-			objectSource: $container->get(ObjectMetricSource::class),
-			tableSource: $container->get(TableMetricSource::class),
-			appConfigSource: $container->get(AppConfigMetricSource::class),
-			providerSource: $container->get(ProviderMetricSource::class),
+			sources: new MetricSources(
+				object: $container->get(ObjectMetricSource::class),
+				table: $container->get(TableMetricSource::class),
+				appConfig: $container->get(AppConfigMetricSource::class),
+				provider: $container->get(ProviderMetricSource::class)
+			),
 			renderer: $container->get(PrometheusRenderer::class),
-			manifestLoader: $container->get(ManifestLoader::class),
-			cacheFactory: $container->get('OCP\ICacheFactory'),
-			config: $container->get('OCP\IConfig'),
+			runtime: new MetricsRuntime(
+				manifestLoader: $container->get(ManifestLoader::class),
+				cacheFactory: $container->get('OCP\ICacheFactory'),
+				config: $container->get('OCP\IConfig')
+			),
 			logger: $container->get('Psr\Log\LoggerInterface')
 		);
 	}//end metricsEngine()

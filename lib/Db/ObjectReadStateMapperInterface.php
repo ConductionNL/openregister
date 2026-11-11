@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+
 
 /**
  * The methods of ObjectReadStateMapper that callers outside the Db component use.

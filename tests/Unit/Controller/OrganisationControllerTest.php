@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\TenantDirectory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use Exception;
@@ -247,7 +247,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['uuid' => 'custom-uuid']);
 		$this->organisationService->expects($this->once())
 			->method('createOrganisation')
-			->with('My Org', 'Desc', true, 'custom-uuid')
+			->with(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'My Org', description: 'Desc', uuid: 'custom-uuid'), true)
 			->willReturn($org);
 
 		$result = $this->controller->create('My Org', 'Desc');
@@ -1442,7 +1442,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 		$this->organisationService->expects($this->once())
 			->method('createOrganisation')
-			->with('Valid Org', '', true, '')
+			->with(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Valid Org'), true)
 			->willReturn($org);
 
 		$result = $this->controller->create('Valid Org');
@@ -2178,7 +2178,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['someOtherKey' => 'value']);
 		$this->organisationService->expects($this->once())
 			->method('createOrganisation')
-			->with('Org', 'Desc', true, '')
+			->with(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Org', description: 'Desc'), true)
 			->willReturn($org);
 
 		$result = $this->controller->create('Org', 'Desc');
