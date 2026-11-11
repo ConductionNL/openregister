@@ -113,8 +113,8 @@ class DeferredObjectEventJobSessionTest extends TestCase {
 			$this->createMock(ITimeFactory::class),
 			new DeferredObjectEventLookup(
 				catalog: new SchemaCatalog(
-					registers: $this->createMock(originalClassName: RegisterMapperInterface::class),
-					schemas: $this->createMock(originalClassName: SchemaMapperInterface::class),
+					registers: $this->createMock(RegisterMapperInterface::class),
+					schemas: $this->createMock(SchemaMapperInterface::class),
 					tables: $objects
 				)
 			),
