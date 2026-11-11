@@ -1594,7 +1594,7 @@ class ImportService implements ObjectImporterInterface {
 		$objectData['@self'] = $selfData;
 
 		// Validate that we're not accidentally creating invalid properties.
-		$this->validateObjectProperties(objectData: $objectData, _schemaId: (string)$table->schema->getId());
+		$this->validateObjectProperties(objectData: $objectData, schema: $table->schema);
 
 		return $objectData;
 	}//end transformCsvRow()
@@ -1896,26 +1896,30 @@ class ImportService implements ObjectImporterInterface {
 	}//end clearCaches()
 
 	/**
-	 * Validate that object data only contains valid ObjectEntity properties
+	 * Warn about columns that are a common mistake for object properties.
 	 *
-	 * @param array $objectData The object data to validate
-	 * @param string $_schemaId Schema ID for debugging (unused, for future use)
+	 * A `data`, `content`, `body` or `payload` column usually holds a whole
+	 * object rather than one property; it is logged as a warning unless the
+	 * schema declares a property by that name. The row is still imported.
+	 *
+	 * @param array  $objectData The object data to validate
+	 * @param Schema $schema     The schema the row is imported into
 	 *
 	 * @return void
 	 */
-	private function validateObjectProperties(array $objectData, string $_schemaId): void {
-		// Check for invalid properties (common mistakes).
+	private function validateObjectProperties(array $objectData, Schema $schema): void {
 		$invalidProperties = ['data', 'content', 'body', 'payload'];
+		$schemaProperties  = $this->cachedSchemaProperties(schema: $schema);
 
 		foreach (array_keys($objectData) as $key) {
-			// Skip @self as it's handled separately.
-			if ($key === '@self') {
+			if (in_array($key, $invalidProperties, true) === false || isset($schemaProperties[$key]) === true) {
 				continue;
 			}
 
-			// Check for invalid properties that commonly cause issues.
-			if (in_array($key, $invalidProperties) === true) {
-			}
+			$this->runtime->logger->warning(
+				message: '[ImportService] Column "'.$key.'" is not a property of the schema and usually holds a whole object',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $key, 'schema' => (string)$schema->getId()]
+			);
 		}
 	}//end validateObjectProperties()
 
