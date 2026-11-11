@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * The methods of ProcessingLogMapper that callers outside the Db component use.

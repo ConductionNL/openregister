@@ -21,8 +21,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -1643,7 +1644,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->renderHandler
 			->expects($this->once())
-			->method('renderEntity')
+			->method('render')
 			->willReturn($renderedEntity);
 
 		$result = $this->service->renderEntity(entity: $entity);
@@ -1973,7 +1974,7 @@ class ObjectServiceTest extends TestCase {
 			->method('migrateObjects')
 			->willReturn(['success' => true, 'migrated' => 2]);
 
-		$result = $this->service->migrateObjects('1', '2', '3', '4', ['uuid-1'], ['field1' => 'field2']);
+		$result = $this->service->migrate(new ObjectMigration(source: new RegisterSchemaRef(register: '1', schema: '2'), target: new RegisterSchemaRef(register: '3', schema: '4'), objectIds: ['uuid-1'], mapping: ['field1' => 'field2']));
 
 		$this->assertTrue($result['success']);
 	}
@@ -2032,7 +2033,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->expectException(\OCA\OpenRegister\Exception\NotAuthorizedException::class);
 
-		$this->service->migrateObjects('1', '2', '3', '4', ['uuid-1'], ['a' => 'b']);
+		$this->service->migrate(new ObjectMigration(source: new RegisterSchemaRef(register: '1', schema: '2'), target: new RegisterSchemaRef(register: '3', schema: '4'), objectIds: ['uuid-1'], mapping: ['a' => 'b']));
 	}
 
 	public function testMigrateObjectsMovesOnlyObjectsTheCallerMayReadAndUpdate(): void {
@@ -2057,7 +2058,7 @@ class ObjectServiceTest extends TestCase {
 				]
 			);
 
-		$result = $this->service->migrateObjects('1', '2', '3', '4', ['uuid-1', 'uuid-2', 'uuid-3'], ['a' => 'b']);
+		$result = $this->service->migrate(new ObjectMigration(source: new RegisterSchemaRef(register: '1', schema: '2'), target: new RegisterSchemaRef(register: '3', schema: '4'), objectIds: ['uuid-1', 'uuid-2', 'uuid-3'], mapping: ['a' => 'b']));
 
 		$this->assertSame(1, $result['statistics']['objectsMigrated']);
 		$this->assertSame(2, $result['statistics']['objectsFailed']);
@@ -2086,7 +2087,7 @@ class ObjectServiceTest extends TestCase {
 			->method('validateAndSaveObjectsBySchema')
 			->willReturn(['processed' => 10, 'updated' => 8, 'failed' => 2, 'total' => 10, 'errors' => []]);
 
-		$result = $this->service->validateAndSaveObjectsBySchema(1, 2);
+		$result = $this->service->validateAndSaveTable(new RegisterSchemaRef(register: 1, schema: 2), ListQuery::unbounded());
 
 		$this->assertSame(10, $result['processed']);
 		$this->assertSame(8, $result['updated']);

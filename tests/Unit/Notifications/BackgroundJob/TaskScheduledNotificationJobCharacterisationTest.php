@@ -12,7 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notifications\BackgroundJob;
 
 use OCA\OpenRegister\Notifications\Db\DedupeSighting;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
 use OCA\OpenRegister\Db\Schema;

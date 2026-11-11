@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCA\OpenRegister\Db\RecordTemplateMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;

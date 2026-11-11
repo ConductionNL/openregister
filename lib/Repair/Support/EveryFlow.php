@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Repair\Support;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Reads every flow for the repair steps that walk all of them.
