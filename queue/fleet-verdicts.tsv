@@ -2683,6 +2683,31 @@ filinq	1939	0b4f0cb863f5fbe246a687577ab1fe7558e0b022	GREEN	FV9-09:1	phpunit 5150
 filinq	1940	bd330815b9c0ce04fd4dad18b6bfe23fd586dee5	GREEN	FV9-09:1	phpunit 5150 ok, vitest 449 ok, baseline 0 failures; floor not measured (floor_check run not permitted in this session)
 filinq	1941	d38ce252294da7d240595cb2b37ae8005831e3d6	GREEN	FV9-09:1	phpunit 5150 ok, vitest 449 ok, baseline 0 failures; floor not measured (floor_check run not permitted in this session)
 filinq	1942	365f5e35cad0dce92625faf8b287c049f4c44609	GREEN	FV9-09:1	phpunit 5150 ok, vitest 449 ok, baseline 0 failures; floor not measured (floor_check run not permitted in this session)
+learniq	2215	f13c09700359cb31bc5d4c8731e20717398e88fb	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2216	a979df8a6742426f6b0b01023b63f22fbd664e40	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2217	395498d8b88f1d333b3143e2ffa51484eca7332a	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2218	8d6c8abb90c5cc9b7b7afa1c11340b44e99ccd38	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2219	2c3ac3f1d74e53cd1412b1b8838284e3d67612e4	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2220	d63b1fd94a030dab60e96d25a28997716e50e2c8	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2221	18c6c041160685b32ea3307fc0d5bfd3e7cb8585	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2222	7c089fecc62eda67d73f40a8274f3ed90ed2be37	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2223	fc54974bd2dae627eb258e6ca31f360f285701c8	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2224	8549218a504f4e02f3880bf7804a538270ec89eb	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2225	72faada146073d78d6fdf97f7629dd946d9275c7	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2226	1e940cfd5307403ed6200848a2016a1838c33874	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2227	1a9462d456577c43e85245a4ee2d3e3771738a00	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2228	69acdfc154da7ade190de7d023d8b584e6985981	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2230	282415bc041aacec9edbd343e8178930bdff2b8c	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2231	54ccc03732fb1d3097d7f2f3e8b4f7285cf93157	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2232	803fa233cca8d72a108445309e9189e27ccf6228	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2233	dea8ef0d522508ec2e5bdae57bdf348dc5bf4992	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2234	8ee77197550eaea2c3b51e9e607a5fec8a9a6873	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2235	7d10898bf7025a59bd21c25e8970a4e59f2df32b	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2236	d34362ed64d4058989b1b992ddbe671729dbd409	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2237	01ae3249d744f3c711cb8cf1ebd087fddf569038	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2238	2cecaf1bc07cdfc490b41a63348b8290b8a1ae97	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2239	e536572f0a82e70937373ff01066b73fcd046940	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2240	95ba65ea34143eb8975a14d257e929bb79cd7b21	GREEN	FV9-02:1	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
 buildiq	1353	ab280e1a28044623a3b7d6d7c19d3638c9fb441a	GREEN	FV9-06:2	unit + vitest green against baseline; floor holds
 buildiq	1354	170818b15d46fe676ef02a70a34359fe161f251f	GREEN	FV9-06:2	unit + vitest green against baseline; floor holds
 buildiq	1355	81b065fb325176d036f220d9f2f59ad53dd0a290	GREEN	FV9-06:2	unit + vitest green against baseline; floor holds
@@ -2954,6 +2979,31 @@ buildiq	1410	a4faa849dd58c1f9473eacbad948f5581c6aae7b	GREEN	FV9-06:4	unit + vite
 buildiq	1411	8ed2712fe4613035d19c5970cf174c2c505325c8	GREEN	FV9-06:4	unit + vitest green against baseline; floor holds
 buildiq	1412	c3ddd31586f65fca4bc8b1014049f51b6ea3a6ec	GREEN	FV9-06:4	unit + vitest green against baseline; floor holds
 buildiq	1413	a319f4698c8a5c26bb657aa4050c855e573ae7f2	GREEN	FV9-06:4	unit + vitest green against baseline; floor holds
+learniq	2241	1801ff5ce646454c0c5ef3283c46bf02c9940017	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2242	040388a60791bd76066c453478868a07dba1a7df	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2243	12b4772a3bcf541a067ff47e4fa84876deabe6f7	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2244	53fe90e04cc389c77356a4426c406f5ac1fc1cff	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2245	44e4c8ef9ac98f070ef621318318ba67773bf33f	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2246	e63cd90867c550baa1271bef463b285d1b2845d7	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2247	e3622ded5d98b7c7b3aeeb4cf191a7df2d0bf5d1	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2248	7524a65fcc4b1e1bb9eaa2b524c165a5cd9f85d4	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2249	6a7ac9bd04d6bb1dba9ed639bd91e65b795d14dc	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2250	27befbd683b797f083f23db2d8448e7fd96c7b00	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2251	61f1146c76171f63989d8f816d299c8c70a736e7	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2252	6d5516a5e181807b0b9eb6c5e749d22765a27d40	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2253	1e569ccb71dab205b98105412cf0577aec0d4af2	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2254	42c515b2c96e938438569563fc0c7a1129477204	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2255	6a76073e17cffdb20bc26e50a6837a19bff85f56	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2256	3d9030384d802d31eecf788c5307c1e5c27d0d9c	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2257	5a1c8d7fe90008f9242b32a7037c9af1ddc6c63a	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2258	65f625c7baa75da04237c65ca82e0b028f32da92	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2259	ec0e36ccacd3ccda7fae04efd29f52369e6018b9	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2260	6f82e0544acb1c4d9c359d8832f969c8a0eb38ef	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2261	d66304738519a51bd3664d94f121156c9685a4b9	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2262	62406ac21ac1e2eb30af64eaa6d65753ed945524	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2263	c63f3ab80e90aad6e6395f77873a34d3c3303831	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2264	9421d242626b1463b23f516ad08a4419f39841e2	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2265	a74cf2c7623fbcbbcaefcb8716459896d9603bc4	GREEN	FV9-02:2	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
 dossiq	5963	dd696c683bf8b8728637cc89940268bbbb53aa4a	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5964	7f324bfa5ac26ea49da816526741f22161f4a5b9	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5965	0ecb7434bcff4076ab836f8431d35ef47acc9ea2	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
@@ -2979,6 +3029,31 @@ dossiq	5984	78b0f38bcc53c7a97b0b0fd1dfddbe3f4de3a9d4	GREEN	FV9-05:3	tree green o
 dossiq	5985	a5dcd9a03e81183bf41c37970bdf5906be4587a4	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5986	b4dda28de9169393da6c3773003c98f517c51a68	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5987	8b034ae29fd378c5f0173058347acde64fdd5355	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
+learniq	2266	1fd6158a3cc6b025aab13acd44c954054ad45558	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2267	c66baf51f72f4a8b8bb495e7b0d66eacbc96c893	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2268	28155fb5ed09b2d99aad49b087f3e178b356c061	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2269	ed66656b13f5ee24e4bdf94974542f6283170469	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2270	df37713ab1da30893d1542828c20cf292c2ea9ee	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2271	c09b5def86a2c309f39fe417bd10ad06e0e3cde5	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2272	6409c3cd5635e7e85846299d6024f04fcd665ceb	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2273	6cfd18fa210086a23e08797de28cd2524bdd845d	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2274	89b716cdf15deb2c236485d9a6d41d4c812c58f4	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2275	aaea8d02b1636ff959a4b7c7ca476219158770ff	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2276	f55398b087ec98161831db02da9496d62b9cf019	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2277	3528f4fb169f1433aa9ddc5c16384a9d9d54a871	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2278	042ac2722c379c9aa2e2cc1122fd33a4644485aa	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2279	b414b9534d8e837700c15a717305b1146fb2a3fa	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2280	9570a2cde3e9452bbe46bd510916b6601c810d79	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2281	527c9e3fa38834c749e8d6801b3c9a8794d9252d	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2282	2c11c4925c03f1c7edb0ab7fa13f522f8bb0e63e	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2283	a5ae0b8c73d0c1ee31f694476b4a4a9808c126b2	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2284	6a67d6314bd5c6a34bc80d8a9ac554fed1fdbc33	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2285	71245727d06b8da8fca9b74c58f3199ea6185cb1	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2286	f1846b041b9013a6c2785081dfe244971a092682	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2287	ea36e690e1f212e71a248fe6098aaf5ac9f73136	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2288	aaa7035f78bec252095b6b6ad9f190697b8862d7	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2289	1042819c544a464ad669d99ae3cc9edc90640536	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2290	8e84c3e327afa37a470dbda35a66058666aa257c	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
 stackiq	1667	a1bf89fbd90f15b8bc21e3d3c8dfa9d8ec86c674	RED	FV9-01:4	unit tests fail beyond development: OCA\Stackiq\Tests\Unit\Service\CmdbExportImportServiceTest::testAnUnresolvableOwnerIsSkippedWithAWarning (added test errors: OpenRegister PackDefinitionValidator is not available)
 buildiq	1301	8a57239a03233aa6ee8c67826c6c74e779e853b7	GREEN	FV9-06:5	unit + vitest green against baseline; floor holds
 buildiq	1302	db45d4731979e407e77162efb51e040e5b0e1d33	GREEN	FV9-06:5	unit + vitest green against baseline; floor holds
