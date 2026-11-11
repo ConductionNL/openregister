@@ -2456,3 +2456,4 @@ integriq	3127	26af4b9cb45e0bfa44dbecc5bf48a5e61180d9a7	GREEN	FXL	binding sweep s
 integriq	3117	7aaf1f8bef054f5c27750fd5eaaaebbadd5aeabd	GREEN	FXL	development merged in (binding sweep now skips hand-built SignedEnvelopeDelivery); merged
 integriq	3076	97a2eebcd9686b7e128d126ae410882470f83190	GREEN	FXL	binding check reads alias-map entries; control: dropped entry caught; merged
 integriq	3223	6a4e1ac8f47904b0b631c5f6e4196d98d7d0880b	GREEN	FXL	flagged path unreachable (holder resolved in depth first); test pins same outcome on dev and branch; merged
+integriq	3143	b9f29cb5bb9e2d627f5315e2476d8c78a812641e	GREEN	FXL	golden runs in a separate process, so the 128MB guard cannot fire; control: fails at 200MB without it; merged
