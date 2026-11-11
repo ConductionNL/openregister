@@ -53,6 +53,7 @@ use OCP\IUserManager;
 use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Release a run-scoped object lock.
@@ -294,9 +295,7 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 			$this->objects->runAs(
 				$actor->owner,
 				fn (): bool => $this->objects->unlockObject(
-					identifier: $uuid,
-					advisory: false,
-					runUuid: $actor->runUuid
+					request: new UnlockRequest(identifier: $uuid, runUuid: $actor->runUuid)
 				)
 			);
 		}
