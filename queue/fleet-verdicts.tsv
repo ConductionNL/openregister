@@ -3379,3 +3379,5 @@ learniq	2201	98cf0ef94ea74691cdfc32a3a1dc260a76852730	GREEN	vm1:26446	tree of 25
 learniq	2202	d57d48d36c95baca613cd98a85ffc99c14896671	GREEN	vm1:26446	tree of 25 green on 42e9479e30; unit failures only inherited (0); floor held; unit suite run with a harness autoload shim for OCA\Learniq\Tests (development's bootstrap lacks it)
 learniq	2203	5c12b073b83c23eb0878d88ded254e6d438aed87	GREEN	vm1:26446	tree of 25 green on 42e9479e30; unit failures only inherited (0); floor held; unit suite run with a harness autoload shim for OCA\Learniq\Tests (development's bootstrap lacks it)
 learniq	2204	f28e08371f29779501c5e5b8ef09005a1bde583c	GREEN	vm1:26446	tree of 25 green on 42e9479e30; unit failures only inherited (0); floor held; unit suite run with a harness autoload shim for OCA\Learniq\Tests (development's bootstrap lacks it)
+portaliq	2276	56e2fbd47ffff52c39b9f79846de2abaeb10aedf	GREEN	vm2:p1	unit 4460 OK (baseline 0), floor holds; rollup split keeps sums
+portaliq	2277	8642f56397eb50083d386bcfe6e407c0c2ef71bd	GREEN	vm2:p1	unit 4460 OK (baseline 0), floor holds; call golden pins dispatch, log strings kept
