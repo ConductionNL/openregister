@@ -290,30 +290,34 @@ class PermissionCatalogue implements PermissionCatalogueInterface {
 
 		$findings = [];
 		foreach ($roleDefinitions as $index => $definition) {
-			if (is_array($definition) === false) {
-				continue;
-			}
-
-			$name = (string)($definition['name'] ?? $index);
-			$actions = ($definition['actions'] ?? null);
-			if (is_array($actions) === false) {
-				continue;
-			}
-
-			$unknown = [];
-			foreach ($actions as $action) {
-				if (is_string($action) === true && $this->isGrantable(verb: $action) === false) {
-					$unknown[] = $action;
-				}
-			}
-
+			$unknown = $this->unknownActionsOf(definition: $definition);
 			if ($unknown !== []) {
-				$findings[$name] = $unknown;
+				$findings[(string)($definition['name'] ?? $index)] = $unknown;
 			}
 		}
 
 		return $findings;
 	}//end unknownActionsInRoles()
+
+	/**
+	 * The verbs one role definition's `actions` names that the catalogue does not.
+	 *
+	 * @param mixed $definition One role definition.
+	 *
+	 * @return array<int, string> The unknown verbs in declaration order; none when the definition or its actions are not a list.
+	 */
+	private function unknownActionsOf(mixed $definition): array {
+		if (is_array($definition) === false || is_array($definition['actions'] ?? null) === false) {
+			return [];
+		}
+
+		return array_values(
+			array_filter(
+				$definition['actions'],
+				fn (mixed $action): bool => is_string($action) === true && $this->isGrantable(verb: $action) === false
+			)
+		);
+	}//end unknownActionsOf()
 
 	/**
 	 * Refuse a block or a role set naming a verb nobody declared.
