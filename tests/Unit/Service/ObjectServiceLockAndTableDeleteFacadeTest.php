@@ -92,7 +92,7 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->with(SchemaDeletionService::class)->willReturn($deletion);
 
-		$result = $this->service($this->createMock(LockHandler::class), $container)->deleteObjectsBySchema(7, 42, true);
+		$result = $this->service($this->createMock(LockHandler::class), $container)->deleteObjectsOfTable(new RegisterSchemaRef(7, 42), true);
 
 		$this->assertSame(['deleted_count' => 1, 'deleted_uuids' => ['u'], 'schema_id' => 42], $result);
 	}
@@ -105,6 +105,6 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->willReturn($deletion);
 
-		$this->service($this->createMock(LockHandler::class), $container)->deleteObjectsBySchema(7, 42);
+		$this->service($this->createMock(LockHandler::class), $container)->deleteObjectsOfTable(new RegisterSchemaRef(7, 42));
 	}
 }

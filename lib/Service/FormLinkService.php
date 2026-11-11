@@ -559,9 +559,9 @@ class FormLinkService implements FormLinkServiceInterface {
 			'hash' => (string)($row['hash'] ?? ''),
 			'title' => (string)($row['title'] ?? ''),
 			'description' => (string)($row['description'] ?? ''),
-			'status' => $this->stateToStatus(state: (int)($row['state'] ?? 0), expires: $expires),
+			'status' => FormsAppRows::status(state: (int)($row['state'] ?? 0), expires: $expires),
 			'expiresAt' => $this->atomExpiry(expires: $expires),
-			'submissionCount' => $this->countSubmissions(formId: $formId),
+			'submissionCount' => FormsAppRows::submissionCount(db: $this->db, formId: $formId),
 			'linked' => isset($linkedSet[$formId]),
 		];
 	}//end pickerRow()
@@ -643,67 +643,8 @@ class FormLinkService implements FormLinkServiceInterface {
 		return [
 			'title' => (string)($row['title'] ?? ''),
 			'hash' => (string)($row['hash'] ?? ''),
-			'status' => $this->stateToStatus(state: (int)($row['state'] ?? 0), expires: $expires),
+			'status' => FormsAppRows::status(state: (int)($row['state'] ?? 0), expires: $expires),
 			'expiresAt' => $expiresAt,
 		];
 	}//end metadataFromRow()
-
-	/**
-	 * Map NC Forms' numeric `state` column + expiry timestamp onto
-	 * the canonical `open` / `closed` / `draft` / `archived` strings
-	 * used by the registry leaf row contract.
-	 *
-	 * NC Forms `state` values:
-	 *   0 -> active (open)
-	 *   1 -> archived (closed)
-	 *   2 -> draft
-	 *
-	 * `expires > now()` also forces `closed`.
-	 *
-	 * @param integer $state NC Forms `state` column.
-	 * @param integer $expires NC Forms `expires` epoch (0 = no expiry).
-	 *
-	 * @return string Canonical status.
-	 */
-	private function stateToStatus(int $state, int $expires): string {
-		if ($state === 1) {
-			return 'archived';
-		}
-
-		if ($state === 2) {
-			return 'draft';
-		}
-
-		if ($expires > 0 && $expires <= time()) {
-			return 'closed';
-		}
-
-		return 'open';
-	}//end stateToStatus()
-
-	/**
-	 * Best-effort submission count for a given form id. Used by the
-	 * available-forms picker so the row can show "12 submissions".
-	 *
-	 * Defensive: returns 0 when the query fails.
-	 *
-	 * @param integer $formId The NC Forms form id.
-	 *
-	 * @return integer
-	 */
-	private function countSubmissions(int $formId): int {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->createFunction('COUNT(*)'))
-				->from('forms_v2_submissions')
-				->where($qb->expr()->eq('form_id', $qb->createNamedParameter($formId)));
-			$result = $qb->executeQuery();
-			$count = (int)$result->fetchOne();
-			$result->closeCursor();
-			return $count;
-		} catch (Throwable $e) {
-			return 0;
-		}
-
-	}//end countSubmissions()
 }//end class

@@ -121,23 +121,35 @@ class RegisterScopedSchemaResolver implements RegisterScopedSchemaResolverInterf
 		try {
 			return $this->registerMapper->find(id: $registerRef, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
-			// RegisterNotFoundException::__construct types `$previous` as
-			// \Exception, but mapper failures can surface as any \Throwable — an
-			// \Error would be dropped rather than chained.
-			$previous = null;
-			if (($e instanceof \Exception) === true) {
-				$previous = $e;
-			}
-
-			throw new RegisterNotFoundException(
-				registerSlugOrId: (string)$registerRef,
-				previous: $previous,
-				remedies: 'The schema was therefore not resolved, because naming a register makes it a '
-					. 'boundary and falling back to instance-wide resolution would serve a schema from '
-					. 'outside it. Omit the register to resolve the identifier globally.'
-			);
+			throw self::registerNotFound(registerRef: $registerRef, error: $e);
 		}
 	}//end resolveRegister()
+
+	/**
+	 * The refusal of a register reference that does not resolve.
+	 *
+	 * @param int|string $registerRef The register reference.
+	 * @param Throwable  $error       Why the mapper did not find it.
+	 *
+	 * @return RegisterNotFoundException
+	 */
+	private static function registerNotFound(int|string $registerRef, Throwable $error): RegisterNotFoundException {
+		// RegisterNotFoundException::__construct types `$previous` as
+		// \Exception, but mapper failures can surface as any \Throwable — an
+		// \Error would be dropped rather than chained.
+		$previous = null;
+		if (($error instanceof \Exception) === true) {
+			$previous = $error;
+		}
+
+		return new RegisterNotFoundException(
+			registerSlugOrId: (string)$registerRef,
+			previous: $previous,
+			remedies: 'The schema was therefore not resolved, because naming a register makes it a '
+				. 'boundary and falling back to instance-wide resolution would serve a schema from '
+				. 'outside it. Omit the register to resolve the identifier globally.'
+		);
+	}//end registerNotFound()
 
 
 	/**
@@ -166,34 +178,63 @@ class RegisterScopedSchemaResolver implements RegisterScopedSchemaResolverInterf
 			return $scoped;
 		}
 
-		// THE BOUNDARY EXISTS FOR SLUGS, NOT FOR UNIQUE IDENTIFIERS.
-		// A slug is not unique instance-wide — several registers legitimately
-		// carry a `TimeEntry`, and resolving one globally is what served
-		// another app's schema into a leaf app's forms and aggregations. A
-		// numeric id and a uuid are unique BY CONSTRUCTION, so scoping them
-		// adds no protection; all it can do is refuse a caller whose register
-		// happens to have a stale `schemas` list. That refusal is exactly what
-		// broke `POST /api/objects/{registerId}/{schemaId}` for existing
-		// clients, so a unique identifier resolves globally and the membership
-		// list is treated as the cache it is.
-		if ($this->isUniqueIdentifier(ref: $schemaRef) === true) {
-			try {
-				return $this->schemaMapper->find($schemaRef);
-			} catch (\Exception) {
-				// Genuinely absent, not merely unlisted — fall through to the
-				// refusal below. The global lookup widens for AMBIGUITY, never
-				// for absence.
-			}
+		$unique = $this->uniquelyIdentifiedSchema(schemaRef: $schemaRef);
+		if ($unique !== null) {
+			return $unique;
 		}
 
-		throw new SchemaNotInRegisterException(
+		throw $this->notInRegister(register: $register, schemaRef: $schemaRef);
+	}//end resolveSchemaWithin()
+
+	/**
+	 * A schema named by a unique identifier, resolved instance-wide.
+	 *
+	 * THE BOUNDARY EXISTS FOR SLUGS, NOT FOR UNIQUE IDENTIFIERS.
+	 * A slug is not unique instance-wide — several registers legitimately
+	 * carry a `TimeEntry`, and resolving one globally is what served
+	 * another app's schema into a leaf app's forms and aggregations. A
+	 * numeric id and a uuid are unique BY CONSTRUCTION, so scoping them
+	 * adds no protection; all it can do is refuse a caller whose register
+	 * happens to have a stale `schemas` list. That refusal is exactly what
+	 * broke `POST /api/objects/{registerId}/{schemaId}` for existing
+	 * clients, so a unique identifier resolves globally and the membership
+	 * list is treated as the cache it is.
+	 *
+	 * @param int|string $schemaRef The schema reference.
+	 *
+	 * @return Schema|null The schema, or null for a slug or a schema that is genuinely absent.
+	 */
+	private function uniquelyIdentifiedSchema(int|string $schemaRef): ?Schema {
+		if ($this->isUniqueIdentifier(ref: $schemaRef) === false) {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find($schemaRef);
+		} catch (\Exception) {
+			// Genuinely absent, not merely unlisted — the caller refuses. The
+			// global lookup widens for AMBIGUITY, never for absence.
+			return null;
+		}
+	}//end uniquelyIdentifiedSchema()
+
+	/**
+	 * The refusal of a schema reference the register does not hold.
+	 *
+	 * @param Register   $register  The register.
+	 * @param int|string $schemaRef The schema reference.
+	 *
+	 * @return SchemaNotInRegisterException
+	 */
+	private function notInRegister(Register $register, int|string $schemaRef): SchemaNotInRegisterException {
+		return new SchemaNotInRegisterException(
 			schemaSlug: (string)$schemaRef,
 			registerId: $register->getId(),
 			registerSlug: $register->getSlug(),
 			candidatesElsewhere: $this->schemaMapper->countBySlug(slug: (string)$schemaRef),
-			registerSchemaCount: count($registerSchemaIds)
+			registerSchemaCount: count(($register->getSchemas() ?? []))
 		);
-	}//end resolveSchemaWithin()
+	}//end notInRegister()
 
 
 	/**

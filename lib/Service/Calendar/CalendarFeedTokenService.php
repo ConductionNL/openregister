@@ -112,11 +112,28 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function mintToken(FeedTokenMint $mint): array {
-		$draft = $mint->draft;
+		$draft = $this->stampedDraft(mint: $mint);
+
+		$saved = $this->mapper->insert($draft);
+		$data  = $saved->jsonSerialize();
+		$data['url'] = $this->feedUrl(token: (string)$saved->getToken());
+
+		return $data;
+	}//end mintToken()
+
+	/**
+	 * The mint's draft token, stamped with a fresh secret, its principal and scope, and its lifetime from now.
+	 *
+	 * @param FeedTokenMint $mint The draft, the principal and the lifetime.
+	 *
+	 * @return CalendarFeedToken The stamped draft, not yet saved.
+	 */
+	private function stampedDraft(FeedTokenMint $mint): CalendarFeedToken {
+		$draft     = $mint->draft;
 		$scopeType = self::scopeTypeOf(draft: $draft);
-		$scopeId = self::scopeIdOf(draft: $draft);
-		$userId = self::principalOf(userId: $mint->userId);
-		$now = new DateTime();
+		$scopeId   = self::scopeIdOf(draft: $draft);
+		$userId    = self::principalOf(userId: $mint->userId);
+		$now       = new DateTime();
 		$draft->setToken($this->secureRandom->generate(self::TOKEN_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC));
 		$draft->setUserId($userId);
 		$draft->setScopeType($scopeType);
@@ -126,12 +143,8 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 		$draft->setRevokedAt(null);
 		$draft->setLastReadAt(null);
 
-		$saved = $this->mapper->insert($draft);
-		$data = $saved->jsonSerialize();
-		$data['url'] = $this->feedUrl(token: (string)$saved->getToken());
-
-		return $data;
-	}//end mintToken()
+		return $draft;
+	}//end stampedDraft()
 
 	/**
 	 * The draft's scope type, refusing anything but a schema or a view.

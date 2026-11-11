@@ -113,25 +113,6 @@ class ReferenceResolver implements ReferenceResolverInterface {
 	 * read failed. An empty foreign key, or a lookup that matched nothing, is a
 	 * real answer (null) and is not listed.
 	 *
-	 * @param array<string, mixed> $payload Object data WITH `@self` already injected.
-	 * @param array<string, mixed> $references The `x-openregister-references` map.
-	 * @param Register|string|int|null $register Saving object's register context.
-	 * @param string|null $organisation Saving object's organisation UUID (the tenant boundary).
-	 *
-	 * @return array{refs: array<string, mixed>, unresolved: list<string>} The map and the unresolved names.
-	 *
-	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
-	 */
-	public function resolveAllWithOutcome(array $payload, array $references, mixed $register, ?string $organisation): array {
-		$referrer = new ReferringObject(payload: $payload, register: $register, organisation: $organisation);
-		return $this->resolveReferences(referrer: $referrer, references: $references);
-	}//end resolveAllWithOutcome()
-
-	/**
-	 * Build the `@ref` map of a referring object and name the references that could not be resolved.
-	 *
-	 * See resolveAllWithOutcome() for what `unresolved` lists.
-	 *
 	 * @param ReferringObject      $referrer   The saving object: payload, register and organisation.
 	 * @param array<string, mixed> $references The `x-openregister-references` map.
 	 *
@@ -327,6 +308,18 @@ class ReferenceResolver implements ReferenceResolverInterface {
 		// saving object's tenant are dropped by the guard, keeping the sort
 		// order so the most-relevant ADMITTED row wins.
 		$results = $this->objectService->findAll($config, _rbac: false, _multitenancy: false);
+		return $this->lookupOutcome(query: $query, results: $results);
+	}//end resolveLookup()
+
+	/**
+	 * The lookup's outcome: the first row the saving object's tenant admits, or nothing when no row matched.
+	 *
+	 * @param ReferenceQuery      $query   The saving object's organisation.
+	 * @param array<int, mixed> $results The matching rows, most relevant first.
+	 *
+	 * @return array{entity: ObjectEntity|null, attempted: bool} The admitted row (or null), and whether any row matched.
+	 */
+	private function lookupOutcome(ReferenceQuery $query, array $results): array {
 		if (count($results) === 0) {
 			return ['entity' => null, 'attempted' => false];
 		}
@@ -335,7 +328,7 @@ class ReferenceResolver implements ReferenceResolverInterface {
 			'entity' => $this->tenantGuard->firstAdmitted(savingOrganisation: $query->organisation, candidates: $results),
 			'attempted' => true,
 		];
-	}//end resolveLookup()
+	}//end lookupOutcome()
 
 	/**
 	 * The findAll() configuration of a lookup.

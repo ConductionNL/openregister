@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCP\Files\Folder;
 use RuntimeException;
 
@@ -114,8 +115,7 @@ class AuditTrailExportJob extends RecordedQueuedJob {
 		}
 
 		$collected = $this->source->pageQuery->collect(
-			filters: (array)($argument['filters'] ?? []),
-			search: ($argument['search'] ?? null),
+			criteria: new AuditTrailCriteria(filters: (array)($argument['filters'] ?? []), search: ($argument['search'] ?? null)),
 			ceiling: self::JOB_LIMIT
 		);
 

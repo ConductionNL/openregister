@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Rbac\GrantCaller;
 use OCA\OpenRegister\Service\Rbac\GrantedPrincipal;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -65,11 +66,11 @@ final class GrantManageGuardGoldenTest extends TestCase {
 		$guard  = $this->guard();
 		$object = $this->record();
 
-		$this->assertSame(GrantManageGuard::AS_OWNER, $guard->admittedAs('ann', [], $object));
-		$this->assertSame(GrantManageGuard::AS_OWNER, $guard->admittedAs('bob', ['admin'], $object));
-		$this->assertSame(GrantManageGuard::AS_HOLDER, $guard->admittedAs('bob', ['deputies'], $object));
-		$this->assertNull($guard->admittedAs('bob', ['staff'], $object));
-		$this->assertNull($guard->admittedAs(null, ['deputies'], $object));
+		$this->assertSame(GrantManageGuard::AS_OWNER, $guard->admittedAs(new GrantCaller('ann', []), $object));
+		$this->assertSame(GrantManageGuard::AS_OWNER, $guard->admittedAs(new GrantCaller('bob', ['admin']), $object));
+		$this->assertSame(GrantManageGuard::AS_HOLDER, $guard->admittedAs(new GrantCaller('bob', ['deputies']), $object));
+		$this->assertNull($guard->admittedAs(new GrantCaller('bob', ['staff']), $object));
+		$this->assertNull($guard->admittedAs(new GrantCaller(null, ['deputies']), $object));
 	}//end testAdmittedAsPinsEveryOutcome()
 
 	/**
@@ -82,12 +83,12 @@ final class GrantManageGuardGoldenTest extends TestCase {
 		$holder = GrantManageGuard::AS_HOLDER;
 		$groups = ['deputies', 'staff'];
 
-		$this->assertTrue($guard->letsItselfIn($holder, 'bob', $groups, new GrantedPrincipal(user: 'bob')));
-		$this->assertTrue($guard->letsItselfIn($holder, 'bob', $groups, new GrantedPrincipal(group: 'staff')));
-		$this->assertTrue($guard->letsItselfIn($holder, 'bob', $groups, new GrantedPrincipal(remote: 'x@remote.example')));
-		$this->assertFalse($guard->letsItselfIn($holder, 'bob', $groups, new GrantedPrincipal(user: 'cas')));
-		$this->assertFalse($guard->letsItselfIn($holder, 'bob', $groups, new GrantedPrincipal(group: 'board')));
-		$this->assertFalse($guard->letsItselfIn(GrantManageGuard::AS_OWNER, 'bob', $groups, new GrantedPrincipal(user: 'bob')));
-		$this->assertFalse($guard->letsItselfIn(null, 'bob', $groups, new GrantedPrincipal(remote: 'x@remote.example')));
+		$this->assertTrue($guard->letsItselfIn($holder, new GrantCaller('bob', $groups), new GrantedPrincipal(user: 'bob')));
+		$this->assertTrue($guard->letsItselfIn($holder, new GrantCaller('bob', $groups), new GrantedPrincipal(group: 'staff')));
+		$this->assertTrue($guard->letsItselfIn($holder, new GrantCaller('bob', $groups), new GrantedPrincipal(remote: 'x@remote.example')));
+		$this->assertFalse($guard->letsItselfIn($holder, new GrantCaller('bob', $groups), new GrantedPrincipal(user: 'cas')));
+		$this->assertFalse($guard->letsItselfIn($holder, new GrantCaller('bob', $groups), new GrantedPrincipal(group: 'board')));
+		$this->assertFalse($guard->letsItselfIn(GrantManageGuard::AS_OWNER, new GrantCaller('bob', $groups), new GrantedPrincipal(user: 'bob')));
+		$this->assertFalse($guard->letsItselfIn(null, new GrantCaller('bob', $groups), new GrantedPrincipal(remote: 'x@remote.example')));
 	}//end testLetsItselfInPinsEveryOutcome()
 }//end class

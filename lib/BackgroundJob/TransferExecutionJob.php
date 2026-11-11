@@ -332,37 +332,59 @@ class TransferExecutionJob extends QueuedJob {
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 */
 	private function reschedule(TransferAttemptRun $run): void {
-		$transferListId = $run->transferListId;
-		$attempt = $run->attempt;
-		$list = $run->list;
 		// Keep the list non-terminal (in_progress) between attempts so a
 		// partially-failed run keeps its confirmed objects while retrying.
+		$list           = $run->list;
 		$list['status'] = TransferListServiceInterface::STATUS_IN_PROGRESS;
 		$this->transferRecordService->saveTransferList($list);
 
-		$delay = $this->backoffSeconds(attempt: $attempt);
+		$delay = $this->scheduleRetry(run: $run);
+		$this->logRescheduled(run: $run, delay: $delay);
+	}//end reschedule()
+
+	/**
+	 * Queue the next attempt after its backoff.
+	 *
+	 * @param TransferAttemptRun $run The failed attempt.
+	 *
+	 * @return int The backoff in seconds.
+	 */
+	private function scheduleRetry(TransferAttemptRun $run): int {
+		$delay    = $this->backoffSeconds(attempt: $run->attempt);
 		$runAfter = ($this->time->getTime() + $delay);
 		$this->jobList->scheduleAfter(
 			TransferExecutionJob::class,
 			$runAfter,
 			[
-				'transferListId' => $transferListId,
-				'attempt' => ($attempt + 1),
+				'transferListId' => $run->transferListId,
+				'attempt' => ($run->attempt + 1),
 			]
 		);
 
+		return $delay;
+	}//end scheduleRetry()
+
+	/**
+	 * Log a rescheduled attempt.
+	 *
+	 * @param TransferAttemptRun $run   The failed attempt.
+	 * @param int                $delay The backoff in seconds.
+	 *
+	 * @return void
+	 */
+	private function logRescheduled(TransferAttemptRun $run, int $delay): void {
 		$this->logger->info(
 			message: '[TransferExecutionJob] Attempt failed — rescheduled',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'transferListId' => $transferListId,
-				'attempt' => $attempt,
-				'nextAttempt' => ($attempt + 1),
+				'transferListId' => $run->transferListId,
+				'attempt' => $run->attempt,
+				'nextAttempt' => ($run->attempt + 1),
 				'delaySeconds' => $delay,
 			]
 		);
-	}//end reschedule()
+	}//end logRescheduled()
 
 	/**
 	 * Exponential backoff with jitter: `min(60 * 2^(attempt-1), 28800)` ± 10 %.

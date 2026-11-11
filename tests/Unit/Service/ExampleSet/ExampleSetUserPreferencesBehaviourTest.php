@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccounts;
+use OCA\OpenRegister\Service\ExampleSet\UserPreferenceKey;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
 use OCP\Config\IUserConfig;
 use OCP\IConfig;
@@ -87,11 +88,11 @@ class ExampleSetUserPreferencesBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			'account "root" is one of Nextcloud\'s administrators and not in the set\'s cast; an example set never changes their preferences',
-			$this->subject->refusal(app: 'files', uid: 'root', key: 'view', users: ['anna'])
+			$this->subject->refusal(preference: new UserPreferenceKey(entry: ['user' => 'root', 'app' => 'files', 'key' => 'view']), users: ['anna'])
 		);
 		$this->assertSame(
 			'account "bob" is not one the set creates or adopts',
-			$this->subject->refusal(app: 'files', uid: 'bob', key: 'view', users: ['anna'])
+			$this->subject->refusal(preference: new UserPreferenceKey(entry: ['user' => 'bob', 'app' => 'files', 'key' => 'view']), users: ['anna'])
 		);
 	}//end testAnAccountOutsideTheCastIsRefused()
 
@@ -104,7 +105,7 @@ class ExampleSetUserPreferencesBehaviourTest extends TestCase {
 		$this->config->expects($this->never())->method('getUserKeys');
 		$this->assertSame(
 			'user preference mail api_key holds a secret; a set never writes one',
-			$this->subject->refusal(app: 'mail', uid: 'anna', key: 'api_key', users: ['anna'])
+			$this->subject->refusal(preference: new UserPreferenceKey(entry: ['user' => 'anna', 'app' => 'mail', 'key' => 'api_key']), users: ['anna'])
 		);
 	}//end testASecretKeyNameIsRefused()
 
@@ -121,9 +122,9 @@ class ExampleSetUserPreferencesBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			'user preference mail signature holds a secret; a set never writes one',
-			$this->subject->refusal(app: 'mail', uid: 'anna', key: 'signature', users: ['anna'])
+			$this->subject->refusal(preference: new UserPreferenceKey(entry: ['user' => 'anna', 'app' => 'mail', 'key' => 'signature']), users: ['anna'])
 		);
-		$this->assertSame('', $this->subject->refusal(app: 'mail', uid: 'anna', key: 'theme', users: ['anna']));
+		$this->assertSame('', $this->subject->refusal(preference: new UserPreferenceKey(entry: ['user' => 'anna', 'app' => 'mail', 'key' => 'theme']), users: ['anna']));
 	}//end testAHeldKeyIsRefusedOnlyWhenSensitive()
 
 	/**
@@ -134,7 +135,7 @@ class ExampleSetUserPreferencesBehaviourTest extends TestCase {
 	public function testAnUnheldKeyIsNotAskedAboutSensitivity(): void {
 		$this->config->method('getUserKeys')->willReturn([]);
 		$this->userConfig->expects($this->never())->method('isSensitive');
-		$this->assertSame('', $this->subject->refusal(app: 'mail', uid: 'anna', key: 'theme', users: ['anna']));
+		$this->assertSame('', $this->subject->refusal(preference: new UserPreferenceKey(entry: ['user' => 'anna', 'app' => 'mail', 'key' => 'theme']), users: ['anna']));
 	}//end testAnUnheldKeyIsNotAskedAboutSensitivity()
 
 	/**
@@ -148,9 +149,9 @@ class ExampleSetUserPreferencesBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			'user preference mail theme holds a secret; a set never writes one',
-			$this->subject->refusal(app: 'mail', uid: 'anna', key: 'theme', users: ['anna'])
+			$this->subject->refusal(preference: new UserPreferenceKey(entry: ['user' => 'anna', 'app' => 'mail', 'key' => 'theme']), users: ['anna'])
 		);
-		$this->assertSame('', $this->subject->refusal(app: 'mail', uid: 'anna', key: 'theme', users: ['anna']));
+		$this->assertSame('', $this->subject->refusal(preference: new UserPreferenceKey(entry: ['user' => 'anna', 'app' => 'mail', 'key' => 'theme']), users: ['anna']));
 	}//end testFailingLookupsLeanTowardsRefusalAndUnheld()
 
 	/**
@@ -163,7 +164,7 @@ class ExampleSetUserPreferencesBehaviourTest extends TestCase {
 		$this->config->method('getUserValue')->willReturn('dark');
 		$this->config->expects($this->never())->method('setUserValue');
 
-		$this->assertSame(['error' => '', 'entry' => null], $this->subject->apply(uid: 'anna', app: 'core', key: 'theme', value: 'dark'));
+		$this->assertSame(['error' => '', 'entry' => null], $this->subject->apply(preference: new UserPreferenceKey(entry: ['user' => 'anna', 'app' => 'core', 'key' => 'theme']), value: 'dark'));
 	}//end testApplyingTheHeldValueWritesNothing()
 
 	/**
@@ -178,7 +179,7 @@ class ExampleSetUserPreferencesBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['error' => '', 'entry' => ['user' => 'anna', 'app' => 'core', 'key' => 'theme', 'had' => true, 'old' => 'light', 'new' => 'dark']],
-			$this->subject->apply(uid: 'anna', app: 'core', key: 'theme', value: 'dark')
+			$this->subject->apply(preference: new UserPreferenceKey(entry: ['user' => 'anna', 'app' => 'core', 'key' => 'theme']), value: 'dark')
 		);
 	}//end testApplyingANewValueRecordsTheOldOne()
 
@@ -194,9 +195,9 @@ class ExampleSetUserPreferencesBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['error' => '', 'entry' => ['user' => 'anna', 'app' => 'core', 'key' => 'theme', 'had' => false, 'old' => '', 'new' => 'dark']],
-			$this->subject->apply(uid: 'anna', app: 'core', key: 'theme', value: 'dark')
+			$this->subject->apply(preference: new UserPreferenceKey(entry: ['user' => 'anna', 'app' => 'core', 'key' => 'theme']), value: 'dark')
 		);
-		$this->assertSame(['error' => 'read-only', 'entry' => null], $this->subject->apply(uid: 'anna', app: 'core', key: 'theme', value: 'dark'));
+		$this->assertSame(['error' => 'read-only', 'entry' => null], $this->subject->apply(preference: new UserPreferenceKey(entry: ['user' => 'anna', 'app' => 'core', 'key' => 'theme']), value: 'dark'));
 	}//end testApplyOfAnUnheldKeyAndAFailedWrite()
 
 	/**
@@ -208,8 +209,8 @@ class ExampleSetUserPreferencesBehaviourTest extends TestCase {
 		$entry = ['user' => 'anna', 'app' => 'core', 'key' => 'theme', 'had' => true, 'old' => 'light', 'new' => 'dark'];
 		$this->config->expects($this->never())->method('setUserValue');
 
-		$this->assertSame(['error' => '', 'entry' => $entry, 'wrote' => false], $this->subject->follow(entry: $entry, value: 'blue', refresh: false));
-		$this->assertSame(['error' => '', 'entry' => $entry, 'wrote' => false], $this->subject->follow(entry: $entry, value: 'dark', refresh: true));
+		$this->assertSame(['error' => '', 'entry' => $entry, 'wrote' => false], $this->subject->kept(entry: $entry));
+		$this->assertSame(['error' => '', 'entry' => $entry, 'wrote' => false], $this->subject->follow(entry: $entry, value: 'dark'));
 	}//end testFollowWritesOnlyOnARefreshWithANewValue()
 
 	/**
@@ -225,9 +226,9 @@ class ExampleSetUserPreferencesBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['error' => '', 'entry' => ['user' => 'anna', 'app' => 'core', 'key' => 'theme', 'had' => true, 'old' => 'light', 'new' => 'blue'], 'wrote' => true],
-			$this->subject->follow(entry: $entry, value: 'blue', refresh: true)
+			$this->subject->follow(entry: $entry, value: 'blue')
 		);
-		$this->assertSame(['error' => 'locked', 'entry' => $entry, 'wrote' => false], $this->subject->follow(entry: $entry, value: 'blue', refresh: true));
+		$this->assertSame(['error' => 'locked', 'entry' => $entry, 'wrote' => false], $this->subject->follow(entry: $entry, value: 'blue'));
 	}//end testFollowOnARefreshWritesTheNewValue()
 
 	/**

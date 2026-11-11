@@ -118,9 +118,23 @@ class CaseAccessControl implements CaseAccessControlInterface {
 	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	private function isOfficer(\OCP\IUser $user): bool {
-		$officerGroup = '';
+		$officerGroup = $this->officerGroup();
+		if ($officerGroup === null || $officerGroup === '') {
+			// Unreadable, or no officer role configured → no override is possible → deny.
+			return false;
+		}
+
+		return $this->membership->groupManager->isInGroup($user->getUID(), $officerGroup);
+	}//end isOfficer()
+
+	/**
+	 * The configured officer group, '' when none is configured, or null when the configuration cannot be read.
+	 *
+	 * @return string|null The group id.
+	 */
+	private function officerGroup(): ?string {
 		try {
-			$officerGroup = (string)$this->appConfig->getValueString(
+			return (string)$this->appConfig->getValueString(
 				app: self::APP_ID,
 				key: self::CONFIG_KEY_OFFICER_GROUP,
 				default: ''
@@ -131,14 +145,7 @@ class CaseAccessControl implements CaseAccessControlInterface {
 			$this->membership->logger->warning(
 				message: '[CaseAccessControl] officer-group config unreadable — denying (fail closed): ' . $e->getMessage()
 			);
-			return false;
+			return null;
 		}
-
-		if ($officerGroup === '') {
-			// No officer role configured → no override is possible → deny.
-			return false;
-		}
-
-		return $this->membership->groupManager->isInGroup($user->getUID(), $officerGroup);
-	}//end isOfficer()
+	}//end officerGroup()
 }//end class

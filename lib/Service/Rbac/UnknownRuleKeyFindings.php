@@ -158,6 +158,24 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 	}//end registerBlock()
 
 	/**
+	 * The finding for a stored condition on a key that names nothing.
+	 *
+	 * @param array{label: string, principal: string, key: string} $condition The condition.
+	 * @param string                                                $context   Where the block sits.
+	 *
+	 * @return string The finding.
+	 */
+	private static function unknownKeyFinding(array $condition, string $context): string {
+		return sprintf(
+			'The %s rule for %s in %s has a condition on "%s", which names no property or record metadata, so it admits no row.',
+			$condition['label'],
+			$condition['principal'],
+			$context,
+			$condition['key']
+		);
+	}//end unknownKeyFinding()
+
+	/**
 	 * One sentence per condition of a block that its columns refuse and the stored block does not hold.
 	 *
 	 * @param array{authorization: ?array, context: string, columns: RuleColumns} $block  The block and how to judge it.
@@ -176,13 +194,7 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 				continue;
 			}
 
-			$findings[] = sprintf(
-				'The %s rule for %s in %s has a condition on "%s", which names no property or record metadata, so it admits no row.',
-				$condition['label'],
-				$condition['principal'],
-				$block['context'],
-				$condition['key']
-			);
+			$findings[] = self::unknownKeyFinding(condition: $condition, context: $block['context']);
 		}
 
 		return $findings;
@@ -197,21 +209,14 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 	 */
 	private function conditions(?array $authorization): array {
 		$conditions = [];
-		foreach ($this->blocks->ruleLists(authorization: $authorization) as $label => $rules) {
-			foreach ($rules as $rule) {
-				if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false) {
-					continue;
-				}
-
-				$principal = $this->blocks->principalOf(rule: $rule);
-				foreach ($rule['match'] as $key => $value) {
-					$conditions[] = [
-						'label'       => (string)$label,
-						'principal'   => $principal,
-						'key'         => (string)$key,
-						'fingerprint' => $label.'|'.$principal.'|'.$key.'|'.json_encode($value),
-					];
-				}
+		foreach ($this->blocks->matchRules(authorization: $authorization) as $rule) {
+			foreach ($rule['match'] as $key => $value) {
+				$conditions[] = [
+					'label'       => (string)$rule['label'],
+					'principal'   => $rule['principal'],
+					'key'         => (string)$key,
+					'fingerprint' => $rule['label'].'|'.$rule['principal'].'|'.$key.'|'.json_encode($value),
+				];
 			}
 		}
 

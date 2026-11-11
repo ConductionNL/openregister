@@ -142,49 +142,89 @@ class CalculationsController extends Controller {
 	public function evaluate(): JSONResponse {
 		$declaration = $this->request->getParam('calculation');
 		if (is_array($declaration) === false || isset($declaration['expression']) === false) {
-			return new JSONResponse(
-				[
-					'ok' => false,
-					'error' => [
-						'code' => 'calculation-trial-no-declaration',
-						'message' => 'A "calculation" object carrying an "expression" is required.',
-					],
-				],
-				422
-			);
+			return $this->noDeclaration();
 		}
 
 		$target = $this->objectTarget();
 		if ($target !== null) {
-			try {
-				$readable = $this->readableObject(target: $target);
-			} catch (Throwable $e) {
-				$result = $this->trials->objectNotFound(
-					declaration: $declaration,
-					target: new UnresolvedTrialObject(objectId: $target['objectId'], reason: $e->getMessage())
-				);
-
-				return new JSONResponse($result, $this->statusFor(result: $result));
-			}
-
-			$result = $this->trials->tryObject(
-				declaration: $declaration,
-				target: new TrialObject(object: $readable['object'], schema: $readable['schema'])
-			);
-
-			return new JSONResponse($result, $this->statusFor(result: $result));
+			return $this->trialAnswer(result: $this->objectTrial(declaration: $declaration, target: $target));
 		}
 
+		return $this->trialAnswer(result: $this->sampleTrial(declaration: $declaration));
+
+	}//end evaluate()
+
+	/**
+	 * The refusal of a trial that carries no declaration with an expression.
+	 *
+	 * @return JSONResponse 422 naming what is required
+	 */
+	private function noDeclaration(): JSONResponse {
+		return new JSONResponse(
+			[
+				'ok' => false,
+				'error' => [
+					'code' => 'calculation-trial-no-declaration',
+					'message' => 'A "calculation" object carrying an "expression" is required.',
+				],
+			],
+			422
+		);
+	}//end noDeclaration()
+
+	/**
+	 * Try the declaration against the stored object the request names.
+	 *
+	 * The object is looked up with RBAC and tenancy on before anything is
+	 * evaluated; an object the caller may not read is a not-found result.
+	 *
+	 * @param array<string, mixed>  $declaration The calculation declaration
+	 * @param array<string, string> $target      The register, schema and objectId
+	 *
+	 * @return array<string, mixed> The trial result
+	 */
+	private function objectTrial(array $declaration, array $target): array {
+		try {
+			$readable = $this->readableObject(target: $target);
+		} catch (Throwable $e) {
+			return $this->trials->objectNotFound(
+				declaration: $declaration,
+				target: new UnresolvedTrialObject(objectId: $target['objectId'], reason: $e->getMessage())
+			);
+		}
+
+		return $this->trials->tryObject(
+			declaration: $declaration,
+			target: new TrialObject(object: $readable['object'], schema: $readable['schema'])
+		);
+	}//end objectTrial()
+
+	/**
+	 * Try the declaration against the sample payload of the request; no stored data is touched.
+	 *
+	 * @param array<string, mixed> $declaration The calculation declaration
+	 *
+	 * @return array<string, mixed> The trial result
+	 */
+	private function sampleTrial(array $declaration): array {
 		$sample = $this->request->getParam('object', []);
 		if (is_array($sample) === false) {
 			$sample = [];
 		}
 
-		$result = $this->trials->trySample(declaration: $declaration, sample: $sample);
+		return $this->trials->trySample(declaration: $declaration, sample: $sample);
+	}//end sampleTrial()
 
+	/**
+	 * Answer a trial result with the status it calls for.
+	 *
+	 * @param array<string, mixed> $result The trial result
+	 *
+	 * @return JSONResponse The result
+	 */
+	private function trialAnswer(array $result): JSONResponse {
 		return new JSONResponse($result, $this->statusFor(result: $result));
-
-	}//end evaluate()
+	}//end trialAnswer()
 
 	/**
 	 * The stored object a trial names, when it names one in full.

@@ -25,6 +25,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -135,13 +136,12 @@ final class RelatedReadFilter {
 	private function readableUnder(ObjectEntity $object, Schema $schema): bool {
 		$userId = $this->rbac->getCurrentUserId();
 		if ((new DraftCallerRule())->keptFromCaller(
-			object: $object,
-			schema: $schema,
+			subject: new DraftSubject(object: $object, schema: $schema),
 			caller: new DraftCaller(userId: $userId, isAdmin: false)
 		) === true) {
 			return false;
 		}
 
-		return $this->rbac->hasRowPermission(schema: $schema, action: 'read', row: $object) === true;
+		return $this->rbac->hasRowPermission(ask: new RbacPermissionAsk(schema: $schema, action: 'read'), row: $object) === true;
 	}//end readableUnder()
 }//end class

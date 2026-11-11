@@ -23,8 +23,9 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use Exception;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
@@ -106,7 +107,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 		$link = $this->storedLink(cachedAt: null);
 		$this->mapper->method('findByObjectUuid')->willReturn([$link]);
 		$this->provider->expects($this->once())->method('get')
-			->with('3', '4', 'obj-1', 'Main.Old')
+			->with(new ObjectRef(register: '3', schema: '4', id: 'obj-1'), 'Main.Old')
 			->willReturn(['reference' => 'Main.Old', 'title' => 'New', 'space' => 'Docs', 'url' => 'https://new']);
 		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
 
@@ -202,7 +203,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 
 	public function testCreateFallsBackToTheGivenSpaceTitleAndReference(): void {
 		$this->provider->expects($this->once())->method('create')
-			->with('3', '4', 'obj-1', ['space' => 'Docs', 'title' => 'Page'])
+			->with(new ObjectRef(register: '3', schema: '4', id: 'obj-1'), ['space' => 'Docs', 'title' => 'Page'])
 			->willReturn(['url' => '']);
 
 		$link = $this->service->createAndLinkPage($this->target(), new XwikiPageDraft('  Docs ', ' Page '));
@@ -245,7 +246,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 	}//end testAnEmptyResolvedReferenceFallsBackToTheGivenOne()
 
 	public function testBrowseRowsFallBackToIdForReferenceAndTitleAndSkipNonArrays(): void {
-		$this->provider->expects($this->once())->method('list')->with('', '', '', ['_search' => 'x'])
+		$this->provider->expects($this->once())->method('list')->with(new ObjectRef(register: '', schema: '', id: ''), ['_search' => 'x'])
 			->willReturn([['id' => 'A.B', 'url' => 7], 'junk']);
 
 		$result = $this->service->getAvailablePages('x');
@@ -272,7 +273,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 
 	public function testSearchSendsTrimmedQueryAndPage(): void {
 		$this->provider->expects($this->once())->method('list')
-			->with('', '', '', ['_limit' => 10, '_page' => 3, '_search' => 'q'])
+			->with(new ObjectRef(register: '', schema: '', id: ''), ['_limit' => 10, '_page' => 3, '_search' => 'q'])
 			->willReturn([]);
 
 		$this->assertSame(['results' => [], 'total' => 0, 'limit' => 10, 'offset' => 25], $this->service->searchPages(new ListQuery(limit: 10, offset: 25, search: '  q ')));

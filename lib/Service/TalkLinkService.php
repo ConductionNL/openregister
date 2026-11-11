@@ -257,25 +257,34 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 * @spec openspec/specs/integration-talk/spec.md
 	 */
 	public function invite(ExternalInvitation $invitation): array {
-		$link = $this->talkLinkMapper->findByObjectAndRoom($invitation->objectUuid, $invitation->roomToken);
-		if ($link === null) {
-			throw new Exception('Talk link not found', 404);
-		}
-
+		$link = $this->invitedRoomLink(invitation: $invitation);
 		$this->assertInviteAllowed(link: $link, email: $invitation->email);
 
-		$user = $this->runtime->userSession()->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
-
-		$targets = $this->resolveInviteTargets(roomToken: $invitation->roomToken, userUid: $user->getUID());
+		$targets = $this->resolveInviteTargets(roomToken: $invitation->roomToken, userUid: $this->requireUserUid());
 		if ($targets['degraded'] === true) {
 			return ['invited' => false, 'unavailable' => true, 'cause' => $targets['cause']];
 		}
 
 		return $this->sendInvite(targets: $targets, invitation: $invitation);
 	}//end invite()
+
+	/**
+	 * The link of the room an invitation is for.
+	 *
+	 * @param ExternalInvitation $invitation The object, room and invitee.
+	 *
+	 * @return TalkLink
+	 *
+	 * @throws Exception When the object does not link the room (404).
+	 */
+	private function invitedRoomLink(ExternalInvitation $invitation): TalkLink {
+		$link = $this->talkLinkMapper->findByObjectAndRoom($invitation->objectUuid, $invitation->roomToken);
+		if ($link === null) {
+			throw new Exception('Talk link not found', 404);
+		}
+
+		return $link;
+	}//end invitedRoomLink()
 
 	/**
 	 * Refuse an invite whose schema has not opted in, or whose email is malformed.
@@ -351,10 +360,7 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 */
 	private function sendInvite(array $targets, ExternalInvitation $invitation): array {
 		$email = $invitation->email;
-		$resolvedDisplayName = $invitation->displayName;
-		if ($resolvedDisplayName === null || $resolvedDisplayName === '') {
-			$resolvedDisplayName = $email;
-		}
+		$resolvedDisplayName = $this->inviteeDisplayName(invitation: $invitation);
 
 		try {
 			$targets['participantService']->addUsers($targets['room'], [
@@ -367,6 +373,22 @@ class TalkLinkService implements TalkLinkServiceInterface {
 
 		return ['invited' => true, 'actorType' => 'emails', 'actorId' => $email];
 	}//end sendInvite()
+
+	/**
+	 * The name an invitee is shown under: the given display name, else the email address.
+	 *
+	 * @param ExternalInvitation $invitation The object, room and invitee.
+	 *
+	 * @return string
+	 */
+	private function inviteeDisplayName(ExternalInvitation $invitation): string {
+		$resolvedDisplayName = $invitation->displayName;
+		if ($resolvedDisplayName === null || $resolvedDisplayName === '') {
+			$resolvedDisplayName = $invitation->email;
+		}
+
+		return $resolvedDisplayName;
+	}//end inviteeDisplayName()
 
 	/**
 	 * Whether a schema opts into external (non-Nextcloud-user) Talk participants.
@@ -461,20 +483,32 @@ class TalkLinkService implements TalkLinkServiceInterface {
 			return $cachedRow;
 		}
 
+		return ($this->freshRoomRow(link: $link, run: $run) ?? $cachedRow);
+	}//end refreshedRow()
+
+	/**
+	 * A stale link's row refreshed from its Talk room and cached on the link.
+	 *
+	 * @param TalkLink       $link The stale link row.
+	 * @param RoomRefreshRun $run  The Talk manager and the reading user.
+	 *
+	 * @return array<string,mixed>|null The refreshed row, or null when the room is gone or cannot be read (logged at debug).
+	 */
+	private function freshRoomRow(TalkLink $link, RoomRefreshRun $run): ?array {
 		try {
 			$session = new TalkSession(manager: $run->manager, userUid: $run->userUid);
 			$room = $this->talk->findRoom(session: $session, roomToken: $link->getRoomToken());
 			if ($room === null) {
-				return $cachedRow;
+				return null;
 			}
 
 			return $this->cacheRoom(link: $link, cache: $this->extractRoomFields(room: $room, userUid: $run->userUid));
 		} catch (Throwable $e) {
 			// Stale link — keep cached row as-is.
 			$this->runtime->logger()->debug('Stale talk link for room ' . $link->getRoomToken() . ': ' . $e->getMessage());
-			return $cachedRow;
+			return null;
 		}
-	}//end refreshedRow()
+	}//end freshRoomRow()
 
 	/**
 	 * Write freshly read room fields onto the link row and persist it.

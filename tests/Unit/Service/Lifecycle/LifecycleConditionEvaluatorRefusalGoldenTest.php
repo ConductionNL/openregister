@@ -51,16 +51,11 @@ class LifecycleConditionEvaluatorRefusalGoldenTest extends TestCase {
 			static fn (string $text, array $parameters = []): string => 'T:' . vsprintf($text, $parameters)
 		);
 
-		return new LifecycleConditionEvaluator(
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			new LifecycleConditionReporting($l10n, $this->logger),
-			new ConditionDialect(
+		return new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck(new ConditionDialect(
 				ast: new CalculationEvaluator(
 					placeholders: new PlaceholderResolver(userSession: $this->createMock(IUserSession::class))
 				)
-			)
-		);
+			), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))));
 	}//end evaluator()
 
 	protected function setUp(): void {

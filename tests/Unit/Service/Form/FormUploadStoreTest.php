@@ -240,10 +240,10 @@ class FormUploadStoreTest extends TestCase {
 		$token = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024], file: $this->upload('%PDF-1.7'))['token'];
 		$this->store->claim(tokens: [$token], draftId: 'draft-1');
 
-		$this->assertNull($this->store->redeem(formId: 'form-1', property: 'bijlage', token: $token, draftId: 'draft-1'));
+		$this->assertNull($this->store->redeem(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: 'draft-1'), token: $token));
 		foreach ([['form-1', 'bijlage', 'draft-2'], ['form-1', 'other', 'draft-1'], ['form-2', 'bijlage', 'draft-1'], ['form-1', 'bijlage', null]] as [$form, $property, $draft]) {
 			try {
-				$this->store->redeem(formId: $form, property: $property, token: $token, draftId: $draft);
+				$this->store->redeem(claim: new FormUploadClaim(formId: $form, property: $property, draftId: $draft), token: $token);
 				$this->fail('A claimed token was redeemed by the wrong asker.');
 			} catch (FormSubmitRefusedException $refused) {
 				$this->assertSame(422, $refused->getStatus());
@@ -262,11 +262,11 @@ class FormUploadStoreTest extends TestCase {
 		$target = new FormUploadTarget(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024]);
 		$token = $this->store->issueFor(target: $target, file: $this->upload('%PDF-1.7'))['token'];
 
-		$file = $this->store->redeemClaim(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: null), token: $token);
+		$file = $this->store->redeem(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: null), token: $token);
 		$this->assertSame('bewijs.pdf', $file['name']);
 
 		$this->store->claim(tokens: [$token], draftId: 'draft-1');
-		$this->assertNull($this->store->redeemClaim(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: 'draft-1'), token: $token));
+		$this->assertNull($this->store->redeem(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: 'draft-1'), token: $token));
 
 		$this->expectException(FormSubmitRefusedException::class);
 		$this->store->issueFor(target: new FormUploadTarget(formId: 'form-1', property: 'title', rule: ['type' => 'string']), file: $this->upload('x'));
@@ -280,7 +280,7 @@ class FormUploadStoreTest extends TestCase {
 		$this->store->claim(tokens: [$token]);
 
 		$this->expectException(FormSubmitRefusedException::class);
-		$this->store->redeem(formId: 'form-1', property: 'bijlage', token: $token, draftId: 'draft-1');
+		$this->store->redeem(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: 'draft-1'), token: $token);
 	}//end testAFinalClaimLeavesNoRecord()
 
 	/**
@@ -290,17 +290,17 @@ class FormUploadStoreTest extends TestCase {
 		$one = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024], file: $this->upload('a'))['token'];
 		$two = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024], file: $this->upload('b'))['token'];
 
-		$this->assertSame('bewijs.pdf', $this->store->redeem(formId: 'form-1', property: 'bijlage', token: $one)['name']);
+		$this->assertSame('bewijs.pdf', $this->store->redeem(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: null), token: $one)['name']);
 		try {
-			$this->store->redeem(formId: 'form-1', property: 'andere', token: $one);
+			$this->store->redeem(claim: new FormUploadClaim(formId: 'form-1', property: 'andere', draftId: null), token: $one);
 			$this->fail('A token for another property was redeemed.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame('upload-token-unknown', $refused->getFindings()[0]['code']);
 		}
 
 		$this->store->claimPlanned(plans: [['tokens' => [$one]], ['tokens' => [$two]]], draftId: 'draft-1');
-		$this->assertNull($this->store->redeem(formId: 'form-1', property: 'bijlage', token: $one, draftId: 'draft-1'));
-		$this->assertNull($this->store->redeem(formId: 'form-1', property: 'bijlage', token: $two, draftId: 'draft-1'));
+		$this->assertNull($this->store->redeem(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: 'draft-1'), token: $one));
+		$this->assertNull($this->store->redeem(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: 'draft-1'), token: $two));
 		$this->store->claimPlanned(plans: []);
 	}//end testRedeemRefusesAnotherPropertyAndClaimPlannedClaimsEveryToken()
 }//end class

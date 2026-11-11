@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCP\IL10N;
@@ -49,11 +50,11 @@ class RouterNodeRulesBehaviourTest extends TestCase {
 	public function testARuleWithoutAnOutputIsSkippedEvenWhenItMatches(): void {
 		$router = new RouterNode($this->l10n, $this->createMock(IURLGenerator::class));
 
-		$out = $router->execute(
-			[FlowItems::item(json: ['status' => 'open'])],
-			['rules' => [['output' => ' ', 'condition' => true], ['output' => 'open', 'condition' => ['==' => [['var' => 'json.status'], 'open']]]]],
-			[]
-		);
+		$out = $router->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['status' => 'open'])],
+			config: ['rules' => [['output' => ' ', 'condition' => true], ['output' => 'open', 'condition' => ['==' => [['var' => 'json.status'], 'open']]]]],
+			context: []
+		));
 
 		self::assertSame('open', $out[0][FlowItems::OUTPUT]);
 	}//end testARuleWithoutAnOutputIsSkippedEvenWhenItMatches()
@@ -61,8 +62,8 @@ class RouterNodeRulesBehaviourTest extends TestCase {
 	public function testRulesThatAreNotAListLeaveOnlyTheFallback(): void {
 		$router = new RouterNode($this->l10n, $this->createMock(IURLGenerator::class));
 
-		$routed = $router->execute([FlowItems::item(json: ['a' => 1])], ['rules' => 'status == open', 'default' => 'other'], []);
-		$dropped = $router->execute([FlowItems::item(json: ['a' => 1])], ['rules' => 'status == open'], []);
+		$routed = $router->execute(new FlowNodeCall(items: [FlowItems::item(json: ['a' => 1])], config: ['rules' => 'status == open', 'default' => 'other'], context: []));
+		$dropped = $router->execute(new FlowNodeCall(items: [FlowItems::item(json: ['a' => 1])], config: ['rules' => 'status == open'], context: []));
 
 		self::assertSame('other', $routed[0][FlowItems::OUTPUT]);
 		self::assertSame([], $dropped);
@@ -72,6 +73,6 @@ class RouterNodeRulesBehaviourTest extends TestCase {
 		$switch = new SwitchNode($this->l10n, $this->createMock(IURLGenerator::class));
 		$items = [FlowItems::item(json: ['a' => 1]), FlowItems::item(json: ['a' => 2])];
 
-		self::assertSame($items, $switch->execute($items, ['rules' => [['output' => 'x', 'condition' => false]]], []));
+		self::assertSame($items, $switch->execute(new FlowNodeCall(items: $items, config: ['rules' => [['output' => 'x', 'condition' => false]]], context: [])));
 	}//end testTheLegacySwitchPassesItsItemsThroughUntouched()
 }//end class

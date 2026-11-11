@@ -41,138 +41,111 @@ jest.mock(
 			},
 		),
 )
-// vue-material-design-icons ships ESM .vue files that this repo's jest
-// transform chain does not compile (no existing spec imports icons). Stub
-// each imported icon so the component options object can be required.
+// Stub each imported icon so the rendered markup stays independent of the
+// icon library.
 jest.mock(
 	'vue-material-design-icons/AccountCheckOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/AccountSearch.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/AlertCircleOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/AlertOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Archive.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ArrowLeft.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/BankOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/CheckCircleOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/CheckboxMarkedCircleOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ClipboardTextClockOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ClockOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/DatabaseSearchOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Download.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/EyeOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/FileDocumentEditOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/FileDocumentOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Magnify.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/MagnifyClose.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Marker.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/OpenInNew.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Pencil.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Plus.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Refresh.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ShieldAlertOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ShieldLockOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/TrashCanOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 
 const computedCall = (key, ctx) => AvgIndex.computed[key].call(ctx)

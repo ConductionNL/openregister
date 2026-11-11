@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\DenialQuestion;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -458,8 +459,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		$handler = $this->handlerFor('ana', ['waarnemers']);
 
 		$denial = $handler->denialFor(
-			['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]],
-			'read',
+			new DenialQuestion(authorization: ['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]], action: 'read'),
 			'ana'
 		);
 
@@ -557,8 +557,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		$handler = $this->handlerInMode('ana', ['waarnemers'], DenyEnforcementMode::MODE_STAGING);
 
 		$denial = $handler->denialFor(
-			['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]],
-			'read',
+			new DenialQuestion(authorization: ['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]], action: 'read'),
 			'ana'
 		);
 

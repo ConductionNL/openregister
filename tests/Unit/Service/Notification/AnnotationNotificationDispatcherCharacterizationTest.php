@@ -44,17 +44,25 @@ use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationCoalescer;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\OutboundTransportInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Service\Notification\MailingRequest;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\CoalesceBucket;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCP\Activity\IEvent;
 use OCP\Activity\IManager as IActivityManager;
@@ -383,8 +391,8 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
 		$party = $this->createMock(PartyNotificationService::class);
 		$party->method('notifyParties')->willReturnCallback(
-			function (...$args) use ($case): array {
-				$this->record(what: 'parties.notifyParties', args: $args);
+			function (PartyMessage $message, ?string $role = null) use ($case): array {
+				$this->record(what: 'parties.notifyParties', args: [$message->objectUuid, $message->subject, $message->body, $role, $message->category]);
 				if (($case['partiesNone'] ?? false) === true) {
 					return [];
 				}
@@ -394,8 +402,9 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		);
 
 		$addresses = $this->createMock(ReferencedAddressNotifier::class);
-		$addresses->method('notify')->willReturnCallback(
-			function (...$args): array {
+		$addresses->method('mail')->willReturnCallback(
+			function (ReferenceOrigin $origin, MailingRequest $request): array {
+				$args = [$origin->object, $origin->data, $request->recipients, $request->subject, $request->body, $request->category, $origin->schema];
 				$this->record(what: 'addresses.notify', args: $args);
 				return [
 					['field' => 'mail', 'outcome' => EmailSender::OUTCOME_DISPATCHED],
@@ -494,8 +503,9 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
 		$coalescer = $this->createMock(NotificationCoalescer::class);
 		$coalescer->method('shouldDispatch')->willReturnCallback(
-			function (string $ruleId, string $recipient, ?array $perRuleOverride) use ($prefix): bool {
-				$this->record(what: 'coalescer.shouldDispatch', args: [$ruleId, $recipient, $perRuleOverride]);
+			function (CoalesceBucket $bucket, ?array $perRuleOverride) use ($prefix): bool {
+				$recipient = $bucket->recipient;
+				$this->record(what: 'coalescer.shouldDispatch', args: [$bucket->ruleId, $recipient, $perRuleOverride]);
 				if ($recipient === '__talk__') {
 					return (($perRuleOverride['blockTalk'] ?? false) !== true);
 				}
@@ -559,9 +569,11 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		$preferences = null;
 		if (($case['noPreferences'] ?? false) !== true) {
 			$preferences = $this->createMock(NotificationPreferenceService::class);
-			$preferences->method('resolveEffective')->willReturnCallback(
-				function (array $schemaDefault, string $userId, string $schemaSlug, string $notificationKey, array $scopes = []) use ($prefix): array {
-					$this->record(what: 'preferences.resolveEffective', args: [$userId, $schemaSlug, $notificationKey, $scopes]);
+			$preferences->method('resolve')->willReturnCallback(
+				function (PreferenceResolution $resolution) use ($prefix): array {
+					$userId = $resolution->userId;
+					$topic  = $resolution->topic;
+					$this->record(what: 'preferences.resolve', args: [$userId, $topic->schemaSlug, $topic->notificationKey, $topic->scopes]);
 					if ($prefix($userId, 'off-') === true) {
 						return ['enabled' => false, 'channels' => null];
 					}
@@ -609,15 +621,34 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		$time->method('getDateTime')->willReturn(new DateTime('2026-07-12T20:15:00+02:00'));
 
 		$ncSender = $this->createMock(NcNotificationSender::class);
-		$ncSender->method('send')->willReturnCallback(
-			function (...$args): string {
-				$this->record(what: 'nc.send', args: $args);
+		$ncSender->method('notify')->willReturnCallback(
+			function (InAppNotice $notice): string {
+				$this->record(what: 'nc.send', args: [
+					$notice->uid,
+					$notice->object,
+					$notice->content->subjectKey,
+					$notice->rule->name,
+					$notice->content->subject,
+					$notice->content->message,
+					$notice->content->context,
+					$notice->rule->originApp,
+					$notice->rule->actions,
+					$notice->rule->webPushActive,
+				]);
 				return 'dispatched';
 			}
 		);
-		$ncSender->method('enqueueWebPush')->willReturnCallback(
-			function (...$args): void {
-				$this->record(what: 'nc.enqueueWebPush', args: $args);
+		$ncSender->method('enqueuePush')->willReturnCallback(
+			function (PushRideAlong $push): void {
+				$this->record(what: 'nc.enqueueWebPush', args: [
+					$push->recipients,
+					$push->rule->name,
+					$push->rule->originApp,
+					$push->content->subject,
+					$push->content->message,
+					$push->rule->actions,
+					$push->object,
+				]);
 			}
 		);
 
@@ -638,9 +669,9 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		);
 
 		$resolver = $this->createMock(NotificationRecipientResolver::class);
-		$resolver->method('resolveWithDiagnostics')->willReturnCallback(
-			function (array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = [], array $roleGroups = []) use ($case): array {
-				$this->record(what: 'resolver.resolveWithDiagnostics', args: [$recipientsSpec, $data, $object, $context, $roleGroups]);
+		$resolver->method('resolveFromSource')->willReturnCallback(
+			function (array $recipientsSpec, RecipientSource $source) use ($case): array {
+				$this->record(what: 'resolver.resolveFromSource', args: [$recipientsSpec, $source->data, $source->object, $source->context, $source->roleGroups]);
 				return ['uids' => ($case['uids'] ?? []), 'unresolved' => ($case['unresolved'] ?? [])];
 			}
 		);

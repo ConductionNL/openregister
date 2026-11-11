@@ -143,6 +143,27 @@ class ReportRenderServiceCharacterisationTest extends TestCase {
 		$this->assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $service->render($this->dashboard(), 'xlsx')['mime']);
 	}//end testHtmlAndSpreadsheetFormats()
 
+	public function testIncompleteDataSourcesResolveToNoDataWithoutACall(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+		$dashboard = [
+			'titel' => null,
+			'title' => 'Fallback Title',
+			'widgets' => [
+				['dataSource' => ['register' => 'zaken', 'schema' => 'zaak', 'aggregation' => '']],
+				['dataSource' => ['mode' => 'aggregation', 'register' => '', 'schema' => 'zaak', 'aggregation' => 'x']],
+				['dataSource' => ['mode' => 'graphql', 'graphqlQuery' => '']],
+				['dataSource' => ['mode' => 'graphql']],
+				['dataSource' => 'not-an-array'],
+			],
+		];
+
+		$rendered = $this->service($logger)->render($dashboard, 'pdf');
+
+		$this->assertMatchesRegularExpression('/^fallback-title_\d{4}-\d{2}-\d{2}_\d{6}\.pdf$/', $rendered['filename']);
+		$this->assertSame('%PDF ' . json_encode([null, [null, null, null, null, null]]), $rendered['bytes']);
+	}//end testIncompleteDataSourcesResolveToNoDataWithoutACall()
+
 	public function testUntitledDashboardIsNamedDashboard(): void {
 		$rendered = $this->service()->render(['widgets' => []], 'csv');
 		$this->assertMatchesRegularExpression('/^dashboard_\d{4}-\d{2}-\d{2}_\d{6}\.csv$/', $rendered['filename']);

@@ -103,11 +103,57 @@ class PartyDefinition {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public static function fromAnnotation(array $annotation): self {
+		return new self(
+			kind: (self::text(value: ($annotation['kind'] ?? null)) ?? self::DEFAULT_KIND),
+			properties: self::propertyNames(annotation: $annotation),
+			maxDepth: self::depth(value: ($annotation['maxDepth'] ?? null)),
+			merge: self::mergeRules(annotation: $annotation),
+		);
+	}//end fromAnnotation()
+
+	/**
+	 * The properties a party's name, addresses, indicators and parent live in.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-party` value.
+	 *
+	 * @return PartyPropertyNames The property names, defaulted.
+	 */
+	private static function propertyNames(array $annotation): PartyPropertyNames {
+		return new PartyPropertyNames(
+			nameProperty: self::text(value: ($annotation['nameProperty'] ?? null)),
+			addressesProperty: (self::text(value: ($annotation['addressesProperty'] ?? null)) ?? 'addresses'),
+			indicatorsProperty: (self::text(value: ($annotation['indicatorsProperty'] ?? null)) ?? 'indicators'),
+			parentProperty: self::text(value: ($annotation['parentProperty'] ?? null)),
+		);
+	}//end propertyNames()
+
+	/**
+	 * How two parties merge: which properties survive and whether addresses are united.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-party` value.
+	 *
+	 * @return PartyMergeRules The rules, defaulted.
+	 */
+	private static function mergeRules(array $annotation): PartyMergeRules {
 		$merge = ($annotation['merge'] ?? []);
 		if (is_array($merge) === false) {
 			$merge = [];
 		}
 
+		return new PartyMergeRules(
+			survivingProperties: self::survivorsIn(merge: $merge),
+			unionAddresses: (($merge['unionAddresses'] ?? true) !== false),
+		);
+	}//end mergeRules()
+
+	/**
+	 * The merge block's surviving properties, trimmed and without empties.
+	 *
+	 * @param array<string, mixed> $merge The merge block.
+	 *
+	 * @return array<int, string> The properties.
+	 */
+	private static function survivorsIn(array $merge): array {
 		$surviving = [];
 		foreach ((array)($merge['survivingProperties'] ?? []) as $property) {
 			$property = trim((string)$property);
@@ -116,21 +162,8 @@ class PartyDefinition {
 			}
 		}
 
-		return new self(
-			kind: (self::text(value: ($annotation['kind'] ?? null)) ?? self::DEFAULT_KIND),
-			properties: new PartyPropertyNames(
-				nameProperty: self::text(value: ($annotation['nameProperty'] ?? null)),
-				addressesProperty: (self::text(value: ($annotation['addressesProperty'] ?? null)) ?? 'addresses'),
-				indicatorsProperty: (self::text(value: ($annotation['indicatorsProperty'] ?? null)) ?? 'indicators'),
-				parentProperty: self::text(value: ($annotation['parentProperty'] ?? null)),
-			),
-			maxDepth: self::depth(value: ($annotation['maxDepth'] ?? null)),
-			merge: new PartyMergeRules(
-				survivingProperties: $surviving,
-				unionAddresses: (($merge['unionAddresses'] ?? true) !== false),
-			),
-		);
-	}//end fromAnnotation()
+		return $surviving;
+	}//end survivorsIn()
 
 	/**
 	 * The kind of party objects of this schema are.

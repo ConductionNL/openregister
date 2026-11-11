@@ -57,13 +57,9 @@ final class SyncScheduleService implements SyncScheduleInterface {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function isDueForSync(Source $source, DateTimeInterface $now): bool {
-		if ($source->getSyncEnabled() !== true) {
-			return false;
-		}
-
 		// Skip sources whose previous execution is still in progress
 		// (overlap protection).
-		if ($source->getLastSyncStatus() === 'running') {
+		if ($source->getSyncEnabled() !== true || $source->getLastSyncStatus() === 'running') {
 			return false;
 		}
 
@@ -73,15 +69,26 @@ final class SyncScheduleService implements SyncScheduleInterface {
 			return true;
 		}
 
-		$intervalHours = $source->getSyncInterval();
-		if ($intervalHours === null || $intervalHours <= 0) {
-			$intervalHours = self::DEFAULT_INTERVAL_HOURS;
-		}
-
 		$hoursPassed = ($now->getTimestamp() - $lastSync->getTimestamp()) / 3600;
 
-		return $hoursPassed >= $intervalHours;
+		return $hoursPassed >= self::intervalHoursOf(source: $source);
 	}//end isDueForSync()
+
+	/**
+	 * The source's sync interval in hours, or the default when none is set.
+	 *
+	 * @param Source $source The source.
+	 *
+	 * @return int The interval in hours.
+	 */
+	private static function intervalHoursOf(Source $source): int {
+		$intervalHours = $source->getSyncInterval();
+		if ($intervalHours === null || $intervalHours <= 0) {
+			return self::DEFAULT_INTERVAL_HOURS;
+		}
+
+		return $intervalHours;
+	}//end intervalHoursOf()
 
 	/**
 	 * Select the subset of sources that are due for sync at $now.

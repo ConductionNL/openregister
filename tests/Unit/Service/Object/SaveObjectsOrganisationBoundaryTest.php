@@ -222,7 +222,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$orgs->method('getOrganisationForNewEntity')->willReturn('org-a');
 
 		return new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $mapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $userSession, organisationService: $orgs, groupManager: $groupManager),
 			reporting: new BulkSaveReporting(logger: $logger),
 			checks: new BulkRowChecks(permissionHandler: $permissionHandler, validateHandler: $this->createMock(ValidateObject::class))

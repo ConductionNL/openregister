@@ -49,6 +49,9 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapperInterface;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 use Symfony\Component\Uid\Uuid;
@@ -333,22 +336,22 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	public function recordUse(AccessLink $link, AccessLinkUse $use): void {
 		if ($use->object !== null) {
 			try {
-				$this->useLog->auditTrail->createAuditTrailEntry(
-					object: $use->object,
-					action: $use->act,
-					context: array_merge(
-						$use->context,
-						[
-							'accessLink' => $link->getUuid(),
-							'capabilities' => $link->declaredCapabilities(),
-							'subjectType' => $link->getSubjectType(),
-							'subjectId' => $link->getSubjectId(),
-							'ipAddress' => $use->ipAddress,
-						]
-					),
-					actorId: $link->principalId(),
-					actorName: $link->principalName(),
-					ipAddress: $use->ipAddress
+				$this->useLog->auditTrail->recordObjectEvent(
+					event: new ObjectAuditEvent(
+						object: $use->object,
+						action: $use->act,
+						context: array_merge(
+							$use->context,
+							[
+								'accessLink' => $link->getUuid(),
+								'capabilities' => $link->declaredCapabilities(),
+								'subjectType' => $link->getSubjectType(),
+								'subjectId' => $link->getSubjectId(),
+								'ipAddress' => $use->ipAddress,
+							]
+						),
+						options: new ObjectAuditEventOptions(actor: new NamedActor(id: $link->principalId(), name: $link->principalName()), ipAddress: $use->ipAddress)
+					)
 				);
 			} catch (Throwable $failure) {
 				// An audit write that fails must be visible, and it must not
@@ -558,32 +561,59 @@ class AccessLinkService implements AccessLinkServiceInterface {
 		$declared = [AccessLink::CAP_READ];
 
 		foreach ($capabilities as $candidate) {
-			if (is_string($candidate) === false) {
-				throw new InvalidArgumentException('A capability must be named as a string.');
-			}
-
-			$name = strtolower(trim($candidate));
-			if ($name === '') {
-				continue;
-			}
-
-			if (in_array($name, AccessLink::CAPABILITIES, true) === false) {
-				throw new InvalidArgumentException(
-					sprintf(
-						"'%s' is not a link capability: use %s.",
-						$name,
-						implode(', ', AccessLink::CAPABILITIES)
-					)
-				);
-			}
-
-			if (in_array($name, $declared, true) === false) {
+			$name = $this->capabilityName(candidate: $candidate);
+			if ($name !== '' && in_array($name, $declared, true) === false) {
 				$declared[] = $name;
 			}
 		}
 
 		return $declared;
 	}//end normaliseCapabilities()
+
+	/**
+	 * One requested capability, lower-cased and trimmed; '' for a blank one.
+	 *
+	 * @param mixed $candidate The requested capability.
+	 *
+	 * @return string The capability name, or ''.
+	 *
+	 * @throws InvalidArgumentException When it is not a string, or not a capability this app knows.
+	 */
+	private function capabilityName(mixed $candidate): string {
+		if (is_string($candidate) === false) {
+			throw new InvalidArgumentException('A capability must be named as a string.');
+		}
+
+		$name = strtolower(trim($candidate));
+		if ($name === '') {
+			return '';
+		}
+
+		$this->assertKnownCapability(name: $name);
+
+		return $name;
+	}//end capabilityName()
+
+	/**
+	 * Refuse a capability this app does not know.
+	 *
+	 * @param string $name The lower-cased capability name.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not one of AccessLink::CAPABILITIES.
+	 */
+	private function assertKnownCapability(string $name): void {
+		if (in_array($name, AccessLink::CAPABILITIES, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					"'%s' is not a link capability: use %s.",
+					$name,
+					implode(', ', AccessLink::CAPABILITIES)
+				)
+			);
+		}
+	}//end assertKnownCapability()
 
 	/**
 	 * The end date a link must carry.

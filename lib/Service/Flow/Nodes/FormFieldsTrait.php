@@ -34,32 +34,26 @@ trait FormFieldsTrait {
 	/**
 	 * One optional form field.
 	 *
-	 * @param string $key   The config key the field writes.
-	 * @param string $label The translated label.
-	 * @param string $type  The input type, such as `text`, `textarea`, `number` or `boolean`.
-	 * @param string $help  The translated help text.
+	 * @param NodeFormField $field The config key, the translated label and help, and the input type.
 	 *
 	 * @return array{key: string, label: string, type: string, help: string} The field.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
 	 */
-	private function field(string $key, string $label, string $type, string $help): array {
-		return ['key' => $key, 'label' => $label, 'type' => $type, 'help' => $help];
+	private function field(NodeFormField $field): array {
+		return ['key' => $field->key, 'label' => $field->label, 'type' => $field->type, 'help' => $field->help];
 	}//end field()
 
 	/**
 	 * One required form field.
 	 *
-	 * @param string $key   The config key the field writes.
-	 * @param string $label The translated label.
-	 * @param string $type  The input type, such as `text` or `textarea`.
-	 * @param string $help  The translated help text.
+	 * @param NodeFormField $field The config key, the translated label and help, and the input type.
 	 *
 	 * @return array{key: string, label: string, type: string, help: string, required: true} The field.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
 	 */
-	private function requiredField(string $key, string $label, string $type, string $help): array {
-		return $this->field(key: $key, label: $label, type: $type, help: $help) + ['required' => true];
+	private function requiredField(NodeFormField $field): array {
+		return $this->field(field: $field) + ['required' => true];
 	}//end requiredField()
 }//end trait

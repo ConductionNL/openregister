@@ -109,28 +109,6 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	}//end __construct()
 
 	/**
-	 * Read the configured slug/UUID for a register from app config.
-	 *
-	 * Honours the documented naming convention (`<context>_register`
-	 * preferred; bare `register` grandfathered).
-	 *
-	 * @param string $appId Consumer app id.
-	 * @param string $configKey Config key to read.
-	 * @param string|null $default Fallback value if config unset.
-	 * @param string|null $organisationUuid Optional org override (unused here, kept for signature parity).
-	 *
-	 * @return string The configured slug or UUID.
-	 *
-	 * @throws MissingConfigException If the config is unset and no default was provided.
-	 *
-	 * @spec openspec/specs/register-resolver-service/spec.md
-	 *   (Requirement: resolveRegisterId)
-	 */
-	public function resolveRegisterId(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
-		return $this->lookupId(lookup: new ConfigLookup(appId: $appId, configKey: $configKey, default: $default, organisationUuid: $organisationUuid));
-	}//end resolveRegisterId()
-
-	/**
 	 * Read the configured slug/UUID/name of a lookup from app config.
 	 *
 	 * @param ConfigLookup $lookup The app, config key and fallback to read.
@@ -167,28 +145,6 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 
 		throw new MissingConfigException(appId: $lookup->appId, configKey: $lookup->configKey);
 	}//end defaultOrThrow()
-
-	/**
-	 * Read the configured slug/UUID for a schema from app config.
-	 *
-	 * @param string $appId Consumer app id.
-	 * @param string $configKey Config key to read.
-	 * @param string|null $default Fallback value if config unset.
-	 * @param string|null $organisationUuid Optional org override (unused here, kept for signature parity).
-	 *
-	 * @return string The configured slug or UUID.
-	 *
-	 * @throws MissingConfigException If the config is unset and no default was provided.
-	 *
-	 * @spec openspec/specs/register-resolver-service/spec.md
-	 *   (Requirement: resolveSchemaId)
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The organisationUuid parameter is reserved for
-	 * signature parity with resolveRegisterId; pure id reads never need it.
-	 */
-	public function resolveSchemaId(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
-		return $this->lookupId(lookup: new ConfigLookup(appId: $appId, configKey: $configKey, default: $default));
-	}//end resolveSchemaId()
 
 	/**
 	 * Resolve a configured register lookup to a hydrated Register entity, cached per request.
