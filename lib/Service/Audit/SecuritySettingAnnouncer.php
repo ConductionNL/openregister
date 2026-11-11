@@ -315,13 +315,7 @@ class SecuritySettingAnnouncer {
 	private function deliver(string $uid, array $parameters): int {
 		$path = (string)$parameters['setting'];
 		try {
-			$notification = $this->recipients->notifications->createNotification();
-			$notification->setApp('openregister')
-				->setUser($uid)
-				->setDateTime(new DateTime())
-				->setObject('security_setting', $path)
-				->setSubject(self::SUBJECT, $parameters);
-			$this->recipients->notifications->notify($notification);
+			$this->notify(uid: $uid, parameters: $parameters);
 		} catch (Throwable $deliveryFailed) {
 			$this->logger->warning(
 				message: '[SecuritySettingAnnouncer] Could not announce a security setting change: '
@@ -334,4 +328,22 @@ class SecuritySettingAnnouncer {
 
 		return 1;
 	}//end deliver()
+
+	/**
+	 * Send the announcement notification to one administrator.
+	 *
+	 * @param string               $uid        The administrator.
+	 * @param array<string, mixed> $parameters The notification subject parameters; `setting` is the object id.
+	 *
+	 * @return void
+	 */
+	private function notify(string $uid, array $parameters): void {
+		$notification = $this->recipients->notifications->createNotification();
+		$notification->setApp('openregister')
+			->setUser($uid)
+			->setDateTime(new DateTime())
+			->setObject('security_setting', (string)$parameters['setting'])
+			->setSubject(self::SUBJECT, $parameters);
+		$this->recipients->notifications->notify($notification);
+	}//end notify()
 }//end class

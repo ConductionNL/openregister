@@ -195,6 +195,18 @@ class HistoryEntryRedactor {
 			$changed['cascadeContext'] = $this->filterCascade(cascade: $changed['cascadeContext'], hidden: $run->hidden);
 		}
 
+		return $this->withFilteredSelf(run: $run, changed: $changed);
+	}//end filterChanged()
+
+	/**
+	 * Filter the old and new `@self` metadata of a change, when it carries any.
+	 *
+	 * @param HistoryRedactionRun  $run     The redaction run.
+	 * @param array<string, mixed> $changed The change, its properties already filtered.
+	 *
+	 * @return array<string, mixed> The change with each `@self` side filtered.
+	 */
+	private function withFilteredSelf(HistoryRedactionRun $run, array $changed): array {
 		if (is_array($changed['@self'] ?? null) === false) {
 			return $changed;
 		}
@@ -206,7 +218,7 @@ class HistoryEntryRedactor {
 		}
 
 		return $changed;
-	}//end filterChanged()
+	}//end withFilteredSelf()
 
 	/**
 	 * The cascade context of a referential-integrity entry, as a reader is given it.
@@ -338,6 +350,18 @@ class HistoryEntryRedactor {
 			$self['relations'] = $this->filterRelations(run: $run, relations: $self['relations']);
 		}
 
+		return $this->withoutWithheldCopies(run: $run, self: $self);
+	}//end filterSelf()
+
+	/**
+	 * Null each metadata field that the schema copies from a property the reader may not see.
+	 *
+	 * @param HistoryRedactionRun  $run  The redaction run.
+	 * @param array<string, mixed> $self One side of the `@self` metadata.
+	 *
+	 * @return array<string, mixed> That side, withheld copies set to null.
+	 */
+	private function withoutWithheldCopies(HistoryRedactionRun $run, array $self): array {
 		$hidden = $run->withheld();
 		$configuration = ($run->schema->getConfiguration() ?? []);
 		foreach (RenderObject::METADATA_COPIES as $configKey => $field) {
@@ -350,7 +374,7 @@ class HistoryEntryRedactor {
 		}
 
 		return $self;
-	}//end filterSelf()
+	}//end withoutWithheldCopies()
 
 	/**
 	 * The relations mirror without write-only paths and withheld properties.

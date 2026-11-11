@@ -198,15 +198,28 @@ class JwtValidator {
 			throw $this->invalid(reason: 'Token algorithm does not match issuer configuration');
 		}
 
+		$this->assertSupported(algorithm: $algorithm);
+
+		return $algorithm;
+	}//end pinnedAlgorithm()
+
+	/**
+	 * Refuse an algorithm this validator cannot verify.
+	 *
+	 * @param string $algorithm The issuer's pinned algorithm.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the algorithm is not supported.
+	 */
+	private function assertSupported(string $algorithm): void {
 		if (in_array($algorithm, self::SUPPORTED_ALGORITHMS, true) === false) {
 			throw new AuthenticationException(
 				message: 'The token algorithm is not supported',
 				details: ['algorithm' => $algorithm]
 			);
 		}
-
-		return $algorithm;
-	}//end pinnedAlgorithm()
+	}//end assertSupported()
 
 	/**
 	 * Refuse a token whose signature does not verify with the pinned key.

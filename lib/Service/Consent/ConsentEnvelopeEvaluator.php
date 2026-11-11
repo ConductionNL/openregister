@@ -193,11 +193,24 @@ final class ConsentEnvelopeEvaluator implements ConsentEnvelopeEvaluatorInterfac
 		$entry['userAgent'] = $stamp->source->userAgent;
 		$entry['contentHash'] = hash('sha256', $stamp->purpose . $decision . $evidenceOf);
 
-		$entry['withdrawnAt'] = null;
-		if ($decision === 'withdrawn') {
-			$entry['withdrawnAt'] = $timestamp;
-		}
+		$entry['withdrawnAt'] = $this->withdrawnAt(decision: $decision, timestamp: $timestamp);
 
 		return $entry;
 	}//end fillEvidence()
+
+	/**
+	 * When a consent entry was withdrawn: its own timestamp for a withdrawal, null otherwise.
+	 *
+	 * @param string $decision  The entry's decision.
+	 * @param string $timestamp The entry's server-stamped timestamp.
+	 *
+	 * @return string|null The withdrawal moment, or null.
+	 */
+	private function withdrawnAt(string $decision, string $timestamp): ?string {
+		if ($decision === 'withdrawn') {
+			return $timestamp;
+		}
+
+		return null;
+	}//end withdrawnAt()
 }//end class
