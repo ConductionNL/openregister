@@ -9,10 +9,10 @@ namespace Unit\Controller;
 // phpcs:disable Squiz.PHP.DisallowInlineIf.Found -- PHPUnit fixture defaults.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
-use OCA\OpenRegister\Files\Service\NoteEdit;
-use OCA\OpenRegister\Files\Service\NoteDraft;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\NotesControllerFactory;
 use Exception;
 use OCA\OpenRegister\Notifications\Controller\NotesController;

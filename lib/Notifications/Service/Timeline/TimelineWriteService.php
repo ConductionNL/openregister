@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
-use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;

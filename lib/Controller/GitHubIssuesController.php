@@ -51,6 +51,9 @@ use OCP\ICache;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSelection;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSubmission;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueText;
 
 /**
  * Class GitHubIssuesController.
@@ -211,12 +214,14 @@ class GitHubIssuesController extends Controller {
 
 		try {
 			$result = $this->services->domain->githubHandler->listIssues(
-				owner: $owner,
-				repo: $repoName,
-				state: $listing->state,
-				sort: $listing->sort,
-				perPage: $listing->perPage,
-				labels: $labels
+				selection: new GitHubIssueSelection(
+					owner: $owner,
+					repo: $repoName,
+					state: $listing->state,
+					sort: $listing->sort,
+					perPage: $listing->perPage,
+					labels: $labels
+				)
 			);
 		} catch (Exception $e) {
 			return $this->mapHandlerException(exception: $e, isRead: true);
@@ -300,12 +305,8 @@ class GitHubIssuesController extends Controller {
 
 		try {
 			$result = $this->services->domain->githubHandler->createIssue(
-				owner: $owner,
-				repo: $repoName,
-				title: $draft->title,
-				body: $draft->body,
-				specRef: $draft->specRef,
-				userId: $uid
+				submission: new GitHubIssueSubmission(owner: $owner, repo: $repoName, userId: $uid, specRef: $draft->specRef),
+				text: new GitHubIssueText(title: $draft->title, body: $draft->body)
 			);
 		} catch (Exception $e) {
 			return $this->mapHandlerException(exception: $e, isRead: false);

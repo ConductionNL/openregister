@@ -22,7 +22,7 @@ namespace Unit\Service\Merge;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Merge\MergeInstruction;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Service\Merge\MergePair;
 use OCA\OpenRegister\Service\Merge\MergeReportingServices;
 use OCA\OpenRegister\Service\Merge\MergeRun;

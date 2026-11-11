@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -732,7 +733,9 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 		$uuids = [];
 		foreach ($this->teardownGuard()->rows->all(register: $run->register, schema: $schema) as $object) {
 			$context = (['snapshot' => $object->jsonSerialize()] + $baseContext);
-			$this->stores->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::ACTION_CASCADE_DELETE, context: $context);
+			$this->stores->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(object: $object, action: self::ACTION_CASCADE_DELETE, context: $context)
+			);
 			if ($object->getUuid() !== null) {
 				$uuids[] = (string)$object->getUuid();
 			}

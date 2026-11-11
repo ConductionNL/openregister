@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use DateTime;
 use OCA\OpenRegister\Controller\ProcessingLogController;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
 use OCA\OpenRegister\Db\ProcessingLogReadScope;

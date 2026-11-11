@@ -633,6 +633,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function computeFingerprint(array $objectData, array $watchedFields): string {
 		if ($watchedFields === []) {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 			return sha1('constant');
 		}
 
@@ -647,6 +648,7 @@ final class ScheduledNotificationJob extends TimedJob {
 			$encoded = var_export($payload, true);
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return sha1($encoded);
 	}//end computeFingerprint()
 }//end class

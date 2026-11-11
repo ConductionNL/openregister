@@ -7,11 +7,11 @@ namespace Unit\Service;
 // phpcs:disable Squiz.PHP.DisallowInlineIf.Found -- PHPUnit fixture defaults.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
-use OCA\OpenRegister\Files\Service\NoteEdit;
-use OCA\OpenRegister\Files\Service\NoteDraft;
-use OCA\OpenRegister\Files\Service\NoteAuthor;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteAuthor;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -395,7 +395,7 @@ class NoteServiceTest extends TestCase {
 		// kept BEFORE the comment is saved: afterwards it exists nowhere.
 		$this->versions->expects($this->once())
 			->method('record')
-			->with(1, $this->callback(self::noteReading(message: 'Applicant called', actor: 'a')), 'a');
+			->with($this->callback(self::noteReading(message: 'Applicant called', actor: 'a')), 'a');
 		$comment->expects($this->once())
 			->method('setMessage')
 			->with('Applicant called, will send documents');
@@ -413,7 +413,7 @@ class NoteServiceTest extends TestCase {
 
 		$this->versions->expects($this->once())
 			->method('record')
-			->with(1, $this->callback(self::noteReading(message: 'msg', actor: 'handler')), 'supervisor');
+			->with($this->callback(self::noteReading(message: 'msg', actor: 'handler')), 'supervisor');
 
 		$this->service->editNote(1, new NoteEdit(message: 'rewritten', visibility: null, mayManage: true));
 	}

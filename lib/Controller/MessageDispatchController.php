@@ -51,6 +51,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -211,9 +212,11 @@ class MessageDispatchController extends Controller {
 	private function sendThroughProvider(string $source, string $path): array {
 		return $this->provider->dispatch(
 			source: $source,
-			body: $this->arrayParam(name: 'body'),
-			path: $path,
-			headers: $this->stringifyHeaders(headers: $this->arrayParam(name: 'headers')),
+			message: new OutboundMessage(
+				path: $path,
+				body: $this->arrayParam(name: 'body'),
+				headers: $this->stringifyHeaders(headers: $this->arrayParam(name: 'headers'))
+			),
 		);
 	}//end sendThroughProvider()
 

@@ -66,10 +66,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
-use OCA\OpenRegister\Files\Service\NoteEdit;
-use OCA\OpenRegister\Files\Service\NoteDraft;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskLeafGuard;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;

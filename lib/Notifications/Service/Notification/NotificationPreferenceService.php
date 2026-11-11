@@ -49,6 +49,8 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
@@ -280,28 +282,6 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 		return $this->scopedKeyFor(address: $address->scopedOrGlobal(), groupId: $groupId);
 	}//end groupKeyFor()
 
-	/**
-	 * Read a group's stored default, or null when the group has none.
-	 *
-	 * @param string $groupId The group id.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param string|null $scope The scope, or null for the group's global default.
-	 *
-	 * @return array<string, mixed>|null The decoded default, or null when none/invalid.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
-	 */
-	public function getGroupDefault(
-		string $groupId,
-		string $schemaSlug,
-		string $notificationKey,
-		?string $scope = null,
-	): ?array {
-		$address = new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope);
-
-		return $this->groupDefaultAt(groupId: $groupId, address: $address);
-	}//end getGroupDefault()
 
 	/**
 	 * Read a group's stored default at a preference address, or null when the group has none.
@@ -319,27 +299,6 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 		return self::decodedValue(raw: $this->config->getAppValue(self::APP_NAME, $key, ''));
 	}//end groupDefaultAt()
 
-	/**
-	 * Write or clear a group's default.
-	 *
-	 * Passing null clears it, so the layer below — the schema default — applies
-	 * again. The caller is responsible for having established that the writer
-	 * administers this group; this method stores what it is given.
-	 *
-	 * @param string $groupId The group id.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param array<string, mixed>|null $default The default (`enabled`, optional `channels`) or null to clear.
-	 * @param string|null $scope The scope, or null for the group's global default.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
-	 */
-	public function setGroupDefault(string $groupId, string $schemaSlug, string $notificationKey, ?array $default, ?string $scope = null): void {
-		$address = new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope);
-		$this->storeGroupDefault(write: new PreferenceWrite(party: $groupId, address: $address, value: $default));
-	}//end setGroupDefault()
 
 	/**
 	 * Write or clear a group's default; the write's party is the group id.
@@ -445,30 +404,6 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 		return $clean;
 	}//end cleanValue()
 
-	/**
-	 * Read a user's stored override for a `(schemaSlug, notificationKey)`
-	 * pair. Returns null when no override is stored (fall through to the
-	 * schema default) — never throws for an unknown key.
-	 *
-	 * @param string $userId The user UID.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param string|null $scope The scope, or null for the user's global value.
-	 *
-	 * @return array<string, mixed>|null The decoded override, or null when none/invalid.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
-	 */
-	public function getOverride(
-		string $userId,
-		string $schemaSlug,
-		string $notificationKey,
-		?string $scope = null,
-	): ?array {
-		$address = new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope);
-
-		return $this->overrideAt(userId: $userId, address: $address);
-	}//end getOverride()
 
 	/**
 	 * Read a user's stored override at a preference address, or null when none is stored.
@@ -521,25 +456,6 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 		return $decoded;
 	}//end decodedValue()
 
-	/**
-	 * Write or clear a user's override for one `(schemaSlug, notificationKey)`
-	 * pair. Passing null clears the override so the schema default applies
-	 * again (zero-migration fall-through).
-	 *
-	 * @param string $userId The user UID.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param array<string, mixed>|null $override Override body (`enabled`, optional `channels`) or null to clear.
-	 * @param string|null $scope The scope, or null for the user's global value.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
-	 */
-	public function setOverride(string $userId, string $schemaSlug, string $notificationKey, ?array $override, ?string $scope = null): void {
-		$address = new PreferenceAddress(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scope: $scope);
-		$this->storeOverride(write: new PreferenceWrite(party: $userId, address: $address, value: $override));
-	}//end setOverride()
 
 	/**
 	 * Write or clear a user's override; the write's party is the user UID.
@@ -563,8 +479,7 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	}//end storeOverride()
 
 	/**
-	 * Resolve the EFFECTIVE preference for a `(schemaSlug, notificationKey)`
-	 * pair as `schema-default ⊕ group-default ⊕ user-override`.
+	 * Resolve the effective preference as `schema-default ⊕ group-default ⊕ user-override`.
 	 *
 	 * Three layers, narrowest party last: the schema says what the rule does by
 	 * default, the groups the user belongs to may change it for the team, and
@@ -579,37 +494,6 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	 *
 	 * Unknown keys with no stored value at any layer resolve to the schema
 	 * default without error, exactly as before.
-	 *
-	 * @param array<string, mixed> $schemaDefault The notification spec block from the schema (provides `enabled`/`channels`).
-	 * @param string $userId The user UID.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param array<int, string> $scopes Candidate scopes for this dispatch, narrowest first (e.g. `['schema:zaak', 'register:7']`).
-	 * @param array<int, string>|null $groupIds The user's groups; read from the group manager when null.
-	 *
-	 * @return array{enabled: bool, channels: array<int, string>|null, source: string, scope: string, layers: array<int, array<string, mixed>>}
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The merge's inputs: the default, the party, the scope.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
-	 */
-	public function resolveEffective(
-		array $schemaDefault,
-		string $userId,
-		string $schemaSlug,
-		string $notificationKey,
-		array $scopes = [],
-		?array $groupIds = null,
-	): array {
-		$topic = new PreferenceTopic(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scopes: $scopes);
-
-		return $this->resolve(resolution: new PreferenceResolution(schemaDefault: $schemaDefault, userId: $userId, topic: $topic, groupIds: $groupIds));
-	}//end resolveEffective()
-
-	/**
-	 * Resolve the effective preference as `schema-default ⊕ group-default ⊕ user-override`.
-	 *
-	 * See {@see resolveEffective()} for the layers and the shape of the answer.
 	 *
 	 * @param PreferenceResolution $resolution The rule's default, the user, the topic and the user's groups.
 	 *
@@ -971,13 +855,13 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	 * @return array<string, mixed> The entry, without the schema fields.
 	 */
 	private function entry(DeclaredNotification $declared, array $reader): array {
-		$effective = $this->resolveEffective(
-			schemaDefault: $declared->spec,
-			userId: $reader['userId'],
-			schemaSlug: $declared->schemaSlug,
-			notificationKey: $declared->key,
-			scopes: $reader['scopes'],
-			groupIds: $reader['groupIds']
+		$effective = $this->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: $declared->spec,
+				userId: $reader['userId'],
+				topic: new PreferenceTopic(schemaSlug: $declared->schemaSlug, notificationKey: $declared->key, scopes: $reader['scopes']),
+				groupIds: $reader['groupIds']
+			)
 		);
 
 		return ['notification' => $declared->key] + self::entryFields(effective: $effective, spec: $declared->spec);

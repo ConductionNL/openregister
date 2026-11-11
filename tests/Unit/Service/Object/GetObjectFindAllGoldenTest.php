@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -26,6 +28,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectListRequest;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use PHPUnit\Framework\TestCase;
@@ -87,11 +92,11 @@ class GetObjectFindAllGoldenTest extends TestCase {
 					return 'live';
 				}
 
-				public function find(Register $register, Schema $schema, string $id, array $config=[]): ?ObjectEntity {
+				public function find(SourcedTable $source, string $id): ?ObjectEntity {
 					return null;
 				}
 
-				public function count(Register $register, Schema $schema, array $query=[], array $config=[]): int {
+				public function count(SourcedTable $source, array $query = []): int {
 					return 0;
 				}
 
@@ -99,7 +104,10 @@ class GetObjectFindAllGoldenTest extends TestCase {
 					return $this->enabled;
 				}
 
-				public function findAll(Register $register, Schema $schema, array $query=[], array $config=[]): array {
+				public function findAll(SourcedTable $source, array $query = []): array {
+					$register = $source->table->register;
+					$schema   = $source->table->schema;
+					$config   = $source->config;
 					$this->calls[] = ['source', $register->getId(), $schema->getId(), $query, $config];
 					return [['live' => true]];
 				}
@@ -143,6 +151,28 @@ class GetObjectFindAllGoldenTest extends TestCase {
 		return $schema;
 	}//end schema()
 
+	/**
+	 * The listing request a case's named arguments describe.
+	 *
+	 * @param array<string, mixed> $args The case.
+	 *
+	 * @return ObjectListRequest
+	 */
+	private static function request(array $args): ObjectListRequest {
+		return new ObjectListRequest(
+			query: new ListQuery(
+				limit: ($args['limit'] ?? ListQuery::UNBOUNDED),
+				offset: ($args['offset'] ?? null),
+				filters: ($args['filters'] ?? []),
+				sort: ($args['sort'] ?? []),
+				search: ($args['search'] ?? null)
+			),
+			scope: new ReadScope(register: ($args['register'] ?? null), schema: ($args['schema'] ?? null)),
+			selection: new ObjectSelection(ids: ($args['ids'] ?? null), uses: ($args['uses'] ?? null)),
+			files: ($args['files'] ?? false)
+		);
+	}//end request()
+
 	public function testEveryRouteMatchesTheGolden(): void {
 		$register = new Register();
 		$register->setId(9);
@@ -159,7 +189,11 @@ class GetObjectFindAllGoldenTest extends TestCase {
 		$actual = [];
 		foreach ($cases as $name => $args) {
 			$this->calls = [];
-			$rows = $this->getObject()->findAll(...$args);
+			$rows = $this->getObject()->findAll(
+				request: self::request(args: $args),
+				_rbac: ($args['_rbac'] ?? true),
+				_multitenancy: ($args['_multitenancy'] ?? true)
+			);
 			$actual[$name] = [
 				'rows'  => array_map(static fn ($row) => $row instanceof ObjectEntity ? [$row->getUuid(), $row->getObject()] : $row, $rows),
 				'calls' => $this->calls,

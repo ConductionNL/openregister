@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Timeline;
 
-use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Notifications\Service\Timeline\WrittenEntry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryDerivations;
@@ -47,7 +47,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Drives the services through the collaborators they build.

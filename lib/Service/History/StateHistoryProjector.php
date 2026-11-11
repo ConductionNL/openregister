@@ -151,7 +151,18 @@ class StateHistoryProjector implements StateHistoryProjectorInterface, StateHist
 			return null;
 		}
 
-		$annotation = (($schema->getConfiguration() ?? [])['x-openregister-lifecycle'] ?? null);
+		return $this->lifecycleField(configuration: ($schema->getConfiguration() ?? []));
+	}//end declaredProperty()
+
+	/**
+	 * The `field` (else `property`) of a schema configuration's `x-openregister-lifecycle` block.
+	 *
+	 * @param array $configuration The schema configuration.
+	 *
+	 * @return string|null The declared property name, or null when the block names none.
+	 */
+	private function lifecycleField(array $configuration): ?string {
+		$annotation = ($configuration['x-openregister-lifecycle'] ?? null);
 		if (is_array($annotation) === false) {
 			return null;
 		}
@@ -162,5 +173,5 @@ class StateHistoryProjector implements StateHistoryProjectorInterface, StateHist
 		}
 
 		return $field;
-	}//end declaredProperty()
+	}//end lifecycleField()
 }//end class

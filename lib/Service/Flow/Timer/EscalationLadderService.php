@@ -221,7 +221,14 @@ class EscalationLadderService {
 			return $this->calculator->sub(from: $timeline->fireAt, value: $offset, unit: $unit, calendar: $timeline->calendar);
 		}
 
-		return $this->calculator->add(from: $timeline->fireAt, value: $offset, unit: $unit, calendar: $timeline->calendar);
+		return $this->calculator->add(
+			addition: new SlaAddition(
+				start: DateTimeImmutable::createFromInterface($timeline->fireAt),
+				value: $offset,
+				unit: $unit,
+				calendar: $timeline->calendar
+			)
+		);
 	}//end rungInstant()
 
 	/**

@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Calendar;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use Psr\Log\LoggerInterface;
@@ -149,8 +150,7 @@ class DeadlineDateResolver {
 	private function openTimers(string $objectUuid): ?array {
 		try {
 			return $this->timers->findBySubject(
-				subjectType: 'object',
-				subjectUuid: $objectUuid,
+				subject: new TimerSubject(type: 'object', uuid: $objectUuid),
 				states: self::OPEN_STATES
 			);
 		} catch (Throwable $failure) {

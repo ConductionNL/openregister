@@ -160,7 +160,6 @@
 </template>
 
 <script>
-import { NcActionButton, NcActions } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -204,6 +203,25 @@ import { configurationStore, navigationStore } from '../../store/store.js'
  * - check-version: Check for updates
  * - preview-update: Preview available updates
  */
+/**
+ * Ask for the configurations imported for an app.
+ *
+ * @param {string} appId The app id
+ * @return {Promise<Response>} The response
+ */
+function fetchConfigurationsOfApp(appId) {
+	return fetch(
+		`/index.php/apps/openregister/api/configurations?app=${encodeURIComponent(appId)}`,
+		{
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
+		},
+	)
+}
+
 export default {
 	name: 'ConfigurationCard',
 	components: {
@@ -267,30 +285,11 @@ export default {
 		importedActions() {
 			return [
 				viewAction(() => this.handleView()),
-				{
-					label: 'Preview Update',
-					icon: EyeOutline,
-					run: () => this.handlePreviewUpdate(),
-					hidden: !this.hasUpdateAvailable,
-				},
-				{
-					label: 'Check Version',
-					icon: Sync,
-					run: () => this.handleCheckVersion(),
-					hidden: !this.isRemoteConfiguration,
-				},
+				previewUpdateAction(this),
+				checkVersionAction(this),
 				editAction(() => this.handleEdit()),
-				{
-					label: 'Export',
-					icon: Download,
-					run: () => this.handleExport(),
-				},
-				{
-					label: this.isPublished ? 'Update Published' : 'Publish',
-					icon: CloudUploadOutline,
-					run: () => this.handlePublish(),
-					hidden: !this.isPublished && !this.isLocalConfiguration,
-				},
+				exportAction(this),
+				publishAction(this),
 				deleteAction(() => this.handleDelete()),
 			]
 		},
@@ -361,22 +360,7 @@ export default {
 
 			// Not in store, create a minimal config object for display
 			// with properties needed for version checking
-			return {
-				id: this.importedConfigId,
-				app: this.appId,
-				title: this.configuration.config?.title || this.appId,
-				description: this.configuration.config?.description || '',
-				sourceType: 'github', // Assume github for discovered configs
-				isLocal: false,
-				// Version info from discovered config
-				localVersion: this.configuration.config?.version || null,
-				remoteVersion: null, // Will be fetched on check
-				// GitHub sync info
-				githubRepo: this.configuration.repository,
-				githubBranch: this.configuration.branch || 'main',
-				githubPath: this.configuration.path,
-				syncEnabled: true,
-			}
+			return importedStandIn(this)
 		},
 
 		/**
@@ -389,23 +373,10 @@ export default {
 		displayConfiguration() {
 			if (this.isDiscovered && this.existingConfiguration) {
 				// Merge discovered metadata with local configuration
-				return {
-					...this.existingConfiguration,
-					repository: this.configuration.repository, // Full repo name (owner/repo)
-					organization: this.configuration.organization,
-					stars: this.configuration.stars,
-					url: this.configuration.url,
-					owner: this.configuration.owner, // Repository owner
-					repo: this.configuration.repo, // Repository name
-					// Ensure isLocal and sourceType are preserved
-					isLocal:
-						this.existingConfiguration.isLocal
-						?? this.configuration.isLocal,
-
-					sourceType:
-						this.existingConfiguration.sourceType
-						?? this.configuration.sourceType,
-				}
+				return withDiscoveredMetadata(
+					this.existingConfiguration,
+					this.configuration,
+				)
 			}
 			// For imported configurations, ensure we have the properties
 			const config = this.configuration || {}
@@ -573,12 +544,7 @@ export default {
 
 			// Try to extract from sourceUrl
 			if (config.sourceUrl) {
-				const githubMatch = config.sourceUrl.match(
-					/github\.com\/([^/]+\/[^/]+)/,
-				)
-				if (githubMatch) {
-					return githubMatch[1].replace(/\/blob\/.*$/, '')
-				}
+				return githubRepoIn(config.sourceUrl)
 			}
 
 			return null
@@ -658,49 +624,40 @@ export default {
 			this.checkingImportStatus = true
 
 			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/configurations?app=${encodeURIComponent(this.appId)}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							Accept: 'application/json',
-						},
-					},
-				)
-
+				const response = await fetchConfigurationsOfApp(this.appId)
 				if (response.ok) {
 					const data = await response.json()
-
-					// Check if we got results
-					if (data.results && data.results.length > 0) {
-						const importedConfig = data.results[0]
-
-						// Configuration exists! Store the ID and add to store if not present
-						this.importedConfigId = importedConfig.id
-
-						// Add to store if not already there (for pagination support)
-						const existsInStore =
-							configurationStore.configurationList.find(
-								(c) => c.id === importedConfig.id,
-							)
-						if (!existsInStore) {
-							configurationStore.configurationList.push(importedConfig)
-						}
-
-						// Debug logging removed for production
-					} else {
-						// Not imported
-						this.importedConfigId = null
-						// Debug logging removed for production
-					}
+					this.rememberImported(data.results)
 				}
 			} catch {
-				// Debug logging removed for production
 				// On error, assume not imported
 				this.importedConfigId = null
 			} finally {
 				this.checkingImportStatus = false
+			}
+		},
+
+		/**
+		 * Remember the configuration the app was imported as, adding it to the
+		 * store when it is not there yet (for pagination support), or that the
+		 * app was not imported.
+		 *
+		 * @param {Array<object>|undefined} results The configurations of the app
+		 * @return {void}
+		 */
+		rememberImported(results) {
+			if (!(results && results.length > 0)) {
+				// Not imported
+				this.importedConfigId = null
+				return
+			}
+			const importedConfig = results[0]
+			this.importedConfigId = importedConfig.id
+			const existsInStore = configurationStore.configurationList.find(
+				(c) => c.id === importedConfig.id,
+			)
+			if (!existsInStore) {
+				configurationStore.configurationList.push(importedConfig)
 			}
 		},
 
@@ -811,6 +768,142 @@ export default {
 			}
 		},
 	},
+}
+
+/**
+ * The Preview Update action, shown when an update is available.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The action
+ */
+function previewUpdateAction(card) {
+	return {
+		label: 'Preview Update',
+		icon: EyeOutline,
+		run: () => card.handlePreviewUpdate(),
+		hidden: !card.hasUpdateAvailable,
+	}
+}
+
+/**
+ * The Check Version action, shown for a remote configuration.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The action
+ */
+function checkVersionAction(card) {
+	return {
+		label: 'Check Version',
+		icon: Sync,
+		run: () => card.handleCheckVersion(),
+		hidden: !card.isRemoteConfiguration,
+	}
+}
+
+/**
+ * The Export action.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The action
+ */
+function exportAction(card) {
+	return {
+		label: 'Export',
+		icon: Download,
+		run: () => card.handleExport(),
+	}
+}
+
+/**
+ * The Publish (or Update Published) action, shown for a published or a local
+ * configuration.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The action
+ */
+function publishAction(card) {
+	return {
+		label: card.isPublished ? 'Update Published' : 'Publish',
+		icon: CloudUploadOutline,
+		run: () => card.handlePublish(),
+		hidden: !card.isPublished && !card.isLocalConfiguration,
+	}
+}
+
+/**
+ * A minimal stand-in for an imported configuration the store does not hold,
+ * with what the card needs for display and version checks.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The configuration
+ */
+function importedStandIn(card) {
+	const discovered = card.configuration
+	return {
+		id: card.importedConfigId,
+		app: card.appId,
+		title: discovered.config?.title || card.appId,
+		description: discovered.config?.description || '',
+		sourceType: 'github', // Assume github for discovered configs
+		isLocal: false,
+		...discoveredSyncInfo(discovered),
+	}
+}
+
+/**
+ * The version and GitHub sync details of a discovered configuration.
+ *
+ * @param {object} discovered The discovered configuration
+ * @return {object} The details
+ */
+function discoveredSyncInfo(discovered) {
+	return {
+		// Version info from discovered config
+		localVersion: discovered.config?.version || null,
+		remoteVersion: null, // Will be fetched on check
+		// GitHub sync info
+		githubRepo: discovered.repository,
+		githubBranch: discovered.branch || 'main',
+		githubPath: discovered.path,
+		syncEnabled: true,
+	}
+}
+
+/**
+ * A local configuration with the repository metadata of its discovery, keeping
+ * its own isLocal and sourceType where it has them.
+ *
+ * @param {object} existing The local configuration
+ * @param {object} discovered The discovered configuration
+ * @return {object} The configuration to display
+ */
+function withDiscoveredMetadata(existing, discovered) {
+	return {
+		...existing,
+		repository: discovered.repository, // Full repo name (owner/repo)
+		organization: discovered.organization,
+		stars: discovered.stars,
+		url: discovered.url,
+		owner: discovered.owner, // Repository owner
+		repo: discovered.repo, // Repository name
+		// Ensure isLocal and sourceType are preserved
+		isLocal: existing.isLocal ?? discovered.isLocal,
+		sourceType: existing.sourceType ?? discovered.sourceType,
+	}
+}
+
+/**
+ * The owner/repo a GitHub source URL points at, if it is one.
+ *
+ * @param {string} sourceUrl The source URL
+ * @return {string|null} The repository, or null for another URL
+ */
+function githubRepoIn(sourceUrl) {
+	const githubMatch = sourceUrl.match(/github\.com\/([^/]+\/[^/]+)/)
+	if (githubMatch) {
+		return githubMatch[1].replace(/\/blob\/.*$/, '')
+	}
+	return null
 }
 </script>
 

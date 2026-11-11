@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\ICache;
@@ -152,7 +153,7 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 	 */
 	public function testFiveFailedLoginsLockOutUserAndAddress(): void {
 		for ($i = 1; $i <= 4; $i++) {
-			$this->service->recordFailedLoginAttempt('alice', '10.0.0.1');
+			$this->service->recordFailedLoginAttempt(new FailedAttempt('alice', '10.0.0.1', 'invalid_credentials'));
 		}
 
 		$this->assertSame(['allowed' => true], $this->service->checkLoginRateLimit('alice', '10.0.0.1'));
@@ -162,7 +163,7 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 		);
 
 		$this->events = [];
-		$this->service->recordFailedLoginAttempt('alice', '10.0.0.1', 'bad_password');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('alice', '10.0.0.1', 'bad_password'));
 		$this->assertSame(
 			[
 				['warning', 'user_locked_out', ['username' => 'alice', 'ip_address' => '10.0.0.1', 'attempts' => 5, 'lockout_until' => 'future']],
@@ -204,7 +205,7 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 	 */
 	public function testBlockedAddressAndProgressiveDelay(): void {
 		for ($i = 1; $i <= 5; $i++) {
-			$this->service->recordFailedLoginAttempt('user' . $i, '10.0.0.2');
+			$this->service->recordFailedLoginAttempt(new FailedAttempt('user' . $i, '10.0.0.2', 'invalid_credentials'));
 		}
 
 		$refusal = $this->service->checkLoginRateLimit('bob', '10.0.0.2');
@@ -227,7 +228,7 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 		$this->assertSame(4, $this->service->checkLoginRateLimit('bob', '10.0.0.2')['delay']);
 
 		// A cache-key-unsafe username is sanitised before it reaches a key.
-		$this->service->recordFailedLoginAttempt('a b/c', '10.0.0.3');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('a b/c', '10.0.0.3', 'invalid_credentials'));
 		$this->assertArrayHasKey('openregister_login_attempts_a_b_c', $this->store);
 	}//end testBlockedAddressAndProgressiveDelay()
 
@@ -237,8 +238,8 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testInboundAuthLocksOutAtTheIdentityCeiling(): void {
-		$this->service->recordFailedAuthAttempt('key-1', '10.0.0.9');
-		$this->service->recordFailedAuthAttempt('key-1', '10.0.0.9');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('key-1', '10.0.0.9', 'inbound_auth_failed'));
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('key-1', '10.0.0.9', 'inbound_auth_failed'));
 		$this->assertSame(['allowed' => true], $this->service->checkAuthRateLimit('key-1', '10.0.0.9'));
 		$this->assertSame(
 			['info', 'failed_auth_attempt', ['identity' => 'key-1', 'ip_address' => '10.0.0.9', 'reason' => 'inbound_auth_failed', 'attempts' => 2, 'ip_attempts' => 2, 'lockout_triggered' => false]],
@@ -246,7 +247,7 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 		);
 
 		$this->events = [];
-		$this->service->recordFailedAuthAttempt('key-1', '10.0.0.9', 'bad_token');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('key-1', '10.0.0.9', 'bad_token'));
 		$this->assertSame(
 			[
 				['warning', 'auth_locked_out', ['identity' => 'key-1', 'ip_address' => '10.0.0.9', 'attempts' => 3, 'ip_attempts' => 3, 'lockout_until' => 'future']],
@@ -273,11 +274,11 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 	 */
 	public function testInboundAuthAddressBackstop(): void {
 		for ($i = 1; $i <= 4; $i++) {
-			$this->service->recordFailedAuthAttempt('id' . $i, '10.0.0.8');
+			$this->service->recordFailedAuthAttempt(new FailedAttempt('id' . $i, '10.0.0.8', 'inbound_auth_failed'));
 		}
 
 		$this->assertSame(['allowed' => true], $this->service->checkAuthRateLimit('id4', '10.0.0.8'));
-		$this->service->recordFailedAuthAttempt('', '10.0.0.8');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('', '10.0.0.8', 'inbound_auth_failed'));
 		$this->assertSame(false, $this->service->checkAuthRateLimit('', '10.0.0.8')['allowed']);
 		$this->assertArrayHasKey('openregister_auth_lockout_anonymous_10.0.0.8', $this->store);
 		$this->assertSame(['allowed' => true], $this->service->checkAuthRateLimit('id1', '10.0.0.8'));

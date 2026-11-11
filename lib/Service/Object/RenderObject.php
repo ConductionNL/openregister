@@ -28,6 +28,9 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use Adbar\Dot;
 use Exception;
@@ -35,6 +38,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
@@ -238,7 +242,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			$register = $this->stores->mappers->registerMapper->find($id);
+			$register = $this->stores->mappers->catalog->registers()->find($id);
 			// Cache the result.
 			$this->registersCache[$id] = $register;
 			return $register;
@@ -265,7 +269,7 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			// Bypass multi-tenancy for internal schema resolution — schemas must always
 			// be accessible when resolving references, regardless of the current user's organization.
-			$schema = $this->stores->mappers->schemaMapper->find($id, _multitenancy: false);
+			$schema = $this->stores->mappers->catalog->schemas()->find($id, _multitenancy: false);
 			// Cache the result.
 			$this->schemasCache[$id] = $schema;
 			return $schema;
@@ -806,6 +810,7 @@ class RenderObject implements RenderObjectInterface {
 		// The trusted-internal-read bypass applies to property `authorization.read` and to
 		// decryption ONLY. The writeOnly strip deliberately does not consult it.
 		$pass = new RowRedaction();
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		$pass->applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
 
 		foreach ($rows as &$row) {
@@ -2617,7 +2622,7 @@ class RenderObject implements RenderObjectInterface {
 	 */
 	private function extendReads(): ExtendTargetReads {
 		$this->extendTargetReads ??= new ExtendTargetReads(
-			mapper: $this->stores->mappers->objectEntityMapper,
+			mapper: $this->stores->mappers->catalog->tables(),
 			mayRead: fn (ObjectEntity $object): bool => $this->mayReadInverse(object: $object)
 		);
 
@@ -2971,6 +2976,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private static function stripsAuthorizedProperties(?Schema $schema, bool $rbac): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $rbac !== false
 			&& SystemOperationContext::isActive() === false
 			&& $schema !== null
@@ -3724,7 +3730,7 @@ class RenderObject implements RenderObjectInterface {
 			}
 
 			try {
-				$row = $this->enrichers->translations->translationMapper->findOne($uuid, $property, $entry['served']);
+				$row = $this->enrichers->translations->translationMapper->findOne(new TranslationSlot(objectUuid: $uuid, property: $property, language: $entry['served']));
 			} catch (\Throwable $e) {
 				$row = null;
 			}
@@ -4598,10 +4604,8 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$related = $run->provider->find(
-			register: $run->register,
-			schema: $run->target,
-			id: (string)$identifier,
-			config: $run->config
+			source: new SourcedTable(table: new RegisterSchema(register: $run->register, schema: $run->target), config: $run->config),
+			id: (string)$identifier
 		);
 		if ($related === null) {
 			return $identifier;
@@ -4708,7 +4712,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$this->inverseSupport = new InverseRenderSupport(
-			mapper: $this->stores->mappers->objectEntityMapper,
+			mapper: $this->stores->mappers->catalog->tables(),
 			logger: $this->runtime->logger,
 			schemas: new InverseSchemaLookups(
 				find: fn (int|string $id): ?Schema => $this->getSchema(id: $id),
@@ -4802,7 +4806,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			return (string)$this->stores->mappers->schemaMapper->find($reference)->getId();
+			return (string)$this->stores->mappers->catalog->schemas()->find($reference)->getId();
 		} catch (\Exception $e) {
 			return null;
 		}
@@ -4829,7 +4833,7 @@ class RenderObject implements RenderObjectInterface {
 		$lastSegment = strtolower(preg_replace('/#.*$/', '', $lastSegment));
 
 		try {
-			$schemas = $this->stores->mappers->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+			$schemas = $this->stores->mappers->catalog->schemas()->findAll(_rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			return null;
 		}
@@ -4854,7 +4858,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function schemaIdBySlug(string $slug): ?string {
-		$schemas = $this->stores->mappers->schemaMapper->findAll(filters: ['slug' => $slug], _rbac: false, _multitenancy: false);
+		$schemas = $this->stores->mappers->catalog->schemas()->findAll(filters: ['slug' => $slug], _rbac: false, _multitenancy: false);
 		if (count($schemas) === 1) {
 			return (string)array_shift($schemas)->getId();
 		}

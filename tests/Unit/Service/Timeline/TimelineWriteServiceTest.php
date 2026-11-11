@@ -26,7 +26,7 @@ namespace Unit\Service\Timeline;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryDerivations;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;

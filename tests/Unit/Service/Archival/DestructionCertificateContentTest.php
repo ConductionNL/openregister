@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\ApprovalChoice;
+use OCA\OpenRegister\Service\Archival\ApprovalRequest;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\RetentionRules;
@@ -146,12 +147,7 @@ class DestructionCertificateContentTest extends TestCase {
 		];
 
 		// 1. The archivist approves through the route the ArchivalController drives.
-		$approved = $this->destructionService->approveList(
-			$list,
-			new ApprovalChoice('approve_all'),
-			false,
-			'list-uuid-42'
-		);
+		$approved = $this->destructionService->approveList($list, new ApprovalRequest(choice: new ApprovalChoice('approve_all'), requiresDual: false, listUuid: 'list-uuid-42'));
 
 		$this->assertSame(DestructionService::STATUS_APPROVED, $approved['status']);
 
@@ -193,17 +189,12 @@ class DestructionCertificateContentTest extends TestCase {
 	 * populated-looking array — but with an EMPTY approver list.
 	 */
 	public function testCertificateApproverListIsNotSilentlyEmpty(): void {
-		$approved = $this->destructionService->approveList(
-			[
+		$approved = $this->destructionService->approveList([
 				'uuid' => 'list-uuid-7',
 				'status' => DestructionService::STATUS_IN_REVIEW,
 				'approvals' => [],
 				'objects' => [['uuid' => 'obj-1', 'schema' => 1, 'classification' => 'V1']],
-			],
-			new ApprovalChoice('approve_all'),
-			false,
-			'list-uuid-7'
-		);
+			], new ApprovalRequest(choice: new ApprovalChoice('approve_all'), requiresDual: false, listUuid: 'list-uuid-7'));
 
 		$certificate = $this->retentionService->certify(new ExecutedDestruction($approved, 1, '2026-07-14T12:00:00+00:00'));
 

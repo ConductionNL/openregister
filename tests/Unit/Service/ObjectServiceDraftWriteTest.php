@@ -81,6 +81,7 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that a save cannot reach a draft its caller cannot read.
@@ -101,7 +102,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindScope
- * @uses \OCA\OpenRegister\Service\Object\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses   \OCA\OpenRegister\Service\Object\SaveAccessRequest
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
@@ -192,7 +193,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willReturn(new ValidationResult(null));
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -231,7 +232,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end setUp()
 
 	/**

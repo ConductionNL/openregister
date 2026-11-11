@@ -145,15 +145,15 @@ class SendNotificationNode extends MessagingNodeBase implements
 	 */
 	public function configForm(): array {
 		return [
-			$this->requiredField(key: 'recipients', label: $this->l10n->t('Who to tell'), type: 'text', help: $this->l10n->t(
+			$this->requiredField(field: new NodeFormField(key: 'recipients', label: $this->l10n->t('Who to tell'), type: 'text', help: $this->l10n->t(
 				'User or group ids, or a field on the item such as {{ assignee }}. Groups are expanded.'
-			)),
-			$this->formField(key: 'title', label: $this->l10n->t('Title'), type: 'text', help: $this->l10n->t(
+			))),
+			$this->formField(field: new NodeFormField(key: 'title', label: $this->l10n->t('Title'), type: 'text', help: $this->l10n->t(
 				'Placeholders such as {{ name }} read fields from the item, the same syntax a schema notification uses.'
-			)),
-			$this->requiredField(key: 'message', label: $this->l10n->t('Message'), type: 'textarea', help: $this->l10n->t(
+			))),
+			$this->requiredField(field: new NodeFormField(key: 'message', label: $this->l10n->t('Message'), type: 'textarea', help: $this->l10n->t(
 				'What the notification says. Placeholders read fields from the item.'
-			)),
+			))),
 		];
 	}//end configForm()
 

@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Controller;
 
-use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;

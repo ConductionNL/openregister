@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -67,17 +68,6 @@ interface BulkJobMapperInterface {
 	public function find(int $id): BulkJob;
 
 	/**
-	 * List every job, newest first. For the administrator's console.
-	 *
-	 * @param string|null $state Optional state filter.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
-	 *
-	 * @return BulkJob[] The jobs.
-	 */
-	public function findAllJobs(?string $state = null, ?int $limit = null, ?int $offset = null): array;
-
-	/**
 	 * List the jobs of one actor, newest first.
 	 *
 	 * @param string $startedBy The actor's uid.
@@ -108,7 +98,7 @@ interface BulkJobMapperInterface {
 	 *
 	 * @return BulkJob[] The jobs.
 	 *
-	 * @spec exclude ADR-011 ListQuery variant of findAllJobs(), no capability of its own
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function findJobs(ListQuery $query): array;
 

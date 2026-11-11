@@ -34,6 +34,7 @@ use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Calendar\DeadlineDateResolver;
 use OCA\OpenRegister\Service\Calendar\DeadlineLookup;
@@ -99,7 +100,7 @@ class DeadlineDateResolverTest extends TestCase {
 
 		$this->timers->expects($this->once())
 			->method('findBySubject')
-			->with('object', 'object-uuid', [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED])
+			->with(new TimerSubject('object', 'object-uuid'), [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED])
 			->willReturn([$timer]);
 
 		$this->calendars->expects($this->never())->method('resolve');

@@ -31,13 +31,6 @@ n8n MUST serve as the default and primary workflow engine for OpenRegister. It S
 - **AND** workflow execution MUST POST to `{baseUrl}/webhook/{workflowId}` for webhook-triggered workflows
 - **AND** workflow management MUST use `{baseUrl}/rest/workflows` for CRUD operations
 
-#### Scenario: n8n MCP integration for AI-assisted workflow creation
-- **GIVEN** the n8n MCP server is configured (via `npx n8n-mcp@latest`)
-- **WHEN** an AI agent invokes `mcp__n8n__n8n_create_workflow` or `mcp__n8n__n8n_list_workflows`
-- **THEN** the MCP server MUST interact with n8n's REST API to create, list, execute, and debug workflows
-- **AND** created workflows MUST be deployable to OpenRegister via the `WorkflowEngineInterface::deployWorkflow()` method
-- **AND** the MCP tools `n8n_test_workflow` and `n8n_executions` MUST provide execution debugging capabilities
-
 #### Scenario: Multiple engines active simultaneously
 - **GIVEN** both an n8n engine and a Windmill engine are registered in the `WorkflowEngineRegistry`
 - **WHEN** a schema has hook 1 referencing `engine: "n8n"` and hook 2 referencing `engine: "windmill"`
@@ -399,13 +392,6 @@ Workflow payloads MUST include contextual information about the register, schema
 ### Requirement: Workflows MUST support testing and dry-run execution
 Administrators MUST be able to test workflow triggers with sample data before activating them in production, to verify correct behavior and prevent data corruption.
 
-#### Scenario: Test workflow trigger via n8n MCP
-- **GIVEN** an n8n workflow `validate-org` is deployed
-- **WHEN** an admin or AI agent invokes `mcp__n8n__n8n_test_workflow` with sample object data
-- **THEN** the workflow MUST execute with the test data
-- **AND** the execution result MUST be returned without modifying any register data
-- **AND** execution details MUST be viewable via `mcp__n8n__n8n_executions`
-
 #### Scenario: Test workflow via engine adapter
 - **GIVEN** a registered engine and a deployed workflow
 - **WHEN** `WorkflowEngineInterface::executeWorkflow()` is called with test data and a mock object
@@ -461,7 +447,6 @@ Administrators MUST be able to configure event-workflow connections without codi
 - `lib/Db/DeployedWorkflow.php` + `DeployedWorkflowMapper.php` -- Deployed workflow tracking with SHA-256 hash, version, attachedSchema, attachedEvent
 - `lib/Settings/n8n_workflows.openregister.json` -- Pre-configured n8n workflow templates (workflow, trigger, webhook, schedule, notification schemas)
 - `lib/Controller/Settings/N8nSettingsController.php` -- n8n connection configuration, testing, and project initialization
-- `n8n-mcp/` -- n8n MCP integration for AI-assisted workflow creation and debugging
 
 **Implemented (workflow modifies objects):**
 - HookExecutor processes `modified` results via `setModifiedDataOnEvent()`, merging enriched data back into objects before save
@@ -480,7 +465,6 @@ Administrators MUST be able to configure event-workflow connections without codi
 - CloudEvents 1.0 Specification -- wire format for all hook payloads (`specversion: "1.0"`, structured content mode)
 - BPMN 2.0 (Business Process Model and Notation) -- conceptual model for workflow automation
 - n8n REST API (https://docs.n8n.io/api/) -- workflow CRUD, webhook triggers, execution history
-- n8n MCP (https://www.npmjs.com/package/n8n-mcp) -- AI agent integration for workflow management
 - Windmill REST API (https://app.windmill.dev/openapi.html) -- alternative engine support
 - Nextcloud ExApp API proxy (`IAppApiService`) -- secure routing to containerized engines
 - Nextcloud notification system (`OCP\Notification`) -- user notifications for approval workflows

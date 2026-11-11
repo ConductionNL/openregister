@@ -104,26 +104,67 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 	public function reset(string|int $schema, string $path): array {
 		$path = trim($path);
 		$entity = $this->schemas->find(id: $schema, _rbac: false, _multitenancy: false);
-		$slug = (string)($entity->getSlug() ?? '');
+		$outcome = self::openOutcome(schema: $entity, path: $path);
 
-		$outcome = [
-			'applied' => false,
-			'reason' => '',
-			'schema' => $slug,
-			'schemaId' => $entity->getId(),
-			'path' => $path,
-			'from' => null,
-			'to' => null,
-		];
-
-		$refusal = $this->refusal(slug: $slug, path: $path);
+		$refusal = $this->refusal(slug: $outcome['schema'], path: $path);
 		if ($refusal !== null) {
 			$outcome['reason'] = $refusal;
 			return $outcome;
 		}
 
-		$live = $this->live(schema: $entity);
-		$result = $this->guard->resetToBaseline(slug: $slug, live: $live, path: $path, record: false);
+		return self::settled(outcome: $outcome, result: $this->resetPart(schema: $entity, path: $path));
+	}//end reset()
+
+	/**
+	 * The outcome of a reset that has not happened (yet).
+	 *
+	 * @param Schema $schema The schema.
+	 * @param string $path   The part, trimmed.
+	 *
+	 * @return array{applied: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
+	 */
+	private static function openOutcome(Schema $schema, string $path): array {
+		return [
+			'applied' => false,
+			'reason' => '',
+			'schema' => (string)($schema->getSlug() ?? ''),
+			'schemaId' => $schema->getId(),
+			'path' => $path,
+			'from' => null,
+			'to' => null,
+		];
+	}//end openOutcome()
+
+	/**
+	 * Ask the guard to reset the part and, when it applies, write the schema and put it on the trail.
+	 *
+	 * @param Schema $schema The schema, written in place.
+	 * @param string $path   The part, trimmed.
+	 *
+	 * @return array{applied: bool, reason: string, from: mixed, to: mixed} The guard's answer.
+	 */
+	private function resetPart(Schema $schema, string $path): array {
+		$slug = (string)($schema->getSlug() ?? '');
+		$result = $this->guard->resetToBaseline(slug: $slug, live: $this->live(schema: $schema), path: $path, record: false);
+		if ($result['applied'] === true) {
+			$this->writePart(schema: $schema, leaf: new LeafReset(segments: explode(DescriptorParts::SEPARATOR, $path), to: $result['to']));
+			$this->schemas->update($schema);
+
+			$this->guard->recordPartReset(slug: $slug, reset: new PartReset(path: $path, from: $result['from'], to: $result['to']));
+		}
+
+		return $result;
+	}//end resetPart()
+
+	/**
+	 * The outcome once the guard answered: its from and to, and applied or its reason.
+	 *
+	 * @param array<string, mixed> $outcome The open outcome.
+	 * @param array<string, mixed> $result  The guard's answer.
+	 *
+	 * @return array{applied: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
+	 */
+	private static function settled(array $outcome, array $result): array {
 		$outcome['from'] = $result['from'];
 		$outcome['to'] = $result['to'];
 		if ($result['applied'] === false) {
@@ -131,14 +172,9 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 			return $outcome;
 		}
 
-		$this->writePart(schema: $entity, leaf: new LeafReset(segments: explode(DescriptorParts::SEPARATOR, $path), to: $result['to']));
-		$this->schemas->update($entity);
-
-		$this->guard->recordPartReset(slug: $slug, reset: new PartReset(path: $path, from: $result['from'], to: $result['to']));
-
 		$outcome['applied'] = true;
 		return $outcome;
-	}//end reset()
+	}//end settled()
 
 	/**
 	 * Why a reset cannot even be asked for, or null.

@@ -26,10 +26,10 @@ use Exception;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
-use OCA\OpenRegister\Files\Service\NoteAuthor;
-use OCA\OpenRegister\Files\Service\NoteDraft;
-use OCA\OpenRegister\Files\Service\NoteEdit;
-use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteAuthor;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
 
 /**
  * Every public method of NoteService. Callers depend on this interface, not on the class.

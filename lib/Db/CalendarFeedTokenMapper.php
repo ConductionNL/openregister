@@ -24,9 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -37,6 +35,8 @@ use OCP\IDBConnection;
  * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
 class CalendarFeedTokenMapper extends QBMapper implements CalendarFeedTokenMapperInterface {
+	use SelectByColumnTrait;
+
 
 	/**
 	 * Constructor.
@@ -65,16 +65,12 @@ class CalendarFeedTokenMapper extends QBMapper implements CalendarFeedTokenMappe
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function findByToken(string $token): ?CalendarFeedToken {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('token', $qb->createNamedParameter($token)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findOneOrNull(query: $this->selectWhere(column: new LinkColumn(name: 'token', value: $token)));
+		if ($found instanceof CalendarFeedToken) {
+			return $found;
 		}
+
+		return null;
 	}//end findByToken()
 
 	/**
@@ -87,16 +83,12 @@ class CalendarFeedTokenMapper extends QBMapper implements CalendarFeedTokenMappe
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function findById(int $id): ?CalendarFeedToken {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findOneOrNull(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
+		if ($found instanceof CalendarFeedToken) {
+			return $found;
 		}
+
+		return null;
 	}//end findById()
 
 	/**

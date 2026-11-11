@@ -38,7 +38,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -130,13 +132,13 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	/**
 	 * Combine the already-concatenated branch items.
 	 *
-	 * @param array $items The input items (all branches, concatenated).
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The combined items.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		return $this->merged(items: $items, config: $config);
 	}//end execute()
 
@@ -171,8 +173,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
 				json: (array)($item[FlowItems::JSON] ?? []),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
@@ -207,7 +208,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 
 		$out = [];
 		foreach ($order as $value) {
-			$out[] = FlowItems::item(json: $groups[$value]['json'], binary: [], fromItemIndex: $groups[$value]['from']);
+			$out[] = FlowItems::item(json: $groups[$value]['json'], options: new FlowItemOptions(binary: [], fromItemIndex: $groups[$value]['from']));
 		}
 
 		return $out;
@@ -236,8 +237,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 			$seen[$value] = true;
 			$out[] = FlowItems::item(
 				json: $json,
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 

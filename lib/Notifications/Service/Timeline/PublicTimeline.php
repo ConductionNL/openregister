@@ -48,13 +48,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
-use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Reads and projects the public timeline of one object.

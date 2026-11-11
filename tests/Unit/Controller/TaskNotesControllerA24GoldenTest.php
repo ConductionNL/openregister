@@ -26,10 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
-use OCA\OpenRegister\Files\Service\NoteEdit;
-use OCA\OpenRegister\Files\Service\NoteDraft;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use Exception;
 use OCA\OpenRegister\Controller\TaskNotesController;
 use OCA\OpenRegister\Db\Task;

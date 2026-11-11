@@ -116,9 +116,24 @@ class ChunkVectorizationJob extends TimedJob {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		[$vectorized, $failed] = $this->vectorizeBatch(logger: $logger);
+		$batch = $this->vectorizeBatch(logger: $logger);
 		$backfill = $this->runBackfill(logger: $logger, appConfig: $appConfig);
+		$this->recordRun(appConfig: $appConfig, backfill: $backfill);
 
+		$context = $this->completionContext(batch: $batch, backfill: $backfill);
+		$context['execution_time_seconds'] = round(microtime(true) - $startTime, 2);
+		$logger->info(message: '[ChunkVectorizationJob] Batch completed', context: $context);
+	}//end run()
+
+	/**
+	 * Record when the job last ran and how many rows the backfill has left.
+	 *
+	 * @param IAppConfig           $appConfig App config.
+	 * @param array<string, mixed> $backfill  The backfill outcome.
+	 *
+	 * @return void
+	 */
+	private function recordRun(IAppConfig $appConfig, array $backfill): void {
 		$appConfig->setValueString(
 			app: 'openregister',
 			key: self::CONFIG_PREFIX . 'last_run',
@@ -129,18 +144,23 @@ class ChunkVectorizationJob extends TimedJob {
 			key: self::CONFIG_PREFIX . 'backfill_remaining',
 			value: (string)$backfill['remaining']
 		);
+	}//end recordRun()
 
-		$executionTime = microtime(true) - $startTime;
-
-		$logger->info(
-			message: '[ChunkVectorizationJob] Batch completed',
-			context: [
-				'file' => __FILE__, 'line' => __LINE__, 'vectorized' => $vectorized, 'failed' => $failed,
-				'backfill_converted' => $backfill['converted'], 'backfill_failed' => $backfill['failed'],
-				'backfill_remaining' => $backfill['remaining'], 'execution_time_seconds' => round($executionTime, 2),
-			]
-		);
-	}//end run()
+	/**
+	 * The completion log context: the batch and backfill counts.
+	 *
+	 * @param array<int, int>      $batch    [vectorized count, failed count].
+	 * @param array<string, mixed> $backfill The backfill outcome.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function completionContext(array $batch, array $backfill): array {
+		return [
+			'file' => __FILE__, 'line' => __LINE__, 'vectorized' => $batch[0], 'failed' => $batch[1],
+			'backfill_converted' => $backfill['converted'], 'backfill_failed' => $backfill['failed'],
+			'backfill_remaining' => $backfill['remaining'],
+		];
+	}//end completionContext()
 
 	/**
 	 * Vectorize one batch of chunks; a provider-level failure is logged and counts as nothing done.
@@ -210,30 +230,65 @@ class ChunkVectorizationJob extends TimedJob {
 		VectorStorageHandlerInterface $storageHandler,
 		IAppConfig $appConfig,
 	): array {
-		$cursor = (int)$appConfig->getValueString(
-			app: 'openregister',
-			key: self::CONFIG_PREFIX . 'backfill_cursor',
-			default: '0'
-		);
+		$cursor = $this->backfillCursor(appConfig: $appConfig);
 
 		$result = $storageHandler->backfillEmbeddingVectors(
 			batchSize: self::BACKFILL_BATCH_SIZE,
 			afterId: $cursor
 		);
 
+		$this->storeBackfillCursor(appConfig: $appConfig, cursor: $this->nextBackfillCursor(cursor: $cursor, result: $result));
+
+		return $result;
+	}//end runWarmupBackfill()
+
+	/**
+	 * The stored backfill cursor; 0 before the first run.
+	 *
+	 * @param IAppConfig $appConfig App config (cursor storage).
+	 *
+	 * @return int The cursor.
+	 */
+	private function backfillCursor(IAppConfig $appConfig): int {
+		return (int)$appConfig->getValueString(
+			app: 'openregister',
+			key: self::CONFIG_PREFIX . 'backfill_cursor',
+			default: '0'
+		);
+	}//end backfillCursor()
+
+	/**
+	 * The cursor the next backfill run starts after.
+	 *
+	 * @param int                  $cursor The cursor this run started after.
+	 * @param array<string, mixed> $result This run's backfill outcome.
+	 *
+	 * @return int The next cursor.
+	 */
+	private function nextBackfillCursor(int $cursor, array $result): int {
 		$newCursor = (int)$result['last_id'];
 		if ($newCursor <= $cursor || (int)$result['remaining'] === 0) {
 			// Sweep finished (or made no progress): restart from the beginning
 			// next run so earlier rows and future NULL rows are re-checked.
-			$newCursor = 0;
+			return 0;
 		}
 
+		return $newCursor;
+	}//end nextBackfillCursor()
+
+	/**
+	 * Store the backfill cursor.
+	 *
+	 * @param IAppConfig $appConfig App config (cursor storage).
+	 * @param int        $cursor    The cursor.
+	 *
+	 * @return void
+	 */
+	private function storeBackfillCursor(IAppConfig $appConfig, int $cursor): void {
 		$appConfig->setValueString(
 			app: 'openregister',
 			key: self::CONFIG_PREFIX . 'backfill_cursor',
-			value: (string)$newCursor
+			value: (string)$cursor
 		);
-
-		return $result;
-	}//end runWarmupBackfill()
+	}//end storeBackfillCursor()
 }//end class

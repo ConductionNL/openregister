@@ -126,24 +126,6 @@ interface ObjectOwnershipServiceInterface {
 	 * still moved — a bulk reassignment that stops halfway leaves an
 	 * administrator with no way to know how far it got.
 	 *
-	 * @param string[] $identifiers The records, by uuid, id, slug or uri.
-	 * @param string $newOwner The uid of the new owner.
-	 * @param bool $cascade Whether the change carries to each record's children.
-	 *
-	 * @throws NotAuthorizedException When the caller is not an administrator.
-	 * @throws InvalidArgumentException When no such user exists, or no record was named.
-	 *
-	 * @return array{newOwner: string, transferred: array, failed: array, unchanged: array}
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
-	 *
-	 * @spec openspec/specs/object-ownership/spec.md
-	 */
-	public function reassignMany(array $identifiers, string $newOwner, bool $cascade = false): array;
-
-	/**
-	 * Reassign many records to one owner, as reassignMany() does, for a reassignment already built.
-	 *
 	 * @param string[]              $identifiers  The records, by uuid, id, slug or uri.
 	 * @param OwnershipReassignment $reassignment The new owner and whether the change carries to each record's children.
 	 *

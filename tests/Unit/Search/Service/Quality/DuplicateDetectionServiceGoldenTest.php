@@ -170,7 +170,7 @@ class DuplicateDetectionServiceGoldenTest extends TestCase {
 		$register = ($case['register'] ?? 1);
 		return match ($case['call']) {
 			'find' => $service->findDuplicates(request: new DedupRun(register: $register, schema: 1, matchRules: ($case['rules'] ?? null), threshold: ($case['threshold'] ?? null))),
-			'check' => $service->checkCandidate($register, 1, $case['candidate'], ($case['threshold'] ?? null)),
+			'check' => $service->checkCandidate(new DedupRun(register: $register, schema: 1, threshold: ($case['threshold'] ?? null)), $case['candidate']),
 			'threshold' => $service->effectiveThreshold(request: new DedupRun(register: $register, schema: 1, threshold: ($case['threshold'] ?? null))),
 			'rules' => $service->effectiveRules($register, 1),
 			'annotation' => $service->dedupAnnotation($register, 1),

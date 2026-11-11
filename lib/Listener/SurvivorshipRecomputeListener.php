@@ -44,6 +44,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -262,10 +264,8 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 */
 	private function sourcesOf(SurvivorshipRecomputeRun $run): array {
 		return $this->resolvers->sourceRecordResolver->resolveSources(
-			masterData: $run->data,
-			masterUuid: (string)$run->object?->getUuid(),
-			config: $run->config,
-			masterRegister: (string)$run->object?->getRegister()
+			master: new MasterRecord(data: $run->data, uuid: (string)$run->object?->getUuid(), register: (string)$run->object?->getRegister()),
+			config: $run->config
 		);
 	}//end sourcesOf()
 
@@ -285,16 +285,18 @@ class SurvivorshipRecomputeListener implements IEventListener {
 		$trustRows = $this->loadTrustRows(entityType: $entityType);
 		$overridesField = self::fieldName(config: $run->config, key: 'overridesField');
 
-		return $this->resolvers->resolver->resolveGoldenRecord(
-			sourceRecords: $sourceRecords,
-			config: $run->config,
-			trust: new SurvivorshipTrustLookup(
-				entityType: $entityType,
-				trustRows: $trustRows,
-				trustResolver: $this->resolvers->trustResolver,
-				asOf: new DateTimeImmutable()
-			),
-			overrides: ($run->data[$overridesField] ?? null)
+		return $this->resolvers->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sourceRecords,
+				config: $run->config,
+				trust: new SurvivorshipTrustLookup(
+					entityType: $entityType,
+					trustRows: $trustRows,
+					trustResolver: $this->resolvers->trustResolver,
+					asOf: new DateTimeImmutable()
+				),
+				overrides: ($run->data[$overridesField] ?? null)
+			)
 		);
 	}//end resolve()
 

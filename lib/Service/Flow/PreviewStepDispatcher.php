@@ -94,7 +94,7 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 	private function previewStep(IFlowNode $node, DryRunStep $step): array {
 		if ($node instanceof IFlowSideEffectFree) {
 			$this->previews[$step->nodeId] = ['performed' => true, 'summary' => $node->getDisplayName()];
-			return $node->execute(items: $step->items, config: $step->config, context: $step->context);
+			return $node->execute(call: $step->nodeCall());
 		}
 
 		// A described step is never executed, so its own check has to run here
@@ -117,7 +117,7 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 	 */
 	private function describe(IFlowNode $node, DryRunStep $step): array {
 		if ($node instanceof IFlowNodePreview) {
-			return array_merge(['performed' => false], $node->preview(items: $step->items, config: $step->config, context: $step->context));
+			return array_merge(['performed' => false], $node->preview(call: $step->nodeCall()));
 		}
 
 		return ['performed' => false, 'summary' => $node->getDisplayName() . ' would run'];

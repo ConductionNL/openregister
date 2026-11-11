@@ -35,9 +35,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Sharing;
 
-use OCA\OpenRegister\Files\Service\NoteDraft;
-use OCA\OpenRegister\Files\Service\NoteAuthor;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteAuthor;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
@@ -107,7 +109,10 @@ class AccessLinkActs implements AccessLinkActsInterface {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
 	public function upload(LinkAct $act, LinkFile $file): array {
-		$stored = $this->files->addFile(objectEntity: $act->object, fileName: $file->fileName, content: $file->content, share: false);
+		$stored = $this->files->addFile(
+			target: new FileTarget(object: $act->object),
+			upload: new FileUpload(fileName: $file->fileName, content: $file->content, share: false)
+		);
 
 		return $this->files->formatFile($stored);
 	}//end upload()
