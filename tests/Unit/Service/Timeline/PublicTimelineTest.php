@@ -30,21 +30,23 @@ declare(strict_types=1);
 
 namespace Unit\Service\Timeline;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\TimelineEntry;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\Timeline\PublicTimeline;
-use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Unit tests for the one anonymous timeline reader.
  *
- * @covers \OCA\OpenRegister\Service\Timeline\PublicTimeline
+ * @covers \OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class PublicTimelineTest extends TestCase {
@@ -110,12 +112,12 @@ class PublicTimelineTest extends TestCase {
 	public function testBothSourcesAreAskedForThePublicHalf(): void {
 		$this->entries->expects($this->once())
 			->method('listForObject')
-			->with($this->anything(), TimelineVisibilityService::PUBLIC_ENTRY, 50)
+			->with($this->anything(), $this->callback(static fn (ListQuery $q): bool => [$q->filters['visibility'] ?? null, $q->limit, $q->offset ?? 0] === [TimelineVisibilityService::PUBLIC_ENTRY, 50, 0]))
 			->willReturn([]);
 
 		$this->notes->expects($this->once())
-			->method('getNotesForObject')
-			->with('object-uuid', 50, 0, TimelineVisibilityService::PUBLIC_ENTRY)
+			->method('listNotes')
+			->with(new ObjectNotesQuery(objectUuid: 'object-uuid', page: new ListQuery(limit: 50, offset: 0), visibility: TimelineVisibilityService::PUBLIC_ENTRY))
 			->willReturn([]);
 
 		$this->assertSame([], $this->timeline->forObject(object: $this->object()));
@@ -134,7 +136,7 @@ class PublicTimelineTest extends TestCase {
 	 */
 	public function testANoteLeavesWithoutItsAuthor(): void {
 		$this->entries->method('listForObject')->willReturn([]);
-		$this->notes->method('getNotesForObject')->willReturn([
+		$this->notes->method('listNotes')->willReturn([
 			[
 				'id' => 7,
 				'message' => 'We hebben uw stukken ontvangen',
@@ -177,7 +179,7 @@ class PublicTimelineTest extends TestCase {
 				'created' => '2026-05-04T09:12:00+02:00',
 			]),
 		]);
-		$this->notes->method('getNotesForObject')->willReturn([]);
+		$this->notes->method('listNotes')->willReturn([]);
 
 		$entry = $this->timeline->forObject(object: $this->object())[0];
 
@@ -204,7 +206,7 @@ class PublicTimelineTest extends TestCase {
 				'created' => '2026-05-04T09:12:00+02:00',
 			]),
 		]);
-		$this->notes->method('getNotesForObject')->willReturn([
+		$this->notes->method('listNotes')->willReturn([
 			['id' => 7, 'message' => 'Same note', 'createdAt' => '2026-05-04T09:12:00+02:00'],
 		]);
 
@@ -228,7 +230,7 @@ class PublicTimelineTest extends TestCase {
 		$this->entries->method('listForObject')->willReturn([
 			$this->record(['id' => 'entry-uuid', 'commentId' => 9, 'message' => 'Newer', 'created' => '2026-05-05T09:00:00+02:00']),
 		]);
-		$this->notes->method('getNotesForObject')->willReturn([
+		$this->notes->method('listNotes')->willReturn([
 			['id' => 3, 'message' => 'Older, from before records', 'createdAt' => '2026-01-10T09:00:00+01:00'],
 		]);
 
@@ -249,7 +251,7 @@ class PublicTimelineTest extends TestCase {
 			$this->record(['id' => 'r-old', 'message' => 'record old', 'created' => '2026-03-01T10:00:00+01:00']),
 			$this->record(['id' => 'r-new', 'message' => 'record new', 'created' => '2026-05-01T10:00:00+02:00']),
 		]);
-		$this->notes->method('getNotesForObject')->willReturn([
+		$this->notes->method('listNotes')->willReturn([
 			['id' => 1, 'message' => 'note middle', 'createdAt' => '2026-04-01T10:00:00+02:00'],
 		]);
 
@@ -267,7 +269,7 @@ class PublicTimelineTest extends TestCase {
 	 */
 	public function testEachSourceFailsOnItsOwn(): void {
 		$this->entries->method('listForObject')->willThrowException(new RuntimeException('no such table'));
-		$this->notes->method('getNotesForObject')->willReturn([
+		$this->notes->method('listNotes')->willReturn([
 			['id' => 1, 'message' => 'still here', 'createdAt' => '2026-04-01T10:00:00+02:00'],
 		]);
 		$this->logger->expects($this->once())->method('warning');
@@ -286,7 +288,7 @@ class PublicTimelineTest extends TestCase {
 		$this->entries->method('listForObject')->willReturn([
 			$this->record(['id' => 'r', 'message' => 'record', 'created' => '2026-04-01T10:00:00+02:00']),
 		]);
-		$this->notes->method('getNotesForObject')->willThrowException(new RuntimeException('comments down'));
+		$this->notes->method('listNotes')->willThrowException(new RuntimeException('comments down'));
 		$this->logger->expects($this->once())->method('warning');
 
 		$this->assertSame(['record'], array_column($this->timeline->forObject(object: $this->object()), 'message'));
@@ -304,7 +306,7 @@ class PublicTimelineTest extends TestCase {
 			$this->record(['id' => 'r1', 'message' => 'a', 'created' => '2026-04-03T10:00:00+02:00']),
 			$this->record(['id' => 'r2', 'message' => 'b', 'created' => '2026-04-02T10:00:00+02:00']),
 		]);
-		$this->notes->method('getNotesForObject')->willReturn([
+		$this->notes->method('listNotes')->willReturn([
 			['id' => 1, 'message' => 'c', 'createdAt' => '2026-04-01T10:00:00+02:00'],
 		]);
 

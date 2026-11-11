@@ -164,7 +164,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -314,7 +317,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -410,7 +416,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -588,7 +597,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -684,7 +696,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -838,7 +853,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -1026,7 +1044,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -1349,7 +1370,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -1535,7 +1559,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -1544,6 +1571,16 @@
             "config.findBySourceUrl",
             [
                 "https://example.test/config.json"
+            ]
+        ],
+        [
+            "logger.debug",
+            [
+                "[ImportHandler] No configuration found by source URL",
+                {
+                    "sourceUrl": "https://example.test/config.json",
+                    "exception": "not found"
+                }
             ]
         ],
         [
@@ -1759,7 +1796,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -1879,7 +1919,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -2076,7 +2119,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -2200,7 +2246,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -2320,7 +2369,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ],
@@ -2444,7 +2496,10 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
-                "importJobId": null
+                "importJobId": null,
+                "keptLocal": {
+                    "schemas": []
+                }
             }
         ]
     ]

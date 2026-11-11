@@ -116,6 +116,14 @@ The `DeletedController` MUST provide endpoints for listing, restoring, and perma
 - **WHEN** `POST /api/deleted/restore` is called with the 5 UUIDs
 - **THEN** the response MUST include `{"restored": 3, "failed": 2, "notFound": 1}`
 
+#### Scenario: The trash routes that write ask for the request token
+- **GIVEN** a user signed in to the web interface
+- **WHEN** `POST /api/deleted/{id}/restore`, `POST /api/deleted/restore`, `DELETE /api/deleted/{id}` or `DELETE /api/deleted` arrives with the session cookie but without a valid `requesttoken`
+- **THEN** Nextcloud refuses it before the controller runs
+- **AND** the trash page sends the token on each of these calls
+- **AND** a client that sends `OCS-APIRequest: true` (a script signing in with basic auth or an app password) is not asked for it; without that header and without the token the call is refused
+- @e2e exclude {request-token check is Nextcloud middleware; DeletedControllerCsrfTest pins the route annotations and the store golden pins the token header}
+
 ### Requirement 4: Permanent deletion (purge) MUST require prior soft delete and authorization
 
 Objects MUST only be permanently deletable (hard delete) after they have been soft-deleted. The `DeletedController::destroy()` endpoint MUST verify the object is in soft-deleted state before allowing permanent removal. Admin-only access SHOULD be enforced for permanent deletion.

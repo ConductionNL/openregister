@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  */
-class NotificationService {
+class NotificationService implements NotificationServiceInterface {
 
 	/**
 	 * Constructor.
@@ -101,62 +101,7 @@ class NotificationService {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		// Step 1: Get notification groups from configuration.
-		// These are groups that should be notified about updates.
-		$notificationGroups = $configuration->getNotificationGroups() ?? [];
-
-		// Step 2: Always include admin group to ensure administrators are notified.
-		// This ensures critical updates are always communicated to admins.
-		if (in_array('admin', $notificationGroups, true) === false) {
-			$notificationGroups[] = 'admin';
-		}
-
-		// Step 3: Collect all unique users to notify from all groups.
-		// Uses array keys to automatically deduplicate users across groups.
-		$usersToNotify = [];
-		foreach ($notificationGroups as $groupId) {
-			// Get group entity from group manager.
-			$group = $this->groupManager->get($groupId);
-			if ($group === null) {
-				// Log warning if group doesn't exist but continue with other groups.
-				$this->logger->warning(
-					message: "[NotificationService] Group {$groupId} not found, skipping",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				continue;
-			}
-
-			// Get all users in this group.
-			$users = $group->getUsers();
-			foreach ($users as $user) {
-				// Use user ID as array key to automatically deduplicate.
-				$usersToNotify[$user->getUID()] = true;
-			}
-		}
-
-		// Step 4: Send notifications to all unique users.
-		$notificationCount = 0;
-		foreach (array_keys($usersToNotify) as $userId) {
-			try {
-				// Send individual notification to user.
-				$this->sendUpdateNotification(
-					userId: $userId,
-					configurationTitle: $configuration->getTitle(),
-					configurationId: $configuration->getId(),
-					currentVersion: $configuration->getLocalVersion(),
-					newVersion: $configuration->getRemoteVersion()
-				);
-				$notificationCount++;
-			} catch (\Exception $e) {
-				// Log error but continue sending to other users.
-				$this->logger->error(
-					message: "[NotificationService] Failed to send notification to user {$userId}: " . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-		}
-
-		// Log completion with notification count.
+		$notificationCount = $this->notifyRecipients(configuration: $configuration);
 		$this->logger->info(
 			message: "[NotificationService] Sent {$notificationCount} notifications for configuration update",
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -166,17 +111,118 @@ class NotificationService {
 	}//end notifyConfigurationUpdate()
 
 	/**
+	 * Notify every recipient of a configuration's update.
+	 *
+	 * @param Configuration $configuration The configuration entity with available update
+	 *
+	 * @return int Number of notifications successfully sent
+	 */
+	private function notifyRecipients(Configuration $configuration): int {
+		$notificationCount = 0;
+		foreach ($this->recipientsOf(configuration: $configuration) as $userId) {
+			$notificationCount += $this->trySendUpdateNotification(userId: $userId, configuration: $configuration);
+		}
+
+		return $notificationCount;
+	}//end notifyRecipients()
+
+	/**
+	 * The unique ids of every user to notify: members of the configured groups plus the admin group.
+	 *
+	 * The admin group is always included so critical updates always reach administrators.
+	 * Users in several groups are notified once, in order of first appearance.
+	 *
+	 * @param Configuration $configuration The configuration entity with available update
+	 *
+	 * @return array<int,int|string> User ids (numeric ids come back as int array keys)
+	 */
+	private function recipientsOf(Configuration $configuration): array {
+		$notificationGroups = $configuration->getNotificationGroups() ?? [];
+		if (in_array('admin', $notificationGroups, true) === false) {
+			$notificationGroups[] = 'admin';
+		}
+
+		$usersToNotify = [];
+		foreach ($notificationGroups as $groupId) {
+			foreach ($this->memberIdsOf(groupId: $groupId) as $userId) {
+				$usersToNotify[$userId] = true;
+			}
+		}
+
+		return array_keys($usersToNotify);
+	}//end recipientsOf()
+
+	/**
+	 * The user ids of a group's members; a missing group is logged and has none.
+	 *
+	 * @param mixed $groupId The group id as configured
+	 *
+	 * @return array<int|string,string>
+	 */
+	private function memberIdsOf(mixed $groupId): array {
+		$group = $this->groupManager->get($groupId);
+		if ($group === null) {
+			// Log warning if group doesn't exist but continue with other groups.
+			$this->logger->warning(
+				message: "[NotificationService] Group {$groupId} not found, skipping",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
+
+		return array_map(static fn ($user) => $user->getUID(), $group->getUsers());
+	}//end memberIdsOf()
+
+	/**
+	 * Notify one user, logging a failure instead of throwing it.
+	 *
+	 * @param string        $userId        The user ID to notify
+	 * @param Configuration $configuration The configuration entity with available update
+	 *
+	 * @return int 1 when sent, 0 when sending failed
+	 */
+	private function trySendUpdateNotification(string $userId, Configuration $configuration): int {
+		try {
+			$this->sendUpdateNotification(userId: $userId, notice: $this->noticeFor(configuration: $configuration));
+			return 1;
+		} catch (\Exception $e) {
+			// Log error but continue sending to other users.
+			$this->logger->error(
+				message: "[NotificationService] Failed to send notification to user {$userId}: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return 0;
+		}
+	}//end trySendUpdateNotification()
+
+	/**
+	 * The notice for a configuration's available update.
+	 *
+	 * Built in this (non-strict) file so title, id and versions are coerced to the
+	 * notice's types exactly as the former scalar parameters were.
+	 *
+	 * @param Configuration $configuration The configuration entity with available update
+	 *
+	 * @return ConfigurationUpdateNotice
+	 */
+	private function noticeFor(Configuration $configuration): ConfigurationUpdateNotice {
+		return new ConfigurationUpdateNotice(
+			configurationTitle: $configuration->getTitle(),
+			configurationId: $configuration->getId(),
+			currentVersion: $configuration->getLocalVersion(),
+			newVersion: $configuration->getRemoteVersion()
+		);
+	}//end noticeFor()
+
+	/**
 	 * Send update notification to a specific user
 	 *
 	 * Creates and sends a Nextcloud notification to a specific user about
 	 * an available configuration update. Includes version information and
 	 * configuration details.
 	 *
-	 * @param string $userId The user ID to notify
-	 * @param string $configurationTitle The configuration title
-	 * @param int $configurationId The configuration ID
-	 * @param string|null $currentVersion The current/local version (optional)
-	 * @param string|null $newVersion The new/remote version (optional)
+	 * @param string                    $userId The user ID to notify
+	 * @param ConfigurationUpdateNotice $notice The configuration and its versions
 	 *
 	 * @return void
 	 *
@@ -184,29 +230,14 @@ class NotificationService {
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function sendUpdateNotification(
-		string $userId,
-		string $configurationTitle,
-		int $configurationId,
-		?string $currentVersion,
-		?string $newVersion,
-	): void {
-		// Step 1: Create new notification instance.
+	private function sendUpdateNotification(string $userId, ConfigurationUpdateNotice $notice): void {
 		$notification = $this->notificationManager->createNotification();
 
 		$notification->setApp('openregister')
 			->setUser($userId)
 			->setDateTime(new DateTime())
-			->setObject(type: 'configuration', id: (string)$configurationId)
-			->setSubject(
-				subject: 'configuration_update_available',
-				parameters: [
-					'configurationTitle' => $configurationTitle,
-					'configurationId' => $configurationId,
-					'currentVersion' => $currentVersion ?? 'unknown',
-					'newVersion' => $newVersion ?? 'unknown',
-				]
-			);
+			->setObject(type: 'configuration', id: (string)$notice->configurationId)
+			->setSubject(subject: 'configuration_update_available', parameters: $notice->subjectParameters());
 
 		$this->notificationManager->notify($notification);
 	}//end sendUpdateNotification()

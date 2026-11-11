@@ -63,19 +63,23 @@
             },
             {
                 "viewService.create": [
-                    "N",
-                    "",
-                    "alice",
-                    false,
-                    false,
                     {
-                        "registers": [
-                            9
-                        ],
-                        "custom": true
+                        "name": "N",
+                        "description": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": null
                     },
-                    null,
-                    null,
+                    {
+                        "owner": "alice",
+                        "isPublic": false,
+                        "isDefault": false,
+                        "sharedWith": null
+                    },
                     null
                 ]
             }
@@ -172,31 +176,35 @@
             },
             {
                 "viewService.create": [
-                    "N",
-                    "D",
-                    "alice",
-                    true,
-                    true,
                     {
-                        "registers": [
-                            1
-                        ],
-                        "schemas": [
-                            2
-                        ],
-                        "source": "database",
-                        "searchTerms": [
-                            "x"
-                        ],
-                        "facetFilters": {
-                            "a": 1
+                        "name": "N",
+                        "description": "D",
+                        "query": {
+                            "registers": [
+                                1
+                            ],
+                            "schemas": [
+                                2
+                            ],
+                            "source": "database",
+                            "searchTerms": [
+                                "x"
+                            ],
+                            "facetFilters": {
+                                "a": 1
+                            },
+                            "enabledFacets": [
+                                "f"
+                            ]
                         },
-                        "enabledFacets": [
-                            "f"
-                        ]
+                        "presentation": null
                     },
-                    null,
-                    null,
+                    {
+                        "owner": "alice",
+                        "isPublic": true,
+                        "isDefault": true,
+                        "sharedWith": null
+                    },
                     null
                 ]
             }
@@ -272,19 +280,23 @@
             },
             {
                 "viewService.create": [
-                    "N",
-                    "",
-                    "alice",
-                    false,
-                    false,
                     {
-                        "registers": [
-                            9
-                        ],
-                        "custom": true
+                        "name": "N",
+                        "description": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": null
                     },
-                    null,
-                    null,
+                    {
+                        "owner": "alice",
+                        "isPublic": false,
+                        "isDefault": false,
+                        "sharedWith": null
+                    },
                     []
                 ]
             }
@@ -376,19 +388,23 @@
             },
             {
                 "viewService.create": [
-                    "N",
-                    "",
-                    "alice",
-                    false,
-                    false,
                     {
-                        "registers": [
-                            9
-                        ],
-                        "custom": true
+                        "name": "N",
+                        "description": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": null
                     },
-                    null,
-                    null,
+                    {
+                        "owner": "alice",
+                        "isPublic": false,
+                        "isDefault": false,
+                        "sharedWith": null
+                    },
                     null
                 ]
             }
@@ -533,19 +549,23 @@
             },
             {
                 "viewService.create": [
-                    "N",
-                    "",
-                    "alice",
-                    false,
-                    false,
                     {
-                        "registers": [
-                            9
-                        ],
-                        "custom": true
+                        "name": "N",
+                        "description": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": null
                     },
-                    null,
-                    null,
+                    {
+                        "owner": "alice",
+                        "isPublic": false,
+                        "isDefault": false,
+                        "sharedWith": null
+                    },
                     null
                 ]
             }
@@ -619,23 +639,27 @@
             },
             {
                 "viewService.create": [
-                    "N",
-                    "",
-                    "alice",
-                    false,
-                    false,
                     {
-                        "registers": [],
-                        "schemas": [
-                            3
-                        ],
-                        "source": "auto",
-                        "searchTerms": [],
-                        "facetFilters": [],
-                        "enabledFacets": []
+                        "name": "N",
+                        "description": "",
+                        "query": {
+                            "registers": [],
+                            "schemas": [
+                                3
+                            ],
+                            "source": "auto",
+                            "searchTerms": [],
+                            "facetFilters": [],
+                            "enabledFacets": []
+                        },
+                        "presentation": null
                     },
-                    null,
-                    null,
+                    {
+                        "owner": "alice",
+                        "isPublic": false,
+                        "isDefault": false,
+                        "sharedWith": null
+                    },
                     null
                 ]
             }
@@ -713,21 +737,25 @@
             },
             {
                 "viewService.create": [
-                    "N",
-                    "",
-                    "alice",
-                    false,
-                    false,
                     {
-                        "registers": [
-                            9
-                        ],
-                        "custom": true
+                        "name": "N",
+                        "description": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": {
+                            "type": "table"
+                        }
                     },
                     {
-                        "type": "table"
+                        "owner": "alice",
+                        "isPublic": false,
+                        "isDefault": false,
+                        "sharedWith": null
                     },
-                    null,
                     null
                 ]
             }
@@ -834,19 +862,23 @@
             },
             {
                 "viewService.create": [
-                    "N",
-                    "",
-                    "alice",
-                    false,
-                    false,
                     {
-                        "registers": [
-                            9
-                        ],
-                        "custom": true
+                        "name": "N",
+                        "description": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": null
                     },
-                    null,
-                    null,
+                    {
+                        "owner": "alice",
+                        "isPublic": false,
+                        "isDefault": false,
+                        "sharedWith": null
+                    },
                     null
                 ]
             },
@@ -907,24 +939,28 @@
             },
             {
                 "viewService.create": [
-                    "N",
-                    "",
-                    "alice",
-                    false,
-                    false,
                     {
-                        "registers": [
-                            9
-                        ],
-                        "custom": true
+                        "name": "N",
+                        "description": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": null
                     },
-                    null,
-                    [
-                        {
-                            "type": "user",
-                            "id": "bob"
-                        }
-                    ],
+                    {
+                        "owner": "alice",
+                        "isPublic": false,
+                        "isDefault": false,
+                        "sharedWith": [
+                            {
+                                "type": "user",
+                                "id": "bob"
+                            }
+                        ]
+                    },
                     null
                 ]
             }

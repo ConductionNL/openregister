@@ -1,6 +1,7 @@
 OC.L10N.register(
     "openregister",
     {
+        "Marketplace" : "Marketplace",
         "3": "3",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.",
@@ -435,6 +436,7 @@ OC.L10N.register(
         "Costs": "Costs",
         "Count": "Count",
         "Counting objects...": "Counting objects...",
+        "We could not count the objects. Close this window and try again." : "We could not count the objects. Close this window and try again.",
         "Create": "Create",
         "Create API Token": "Create API Token",
         "Create Agent": "Create Agent",

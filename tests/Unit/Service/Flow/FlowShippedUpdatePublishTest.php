@@ -36,6 +36,8 @@ use OCA\OpenRegister\Service\Flow\FlowDefinitionPin;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleGuard;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
+use OCA\OpenRegister\Service\Flow\FlowVersionGraphs;
+use OCA\OpenRegister\Service\Flow\FlowVersionRows;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -140,14 +142,8 @@ final class FlowShippedUpdatePublishTest extends TestCase {
 		$flows->method('update')->willReturnArgument(0);
 
 		return new FlowVersionService(
-			$versions,
-			$flows,
-			$this->pin,
-			$this->createMock(FlowLifecycleGuard::class),
-			$this->createMock(FlowTriggerIndex::class),
-			new FlowSemanticVersion(),
-			$this->createMock(IDBConnection::class),
-			$this->createMock(LoggerInterface::class)
+			new FlowVersionRows($versions, $flows, $this->createMock(IDBConnection::class), $this->createMock(LoggerInterface::class)),
+			new FlowVersionGraphs($this->pin, $this->createMock(FlowLifecycleGuard::class), $this->createMock(FlowTriggerIndex::class), new FlowSemanticVersion())
 		);
 	}
 

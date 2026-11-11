@@ -32,21 +32,24 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
 
 /**
- * @covers \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler
+ * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
  * @uses \OCA\OpenRegister\Formats\BsnFormat
- * @uses \OCA\OpenRegister\Service\TextExtraction\PatternSet\NlPatternSet
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet
  */
 class BsnDetectionTest extends TestCase {
 
@@ -60,18 +63,22 @@ class BsnDetectionTest extends TestCase {
 	 */
 	private function detect(string $text, ?array $entityTypes=null): array {
 		$handler = new EntityRecognitionHandler(
-			$this->createMock(ChunkMapper::class),
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
-			$this->createMock(IDBConnection::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(SettingsService::class),
-			$this->createMock(AnonymisationBackendService::class)
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->createMock(ChunkMapper::class),
+				entityMapper: $this->createMock(GdprEntityMapper::class),
+				entityRelationMapper: $this->createMock(EntityRelationMapper::class),
+				db: $this->createMock(IDBConnection::class)
+			),
+			backends: new EntityRecognitionBackends(
+				settingsService: $this->createMock(SettingsService::class),
+				anonymisationBackendService: $this->createMock(AnonymisationBackendService::class)
+			),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectWithRegex');
 
-		return array_values($method->invoke($handler, $text, $entityTypes, 0.5));
+		return array_values($method->invoke($handler, new EntityDetectionQuery($text, $entityTypes, 0.5)));
 
 	}//end detect()
 

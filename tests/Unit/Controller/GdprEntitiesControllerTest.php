@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
 use OCA\OpenRegister\Controller\GdprEntitiesController;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
@@ -58,7 +59,7 @@ class GdprEntitiesControllerTest extends TestCase {
 		$this->organisationService = $this->createMock(OrganisationService::class);
 		$this->organisationService->method('getUserOrganisations')->willReturn([]);
 
-		$this->controller = new GdprEntitiesController(
+		$this->controller = GdprEntitiesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->entityMapper,
@@ -930,7 +931,7 @@ class GdprEntitiesControllerTest extends TestCase {
 		$organisationService->method('getUserOrganisations')->willReturn($orgs);
 		$organisationService->method('getActiveOrganisation')->willReturn($orgs[0] ?? null);
 
-		return new GdprEntitiesController(
+		return GdprEntitiesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->entityMapper,
@@ -948,7 +949,7 @@ class GdprEntitiesControllerTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
-		$controller = new GdprEntitiesController(
+		$controller = GdprEntitiesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->entityMapper,

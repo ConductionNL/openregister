@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerInterface;
@@ -41,7 +41,7 @@ class EntityInterfacesTest extends TestCase {
 	 * @var array<class-string, array<int, string>>
 	 */
 	private const ENTITY_ONLY = [
-		Schema::class   => ['getManagedByConfiguration', 'hydrate', 'validateProperties'],
+		Schema::class   => ['declaredActionNames', 'getManagedByConfiguration', 'hydrate', 'validateProperties'],
 		Register::class => ['getManagedByConfiguration'],
 	];
 

@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
@@ -39,6 +40,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Unit tests for SettingsService
@@ -69,9 +71,6 @@ class SettingsServiceTest extends TestCase {
 
 	/** @var SchemaCacheHandler|MockObject */
 	private $schemaCacheService;
-
-	/** @var FacetCacheHandler|MockObject */
-	private $facetCacheHandler;
 
 	/** @var ICacheFactory|MockObject */
 	private $cacheFactory;
@@ -114,7 +113,6 @@ class SettingsServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$this->facetCacheHandler = $this->createMock(FacetCacheHandler::class);
 		$this->searchTrailMapper = $this->createMock(SearchTrailMapper::class);
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->db = $this->createMock(IDBConnection::class);
@@ -138,15 +136,7 @@ class SettingsServiceTest extends TestCase {
 		// All handler properties must be injected to avoid null property access.
 		$this->settingsService = new SettingsService(
 			config: $this->config,
-			auditTrailMapper: $this->auditTrailMapper,
-			cacheFactory: $this->cacheFactory,
-			groupManager: $this->groupManager,
 			logger: $this->logger,
-			organisationMapper: $this->organisationMapper,
-			schemaCacheService: $this->schemaCacheService,
-			facetCacheSvc: $this->facetCacheHandler,
-			searchTrailMapper: $this->searchTrailMapper,
-			userManager: $this->userManager,
 			db: $this->db,
 			validOpsHandler: $this->validationOperationsHandler,
 			searchBackendHandler: $this->searchBackendHandler,
@@ -171,7 +161,7 @@ class SettingsServiceTest extends TestCase {
 
 		$result = $this->settingsService->getSettings();
 
-		$this->assertIsArray($result);
+		$this->assertSame(['solr' => ['enabled' => true, 'host' => 'localhost'], 'rbac' => ['enabled' => false]], $result);
 	}
 
 	/**
@@ -219,6 +209,9 @@ class SettingsServiceTest extends TestCase {
 		$result = $this->settingsService->getStats();
 
 		$this->assertIsArray($result);
+		// The failing database query leaves every warning count at zero.
+		$this->assertSame(0, $result['warnings']['objectsWithoutOwner']);
+		$this->assertArrayHasKey('timestamp', $result);
 	}
 
 	/**
@@ -1126,22 +1119,14 @@ class SettingsServiceTest extends TestCase {
 	// ===== MASS VALIDATE PARAMETER VALIDATION =====.
 
 	/**
-	 * Test massValidateObjects with invalid mode throws exception
+	 * Test massValidate with invalid mode throws exception
 	 */
 	public function testMassValidateObjectsInvalidMode(): void {
 		$container = $this->createMock(IAppContainer::class);
 
 		$service = new SettingsService(
 			config: $this->config,
-			auditTrailMapper: $this->auditTrailMapper,
-			cacheFactory: $this->cacheFactory,
-			groupManager: $this->groupManager,
 			logger: $this->logger,
-			organisationMapper: $this->organisationMapper,
-			schemaCacheService: $this->schemaCacheService,
-			facetCacheSvc: $this->facetCacheHandler,
-			searchTrailMapper: $this->searchTrailMapper,
-			userManager: $this->userManager,
 			db: $this->db,
 			container: $container,
 			validOpsHandler: $this->validationOperationsHandler,
@@ -1156,26 +1141,18 @@ class SettingsServiceTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid mode parameter');
 
-		$service->massValidateObjects(mode: 'invalid_mode');
+		$service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 1000, mode: 'invalid_mode', collectErrors: false));
 	}
 
 	/**
-	 * Test massValidateObjects with invalid batch size (too small)
+	 * Test massValidate with invalid batch size (too small)
 	 */
 	public function testMassValidateObjectsInvalidBatchSizeTooSmall(): void {
 		$container = $this->createMock(IAppContainer::class);
 
 		$service = new SettingsService(
 			config: $this->config,
-			auditTrailMapper: $this->auditTrailMapper,
-			cacheFactory: $this->cacheFactory,
-			groupManager: $this->groupManager,
 			logger: $this->logger,
-			organisationMapper: $this->organisationMapper,
-			schemaCacheService: $this->schemaCacheService,
-			facetCacheSvc: $this->facetCacheHandler,
-			searchTrailMapper: $this->searchTrailMapper,
-			userManager: $this->userManager,
 			db: $this->db,
 			container: $container,
 			validOpsHandler: $this->validationOperationsHandler,
@@ -1190,26 +1167,18 @@ class SettingsServiceTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid batch size');
 
-		$service->massValidateObjects(batchSize: 0);
+		$service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 0, mode: 'serial', collectErrors: false));
 	}
 
 	/**
-	 * Test massValidateObjects with invalid batch size (too large)
+	 * Test massValidate with invalid batch size (too large)
 	 */
 	public function testMassValidateObjectsInvalidBatchSizeTooLarge(): void {
 		$container = $this->createMock(IAppContainer::class);
 
 		$service = new SettingsService(
 			config: $this->config,
-			auditTrailMapper: $this->auditTrailMapper,
-			cacheFactory: $this->cacheFactory,
-			groupManager: $this->groupManager,
 			logger: $this->logger,
-			organisationMapper: $this->organisationMapper,
-			schemaCacheService: $this->schemaCacheService,
-			facetCacheSvc: $this->facetCacheHandler,
-			searchTrailMapper: $this->searchTrailMapper,
-			userManager: $this->userManager,
 			db: $this->db,
 			container: $container,
 			validOpsHandler: $this->validationOperationsHandler,
@@ -1224,7 +1193,7 @@ class SettingsServiceTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid batch size');
 
-		$service->massValidateObjects(batchSize: 5001);
+		$service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 5001, mode: 'serial', collectErrors: false));
 	}
 
 	// ===== PURE LOGIC METHOD TESTS (additional coverage) =====.
@@ -1382,24 +1351,15 @@ class SettingsServiceTest extends TestCase {
 	// ===== MASS VALIDATE BOUNDARY TESTS =====.
 
 	/**
-	 * Test massValidateObjects with negative batch size throws exception
+	 * Test massValidate with negative batch size throws exception
 	 */
 	public function testMassValidateObjectsNegativeBatchSize(): void {
 		$container = $this->createMock(IAppContainer::class);
 
 		$service = new SettingsService(
 			$this->config,
-			$this->auditTrailMapper,
-			$this->cacheFactory,
-			$this->groupManager,
 			$this->logger,
-			$this->organisationMapper,
-			$this->schemaCacheService,
-			$this->facetCacheHandler,
-			$this->searchTrailMapper,
-			$this->userManager,
 			$this->db,
-			null,
 			$container,
 			'openregister',
 			$this->validationOperationsHandler,
@@ -1414,28 +1374,19 @@ class SettingsServiceTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid batch size');
 
-		$service->massValidateObjects(0, -1, 'serial', false);
+		$service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: -1, mode: 'serial', collectErrors: false));
 	}
 
 	/**
-	 * Test massValidateObjects validates mode before batch size
+	 * Test massValidate validates mode before batch size
 	 */
 	public function testMassValidateObjectsModeValidatedFirst(): void {
 		$container = $this->createMock(IAppContainer::class);
 
 		$service = new SettingsService(
 			$this->config,
-			$this->auditTrailMapper,
-			$this->cacheFactory,
-			$this->groupManager,
 			$this->logger,
-			$this->organisationMapper,
-			$this->schemaCacheService,
-			$this->facetCacheHandler,
-			$this->searchTrailMapper,
-			$this->userManager,
 			$this->db,
-			null,
 			$container,
 			'openregister',
 			$this->validationOperationsHandler,
@@ -1451,7 +1402,7 @@ class SettingsServiceTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid mode parameter');
 
-		$service->massValidateObjects(0, 0, 'bogus', false);
+		$service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 0, mode: 'bogus', collectErrors: false));
 	}
 
 	// ===== CLEAR CACHE WITH SPECIFIC TYPE =====.
@@ -1713,38 +1664,6 @@ class SettingsServiceTest extends TestCase {
 	// ===== CONSTRUCTOR / INITIALIZATION TESTS =====.
 
 	/**
-	 * Test service can be constructed with all handler dependencies
-	 */
-	public function testConstructorWithAllHandlers(): void {
-		$service = new SettingsService(
-			$this->config,
-			$this->auditTrailMapper,
-			$this->cacheFactory,
-			$this->groupManager,
-			$this->logger,
-			$this->organisationMapper,
-			$this->schemaCacheService,
-			$this->facetCacheHandler,
-			$this->searchTrailMapper,
-			$this->userManager,
-			$this->db,
-			null,
-			null,
-			'openregister',
-			$this->validationOperationsHandler,
-			$this->searchBackendHandler,
-			$this->llmSettingsHandler,
-			$this->fileSettingsHandler,
-			$this->objectRetentionHandler,
-			$this->cacheSettingsHandler,
-			$this->configurationSettingsHandler
-		);
-
-		// Service should be created without errors.
-		$this->assertInstanceOf(SettingsService::class, $service);
-	}
-
-	/**
 	 * Test service can be constructed with custom app name
 	 */
 	public function testConstructorWithCustomAppName(): void {
@@ -1756,17 +1675,8 @@ class SettingsServiceTest extends TestCase {
 
 		$service = new SettingsService(
 			$config,
-			$this->auditTrailMapper,
-			$this->cacheFactory,
-			$this->groupManager,
 			$this->logger,
-			$this->organisationMapper,
-			$this->schemaCacheService,
-			$this->facetCacheHandler,
-			$this->searchTrailMapper,
-			$this->userManager,
 			$this->db,
-			null,
 			null,
 			'custom_app',
 			$this->validationOperationsHandler,
@@ -1832,17 +1742,8 @@ class SettingsServiceTest extends TestCase {
 	private function createServiceWithContainer($container): SettingsService {
 		return new SettingsService(
 			$this->config,
-			$this->auditTrailMapper,
-			$this->cacheFactory,
-			$this->groupManager,
 			$this->logger,
-			$this->organisationMapper,
-			$this->schemaCacheService,
-			$this->facetCacheHandler,
-			$this->searchTrailMapper,
-			$this->userManager,
 			$this->db,
-			null,
 			$container,
 			'openregister',
 			$this->validationOperationsHandler,
@@ -1856,7 +1757,7 @@ class SettingsServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test massValidateObjects serial mode with zero objects
+	 * Test massValidate serial mode with zero objects
 	 */
 	public function testMassValidateObjectsSerialZeroObjects(): void {
 		$container = $this->createMock(IAppContainer::class);
@@ -1864,7 +1765,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -1874,7 +1775,7 @@ class SettingsServiceTest extends TestCase {
 			->willReturn(0);
 
 		$service = $this->createServiceWithContainer($container);
-		$result = $service->massValidateObjects(0, 1000, 'serial', false);
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 1000, mode: 'serial', collectErrors: false));
 
 		$this->assertTrue($result['success']);
 		$this->assertSame(0, $result['stats']['total_objects']);
@@ -1887,7 +1788,7 @@ class SettingsServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test massValidateObjects parallel mode with zero objects
+	 * Test massValidate parallel mode with zero objects
 	 */
 	public function testMassValidateObjectsParallelZeroObjects(): void {
 		$container = $this->createMock(IAppContainer::class);
@@ -1895,7 +1796,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -1905,7 +1806,7 @@ class SettingsServiceTest extends TestCase {
 			->willReturn(0);
 
 		$service = $this->createServiceWithContainer($container);
-		$result = $service->massValidateObjects(0, 1000, 'parallel', false);
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 1000, mode: 'parallel', collectErrors: false));
 
 		$this->assertTrue($result['success']);
 		$this->assertSame('parallel', $result['config_used']['mode']);
@@ -1913,7 +1814,7 @@ class SettingsServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test massValidateObjects serial mode with maxObjects limit
+	 * Test massValidate serial mode with maxObjects limit
 	 */
 	public function testMassValidateObjectsWithMaxObjectsLimit(): void {
 		$container = $this->createMock(IAppContainer::class);
@@ -1921,7 +1822,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -1930,11 +1831,12 @@ class SettingsServiceTest extends TestCase {
 		// Total objects is 1000, but maxObjects limits to 50.
 		$objectMapper->method('countSearchObjects')
 			->willReturn(1000);
-		$objectMapper->method('findAll')
+		$objectMapper->method('getAllRegisterSchemaPairs')->willReturn([['registerId' => 1, 'schemaId' => 2]]);
+		$objectMapper->method('searchObjects')
 			->willReturn([]);
 
 		$service = $this->createServiceWithContainer($container);
-		$result = $service->massValidateObjects(50, 100, 'serial', false);
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 50, batchSize: 100, mode: 'serial', collectErrors: false));
 
 		$this->assertTrue($result['success']);
 		$this->assertSame(50, $result['stats']['total_objects']);
@@ -1942,79 +1844,139 @@ class SettingsServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test massValidateObjects serial mode with objects throws Error due to null objectService
+	 * Build a container that serves the mapper and an object service that records each re-save.
 	 *
-	 * The source hardcodes $objectService = null (circular dependency fix).
-	 * processJobsSerial catches Exception but not Error, so the null->saveObject()
-	 * call propagates as a PHP Error.
+	 * @param MockObject $objectMapper  The mapper mock.
+	 * @param MockObject $objectService The object service mock.
+	 *
+	 * @return IAppContainer&MockObject
 	 */
-	public function testMassValidateObjectsSerialWithObjectsThrowsError(): void {
+	private function massValidationContainer(MockObject $objectMapper, MockObject $objectService): IAppContainer {
 		$container = $this->createMock(IAppContainer::class);
-		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
-
-		$container->method('get')
-			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
-					return $objectMapper;
-				}
-				return null;
-			});
-
-		$objectMapper->method('countSearchObjects')
-			->willReturn(1);
-
-		$obj = new \OCA\OpenRegister\Db\ObjectEntity();
-		$obj->setUuid('uuid-1');
-		$obj->setRegister('reg-1');
-		$obj->setSchema('schema-1');
-
-		$objectMapper->method('findAll')
-			->willReturn([$obj]);
-
-		// PHP Error (not Exception) propagates because catch(Exception) doesn't catch Error.
-		$this->expectException(\Error::class);
-
-		$service = $this->createServiceWithContainer($container);
-		$service->massValidateObjects(0, 1000, 'serial', true);
+		$container->method('get')->willReturnMap(
+			[
+				[\OCA\OpenRegister\Db\MagicMapperInterface::class, $objectMapper],
+				[ObjectService::class, $objectService],
+			]
+		);
+		return $container;
 	}
 
 	/**
-	 * Test massValidateObjects parallel mode with objects throws TypeError due to null objectService
+	 * Two stored objects with a register and a schema.
 	 *
-	 * processBatchDirectly has a non-nullable ObjectService parameter, so passing
-	 * null triggers a TypeError.
+	 * @return list<\OCA\OpenRegister\Db\ObjectEntity>
 	 */
-	public function testMassValidateObjectsParallelWithObjectsThrowsTypeError(): void {
-		$container = $this->createMock(IAppContainer::class);
-		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
-
-		$container->method('get')
-			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
-					return $objectMapper;
-				}
-				return null;
-			});
-
-		$objectMapper->method('countSearchObjects')
-			->willReturn(1);
-
-		$obj = new \OCA\OpenRegister\Db\ObjectEntity();
-		$obj->setUuid('uuid-1');
-		$obj->setRegister('reg-1');
-		$obj->setSchema('schema-1');
-
-		$objectMapper->method('findAll')
-			->willReturn([$obj]);
-
-		$this->expectException(\TypeError::class);
-
-		$service = $this->createServiceWithContainer($container);
-		$service->massValidateObjects(0, 1000, 'parallel', true);
+	private function massValidationObjects(): array {
+		$objects = [];
+		foreach (['uuid-1', 'uuid-2'] as $index => $uuid) {
+			$obj = new \OCA\OpenRegister\Db\ObjectEntity();
+			$obj->setUuid($uuid);
+			$obj->setRegister('reg-' . $index);
+			$obj->setSchema('schema-' . $index);
+			$obj->setObject(['n' => $index]);
+			$objects[] = $obj;
+		}
+		return $objects;
 	}
 
 	/**
-	 * Test massValidateObjects valid batch size boundary (exactly 1)
+	 * Serial and parallel runs re-save every object through the object service.
+	 *
+	 * @dataProvider massValidationModes
+	 */
+	public function testMassValidateObjectsReSavesEveryObject(string $mode): void {
+		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
+		$objectMapper->method('countSearchObjects')->willReturn(2);
+		$objectMapper->method('getAllRegisterSchemaPairs')->willReturn([['registerId' => 1, 'schemaId' => 2]]);
+		$objectMapper->method('searchObjects')->willReturn($this->massValidationObjects());
+
+		$saved = [];
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->expects($this->exactly(2))->method('saveObject')
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saved) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
+				$saved[] = [$args[0], $args[2], $args[3], $args[4]];
+				return new \OCA\OpenRegister\Db\ObjectEntity();
+			});
+
+		$service = $this->createServiceWithContainer($this->massValidationContainer($objectMapper, $objectService));
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 10, mode: $mode, collectErrors: false));
+
+		$this->assertSame(
+			[
+				[['id' => 'uuid-1', 'n' => 0], 'reg-0', 'schema-0', 'uuid-1'],
+				[['id' => 'uuid-2', 'n' => 1], 'reg-1', 'schema-1', 'uuid-2'],
+			],
+			$saved
+		);
+		$this->assertTrue($result['success']);
+		$this->assertSame(2, $result['stats']['processed_objects']);
+		$this->assertSame(2, $result['stats']['successful_saves']);
+		$this->assertSame(0, $result['stats']['failed_saves']);
+	}
+
+	/**
+	 * The run modes.
+	 *
+	 * @return array<string, array{string}>
+	 */
+	public static function massValidationModes(): array {
+		return ['serial' => ['serial'], 'parallel' => ['parallel']];
+	}
+
+	/**
+	 * Without collectErrors a batch stops at its first failed re-save and the run reports it.
+	 */
+	public function testMassValidateObjectsStopsAtFirstFailedSave(): void {
+		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
+		$objectMapper->method('countSearchObjects')->willReturn(2);
+		$objectMapper->method('getAllRegisterSchemaPairs')->willReturn([['registerId' => 1, 'schemaId' => 2]]);
+		$objectMapper->method('searchObjects')->willReturn($this->massValidationObjects());
+
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->expects($this->once())->method('saveObject')
+			->willThrowException(new \Exception('invalid'));
+
+		$service = $this->createServiceWithContainer($this->massValidationContainer($objectMapper, $objectService));
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 10, mode: 'serial', collectErrors: false));
+
+		$this->assertFalse($result['success']);
+		$this->assertSame(1, $result['stats']['processed_objects']);
+		$this->assertSame(0, $result['stats']['successful_saves']);
+		$this->assertSame(1, $result['stats']['failed_saves']);
+		$this->assertSame('uuid-1', $result['errors'][0]['object_id']);
+		$this->assertSame('invalid', $result['errors'][0]['error']);
+	}
+
+	/**
+	 * With collectErrors every object is tried and the run succeeds when at least one save succeeded.
+	 */
+	public function testMassValidateObjectsCollectsErrorsAndContinues(): void {
+		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
+		$objectMapper->method('countSearchObjects')->willReturn(2);
+		$objectMapper->method('getAllRegisterSchemaPairs')->willReturn([['registerId' => 1, 'schemaId' => 2]]);
+		$objectMapper->method('searchObjects')->willReturn($this->massValidationObjects());
+
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->expects($this->exactly(2))->method('saveObject')
+			->willReturnOnConsecutiveCalls(
+				$this->throwException(new \Exception('invalid')),
+				new \OCA\OpenRegister\Db\ObjectEntity()
+			);
+
+		$service = $this->createServiceWithContainer($this->massValidationContainer($objectMapper, $objectService));
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 10, mode: 'parallel', collectErrors: true));
+
+		$this->assertTrue($result['success']);
+		$this->assertSame(1, $result['stats']['successful_saves']);
+		$this->assertSame(1, $result['stats']['failed_saves']);
+		$this->assertSame('parallel_optimized', $result['errors'][0]['batch_mode']);
+	}
+
+
+	/**
+	 * Test massValidate valid batch size boundary (exactly 1)
 	 */
 	public function testMassValidateObjectsBatchSizeOne(): void {
 		$container = $this->createMock(IAppContainer::class);
@@ -2022,7 +1984,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2032,14 +1994,14 @@ class SettingsServiceTest extends TestCase {
 			->willReturn(0);
 
 		$service = $this->createServiceWithContainer($container);
-		$result = $service->massValidateObjects(0, 1, 'serial', false);
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 1, mode: 'serial', collectErrors: false));
 
 		$this->assertTrue($result['success']);
 		$this->assertSame(1, $result['config_used']['batch_size']);
 	}
 
 	/**
-	 * Test massValidateObjects valid batch size boundary (exactly 5000)
+	 * Test massValidate valid batch size boundary (exactly 5000)
 	 */
 	public function testMassValidateObjectsBatchSizeFiveThousand(): void {
 		$container = $this->createMock(IAppContainer::class);
@@ -2047,7 +2009,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2057,14 +2019,14 @@ class SettingsServiceTest extends TestCase {
 			->willReturn(0);
 
 		$service = $this->createServiceWithContainer($container);
-		$result = $service->massValidateObjects(0, 5000, 'serial', false);
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 5000, mode: 'serial', collectErrors: false));
 
 		$this->assertTrue($result['success']);
 		$this->assertSame(5000, $result['config_used']['batch_size']);
 	}
 
 	/**
-	 * Test massValidateObjects config_used reflects all input parameters
+	 * Test massValidate config_used reflects all input parameters
 	 */
 	public function testMassValidateObjectsConfigUsed(): void {
 		$container = $this->createMock(IAppContainer::class);
@@ -2072,7 +2034,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2082,7 +2044,7 @@ class SettingsServiceTest extends TestCase {
 			->willReturn(0);
 
 		$service = $this->createServiceWithContainer($container);
-		$result = $service->massValidateObjects(42, 500, 'serial', true);
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 42, batchSize: 500, mode: 'serial', collectErrors: true));
 
 		$this->assertArrayHasKey('config_used', $result);
 		$this->assertSame('serial', $result['config_used']['mode']);
@@ -2092,7 +2054,7 @@ class SettingsServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test massValidateObjects duration calculation with zero-time processing
+	 * Test massValidate duration calculation with zero-time processing
 	 */
 	public function testMassValidateObjectsDurationAndMemory(): void {
 		$container = $this->createMock(IAppContainer::class);
@@ -2100,7 +2062,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2110,7 +2072,7 @@ class SettingsServiceTest extends TestCase {
 			->willReturn(0);
 
 		$service = $this->createServiceWithContainer($container);
-		$result = $service->massValidateObjects(0, 1000, 'serial', false);
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 1000, mode: 'serial', collectErrors: false));
 
 		// Check memory_usage structure.
 		$this->assertArrayHasKey('memory_usage', $result);
@@ -2480,7 +2442,7 @@ class SettingsServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test massValidateObjects maxObjects exactly equals totalObjects (no limiting)
+	 * Test massValidate maxObjects exactly equals totalObjects (no limiting)
 	 */
 	public function testMassValidateObjectsMaxObjectsEqualsTotal(): void {
 		$container = $this->createMock(IAppContainer::class);
@@ -2488,7 +2450,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2497,18 +2459,19 @@ class SettingsServiceTest extends TestCase {
 		// maxObjects = totalObjects, no limiting applied.
 		$objectMapper->method('countSearchObjects')
 			->willReturn(50);
-		$objectMapper->method('findAll')
+		$objectMapper->method('getAllRegisterSchemaPairs')->willReturn([['registerId' => 1, 'schemaId' => 2]]);
+		$objectMapper->method('searchObjects')
 			->willReturn([]);
 
 		$service = $this->createServiceWithContainer($container);
-		$result = $service->massValidateObjects(50, 100, 'serial', false);
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 50, batchSize: 100, mode: 'serial', collectErrors: false));
 
 		$this->assertTrue($result['success']);
 		$this->assertSame(50, $result['stats']['total_objects']);
 	}
 
 	/**
-	 * Test massValidateObjects maxObjects greater than totalObjects (no limiting)
+	 * Test massValidate maxObjects greater than totalObjects (no limiting)
 	 */
 	public function testMassValidateObjectsMaxObjectsGreaterThanTotal(): void {
 		$container = $this->createMock(IAppContainer::class);
@@ -2516,7 +2479,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2524,11 +2487,12 @@ class SettingsServiceTest extends TestCase {
 
 		$objectMapper->method('countSearchObjects')
 			->willReturn(10);
-		$objectMapper->method('findAll')
+		$objectMapper->method('getAllRegisterSchemaPairs')->willReturn([['registerId' => 1, 'schemaId' => 2]]);
+		$objectMapper->method('searchObjects')
 			->willReturn([]);
 
 		$service = $this->createServiceWithContainer($container);
-		$result = $service->massValidateObjects(100, 100, 'serial', false);
+		$result = $service->massValidate(request: new MassValidationRequest(maxObjects: 100, batchSize: 100, mode: 'serial', collectErrors: false));
 
 		$this->assertTrue($result['success']);
 		// totalObjects stays at 10 since maxObjects(100) > total(10).
@@ -2641,100 +2605,8 @@ class SettingsServiceTest extends TestCase {
 	// massValidateObjects() — failed_saves > 0 branches
 	// ──────────────────────────────────────────────────────────────────────────
 
-	/**
-	 * massValidateObjects() in serial mode — when objects exist but objectService is null,
-	 * a TypeError is thrown (since objectService is hardcoded to null in the source).
-	 * The caught Exception increments failed_saves for each object.
-	 */
-	public function testMassValidateObjectsSerialWithObjectsAndNullServiceThrowsTypeError(): void {
-		$container = $this->createMock(IAppContainer::class);
-		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
-		$container->method('get')
-			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
-					return $objectMapper;
-				}
 
-				return null;
-			});
-
-		// Real ObjectEntity with setters to avoid __call issues.
-		$obj = new \OCA\OpenRegister\Db\ObjectEntity();
-		$obj->setUuid('uuid-serial-null-svc');
-		$obj->setRegister('reg-1');
-		$obj->setSchema('schema-1');
-
-		$objectMapper->method('countSearchObjects')->willReturn(1);
-		$objectMapper->method('findAll')->willReturn([$obj]);
-
-		$this->expectException(\Error::class);
-
-		$service = $this->createServiceWithContainer($container);
-		$service->massValidateObjects(0, 10, 'serial', true);
-	}
-
-	/**
-	 * massValidateObjects() in parallel mode — when objects exist but objectService is null,
-	 * an Error is thrown inside processBatchDirectly.
-	 */
-	public function testMassValidateObjectsParallelModeWithObjectsThrowsTypeErrorForNullService(): void {
-		$container = $this->createMock(IAppContainer::class);
-		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
-
-		$container->method('get')
-			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
-					return $objectMapper;
-				}
-
-				return null;
-			});
-
-		$obj = new \OCA\OpenRegister\Db\ObjectEntity();
-		$obj->setUuid('uuid-parallel-null-svc');
-		$obj->setRegister('reg-1');
-		$obj->setSchema('schema-1');
-
-		$objectMapper->method('countSearchObjects')->willReturn(1);
-		$objectMapper->method('findAll')->willReturn([$obj]);
-
-		$this->expectException(\Error::class);
-
-		$service = $this->createServiceWithContainer($container);
-		$service->massValidateObjects(0, 10, 'parallel', true);
-	}
-
-	/**
-	 * massValidateObjects() in serial mode with collectErrors=false still throws
-	 * Error on first object (objectService is always null in the source).
-	 */
-	public function testMassValidateObjectsSerialCollectErrorsFalseThrowsError(): void {
-		$container = $this->createMock(IAppContainer::class);
-		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
-
-		$container->method('get')
-			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
-					return $objectMapper;
-				}
-
-				return null;
-			});
-
-		$obj = new \OCA\OpenRegister\Db\ObjectEntity();
-		$obj->setUuid('uuid-ce-false');
-		$obj->setRegister('reg-1');
-		$obj->setSchema('schema-1');
-
-		$objectMapper->method('countSearchObjects')->willReturn(1);
-		$objectMapper->method('findAll')->willReturn([$obj]);
-
-		$this->expectException(\Error::class);
-
-		$service = $this->createServiceWithContainer($container);
-		$service->massValidateObjects(0, 10, 'serial', false);
-	}
 
 	// ──────────────────────────────────────────────────────────────────────────
 	// getDatabaseStats() — success path (via getStats())

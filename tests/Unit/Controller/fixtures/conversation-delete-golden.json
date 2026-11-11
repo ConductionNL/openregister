@@ -375,6 +375,9 @@
                 ]
             },
             {
+                "feedbackMapper.deleteByConversation": 42
+            },
+            {
                 "messageMapper.deleteByConversation": 42
             },
             {
@@ -406,6 +409,9 @@
                 ]
             },
             {
+                "feedbackMapper.deleteByConversation": 42
+            },
+            {
                 "messageMapper.deleteByConversation": 42
             },
             {
@@ -425,6 +431,34 @@
             "message": "delete failed"
         }
     },
+    "destroyPermanent feedback delete failure": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "conversationMapper.canUserModifyConversation": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "feedbackMapper.deleteByConversation": 42
+            },
+            {
+                "logger.error": [
+                    "[ConversationController] Failed to permanently delete conversation",
+                    "conv-1",
+                    "feedback failed"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to permanently delete conversation",
+            "message": "feedback failed"
+        }
+    },
     "destroyPermanent message delete failure": {
         "calls": [
             {
@@ -435,6 +469,9 @@
                     42,
                     "alice"
                 ]
+            },
+            {
+                "feedbackMapper.deleteByConversation": 42
             },
             {
                 "messageMapper.deleteByConversation": 42
@@ -475,6 +512,9 @@
                     42,
                     "alice"
                 ]
+            },
+            {
+                "feedbackMapper.deleteByConversation": 42
             },
             {
                 "messageMapper.deleteByConversation": 42

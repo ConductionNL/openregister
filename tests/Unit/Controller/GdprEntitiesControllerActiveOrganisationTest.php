@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\GdprEntitiesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
@@ -211,7 +212,7 @@ class GdprEntitiesControllerActiveOrganisationTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->table());
 
-		return new GdprEntitiesController(
+		return GdprEntitiesControllerFactory::create(
 			'openregister',
 			$request,
 			$this->entityMapper($userSession),

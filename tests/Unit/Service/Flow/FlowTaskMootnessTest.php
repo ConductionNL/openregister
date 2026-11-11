@@ -15,11 +15,14 @@ use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowTaskMootness;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\PlacesPruning;
 
 /**
  * A losing branch takes its task with it; a run-less task is never touched.
@@ -35,7 +38,7 @@ class FlowTaskMootnessTest extends TestCase {
 	protected function setUp(): void {
 		$this->tasks = $this->createMock(TaskService::class);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(TaskService::class)->willReturn($this->tasks);
+		$container->method('get')->with(TaskServiceInterface::class)->willReturn($this->tasks);
 
 		$this->mootness = new FlowTaskMootness($container, new NullLogger());
 	}//end setUp()
@@ -73,18 +76,18 @@ class FlowTaskMootnessTest extends TestCase {
 			->method('terminateAsMoot')
 			->with(
 				't-lo',
-				$this->callback(function (string $reason): bool {
-					$this->assertStringContainsString("'s'", $reason, 'names the deciding transition');
-					$this->assertStringContainsString("'lo'", $reason, 'names the node');
-					$this->assertStringContainsString('run-1', $reason);
+				$this->callback(function (TaskTrigger $trigger): bool {
+					$this->assertStringContainsString("'s'", $trigger->reason, 'names the deciding transition');
+					$this->assertStringContainsString("'lo'", $trigger->reason, 'names the node');
+					$this->assertStringContainsString('run-1', $trigger->reason);
+					$this->assertSame('flow-run:run-1', $trigger->source);
 
 					return true;
-				}),
-				'flow-run:run-1'
+				})
 			)
 			->willReturn($this->task(runUuid: 'run-1'));
 
-		$count = $this->mootness->placesPruned(context: $this->context($state), places: ['lo'], byTransition: 's');
+		$count = $this->mootness->placesPruned(context: $this->context($state), pruning: new PlacesPruning(places: ['lo'], byTransition: 's'));
 
 		$this->assertSame(1, $count);
 		$this->assertSame([], $state->read(nodeId: 'lo'), 'the slot is cleared');
@@ -100,7 +103,7 @@ class FlowTaskMootnessTest extends TestCase {
 		$this->tasks->method('get')->willReturn($this->task(runUuid: 'run-1'));
 		$this->tasks->expects($this->once())->method('terminateAsMoot')->willReturn($this->task(runUuid: 'run-1'));
 
-		$this->mootness->placesPruned(context: $this->context($state), places: ['lo' . FlowGraph::PLACE_JOIN . 'e1'], byTransition: 's');
+		$this->mootness->placesPruned(context: $this->context($state), pruning: new PlacesPruning(places: ['lo' . FlowGraph::PLACE_JOIN . 'e1'], byTransition: 's'));
 	}//end testAJoinPlaceIsRecognisedAsTheNodes()
 
 	/**
@@ -112,7 +115,7 @@ class FlowTaskMootnessTest extends TestCase {
 		$this->tasks->method('get')->willReturn($this->task(runUuid: null));
 		$this->tasks->expects($this->never())->method('terminateAsMoot');
 
-		$count = $this->mootness->placesPruned(context: $this->context($state), places: ['lo'], byTransition: 's');
+		$count = $this->mootness->placesPruned(context: $this->context($state), pruning: new PlacesPruning(places: ['lo'], byTransition: 's'));
 
 		$this->assertSame(0, $count);
 		$this->assertSame('t-lo', $state->read(nodeId: 'lo')['taskUuid'], 'the slot is kept when nothing was terminated');
@@ -128,7 +131,7 @@ class FlowTaskMootnessTest extends TestCase {
 		$this->tasks->method('get')->willReturn($this->task(runUuid: 'run-other'));
 		$this->tasks->expects($this->never())->method('terminateAsMoot');
 
-		$this->mootness->placesPruned(context: $this->context($state), places: ['lo'], byTransition: 's');
+		$this->mootness->placesPruned(context: $this->context($state), pruning: new PlacesPruning(places: ['lo'], byTransition: 's'));
 	}//end testAnotherRunsTaskIsNeverTouched()
 
 	/**
@@ -139,10 +142,22 @@ class FlowTaskMootnessTest extends TestCase {
 		$state->forNode(nodeId: 'lo')->set(key: 'taskUuid', value: 't-lo');
 		$this->tasks->expects($this->never())->method('terminateAsMoot');
 
-		$count = $this->mootness->placesPruned(context: $this->context($state), places: ['hi'], byTransition: 's');
+		$count = $this->mootness->placesPruned(context: $this->context($state), pruning: new PlacesPruning(places: ['hi'], byTransition: 's'));
 
 		$this->assertSame(0, $count);
 	}//end testAPlaceThatWasNotClearedIsLeftAlone()
+
+	/**
+	 * A task-less slot under an all-digit node id (an int array key) is skipped, not a TypeError.
+	 */
+	public function testATaskLessSlotUnderANumericNodeIdIsSkipped(): void {
+		$state = new FlowResumeState(byNode: ['42' => ['note' => 'no task here']]);
+		$this->tasks->expects($this->never())->method('terminateAsMoot');
+
+		$count = $this->mootness->placesPruned(context: $this->context($state), pruning: new PlacesPruning(places: ['42'], byTransition: 's'));
+
+		$this->assertSame(0, $count);
+	}//end testATaskLessSlotUnderANumericNodeIdIsSkipped()
 
 	/**
 	 * Task bookkeeping must never fail a hop: a throwing service is logged
@@ -153,7 +168,7 @@ class FlowTaskMootnessTest extends TestCase {
 		$state->forNode(nodeId: 'lo')->set(key: 'taskUuid', value: 't-lo');
 		$this->tasks->method('get')->willThrowException(new RuntimeException('database away'));
 
-		$count = $this->mootness->placesPruned(context: $this->context($state), places: ['lo'], byTransition: 's');
+		$count = $this->mootness->placesPruned(context: $this->context($state), pruning: new PlacesPruning(places: ['lo'], byTransition: 's'));
 
 		$this->assertSame(0, $count);
 	}//end testATaskLayerFailureNeverFailsTheHop()
@@ -161,6 +176,6 @@ class FlowTaskMootnessTest extends TestCase {
 	public function testWithoutAResumeStateNothingHappens(): void {
 		$this->tasks->expects($this->never())->method('get');
 
-		$this->assertSame(0, $this->mootness->placesPruned(context: [], places: ['lo'], byTransition: 's'));
+		$this->assertSame(0, $this->mootness->placesPruned(context: [], pruning: new PlacesPruning(places: ['lo'], byTransition: 's')));
 	}//end testWithoutAResumeStateNothingHappens()
 }//end class

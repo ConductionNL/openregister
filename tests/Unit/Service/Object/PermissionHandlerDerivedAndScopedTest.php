@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -63,6 +64,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\DerivedGrantResolver
  * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerDerivedAndScopedTest extends TestCase {
 
@@ -119,7 +123,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturn(false);
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_ENFORCING);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$userManager,
 			$groupManager,
@@ -162,7 +166,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($registerMapper): mixed {
-				if ($id === RegisterMapper::class) {
+				if ($id === RegisterMapperInterface::class) {
 					return $registerMapper;
 				}
 
@@ -239,7 +243,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$this->assertTrue(
 			$handler->hasPermission(
 				schema: $this->schemaWith(
-					['read' => [['group' => 'waarnemers', 'until' => '2099-01-01T00:00:00+01:00']]]
+					['read' => [['group' => 'waarnemers', 'until' => date('c', strtotime('+10 years'))]]]
 				),
 				action: 'read',
 				userId: 'ana'
@@ -266,7 +270,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$this->assertTrue(
 			$granted->hasPermission(
 				schema: $this->schemaWith(
-					['read' => [['user' => 'ana', 'until' => '2099-01-01T00:00:00+01:00']]]
+					['read' => [['user' => 'ana', 'until' => date('c', strtotime('+10 years'))]]]
 				),
 				action: 'read',
 				userId: 'ana'

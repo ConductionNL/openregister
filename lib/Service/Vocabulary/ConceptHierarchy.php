@@ -37,7 +37,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use DateTimeInterface;
 
 /**
  * Walks a concept scheme's broader/narrower relations.
@@ -78,44 +77,22 @@ class ConceptHierarchy {
 	 * expanded twice, so a scheme whose `narrower` relations loop terminates
 	 * with the set it reached rather than with a hung request.
 	 *
-	 * @param string $rootUri The branch root's uri.
-	 * @param array<string,array<string,mixed>> $conceptsByUri Every concept of the scheme, keyed by uri.
-	 * @param integer|null $maxDepth How many levels below the root to walk.
+	 * @param ConceptBranch $branch The branch: its root, the scheme's concepts and the depth bound.
 	 *
 	 * @return array<int,string> The branch's uris, root first.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function branchUris(string $rootUri, array $conceptsByUri, ?int $maxDepth = null): array {
-		$limit = ($maxDepth ?? self::DEFAULT_MAX_DEPTH);
-		if ($limit < 0) {
-			$limit = 0;
+	public function branchUris(ConceptBranch $branch): array {
+		$relations = $branch->relations();
+		$limit = $branch->depthLimit();
+		$ordered = [$branch->rootUri];
+		$frontier = [$branch->rootUri];
+
+		for ($depth = 0; $depth < $limit && $frontier !== []; $depth++) {
+			$frontier = $relations->unseenChildren(frontier: $frontier, known: $ordered);
+			$ordered = array_merge($ordered, $frontier);
 		}
-
-		$seen = [$rootUri => true];
-		$ordered = [$rootUri];
-		$frontier = [$rootUri];
-
-		for ($depth = 0; $depth < $limit; $depth++) {
-			$next = [];
-			foreach ($frontier as $uri) {
-				foreach ($this->narrowerUrisOf(uri: $uri, conceptsByUri: $conceptsByUri) as $child) {
-					if (isset($seen[$child]) === true) {
-						continue;
-					}
-
-					$seen[$child] = true;
-					$ordered[] = $child;
-					$next[] = $child;
-				}
-			}
-
-			if ($next === []) {
-				break;
-			}
-
-			$frontier = $next;
-		}//end for
 
 		return $ordered;
 	}//end branchUris()
@@ -135,7 +112,7 @@ class ConceptHierarchy {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isLeaf(string $uri, array $conceptsByUri): bool {
-		return $this->narrowerUrisOf(uri: $uri, conceptsByUri: $conceptsByUri) === [];
+		return (new ConceptRelations(conceptsByUri: $conceptsByUri))->narrowerOf(uri: $uri) === [];
 	}//end isLeaf()
 
 	/**
@@ -147,31 +124,21 @@ class ConceptHierarchy {
 	 * its parent is not. A caller that wants only the offerable values filters
 	 * the flattened list instead.
 	 *
-	 * @param string $rootUri The branch root's uri.
-	 * @param array<string,array<string,mixed>> $conceptsByUri Every concept of the scheme, keyed by uri.
-	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param DateTimeInterface $at The instant to judge each window at.
-	 * @param integer|null $maxDepth How many levels below the root to walk.
+	 * @param ConceptBranch  $branch  The branch: its root, the scheme's concepts and the depth bound.
+	 * @param ConceptReading $reading The language to read labels in and the instant to judge each window at.
 	 *
 	 * @return array<string,mixed> The tree node for the root.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function tree(
-		string $rootUri,
-		array $conceptsByUri,
-		string $language,
-		DateTimeInterface $at,
-		?int $maxDepth = null,
-	): array {
-		return $this->node(
-			uri: $rootUri,
-			conceptsByUri: $conceptsByUri,
-			language: $language,
-			at: $at,
-			remaining: ($maxDepth ?? self::DEFAULT_MAX_DEPTH),
-			visited: []
+	public function tree(ConceptBranch $branch, ConceptReading $reading): array {
+		$walk = new ConceptTreeWalk(
+			relations: $branch->relations(),
+			reading: $reading,
+			remaining: $branch->depthLimit()
 		);
+
+		return $this->node(uri: $branch->rootUri, walk: $walk);
 	}//end tree()
 
 	/**
@@ -189,21 +156,32 @@ class ConceptHierarchy {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function labelOf(array $concept, string $language): string {
+		$label = null;
 		$labels = ($concept['prefLabel'] ?? null);
 		if (is_array($labels) === true) {
 			$label = $this->preferredLabelFromMap(labels: $labels, language: $language);
-			if ($label !== null) {
-				return $label;
-			}
 		}
 
+		return ($label ?? $this->fallbackLabel(concept: $concept));
+	}//end labelOf()
+
+	/**
+	 * The label of a concept that has no usable `prefLabel`.
+	 *
+	 * The notation when it is filled, else the uri, else an empty string.
+	 *
+	 * @param array<string,mixed> $concept The concept's decoded object data.
+	 *
+	 * @return string The label.
+	 */
+	private function fallbackLabel(array $concept): string {
 		$notation = ($concept['notation'] ?? null);
-		if (is_string($notation) === true && trim($notation) !== '') {
+		if ($this->isFilled(value: $notation) === true) {
 			return $notation;
 		}
 
-		return (string)($concept['uri'] ?? '');
-	}//end labelOf()
+		return (string) ($concept['uri'] ?? '');
+	}//end fallbackLabel()
 
 	/**
 	 * Pick the best label from a decoded `prefLabel` map.
@@ -219,15 +197,13 @@ class ConceptHierarchy {
 	 * @return string|null The chosen label, or null when the map holds none.
 	 */
 	private function preferredLabelFromMap(array $labels, string $language): ?string {
+		$preferred = [];
 		foreach ([$language, substr($language, 0, 2), 'nl'] as $tag) {
-			$candidate = ($labels[$tag] ?? null);
-			if (is_string($candidate) === true && trim($candidate) !== '') {
-				return $candidate;
-			}
+			$preferred[] = ($labels[$tag] ?? null);
 		}
 
-		foreach ($labels as $candidate) {
-			if (is_string($candidate) === true && trim($candidate) !== '') {
+		foreach (array_merge($preferred, array_values($labels)) as $candidate) {
+			if ($this->isFilled(value: $candidate) === true) {
 				return $candidate;
 			}
 		}
@@ -236,156 +212,59 @@ class ConceptHierarchy {
 	}//end preferredLabelFromMap()
 
 	/**
+	 * Whether a label candidate is a non-blank string.
+	 *
+	 * @param mixed $value The candidate.
+	 *
+	 * @return boolean True when it can be shown as a label.
+	 */
+	private function isFilled(mixed $value): bool {
+		return is_string($value) === true && trim($value) !== '';
+	}//end isFilled()
+
+	/**
 	 * One tree node, recursing into its narrower concepts.
 	 *
 	 * @param string $uri The concept's uri.
-	 * @param array<string,array<string,mixed>> $conceptsByUri Every concept of the scheme, keyed by uri.
-	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param DateTimeInterface $at The instant to judge the window at.
-	 * @param integer $remaining How many more levels may be walked.
-	 * @param array<string,true> $visited The uris already on this path.
+	 * @param ConceptTreeWalk $walk The walk's position: relations, language, instant, depth and path.
 	 *
 	 * @return array<string,mixed> The node.
 	 */
-	private function node(
-		string $uri,
-		array $conceptsByUri,
-		string $language,
-		DateTimeInterface $at,
-		int $remaining,
-		array $visited,
-	): array {
-		$concept = ($conceptsByUri[$uri] ?? []);
-		$visited[$uri] = true;
-
-		$children = [];
-		if ($remaining > 0) {
-			foreach ($this->narrowerUrisOf(uri: $uri, conceptsByUri: $conceptsByUri) as $child) {
-				if (isset($visited[$child]) === true) {
-					continue;
-				}
-
-				$children[] = $this->node(
-					uri: $child,
-					conceptsByUri: $conceptsByUri,
-					language: $language,
-					at: $at,
-					remaining: ($remaining - 1),
-					visited: $visited
-				);
-			}
-		}
+	private function node(string $uri, ConceptTreeWalk $walk): array {
+		$children = $this->childNodes(uri: $uri, walk: $walk);
+		$concept = $walk->relations->concept(uri: $uri);
 
 		return [
 			'value' => $uri,
-			'label' => $this->labelOf(concept: $concept, language: $language),
+			'label' => $this->labelOf(concept: $concept, language: $walk->reading->language),
 			'notation' => ($concept['notation'] ?? null),
-			'offerable' => $this->lifecycle->isOfferable(concept: $concept, at: $at),
-			'leaf' => ($this->narrowerUrisOf(uri: $uri, conceptsByUri: $conceptsByUri) === []),
+			'offerable' => $this->lifecycle->isOfferable(concept: $concept, at: $walk->reading->instant),
+			'leaf' => ($walk->relations->narrowerOf(uri: $uri) === []),
 			'children' => $children,
 		];
 	}//end node()
 
 	/**
-	 * The uris of every concept directly under `$uri`.
-	 *
-	 * Both directions of the relation are read and merged: the concept's own
-	 * `narrower`, plus every concept whose `broader` names it.
+	 * The nodes of the concepts directly under `$uri` that are not on the path.
 	 *
 	 * @param string $uri The parent concept's uri.
-	 * @param array<string,array<string,mixed>> $conceptsByUri Every concept of the scheme, keyed by uri.
+	 * @param ConceptTreeWalk $walk The walk's position at the parent.
 	 *
-	 * @return array<int,string> The child uris.
+	 * @return array<int,array<string,mixed>> The child nodes.
 	 */
-	private function narrowerUrisOf(string $uri, array $conceptsByUri): array {
-		$children = [];
-
-		$parent = ($conceptsByUri[$uri] ?? []);
-		foreach ($this->relationUris(value: ($parent['narrower'] ?? null)) as $child) {
-			if (isset($conceptsByUri[$child]) === true) {
-				$children[$child] = true;
-			}
-		}
-
-		foreach ($conceptsByUri as $candidateUri => $candidate) {
-			if ((string)$candidateUri === $uri) {
-				continue;
-			}
-
-			foreach ($this->relationUris(value: ($candidate['broader'] ?? null)) as $broader) {
-				if ($broader === $uri) {
-					$children[(string)$candidateUri] = true;
-				}
-			}
-		}
-
-		return array_keys($children);
-	}//end narrowerUrisOf()
-
-	/**
-	 * Normalise a SKOS relation value to a list of uris.
-	 *
-	 * The relation dialect stores either a bare string, a list of strings, or
-	 * a list of `{uri: ...}`/`{id: ...}` maps depending on whether the read
-	 * extended the relation. All three are read here so a caller never has to
-	 * know which one it got.
-	 *
-	 * @param mixed $value The raw relation value.
-	 *
-	 * @return array<int,string> The referenced uris.
-	 */
-	private function relationUris(mixed $value): array {
-		if (is_string($value) === true) {
-			if ($value === '') {
-				return [];
-			}
-
-			return [$value];
-		}
-
-		if (is_array($value) === false) {
+	private function childNodes(string $uri, ConceptTreeWalk $walk): array {
+		if ($walk->canDescend() === false) {
 			return [];
 		}
 
-		$uris = [];
-		foreach ($value as $entry) {
-			$uri = $this->uriFromRelationEntry(entry: $entry);
-			if ($uri !== null) {
-				$uris[] = $uri;
-			}
-		}//end foreach
-
-		return $uris;
-	}//end relationUris()
-
-	/**
-	 * Read a single uri out of one relation-list entry.
-	 *
-	 * An entry is either a bare uri string or a `{uri: ...}`/`{id: ...}` map;
-	 * for a map the first non-empty of `uri`, `id`, `uuid`, `@id` wins. An empty
-	 * string, or a map holding none of those keys, yields null so the caller
-	 * drops it.
-	 *
-	 * @param mixed $entry The raw relation-list entry.
-	 *
-	 * @return string|null The referenced uri, or null when the entry names none.
-	 */
-	private function uriFromRelationEntry(mixed $entry): ?string {
-		if (is_string($entry) === true && $entry !== '') {
-			return $entry;
-		}
-
-		if (is_array($entry) === false) {
-			return null;
-		}
-
-		foreach (['uri', 'id', 'uuid', '@id'] as $key) {
-			$candidate = ($entry[$key] ?? null);
-			if (is_string($candidate) === true && $candidate !== '') {
-				return $candidate;
+		$below = $walk->below(uri: $uri);
+		$children = [];
+		foreach ($walk->relations->narrowerOf(uri: $uri) as $child) {
+			if ($below->hasVisited(uri: $child) === false) {
+				$children[] = $this->node(uri: $child, walk: $below);
 			}
 		}
 
-		return null;
-	}//end uriFromRelationEntry()
+		return $children;
+	}//end childNodes()
 }//end class

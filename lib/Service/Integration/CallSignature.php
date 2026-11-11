@@ -37,22 +37,34 @@ use ReflectionMethod;
 final class CallSignature {
 
 	/**
-	 * Whether `$service->$method()` names the parameter, or collects named arguments.
+	 * The signature of one method of one service.
 	 *
 	 * @param object $service The connector's CallService.
-	 * @param string $method The method asked about.
-	 * @param string $name The parameter name.
-	 *
-	 * @return bool True when the method takes it.
+	 * @param string $method  The method asked about.
 	 *
 	 * @spec openspec/specs/integration-person-lookup/spec.md#requirement-a-call-may-be-recorded-without-its-bodies
 	 */
-	public function accepts(object $service, string $method, string $name): bool {
-		if (method_exists($service, $method) === false) {
+	public function __construct(
+		public readonly object $service,
+		public readonly string $method,
+	) {
+	}//end __construct()
+
+	/**
+	 * Whether the method names the parameter, or collects named arguments.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return bool True when the method takes it; false when the method does not exist.
+	 *
+	 * @spec openspec/specs/integration-person-lookup/spec.md#requirement-a-call-may-be-recorded-without-its-bodies
+	 */
+	public function accepts(string $name): bool {
+		if (method_exists($this->service, $this->method) === false) {
 			return false;
 		}
 
-		foreach ((new ReflectionMethod($service, $method))->getParameters() as $parameter) {
+		foreach ((new ReflectionMethod($this->service, $this->method))->getParameters() as $parameter) {
 			if ($parameter->getName() === $name || $parameter->isVariadic() === true) {
 				return true;
 			}

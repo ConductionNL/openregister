@@ -20,16 +20,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\DetectionMethod;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\DetectionMethod;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Exception\ManualEntityException;
-use OCA\OpenRegister\Service\File\ChunkTextMatcher;
-use OCA\OpenRegister\Service\File\ManualEntityService;
+use OCA\OpenRegister\Files\Service\File\ChunkTextMatcher;
+use OCA\OpenRegister\Files\Service\File\ManualEntityCatalogue;
+use OCA\OpenRegister\Files\Service\File\ManualEntityRecording;
+use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
+use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCP\Files\File as NcFile;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -119,13 +122,17 @@ class ManualEntityServiceTest extends TestCase {
 		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 
 		$this->service = new ManualEntityService(
-			gdprEntityMapper: $this->gdprMapper,
-			entityRelationMapper: $this->relationMapper,
-			chunkMapper: $this->chunkMapper,
-			matcher: new ChunkTextMatcher(),
-			auditTrailMapper: $this->auditMapper,
-			rootFolder: $this->rootFolder,
-			db: $this->db,
+			catalogue: new ManualEntityCatalogue(
+				gdprEntityMapper: $this->gdprMapper,
+				entityRelationMapper: $this->relationMapper,
+				chunkMapper: $this->chunkMapper,
+				matcher: new ChunkTextMatcher()
+			),
+			recording: new ManualEntityRecording(
+				auditTrailMapper: $this->auditMapper,
+				rootFolder: $this->rootFolder,
+				db: $this->db
+			),
 			logger: $this->logger
 		);
 
@@ -238,12 +245,8 @@ class ManualEntityServiceTest extends TestCase {
 		$this->db->expects($this->never())->method('rollBack');
 
 		$result = $this->service->addManualEntity(
-			fileId: $fileId,
-			value: 'Jan Jansen',
-			type: 'PERSON',
-			wholeWord: true,
-			caseSensitive: true,
-			actor: $actor
+			request: (new ManualEntityRequest(fileId: $fileId, value: 'Jan Jansen', type: 'PERSON', actor: $actor))
+				->withMatching(wholeWord: true, caseSensitive: true)
 		);
 
 		$this->assertTrue(condition: $result->entityWasNew);
@@ -291,12 +294,8 @@ class ManualEntityServiceTest extends TestCase {
 		$this->db->expects($this->once())->method('commit');
 
 		$result = $this->service->addManualEntity(
-			fileId: $fileId,
-			value: 'Jan Jansen',
-			type: 'PERSON',
-			wholeWord: true,
-			caseSensitive: true,
-			actor: $actor
+			request: (new ManualEntityRequest(fileId: $fileId, value: 'Jan Jansen', type: 'PERSON', actor: $actor))
+				->withMatching(wholeWord: true, caseSensitive: true)
 		);
 
 		$this->assertFalse(condition: $result->entityWasNew);
@@ -343,12 +342,8 @@ class ManualEntityServiceTest extends TestCase {
 		$this->db->expects($this->once())->method('commit');
 
 		$result = $this->service->addManualEntity(
-			fileId: $fileId,
-			value: 'Jan',
-			type: 'PERSON',
-			wholeWord: true,
-			caseSensitive: true,
-			actor: $actor
+			request: (new ManualEntityRequest(fileId: $fileId, value: 'Jan', type: 'PERSON', actor: $actor))
+				->withMatching(wholeWord: true, caseSensitive: true)
 		);
 
 		$this->assertSame(expected: 3, actual: $result->matchCount);
@@ -392,12 +387,8 @@ class ManualEntityServiceTest extends TestCase {
 		$this->db->expects($this->once())->method('commit');
 
 		$result = $this->service->addManualEntity(
-			fileId: $fileId,
-			value: 'Jan Jansen',
-			type: 'PERSON',
-			wholeWord: true,
-			caseSensitive: true,
-			actor: $actor
+			request: (new ManualEntityRequest(fileId: $fileId, value: 'Jan Jansen', type: 'PERSON', actor: $actor))
+				->withMatching(wholeWord: true, caseSensitive: true)
 		);
 
 		$this->assertSame(expected: 0, actual: $result->matchCount);
@@ -421,12 +412,8 @@ class ManualEntityServiceTest extends TestCase {
 
 		try {
 			$this->service->addManualEntity(
-				fileId: $fileId,
-				value: 'X',
-				type: 'PERSON',
-				wholeWord: true,
-				caseSensitive: true,
-				actor: $actor
+				request: (new ManualEntityRequest(fileId: $fileId, value: 'X', type: 'PERSON', actor: $actor))
+					->withMatching(wholeWord: true, caseSensitive: true)
 			);
 			$this->fail(message: 'Expected ManualEntityException');
 		} catch (ManualEntityException $e) {
@@ -452,12 +439,8 @@ class ManualEntityServiceTest extends TestCase {
 
 		try {
 			$this->service->addManualEntity(
-				fileId: $fileId,
-				value: 'X',
-				type: 'PERSON',
-				wholeWord: true,
-				caseSensitive: true,
-				actor: $actor
+				request: (new ManualEntityRequest(fileId: $fileId, value: 'X', type: 'PERSON', actor: $actor))
+					->withMatching(wholeWord: true, caseSensitive: true)
 			);
 			$this->fail(message: 'Expected ManualEntityException');
 		} catch (ManualEntityException $e) {
@@ -487,12 +470,8 @@ class ManualEntityServiceTest extends TestCase {
 
 		try {
 			$this->service->addManualEntity(
-				fileId: 42,
-				value: 'X',
-				type: 'PERSON',
-				wholeWord: true,
-				caseSensitive: true,
-				actor: $user
+				request: (new ManualEntityRequest(fileId: 42, value: 'X', type: 'PERSON', actor: $user))
+					->withMatching(wholeWord: true, caseSensitive: true)
 			);
 			$this->fail(message: 'Expected ManualEntityException');
 		} catch (ManualEntityException $e) {
@@ -535,12 +514,8 @@ class ManualEntityServiceTest extends TestCase {
 
 		try {
 			$this->service->addManualEntity(
-				fileId: $fileId,
-				value: 'Jan Jansen',
-				type: 'PERSON',
-				wholeWord: true,
-				caseSensitive: true,
-				actor: $actor
+				request: (new ManualEntityRequest(fileId: $fileId, value: 'Jan Jansen', type: 'PERSON', actor: $actor))
+					->withMatching(wholeWord: true, caseSensitive: true)
 			);
 			$this->fail(message: 'Expected ManualEntityException');
 		} catch (ManualEntityException $e) {
@@ -551,4 +526,81 @@ class ManualEntityServiceTest extends TestCase {
 		}
 
 	}//end testAuditFailureRollsBack()
+
+	/**
+	 * Both audit rows carry the exact payloads, the acting UID and one shared timestamp.
+	 *
+	 * @return void
+	 */
+	public function testAuditPayloadsArePinned(): void {
+		$fileId = 42;
+		$actor = $this->setupWritableFile(fileId: $fileId);
+
+		$this->chunkMapper->method('findBySource')->willReturn(
+			value: [$this->makeChunk(id: 100, text: 'Jan Jansen en Jan Jansen.')]
+		);
+		$this->gdprMapper->method('findOneByValueAndType')->willReturn(value: null);
+		$inserted = new GdprEntity();
+		$inserted->setId(7);
+		$inserted->setCategory('personal_data');
+		$this->gdprMapper->method('insert')->willReturn(value: $inserted);
+
+		$this->relationMapper->method('existsForFileAtPosition')->willReturnOnConsecutiveCalls(true, false);
+		$relation = new EntityRelation();
+		$relation->setId(201);
+		$this->relationMapper->method('insertBatch')->willReturn(value: [$relation]);
+
+		$rows = [];
+		$this->auditMapper->expects($this->exactly(count: 2))
+			->method('insert')
+			->willReturnCallback(
+				callback: function ($row) use (&$rows) {
+					$rows[] = $row;
+					return $row;
+				}
+			);
+
+		$result = $this->service->addManualEntity(
+			request: (new ManualEntityRequest(fileId: $fileId, value: 'Jan Jansen', type: 'PERSON', actor: $actor))
+				->withMatching(wholeWord: true, caseSensitive: true)
+		);
+
+		$this->assertSame(expected: 2, actual: $result->matchCount);
+		$this->assertSame(expected: 1, actual: $result->matchesSkipped);
+		$this->assertSame(expected: 'entity_create', actual: $rows[0]->getAction());
+		$this->assertSame(expected: 'entity_relations_batch_create', actual: $rows[1]->getAction());
+		foreach ($rows as $row) {
+			$this->assertSame(expected: 'op1', actual: $row->getUser());
+			$this->assertNull(actual: $row->getUserName());
+			$this->assertMatchesRegularExpression(pattern: '/^[0-9a-f-]{36}$/', string: $row->getUuid());
+		}
+
+		$this->assertSame(expected: $rows[0]->getCreated(), actual: $rows[1]->getCreated());
+		$this->assertNotSame(expected: $rows[0]->getUuid(), actual: $rows[1]->getUuid());
+		$this->assertSame(
+			expected: [
+				'subjectType' => 'openregister_entities',
+				'subjectId'   => 7,
+				'fields'      => ['value' => 'Jan Jansen', 'type' => 'PERSON', 'category' => 'personal_data'],
+			],
+			actual: $rows[0]->getChanged()
+		);
+		$this->assertSame(
+			expected: [
+				'subjectType' => 'openregister_files',
+				'subjectId'   => 42,
+				'fields'      => [
+					'value'           => 'Jan Jansen',
+					'type'            => 'PERSON',
+					'fileId'          => 42,
+					'detectionMethod' => DetectionMethod::MANUAL,
+					'matchCount'      => 2,
+					'matchesSkipped'  => 1,
+					'relationIds'     => [201],
+				],
+			],
+			actual: $rows[1]->getChanged()
+		);
+
+	}//end testAuditPayloadsArePinned()
 }//end class

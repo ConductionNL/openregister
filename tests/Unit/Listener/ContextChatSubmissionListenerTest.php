@@ -27,7 +27,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\ContextChat\ContentItem;
 use OCP\ContextChat\IContentManager;
@@ -35,13 +36,15 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionServices;
 
 /**
- * @covers \OCA\OpenRegister\Listener\ContextChatSubmissionListener
+ * @covers \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectDeletedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
  */
 class ContextChatSubmissionListenerTest extends TestCase {
 	private SchemaMapper $schemaMapper;
@@ -74,11 +77,13 @@ class ContextChatSubmissionListenerTest extends TestCase {
 		);
 
 		$this->listener = new ContextChatSubmissionListener(
-			$container,
-			$this->schemaMapper,
+			new ContextChatSubmissionServices(
+				$container,
+				$this->schemaMapper,
+				$this->userManager,
+				$this->createMock(LoggerInterface::class),
+			),
 			$this->permissionHandler,
-			$this->userManager,
-			$this->createMock(LoggerInterface::class)
 		);
 	}
 
@@ -154,6 +159,33 @@ class ContextChatSubmissionListenerTest extends TestCase {
 		$this->assertSame('Test Object', $captured->title);
 		$this->assertStringContainsString('name: Test Object', $captured->content);
 		$this->assertSame(['alice', 'bob'], $captured->users);
+	}
+
+	/**
+	 * The public-read question is asked on the record's metadata, not on an `@self` in its data.
+	 */
+	public function testThePublicReadQuestionCarriesTheRecordsMetadata(): void {
+		$this->schemaMapper->method('find')->willReturn($this->optedInSchema(2));
+		$this->permissionHandler->method('resolveAuthorization')->willReturn(['read' => [['group' => 'public', 'match' => ['_owner' => 'alice']]]]);
+		$this->permissionHandler->expects($this->once())
+			->method('hasGroupPermission')
+			->with(
+				$this->callback(
+					static fn (GroupRuleRequest $request): bool => $request->groupId === 'public'
+						&& $request->action === 'read'
+						&& $request->userId === null
+						&& $request->userGroup === null
+						&& $request->objectOwner === null
+						&& ($request->objectData['@self']['owner'] ?? null) === 'alice'
+						&& ($request->objectData['@self']['schema'] ?? null) === '2'
+						&& array_key_exists('_owner', $request->objectData) === false
+				)
+			)
+			->willReturn(false);
+
+		$object = $this->makeObject(2, ['@self' => ['owner' => 'mallory'], '_owner' => 'mallory']);
+
+		$this->assertFalse($this->listener->submitIfEligible($object));
 	}
 
 	/**

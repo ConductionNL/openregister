@@ -19,17 +19,23 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use GuzzleHttp\Client;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SeedRelatedTarget;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IAppConfig;
@@ -43,6 +49,16 @@ use Psr\Log\LoggerInterface;
  * regenerate the fixture.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedTarget
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
+ * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
+ * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
+ * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
  */
 class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 
@@ -117,7 +133,7 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @covers ::processRelatedItems
+	 * @covers \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
 	 *
 	 * @dataProvider cases
 	 */
@@ -163,23 +179,27 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 		}
 
 		$handler = new ImportHandler(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->createMock(ObjectService::class)
 		);
 
 		if ($withServices === true) {
 			$fileService = $this->createMock(FileService::class);
 			$fileService->method('addFile')->willReturnCallback(
-				function ($object, string $name, string $content, bool $share, array $tags) {
+				function (FileTarget $target, FileUpload $upload) {
+					[$object, $name, $content, $share, $tags] = [$target->object, $upload->fileName, $upload->content, $upload->share, $upload->tags];
 					$this->calls[] = ['addFile', $object->getUuid(), $name, $content, $share, $tags];
 					if ($name === 'fails.txt') {
 						throw new \RuntimeException('disk full');
@@ -190,8 +210,9 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 			);
 			$noteService = $this->createMock(NoteService::class);
 			$noteService->method('createNote')->willReturnCallback(
-				function (string $uuid, string $message): array {
-					$this->calls[] = ['createNote', $uuid, $message];
+				function (NoteDraft $draft): array {
+					$message = $draft->message;
+					$this->calls[] = ['createNote', $draft->objectUuid, $message];
 					if ($message === 'fail') {
 						throw new \RuntimeException('note failed');
 					}
@@ -200,8 +221,9 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 				}
 			);
 			$taskService = $this->createMock(TaskService::class);
-			$taskService->method('createTask')->willReturnCallback(
-				function (...$args): array {
+			$taskService->method('createObjectTask')->willReturnCallback(
+				function (ObjectRef $ref, LinkedTaskDraft $draft): array {
+					$args = [$ref->register, $ref->schema, $ref->id, $draft->objectTitle, $draft->data];
 					$this->calls[] = ['createTask', $args];
 					if ($args[4]['summary'] === 'fail') {
 						throw new \RuntimeException('task failed');
@@ -218,8 +240,13 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('uuid-1');
 
-		$method = new \ReflectionMethod(ImportHandler::class, 'processRelatedItems');
-		$method->invokeArgs($handler, [$object, $items, 4, 9, 'Seed title', $hasUserContext, &$result]);
+		$target = new SeedRelatedTarget(object: $object);
+		$target->items = $items;
+		$target->registerId = 4;
+		$target->schemaId = 9;
+		$target->title = 'Seed title';
+		$target->hasUserContext = $hasUserContext;
+		(new \ReflectionProperty(ImportHandler::class, 'relatedItems'))->getValue($handler)->create($target, $result);
 
 		return json_decode((string)json_encode(['result' => $result, 'calls' => $this->calls]), true);
 	}//end runCase()

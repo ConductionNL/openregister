@@ -29,26 +29,52 @@ use OCA\OpenRegister\Db\Schema;
 final class TableTermsFacet {
 
 	/**
+	 * The magic table, without the table prefix.
+	 *
+	 * @var string
+	 */
+	public readonly string $tableName;
+
+	/**
+	 * The search filters, without the facet configuration.
+	 *
+	 * @var array
+	 */
+	public readonly array $baseQuery;
+
+	/**
+	 * The register the table belongs to.
+	 *
+	 * @var Register
+	 */
+	public readonly Register $register;
+
+	/**
+	 * The schema the table belongs to.
+	 *
+	 * @var Schema
+	 */
+	public readonly Schema $schema;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string   $tableName  The magic table, without the table prefix
-	 * @param string   $field      The column the facet counts
-	 * @param array    $baseQuery  The search filters, without the facet configuration
-	 * @param bool     $isMetadata Whether the column is a metadata column
-	 * @param Register $register   The register the table belongs to
-	 * @param Schema   $schema     The schema the table belongs to
+	 * Built by TermsFacetTable::forMetadataField() and ::forPropertyField().
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 * @param TermsFacetTable $table      The table and its filters
+	 * @param string          $field      The column the facet counts
+	 * @param bool            $isMetadata Whether the column is a metadata column
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function __construct(
-		public readonly string $tableName,
+		TermsFacetTable $table,
 		public readonly string $field,
-		public readonly array $baseQuery,
 		public readonly bool $isMetadata,
-		public readonly Register $register,
-		public readonly Schema $schema,
 	) {
+		$this->tableName = $table->tableName;
+		$this->baseQuery = $table->baseQuery;
+		$this->register  = $table->register;
+		$this->schema    = $table->schema;
 	}//end __construct()
 }//end class

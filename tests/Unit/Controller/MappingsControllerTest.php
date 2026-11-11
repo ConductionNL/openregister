@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\MappingsControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\MappingsController;
 use OCA\OpenRegister\Db\Mapping;
@@ -42,7 +43,7 @@ class MappingsControllerTest extends TestCase {
 		$this->organisationService = $this->createMock(OrganisationService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new MappingsController(
+		$this->controller = MappingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

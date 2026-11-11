@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Evidence;
 
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
+use OCA\OpenRegister\Service\Gdpr\Case\CasePayload;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -42,7 +43,7 @@ use Throwable;
 /**
  * Harvests + dedups evidence onto a case.
  */
-class EvidenceHarvestService {
+class EvidenceHarvestService implements EvidenceHarvestServiceInterface {
 	/**
 	 * Constructor.
 	 *
@@ -71,88 +72,68 @@ class EvidenceHarvestService {
 	 *
 	 * @throws RuntimeException When the case cannot be loaded (absent or unauthorised).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Linear enumerate→dedup→append loop; per-provider/per-item guards.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same loop; path count inflated by nested per-item guards.
-	 *
 	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function harvest(string $caseUuid): array {
-		$case = $this->accessor->load(caseUuid: $caseUuid);
-		if ($case === null) {
-			throw new RuntimeException(
-				message: sprintf('Case "%s" not found or not authorised.', $caseUuid)
-			);
-		}
-
+		$case = CasePayload::loaded(case: $this->accessor->load(caseUuid: $caseUuid), caseUuid: $caseUuid);
 		$data = $case->getObject();
-		$evidence = [];
-		if (isset($data['evidence']) === true && is_array($data['evidence']) === true) {
-			$evidence = array_values($data['evidence']);
-		}
-
-		// Index existing content hashes so re-runs never duplicate an item.
-		$seenHashes = [];
-		foreach ($evidence as $existing) {
-			if (is_array($existing) === true && isset($existing['contentHash']) === true) {
-				$seenHashes[(string)$existing['contentHash']] = true;
-			}
-		}
-
-		$evaluated = 0;
-		$appended = 0;
-		$skipped = 0;
-		$providerIds = [];
+		$merge = new EvidenceMerge(data: $data);
+		$run = new EvidenceHarvestRun(caseUuid: $caseUuid, data: $data, merge: $merge);
 
 		foreach ($this->registry->list() as $provider) {
-			if ($provider->isEnabled() === false) {
-				continue;
-			}
-
-			$providerIds[] = $provider->getSourceId();
-
-			try {
-				$items = $provider->harvest(caseUuid: $caseUuid, case: $data);
-			} catch (Throwable $e) {
-				// A failing source is visible + re-runnable: it contributes no
-				// items this pass, but does not abort the whole harvest.
-				$this->logger->warning(
-					message: sprintf(
-						'[EvidenceHarvestService] provider "%s" failed for case "%s": %s',
-						$provider->getSourceId(),
-						$caseUuid,
-						$e->getMessage()
-					)
-				);
-				continue;
-			}
-
-			foreach ($items as $item) {
-				$evaluated++;
-				$hash = $item->getContentHash();
-
-				if ($hash === '' || isset($seenHashes[$hash]) === true) {
-					$skipped++;
-					continue;
-				}
-
-				$seenHashes[$hash] = true;
-				$evidence[] = $item->toEvidenceRecord();
-				$appended++;
-			}//end foreach
-		}//end foreach
+			$this->harvestFrom(run: $run, provider: $provider);
+		}
 
 		// Persist once (a single audited write) only when something changed.
-		if ($appended > 0) {
-			$data['evidence'] = $evidence;
+		if ($merge->changed() === true) {
+			$data['evidence'] = $merge->evidence();
 			$this->accessor->save(case: $case, data: $data);
 		}
 
-		return [
-			'caseUuid' => $caseUuid,
-			'evaluated' => $evaluated,
-			'appended' => $appended,
-			'skipped' => $skipped,
-			'providers' => $providerIds,
-		];
+		return $merge->summary(caseUuid: $caseUuid);
 	}//end harvest()
+
+	/**
+	 * Harvest one provider into the run's merge, unless it is disabled.
+	 *
+	 * @param EvidenceHarvestRun     $run      The case being harvested and its merge.
+	 * @param EvidenceSourceProvider $provider The provider.
+	 *
+	 * @return void
+	 */
+	private function harvestFrom(EvidenceHarvestRun $run, EvidenceSourceProvider $provider): void {
+		if ($provider->isEnabled() === false) {
+			return;
+		}
+
+		$run->merge->noteProvider(sourceId: $provider->getSourceId());
+		$run->merge->merge(items: $this->itemsFrom(run: $run, provider: $provider));
+	}//end harvestFrom()
+
+	/**
+	 * One provider's items; none when it fails.
+	 *
+	 * A failing source is visible + re-runnable: it contributes no items this
+	 * pass, but does not abort the whole harvest.
+	 *
+	 * @param EvidenceHarvestRun     $run      The case uuid and its payload as loaded.
+	 * @param EvidenceSourceProvider $provider The provider.
+	 *
+	 * @return array<int, EvidenceItem>
+	 */
+	private function itemsFrom(EvidenceHarvestRun $run, EvidenceSourceProvider $provider): array {
+		try {
+			return $provider->harvest(caseUuid: $run->caseUuid, case: $run->data);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: sprintf(
+					'[EvidenceHarvestService] provider "%s" failed for case "%s": %s',
+					$provider->getSourceId(),
+					$run->caseUuid,
+					$e->getMessage()
+				)
+			);
+			return [];
+		}
+	}//end itemsFrom()
 }//end class

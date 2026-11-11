@@ -1,0 +1,233 @@
+{
+    "enriched": {
+        "_mail": [
+            {
+                "id": "1/5",
+                "subject": "Offer",
+                "sender": "anna@example.org",
+                "date": 1700000000
+            },
+            {
+                "id": "1/6",
+                "subject": "",
+                "sender": "",
+                "date": null
+            },
+            {
+                "id": "1/9",
+                "label": "Not found"
+            },
+            {
+                "id": "no-slash",
+                "label": "Not found"
+            },
+            {
+                "id": "1/7",
+                "label": "Not found"
+            }
+        ],
+        "_contacts": [
+            {
+                "id": "card-1",
+                "name": "Anna Smit",
+                "email": "anna@example.org"
+            },
+            {
+                "id": "card-2",
+                "name": "card-2",
+                "email": null
+            },
+            {
+                "id": "card-x",
+                "label": "Not found"
+            },
+            {
+                "id": "card-none",
+                "label": "Not found"
+            }
+        ],
+        "_notes": [
+            {
+                "id": "c1",
+                "message": "Note c1",
+                "author": "Anna Smit",
+                "date": "2026-01-02T03:04:05+00:00"
+            },
+            {
+                "id": "c2",
+                "message": "Note c2",
+                "author": "ghost",
+                "date": "2026-01-02T03:04:05+00:00"
+            },
+            {
+                "id": "c-missing",
+                "label": "Not found"
+            }
+        ],
+        "_talk": [
+            {
+                "id": "room-1",
+                "name": "Case room",
+                "type": 3
+            },
+            {
+                "id": "room-2",
+                "name": "",
+                "type": 0
+            },
+            {
+                "id": "room-x",
+                "label": "Not found"
+            },
+            {
+                "id": "room-none",
+                "label": "Not found"
+            }
+        ],
+        "_deck": [
+            {
+                "id": "4/11",
+                "title": "Card",
+                "board": "Board",
+                "stack": "Doing"
+            },
+            {
+                "id": "4/12",
+                "title": "",
+                "board": "",
+                "stack": ""
+            },
+            {
+                "id": "4/13",
+                "label": "Not found"
+            },
+            {
+                "id": "deck",
+                "label": "Not found"
+            },
+            {
+                "id": "4/99",
+                "label": "Not found"
+            }
+        ],
+        "_calendar": "not-a-list"
+    },
+    "queries": [
+        [
+            "SELECT subject, `from` AS sender, sent_at FROM *PREFIX*mail_messages WHERE id = ? LIMIT 1",
+            [
+                5
+            ]
+        ],
+        [
+            "SELECT subject, `from` AS sender, sent_at FROM *PREFIX*mail_messages WHERE id = ? LIMIT 1",
+            [
+                6
+            ]
+        ],
+        [
+            "SELECT subject, `from` AS sender, sent_at FROM *PREFIX*mail_messages WHERE id = ? LIMIT 1",
+            [
+                9
+            ]
+        ],
+        [
+            "SELECT subject, `from` AS sender, sent_at FROM *PREFIX*mail_messages WHERE id = ? LIMIT 1",
+            [
+                7
+            ]
+        ],
+        [
+            "SELECT carddata FROM *PREFIX*cards WHERE uid = ? LIMIT 1",
+            [
+                "card-1"
+            ]
+        ],
+        [
+            "SELECT carddata FROM *PREFIX*cards WHERE uid = ? LIMIT 1",
+            [
+                "card-2"
+            ]
+        ],
+        [
+            "SELECT carddata FROM *PREFIX*cards WHERE uid = ? LIMIT 1",
+            [
+                "card-x"
+            ]
+        ],
+        [
+            "SELECT carddata FROM *PREFIX*cards WHERE uid = ? LIMIT 1",
+            [
+                "card-none"
+            ]
+        ],
+        [
+            "SELECT name, type FROM *PREFIX*talk_rooms WHERE token = ? LIMIT 1",
+            [
+                "room-1"
+            ]
+        ],
+        [
+            "SELECT name, type FROM *PREFIX*talk_rooms WHERE token = ? LIMIT 1",
+            [
+                "room-2"
+            ]
+        ],
+        [
+            "SELECT name, type FROM *PREFIX*talk_rooms WHERE token = ? LIMIT 1",
+            [
+                "room-x"
+            ]
+        ],
+        [
+            "SELECT name, type FROM *PREFIX*talk_rooms WHERE token = ? LIMIT 1",
+            [
+                "room-none"
+            ]
+        ],
+        [
+            "SELECT c.title, b.title AS board_title, s.title AS stack_title FROM *PREFIX*deck_cards c JOIN *PREFIX*deck_stacks s ON c.stack_id = s.id JOIN *PREFIX*deck_boards b ON s.board_id = b.id WHERE c.id = ? AND b.id = ? LIMIT 1",
+            [
+                11,
+                4
+            ]
+        ],
+        [
+            "SELECT c.title, b.title AS board_title, s.title AS stack_title FROM *PREFIX*deck_cards c JOIN *PREFIX*deck_stacks s ON c.stack_id = s.id JOIN *PREFIX*deck_boards b ON s.board_id = b.id WHERE c.id = ? AND b.id = ? LIMIT 1",
+            [
+                12,
+                4
+            ]
+        ],
+        [
+            "SELECT c.title, b.title AS board_title, s.title AS stack_title FROM *PREFIX*deck_cards c JOIN *PREFIX*deck_stacks s ON c.stack_id = s.id JOIN *PREFIX*deck_boards b ON s.board_id = b.id WHERE c.id = ? AND b.id = ? LIMIT 1",
+            [
+                13,
+                4
+            ]
+        ],
+        [
+            "SELECT c.title, b.title AS board_title, s.title AS stack_title FROM *PREFIX*deck_cards c JOIN *PREFIX*deck_stacks s ON c.stack_id = s.id JOIN *PREFIX*deck_boards b ON s.board_id = b.id WHERE c.id = ? AND b.id = ? LIMIT 1",
+            [
+                99,
+                4
+            ]
+        ]
+    ],
+    "logs": [
+        [
+            "[LinkedEntityEnricher] Mail enrichment failed",
+            {
+                "id": "1/9",
+                "error": "database down"
+            }
+        ],
+        [
+            "[LinkedEntityEnricher] Contact enrichment failed",
+            {
+                "id": "card-x",
+                "error": "database down"
+            }
+        ]
+    ]
+}

@@ -15,9 +15,9 @@ name: Spec Validation
 
 on:
   push:
-    branches: [main, master, development, beta, 'feature/**', 'bugfix/**', 'hotfix/**', 'chore/**', 'fix/**', 'spec/**']
+    branches: [main, master, 'stable*', 'feature/**', 'bugfix/**', 'hotfix/**', 'chore/**', 'fix/**', 'spec/**']
   pull_request:
-    branches: [main, master, development, beta]
+    branches: [main, master, 'stable*']
   workflow_dispatch:
 
 permissions:

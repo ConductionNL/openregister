@@ -34,7 +34,7 @@ use RuntimeException;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class ElevationRequiredException extends RuntimeException {
+class ElevationRequiredException extends RuntimeException implements ElevationRequiredExceptionInterface {
 
 	/**
 	 * Constructor.

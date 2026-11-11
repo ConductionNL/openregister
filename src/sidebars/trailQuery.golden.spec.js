@@ -36,6 +36,7 @@ jest.mock('@nextcloud/l10n', () => ({
 jest.mock('vue-material-design-icons/AccountCircle.vue', () => ({}))
 jest.mock('vue-material-design-icons/ChartLine.vue', () => ({}))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({}))
+jest.mock('vue-material-design-icons/Delete.vue', () => ({}))
 jest.mock('vue-material-design-icons/DatabaseOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/Eye.vue', () => ({}))
 jest.mock('vue-material-design-icons/FilterOffOutline.vue', () => ({}))

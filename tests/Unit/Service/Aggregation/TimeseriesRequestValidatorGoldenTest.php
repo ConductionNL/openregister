@@ -9,7 +9,7 @@ namespace Unit\Service\Aggregation;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -21,10 +21,12 @@ use PHPUnit\Framework\TestCase;
  * with fixtures/timeseries-request-golden.json. Set UPDATE_GOLDEN=1 to
  * rewrite the fixture.
  *
- * @covers \OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator
- * @uses   \OCA\OpenRegister\Service\Aggregation\AggregationQuery
- * @uses   \OCA\OpenRegister\Service\Aggregation\AggregationMetricsAnnotationValidator
- * @uses   \OCA\OpenRegister\Service\Aggregation\TimeseriesDateBucketValidator
+ * @covers \OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationMetricsAnnotationValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\MetricEntrySite
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\MetricsDeclaration
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\TimeseriesDateBucketValidator
  */
 class TimeseriesRequestValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/timeseries-request-golden.json';

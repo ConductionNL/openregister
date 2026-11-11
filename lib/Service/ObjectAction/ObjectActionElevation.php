@@ -48,45 +48,124 @@ final class ObjectActionElevation {
 	public const VERBS = ['create', 'update', 'delete'];
 
 	/**
+	 * Groups that admit everyone or every signed-in user, so never a grant for an elevated action.
+	 *
+	 * @var list<string>
+	 */
+	private const BROADCAST_GROUPS = ['public', 'authenticated', ''];
+
+	/**
 	 * Refusals about one action's `elevate`.
 	 *
-	 * @param string                    $key           The action key.
-	 * @param array<string, mixed>      $definition    The declared entry.
+	 * @param ObjectActionEntry         $action        The action key and its declared entry.
 	 * @param array<string, mixed>|null $authorization The authorization block; null skips the grant check.
 	 *
 	 * @return list<string> The refusals.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
-	public static function refusals(string $key, array $definition, ?array $authorization): array {
-		if (array_key_exists('elevate', $definition) === false) {
+	public static function refusals(ObjectActionEntry $action, ?array $authorization): array {
+		if (array_key_exists('elevate', $action->definition) === false) {
 			return [];
 		}
 
-		$elevate = $definition['elevate'];
-		if (is_array($elevate) === false || array_is_list($elevate) === false || $elevate === []) {
-			return [sprintf('Action "%s": "elevate" must be a non-empty list of {register, schema, verbs}.', $key)];
+		$refusal = (self::shapeRefusal(action: $action) ?? self::firstEntryRefusal(key: $action->key, entries: $action->definition['elevate']));
+		if ($refusal !== null) {
+			return [$refusal];
 		}
 
-		foreach ($elevate as $entry) {
+		return self::grantRefusals(key: $action->key, authorization: $authorization);
+	}//end refusals()
+
+	/**
+	 * Why the declared elevation has the wrong shape or mode, or null.
+	 *
+	 * @param ObjectActionEntry $action The action, declaring `elevate`.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private static function shapeRefusal(ObjectActionEntry $action): ?string {
+		$elevate = $action->definition['elevate'];
+		if (is_array($elevate) === false || array_is_list($elevate) === false || $elevate === []) {
+			return sprintf('Action "%s": "elevate" must be a non-empty list of {register, schema, verbs}.', $action->key);
+		}
+
+		if (($action->definition['mode'] ?? 'sync') === 'async') {
+			return sprintf('Action "%s": an elevated action runs sync; a queued run would execute after its elevation has ended.', $action->key);
+		}
+
+		return null;
+	}//end shapeRefusal()
+
+	/**
+	 * The refusal of the first malformed elevation entry, or null.
+	 *
+	 * @param string            $key     The action key.
+	 * @param array<int, mixed> $entries The elevation entries.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private static function firstEntryRefusal(string $key, array $entries): ?string {
+		foreach ($entries as $entry) {
 			$refusal = self::entryRefusal(key: $key, entry: $entry);
 			if ($refusal !== null) {
-				return [$refusal];
+				return $refusal;
 			}
 		}
 
-		if ($authorization !== null && empty($authorization[$key] ?? null) === true) {
-			return [
-				sprintf(
-					'Action "%s": "elevate" needs an authorization rule granting "%s"; an elevated action open to everyone is a privilege escalation.',
-					$key,
-					$key
-				),
-			];
+		return null;
+	}//end firstEntryRefusal()
+
+	/**
+	 * Refuse an elevation no authorization rule grants.
+	 *
+	 * @param string                    $key           The action key.
+	 * @param array<string, mixed>|null $authorization The authorization block; null skips the check.
+	 *
+	 * @return list<string> The refusals.
+	 */
+	private static function grantRefusals(string $key, ?array $authorization): array {
+		if ($authorization === null) {
+			return [];
 		}
 
-		return [];
-	}//end refusals()
+		$rules = (array)($authorization[$key] ?? []);
+		if ($rules !== [] && self::grantsEveryone(rules: $rules) === false) {
+			return [];
+		}
+
+		return [
+			sprintf(
+				'Action "%s": "elevate" needs an authorization rule granting "%s"; an elevated action open to everyone is a privilege escalation.',
+				$key,
+				$key
+			),
+		];
+	}//end grantRefusals()
+
+	/**
+	 * Whether a rule list grants a broadcast group: everyone (`public`), every signed-in user (`authenticated`), or the empty group.
+	 *
+	 * @param array<mixed> $rules The rules granting the action.
+	 *
+	 * @return bool True when one rule names a broadcast group.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
+	 */
+	private static function grantsEveryone(array $rules): bool {
+		foreach ($rules as $rule) {
+			$group = $rule;
+			if (is_array($rule) === true) {
+				$group = ($rule['group'] ?? null);
+			}
+
+			if (is_string($group) === true && in_array(trim($group), self::BROADCAST_GROUPS, true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end grantsEveryone()
 
 	/**
 	 * The `elevate` entries of a declaration, normalised.

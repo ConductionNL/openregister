@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ApiVersion;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -31,7 +32,7 @@ use PHPUnit\Framework\TestCase;
 class ApiVersionTest extends TestCase {
 
 	public function testSupportedVersionNeedsNoDates(): void {
-		$version = new ApiVersion(id: '1', status: ApiVersion::STATUS_SUPPORTED);
+		$version = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED));
 
 		$this->assertSame('1', $version->id);
 		$this->assertTrue($version->isServed());
@@ -43,38 +44,32 @@ class ApiVersionTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/deprecated without a sunset date/');
 
-		new ApiVersion(id: '1', status: ApiVersion::STATUS_DEPRECATED, deprecatedOn: '2026-09-01');
+		new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_DEPRECATED, deprecatedOn: '2026-09-01'));
 	}//end testDeprecatedWithoutSunsetIsRefused()
 
 	public function testWithdrawnWithoutSuccessorIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/withdrawn without a successor/');
 
-		new ApiVersion(id: '1', status: ApiVersion::STATUS_WITHDRAWN);
+		new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_WITHDRAWN));
 	}//end testWithdrawnWithoutSuccessorIsRefused()
 
 	public function testWithdrawnCannotSucceedItself(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/cannot succeed itself/');
 
-		new ApiVersion(id: '1', status: ApiVersion::STATUS_WITHDRAWN, successor: '1');
+		new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_WITHDRAWN, successor: '1'));
 	}//end testWithdrawnCannotSucceedItself()
 
 	public function testDeprecatedVersionIsStillServed(): void {
-		$version = new ApiVersion(
-			id: '1',
-			status: ApiVersion::STATUS_DEPRECATED,
-			deprecatedOn: '2026-09-01',
-			sunset: '2027-03-01',
-			successor: '2',
-		);
+		$version = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_DEPRECATED, deprecatedOn: '2026-09-01', sunset: '2027-03-01', successor: '2'));
 
 		$this->assertTrue($version->isServed(), 'A deprecated version that stops answering is a breaking change with extra steps.');
 		$this->assertTrue($version->isDeprecated());
 	}//end testDeprecatedVersionIsStillServed()
 
 	public function testWithdrawnVersionIsNotServed(): void {
-		$version = new ApiVersion(id: '1', status: ApiVersion::STATUS_WITHDRAWN, successor: '2');
+		$version = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_WITHDRAWN, successor: '2'));
 
 		$this->assertFalse($version->isServed());
 	}//end testWithdrawnVersionIsNotServed()
@@ -120,7 +115,7 @@ class ApiVersionTest extends TestCase {
 	}//end testFromArrayAcceptsACompleteDeprecation()
 
 	public function testServesPathHonoursDeclaredPrefixes(): void {
-		$narrow = new ApiVersion(id: '2', status: ApiVersion::STATUS_SUPPORTED, pathPrefixes: ['/objects']);
+		$narrow = new ApiVersion(id: '2', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED), pathPrefixes: ['/objects']);
 
 		$this->assertTrue($narrow->servesPath(path: '/objects/zaken/meldingen'));
 		$this->assertTrue($narrow->servesPath(path: 'objects/zaken'));
@@ -128,7 +123,7 @@ class ApiVersionTest extends TestCase {
 	}//end testServesPathHonoursDeclaredPrefixes()
 
 	public function testRootPrefixServesEverything(): void {
-		$whole = new ApiVersion(id: '1', status: ApiVersion::STATUS_SUPPORTED, pathPrefixes: ['/']);
+		$whole = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED), pathPrefixes: ['/']);
 
 		$this->assertTrue($whole->servesPath(path: '/registers/1'));
 		$this->assertTrue($whole->servesPath(path: '/anything/at/all'));
@@ -141,7 +136,7 @@ class ApiVersionTest extends TestCase {
 	}//end testHttpDateRendersAnIsoDate()
 
 	public function testPublishedShapeDropsAbsentKeys(): void {
-		$supported = new ApiVersion(id: '1', status: ApiVersion::STATUS_SUPPORTED);
+		$supported = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED));
 
 		$published = $supported->jsonSerialize();
 
@@ -151,13 +146,7 @@ class ApiVersionTest extends TestCase {
 	}//end testPublishedShapeDropsAbsentKeys()
 
 	public function testPublishedShapeCarriesTheDeadline(): void {
-		$deprecated = new ApiVersion(
-			id: '1',
-			status: ApiVersion::STATUS_DEPRECATED,
-			deprecatedOn: '2026-09-01',
-			sunset: '2027-03-01',
-			successor: '2',
-		);
+		$deprecated = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_DEPRECATED, deprecatedOn: '2026-09-01', sunset: '2027-03-01', successor: '2'));
 
 		$published = $deprecated->jsonSerialize();
 
@@ -165,4 +154,17 @@ class ApiVersionTest extends TestCase {
 		$this->assertSame('2026-09-01', $published['deprecatedOn']);
 		$this->assertSame('2', $published['successor']);
 	}//end testPublishedShapeCarriesTheDeadline()
+	public function testInterfaceAccessorsReadTheDeclaration(): void {
+		$deprecated = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_DEPRECATED, deprecatedOn: '2026-09-01', sunset: '2027-03-01', successor: '2'));
+
+		$this->assertSame('1', $deprecated->identifier());
+		$this->assertSame('2', $deprecated->successorIdentifier());
+		$this->assertSame('Tue, 01 Sep 2026 00:00:00 GMT', $deprecated->deprecationHttpDate());
+		$this->assertSame('Mon, 01 Mar 2027 00:00:00 GMT', $deprecated->sunsetHttpDate());
+
+		$supported = new ApiVersion(id: '2', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED));
+		$this->assertNull($supported->successorIdentifier());
+		$this->assertNull($supported->deprecationHttpDate());
+		$this->assertNull($supported->sunsetHttpDate());
+	}//end testInterfaceAccessorsReadTheDeclaration()
 }//end class

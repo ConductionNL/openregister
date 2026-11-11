@@ -20,6 +20,70 @@ import { useRegisterStore } from './register.js'
 import { useSchemaStore } from './schema.js'
 
 /**
+ * The register and schema an object list is for: the options', else the
+ * active ones.
+ *
+ * @param {import('pinia').Pinia} pinia The pinia instance.
+ * @param {object} options The refresh options.
+ * @return {{registerId: (string|number), schemaId: (string|number)}} The ids.
+ * @throws {Error} When either is missing.
+ */
+function listScope(pinia, options) {
+	const registerStore = useRegisterStore(pinia)
+	const schemaStore = useSchemaStore(pinia)
+	const registerId = options.register ?? registerStore.registerItem?.id
+	const schemaId = options.schema ?? schemaStore.schemaItem?.id
+	if (!registerId || !schemaId) {
+		throw new Error('Register and schema are required.')
+	}
+	return { registerId, schemaId }
+}
+
+// The refresh options an object list passes on, and the query parameter each becomes.
+const LIST_OPTION_PARAMS = [
+	['limit', '_limit'],
+	['page', '_page'],
+	['search', '_search'],
+]
+
+/**
+ * The query parameters of an object list: the filters plus the options that are set.
+ *
+ * @param {object} filters The store's filters.
+ * @param {object} options The refresh options.
+ * @return {object} The parameters.
+ */
+function listParams(filters, options) {
+	const params = { ...filters }
+	for (const [option, param] of LIST_OPTION_PARAMS) {
+		if (options[option] !== null && options[option] !== undefined)
+			params[param] = options[option]
+	}
+	return params
+}
+
+/**
+ * The answer an object list refresh gives its callers.
+ *
+ * @param {Array} results The objects.
+ * @param {object} pag The collection's pagination.
+ * @return {{response: object, data: object}} The answer.
+ */
+function listAnswer(results, pag) {
+	return {
+		response: {},
+		data: {
+			results,
+			total: pag.total,
+			page: pag.page,
+			pages: pag.pages,
+			limit: pag.limit,
+			offset: (pag.page - 1) * pag.limit,
+		},
+	}
+}
+
+/**
  * Derive current type slug from register and schema stores.
  *
  * @param {import('pinia').Pinia} pinia - The pinia instance
@@ -126,37 +190,19 @@ function openregisterObjectPlugin() {
 			async refreshObjectList(options = {}) {
 				const pinia = getActivePinia()
 				if (!pinia) return { response: null, data: {} }
-				const registerStore = useRegisterStore(pinia)
-				const schemaStore = useSchemaStore(pinia)
-				const registerId = options.register ?? registerStore.registerItem?.id
-				const schemaId = options.schema ?? schemaStore.schemaItem?.id
-				if (!registerId || !schemaId) {
-					throw new Error('Register and schema are required.')
-				}
+				const { registerId, schemaId } = listScope(pinia, options)
 				const type = `${registerId}-${schemaId}`
 				if (!this.objectTypes.includes(type)) {
 					this.registerObjectType(type, schemaId, registerId)
 				}
-				const params = { ...this.filters }
-				if (options.limit != null) params._limit = options.limit
-				if (options.page != null) params._page = options.page
-				if (options.search != null) params._search = options.search
-				const results = await this.fetchCollection(type, params)
-				const pag = this.getPagination(type)
-				return {
-					response: {},
-					data: {
-						results,
-						total: pag.total,
-						page: pag.page,
-						pages: pag.pages,
-						limit: pag.limit,
-						offset: (pag.page - 1) * pag.limit,
-					},
-				}
+				const results = await this.fetchCollection(
+					type,
+					listParams(this.filters, options),
+				)
+				return listAnswer(results, this.getPagination(type))
 			},
 
-			setObjectItem(item, _skipRefresh = false) {
+			setObjectItem(item) {
 				this.objectItem = item || false
 			},
 
@@ -189,10 +235,9 @@ function openregisterObjectPlugin() {
 			// becomes available. The new schema-aware property store
 			// handles this elsewhere; a no-op keeps the call site safe.
 			/**
-			 * @param {object} _schema Unused — kept for call-site compatibility
 			 * @spec exclude Intentional no-op compatibility stub — keeps stale call sites safe; behaviour moved into the schema-aware property store.
 			 */
-			initializeProperties(_schema) {
+			initializeProperties() {
 				// Intentionally empty.
 			},
 		},

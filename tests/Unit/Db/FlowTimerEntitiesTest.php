@@ -29,6 +29,8 @@ use OCA\OpenRegister\Db\FlowTimerEventMapper;
 use OCA\OpenRegister\Db\FlowTimerFire;
 use OCA\OpenRegister\Db\FlowTimerFireMapper;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
+use OCA\OpenRegister\Service\Flow\Timer\EscalationNotice;
+use OCA\OpenRegister\Service\Flow\Timer\TimerFiring;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Exception as DbException;
 use OCP\IDBConnection;
@@ -157,12 +159,8 @@ class FlowTimerEntitiesTest extends TestCase {
 		$timer->setUuid('t-1');
 		$event = new FlowTimerFiredEvent(
 			timer: $timer,
-			kind: FlowTimerFiredEvent::KIND_RUNG,
-			transition: 'escalation:preBreach:7:calendarDays',
-			rungKey: 'preBreach:7:calendarDays',
-			recipients: [['type' => 'group', 'id' => 'g', 'role' => 'handler']],
-			priority: 'medium',
-			message: 'termijn-7d'
+			firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: 'escalation:preBreach:7:calendarDays', rungKey: 'preBreach:7:calendarDays'),
+			notice: new EscalationNotice(recipients: [['type' => 'group', 'id' => 'g', 'role' => 'handler']], priority: 'medium', message: 'termijn-7d'),
 		);
 		self::assertSame($timer, $event->getTimer());
 		self::assertSame('rung', $event->getKind());
@@ -172,4 +170,25 @@ class FlowTimerEntitiesTest extends TestCase {
 		self::assertSame('medium', $event->getPriority());
 		self::assertSame('termijn-7d', $event->getMessage());
 	}//end testTheFiredEventCarriesTheTransitionAndItsAddressees()
+
+	public function testAFireWithoutANoticeAddressesNobody(): void {
+		$event = new FlowTimerFiredEvent(
+			timer: new FlowTimer(),
+			firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_EXPIRY, transition: 'expiry:close'),
+		);
+		self::assertSame('expiry', $event->getKind());
+		self::assertNull($event->getRungKey());
+		self::assertSame([], $event->getRecipients());
+		self::assertNull($event->getPriority());
+		self::assertNull($event->getMessage());
+		self::assertNull($event->getConsequence());
+
+		$withConsequence = new FlowTimerFiredEvent(
+			timer: new FlowTimer(),
+			firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: 'escalation:postBreach', rungKey: 'postBreach'),
+			notice: new EscalationNotice(priority: 'critical', consequence: 'case-closed'),
+		);
+		self::assertSame('critical', $withConsequence->getPriority());
+		self::assertSame('case-closed', $withConsequence->getConsequence());
+	}//end testAFireWithoutANoticeAddressesNobody()
 }//end class

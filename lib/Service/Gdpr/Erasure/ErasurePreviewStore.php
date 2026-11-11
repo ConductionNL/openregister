@@ -36,10 +36,8 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 
 use DateTime;
 use OCA\OpenRegister\Db\ErasurePreview;
-use OCA\OpenRegister\Db\ErasurePreviewMapper;
-use OCP\IGroupManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ErasurePreviewMapperInterface;
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use Throwable;
 
 /**
@@ -50,22 +48,18 @@ use Throwable;
  *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class ErasurePreviewStore {
+class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 	/**
 	 * Wire the store.
 	 *
-	 * @param ErasurePreviewMapper $mapper       The preview rows.
-	 * @param IUserSession         $userSession  The acting principal.
-	 * @param IGroupManager        $groupManager Administrator reach.
-	 * @param LoggerInterface      $logger       PSR logger.
+	 * @param ErasurePreviewMapperInterface $mapper     The preview rows.
+	 * @param GdprCallerMembership          $membership The acting principal, administrator reach and the log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ErasurePreviewMapper $mapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		private readonly ErasurePreviewMapperInterface $mapper,
+		private readonly GdprCallerMembership $membership,
 	) {
 	}//end __construct()
 
@@ -109,23 +103,14 @@ class ErasurePreviewStore {
 		try {
 			$preview = $this->mapper->findByUuid(uuid: $uuid);
 		} catch (Throwable $e) {
-			throw new ErasureRefusedException(
-				rule: 'erasure-preview-unknown',
-				reason: 'No erasure preview with that identifier exists.',
-				statusCode: 404,
-				previous: $e
-			);
+			throw $this->unknown(previous: $e);
 		}
 
 		if ($this->mayReach(preview: $preview) === false) {
 			// SAME ANSWER AS "UNKNOWN", DELIBERATELY. Telling a stranger that the
 			// preview exists but is not theirs confirms that somebody asked about
 			// this data subject, which is itself the disclosure.
-			throw new ErasureRefusedException(
-				rule: 'erasure-preview-unknown',
-				reason: 'No erasure preview with that identifier exists.',
-				statusCode: 404
-			);
+			throw $this->unknown(previous: null);
 		}
 
 		return $preview;
@@ -145,14 +130,7 @@ class ErasurePreviewStore {
 	public function approve(string $uuid): ErasurePreview {
 		$preview = $this->load(uuid: $uuid);
 
-		if ($preview->getStatus() === ErasurePreview::STATUS_CONSUMED) {
-			throw new ErasureRefusedException(
-				rule: 'erasure-already-run',
-				reason: 'This preview has already been run. Take a new preview before erasing again.',
-				statusCode: 409,
-				context: ['consumedAt' => $preview->getConsumedAt()?->format(DateTime::ATOM)]
-			);
-		}
+		$this->refuseIfSpent(preview: $preview);
 
 		$preview->setStatus(ErasurePreview::STATUS_APPROVED);
 		$preview->setApprovedBy($this->actor());
@@ -175,21 +153,13 @@ class ErasurePreviewStore {
 	public function requireRunnable(string $uuid): ErasurePreview {
 		$preview = $this->load(uuid: $uuid);
 
-		if ($preview->getStatus() === ErasurePreview::STATUS_CONSUMED) {
-			throw new ErasureRefusedException(
-				rule: 'erasure-already-run',
-				reason: 'This preview has already been run. Take a new preview before erasing again.',
-				statusCode: 409,
-				context: ['consumedAt' => $preview->getConsumedAt()?->format(DateTime::ATOM)]
-			);
-		}
+		$this->refuseIfSpent(preview: $preview);
 
 		if ($preview->isRunnable() === false) {
 			throw new ErasureRefusedException(
 				rule: 'erasure-not-approved',
 				reason: 'This erasure preview has not been approved, so nothing was erased. '
 					. 'Approve the preview first, and check its protected records before you do.',
-				statusCode: 409,
 				context: ['status' => $preview->getStatus()]
 			);
 		}
@@ -217,7 +187,7 @@ class ErasurePreviewStore {
 		} catch (Throwable $e) {
 			// The erasure has already happened. Losing the stamp would let it be
 			// run a second time, so it is loud rather than swallowed.
-			$this->logger->error(
+			$this->membership->logger->error(
 				message: '[ErasurePreview] Could not stamp the preview as consumed after an erasure ran',
 				context: ['uuid' => $preview->getUuid(), 'error' => $e->getMessage()]
 			);
@@ -234,17 +204,45 @@ class ErasurePreviewStore {
 	 * @return bool True for its author and for an administrator.
 	 */
 	private function mayReach(ErasurePreview $preview): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
+		$uid = $this->membership->userSession->getUser()?->getUID();
+		if ($uid === null) {
 			return false;
 		}
 
-		if ($this->groupManager->isAdmin($user->getUID()) === true) {
-			return true;
+		return ($this->membership->groupManager->isAdmin($uid) === true || $preview->getCreatedBy() === $uid);
+	}//end mayReach()
+
+	/**
+	 * The refusal for a preview that does not exist, or that the caller may not reach.
+	 *
+	 * @param Throwable|null $previous Why the lookup failed, when it did.
+	 *
+	 * @return ErasureRefusedException The refusal.
+	 */
+	private function unknown(?Throwable $previous): ErasureRefusedException {
+		return new ErasurePreviewUnknownException(previous: $previous);
+	}//end unknown()
+
+	/**
+	 * Refuse a preview that was already run.
+	 *
+	 * @param ErasurePreview $preview The preview.
+	 *
+	 * @return void
+	 *
+	 * @throws ErasureRefusedException When it is consumed.
+	 */
+	private function refuseIfSpent(ErasurePreview $preview): void {
+		if ($preview->getStatus() !== ErasurePreview::STATUS_CONSUMED) {
+			return;
 		}
 
-		return ($preview->getCreatedBy() === $user->getUID());
-	}//end mayReach()
+		throw new ErasureRefusedException(
+			rule: 'erasure-already-run',
+			reason: 'This preview has already been run. Take a new preview before erasing again.',
+			context: ['consumedAt' => $preview->getConsumedAt()?->format(DateTime::ATOM)]
+		);
+	}//end refuseIfSpent()
 
 	/**
 	 * The acting principal's uid, or `system`.
@@ -252,6 +250,6 @@ class ErasurePreviewStore {
 	 * @return string The actor.
 	 */
 	private function actor(): string {
-		return ($this->userSession->getUser()?->getUID() ?? 'system');
+		return ($this->membership->userSession->getUser()?->getUID() ?? 'system');
 	}//end actor()
 }//end class

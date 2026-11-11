@@ -29,6 +29,11 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectDeadline;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectRecords;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectEntityIndex;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectLoader;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectWriter;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectRetentionGate;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -41,6 +46,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Gdpr\ErasureRequest;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 
 /**
  * Test class for DataSubjectRequestService.
@@ -131,20 +139,15 @@ class DataSubjectRequestServiceTest extends TestCase {
 			fn ($id) => $this->makeSchema(identifier: (string)$id, archival: false)
 		);
 
-		$this->service = new DataSubjectRequestService(
-			$this->db,
-			$this->objectMapper,
-			$this->objectService,
-			$this->retentionService,
-			$this->dsarService,
-			new DataSubjectDeadline(),
-			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			new ArchivalRetentionGuard(
-				$this->schemaMapper,
-				$this->createMock(LoggerInterface::class)
-			)
-		);
+		$this->service = new DataSubjectRequestService(records: new SubjectRecords(index: new SubjectEntityIndex(db: $this->db, logger: $this->createMock(LoggerInterface::class)), loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $this->createMock(LoggerInterface::class)), writer: new SubjectObjectWriter(
+				objectService: $this->objectService,
+				dsarService: $this->dsarService,
+				userSession: $this->userSession,
+				logger: $this->createMock(LoggerInterface::class)
+			)), retentionGate: new SubjectRetentionGate(
+				retentionService: $this->retentionService,
+				archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->schemaMapper, $this->createMock(LoggerInterface::class)))
+			), deadline: new DataSubjectDeadline(), logger: $this->createMock(LoggerInterface::class));
 
 	}//end setUp()
 
@@ -250,7 +253,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 			}
 		);
 
-		$results = $this->service->findSubjectData(subjectId: 'jane@example.org');
+		$results = $this->service->findSubjectData(new SubjectQuery(subjectId: 'jane@example.org'));
 
 		$this->assertCount(1, $results);
 		$this->assertSame('uuid-a', $results[0]['object']['@self']['id'] ?? $results[0]['object']['id'] ?? 'uuid-a');
@@ -323,16 +326,16 @@ class DataSubjectRequestServiceTest extends TestCase {
 		// EXACTLY ONE WRITE. The retained record is never handed to the audited
 		// save path at all, so it cannot be tombstoned on the way past.
 		$this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
-			function ($object) use ($ordinary) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($ordinary) {
 				$this->assertSame($ordinary, $object);
 				return $ordinary;
 			}
 		);
 
-		$summary = $this->service->erase(
+		$summary = $this->service->erase(new ErasureRequest(
 			subjectId: 'jane@example.org',
 			eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT
-		);
+		));
 
 		$this->assertSame(2, $summary['matchedCount']);
 
@@ -400,10 +403,10 @@ class DataSubjectRequestServiceTest extends TestCase {
 
 		$this->objectService->expects($this->never())->method('saveObject');
 
-		$summary = $this->service->erase(
+		$summary = $this->service->erase(new ErasureRequest(
 			subjectId: 'jane@example.org',
 			eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT
-		);
+		));
 
 		$this->assertCount(0, $summary['erased']);
 		$this->assertCount(1, $summary['withheld']);
@@ -422,20 +425,15 @@ class DataSubjectRequestServiceTest extends TestCase {
 	 * @return void
 	 */
 	private function rebuildServiceWithSchemaMapper(): void {
-		$this->service = new DataSubjectRequestService(
-			$this->db,
-			$this->objectMapper,
-			$this->objectService,
-			$this->retentionService,
-			$this->dsarService,
-			new DataSubjectDeadline(),
-			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			new ArchivalRetentionGuard(
-				$this->schemaMapper,
-				$this->createMock(LoggerInterface::class)
-			)
-		);
+		$this->service = new DataSubjectRequestService(records: new SubjectRecords(index: new SubjectEntityIndex(db: $this->db, logger: $this->createMock(LoggerInterface::class)), loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $this->createMock(LoggerInterface::class)), writer: new SubjectObjectWriter(
+				objectService: $this->objectService,
+				dsarService: $this->dsarService,
+				userSession: $this->userSession,
+				logger: $this->createMock(LoggerInterface::class)
+			)), retentionGate: new SubjectRetentionGate(
+				retentionService: $this->retentionService,
+				archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->schemaMapper, $this->createMock(LoggerInterface::class)))
+			), deadline: new DataSubjectDeadline(), logger: $this->createMock(LoggerInterface::class));
 	}//end rebuildServiceWithSchemaMapper()
 
 	/**
@@ -469,13 +467,13 @@ class DataSubjectRequestServiceTest extends TestCase {
 
 		// Only the free object is written (erased) via the audited save path.
 		$this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
-			function ($object) use ($free) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($free) {
 				$this->assertSame($free, $object);
 				return $free;
 			}
 		);
 
-		$summary = $this->service->erase(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$summary = $this->service->erase(new ErasureRequest(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT));
 
 		$this->assertSame(2, $summary['matchedCount']);
 		$this->assertCount(1, $summary['erased']);
@@ -514,7 +512,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 		$this->retentionService->method('validateNotImmutable')->willReturn(null);
 		$this->objectService->method('saveObject')->willReturnArgument(0);
 
-		$this->service->erase(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$this->service->erase(new ErasureRequest(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT));
 		$this->assertNotNull($object->getDeleted());
 		$this->assertSame('gdpr-erasure', $object->getDeleted()['deletedReason']);
 		// Whole-object mode leaves the payload intact.
@@ -538,7 +536,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 		$this->retentionService->method('validateNotImmutable')->willReturn(null);
 		$this->objectService->method('saveObject')->willReturnArgument(0);
 
-		$this->service->erase(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
+		$this->service->erase(new ErasureRequest(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE));
 
 		$payload = $object->getObject();
 		$this->assertSame('[erased]', $payload['email']);
@@ -565,7 +563,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 		// saveObject() must never be called on a dry run.
 		$this->objectService->expects($this->never())->method('saveObject');
 
-		$summary = $this->service->erase(subjectId: 'jane@example.org', dryRun: true);
+		$summary = $this->service->erase(new ErasureRequest(subjectId: 'jane@example.org', dryRun: true));
 
 		$this->assertTrue($summary['dryRun']);
 		$this->assertCount(1, $summary['erased']);

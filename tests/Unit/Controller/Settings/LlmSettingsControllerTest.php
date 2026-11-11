@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -33,7 +34,7 @@ class LlmSettingsControllerTest extends TestCase {
 		$this->vectorizationService = $this->createMock(VectorizationService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new LlmSettingsController(
+		$this->controller = LlmSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->db,
@@ -233,7 +234,7 @@ class LlmSettingsControllerTest extends TestCase {
 	 * the service's own parameter names, so the call reaches the service.
 	 */
 	public function testTestChatPassesTheRequestToChatService(): void {
-		$chatServiceMock = $this->createMock(\OCA\OpenRegister\Service\ChatService::class);
+		$chatServiceMock = $this->createMock(\OCA\OpenRegister\Mcp\Service\ChatService::class);
 		$chatServiceMock->expects($this->once())
 			->method('testChat')
 			->with('openai', ['apiKey' => 'key'], 'Hi')
@@ -246,7 +247,7 @@ class LlmSettingsControllerTest extends TestCase {
 				['testMessage', 'Hello! Please respond with a brief greeting.', 'Hi'],
 			]);
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\ChatService')
+			->with('OCA\\OpenRegister\\Kernel\\Contracts\\ChatServiceInterface')
 			->willReturn($chatServiceMock);
 
 		$result = $this->controller->testChat();

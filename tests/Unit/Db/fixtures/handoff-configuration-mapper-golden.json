@@ -1,0 +1,322 @@
+{
+    "HandoffQueueEntryMapper find(21) / found": {
+        "result": "OCA\\OpenRegister\\Db\\HandoffQueueEntry#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_handoff_queue, NULL)",
+            "#1 param :p1 = 21, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "HandoffQueueEntryMapper find(21) / missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_handoff_queue, NULL)",
+            "#1 param :p1 = 21, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "HandoffQueueEntryMapper findParked() / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\HandoffQueueEntry#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_handoff_queue, NULL)",
+            "#1 param :p1 = parked, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "HandoffQueueEntryMapper findParked() / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_handoff_queue, NULL)",
+            "#1 param :p1 = parked, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "HandoffQueueEntryMapper findParked(5) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\HandoffQueueEntry#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_handoff_queue, NULL)",
+            "#1 param :p1 = parked, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "HandoffQueueEntryMapper findParked(5) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_handoff_queue, NULL)",
+            "#1 param :p1 = parked, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "HandoffQueueEntryMapper findParkedByKind(kind-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\HandoffQueueEntry#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_handoff_queue, NULL)",
+            "#1 param :p1 = parked, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 param :p2 = kind-1, 2",
+            "#1 expr.eq(target_kind, :p2, NULL)",
+            "#1 andWhere(eq(target_kind, :p2, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "HandoffQueueEntryMapper findParkedByKind(kind-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_handoff_queue, NULL)",
+            "#1 param :p1 = parked, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 param :p2 = kind-1, 2",
+            "#1 expr.eq(target_kind, :p2, NULL)",
+            "#1 andWhere(eq(target_kind, :p2, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "HandoffQueueEntryMapper findParkedForObject(obj-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\HandoffQueueEntry#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_handoff_queue, NULL)",
+            "#1 param :p1 = parked, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 param :p2 = obj-1, 2",
+            "#1 expr.eq(source_object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(source_object_uuid, :p2, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "HandoffQueueEntryMapper findParkedForObject(obj-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_handoff_queue, NULL)",
+            "#1 param :p1 = parked, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 param :p2 = obj-1, 2",
+            "#1 expr.eq(source_object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(source_object_uuid, :p2, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "ConfigurationDeploymentMapper findByUuid(uu-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\ConfigurationDeployment#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_config_deployments, NULL)",
+            "#1 param :p1 = uu-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ConfigurationDeploymentMapper findByUuid(uu-1) / missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_config_deployments, NULL)",
+            "#1 param :p1 = uu-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ConfigurationDeploymentMapper findHistory(7) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\ConfigurationDeployment#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_config_deployments, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(7)",
+            "#1 executeQuery()"
+        ]
+    },
+    "ConfigurationDeploymentMapper findHistory(7) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_config_deployments, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(7)",
+            "#1 executeQuery()"
+        ]
+    },
+    "ConfigurationDraftSetMapper findByUuid(uu-2) / found": {
+        "result": "OCA\\OpenRegister\\Db\\ConfigurationDraftSet#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_config_sets, NULL)",
+            "#1 param :p1 = uu-2, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ConfigurationDraftSetMapper findByUuid(uu-2) / missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_config_sets, NULL)",
+            "#1 param :p1 = uu-2, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ConfigurationDraftSetMapper findAllSets() / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\ConfigurationDraftSet#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_config_sets, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 executeQuery()"
+        ]
+    },
+    "ConfigurationDraftSetMapper findAllSets() / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_config_sets, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 executeQuery()"
+        ]
+    },
+    "ConfigurationDraftSetMapper findAllSets(open, 9) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\ConfigurationDraftSet#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_config_sets, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(9)",
+            "#1 param :p1 = open, 2",
+            "#1 expr.eq(state, :p1, NULL)",
+            "#1 where(eq(state, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ConfigurationDraftSetMapper findAllSets(open, 9) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_config_sets, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(9)",
+            "#1 param :p1 = open, 2",
+            "#1 expr.eq(state, :p1, NULL)",
+            "#1 where(eq(state, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "deployment bare": {
+        "result": "OCA\\OpenRegister\\Db\\ConfigurationDeployment#0",
+        "queries": [
+            "#1 insert(openregister_config_deployments)",
+            "#1 param :p1 = <uuid>, 2",
+            "#1 setValue(uuid, :p1)",
+            "#1 param :p2 = applied, 2",
+            "#1 setValue(state, :p2)",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 setValue(deployed_at, :p3)",
+            "#1 param :p4 = DateTime, datetime",
+            "#1 setValue(created, :p4)",
+            "#1 param :p5 = 0, 1",
+            "#1 setValue(change_count, :p5)",
+            "#1 executeStatement()"
+        ]
+    },
+    "deployment given": {
+        "result": "OCA\\OpenRegister\\Db\\ConfigurationDeployment#0",
+        "queries": [
+            "#1 insert(openregister_config_deployments)",
+            "#1 param :p1 = fixed-1, 2",
+            "#1 setValue(uuid, :p1)",
+            "#1 param :p2 = failed, 2",
+            "#1 setValue(state, :p2)",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 setValue(deployed_at, :p3)",
+            "#1 param :p4 = DateTime, datetime",
+            "#1 setValue(created, :p4)",
+            "#1 param :p5 = 0, 1",
+            "#1 setValue(change_count, :p5)",
+            "#1 executeStatement()"
+        ]
+    },
+    "draft set bare": {
+        "result": "OCA\\OpenRegister\\Db\\ConfigurationDraftSet#0",
+        "queries": [
+            "#1 insert(openregister_config_sets)",
+            "#1 param :p1 = <uuid>, 2",
+            "#1 setValue(uuid, :p1)",
+            "#1 param :p2 = open, 2",
+            "#1 setValue(state, :p2)",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 setValue(created, :p3)",
+            "#1 param :p4 = DateTime, datetime",
+            "#1 setValue(updated, :p4)",
+            "#1 executeStatement()"
+        ]
+    },
+    "draft set given": {
+        "result": "OCA\\OpenRegister\\Db\\ConfigurationDraftSet#0",
+        "queries": [
+            "#1 insert(openregister_config_sets)",
+            "#1 param :p1 = fixed-2, 2",
+            "#1 setValue(uuid, :p1)",
+            "#1 param :p2 = closed, 2",
+            "#1 setValue(state, :p2)",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 setValue(created, :p3)",
+            "#1 param :p4 = DateTime, datetime",
+            "#1 setValue(updated, :p4)",
+            "#1 executeStatement()"
+        ]
+    }
+}

@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\ScheduledFilterParser;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterParser;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -27,9 +27,9 @@ use PHPUnit\Framework\TestCase;
  * with `fixtures/scheduled-filter-parser-golden.json`. Set
  * `OR_GOLDEN_WRITE=1` to regenerate the fixture.
  *
- * @covers \OCA\OpenRegister\Service\Notification\ScheduledFilterParser
- * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterGrammar
- * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterPosition
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterParser
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterGrammar
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterPosition
  */
 final class ScheduledFilterParserGoldenTest extends TestCase {
 

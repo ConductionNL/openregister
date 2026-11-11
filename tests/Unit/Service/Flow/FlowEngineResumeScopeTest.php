@@ -34,10 +34,12 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
@@ -92,7 +94,10 @@ class ScopedAskStub implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$slot = $context[FlowNodeResumeState::CONTEXT_KEY];
 		$nodeId = $slot->nodeId();
 
@@ -197,11 +202,7 @@ class FlowEngineResumeScopeTest extends TestCase {
 
 		// Walk 1: the first ask suspends the run.
 		$first = $this->engine->run(
-			$flow,
-			$store,
-			$subject,
-			$this->dispatcher,
-			[FlowResumeState::CONTEXT_KEY => $state]
+			start: (new FlowRunStart(flow: $flow, store: $store, subject: $subject, dispatcher: $this->dispatcher))->withContext(context: [FlowResumeState::CONTEXT_KEY => $state])
 		);
 		$this->assertSame(FlowEngine::STATUS_SUSPENDED, $first['status']);
 		$this->assertTrue($state->forNode(nodeId: 'first-ask')->has(key: 'askedAt'));
@@ -211,15 +212,11 @@ class FlowEngineResumeScopeTest extends TestCase {
 		// flag is true for EVERY node.
 		$payload = ['decision' => 'approved', 'node' => 'first-ask', 'taskId' => 'task-1'];
 		$second = $this->engine->run(
-			$flow,
-			$store,
-			$subject,
-			$this->dispatcher,
-			[
+			start: (new FlowRunStart(flow: $flow, store: $store, subject: $subject, dispatcher: $this->dispatcher))->withContext(context: [
 				'resuming' => true,
 				FlowResumeState::CONTEXT_KEY => FlowResumeState::fromArray($state->all()),
 				FlowRunService::SIGNAL_CONTEXT_KEY => $payload,
-			]
+			])
 		);
 
 		$this->assertSame(
@@ -273,20 +270,16 @@ class FlowEngineResumeScopeTest extends TestCase {
 		$store = new MethodMarkingStore(false, 'marking');
 		$state = new FlowResumeState();
 
-		$this->engine->run($flow, $store, $subject, $this->dispatcher, [FlowResumeState::CONTEXT_KEY => $state]);
+		$this->engine->run(start: (new FlowRunStart(flow: $flow, store: $store, subject: $subject, dispatcher: $this->dispatcher))->withContext(context: [FlowResumeState::CONTEXT_KEY => $state]));
 		$firstRef = $state->forNode(nodeId: 'first-ask')->get(key: 'ref');
 		$this->assertNotNull($firstRef);
 
 		$second = $this->engine->run(
-			$flow,
-			$store,
-			$subject,
-			$this->dispatcher,
-			[
+			start: (new FlowRunStart(flow: $flow, store: $store, subject: $subject, dispatcher: $this->dispatcher))->withContext(context: [
 				'resuming' => true,
 				FlowResumeState::CONTEXT_KEY => FlowResumeState::fromArray($state->all()),
 				FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'completed', 'decisionRef' => $firstRef],
-			]
+			])
 		);
 
 		$fresh = $second['context'][FlowResumeState::CONTEXT_KEY];

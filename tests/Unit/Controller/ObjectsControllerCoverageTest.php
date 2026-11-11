@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -18,6 +19,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -84,7 +86,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		// them by registering its own.
 		$defaultRenderHandler = $this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class);
 		$defaultRenderHandler->method('renderEntities')->willReturnArgument(0);
-		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, fn () => $defaultRenderHandler);
+		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObjectInterface::class, fn () => $defaultRenderHandler);
 		$this->registerService(OrganisationService::class, fn () => $this->createMock(OrganisationService::class));
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
@@ -99,9 +101,9 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Entities resolved by ObjectService::setRegister()/setSchema() default
-		// to null on the mock, so resolveRegisterSchemaIds() returns null
+		// to null on the mock, so resolveRegisterSchemaRef() returns null
 		// entities unless a test wires the getters explicitly.
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -171,7 +173,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 	/**
 	 * Wire the resolved register/schema entities into the ObjectService mock
-	 * (resolveRegisterSchemaIds() reuses the entities that setRegister()/
+	 * (resolveRegisterSchemaRef() reuses the entities that setRegister()/
 	 * setSchema() already resolved instead of re-fetching them) and the
 	 * constructor-injected mappers, then re-create the controller.
 	 */
@@ -184,7 +186,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn($registerEntity);
 		$this->schemaMapper->method('find')->willReturn($schemaEntity);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -387,7 +389,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(1);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -395,7 +397,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		// RenderObject::redactWriteOnlyFromRows (openregister#380 leak fix), so
 		// the container must resolve a RenderObject here as well.
 		$renderHandler = $this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class);
-		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, function () use ($renderHandler) {
+		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObjectInterface::class, function () use ($renderHandler) {
 			return $renderHandler;
 		});
 
@@ -442,7 +444,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(1);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -451,7 +453,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 			['uuid' => 'magic-ext', 'title' => 'Extended', 'relation' => ['uuid' => 'rel-1']],
 		]);
 
-		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, function () use ($renderHandler) {
+		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObjectInterface::class, function () use ($renderHandler) {
 			return $renderHandler;
 		});
 
@@ -491,7 +493,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(0);
 		$magicMapper->method('getIgnoredFilters')->willReturn(['limit', 'offset']);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -534,7 +536,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 			'status' => ['active' => 5, 'inactive' => 2],
 		]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -576,7 +578,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('getSimpleFacetsFromRegisterSchemaTable')
 			->willThrowException(new Exception('Column not found'));
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -620,7 +622,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(1);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -658,7 +660,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(0);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -697,7 +699,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(0);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -744,7 +746,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(11);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -784,7 +786,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(0);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -822,7 +824,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(0);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -863,7 +865,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		// renderEntities returns ObjectEntity instances (not arrays) when extend is used.
 		$renderHandler->method('renderEntities')->willReturn([$objEntity]);
 
-		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, function () use ($renderHandler) {
+		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObjectInterface::class, function () use ($renderHandler) {
 			return $renderHandler;
 		});
 
@@ -872,7 +874,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(1);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -918,7 +920,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturn([$objEntity]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -962,7 +964,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturn([$objEntity]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -1003,7 +1005,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturn([$objEntity]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -1049,7 +1051,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('searchAcrossMultipleTables')->willReturn([$objEntity]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -1088,7 +1090,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('searchAcrossMultipleTables')->willReturn($rows);
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -1101,6 +1103,32 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$this->assertCount(2, $data['results']);
 		$this->assertSame(2, $data['page']);
+	}
+
+	/**
+	 * An oversized limit reports the bound, so paging by the reported limit misses no row.
+	 */
+	public function testIndexCrossTableSearchReportsTheBoundedLimit(): void {
+		$registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2', '3']);
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturnCallback(function ($id) {
+			return $this->createSchemaMock((int) $id, 'schema'.$id);
+		});
+
+		$this->request->method('getParams')->willReturn(['schemas' => '2,3']);
+
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('searchAcrossMultipleTables')->willReturn([]);
+		$magicMapper->method('countAcrossMultipleTables')->willReturn(2500);
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
+			return $magicMapper;
+		});
+
+		$this->objectService->method('buildSearchQuery')->willReturn(['_limit' => '5000', '_offset' => 1000]);
+
+		$data = $this->controller->index('1', '2', $this->objectService)->getData();
+
+		$this->assertSame(expected: [1000, 3, 2], actual: [$data['limit'], $data['pages'], $data['page']]);
 	}
 
 	/**
@@ -1129,7 +1157,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 			->method('countAcrossMultipleTables')
 			->with($this->callback(static fn (array $query): bool => ($query['_offset'] ?? null) === 2), $this->countOf(2))
 			->willReturn(7);
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -1195,7 +1223,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('searchAcrossMultipleTables')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -1359,7 +1387,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 	 * called with only the raw request params — the register/schema slugs
 	 * were never resolved to numeric IDs before being used as the '@self'
 	 * metadata filter. This asserts the resolved numeric IDs (from
-	 * resolveRegisterSchemaIds()) are passed through to buildSearchQuery(),
+	 * resolveRegisterSchemaRef()) are passed through to buildSearchQuery(),
 	 * matching the path-style index() route's behavior.
 	 */
 	public function testObjectsWithRegisterSchemaQueryParamsResolvesSlugToNumericId(): void {
@@ -1434,26 +1462,24 @@ class ObjectsControllerCoverageTest extends TestCase {
 	 * Exercises lines 1643-1657 (webhook error catch block).
 	 * Uses a fresh controller with a custom webhookService mock.
 	 */
-	public function testCreateContinuesWhenWebhookFails(): void {
+	#[\PHPUnit\Framework\Attributes\DataProvider('webhookFailures')]
+	public function testCreateContinuesWhenWebhookFails(\Throwable $webhookException): void {
 		$this->setupAdminUser();
 
 		$registerEntity = $this->createMagicMappedRegister(1, 'reg', []);
 		$schemaEntity = $this->createSchemaMock(2, 'sch');
 
-		// resolveRegisterSchemaIds() reuses the entities already resolved by
+		// resolveRegisterSchemaRef() reuses the entities already resolved by
 		// ObjectService::setRegister()/setSchema().
 		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
 		// Create a fresh webhookService mock with interceptRequest throwing.
-		// Note: the controller's catch block uses `Exception` which resolves to OCP\DB\Exception
-		// due to the `use OCP\DB\Exception;` import at the top of ObjectsController.
-		$webhookException = new \OCP\DB\Exception('Webhook down');
 		$failingWebhookService = $this->createMock(WebhookService::class);
 		$failingWebhookService->method('interceptRequest')
 			->willThrowException($webhookException);
 
-		$controller = new ObjectsController(
+		$controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -1484,9 +1510,23 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->objectService->method('getSchema')->willReturn(2);
 		$this->objectService->method('saveObject')->willReturn($objectEntity);
 
+		$this->logger->expects($this->once())->method('error')
+			->with(message: '[ObjectsController] Webhook interception failed', context: $this->anything());
+
 		$result = $controller->create('1', '2', $this->objectService);
 
 		$this->assertSame(201, $result->getStatus());
+	}
+
+	/**
+	 * @return array<string, array{0: \Throwable}>
+	 */
+	public static function webhookFailures(): array {
+		return [
+			'database' => [new \OCP\DB\Exception('Webhook down')],
+			'other exception' => [new \RuntimeException('Webhook down')],
+			'error' => [new \TypeError('Webhook down')],
+		];
 	}
 
 	// =========================================================================
@@ -1516,7 +1556,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(0);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -1653,7 +1693,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 			->method('find')
 			->willReturnCallback(
 				function (...$args) use (&$findArgs, $objectEntity): ObjectEntity {
-					$findArgs = $args;
+					$findArgs = FindCallShape::find(args: $args);
 					return $objectEntity;
 				}
 			);
@@ -1742,7 +1782,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		// Return ignored filters that are NOT control params (no hint generated).
 		$magicMapper->method('getIgnoredFilters')->willReturn(['custom_field', 'another_field']);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -1793,7 +1833,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		// The total comes from the mapper's count, not the page size.
 		$magicMapper->method('countAcrossMultipleTables')->willReturn(5);
 
-		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
 			return $magicMapper;
 		});
 
@@ -1809,6 +1849,91 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->assertSame(5, $data['total']);
 		$this->assertSame(1, $data['page']);
 		$this->assertSame(1, $data['pages']);
+	}
+
+	/**
+	 * The query a cross-table search of the given parameters hands the mapper, and its response.
+	 *
+	 * @param array<string, mixed> $query The query buildSearchQuery() returns.
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The mapper's query and the response data.
+	 */
+	private function crossTablePage(array $query): array {
+		$this->registerMapper->method('find')->willReturn($this->createMagicMappedRegister(1, 'reg', ['2', '3']));
+		$this->schemaMapper->method('find')->willReturn($this->createSchemaMock(2, 'sch1'));
+		$this->request->method('getParams')->willReturn(['schemas' => '2,3']);
+
+		$seen = [];
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('searchAcrossMultipleTables')->willReturnCallback(
+			static function (array $query) use (&$seen): array {
+				$seen = $query;
+				return [];
+			}
+		);
+		$magicMapper->method('countAcrossMultipleTables')->willReturn(95);
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, fn () => $magicMapper);
+		$this->objectService->method('buildSearchQuery')->willReturn($query);
+
+		$data = $this->controller->index('1', '2', $this->objectService)->getData();
+
+		return [$seen, $data];
+	}
+
+	/**
+	 * `_page` asks for that page: the mapper pages on an offset, and the response says which page it is.
+	 */
+	public function testCrossTablePageBecomesTheOffset(): void {
+		[$query, $data] = $this->crossTablePage(['_limit' => 10, '_page' => 3]);
+
+		$this->assertSame(20, $query['_offset']);
+		$this->assertSame(3, $data['page']);
+		$this->assertSame(10, $data['pages']);
+	}
+
+	/**
+	 * Without a `_limit` the page counts in the default page size.
+	 */
+	public function testCrossTablePageUsesTheDefaultPageSize(): void {
+		[$query] = $this->crossTablePage(['_page' => '2']);
+
+		$this->assertSame(20, $query['_offset']);
+	}
+
+	/**
+	 * The page counts in the page size the search can return, not in an oversized `_limit`.
+	 */
+	public function testCrossTablePageCountsInTheBoundedPageSize(): void {
+		[$query] = $this->crossTablePage(['_limit' => 5000, '_page' => 2]);
+
+		$this->assertSame(1000, $query['_offset']);
+	}
+
+	/**
+	 * An explicit `_offset` wins over `_page`, as on the single-schema list.
+	 */
+	public function testCrossTableOffsetWinsOverPage(): void {
+		[$query] = $this->crossTablePage(['_limit' => 10, '_page' => 3, '_offset' => 5]);
+
+		$this->assertSame(5, $query['_offset']);
+	}
+
+	/**
+	 * A page below one is the first page.
+	 */
+	public function testCrossTablePageBelowOneIsTheFirstPage(): void {
+		[$query] = $this->crossTablePage(['_limit' => 10, '_page' => -4]);
+
+		$this->assertSame(0, $query['_offset']);
+	}
+
+	/**
+	 * A search without a page size has no pages to skip.
+	 */
+	public function testCrossTablePageWithoutAPageSizeSkipsNothing(): void {
+		[$query] = $this->crossTablePage(['_limit' => false, '_page' => 3]);
+
+		$this->assertArrayNotHasKey('_offset', $query);
 	}
 
 	// =========================================================================
@@ -1862,12 +1987,12 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->objectService->method('getSchema')->willReturn(2);
 		$this->objectService->method('buildSearchQuery')->willReturn($query);
 
-		$magicMapper = $this->createMock(originalClassName: MagicMapper::class);
+		$magicMapper = $this->createMock(originalClassName: \OCA\OpenRegister\Db\MagicMapper::class);
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturn([]);
 		$magicMapper->method('getIgnoredFilters')->willReturn($ignoredFilters);
-		$this->registerService(id: MagicMapper::class, factory: fn () => $magicMapper);
+		$this->registerService(id: \OCA\OpenRegister\Db\MagicMapperInterface::class, factory: fn () => $magicMapper);
 		$renderHandler = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\RenderObject::class);
-		$this->registerService(id: \OCA\OpenRegister\Service\Object\RenderObject::class, factory: fn () => $renderHandler);
+		$this->registerService(id: \OCA\OpenRegister\Service\Object\RenderObjectInterface::class, factory: fn () => $renderHandler);
 
 		return $magicMapper;
 	}//end wireMagicListing()

@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
+use OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners;
 use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\Files\File;
@@ -92,8 +93,7 @@ class ReviewPolicyResolverTest extends TestCase {
 		return new ReviewPolicyResolver(
 			schemaMapper: $schemas,
 			fileSettings: new FileSettingsHandler(appConfig: $appConfig),
-			rootFolder: $root,
-			owners: $owners,
+			fileOwners: new ReviewPolicyFileOwners($root, $owners),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end resolver()

@@ -27,14 +27,17 @@ namespace Unit\Service\Timeline;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\TimelineEntry;
-use OCA\OpenRegister\Db\TimelineEntryMapper;
-use OCA\OpenRegister\Service\Timeline\LanguageDetector;
-use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
-use OCA\OpenRegister\Service\Timeline\TimelineKindService;
-use OCA\OpenRegister\Service\Timeline\TimelinePermissionException;
-use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryRecords;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntryPin;
+use OCA\OpenRegister\Notifications\Service\Timeline\LanguageDetector;
+use OCA\OpenRegister\Notifications\Service\Timeline\NoteRewrite;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelinePermissionException;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -101,9 +104,11 @@ class TimelineEntryServiceTest extends TestCase {
 		);
 
 		$this->service = new TimelineEntryService(
-			$this->entryMapper,
-			$this->kinds,
-			new LanguageDetector(),
+			new TimelineEntryRecords(
+				entryMapper: $this->entryMapper,
+				kinds: $this->kinds,
+				languages: new LanguageDetector()
+			),
 			$this->visibility,
 			$this->userSession,
 			$this->createMock(LoggerInterface::class)
@@ -154,6 +159,17 @@ class TimelineEntryServiceTest extends TestCase {
 		$this->assertSame('handler', $entry->getAuthor());
 		$this->assertSame('case-1', $entry->getObjectUuid());
 		$this->assertNotNull($entry->getUuid());
+	}
+
+	public function testAnAuthorInThePayloadIsIgnored(): void {
+		$this->signIn();
+		$this->echoInsert();
+		$this->kinds->method('validateFields')->willReturn([]);
+		$this->kinds->method('carriesFollowUp')->willReturn(false);
+
+		$entry = $this->service->record($this->object(), ['message' => 'Gebeld', 'author' => 'someone-else']);
+
+		$this->assertSame('handler', $entry->getAuthor());
 	}
 
 	public function testAnEntryWithNoKindIsAPlainNoteWithNothingOnIt(): void {
@@ -244,7 +260,7 @@ class TimelineEntryServiceTest extends TestCase {
 		$this->echoUpdate();
 		$this->visibility->method('mayManage')->willReturn(true);
 
-		$entry = $this->service->pin($this->object(), new TimelineEntry(), true);
+		$entry = $this->service->pin($this->object(), new EntryPin(new TimelineEntry(), true));
 
 		$this->assertTrue($entry->getPinned());
 		$this->assertSame('supervisor', $entry->getPinnedBy());
@@ -256,8 +272,8 @@ class TimelineEntryServiceTest extends TestCase {
 		$this->echoUpdate();
 		$this->visibility->method('mayManage')->willReturn(true);
 
-		$pinned = $this->service->pin($this->object(), new TimelineEntry(), true);
-		$entry = $this->service->pin($this->object(), $pinned, false);
+		$pinned = $this->service->pin($this->object(), new EntryPin(new TimelineEntry(), true));
+		$entry = $this->service->pin($this->object(), new EntryPin($pinned, false));
 
 		$this->assertFalse($entry->getPinned());
 		$this->assertNull($entry->getPinnedBy());
@@ -270,7 +286,7 @@ class TimelineEntryServiceTest extends TestCase {
 		$this->entryMapper->expects($this->never())->method('update');
 
 		$this->expectException(TimelinePermissionException::class);
-		$this->service->pin($this->object(), new TimelineEntry(), true);
+		$this->service->pin($this->object(), new EntryPin(new TimelineEntry(), true));
 	}
 
 	public function testClosingAFollowUpNamesTheCloserAndTheTime(): void {
@@ -347,7 +363,7 @@ class TimelineEntryServiceTest extends TestCase {
 		$this->entryMapper->method('findByComment')->willReturn(null);
 		$this->entryMapper->expects($this->never())->method('update');
 
-		$this->assertNull($this->service->syncFromNote(41, 'rewritten'));
+		$this->assertNull($this->service->syncFromNote(new NoteRewrite(41, 'rewritten')));
 	}
 
 	public function testRewritingANoteRewritesTheIndexedCopyAndItsLanguage(): void {
@@ -357,7 +373,7 @@ class TimelineEntryServiceTest extends TestCase {
 		$stored->setLanguage('nl');
 		$this->entryMapper->method('findByComment')->willReturn($stored);
 
-		$entry = $this->service->syncFromNote(41, 'The applicant is going to send the papers that are missing');
+		$entry = $this->service->syncFromNote(new NoteRewrite(41, 'The applicant is going to send the papers that are missing'));
 
 		$this->assertSame('The applicant is going to send the papers that are missing', $entry?->getMessage());
 		$this->assertSame('en', $entry?->getLanguage());

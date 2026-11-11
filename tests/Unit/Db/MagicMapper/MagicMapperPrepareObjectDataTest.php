@@ -20,9 +20,11 @@ use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -305,11 +307,11 @@ class MagicMapperPrepareObjectDataTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	private function invokePrepare(MagicMapper $mapper, array $data, Register $register, Schema $schema): array {
-		$warned = new \ReflectionProperty(MagicMapper::class, 'warnedMetadataNamedProperties');
+		$warned = new \ReflectionProperty(MagicPropertyColumns::class, 'warned');
 		$warned->setValue(null, []);
 
 		$method = new ReflectionMethod(MagicMapper::class, 'prepareObjectDataForTable');
-		return $method->invoke($mapper, $data, $register, $schema);
+		return $method->invoke($mapper, $data, new \OCA\OpenRegister\Db\RegisterSchema($register, $schema));
 	}//end invokePrepare()
 
 	/**
@@ -322,7 +324,7 @@ class MagicMapperPrepareObjectDataTest extends TestCase {
 	private function mapper(AbstractLogger $logger): MagicMapper {
 		$config = $this->createMock(originalClassName: IConfig::class);
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
-		$container->method('get')->willReturnMap([[DateTimeNormalizer::class, new DateTimeNormalizer(logger: $logger)]]);
+		$container->method('get')->willReturnMap([[DateTimeNormalizerInterface::class, new DateTimeNormalizer(logger: $logger)]]);
 
 		$reflection = new ReflectionClass(objectOrClass: MagicMapper::class);
 		$mapper     = $reflection->newInstanceWithoutConstructor();

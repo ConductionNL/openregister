@@ -26,7 +26,10 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<CalendarLink>
  */
-class CalendarLinkMapper extends QBMapper {
+class CalendarLinkMapper extends QBMapper implements CalendarLinkMapperInterface {
+	use SelectByColumnTrait;
+	use DeleteLinksByObjectUuidTrait;
+	use CountLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -44,11 +47,8 @@ class CalendarLinkMapper extends QBMapper {
 	 * @return CalendarLink[] Array of calendar links.
 	 */
 	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('dtstart', 'ASC');
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'object_uuid', value: $objectUuid));
+		$qb->orderBy('dtstart', 'ASC');
 
 		return $this->findEntities(query: $qb);
 	}//end findByObjectUuid()
@@ -64,49 +64,11 @@ class CalendarLinkMapper extends QBMapper {
 	 * @throws DoesNotExistException When no row matches.
 	 */
 	public function findByObjectAndEvent(string $objectUuid, string $eventUid): CalendarLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('event_uid', $qb->createNamedParameter($eventUid)));
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'object_uuid', value: $objectUuid));
+		$qb->andWhere($qb->expr()->eq('event_uid', $qb->createNamedParameter($eventUid)));
 
 		return $this->findEntity(query: $qb);
 	}//end findByObjectAndEvent()
-
-	/**
-	 * Count calendar links for an object.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Count.
-	 */
-	public function countByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->createFunction('COUNT(*)'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countByObjectUuid()
-
-	/**
-	 * Delete all calendar links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a single calendar link by object UUID + event UID.

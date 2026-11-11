@@ -1,0 +1,66 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectDetails relation tabs (DOM golden) lists the relations of both tabs 1`] = `
+"<x-apptab title="t:Uses">
+  <slot-default>
+    <div>
+      <x-nclistitem name="First" bold="false" forcedisplayactions="true">
+        <slot-icon>
+          <x-cubeoutline disablemenu="" size="44"></x-cubeoutline>
+        </slot-icon>
+        <slot-subname>/objects/u1</slot-subname>
+      </x-nclistitem>
+      <x-nclistitem name="Second" bold="false" forcedisplayactions="true">
+        <slot-icon>
+          <x-cubeoutline disablemenu="" size="44"></x-cubeoutline>
+        </slot-icon>
+        <slot-subname>Parent of</slot-subname>
+      </x-nclistitem>
+      <x-nclistitem name="" bold="false" forcedisplayactions="true">
+        <slot-icon>
+          <x-cubeoutline disablemenu="" size="44"></x-cubeoutline>
+        </slot-icon>
+        <slot-subname></slot-subname>
+      </x-nclistitem>
+    </div>
+  </slot-default>
+</x-apptab>
+<x-apptab title="t:Used by">
+  <slot-default>
+    <div>
+      <x-nclistitem name="First" bold="false" forcedisplayactions="true">
+        <slot-icon>
+          <x-cubeoutline disablemenu="" size="44"></x-cubeoutline>
+        </slot-icon>
+        <slot-subname>/objects/u1</slot-subname>
+      </x-nclistitem>
+      <x-nclistitem name="Second" bold="false" forcedisplayactions="true">
+        <slot-icon>
+          <x-cubeoutline disablemenu="" size="44"></x-cubeoutline>
+        </slot-icon>
+        <slot-subname>Parent of</slot-subname>
+      </x-nclistitem>
+      <x-nclistitem name="" bold="false" forcedisplayactions="true">
+        <slot-icon>
+          <x-cubeoutline disablemenu="" size="44"></x-cubeoutline>
+        </slot-icon>
+        <slot-subname></slot-subname>
+      </x-nclistitem>
+      <!--v-if-->
+    </div>
+  </slot-default>
+</x-apptab>"
+`;
+
+exports[`ObjectDetails relation tabs (DOM golden) shows the empty state of both tabs 1`] = `
+"<x-apptab title="t:Uses">
+  <slot-default>
+    <div class="tabPanel">t:No relations found</div>
+  </slot-default>
+</x-apptab>
+<x-apptab title="t:Used by">
+  <slot-default>
+    <div class="tabPanel">t:No relations found</div>
+  </slot-default>
+</x-apptab>"
+`;

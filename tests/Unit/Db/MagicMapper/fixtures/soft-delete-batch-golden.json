@@ -1,0 +1,362 @@
+{
+    "empty": {
+        "result": [],
+        "trace": []
+    },
+    "empty / system operation": {
+        "result": [],
+        "trace": []
+    },
+    "one table": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\"}",
+            "b {\"id\":\"b\",\"title\":\"object b\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent b old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 WHEN :p3 THEN :p4 END)",
+            "where _uuid IN :p5",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"a\",\"b\"]]",
+            "event ObjectUpdatedEvent a old=NULL",
+            "event ObjectUpdatedEvent b old=NULL"
+        ]
+    },
+    "one table / system operation": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\"}",
+            "b {\"id\":\"b\",\"title\":\"object b\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent b old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 WHEN :p3 THEN :p4 END)",
+            "where _uuid IN :p5",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"a\",\"b\"]]",
+            "debug [MagicMapper] System operation in progress; withholding object lifecycle event []"
+        ]
+    },
+    "two tables": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\"}",
+            "b {\"id\":\"b\",\"title\":\"object b\"}",
+            "c {\"id\":\"c\",\"title\":\"object c\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent c old=NULL",
+            "event ObjectUpdatingEvent b old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 WHEN :p3 THEN :p4 END)",
+            "where _uuid IN :p5",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"a\",\"b\"]]",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_3 [\"c\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"c\\\"}\",[\"c\"]]",
+            "event ObjectUpdatedEvent a old=NULL",
+            "event ObjectUpdatedEvent b old=NULL",
+            "event ObjectUpdatedEvent c old=NULL"
+        ]
+    },
+    "two tables / system operation": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\"}",
+            "b {\"id\":\"b\",\"title\":\"object b\"}",
+            "c {\"id\":\"c\",\"title\":\"object c\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent c old=NULL",
+            "event ObjectUpdatingEvent b old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 WHEN :p3 THEN :p4 END)",
+            "where _uuid IN :p5",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"a\",\"b\"]]",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_3 [\"c\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"c\\\"}\",[\"c\"]]",
+            "debug [MagicMapper] System operation in progress; withholding object lifecycle event []"
+        ]
+    },
+    "missing scope": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "warning [MagicMapper] Skipping batched soft delete for entity without uuid/register/schema {\"uuid\":\"\"}",
+            "warning [MagicMapper] Skipping batched soft delete for entity without uuid/register/schema {\"uuid\":\"x\"}",
+            "warning [MagicMapper] Skipping batched soft delete for entity without uuid/register/schema {\"uuid\":\"y\"}",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",[\"a\"]]",
+            "event ObjectUpdatedEvent a old=NULL"
+        ]
+    },
+    "missing scope / system operation": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "warning [MagicMapper] Skipping batched soft delete for entity without uuid/register/schema {\"uuid\":\"\"}",
+            "warning [MagicMapper] Skipping batched soft delete for entity without uuid/register/schema {\"uuid\":\"x\"}",
+            "warning [MagicMapper] Skipping batched soft delete for entity without uuid/register/schema {\"uuid\":\"y\"}",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",[\"a\"]]",
+            "debug [MagicMapper] System operation in progress; withholding object lifecycle event []"
+        ]
+    },
+    "hook stops one": {
+        "result": [
+            "b {\"id\":\"b\",\"title\":\"object b\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "debug [MagicMapper] Batched soft delete skipped by hook {\"uuid\":\"a\"}",
+            "event ObjectUpdatingEvent b old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"b\"]]",
+            "event ObjectUpdatedEvent b old=NULL"
+        ]
+    },
+    "hook stops one / system operation": {
+        "result": [
+            "b {\"id\":\"b\",\"title\":\"object b\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "debug [MagicMapper] Batched soft delete skipped by hook {\"uuid\":\"a\"}",
+            "event ObjectUpdatingEvent b old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"b\"]]",
+            "debug [MagicMapper] System operation in progress; withholding object lifecycle event []"
+        ]
+    },
+    "hook modifies one": {
+        "result": [
+            "b {\"id\":\"b\",\"title\":\"object b\",\"hooked\":true}",
+            "a {\"id\":\"a\",\"title\":\"object a\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent b old=NULL",
+            "save openregister_table_1_2 b true",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",[\"a\"]]",
+            "event ObjectUpdatedEvent b old=NULL",
+            "event ObjectUpdatedEvent a old=NULL"
+        ]
+    },
+    "hook modifies one / system operation": {
+        "result": [
+            "b {\"id\":\"b\",\"title\":\"object b\",\"hooked\":true}",
+            "a {\"id\":\"a\",\"title\":\"object a\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent b old=NULL",
+            "save openregister_table_1_2 b true",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",[\"a\"]]",
+            "debug [MagicMapper] System operation in progress; withholding object lifecycle event []"
+        ]
+    },
+    "modified save fails": {
+        "result": [
+            "b {\"id\":\"b\",\"title\":\"object b\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "save openregister_table_1_2 a true",
+            "error [MagicMapper] Full-row soft delete failed for hook-modified entity {\"uuid\":\"a\",\"error\":\"save failed for a\"}",
+            "event ObjectUpdatingEvent b old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"b\"]]",
+            "event ObjectUpdatedEvent b old=NULL"
+        ]
+    },
+    "modified save fails / system operation": {
+        "result": [
+            "b {\"id\":\"b\",\"title\":\"object b\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "save openregister_table_1_2 a true",
+            "error [MagicMapper] Full-row soft delete failed for hook-modified entity {\"uuid\":\"a\",\"error\":\"save failed for a\"}",
+            "event ObjectUpdatingEvent b old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"b\"]]",
+            "debug [MagicMapper] System operation in progress; withholding object lifecycle event []"
+        ]
+    },
+    "update fails": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent c old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",[\"a\"]]",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_3 [\"c\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"c\\\"}\",[\"c\"]]",
+            "error [MagicMapper] Batched soft delete UPDATE failed for magic table {\"registerId\":1,\"schemaId\":3,\"count\":1,\"error\":\"update failed on openregister_table_1_3\"}",
+            "event ObjectUpdatedEvent a old=NULL"
+        ]
+    },
+    "update fails / system operation": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent c old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",[\"a\"]]",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_3 [\"c\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"c\\\"}\",[\"c\"]]",
+            "error [MagicMapper] Batched soft delete UPDATE failed for magic table {\"registerId\":1,\"schemaId\":3,\"count\":1,\"error\":\"update failed on openregister_table_1_3\"}",
+            "debug [MagicMapper] System operation in progress; withholding object lifecycle event []"
+        ]
+    },
+    "old entities": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\"}",
+            "b {\"id\":\"b\",\"title\":\"object b\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent b old='prior b'",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 WHEN :p3 THEN :p4 END)",
+            "where _uuid IN :p5",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"a\",\"b\"]]",
+            "event ObjectUpdatedEvent a old=NULL",
+            "event ObjectUpdatedEvent b old='prior b'"
+        ]
+    },
+    "old entities / system operation": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\"}",
+            "b {\"id\":\"b\",\"title\":\"object b\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent b old='prior b'",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 WHEN :p3 THEN :p4 END)",
+            "where _uuid IN :p5",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"a\",\"b\"]]",
+            "debug [MagicMapper] System operation in progress; withholding object lifecycle event []"
+        ]
+    },
+    "modified with old": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\",\"hooked\":true}",
+            "b {\"id\":\"b\",\"title\":\"object b\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old='prior a'",
+            "save openregister_table_1_2 a true",
+            "event ObjectUpdatingEvent b old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"b\"]]",
+            "event ObjectUpdatedEvent a old='prior a'",
+            "event ObjectUpdatedEvent b old=NULL"
+        ]
+    },
+    "modified with old / system operation": {
+        "result": [
+            "a {\"id\":\"a\",\"title\":\"object a\",\"hooked\":true}",
+            "b {\"id\":\"b\",\"title\":\"object b\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old='prior a'",
+            "save openregister_table_1_2 a true",
+            "event ObjectUpdatingEvent b old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"b\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"b\\\"}\",[\"b\"]]",
+            "debug [MagicMapper] System operation in progress; withholding object lifecycle event []"
+        ]
+    },
+    "not an entity": {
+        "thrown": "Exception: softDeleteMultipleObjectEntities() expects ObjectEntity instances",
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL"
+        ]
+    },
+    "not an entity / system operation": {
+        "thrown": "Exception: softDeleteMultipleObjectEntities() expects ObjectEntity instances",
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL"
+        ]
+    },
+    "mixed": {
+        "result": [
+            "m {\"id\":\"m\",\"title\":\"object m\",\"hooked\":true}",
+            "a {\"id\":\"a\",\"title\":\"object a\"}",
+            "c {\"id\":\"c\",\"title\":\"object c\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent s old=NULL",
+            "debug [MagicMapper] Batched soft delete skipped by hook {\"uuid\":\"s\"}",
+            "event ObjectUpdatingEvent m old=NULL",
+            "save openregister_table_1_3 m true",
+            "warning [MagicMapper] Skipping batched soft delete for entity without uuid/register/schema {\"uuid\":\"\"}",
+            "event ObjectUpdatingEvent c old='prior c'",
+            "event ObjectUpdatingEvent d old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",[\"a\"]]",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_3 [\"c\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"c\\\"}\",[\"c\"]]",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_4_5 [\"d\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"d\\\"}\",[\"d\"]]",
+            "error [MagicMapper] Batched soft delete UPDATE failed for magic table {\"registerId\":4,\"schemaId\":5,\"count\":1,\"error\":\"update failed on openregister_table_4_5\"}",
+            "event ObjectUpdatedEvent m old=NULL",
+            "event ObjectUpdatedEvent a old=NULL",
+            "event ObjectUpdatedEvent c old='prior c'"
+        ]
+    },
+    "mixed / system operation": {
+        "result": [
+            "m {\"id\":\"m\",\"title\":\"object m\",\"hooked\":true}",
+            "a {\"id\":\"a\",\"title\":\"object a\"}",
+            "c {\"id\":\"c\",\"title\":\"object c\"}"
+        ],
+        "trace": [
+            "event ObjectUpdatingEvent a old=NULL",
+            "event ObjectUpdatingEvent s old=NULL",
+            "debug [MagicMapper] Batched soft delete skipped by hook {\"uuid\":\"s\"}",
+            "event ObjectUpdatingEvent m old=NULL",
+            "save openregister_table_1_3 m true",
+            "warning [MagicMapper] Skipping batched soft delete for entity without uuid/register/schema {\"uuid\":\"\"}",
+            "event ObjectUpdatingEvent c old='prior c'",
+            "event ObjectUpdatingEvent d old=NULL",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_2 [\"a\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"a\\\"}\",[\"a\"]]",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_1_3 [\"c\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"c\\\"}\",[\"c\"]]",
+            "set _deleted = (CASE _uuid WHEN :p1 THEN :p2 END)",
+            "where _uuid IN :p3",
+            "execute openregister_table_4_5 [\"d\",\"{\\\"deletedBy\\\":\\\"alice\\\",\\\"objectId\\\":\\\"d\\\"}\",[\"d\"]]",
+            "error [MagicMapper] Batched soft delete UPDATE failed for magic table {\"registerId\":4,\"schemaId\":5,\"count\":1,\"error\":\"update failed on openregister_table_4_5\"}",
+            "debug [MagicMapper] System operation in progress; withholding object lifecycle event []"
+        ]
+    }
+}

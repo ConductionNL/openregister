@@ -37,22 +37,47 @@ use OCA\OpenRegister\Db\Task;
 final class PortalSubject {
 
 	/**
+	 * The external audience (`client`, `supplier`, ...).
+	 *
+	 * @var string
+	 */
+	public readonly string $audience;
+
+	/**
+	 * The tenant the subject is scoped to.
+	 *
+	 * @var string
+	 */
+	public readonly string $organisation;
+
+	/**
+	 * The trust level (`low|substantial|high`).
+	 *
+	 * @var string
+	 */
+	public readonly string $trust;
+
+	/**
+	 * The originating session id, for audit correlation.
+	 *
+	 * @var string
+	 */
+	public readonly string $jti;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $subjectRef The server-derived subject reference.
-	 * @param string $audience The external audience (`client`, `supplier`, ...).
-	 * @param string $organisation The tenant the subject is scoped to.
-	 * @param string $trust The trust level (`low|substantial|high`).
-	 * @param string $jti The originating session id, for audit correlation.
+	 * @param PortalSubjectClaims $claims The audience, tenant, trust and session the assertion carried.
 	 */
 	public function __construct(
 		public readonly string $subjectRef,
-		public readonly string $audience = '',
-		public readonly string $organisation = '',
-		public readonly string $trust = '',
-		public readonly string $jti = '',
+		PortalSubjectClaims $claims = new PortalSubjectClaims(),
 	) {
-
+		$this->audience = $claims->audience;
+		$this->organisation = $claims->organisation;
+		$this->trust = $claims->trust;
+		$this->jti = $claims->jti;
 	}//end __construct()
 
 	/**

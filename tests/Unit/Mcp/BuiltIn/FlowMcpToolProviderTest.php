@@ -19,6 +19,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowToolServices;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 class FlowMcpToolProviderTest extends TestCase {
 	private FlowRunService $runner;
@@ -47,11 +49,13 @@ class FlowMcpToolProviderTest extends TestCase {
 		$this->preflight->method('inspect')->willReturn(['blocking' => [], 'warnings' => []]);
 
 		$this->provider = new FlowMcpToolProvider(
-			$this->runner,
-			$this->mapper,
-			$this->flows,
-			$this->preflight,
-			$this->userSession
+			new FlowToolServices(
+				$this->runner,
+				$this->mapper,
+				$this->flows,
+				$this->preflight,
+			),
+			$this->userSession,
 		);
 	}
 
@@ -115,12 +119,8 @@ class FlowMcpToolProviderTest extends TestCase {
 		$run->setStatus(FlowRun::STATUS_QUEUED);
 
 		$this->runner->expects($this->once())
-			->method('queue')
-			->with(
-				$this->equalTo('f1'),
-				$this->callback(fn ($s) => $s['uuid'] === 'u1'),
-				$this->equalTo('mcp')
-			)
+			->method('queueRun')
+			->with($this->equalTo('f1'), $this->callback(fn (FlowRunQueueOptions $o): bool => (fn ($s) => $s['uuid'] === 'u1')($o->subject) === true && $o->trigger == 'mcp'))
 			->willReturn($run);
 
 		$result = $this->provider->invokeTool('openregister.runFlow', [
@@ -148,10 +148,10 @@ class FlowMcpToolProviderTest extends TestCase {
 
 		$seen = null;
 		$this->runner->expects($this->once())
-			->method('queue')
+			->method('queueRun')
 			->willReturnCallback(
-				function (string $flowId, array $subject, string $trigger, array $context, ?string $user) use ($run, &$seen) {
-					$seen = $user;
+				function (string $flowId, FlowRunQueueOptions $options) use ($run, &$seen) {
+					$seen = $options->user;
 					return $run;
 				}
 			);
@@ -174,10 +174,10 @@ class FlowMcpToolProviderTest extends TestCase {
 
 		$seen = 'untouched';
 		$this->runner->expects($this->once())
-			->method('queue')
+			->method('queueRun')
 			->willReturnCallback(
-				function (string $flowId, array $subject, string $trigger, array $context, ?string $user) use ($run, &$seen) {
-					$seen = $user;
+				function (string $flowId, FlowRunQueueOptions $options) use ($run, &$seen) {
+					$seen = $options->user;
 					return $run;
 				}
 			);
@@ -221,7 +221,7 @@ class FlowMcpToolProviderTest extends TestCase {
 
 	public function testRunFlowRefusesAFlowTheCallerCannotSee(): void {
 		$this->flows->method('find')->willThrowException(new DoesNotExistException('hidden'));
-		$this->runner->expects($this->never())->method('queue');
+		$this->runner->expects($this->never())->method('queueRun');
 
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('No such flow: f9');
@@ -231,7 +231,7 @@ class FlowMcpToolProviderTest extends TestCase {
 	public function testRunFlowRefusesAFlowTheCallerMayNotRun(): void {
 		$this->flows->method('assertRunnable')
 			->willThrowException(new \OCA\OpenRegister\Exception\FlowRunRefused(verdict: 'unadopted', message: 'Nobody adopted this flow.'));
-		$this->runner->expects($this->never())->method('queue');
+		$this->runner->expects($this->never())->method('queueRun');
 
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('Nobody adopted this flow.');
@@ -304,7 +304,7 @@ class FlowMcpToolProviderTest extends TestCase {
 			->method('inspect')
 			->with(['nodes' => [['id' => 'a']], 'edges' => []])
 			->willReturn(['blocking' => ['dead end at a'], 'warnings' => ['no trigger']]);
-		$provider = new FlowMcpToolProvider($this->runner, $this->mapper, $this->flows, $preflight, $this->userSession);
+		$provider = new FlowMcpToolProvider(new FlowToolServices($this->runner, $this->mapper, $this->flows, $preflight), $this->userSession);
 
 		$flow = new \OCA\OpenRegister\Db\Flow();
 		$flow->setUuid('flow-7');

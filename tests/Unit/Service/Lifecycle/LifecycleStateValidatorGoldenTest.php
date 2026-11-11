@@ -35,6 +35,8 @@ use PHPUnit\Framework\TestCase;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleStateValidator
+ * @covers \OCA\OpenRegister\Service\Lifecycle\StateConditionValidator
+ * @covers \OCA\OpenRegister\Service\Lifecycle\StateConditionSite
  * @uses   \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleScope
  */
 class LifecycleStateValidatorGoldenTest extends TestCase {
@@ -101,6 +103,44 @@ class LifecycleStateValidatorGoldenTest extends TestCase {
 			'nested condition empty' => ['annotation' => ['states' => ['open' => ['entry' => ['condition' => []], 'exit' => ['when' => 'x']]]]],
 			'no properties' => ['annotation' => ['states' => $entry()], 'properties' => null],
 			'properties scalar' => ['annotation' => ['states' => $entry()], 'properties' => 'x'],
+			'when list references' => [
+				'annotation' => [
+					'states' => $entry(
+						[
+							'when' => [
+								'and' => [
+									['prop' => ['ghost', 1]],
+									['var' => [3]],
+									['var' => ['inner' => ['var' => 'other']]],
+									['var' => 'ghost'],
+									['prop' => 'object.title.x'],
+								],
+							],
+						]
+					),
+				],
+			],
+			'when namespace edges' => [
+				'annotation' => [
+					'states' => $entry(
+						[
+							'when' => [
+								'or' => [
+									['var' => 'object.'],
+									['var' => 'object._x'],
+									['var' => ' object.miss '],
+									['var' => 'previous.ghost'],
+									['var' => 'transition'],
+									['var' => '@'],
+									['prop' => '_'],
+									['var' => 'objects.x'],
+								],
+							],
+						]
+					),
+				],
+			],
+			'two states in order' => ['annotation' => ['states' => ['closed' => ['entry' => ['var' => 'zip']], 'gone' => [], 'open' => 'x']]],
 		];
 
 		$hidden = ['closed' => ['fields' => ['hidden' => [['fields' => ['title', '', 4]], ['field' => 'owner'], ['fields' => 'amount'], 'bad', ['fields' => 9], ['when' => 1]]]]];
@@ -111,6 +151,13 @@ class LifecycleStateValidatorGoldenTest extends TestCase {
 			'inputs target without hidden' => ['states' => ['closed' => ['fields' => ['readOnly' => [['fields' => ['title']]]]]], 'transitions' => ['close' => ['to' => 'closed', 'inputs' => ['title']]]],
 			'inputs target block scalar' => ['states' => ['closed' => 'x'], 'transitions' => ['close' => ['to' => 'closed', 'inputs' => ['title']]]],
 			'inputs hidden scalar' => ['states' => ['closed' => ['fields' => ['hidden' => 'title']]], 'transitions' => ['close' => ['to' => 'closed', 'inputs' => ['title']]]],
+			'inputs duplicate and missing target' => [
+				'states' => ['' => ['fields' => ['hidden' => [['fields' => ['title']]]]]] + $hidden,
+				'transitions' => [
+					'a' => ['inputs' => ['title', 'title']],
+					'b' => ['to' => 'closed', 'inputs' => ['owner', 'owner', ['field' => 'amount', 'label' => 'x']]],
+				],
+			],
 			'inputs bad spec' => ['states' => $hidden, 'transitions' => ['a' => 'x', 'b' => ['to' => 'closed'], 'c' => ['to' => 'closed', 'inputs' => 'title'], 9 => ['inputs' => ['title']]]],
 		];
 
@@ -165,7 +212,7 @@ class LifecycleStateValidatorGoldenTest extends TestCase {
 				$schema = [];
 			}
 
-			$actual = $validator->validateStates($case['annotation'], $schema, $enumSet);
+			$actual = $validator->validateStates($case['annotation'], LifecycleStateValidator::scopeOf($schema, $enumSet));
 		}
 
 		$golden = [];

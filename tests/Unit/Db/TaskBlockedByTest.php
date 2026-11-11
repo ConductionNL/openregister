@@ -23,6 +23,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskBlockerMapper;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxAnchor;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
@@ -85,7 +88,7 @@ class TaskBlockedByTest extends TestCase {
 	public function testTheInboxLeavesBlockedTasksOut(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'anna'));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna')));
 
 		$this->assertTrue($this->saw('expr.notIn', 'blocked_by'), 'the page must exclude tasks whose blocker is open');
 		$this->assertTrue($this->saw('expr.isNull', 'blocked_by'), 'a task with no blocker must stay listed');
@@ -99,7 +102,7 @@ class TaskBlockedByTest extends TestCase {
 	public function testTheTotalLeavesBlockedTasksOut(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith(rows: [['total' => 0]]));
 
-		$mapper->countInbox(criteria: new TaskInboxCriteria(uid: 'anna'));
+		$mapper->countInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna')));
 
 		$this->assertTrue($this->saw('expr.notIn', 'blocked_by'));
 	}//end testTheTotalLeavesBlockedTasksOut()
@@ -112,7 +115,7 @@ class TaskBlockedByTest extends TestCase {
 	public function testAnObjectAnchoredReadKeepsBlockedTasks(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'anna', objectUuid: 'case-1'));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna'), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(objectUuid: 'case-1'))));
 
 		$this->assertFalse($this->saw('expr.notIn', 'blocked_by'));
 	}//end testAnObjectAnchoredReadKeepsBlockedTasks()
@@ -125,7 +128,7 @@ class TaskBlockedByTest extends TestCase {
 	public function testARunAnchoredReadKeepsBlockedTasks(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'anna', runUuid: 'run-1'));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna'), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(runUuid: 'run-1'))));
 
 		$this->assertFalse($this->saw('expr.notIn', 'blocked_by'));
 	}//end testARunAnchoredReadKeepsBlockedTasks()
@@ -138,7 +141,7 @@ class TaskBlockedByTest extends TestCase {
 	public function testIncludeBlockedBringsThemBack(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'anna', includeBlocked: true));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna'), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(includeBlocked: true))));
 
 		$this->assertFalse($this->saw('expr.notIn', 'blocked_by'));
 	}//end testIncludeBlockedBringsThemBack()
@@ -194,8 +197,8 @@ class TaskBlockedByTest extends TestCase {
 			->with(['task-visit', 'task-closed'])
 			->willReturn(['task-visit']);
 
-		$inbox = new TaskInboxService(tasks: $tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: null, blockers: $blockers);
-		$rows = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'anna', objectUuid: 'case-1'))['results'];
+		$inbox = new TaskInboxService(tasks: $tasks, logger: new NullLogger(), objects: null, blockers: $blockers);
+		$rows = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna'), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(objectUuid: 'case-1'))))['results'];
 
 		$this->assertTrue($rows[0]['blocked']);
 		$this->assertSame('task-visit', $rows[0]['blockedBy']);
@@ -217,7 +220,7 @@ class TaskBlockedByTest extends TestCase {
 		$blockers = $this->createMock(TaskBlockerMapper::class);
 		$blockers->method('openBlockerUuids')->willReturn(['task-visit']);
 
-		$inbox = new TaskInboxService(tasks: $tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: null, blockers: $blockers);
+		$inbox = new TaskInboxService(tasks: $tasks, logger: new NullLogger(), objects: null, blockers: $blockers);
 
 		$this->assertTrue($inbox->enrich(task: $waiting)['blocked']);
 	}//end testASingleReadDerivesTheFlagToo()
@@ -250,8 +253,8 @@ class TaskBlockedByTest extends TestCase {
 		$blockers = $this->createMock(TaskBlockerMapper::class);
 		$blockers->method('openBlockerUuids')->willThrowException(new \RuntimeException('database went away'));
 
-		$inbox = new TaskInboxService(tasks: $tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: null, blockers: $blockers);
-		$rows = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'anna', objectUuid: 'case-1'))['results'];
+		$inbox = new TaskInboxService(tasks: $tasks, logger: new NullLogger(), objects: null, blockers: $blockers);
+		$rows = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna'), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(objectUuid: 'case-1'))))['results'];
 
 		$this->assertFalse($rows[0]['blocked']);
 	}//end testABlockerLookupThatFailsMarksNothingBlocked()

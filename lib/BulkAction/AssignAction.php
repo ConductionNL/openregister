@@ -38,7 +38,7 @@ use InvalidArgumentException;
 /**
  * The built-in bulk redistribution.
  */
-class AssignAction extends AbstractPropertyWriteAction {
+class AssignAction extends AbstractPropertyWriteAction implements AssignActionInterface {
 
 	/**
 	 * The action id.

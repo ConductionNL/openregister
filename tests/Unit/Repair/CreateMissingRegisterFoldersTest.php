@@ -24,8 +24,10 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Repair\CreateMissingRegisterFolders;
-use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -61,8 +63,8 @@ class CreateMissingRegisterFoldersTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnMap(
 			[
-				[RegisterMapper::class, $mapper],
-				[RegisterFolderProvisioner::class, $provisioner],
+				[RegisterMapperInterface::class, $mapper],
+				[RegisterFolderProvisionerInterface::class, $provisioner],
 			]
 		);
 
@@ -92,5 +94,22 @@ class CreateMissingRegisterFoldersTest extends TestCase {
 			->with($this->stringContains('skipped'));
 
 		(new CreateMissingRegisterFolders($container, $this->createMock(LoggerInterface::class)))->run($output);
+	}
+
+	public function testTheSkipIsLoggedAndPrintedWithItsReason(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new RuntimeException('not wired'));
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('info')
+			->with('[CreateMissingRegisterFolders] Skipped: not wired', $this->arrayHasKey('line'));
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())
+			->method('info')
+			->with('Register folders: skipped, services unavailable (not wired)');
+
+		(new CreateMissingRegisterFolders($container, $logger))->run($output);
 	}
 }

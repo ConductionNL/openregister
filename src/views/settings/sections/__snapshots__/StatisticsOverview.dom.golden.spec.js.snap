@@ -1,0 +1,1001 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`statistics overview renders while clearing each kind 1`] = `
+"<div>
+<x-settingssection name="System Statistics" description="Overview of your Open Register data and potential issues" loading="false" loadingmessage="t:Loading statistics...">
+<slot-actions>
+<x-ncbutton variant="secondary" disabled="false">
+<slot-default>Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="stats-content">
+<div class="stats-grid">
+<div class="stats-card warning-stats">
+<h4>⚠️ Items Requiring Attention</h4>
+<div class="stats-table-container">
+<table class="stats-table">
+<thead>
+<tr>
+<th scope="col" class="stats-table-header">Issue</th>
+<th scope="col" class="stats-table-header">Count</th>
+<th scope="col" class="stats-table-header">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects without owner</td>
+<td class="stats-table-value danger">1</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects without organisation</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Audit trails without expiry</td>
+<td class="stats-table-value danger">3</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Search trails without expiry</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired audit trails</td>
+<td class="stats-table-value danger">5</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired search trails</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired objects</td>
+<td class="stats-table-value danger">7</td>
+<td class="stats-table-value">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="stats-card general-stats">
+<h4>📊 System Overview</h4>
+<div class="stats-table-container">
+<table class="stats-table">
+<thead>
+<tr>
+<th scope="col" class="stats-table-header">Resource</th>
+<th scope="col" class="stats-table-header">Count</th>
+<th scope="col" class="stats-table-header">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects</td>
+<td class="stats-table-value">11</td>
+<td class="stats-table-value">2 KB</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">└─ Blob Storage Objects</td>
+<td class="stats-table-value">12</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="true">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-ncloadingicon size="16">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">└─ Magic Mapper Objects</td>
+<td class="stats-table-value">13</td>
+<td class="stats-table-value">4 KB</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Configurations</td>
+<td class="stats-table-value">14</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Audit Trails</td>
+<td class="stats-table-value">15</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="false">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-delete size="16">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Search Trails</td>
+<td class="stats-table-value">16</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="true">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-ncloadingicon size="16">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Webhook Logs</td>
+<td class="stats-table-value">17</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Deleted Objects</td>
+<td class="stats-table-value">18</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Organisations</td>
+<td class="stats-table-value">19</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Registers</td>
+<td class="stats-table-value">20</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Schemas</td>
+<td class="stats-table-value">21</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Sources</td>
+<td class="stats-table-value">22</td>
+<td class="stats-table-value">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="rebase-section">
+<div class="rebase-warning">
+<h4>🔧 Data Maintenance Required</h4>
+<p class="rebase-description">Your system has objects or logs that require attention. You can fix these issues by running a rebase operation which will recalculate deletion times and assign default owners/organizations to unassigned objects.</p>
+<div class="rebase-actions">
+<x-ncbutton variant="error" disabled="false">
+<slot-default>Rebase All Objects and Logs</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+<div class="mass-validate-section">
+<div class="mass-validate-info">
+<h4>🔄 Mass Validate Objects</h4>
+<p class="mass-validate-description">Re-save all objects in the system to trigger business logic validation and processing. This ensures all objects are properly processed according to current rules and schemas.</p>
+<div class="mass-validate-actions">
+<x-ncbutton variant="primary" disabled="false">
+<slot-default>Mass Validate Objects</slot-default>
+<slot-icon>
+<x-checkcircle size="20">
+</x-checkcircle>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-settingssection>
+<x-massvalidatemodal show="false" objectstats="{&quot;loading&quot;:false,&quot;totalObjects&quot;:0}" massvalidating="false" completed="false" results="null" config="{&quot;mode&quot;:&quot;serial&quot;,&quot;maxObjects&quot;:0,&quot;batchSize&quot;:1000,&quot;collectErrors&quot;:false}" memoryprediction="{&quot;prediction_safe&quot;:true,&quot;formatted&quot;:{&quot;total_predicted&quot;:&quot;Unknown&quot;,&quot;available&quot;:&quot;Unknown&quot;}}" memorypredictionloading="false">
+</x-massvalidatemodal>
+</div>"
+`;
+
+exports[`statistics overview renders while loading and busy 1`] = `
+"<div>
+<x-settingssection name="System Statistics" description="Overview of your Open Register data and potential issues" loading="false" loadingmessage="t:Loading statistics...">
+<slot-actions>
+<x-ncbutton variant="secondary" disabled="true">
+<slot-default>Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="stats-content">
+<div class="stats-grid">
+<div class="stats-card warning-stats">
+<h4>⚠️ Items Requiring Attention</h4>
+<div class="stats-table-container">
+<table class="stats-table">
+<thead>
+<tr>
+<th scope="col" class="stats-table-header">Issue</th>
+<th scope="col" class="stats-table-header">Count</th>
+<th scope="col" class="stats-table-header">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects without owner</td>
+<td class="stats-table-value danger">1</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects without organisation</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Audit trails without expiry</td>
+<td class="stats-table-value danger">3</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Search trails without expiry</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired audit trails</td>
+<td class="stats-table-value danger">5</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired search trails</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired objects</td>
+<td class="stats-table-value danger">7</td>
+<td class="stats-table-value">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="stats-card general-stats">
+<h4>📊 System Overview</h4>
+<div class="stats-table-container">
+<table class="stats-table">
+<thead>
+<tr>
+<th scope="col" class="stats-table-header">Resource</th>
+<th scope="col" class="stats-table-header">Count</th>
+<th scope="col" class="stats-table-header">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects</td>
+<td class="stats-table-value">11</td>
+<td class="stats-table-value">2 KB</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">└─ Blob Storage Objects</td>
+<td class="stats-table-value">12</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="true">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-delete size="16">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">└─ Magic Mapper Objects</td>
+<td class="stats-table-value">13</td>
+<td class="stats-table-value">4 KB</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Configurations</td>
+<td class="stats-table-value">14</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Audit Trails</td>
+<td class="stats-table-value">15</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="true">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-ncloadingicon size="16">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Search Trails</td>
+<td class="stats-table-value">16</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="true">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-delete size="16">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Webhook Logs</td>
+<td class="stats-table-value">17</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Deleted Objects</td>
+<td class="stats-table-value">18</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Organisations</td>
+<td class="stats-table-value">19</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Registers</td>
+<td class="stats-table-value">20</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Schemas</td>
+<td class="stats-table-value">21</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Sources</td>
+<td class="stats-table-value">22</td>
+<td class="stats-table-value">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="rebase-section">
+<div class="rebase-warning">
+<h4>🔧 Data Maintenance Required</h4>
+<p class="rebase-description">Your system has objects or logs that require attention. You can fix these issues by running a rebase operation which will recalculate deletion times and assign default owners/organizations to unassigned objects.</p>
+<div class="rebase-actions">
+<x-ncbutton variant="error" disabled="true">
+<slot-default>Rebasing...</slot-default>
+<slot-icon>
+<x-ncloadingicon size="20">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+<div class="mass-validate-section">
+<div class="mass-validate-info">
+<h4>🔄 Mass Validate Objects</h4>
+<p class="mass-validate-description">Re-save all objects in the system to trigger business logic validation and processing. This ensures all objects are properly processed according to current rules and schemas.</p>
+<div class="mass-validate-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Validating...</slot-default>
+<slot-icon>
+<x-ncloadingicon size="20">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-settingssection>
+<x-massvalidatemodal show="false" objectstats="{&quot;loading&quot;:false,&quot;totalObjects&quot;:0}" massvalidating="true" completed="false" results="null" config="{&quot;mode&quot;:&quot;serial&quot;,&quot;maxObjects&quot;:0,&quot;batchSize&quot;:1000,&quot;collectErrors&quot;:false}" memoryprediction="{&quot;prediction_safe&quot;:true,&quot;formatted&quot;:{&quot;total_predicted&quot;:&quot;Unknown&quot;,&quot;available&quot;:&quot;Unknown&quot;}}" memorypredictionloading="false">
+</x-massvalidatemodal>
+</div>"
+`;
+
+exports[`statistics overview renders with every dialog open 1`] = `
+"<div>
+<x-settingssection name="System Statistics" description="Overview of your Open Register data and potential issues" loading="false" loadingmessage="t:Loading statistics...">
+<slot-actions>
+<x-ncbutton variant="secondary" disabled="false">
+<slot-default>Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="stats-content">
+<div class="stats-grid">
+<div class="stats-card warning-stats">
+<h4>⚠️ Items Requiring Attention</h4>
+<div class="stats-table-container">
+<table class="stats-table">
+<thead>
+<tr>
+<th scope="col" class="stats-table-header">Issue</th>
+<th scope="col" class="stats-table-header">Count</th>
+<th scope="col" class="stats-table-header">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects without owner</td>
+<td class="stats-table-value danger">1</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects without organisation</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Audit trails without expiry</td>
+<td class="stats-table-value danger">3</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Search trails without expiry</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired audit trails</td>
+<td class="stats-table-value danger">5</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired search trails</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired objects</td>
+<td class="stats-table-value danger">7</td>
+<td class="stats-table-value">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="stats-card general-stats">
+<h4>📊 System Overview</h4>
+<div class="stats-table-container">
+<table class="stats-table">
+<thead>
+<tr>
+<th scope="col" class="stats-table-header">Resource</th>
+<th scope="col" class="stats-table-header">Count</th>
+<th scope="col" class="stats-table-header">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects</td>
+<td class="stats-table-value">11</td>
+<td class="stats-table-value">2 KB</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">└─ Blob Storage Objects</td>
+<td class="stats-table-value">12</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="false">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-delete size="16">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">└─ Magic Mapper Objects</td>
+<td class="stats-table-value">13</td>
+<td class="stats-table-value">4 KB</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Configurations</td>
+<td class="stats-table-value">14</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Audit Trails</td>
+<td class="stats-table-value">15</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="false">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-delete size="16">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Search Trails</td>
+<td class="stats-table-value">16</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="false">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-delete size="16">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Webhook Logs</td>
+<td class="stats-table-value">17</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Deleted Objects</td>
+<td class="stats-table-value">18</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Organisations</td>
+<td class="stats-table-value">19</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Registers</td>
+<td class="stats-table-value">20</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Schemas</td>
+<td class="stats-table-value">21</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Sources</td>
+<td class="stats-table-value">22</td>
+<td class="stats-table-value">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="rebase-section">
+<div class="rebase-warning">
+<h4>🔧 Data Maintenance Required</h4>
+<p class="rebase-description">Your system has objects or logs that require attention. You can fix these issues by running a rebase operation which will recalculate deletion times and assign default owners/organizations to unassigned objects.</p>
+<div class="rebase-actions">
+<x-ncbutton variant="error" disabled="false">
+<slot-default>Rebase All Objects and Logs</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+<div class="mass-validate-section">
+<div class="mass-validate-info">
+<h4>🔄 Mass Validate Objects</h4>
+<p class="mass-validate-description">Re-save all objects in the system to trigger business logic validation and processing. This ensures all objects are properly processed according to current rules and schemas.</p>
+<div class="mass-validate-actions">
+<x-ncbutton variant="primary" disabled="false">
+<slot-default>Mass Validate Objects</slot-default>
+<slot-icon>
+<x-checkcircle size="20">
+</x-checkcircle>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-settingssection>
+<x-rebaseconfirmationdialog open="true" rebasing="false">
+</x-rebaseconfirmationdialog>
+<x-massvalidatemodal show="false" objectstats="{&quot;loading&quot;:false,&quot;totalObjects&quot;:0}" massvalidating="false" completed="false" results="null" config="{&quot;mode&quot;:&quot;serial&quot;,&quot;maxObjects&quot;:0,&quot;batchSize&quot;:1000,&quot;collectErrors&quot;:false}" memoryprediction="{&quot;prediction_safe&quot;:true,&quot;formatted&quot;:{&quot;total_predicted&quot;:&quot;Unknown&quot;,&quot;available&quot;:&quot;Unknown&quot;}}" memorypredictionloading="false">
+</x-massvalidatemodal>
+<x-clearaudittrailsdialog open="true" clearing="false" totalaudittrails="15">
+</x-clearaudittrailsdialog>
+<x-clearsearchtrailsdialog open="true" clearing="false" totalsearchtrails="16">
+</x-clearsearchtrailsdialog>
+<x-clearblobobjectsdialog open="true" clearing="false" totalblobobjects="12">
+</x-clearblobobjectsdialog>
+</div>"
+`;
+
+exports[`statistics overview renders with warnings and data 1`] = `
+"<div>
+<x-settingssection name="System Statistics" description="Overview of your Open Register data and potential issues" loading="false" loadingmessage="t:Loading statistics...">
+<slot-actions>
+<x-ncbutton variant="secondary" disabled="false">
+<slot-default>Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="stats-content">
+<div class="stats-grid">
+<div class="stats-card warning-stats">
+<h4>⚠️ Items Requiring Attention</h4>
+<div class="stats-table-container">
+<table class="stats-table">
+<thead>
+<tr>
+<th scope="col" class="stats-table-header">Issue</th>
+<th scope="col" class="stats-table-header">Count</th>
+<th scope="col" class="stats-table-header">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects without owner</td>
+<td class="stats-table-value danger">1</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects without organisation</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Audit trails without expiry</td>
+<td class="stats-table-value danger">3</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Search trails without expiry</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired audit trails</td>
+<td class="stats-table-value danger">5</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired search trails</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired objects</td>
+<td class="stats-table-value danger">7</td>
+<td class="stats-table-value">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="stats-card general-stats">
+<h4>📊 System Overview</h4>
+<div class="stats-table-container">
+<table class="stats-table">
+<thead>
+<tr>
+<th scope="col" class="stats-table-header">Resource</th>
+<th scope="col" class="stats-table-header">Count</th>
+<th scope="col" class="stats-table-header">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects</td>
+<td class="stats-table-value">11</td>
+<td class="stats-table-value">2 KB</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">└─ Blob Storage Objects</td>
+<td class="stats-table-value">12</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="false">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-delete size="16">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">└─ Magic Mapper Objects</td>
+<td class="stats-table-value">13</td>
+<td class="stats-table-value">4 KB</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Configurations</td>
+<td class="stats-table-value">14</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Audit Trails</td>
+<td class="stats-table-value">15</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="false">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-delete size="16">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Search Trails</td>
+<td class="stats-table-value">16</td>
+<td class="stats-table-value">
+<x-ncbutton variant="error" size="small" disabled="false">
+<slot-default>Clear All</slot-default>
+<slot-icon>
+<x-delete size="16">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Webhook Logs</td>
+<td class="stats-table-value">17</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Deleted Objects</td>
+<td class="stats-table-value">18</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Organisations</td>
+<td class="stats-table-value">19</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Registers</td>
+<td class="stats-table-value">20</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Schemas</td>
+<td class="stats-table-value">21</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Sources</td>
+<td class="stats-table-value">22</td>
+<td class="stats-table-value">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="rebase-section">
+<div class="rebase-warning">
+<h4>🔧 Data Maintenance Required</h4>
+<p class="rebase-description">Your system has objects or logs that require attention. You can fix these issues by running a rebase operation which will recalculate deletion times and assign default owners/organizations to unassigned objects.</p>
+<div class="rebase-actions">
+<x-ncbutton variant="error" disabled="false">
+<slot-default>Rebase All Objects and Logs</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+<div class="mass-validate-section">
+<div class="mass-validate-info">
+<h4>🔄 Mass Validate Objects</h4>
+<p class="mass-validate-description">Re-save all objects in the system to trigger business logic validation and processing. This ensures all objects are properly processed according to current rules and schemas.</p>
+<div class="mass-validate-actions">
+<x-ncbutton variant="primary" disabled="false">
+<slot-default>Mass Validate Objects</slot-default>
+<slot-icon>
+<x-checkcircle size="20">
+</x-checkcircle>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-settingssection>
+<x-massvalidatemodal show="false" objectstats="{&quot;loading&quot;:false,&quot;totalObjects&quot;:0}" massvalidating="false" completed="false" results="null" config="{&quot;mode&quot;:&quot;serial&quot;,&quot;maxObjects&quot;:0,&quot;batchSize&quot;:1000,&quot;collectErrors&quot;:false}" memoryprediction="{&quot;prediction_safe&quot;:true,&quot;formatted&quot;:{&quot;total_predicted&quot;:&quot;Unknown&quot;,&quot;available&quot;:&quot;Unknown&quot;}}" memorypredictionloading="false">
+</x-massvalidatemodal>
+</div>"
+`;
+
+exports[`statistics overview renders without warnings or data 1`] = `
+"<div>
+<x-settingssection name="System Statistics" description="Overview of your Open Register data and potential issues" loading="false" loadingmessage="t:Loading statistics...">
+<slot-actions>
+<x-ncbutton variant="secondary" disabled="false">
+<slot-default>Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="stats-content">
+<div class="stats-grid">
+<div class="stats-card warning-stats">
+<h4>⚠️ Items Requiring Attention</h4>
+<div class="stats-table-container">
+<table class="stats-table">
+<thead>
+<tr>
+<th scope="col" class="stats-table-header">Issue</th>
+<th scope="col" class="stats-table-header">Count</th>
+<th scope="col" class="stats-table-header">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects without owner</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects without organisation</td>
+<td class="stats-table-value danger">2</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Audit trails without expiry</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Search trails without expiry</td>
+<td class="stats-table-value danger">4</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired audit trails</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired search trails</td>
+<td class="stats-table-value danger">6</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Expired objects</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="stats-card general-stats">
+<h4>📊 System Overview</h4>
+<div class="stats-table-container">
+<table class="stats-table">
+<thead>
+<tr>
+<th scope="col" class="stats-table-header">Resource</th>
+<th scope="col" class="stats-table-header">Count</th>
+<th scope="col" class="stats-table-header">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="stats-table-row">
+<td class="stats-table-label">Objects</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">0 B</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">└─ Blob Storage Objects</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">
+<span>-</span>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">└─ Magic Mapper Objects</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">0 B</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Configurations</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Audit Trails</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">
+<span>-</span>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Search Trails</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">
+<span>-</span>
+</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Webhook Logs</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Deleted Objects</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Organisations</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Registers</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Schemas</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+<tr class="stats-table-row">
+<td class="stats-table-label">Sources</td>
+<td class="stats-table-value">0</td>
+<td class="stats-table-value">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="mass-validate-section">
+<div class="mass-validate-info">
+<h4>🔄 Mass Validate Objects</h4>
+<p class="mass-validate-description">Re-save all objects in the system to trigger business logic validation and processing. This ensures all objects are properly processed according to current rules and schemas.</p>
+<div class="mass-validate-actions">
+<x-ncbutton variant="primary" disabled="false">
+<slot-default>Mass Validate Objects</slot-default>
+<slot-icon>
+<x-checkcircle size="20">
+</x-checkcircle>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-settingssection>
+<x-massvalidatemodal show="false" objectstats="{&quot;loading&quot;:false,&quot;totalObjects&quot;:0}" massvalidating="false" completed="false" results="null" config="{&quot;mode&quot;:&quot;serial&quot;,&quot;maxObjects&quot;:0,&quot;batchSize&quot;:1000,&quot;collectErrors&quot;:false}" memoryprediction="{&quot;prediction_safe&quot;:true,&quot;formatted&quot;:{&quot;total_predicted&quot;:&quot;Unknown&quot;,&quot;available&quot;:&quot;Unknown&quot;}}" memorypredictionloading="false">
+</x-massvalidatemodal>
+</div>"
+`;

@@ -35,7 +35,7 @@ use OCP\IUserSession;
 /**
  * Answers whether the signed-in caller is an instance administrator.
  */
-class AdminGate {
+class AdminGate implements AdminGateInterface {
 	/**
 	 * Constructor.
 	 *

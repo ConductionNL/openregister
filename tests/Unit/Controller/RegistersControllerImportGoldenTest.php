@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MigrationPack;
@@ -20,12 +21,14 @@ use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -37,6 +40,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 
 /**
  * Golden test for RegistersController::import().
@@ -65,6 +69,55 @@ class RegistersControllerImportGoldenTest extends TestCase {
 	/**
 	 * @return array<string, array{0: array<string, mixed>}>
 	 */
+	/**
+	 * For every import service call, whether creates kept their lifecycle state.
+	 *
+	 * @var list<bool>
+	 */
+	private array $ranAsSystem = [];
+
+	/**
+	 * For every import service call, whether it ran inside SystemOperationContext.
+	 *
+	 * @var list<bool>
+	 */
+	private array $elevated = [];
+
+	public function testAnAdminsHistoricImportKeepsTheRowsStates(): void {
+		$this->ranAsSystem = [];
+		$controller = $this->buildController(case: ['file' => ['name' => 'data.csv', 'content' => "a\n1\n"], 'params' => ['type' => 'csv', 'schema' => '5', 'historic' => 'true']]);
+
+		$response = $controller->import(1, false);
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame([true], $this->ranAsSystem);
+		$this->assertSame([false], $this->elevated, 'a historic import is not elevated (ADR-099)');
+		$this->assertFalse(KeepLifecycleStatesScope::isActive(), 'the scope ends with the import');
+	}//end testAnAdminsHistoricImportKeepsTheRowsStates()
+
+	public function testAHistoricImportIsRefusedForSomebodyWhoIsNotAnAdmin(): void {
+		$this->ranAsSystem = [];
+		$controller = $this->buildController(
+			case: ['file' => ['name' => 'data.csv', 'content' => "a\n1\n"], 'user' => 'member', 'manage' => ['editors'], 'params' => ['type' => 'csv', 'schema' => '5', 'historic' => 'true']]
+		);
+
+		$response = $controller->import(1, false);
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame([], $this->ranAsSystem);
+	}//end testAHistoricImportIsRefusedForSomebodyWhoIsNotAnAdmin()
+
+	public function testAnOrdinaryImportIsNotElevated(): void {
+		$this->ranAsSystem = [];
+		$controller = $this->buildController(
+			case: ['file' => ['name' => 'data.csv', 'content' => "a\n1\n"], 'user' => 'member', 'manage' => ['editors'], 'params' => ['type' => 'csv', 'schema' => '5']]
+		);
+
+		$controller->import(1, false);
+
+		$this->assertSame([false], $this->ranAsSystem);
+	}//end testAnOrdinaryImportIsNotElevated()
+
 	public static function cases(): array {
 		$excel = ['name' => 'data.xlsx', 'content' => 'xlsx-bytes'];
 		$csv = ['name' => 'data.csv', 'content' => "a,b\n1,2\n"];
@@ -148,6 +201,13 @@ class RegistersControllerImportGoldenTest extends TestCase {
 			'row errors become a csv' => ['file' => $excel, 'summary' => ['Sheet' => ['errors' => [['row' => 2, 'error' => 'bad']]]]],
 			'import service throws' => ['file' => $excel, 'throw' => 'importFromExcel'],
 			'configuration service throws' => ['file' => $jsonConfig, 'throw' => 'importFromJsonConfig'],
+			'configuration as a manager, outside the register' => ['file' => $jsonConfig, 'user' => 'member', 'manage' => ['editors'], 'bundle' => ['components' => ['mappings' => []]]],
+			'configuration as a manager, inside the register' => ['file' => $jsonConfig, 'user' => 'member', 'manage' => ['editors'], 'bundle' => ['components' => ['schemas' => []]]],
+			'configuration as an admin, outside the register' => ['file' => $jsonConfig, 'bundle' => ['components' => ['mappings' => []]]],
+			'configuration names an app id' => ['file' => $jsonConfig, 'bundle' => ['appId' => 'elsewhere', 'parsed' => true]],
+			'register bundle ignores results' => [
+				'file' => ['name' => 'bundle.json', 'content' => json_encode(['results' => [['@self' => ['schema' => '7']]], 'components' => ['registers' => ['r' => ['slug' => 'r']]]])],
+			],
 		];
 
 		$out = [];
@@ -272,8 +332,10 @@ class RegistersControllerImportGoldenTest extends TestCase {
 
 		$importService = $this->createMock(ImportService::class);
 		foreach (['importFromExcel', 'importFromCsv', 'importFromJson'] as $method) {
-			$importService->method($method)->willReturnCallback(function () use ($method, $case) {
-				$this->record(method: 'importService.' . $method, args: func_get_args());
+			$importService->method($method)->willReturnCallback(function (ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true) use ($method, $case) {
+				$this->record(method: 'importService.' . $method, args: $this->importArguments(method: $method, request: $request, guards: [$_rbac, $_multitenancy]));
+				$this->ranAsSystem[] = KeepLifecycleStatesScope::isActive();
+				$this->elevated[] = SystemOperationContext::isActive();
 				if (($case['throw'] ?? null) === $method) {
 					throw new \Exception('Import failed hard');
 				}
@@ -300,7 +362,7 @@ class RegistersControllerImportGoldenTest extends TestCase {
 				return new JSONResponse(data: ['error' => 'Bad upload'], statusCode: 422);
 			}
 
-			return ['parsed' => true];
+			return ($case['bundle'] ?? ['parsed' => true]);
 		});
 		$configurationService->method('importFromJson')->willReturnCallback(function () use ($case) {
 			$this->record(method: 'configurationService.importFromJson', args: func_get_args());
@@ -319,7 +381,7 @@ class RegistersControllerImportGoldenTest extends TestCase {
 			});
 		}
 
-		return new RegistersController(
+		return RegistersControllerFactory::create(
 			'openregister',
 			$request,
 			$registerService,
@@ -424,6 +486,40 @@ class RegistersControllerImportGoldenTest extends TestCase {
 	/**
 	 * @param list<mixed> $args
 	 */
+	/**
+	 * An import request as the positional argument list the fixture records.
+	 *
+	 * @param string        $method  The importer method called.
+	 * @param ImportRequest $request The request it received.
+	 * @param array         $guards  The `_rbac` and `_multitenancy` flags.
+	 *
+	 * @return array The file, scope, flags and options in the fixture's order.
+	 */
+	private function importArguments(string $method, ImportRequest $request, array $guards): array {
+		$args = [
+			$request->filePath,
+			$request->scope->register,
+			$request->scope->schema,
+			$request->options->validation,
+			$request->options->events,
+			$guards[0],
+			$guards[1],
+			$request->options->publish,
+			$request->scope->currentUser,
+			$request->options->enrich,
+		];
+		if ($method === 'importFromExcel') {
+			return $args;
+		}
+
+		$args = [...$args, $request->mapping->pack, $request->mapping->dryRun];
+		if ($method === 'importFromJson') {
+			$args[] = $request->scope->registerSlug;
+		}
+
+		return $args;
+	}//end importArguments()
+
 	private function record(string $method, array $args): void {
 		$this->calls[] = ['method' => $method, 'args' => array_map(fn ($arg) => $this->describe(value: $arg), $args)];
 	}//end record()

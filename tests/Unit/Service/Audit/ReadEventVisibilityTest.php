@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Unit\Service\Audit;
 
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -55,7 +56,7 @@ class ReadEventVisibilityTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new ReadEventVisibility($appConfig, $groupManager, $session);
+		return new ReadEventVisibility($appConfig, new CallerContext($session, $groupManager));
 	}//end rule()
 
 	public function testAnAdministratorAlwaysSeesReads(): void {

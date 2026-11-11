@@ -1,0 +1,340 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditWorkingCalendarModal form renders a new calendar 1`] = `
+"<x-ncdialog name="New working calendar" size="large" noclose="false" data-on="onClosing">
+  <slot-actions>
+    <x-closecancelbutton label="Cancel" disabled="false" data-on="onClick"></x-closecancelbutton>
+    <x-ncbutton variant="primary" disabled="false" data-testid="working-calendar-save" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="calendar-form" data-testid="working-calendar-form">
+      <!--v-if-->
+      <!-- The notice is not decoration. Until
+			     calendar-change-recomputes-timers lands, editing a rule moves
+			     nothing that is already armed, and an administrator who
+			     assumes otherwise has silently mis-set every running deadline. -->
+      <x-ncnotecard type="warning" text="Deadlines that are already running keep the dates they were given. A change here applies to deadlines started after you save."></x-ncnotecard>
+      <section class="calendar-form__block">
+        <h4>Identity</h4>
+        <x-nctextfield modelvalue="" disabled="false" label="Slug" helpertext="The stable name a timer refers to. It cannot change once deadlines point at it." data-testid="working-calendar-slug" data-on="onUpdate:modelValue"></x-nctextfield>
+        <x-nctextfield modelvalue="" label="Title" data-testid="working-calendar-title" data-on="onUpdate:modelValue"></x-nctextfield>
+        <x-nctextfield modelvalue="" label="Organisation" helpertext="Leave empty for a calendar every organisation may use." data-testid="working-calendar-organisation" data-on="onUpdate:modelValue"></x-nctextfield>
+      </section>
+      <section class="calendar-form__block">
+        <h4>Working week</h4>
+        <div class="calendar-form__weekdays">
+          <x-nccheckboxradioswitch modelvalue="true" data-testid="working-calendar-weekday-1" data-on="onUpdate:modelValue">
+            <slot-default>Monday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" data-testid="working-calendar-weekday-2" data-on="onUpdate:modelValue">
+            <slot-default>Tuesday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" data-testid="working-calendar-weekday-3" data-on="onUpdate:modelValue">
+            <slot-default>Wednesday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" data-testid="working-calendar-weekday-4" data-on="onUpdate:modelValue">
+            <slot-default>Thursday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" data-testid="working-calendar-weekday-5" data-on="onUpdate:modelValue">
+            <slot-default>Friday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" data-testid="working-calendar-weekday-6" data-on="onUpdate:modelValue">
+            <slot-default>Saturday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" data-testid="working-calendar-weekday-7" data-on="onUpdate:modelValue">
+            <slot-default>Sunday</slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+        <x-nctextfield modelvalue="8" type="number" label="Hours in a working day" helpertext="Needed to convert a term in hours into a term in working days." data-testid="working-calendar-hours" data-on="onUpdate:modelValue"></x-nctextfield>
+      </section>
+      <section class="calendar-form__block">
+        <h4>Opening hours</h4>
+        <p class="calendar-form__hint">The hours of the day this calendar counts. A deadline in hours only advances while you are open, so a counter that closes over lunch does not count the break. Leave a day empty and it counts from the hour above instead.</p>
+        <div class="calendar-form__hours" data-testid="working-calendar-hours-1">
+          <h5 class="calendar-form__weekday">Monday</h5>
+          <x-ncbutton variant="secondary" data-testid="working-calendar-add-window-1" data-on="onClick">
+            <slot-icon>
+              <x-plus size="20"></x-plus>
+            </slot-icon>
+            <slot-default> Add hours</slot-default>
+          </x-ncbutton>
+        </div>
+        <div class="calendar-form__hours" data-testid="working-calendar-hours-2">
+          <h5 class="calendar-form__weekday">Tuesday</h5>
+          <x-ncbutton variant="secondary" data-testid="working-calendar-add-window-2" data-on="onClick">
+            <slot-icon>
+              <x-plus size="20"></x-plus>
+            </slot-icon>
+            <slot-default> Add hours</slot-default>
+          </x-ncbutton>
+        </div>
+        <div class="calendar-form__hours" data-testid="working-calendar-hours-3">
+          <h5 class="calendar-form__weekday">Wednesday</h5>
+          <x-ncbutton variant="secondary" data-testid="working-calendar-add-window-3" data-on="onClick">
+            <slot-icon>
+              <x-plus size="20"></x-plus>
+            </slot-icon>
+            <slot-default> Add hours</slot-default>
+          </x-ncbutton>
+        </div>
+        <div class="calendar-form__hours" data-testid="working-calendar-hours-4">
+          <h5 class="calendar-form__weekday">Thursday</h5>
+          <x-ncbutton variant="secondary" data-testid="working-calendar-add-window-4" data-on="onClick">
+            <slot-icon>
+              <x-plus size="20"></x-plus>
+            </slot-icon>
+            <slot-default> Add hours</slot-default>
+          </x-ncbutton>
+        </div>
+        <div class="calendar-form__hours" data-testid="working-calendar-hours-5">
+          <h5 class="calendar-form__weekday">Friday</h5>
+          <x-ncbutton variant="secondary" data-testid="working-calendar-add-window-5" data-on="onClick">
+            <slot-icon>
+              <x-plus size="20"></x-plus>
+            </slot-icon>
+            <slot-default> Add hours</slot-default>
+          </x-ncbutton>
+        </div>
+      </section>
+      <section class="calendar-form__block">
+        <h4>Rules</h4>
+        <p class="calendar-form__hint">Rules are computed every year, so the calendar never runs out. A calendar made only of single dates is refused.</p>
+        <x-ncbutton variant="secondary" data-testid="working-calendar-add-rule" data-on="onClick">
+          <slot-icon>
+            <x-plus size="20"></x-plus>
+          </slot-icon>
+          <slot-default> Add a rule</slot-default>
+        </x-ncbutton>
+      </section>
+      <section class="calendar-form__block">
+        <h4>Single closure days</h4>
+        <p class="calendar-form__hint">One date that is closed this year only, such as a local anniversary.</p>
+        <x-ncbutton variant="secondary" data-testid="working-calendar-add-exception" data-on="onClick">
+          <slot-icon>
+            <x-plus size="20"></x-plus>
+          </slot-icon>
+          <slot-default> Add a closure day</slot-default>
+        </x-ncbutton>
+      </section>
+      <section class="calendar-form__block">
+        <h4>Preview a year</h4>
+        <p class="calendar-form__hint">Runs the rules above without saving, so you can read the dates before you commit to them.</p>
+        <div class="calendar-form__row">
+          <x-nctextfield modelvalue="2026" type="number" label="Year" data-testid="working-calendar-preview-year" data-on="onUpdate:modelValue"></x-nctextfield>
+          <x-ncbutton variant="secondary" disabled="false" data-testid="working-calendar-preview" data-on="onClick">
+            <slot-icon>
+              <x-calendar size="20"></x-calendar>
+            </slot-icon>
+            <slot-default> Preview</slot-default>
+          </x-ncbutton>
+        </div>
+        <!--v-if-->
+      </section>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditWorkingCalendarModal form renders an existing calendar 1`] = `
+"<x-ncdialog name="Working calendar {slug} {&quot;slug&quot;:&quot;nl-municipal&quot;}" size="large" noclose="false" data-on="onClosing">
+  <slot-actions>
+    <x-closecancelbutton label="Cancel" disabled="false" data-on="onClick"></x-closecancelbutton>
+    <x-ncbutton variant="primary" disabled="false" data-testid="working-calendar-save" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="calendar-form" data-testid="working-calendar-form">
+      <!--v-if-->
+      <!-- The notice is not decoration. Until
+			     calendar-change-recomputes-timers lands, editing a rule moves
+			     nothing that is already armed, and an administrator who
+			     assumes otherwise has silently mis-set every running deadline. -->
+      <x-ncnotecard type="warning" text="Deadlines that are already running keep the dates they were given. A change here applies to deadlines started after you save."></x-ncnotecard>
+      <section class="calendar-form__block">
+        <h4>Identity</h4>
+        <x-nctextfield modelvalue="nl-municipal" disabled="true" label="Slug" helpertext="The stable name a timer refers to. It cannot change once deadlines point at it." data-testid="working-calendar-slug" data-on="onUpdate:modelValue"></x-nctextfield>
+        <x-nctextfield modelvalue="" label="Title" data-testid="working-calendar-title" data-on="onUpdate:modelValue"></x-nctextfield>
+        <x-nctextfield modelvalue="" label="Organisation" helpertext="Leave empty for a calendar every organisation may use." data-testid="working-calendar-organisation" data-on="onUpdate:modelValue"></x-nctextfield>
+      </section>
+      <section class="calendar-form__block">
+        <h4>Working week</h4>
+        <div class="calendar-form__weekdays">
+          <x-nccheckboxradioswitch modelvalue="true" data-testid="working-calendar-weekday-1" data-on="onUpdate:modelValue">
+            <slot-default>Monday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" data-testid="working-calendar-weekday-2" data-on="onUpdate:modelValue">
+            <slot-default>Tuesday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" data-testid="working-calendar-weekday-3" data-on="onUpdate:modelValue">
+            <slot-default>Wednesday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" data-testid="working-calendar-weekday-4" data-on="onUpdate:modelValue">
+            <slot-default>Thursday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" data-testid="working-calendar-weekday-5" data-on="onUpdate:modelValue">
+            <slot-default>Friday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" data-testid="working-calendar-weekday-6" data-on="onUpdate:modelValue">
+            <slot-default>Saturday</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" data-testid="working-calendar-weekday-7" data-on="onUpdate:modelValue">
+            <slot-default>Sunday</slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+        <x-nctextfield modelvalue="8" type="number" label="Hours in a working day" helpertext="Needed to convert a term in hours into a term in working days." data-testid="working-calendar-hours" data-on="onUpdate:modelValue"></x-nctextfield>
+      </section>
+      <section class="calendar-form__block">
+        <h4>Opening hours</h4>
+        <p class="calendar-form__hint">The hours of the day this calendar counts. A deadline in hours only advances while you are open, so a counter that closes over lunch does not count the break. Leave a day empty and it counts from the hour above instead.</p>
+        <div class="calendar-form__hours" data-testid="working-calendar-hours-1">
+          <h5 class="calendar-form__weekday">Monday</h5>
+          <div class="calendar-form__row" data-testid="working-calendar-window">
+            <x-nctextfield modelvalue="09:00" type="time" label="Opens at" data-on="onUpdate:modelValue"></x-nctextfield>
+            <x-nctextfield modelvalue="12:00" type="time" label="Closes at" data-on="onUpdate:modelValue"></x-nctextfield>
+            <x-ncbutton variant="tertiary" aria-label="Remove these hours" data-on="onClick">
+              <slot-icon>
+                <x-delete size="20"></x-delete>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="calendar-form__row" data-testid="working-calendar-window">
+            <x-nctextfield modelvalue="13:00" type="time" label="Opens at" data-on="onUpdate:modelValue"></x-nctextfield>
+            <x-nctextfield modelvalue="17:00" type="time" label="Closes at" data-on="onUpdate:modelValue"></x-nctextfield>
+            <x-ncbutton variant="tertiary" aria-label="Remove these hours" data-on="onClick">
+              <slot-icon>
+                <x-delete size="20"></x-delete>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <x-ncbutton variant="secondary" data-testid="working-calendar-add-window-1" data-on="onClick">
+            <slot-icon>
+              <x-plus size="20"></x-plus>
+            </slot-icon>
+            <slot-default> Add hours</slot-default>
+          </x-ncbutton>
+        </div>
+        <div class="calendar-form__hours" data-testid="working-calendar-hours-2">
+          <h5 class="calendar-form__weekday">Tuesday</h5>
+          <div class="calendar-form__row" data-testid="working-calendar-window">
+            <x-nctextfield modelvalue="09:00" type="time" label="Opens at" data-on="onUpdate:modelValue"></x-nctextfield>
+            <x-nctextfield modelvalue="17:00" type="time" label="Closes at" data-on="onUpdate:modelValue"></x-nctextfield>
+            <x-ncbutton variant="tertiary" aria-label="Remove these hours" data-on="onClick">
+              <slot-icon>
+                <x-delete size="20"></x-delete>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <x-ncbutton variant="secondary" data-testid="working-calendar-add-window-2" data-on="onClick">
+            <slot-icon>
+              <x-plus size="20"></x-plus>
+            </slot-icon>
+            <slot-default> Add hours</slot-default>
+          </x-ncbutton>
+        </div>
+        <div class="calendar-form__hours" data-testid="working-calendar-hours-3">
+          <h5 class="calendar-form__weekday">Wednesday</h5>
+          <x-ncbutton variant="secondary" data-testid="working-calendar-add-window-3" data-on="onClick">
+            <slot-icon>
+              <x-plus size="20"></x-plus>
+            </slot-icon>
+            <slot-default> Add hours</slot-default>
+          </x-ncbutton>
+        </div>
+        <div class="calendar-form__hours" data-testid="working-calendar-hours-4">
+          <h5 class="calendar-form__weekday">Thursday</h5>
+          <x-ncbutton variant="secondary" data-testid="working-calendar-add-window-4" data-on="onClick">
+            <slot-icon>
+              <x-plus size="20"></x-plus>
+            </slot-icon>
+            <slot-default> Add hours</slot-default>
+          </x-ncbutton>
+        </div>
+        <div class="calendar-form__hours" data-testid="working-calendar-hours-5">
+          <h5 class="calendar-form__weekday">Friday</h5>
+          <x-ncbutton variant="secondary" data-testid="working-calendar-add-window-5" data-on="onClick">
+            <slot-icon>
+              <x-plus size="20"></x-plus>
+            </slot-icon>
+            <slot-default> Add hours</slot-default>
+          </x-ncbutton>
+        </div>
+      </section>
+      <section class="calendar-form__block">
+        <h4>Rules</h4>
+        <p class="calendar-form__hint">Rules are computed every year, so the calendar never runs out. A calendar made only of single dates is refused.</p>
+        <div class="calendar-form__row" data-testid="working-calendar-rule">
+          <x-ncselect modelvalue="[object Object]" options="[object Object],[object Object]" inputlabel="Kind" clearable="false" label="label" data-on="onUpdate:modelValue"></x-ncselect>
+          <x-nctextfield modelvalue="Kingsday" label="Name" data-on="onUpdate:modelValue"></x-nctextfield>
+          <x-nctextfield modelvalue="4" type="number" label="Month" data-on="onUpdate:modelValue"></x-nctextfield>
+          <x-nctextfield modelvalue="27" type="number" label="Day" data-on="onUpdate:modelValue"></x-nctextfield>
+          <x-ncselect modelvalue="[object Object]" options="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" inputlabel="Moves when it falls on" label="label" data-on="onUpdate:modelValue"></x-ncselect>
+          <!--v-if-->
+          <x-ncbutton variant="tertiary" aria-label="Remove this rule" data-on="onClick">
+            <slot-icon>
+              <x-delete size="20"></x-delete>
+            </slot-icon>
+          </x-ncbutton>
+        </div>
+        <div class="calendar-form__row" data-testid="working-calendar-rule">
+          <x-ncselect modelvalue="[object Object]" options="[object Object],[object Object]" inputlabel="Kind" clearable="false" label="label" data-on="onUpdate:modelValue"></x-ncselect>
+          <x-nctextfield modelvalue="Easter Monday" label="Name" data-on="onUpdate:modelValue"></x-nctextfield>
+          <x-nctextfield modelvalue="1" type="number" label="Days from Easter Sunday" data-on="onUpdate:modelValue"></x-nctextfield>
+          <x-ncbutton variant="tertiary" aria-label="Remove this rule" data-on="onClick">
+            <slot-icon>
+              <x-delete size="20"></x-delete>
+            </slot-icon>
+          </x-ncbutton>
+        </div>
+        <x-ncbutton variant="secondary" data-testid="working-calendar-add-rule" data-on="onClick">
+          <slot-icon>
+            <x-plus size="20"></x-plus>
+          </slot-icon>
+          <slot-default> Add a rule</slot-default>
+        </x-ncbutton>
+      </section>
+      <section class="calendar-form__block">
+        <h4>Single closure days</h4>
+        <p class="calendar-form__hint">One date that is closed this year only, such as a local anniversary.</p>
+        <div class="calendar-form__row" data-testid="working-calendar-exception">
+          <x-nctextfield modelvalue="2026-06-01" type="date" label="Date" data-on="onUpdate:modelValue"></x-nctextfield>
+          <x-nctextfield modelvalue="Anniversary" label="Why it is closed" data-on="onUpdate:modelValue"></x-nctextfield>
+          <x-ncbutton variant="tertiary" aria-label="Remove this closure day" data-on="onClick">
+            <slot-icon>
+              <x-delete size="20"></x-delete>
+            </slot-icon>
+          </x-ncbutton>
+        </div>
+        <x-ncbutton variant="secondary" data-testid="working-calendar-add-exception" data-on="onClick">
+          <slot-icon>
+            <x-plus size="20"></x-plus>
+          </slot-icon>
+          <slot-default> Add a closure day</slot-default>
+        </x-ncbutton>
+      </section>
+      <section class="calendar-form__block">
+        <h4>Preview a year</h4>
+        <p class="calendar-form__hint">Runs the rules above without saving, so you can read the dates before you commit to them.</p>
+        <div class="calendar-form__row">
+          <x-nctextfield modelvalue="2026" type="number" label="Year" data-testid="working-calendar-preview-year" data-on="onUpdate:modelValue"></x-nctextfield>
+          <x-ncbutton variant="secondary" disabled="false" data-testid="working-calendar-preview" data-on="onClick">
+            <slot-icon>
+              <x-calendar size="20"></x-calendar>
+            </slot-icon>
+            <slot-default> Preview</slot-default>
+          </x-ncbutton>
+        </div>
+        <!--v-if-->
+      </section>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;

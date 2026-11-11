@@ -1,0 +1,12 @@
+2 schema(s) are shared by more than one register:
+
+  schema 10 (s10) — referenced by registers [1, 2]
+      attribution: one-match — owner: register 1 (configuration)
+      - register 2 (b) -> new schema from configuration (openregister_table_b, 3 row(s))
+
+  schema 11 (s11) — referenced by registers [1, 3]
+      attribution: multi-match — UNATTRIBUTED, will be skipped
+      - register 3 (c) -> new schema from configuration (openregister_table_c, 3 row(s))
+
+
+Refusing to write: 1 schema(s) are unattributed. Name their owner with --keep <schemaId>:<registerId>.

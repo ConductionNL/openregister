@@ -30,6 +30,7 @@ namespace Unit\Service\Vocabulary;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy;
 use OCA\OpenRegister\Service\Vocabulary\ConceptLifecycle;
+use OCA\OpenRegister\Service\Vocabulary\ConceptReading;
 use PHPUnit\Framework\TestCase;
 
 class ConceptHierarchyTest extends TestCase {
@@ -83,7 +84,7 @@ class ConceptHierarchyTest extends TestCase {
 	public function testTheBranchIncludesItsRootAndEveryNarrowerConcept(): void {
 		$this->assertSame(
 			['urn:vergunning', 'urn:kap', 'urn:kap-spoed'],
-			$this->hierarchy->branchUris(rootUri: 'urn:vergunning', conceptsByUri: $this->scheme)
+			$this->hierarchy->branchUris(branch: new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch(rootUri: 'urn:vergunning', conceptsByUri: $this->scheme))
 		);
 	}//end testTheBranchIncludesItsRootAndEveryNarrowerConcept()
 
@@ -96,11 +97,11 @@ class ConceptHierarchyTest extends TestCase {
 	public function testTheDepthBoundIsHonoured(): void {
 		$this->assertSame(
 			['urn:vergunning'],
-			$this->hierarchy->branchUris(rootUri: 'urn:vergunning', conceptsByUri: $this->scheme, maxDepth: 0)
+			$this->hierarchy->branchUris(branch: new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch(rootUri: 'urn:vergunning', conceptsByUri: $this->scheme, maxDepth: 0))
 		);
 		$this->assertSame(
 			['urn:vergunning', 'urn:kap'],
-			$this->hierarchy->branchUris(rootUri: 'urn:vergunning', conceptsByUri: $this->scheme, maxDepth: 1)
+			$this->hierarchy->branchUris(branch: new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch(rootUri: 'urn:vergunning', conceptsByUri: $this->scheme, maxDepth: 1))
 		);
 	}//end testTheDepthBoundIsHonoured()
 
@@ -117,7 +118,7 @@ class ConceptHierarchyTest extends TestCase {
 
 		$this->assertSame(
 			['urn:a', 'urn:b'],
-			$this->hierarchy->branchUris(rootUri: 'urn:a', conceptsByUri: $cyclic, maxDepth: 50)
+			$this->hierarchy->branchUris(branch: new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch(rootUri: 'urn:a', conceptsByUri: $cyclic, maxDepth: 50))
 		);
 	}//end testACyclicSchemeTerminates()
 
@@ -135,7 +136,7 @@ class ConceptHierarchyTest extends TestCase {
 
 		$this->assertSame(
 			['urn:top', 'urn:child'],
-			$this->hierarchy->branchUris(rootUri: 'urn:top', conceptsByUri: $oneSided)
+			$this->hierarchy->branchUris(branch: new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch(rootUri: 'urn:top', conceptsByUri: $oneSided))
 		);
 		$this->assertFalse($this->hierarchy->isLeaf(uri: 'urn:top', conceptsByUri: $oneSided));
 		$this->assertTrue($this->hierarchy->isLeaf(uri: 'urn:child', conceptsByUri: $oneSided));
@@ -180,7 +181,7 @@ class ConceptHierarchyTest extends TestCase {
 		// hierarchy does carry.
 		$this->assertContains(
 			'urn:child',
-			$this->hierarchy->branchUris(rootUri: 'urn:parent', conceptsByUri: $scheme)
+			$this->hierarchy->branchUris(branch: new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch(rootUri: 'urn:parent', conceptsByUri: $scheme))
 		);
 	}//end testAChildInheritsNothingFromItsParent()
 
@@ -220,10 +221,8 @@ class ConceptHierarchyTest extends TestCase {
 		$scheme['urn:kap']['validUntil'] = '2020-01-01';
 
 		$tree = $this->hierarchy->tree(
-			rootUri: 'urn:vergunning',
-			conceptsByUri: $scheme,
-			language: 'nl',
-			at: new DateTimeImmutable('2026-09-14')
+			branch: new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch(rootUri: 'urn:vergunning', conceptsByUri: $scheme),
+			reading: new ConceptReading(language: 'nl', instant: new DateTimeImmutable('2026-09-14'))
 		);
 
 		$this->assertTrue($tree['offerable']);
