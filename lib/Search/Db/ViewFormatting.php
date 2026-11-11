@@ -93,6 +93,18 @@ final class ViewFormatting {
 			return null;
 		}
 
+		return self::firstListing(viewId: $viewId, configurations: $configurations);
+	}//end managing()
+
+	/**
+	 * The first configuration whose views list the id, compared strictly.
+	 *
+	 * @param mixed                $viewId         The view's id, not null.
+	 * @param array<Configuration> $configurations The configurations to check.
+	 *
+	 * @return Configuration|null The first listing configuration, or null.
+	 */
+	private static function firstListing(mixed $viewId, array $configurations): ?Configuration {
 		foreach ($configurations as $configuration) {
 			$views = $configuration->getViews();
 			if (in_array($viewId, $views, true) === true) {
@@ -101,5 +113,5 @@ final class ViewFormatting {
 		}
 
 		return null;
-	}//end managing()
+	}//end firstListing()
 }//end class

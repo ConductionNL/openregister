@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
+use OCA\OpenRegister\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionRegistry;
@@ -73,9 +74,10 @@ class LifecycleActionExecutorGoldenTest extends TestCase {
 	private function handler(): LifecycleActionInterface {
 		$handler = $this->createMock(LifecycleActionInterface::class);
 		$handler->method('execute')->willReturnCallback(
-			function (array $objectData, array $previousData, array $parameters, string $actionName): array {
-				$this->trace[] = 'execute ' . $actionName . ' ' . json_encode([$objectData, $previousData, $parameters]);
-				$objectData['trail'][] = $actionName;
+			function (LifecycleActionContext $context): array {
+				$this->trace[] = 'execute ' . $context->actionName . ' ' . json_encode([$context->objectData, $context->previousData, $context->parameters]);
+				$objectData = $context->objectData;
+				$objectData['trail'][] = $context->actionName;
 				return $objectData;
 			}
 		);

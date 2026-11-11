@@ -34,6 +34,7 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -161,17 +162,17 @@ final class UserTaskAttachToTest extends TestCase {
 		$state = new FlowResumeState();
 
 		try {
-			$this->node($run)->execute(
-				[['json' => ['uuid' => 'obj-item', '@self' => ['uuid' => 'obj-item']]]],
-				$config,
-				[
+			$this->node($run)->execute(new FlowNodeCall(
+				items: [['json' => ['uuid' => 'obj-item', '@self' => ['uuid' => 'obj-item']]]],
+				config: $config,
+				context: [
 					FlowResumeState::CONTEXT_KEY => $state,
 					FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'ask'),
 					FlowRunContext::CONTEXT_RUN => 'run-1',
 					'runUuid' => 'run-1',
 					'runAs' => 'alice',
 				]
-			);
+			));
 		} catch (FlowSuspension) {
 			// Expected: the step waits for its answer.
 		}

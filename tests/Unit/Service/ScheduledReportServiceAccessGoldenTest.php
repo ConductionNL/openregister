@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
 use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Service\ExportService;
@@ -130,10 +131,10 @@ class ScheduledReportServiceAccessGoldenTest extends TestCase {
 	 */
 	public function testDelete(): void {
 		$refused = RuntimeException::class.': You do not have permission to access this scheduled report.';
-		$this->assertSame('allowed', $this->outcome(fn () => $this->service->delete(4, 'alice', false)));
-		$this->assertSame('allowed', $this->outcome(fn () => $this->service->delete(5, 'bob', true)));
-		$this->assertSame($refused, $this->outcome(fn () => $this->service->delete(6, 'bob', false)));
-		$this->assertSame($refused, $this->outcome(fn () => $this->service->delete(7, '', false)));
+		$this->assertSame('allowed', $this->outcome(fn () => $this->service->deleteAs(id: 4, caller: new ReportCaller(uid: 'alice', isAdmin: false))));
+		$this->assertSame('allowed', $this->outcome(fn () => $this->service->deleteAs(id: 5, caller: new ReportCaller(uid: 'bob', isAdmin: true))));
+		$this->assertSame($refused, $this->outcome(fn () => $this->service->deleteAs(id: 6, caller: new ReportCaller(uid: 'bob', isAdmin: false))));
+		$this->assertSame($refused, $this->outcome(fn () => $this->service->deleteAs(id: 7, caller: new ReportCaller(uid: '', isAdmin: false))));
 		$this->assertSame([4, 5], $this->deleted);
 	}//end testDelete()
 
@@ -145,9 +146,9 @@ class ScheduledReportServiceAccessGoldenTest extends TestCase {
 	public function testAssertOwnerOrAdmin(): void {
 		$refused = RuntimeException::class.': You do not have permission to access this scheduled report.';
 		$report  = $this->report(owner: 'alice', id: 1);
-		$this->assertSame('allowed', $this->outcome(fn () => $this->service->assertOwnerOrAdmin($report, 'alice', false)));
-		$this->assertSame('allowed', $this->outcome(fn () => $this->service->assertOwnerOrAdmin($report, 'carol', true)));
-		$this->assertSame($refused, $this->outcome(fn () => $this->service->assertOwnerOrAdmin($report, 'Alice', false)));
-		$this->assertSame($refused, $this->outcome(fn () => $this->service->assertOwnerOrAdmin($report, 'alice ', false)));
+		$this->assertSame('allowed', $this->outcome(fn () => $this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: 'alice', isAdmin: false))));
+		$this->assertSame('allowed', $this->outcome(fn () => $this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: 'carol', isAdmin: true))));
+		$this->assertSame($refused, $this->outcome(fn () => $this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: 'Alice', isAdmin: false))));
+		$this->assertSame($refused, $this->outcome(fn () => $this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: 'alice ', isAdmin: false))));
 	}//end testAssertOwnerOrAdmin()
 }//end class

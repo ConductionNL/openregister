@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
@@ -251,11 +252,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		$this->objects->expects($this->once())->method('saveObject')
 			->willReturn($this->saved('obj-1'));
 
-		$this->writeNode($this->spy())->execute(
+		$this->writeNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['title' => 'a'])],
 			config: $this->createConfig(''),
 			context: $this->context()
-		);
+		));
 
 		$this->assertSame([], $this->recorded, 'recording is opt-in, and this step did not opt in');
 	}//end testAWriteWithNoRoleRecordsNothing()
@@ -272,11 +273,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	public function testADeclaredRoleRecordsTheWrittenObject(): void {
 		$this->objects->method('saveObject')->willReturn($this->saved('obj-1'));
 
-		$this->writeNode($this->spy())->execute(
+		$this->writeNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['title' => 'a'])],
 			config: $this->createConfig('case'),
 			context: $this->context()
-		);
+		));
 
 		$this->assertCount(1, $this->recorded);
 		$this->assertSame('case', $this->recorded[0]['role']);
@@ -303,11 +304,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 			}
 		);
 
-		$this->writeNode($this->spy())->execute(
+		$this->writeNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['title' => 'a']), FlowItems::item(json: ['title' => 'b'])],
 			config: $this->createConfig('case'),
 			context: $this->context()
-		);
+		));
 
 		$this->assertSame(['obj-1', 'obj-2'], $this->recorded[0]['uuids']);
 	}//end testAMultiObjectWriteHandsOverEveryUuid()
@@ -326,11 +327,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		$config = $this->createConfig('case');
 		$config['output'] = 'written';
 
-		$this->writeNode($this->spy())->execute(
+		$this->writeNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['title' => 'a'])],
 			config: $config,
 			context: $this->context()
-		);
+		));
 
 		$this->assertSame(['obj-1'], $this->recorded[0]['uuids']);
 	}//end testTheUuidIsFoundUnderTheOutputKey()
@@ -389,11 +390,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	public function testALockedObjectIsRecordedUnderItsRole(): void {
 		$this->objects->expects($this->once())->method('lockObject')->willReturn([]);
 
-		$this->lockNode($this->spy())->execute(
+		$this->lockNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['uuid' => 'obj-1'])],
 			config: ['subjectRole' => 'case'],
 			context: $this->lockContext()
-		);
+		));
 
 		$this->assertSame('case', $this->recorded[0]['role']);
 		$this->assertSame(['obj-1'], $this->recorded[0]['uuids']);
@@ -414,11 +415,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	public function testALockWithNoRoleInventsNone(): void {
 		$this->objects->method('lockObject')->willReturn([]);
 
-		$this->lockNode($this->spy())->execute(
+		$this->lockNode($this->spy())->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['uuid' => 'obj-1'])],
 			config: [],
 			context: $this->lockContext()
-		);
+		));
 
 		$this->assertSame('', $this->recorded[0]['role'], 'no role named, so none passed on');
 	}//end testALockWithNoRoleInventsNone()
@@ -436,11 +437,11 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		$this->objects->method('lockObject')->willThrowException(new \RuntimeException('held by run-9'));
 
 		try {
-			$this->lockNode($this->spy())->execute(
+			$this->lockNode($this->spy())->execute(new FlowNodeCall(
 				items: [FlowItems::item(json: ['uuid' => 'obj-1'])],
 				config: ['subjectRole' => 'case'],
 				context: $this->lockContext()
-			);
+			));
 		} catch (\Throwable $e) {
 			// Parking or giving up; either way the lock was not taken.
 			$this->addToAssertionCount(1);

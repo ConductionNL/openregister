@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Notifications\Controller\NotificationBroadcastController;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationBroadcastControllerServices;
@@ -232,8 +234,8 @@ class A26NotificationControllersGoldenTest extends TestCase {
 			class: NotificationPreferencesInterface::class,
 			returns: [
 				'getEffectiveForUser' => [['schema' => 'case', 'enabled' => true]],
-				'getOverride'         => ['enabled' => false],
-				'getGroupDefault'     => static fn (string $groupId, string $schemaSlug, string $notificationKey): ?array => $notificationKey === 'quiet' ? null : ['channels' => ['email']],
+				'overrideAt'          => ['enabled' => false],
+				'groupDefaultAt'      => static fn (string $groupId, PreferenceAddress $address): ?array => $address->notificationKey === 'quiet' ? null : ['channels' => ['email']],
 			]
 		);
 	}//end preferences()
@@ -397,6 +399,10 @@ class A26NotificationControllersGoldenTest extends TestCase {
 
 		if ($value instanceof IGroup === true) {
 			return 'IGroup';
+		}
+
+		if ($value instanceof PreferenceAddress === true || $value instanceof PreferenceWrite === true) {
+			return $this->plain(value: get_object_vars($value));
 		}
 
 		if (is_object($value) === true) {

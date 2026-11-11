@@ -276,6 +276,31 @@ class StatementService implements StatementServiceInterface {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-published-statement-is-accepted-before-use-per-version-req-ihc-001
 	 */
 	public function accept(string $userId, string $version): array {
+		$statement = $this->statementToAccept(userId: $userId);
+		$this->refuseAnotherVersion(version: $version, statement: $statement);
+
+		$acceptance = [
+			'version' => $statement['version'],
+			'acceptedAt' => (new DateTime())->format('c'),
+		];
+
+		$this->storeAcceptance(userId: $userId, acceptance: $acceptance);
+		$this->auditAcceptance(userId: $userId, acceptance: $acceptance);
+
+		return $acceptance;
+
+	}//end accept()
+
+	/**
+	 * The statement in force, when there is one and an account to accept it.
+	 *
+	 * @param string $userId The account accepting.
+	 *
+	 * @return array<string, string> The published statement.
+	 *
+	 * @throws InvalidArgumentException When nothing is published, or no account is named.
+	 */
+	private function statementToAccept(string $userId): array {
 		$statement = $this->published();
 		if ($statement === null) {
 			throw new InvalidArgumentException('This instance publishes no statement, so there is nothing to accept.');
@@ -285,22 +310,45 @@ class StatementService implements StatementServiceInterface {
 			throw new InvalidArgumentException('An acceptance is recorded against an account.');
 		}
 
-		if (trim($version) !== $statement['version']) {
-			$this->audit->refused(
-				change: new HardeningFact(fact: 'statement.accepted', before: trim($version), after: $statement['version']),
-				refusal: 'The version accepted is not the version in force.'
-			);
+		return $statement;
 
-			throw new InvalidArgumentException(
-				'The statement has moved on to version ' . $statement['version'] . '. Read it again before accepting.'
-			);
+	}//end statementToAccept()
+
+	/**
+	 * Refuse, and audit the refusal, when the version shown is not the one in force.
+	 *
+	 * @param string                $version   The version the user was shown.
+	 * @param array<string, string> $statement The published statement.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the version is not the one in force.
+	 */
+	private function refuseAnotherVersion(string $version, array $statement): void {
+		if (trim($version) === $statement['version']) {
+			return;
 		}
 
-		$acceptance = [
-			'version' => $statement['version'],
-			'acceptedAt' => (new DateTime())->format('c'),
-		];
+		$this->audit->refused(
+			change: new HardeningFact(fact: 'statement.accepted', before: trim($version), after: $statement['version']),
+			refusal: 'The version accepted is not the version in force.'
+		);
 
+		throw new InvalidArgumentException(
+			'The statement has moved on to version ' . $statement['version'] . '. Read it again before accepting.'
+		);
+
+	}//end refuseAnotherVersion()
+
+	/**
+	 * Store the acceptance on the account.
+	 *
+	 * @param string                $userId     The account accepting.
+	 * @param array<string, string> $acceptance The version and the moment.
+	 *
+	 * @return void
+	 */
+	private function storeAcceptance(string $userId, array $acceptance): void {
 		$this->platform->config->setUserValue(
 			$userId,
 			HardeningPolicy::APP_ID,
@@ -308,6 +356,17 @@ class StatementService implements StatementServiceInterface {
 			(string)json_encode($acceptance)
 		);
 
+	}//end storeAcceptance()
+
+	/**
+	 * Audit the acceptance, naming the account.
+	 *
+	 * @param string                $userId     The account accepting.
+	 * @param array<string, string> $acceptance The version and the moment.
+	 *
+	 * @return void
+	 */
+	private function auditAcceptance(string $userId, array $acceptance): void {
 		$this->audit->accepted(
 			change: new HardeningFact(
 				fact: 'statement.accepted',
@@ -320,7 +379,5 @@ class StatementService implements StatementServiceInterface {
 			)
 		);
 
-		return $acceptance;
-
-	}//end accept()
+	}//end auditAcceptance()
 }//end class

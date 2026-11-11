@@ -84,14 +84,14 @@ class RelationCascadeScanGoldenTest extends TestCase {
 		];
 
 		$out = [
-			'noSchema' => $handler->scanForRelations($data),
-			'withSchema' => $handler->scanForRelations($data, '', $schema),
-			'prefixed' => $handler->scanForRelations($data, 'root'),
-			'intKeys' => $handler->scanForRelations([0 => self::UUID, 1 => 'plain', 2 => '15']),
-			'intKeysPrefixed' => $handler->scanForRelations([0 => self::UUID], 'list'),
-			'intKeyArrayWithSchema' => $this->attempt(fn () => $handler->scanForRelations([0 => [self::UUID]], '', $schema)),
-			'intKeyNestedNoSchema' => $this->attempt(fn () => $handler->scanForRelations([0 => ['x' => ['y' => self::UUID]]])),
-			'flatDefinition' => $this->attempt(fn () => $handler->scanForRelations(['flat' => ['sub' => self::UUID]], '', $schema)),
+			'noSchema' => $handler->scanForRelations(new RelationScan($data)),
+			'withSchema' => $handler->scanForRelations(new RelationScan($data, '', $schema)),
+			'prefixed' => $handler->scanForRelations(new RelationScan($data, 'root')),
+			'intKeys' => $handler->scanForRelations(new RelationScan([0 => self::UUID, 1 => 'plain', 2 => '15'])),
+			'intKeysPrefixed' => $handler->scanForRelations(new RelationScan([0 => self::UUID], 'list')),
+			'intKeyArrayWithSchema' => $this->attempt(fn () => $handler->scanForRelations(new RelationScan([0 => [self::UUID]], '', $schema))),
+			'intKeyNestedNoSchema' => $this->attempt(fn () => $handler->scanForRelations(new RelationScan([0 => ['x' => ['y' => self::UUID]]]))),
+			'flatDefinition' => $this->attempt(fn () => $handler->scanForRelations(new RelationScan(['flat' => ['sub' => self::UUID]], '', $schema))),
 		];
 
 		return $out;

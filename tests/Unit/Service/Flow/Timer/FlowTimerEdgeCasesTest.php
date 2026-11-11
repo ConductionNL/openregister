@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use DateTimeZone;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Exception\FlowTimerStateException;
@@ -75,7 +76,7 @@ class FlowTimerEdgeCasesTest extends TestCase {
 			definition: ['slug' => 'sundays-only', 'workingWeekdays' => [7], 'hoursPerWorkingDay' => 8, 'rules' => [['kind' => 'fixed', 'month' => 1, 'day' => 1, 'name' => 'x']]]
 		);
 		try {
-			$this->calculator->add(from: $this->at('2026-09-01 09:00'), value: 9000, unit: 'businessDays', calendar: $noWork);
+			$this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->at('2026-09-01 09:00')), value: 9000, unit: 'businessDays', calendar: $noWork));
 			self::fail('an unbounded walk terminated');
 		} catch (FlowTimerValidationException $refused) {
 			self::assertStringContainsString('exceeds 20000 calendar days', $refused->getMessage());

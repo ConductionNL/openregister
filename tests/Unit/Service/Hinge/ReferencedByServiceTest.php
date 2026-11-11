@@ -26,10 +26,12 @@ namespace Unit\Service\Hinge;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -89,7 +91,8 @@ final class ReferencedByServiceTest extends TestCase {
 			}
 		);
 		$magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			static function (Register $register, Schema $schema, ?int $limit, ?int $offset, ?array $filters, array $sort) use ($rowsBy, &$capture): array {
+			static function (RegisterSchema $table, ListQuery $listing) use ($rowsBy, &$capture): array {
+				[$register, $schema, $limit, $offset, $filters, $sort] = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort];
 				$capture[] = $filters;
 				return array_slice(($rowsBy[$schema->getId()] ?? []), (int)$offset, (int)$limit);
 			}

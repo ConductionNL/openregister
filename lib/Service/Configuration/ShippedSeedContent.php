@@ -52,6 +52,7 @@ class ShippedSeedContent {
 	public function hash(array $shipped): string {
 		unset($shipped['@self']);
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return sha1((string) json_encode($this->sorted(value: $shipped), (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)));
 	}//end hash()
 

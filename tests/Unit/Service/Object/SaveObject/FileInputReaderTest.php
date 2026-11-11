@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Service\Object\SaveObject\FileFormat;
 use Exception;
 use OCA\OpenRegister\Service\Object\SaveObject\FileInputReader;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyLog;
@@ -112,7 +113,7 @@ final class FileInputReaderTest extends TestCase {
 	public function testFileData(): void {
 		$this->assertSame(
 			['content' => 'abcd', 'mimeType' => 'm', 'extension' => 'e', 'size' => 4],
-			$this->reader()->fileData('abcd', 'm', 'e')
+			$this->reader()->fileData('abcd', new FileFormat(mimeType: 'm', extension: 'e'))
 		);
 	}//end testFileData()
 

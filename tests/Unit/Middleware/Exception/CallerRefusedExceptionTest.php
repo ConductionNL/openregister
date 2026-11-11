@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Middleware\Exception;
 
 use OCA\OpenRegister\Middleware\Exception\CallerRefusedException;
+use OCA\OpenRegister\Middleware\Exception\CeilingBreach;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -31,7 +32,7 @@ use PHPUnit\Framework\TestCase;
 class CallerRefusedExceptionTest extends TestCase {
 
 	public function testOverLimitAnswersWithTheCeilingInBodyAndHeaders(): void {
-		$refusal = CallerRefusedException::overLimit(5, 30, 1000, 990);
+		$refusal = CallerRefusedException::overCeiling(new CeilingBreach(5, 30, 1000, 990));
 		$response = $refusal->toResponse();
 
 		$this->assertSame(429, $refusal->getCode());
@@ -56,7 +57,7 @@ class CallerRefusedExceptionTest extends TestCase {
 	}
 
 	public function testOverLimitNeverAsksForLessThanOneSecond(): void {
-		$response = CallerRefusedException::overLimit(5, 60, 100, 200)->toResponse();
+		$response = CallerRefusedException::overCeiling(new CeilingBreach(5, 60, 100, 200))->toResponse();
 
 		$this->assertSame(1, $response->getData()['retryAfterSeconds']);
 		$this->assertSame('1', $response->getHeaders()['Retry-After']);

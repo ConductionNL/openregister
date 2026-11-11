@@ -135,7 +135,7 @@ class ExampleSetChanges {
 	 */
 	private function located(array $change, array $context): array {
 		$gaps = [];
-		$fill = (array) $this->values->fill(value: $this->declaredParts(change: $change), context: $context, gaps: $gaps);
+		$fill = (array) $this->values->fill(value: $this->declaredParts(change: $change), scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 		if ($gaps !== []) {
 			return ['refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
 		}

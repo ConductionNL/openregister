@@ -136,12 +136,14 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 				// flow wired to the same event. Log it against the flow and
 				// keep queuing the rest.
 				try {
-					$run = $this->runner->queue(
+					$run = $this->runner->queueRun(
 						flowId: $flowId,
-						subject: $subject,
-						trigger: $event,
-						context: $trigger->context,
-						user: $trigger->user
+						options: new FlowRunQueueOptions(
+							subject: $subject,
+							trigger: $event,
+							context: $trigger->context,
+							user: $trigger->user
+						)
 					);
 				} catch (Throwable $one) {
 					$this->logger->error(
@@ -249,7 +251,7 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 			}
 		}
 
-		$this->runner->execute(run: $run, flow: $flow, subject: $object, seedItems: $seed);
+		$this->runner->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: $object), origin: new FlowRunOrigin(items: $seed));
 
 	}//end runInline()
 }//end class

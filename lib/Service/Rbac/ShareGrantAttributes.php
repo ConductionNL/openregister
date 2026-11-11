@@ -91,26 +91,33 @@ class ShareGrantAttributes {
 	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function inheritableOf(IShare $share): bool {
+		$raw = self::verbScopeAttribute(share: $share, key: self::INHERITABLE_ATTRIBUTE_KEY);
+
+		// Only an explicit, recognisable FALSE marks a grant local.
+		return in_array($raw, [false, 0, '0', 'false'], true) === false;
+	}//end inheritableOf()
+
+	/**
+	 * One attribute of the share's verb scope, or null when the share carries
+	 * no attributes or they cannot be read.
+	 *
+	 * @param IShare $share The share.
+	 * @param string $key   The attribute key.
+	 *
+	 * @return mixed The raw attribute value.
+	 */
+	private static function verbScopeAttribute(IShare $share, string $key): mixed {
 		try {
 			$attributes = $share->getAttributes();
 			if ($attributes === null) {
-				return true;
+				return null;
 			}
 
-			$raw = $attributes->getAttribute(
-				self::VERB_ATTRIBUTE_SCOPE,
-				self::INHERITABLE_ATTRIBUTE_KEY
-			);
+			return $attributes->getAttribute(self::VERB_ATTRIBUTE_SCOPE, $key);
 		} catch (Throwable $e) {
-			return true;
+			return null;
 		}
-
-		if ($raw === false || $raw === 0 || $raw === '0' || $raw === 'false') {
-			return false;
-		}
-
-		return true;
-	}//end inheritableOf()
+	}//end verbScopeAttribute()
 
 	/**
 	 * The extension verbs one share carries.
@@ -122,17 +129,7 @@ class ShareGrantAttributes {
 	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function verbsOf(IShare $share): array {
-		try {
-			$attributes = $share->getAttributes();
-			if ($attributes === null) {
-				return [];
-			}
-
-			$raw = $attributes->getAttribute(self::VERB_ATTRIBUTE_SCOPE, self::VERB_ATTRIBUTE_KEY);
-		} catch (Throwable $e) {
-			return [];
-		}
-
+		$raw = self::verbScopeAttribute(share: $share, key: self::VERB_ATTRIBUTE_KEY);
 		if (is_string($raw) === true) {
 			$raw = json_decode($raw, true);
 		}

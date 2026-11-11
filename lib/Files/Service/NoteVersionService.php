@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Files\Db\NoteVersion;
 use OCA\OpenRegister\Files\Db\NoteVersionMapper;
@@ -83,17 +84,16 @@ class NoteVersionService {
 	 * that silently failed to write would leave an edit with no history and
 	 * a note claiming, through its own `versionCount`, that there is none.
 	 *
-	 * @param integer  $noteId   The note being rewritten.
-	 * @param IComment $previous The note as it stands, before its text is replaced: its text, actor and actor type.
+	 * @param IComment $previous The note as it stands, before its text is replaced: its id, text, actor and actor type.
 	 * @param string   $editedBy The user replacing the text.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function record(int $noteId, IComment $previous, string $editedBy): void {
+	public function record(IComment $previous, string $editedBy): void {
 		$version = $this->versionOf(previous: $previous, editedBy: $editedBy);
-		$version->setCommentId($noteId);
+		$version->setCommentId((int)$previous->getId());
 		$this->mapper->insert($version);
 	}//end record()
 
@@ -259,10 +259,12 @@ class NoteVersionService {
 	 */
 	private function writeEditEntry(ObjectEntity $object, array $context): bool {
 		try {
-			$this->auditTrail->createAuditTrailEntry(
-				object: $object,
-				action: self::AUDIT_ACTION,
-				context: $context
+			$this->auditTrail->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: self::AUDIT_ACTION,
+					context: $context
+				)
 			);
 		} catch (Throwable $e) {
 			// The text has already been replaced and the version already

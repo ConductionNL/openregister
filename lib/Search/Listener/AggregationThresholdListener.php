@@ -98,12 +98,8 @@ class AggregationThresholdListener implements IEventListener {
 			return;
 		}
 
-		$schema = $this->loadSchema(object: $object);
+		$schema = $this->thresholdSchema(object: $object);
 		if ($schema === null) {
-			return;
-		}
-
-		if ($this->evaluator->hasThresholdNotifications($schema) === false) {
 			return;
 		}
 
@@ -115,6 +111,37 @@ class AggregationThresholdListener implements IEventListener {
 			return;
 		}
 
+		$this->deferEvaluation(object: $object);
+	}//end handle()
+
+	/**
+	 * The object's schema when it declares threshold notifications.
+	 *
+	 * @param ObjectEntity $object The changed object.
+	 *
+	 * @return Schema|null The schema, or null when it cannot be loaded or declares none.
+	 */
+	private function thresholdSchema(ObjectEntity $object): ?Schema {
+		$schema = $this->loadSchema(object: $object);
+		if ($schema === null) {
+			return null;
+		}
+
+		if ($this->evaluator->hasThresholdNotifications($schema) === false) {
+			return null;
+		}
+
+		return $schema;
+	}//end thresholdSchema()
+
+	/**
+	 * Queue the object's schema for a deferred threshold evaluation, one job per register/schema.
+	 *
+	 * @param ObjectEntity $object The changed object.
+	 *
+	 * @return void
+	 */
+	private function deferEvaluation(ObjectEntity $object): void {
 		$registerRef = (string)$object->getRegister();
 		$schemaRef = (string)$object->getSchema();
 		$this->deferral->defer(
@@ -128,7 +155,7 @@ class AggregationThresholdListener implements IEventListener {
 			chunkSize: self::CHUNK_SIZE,
 			dedupeKey: $registerRef . '|' . $schemaRef
 		);
-	}//end handle()
+	}//end deferEvaluation()
 
 	/**
 	 * Resolve the underlying object for any of the supported event types.

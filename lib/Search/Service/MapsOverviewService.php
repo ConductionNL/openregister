@@ -366,6 +366,24 @@ class MapsOverviewService {
 			return null;
 		}
 
+		return $this->markerIdentity(row: $row, feature: $feature) + [
+			'lat' => $latLng['lat'],
+			'lng' => $latLng['lng'],
+			'register' => (string)$source->register,
+			'schema' => (string)$source->schema,
+			'geometry' => ($feature['geometry'] ?? null),
+		];
+	}//end pointFromRow()
+
+	/**
+	 * A marker's id and label: the row's id, else its `@self` id, else the feature's.
+	 *
+	 * @param array<string,mixed> $row     The rendered object row.
+	 * @param array<string,mixed> $feature The row's GeoJSON feature.
+	 *
+	 * @return array{id: ?string, label: string}
+	 */
+	private function markerIdentity(array $row, array $feature): array {
 		$self = ($row['@self'] ?? []);
 		$id = ($row['id'] ?? ($self['id'] ?? ($feature['id'] ?? null)));
 		$label = $this->deriveLabel(row: $row, id: $id);
@@ -378,13 +396,8 @@ class MapsOverviewService {
 		return [
 			'id' => $idString,
 			'label' => $label,
-			'lat' => $latLng['lat'],
-			'lng' => $latLng['lng'],
-			'register' => (string)$source->register,
-			'schema' => (string)$source->schema,
-			'geometry' => ($feature['geometry'] ?? null),
 		];
-	}//end pointFromRow()
+	}//end markerIdentity()
 
 	/**
 	 * Reduce a GeoJSON geometry to a single representative [lat,lng].

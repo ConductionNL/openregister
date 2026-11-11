@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
@@ -123,17 +124,18 @@ abstract class MessagingNodeBase {
 	/**
 	 * What a dry run would send, without sending it.
 	 *
-	 * @param array $items   The items a real run would send for.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array{summary: string, messages: array} The preview.
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
-	public function preview(array $items, array $config, array $context): array {
+	public function preview(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		return $this->previewOf(
-			messages: $this->messaging->previewMessages(channel: $this->channel(), config: $config, items: $items, context: $context)
+			messages: $this->messaging->preview(channel: $this->channel(), step: new MessageSend(config: $config, items: $items, context: $context))
 		);
 	}//end preview()
 
@@ -154,15 +156,16 @@ abstract class MessagingNodeBase {
 	/**
 	 * Send, then pass the items through unchanged.
 	 *
-	 * @param array $items   The input items.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The same items.
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$this->send(step: new MessageSend(config: $config, items: $items, context: $context, stepName: $this->getId()));
 
 		return $items;
@@ -201,33 +204,27 @@ abstract class MessagingNodeBase {
 	/**
 	 * One optional field of the config form.
 	 *
-	 * @param string $key   The config key the field writes.
-	 * @param string $label The translated label.
-	 * @param string $type  The input type: `text` or `textarea`.
-	 * @param string $help  The translated help text.
+	 * @param NodeFormField $field The config key, the translated label and help, and the input type.
 	 *
 	 * @return array{key: string, label: string, type: string, help: string} The field.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
 	 */
-	protected function formField(string $key, string $label, string $type, string $help): array {
-		return ['key' => $key, 'label' => $label, 'type' => $type, 'help' => $help];
+	protected function formField(NodeFormField $field): array {
+		return ['key' => $field->key, 'label' => $field->label, 'type' => $field->type, 'help' => $field->help];
 	}//end formField()
 
 	/**
 	 * One required field of the config form.
 	 *
-	 * @param string $key   The config key the field writes.
-	 * @param string $label The translated label.
-	 * @param string $type  The input type: `text` or `textarea`.
-	 * @param string $help  The translated help text.
+	 * @param NodeFormField $field The config key, the translated label and help, and the input type.
 	 *
 	 * @return array{key: string, label: string, type: string, help: string, required: true} The field.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
 	 */
-	protected function requiredField(string $key, string $label, string $type, string $help): array {
-		return $this->formField(key: $key, label: $label, type: $type, help: $help) + ['required' => true];
+	protected function requiredField(NodeFormField $field): array {
+		return $this->formField(field: $field) + ['required' => true];
 	}//end requiredField()
 
 	/**

@@ -95,20 +95,32 @@ class StoredRuleBlocks {
 				continue;
 			}
 
-			$held = ($storedProperties[$property]['authorization'] ?? null);
-			if (is_array($held) === false) {
-				$held = null;
-			}
-
 			$blocks[] = [
 				'authorization' => $config['authorization'],
 				'context'       => sprintf('property "%s" of %s', (string)$property, $name),
-				'stored'        => $held,
+				'stored'        => self::heldBlock(storedProperties: $storedProperties, property: $property),
 			];
 		}
 
 		return $blocks;
 	}//end propertyBlocks()
+
+	/**
+	 * The authorization block stored for one property, or null when none is stored.
+	 *
+	 * @param array<int|string, mixed> $storedProperties The stored schema's properties.
+	 * @param int|string               $property         The property.
+	 *
+	 * @return array|null The stored block.
+	 */
+	private static function heldBlock(array $storedProperties, int|string $property): ?array {
+		$held = ($storedProperties[$property]['authorization'] ?? null);
+		if (is_array($held) === false) {
+			return null;
+		}
+
+		return $held;
+	}//end heldBlock()
 
 	/**
 	 * The stored row, read past the mappers' caches and organisation filter.

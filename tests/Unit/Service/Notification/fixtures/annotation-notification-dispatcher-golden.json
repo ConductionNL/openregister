@@ -1,7 +1,7 @@
 {
     "addresses": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -93,7 +93,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -172,7 +172,7 @@
     ],
     "all-channels": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -514,7 +514,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -672,7 +672,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "nl-bob",
                 "meldingen",
@@ -1006,7 +1006,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "off-eve",
                 "meldingen",
@@ -1112,7 +1112,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "em-fay",
                 "meldingen",
@@ -1178,7 +1178,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "q-gus",
                 "meldingen",
@@ -1322,7 +1322,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "qx-hal",
                 "meldingen",
@@ -1454,7 +1454,7 @@
     ],
     "basic": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -1491,7 +1491,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -1544,7 +1544,7 @@
     ],
     "broadcast-blocked": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -1658,7 +1658,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -1672,7 +1672,7 @@
     ],
     "critical": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -1702,7 +1702,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "q-gus",
                 "meldingen",
@@ -1749,7 +1749,7 @@
     ],
     "default-subject": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -1779,7 +1779,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -1832,7 +1832,7 @@
     ],
     "digest": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -1896,7 +1896,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -1978,7 +1978,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "q-gus",
                 "meldingen",
@@ -2046,7 +2046,7 @@
     ],
     "em-only-no-queue": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2110,7 +2110,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "em-fay",
                 "meldingen",
@@ -2138,7 +2138,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "q-gus",
                 "meldingen",
@@ -2224,7 +2224,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2254,7 +2254,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -2327,7 +2327,7 @@
     ],
     "idempotent-empty": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2357,7 +2357,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -2421,7 +2421,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2451,7 +2451,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -2505,7 +2505,7 @@
     "no-annotation": [],
     "no-preferences": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2683,7 +2683,7 @@
     ],
     "nobody": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2757,7 +2757,7 @@
     "not-an-array-rule": [],
     "org-pinned-hit": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2787,7 +2787,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -2842,7 +2842,7 @@
     "org-pinned-odd": [],
     "parties-no-mail": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -2869,7 +2869,7 @@
     ],
     "parties-no-uuid": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -2896,7 +2896,7 @@
     ],
     "parties-nobody": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -2933,7 +2933,7 @@
     ],
     "parties-only": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -3050,7 +3050,7 @@
     ],
     "subscription": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3087,7 +3087,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3140,7 +3140,7 @@
     ],
     "subscription-off": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3170,7 +3170,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3223,7 +3223,7 @@
     ],
     "transition": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3256,7 +3256,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3313,7 +3313,7 @@
     "trigger-mismatch": [],
     "two-rules": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3343,7 +3343,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3394,7 +3394,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3424,7 +3424,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3470,7 +3470,7 @@
     ],
     "updated-trigger": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3504,7 +3504,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3561,7 +3561,7 @@
     ],
     "webhook-variants": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3625,7 +3625,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3637,7 +3637,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3735,7 +3735,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3747,7 +3747,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3849,7 +3849,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3861,7 +3861,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3959,7 +3959,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",

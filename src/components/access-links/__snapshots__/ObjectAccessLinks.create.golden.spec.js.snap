@@ -1,0 +1,211 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectAccessLinks.create (golden) mints a link 1`] = `
+{
+  "busy": false,
+  "created": {
+    "id": 9,
+    "pageUrl": "p",
+    "url": "u",
+  },
+  "during": {
+    "busy": true,
+    "error": "",
+  },
+  "error": "",
+  "form": {
+    "capabilities": [
+      "upload",
+      "read",
+    ],
+    "expiresOn": "2026-12-31",
+    "label": "",
+    "password": "",
+  },
+  "posted": [
+    [
+      "/apps/openregister/api/access-links",
+      {
+        "capabilities": [
+          "read",
+          "upload",
+        ],
+        "expiresAt": [
+          2026,
+          12,
+          31,
+          23,
+          59,
+        ],
+        "label": "Notary",
+        "password": "secret",
+        "subjectId": "uuid-1",
+        "subjectType": "object",
+      },
+    ],
+  ],
+  "reloads": 1,
+}
+`;
+
+exports[`ObjectAccessLinks.create (golden) shows a failure 1`] = `
+{
+  "busy": false,
+  "created": null,
+  "during": {
+    "busy": true,
+    "error": "",
+  },
+  "error": "That did not work. Try again later.",
+  "form": {
+    "capabilities": [
+      "upload",
+      "read",
+    ],
+    "expiresOn": "2026-12-31",
+    "label": "Notary",
+    "password": "secret",
+  },
+  "posted": [
+    [
+      "/apps/openregister/api/access-links",
+      {
+        "capabilities": [
+          "read",
+          "upload",
+        ],
+        "expiresAt": [
+          2026,
+          12,
+          31,
+          23,
+          59,
+        ],
+        "label": "Notary",
+        "password": "secret",
+        "subjectId": "uuid-1",
+        "subjectType": "object",
+      },
+    ],
+  ],
+  "reloads": 0,
+}
+`;
+
+exports[`ObjectAccessLinks.create (golden) shows a refusal 1`] = `
+{
+  "busy": false,
+  "created": null,
+  "during": {
+    "busy": true,
+    "error": "",
+  },
+  "error": "That did not work. Try again later.",
+  "form": {
+    "capabilities": [
+      "upload",
+      "read",
+    ],
+    "expiresOn": "2026-12-31",
+    "label": "Notary",
+    "password": "secret",
+  },
+  "posted": [
+    [
+      "/apps/openregister/api/access-links",
+      {
+        "capabilities": [
+          "read",
+          "upload",
+        ],
+        "expiresAt": [
+          2026,
+          12,
+          31,
+          23,
+          59,
+        ],
+        "label": "Notary",
+        "password": "secret",
+        "subjectId": "uuid-1",
+        "subjectType": "object",
+      },
+    ],
+  ],
+  "reloads": 0,
+}
+`;
+
+exports[`ObjectAccessLinks.create (golden) starts with a read link form 1`] = `
+{
+  "allLinks": [],
+  "busy": false,
+  "capabilities": [
+    "read",
+    "comment",
+    "upload",
+  ],
+  "created": null,
+  "error": "",
+  "form": {
+    "capabilities": [
+      "read",
+    ],
+    "expiresOn": "",
+    "label": "",
+    "password": "",
+  },
+  "loading": false,
+}
+`;
+
+exports[`mintPayload edges (golden) builds the body for a partial expiry 1`] = `
+{
+  "capabilities": [
+    "comment",
+  ],
+  "expiresAt": [
+    2027,
+    5,
+    1,
+    23,
+    59,
+  ],
+  "subjectId": "f",
+  "subjectType": "file",
+}
+`;
+
+exports[`mintPayload edges (golden) builds the body for an empty password and label 1`] = `
+{
+  "capabilities": [
+    "read",
+    "comment",
+    "upload",
+  ],
+  "expiresAt": [
+    2026,
+    1,
+    2,
+    23,
+    59,
+  ],
+  "subjectId": "o",
+  "subjectType": "object",
+}
+`;
+
+exports[`mintPayload edges (golden) builds the body for no capabilities and no expiry 1`] = `
+{
+  "capabilities": [],
+  "expiresAt": [
+    1900,
+    1,
+    1,
+    23,
+    59,
+  ],
+  "subjectId": "12",
+  "subjectType": "view",
+}
+`;

@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Object\RemovalOptions;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\Files\Folder;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -253,12 +254,12 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 				return new AuditTrail();
 			}
 		);
-		$auditMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$auditMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null) use (&$calls): AuditTrail {
 				$calls[] = ['auditEntry' => $action, 'object' => $object->getUuid(), 'context' => $context, 'actorId' => $actorId];
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$settings = $this->createMock(SettingsService::class);
 		if ($audit === null) {

@@ -211,11 +211,8 @@ class FileBatchHandler {
 	 * @throws Exception If the FileService is missing or the update fails.
 	 */
 	private function label(FileBatchRequest $request, int $fileId): void {
-		$this->requireFileService()->updateFile(
-			filePath: $fileId,
-			content: null,
-			tags: ($request->params['labels'] ?? []),
-			object: $request->object
+		$this->requireFileService()->overwriteFile(
+			overwrite: new FileOverwrite(filePath: $fileId, content: null, tags: ($request->params['labels'] ?? []), object: $request->object)
 		);
 	}//end label()
 

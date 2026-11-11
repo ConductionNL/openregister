@@ -147,8 +147,7 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	/**
 	 * Why a filled grant cannot be made in this run, or '': refusal(), then the object, the principal and the dates.
 	 *
-	 * @param array<string, mixed> $data    The filled grant fields.
-	 * @param array<int, string>   $users   The account ids the set creates or adopts.
+	 * @param FilledRow            $row     The filled grant fields and the account ids the set creates or adopts.
 	 * @param array<string, mixed> $context The context: the set's `objects`, the groups it created (`setGroups`) and
 	 *                                      the install day.
 	 *
@@ -156,20 +155,7 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
-	protected function refusalIn(array $data, array $users, array $context): string {
-		return $this->refusalOf(row: new FilledRow(data: $data, users: $users), context: $context);
-	}//end refusalIn()
-
-	/**
-	 * Why a filled grant cannot be made in this run, or '': refusal(), then the object, the principal and the dates.
-	 *
-	 * @param FilledRow            $row     The filled grant fields and the account ids the set creates or adopts.
-	 * @param array<string, mixed> $context The context: the set's `objects`, the groups it created (`setGroups`) and
-	 *                                      the install day.
-	 *
-	 * @return string
-	 */
-	private function refusalOf(FilledRow $row, array $context): string {
+	protected function refusalIn(FilledRow $row, array $context): string {
 		$why = $this->refusal(data: $row->data, users: $row->users);
 		if ($why !== '') {
 			return $why;
@@ -185,7 +171,7 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 		}
 
 		return $this->datesRefusal(data: $row->data, context: $context);
-	}//end refusalOf()
+	}//end refusalIn()
 
 	/**
 	 * Why the grant's principal is no account of the set (a user grant) or no group the set created (a group

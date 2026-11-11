@@ -89,7 +89,7 @@ class BulkControllerWholeTableDeleteTest extends TestCase {
 		$objects->method('setSchema')->willReturnSelf();
 		$objects->method('getRegister')->willReturn(1);
 		$objects->method('getSchema')->willReturn(2);
-		$objects->method('deleteObjectsBySchema')->willReturnCallback(
+		$objects->method('deleteObjectsOfTable')->willReturnCallback(
 			function (): array {
 				$this->deletes[] = 'schema';
 				return ['deleted_count' => 1, 'deleted_uuids' => ['u'], 'schema_id' => 2];

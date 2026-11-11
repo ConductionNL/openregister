@@ -138,26 +138,47 @@ class FlowRunGuard {
 	 */
 	public function checkpoint(string $where = ''): void {
 		if ($this->expired() === true) {
-			$location = '';
-			if ($where !== '') {
-				$location = ' at ' . $where;
-			}
-
-			throw new FlowRunExpired(
-				message: sprintf(
-					'The run exceeded its maximum runtime of %d seconds (%s elapsed)%s. '
-					. 'Raise `maxRuntimeMinutes` on the flow, or the `flow_max_runtime_minutes` '
-					. 'instance setting, if this flow is meant to run this long.',
-					$this->clock->budget,
-					number_format($this->elapsed(), 1),
-					$location
-				)
-			);
+			throw $this->expiry(where: $where);
 		}
 
 		$this->beat();
 
 	}//end checkpoint()
+
+	/**
+	 * The refusal of a run past its maximum runtime, naming where it was stopped.
+	 *
+	 * @param string $where Where the check ran, or the empty string.
+	 *
+	 * @return FlowRunExpired The refusal.
+	 */
+	private function expiry(string $where): FlowRunExpired {
+		return new FlowRunExpired(
+			message: sprintf(
+				'The run exceeded its maximum runtime of %d seconds (%s elapsed)%s. '
+				. 'Raise `maxRuntimeMinutes` on the flow, or the `flow_max_runtime_minutes` '
+				. 'instance setting, if this flow is meant to run this long.',
+				$this->clock->budget,
+				number_format($this->elapsed(), 1),
+				self::location(where: $where)
+			)
+		);
+	}//end expiry()
+
+	/**
+	 * " at <where>" for a named check, else nothing.
+	 *
+	 * @param string $where Where the check ran, or the empty string.
+	 *
+	 * @return string The suffix.
+	 */
+	private static function location(string $where): string {
+		if ($where !== '') {
+			return ' at ' . $where;
+		}
+
+		return '';
+	}//end location()
 
 	/**
 	 * Record that the run is still executing.
@@ -186,6 +207,16 @@ class FlowRunGuard {
 		// write's duration as idle time and beat again immediately.
 		$this->lastBeat = $now;
 
+		$this->recordBeat();
+
+	}//end beat()
+
+	/**
+	 * Write the beat; a failed write is logged, never thrown.
+	 *
+	 * @return void
+	 */
+	private function recordBeat(): void {
 		try {
 			$this->mapper->touch(uuid: $this->clock->runUuid, when: new DateTime());
 		} catch (Throwable $e) {
@@ -198,6 +229,5 @@ class FlowRunGuard {
 				]
 			);
 		}
-
-	}//end beat()
+	}//end recordBeat()
 }//end class

@@ -120,6 +120,82 @@ function moveRequiredToProperties(cleaned) {
 	delete cleaned.required
 }
 
+/**
+ * Refuse a schema that cannot be downloaded: missing, not a Schema, or
+ * without an id.
+ *
+ * @param {unknown} schema The schema to download
+ * @return {void}
+ * @throws {Error} Why it cannot be downloaded
+ */
+function assertDownloadable(schema) {
+	if (!schema) {
+		throw new Error('No schema item to download')
+	}
+	if (!(schema instanceof Schema)) {
+		throw new Error('Invalid schema item to download')
+	}
+	if (!schema?.id) {
+		throw new Error('No schema item ID to download')
+	}
+}
+
+/**
+ * Ask the server for a schema's download; a failed answer is logged and
+ * thrown as its status text.
+ *
+ * @param {Schema} schema The schema
+ * @return {Promise<Response>} The successful response
+ */
+async function fetchSchemaDownload(schema) {
+	const response = await fetch(
+		`/index.php/apps/openregister/api/schemas/${schema.id}/download`,
+		{
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		},
+	)
+
+	if (!response.ok) {
+		console.error(response)
+		throw new Error(response.statusText)
+	}
+	return response
+}
+
+/**
+ * Let the browser save data as a prettified JSON file.
+ *
+ * @param {object} data The data to save
+ * @param {string} filename The file name to offer
+ * @return {void}
+ */
+function saveAsJsonFile(data, filename) {
+	// Convert JSON to a prettified string
+	const jsonString = JSON.stringify(data, null, 2)
+
+	// Create a Blob from the JSON string
+	const blob = new Blob([jsonString], { type: 'application/json' })
+
+	// Create a URL for the Blob
+	const url = URL.createObjectURL(blob)
+
+	// Create a temporary anchor element
+	const a = document.createElement('a')
+	a.href = url
+	a.download = filename
+
+	// Temporarily add the anchor to the DOM and trigger the download
+	document.body.appendChild(a)
+	a.click()
+
+	// Clean up
+	document.body.removeChild(a)
+	URL.revokeObjectURL(url)
+}
+
 export const useSchemaStore = defineStore('schema', {
 	state: () => ({
 		schemaItem: false,
@@ -466,54 +542,9 @@ export const useSchemaStore = defineStore('schema', {
 		 * @spec exclude API passthrough to GET /api/schemas/{id}/download + browser-download side effect
 		 */
 		async downloadSchema(schema) {
-			if (!schema) {
-				throw new Error('No schema item to download')
-			}
-			if (!(schema instanceof Schema)) {
-				throw new Error('Invalid schema item to download')
-			}
-			if (!schema?.id) {
-				throw new Error('No schema item ID to download')
-			}
-
-			const response = await fetch(
-				`/index.php/apps/openregister/api/schemas/${schema.id}/download`,
-				{
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				},
-			)
-
-			if (!response.ok) {
-				console.error(response)
-				throw new Error(response.statusText)
-			}
-
-			const data = await response.json()
-
-			// Convert JSON to a prettified string
-			const jsonString = JSON.stringify(data, null, 2)
-
-			// Create a Blob from the JSON string
-			const blob = new Blob([jsonString], { type: 'application/json' })
-
-			// Create a URL for the Blob
-			const url = URL.createObjectURL(blob)
-
-			// Create a temporary anchor element
-			const a = document.createElement('a')
-			a.href = url
-			a.download = `${schema.title}.json`
-
-			// Temporarily add the anchor to the DOM and trigger the download
-			document.body.appendChild(a)
-			a.click()
-
-			// Clean up
-			document.body.removeChild(a)
-			URL.revokeObjectURL(url)
+			assertDownloadable(schema)
+			const response = await fetchSchemaDownload(schema)
+			saveAsJsonFile(await response.json(), `${schema.title}.json`)
 
 			return { response }
 		},

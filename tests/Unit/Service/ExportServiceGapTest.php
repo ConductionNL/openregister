@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -18,6 +20,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Gap tests for ExportService covering uncovered methods and branches.
@@ -85,7 +88,7 @@ class ExportServiceGapTest extends TestCase {
 		$this->expectExceptionMessage('Cannot export multiple schemas to CSV format');
 
 		$register = $this->createRegisterEntity(1);
-		$this->exportService->exportToCsv($register, null);
+		$this->exportService->exportToCsv(request: new ObjectExportRequest(register: $register));
 	}
 
 	/**
@@ -94,7 +97,7 @@ class ExportServiceGapTest extends TestCase {
 	public function testExportToExcelWithNullRegisterAndSchema(): void {
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel();
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest());
 
 		$this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
 		$this->assertEquals('data', $spreadsheet->getActiveSheet()->getTitle());
@@ -112,7 +115,7 @@ class ExportServiceGapTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 		$this->assertEquals('test-schema', $sheet->getTitle());
@@ -134,7 +137,7 @@ class ExportServiceGapTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('id', $sheet->getCell('A1')->getValue());
@@ -154,7 +157,7 @@ class ExportServiceGapTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('id', $sheet->getCell('A1')->getValue());
@@ -172,12 +175,12 @@ class ExportServiceGapTest extends TestCase {
 		]);
 
 		$this->propertyRbacHandler->method('canReadProperty')
-			->willReturnCallback(function ($s, $p) {
-				return $p !== 'secret_field';
+			->willReturnCallback(function (SchemaProperty $read, PropertyAccessRequest $request) {
+				return $read->name !== 'secret_field';
 			});
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('id', $sheet->getCell('A1')->getValue());
@@ -197,7 +200,7 @@ class ExportServiceGapTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('owner', $sheet->getCell('C1')->getValue());
@@ -215,7 +218,7 @@ class ExportServiceGapTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('parent', $sheet->getCell('B1')->getValue());
@@ -233,7 +236,7 @@ class ExportServiceGapTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('tags', $sheet->getCell('B1')->getValue());
@@ -251,7 +254,7 @@ class ExportServiceGapTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema, [], null);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('name', $sheet->getCell('B1')->getValue());
@@ -274,7 +277,7 @@ class ExportServiceGapTest extends TestCase {
 		$adminGroup->method('inGroup')->with($user)->willReturn(true);
 		$this->groupManager->method('get')->with('admin')->willReturn($adminGroup);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema, [], $user);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema, currentUser: $user));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('name', $sheet->getCell('B1')->getValue());
@@ -290,7 +293,7 @@ class ExportServiceGapTest extends TestCase {
 		$user = $this->createMock(IUser::class);
 		$this->groupManager->method('get')->with('admin')->willReturn(null);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, null, [], $user);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(currentUser: $user));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('id', $sheet->getCell('A1')->getValue());
@@ -310,7 +313,7 @@ class ExportServiceGapTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('id', $sheet->getCell('A1')->getValue());
@@ -332,7 +335,7 @@ class ExportServiceGapTest extends TestCase {
 
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel($register);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(register: $register));
 
 		$this->assertEquals(2, $spreadsheet->getSheetCount());
 		$this->assertEquals('schema-one', $spreadsheet->getSheet(0)->getTitle());
@@ -351,7 +354,7 @@ class ExportServiceGapTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$spreadsheet = $this->exportService->exportToExcel(null, $schema);
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$this->assertEquals('name', $sheet->getCell('B1')->getValue());
