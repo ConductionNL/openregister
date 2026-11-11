@@ -204,4 +204,57 @@ class SharerFolderAccessTest extends TestCase {
 
 		$this->assertSame(1, $this->access()->endStaleViews(object: null, views: [$this->view(holder: 'alice')]));
 	}//end testAViewOnAGoneObjectIsEnded()
+
+	/**
+	 * A share manager that answers the holder's grants on the folder, and records what it deletes.
+	 *
+	 * @param array<int, IShare> $grants  The holder's grants, keyed by share type.
+	 * @param array<int, IShare> $deleted Receives the deleted shares, in order.
+	 *
+	 * @return void
+	 */
+	private function grantsMadeBy(string $holder, array $grants, array &$deleted): void {
+		$this->shareManager = $this->createMock(IManager::class);
+		$this->shareManager->method('shareProviderExists')->willReturn(true);
+		$this->shareManager->method('getSharesBy')->willReturnCallback(
+			static fn (string $uid, int $type, mixed $path, bool $reshares): array => ($uid === $holder && $reshares === false && isset($grants[$type]) === true) ? [$grants[$type]] : []
+		);
+		$this->shareManager->method('deleteShare')->willReturnCallback(static function (IShare $share) use (&$deleted): void {
+			$deleted[] = $share;
+		});
+	}//end grantsMadeBy()
+
+	public function testEndingAViewRevokesTheGrantsAndLinksItsHolderMade(): void {
+		$this->grantManage->method('admittedAs')->willReturn(null);
+		$grant = $this->createMock(IShare::class);
+		$link = $this->createMock(IShare::class);
+		$deleted = [];
+		$this->grantsMadeBy(holder: 'alice', grants: [IShare::TYPE_USER => $grant, IShare::TYPE_LINK => $link], deleted: $deleted);
+		$view = $this->view(holder: 'alice');
+
+		$this->assertSame(1, $this->access()->endStaleViews(object: new ObjectEntity(), views: [$view]));
+		$this->assertSame([$grant, $link, $view], $deleted, 'the grants end first, so core passes nothing on, then the view');
+	}//end testEndingAViewRevokesTheGrantsAndLinksItsHolderMade()
+
+	public function testAKeptViewKeepsItsHoldersGrants(): void {
+		$this->grantManage->method('admittedAs')->willReturn(GrantManageGuard::AS_OWNER);
+		$deleted = [];
+		$this->grantsMadeBy(holder: 'alice', grants: [IShare::TYPE_USER => $this->createMock(IShare::class)], deleted: $deleted);
+
+		$this->assertSame(0, $this->access()->endStaleViews(object: new ObjectEntity(), views: [$this->view(holder: 'alice')]));
+		$this->assertSame([], $deleted);
+	}//end testAKeptViewKeepsItsHoldersGrants()
+
+	public function testARemovedUsersViewsEndWithTheirGrants(): void {
+		$grant = $this->createMock(IShare::class);
+		$deleted = [];
+		$this->grantsMadeBy(holder: 'alice', grants: [IShare::TYPE_GROUP => $grant], deleted: $deleted);
+		$view = $this->view(holder: 'alice');
+		$plainShare = $this->createMock(IShare::class);
+		$plainShare->method('getAttributes')->willReturn(null);
+		$this->shareManager->method('getSharedWith')->willReturn([$view, $plainShare]);
+
+		$this->assertSame(1, $this->access()->endAllViewsOf(uid: 'alice'));
+		$this->assertSame([$grant, $view], $deleted, 'a share that is not a sharer view stays');
+	}//end testARemovedUsersViewsEndWithTheirGrants()
 }//end class

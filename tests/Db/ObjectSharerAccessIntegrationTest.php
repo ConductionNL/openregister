@@ -284,7 +284,7 @@ class ObjectSharerAccessIntegrationTest extends TestCase {
 	}//end testTheSharersViewIsNoGrantAndCarriesNoMoreThanTheirRights()
 
 	/**
-	 * Handing the object over ends the former owner's view, and their grants stay visible to the new owner.
+	 * Handing the object over ends the former owner's view, and the grants they made end with it.
 	 *
 	 * @return void
 	 */
@@ -309,12 +309,11 @@ class ObjectSharerAccessIntegrationTest extends TestCase {
 
 		$this->as('successor');
 		$moved = $this->freshObject(register: $register, schema: $schema, object: $object);
-		$this->assertContains(
+		$this->assertNotContains(
 			(string)$grant['id'],
 			array_column($this->sharing()->listGrants(object: $moved), 'id'),
-			'a grant made by the former owner must stay visible, so the new owner can revoke it'
+			'a grant is made in its sharer\'s name and must end with their right to share'
 		);
-		$this->sharing()->revoke(object: $moved, shareId: (string)$grant['id']);
 	}//end testHandingTheObjectOverEndsTheFormerOwnersView()
 
 	/**

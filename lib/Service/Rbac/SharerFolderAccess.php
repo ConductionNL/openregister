@@ -46,9 +46,9 @@ use Throwable;
  * file rights OpenRegister gives them on the object and never the re-share bit,
  * so re-sharing goes through OpenRegister's own checks. The view grants nothing
  * ({@see ShareGrantAttributes::objectUuidOf()}) and is ended once its holder may
- * no longer share the object. Grants the holder made then pass to the
- * openregister account through core's re-share promotion, so their recipients
- * keep access and the object's owner can still revoke them.
+ * no longer share the object, or is removed. The grants and links the holder
+ * made on the folder end with it: a share is made in its sharer's name and is
+ * revoked with them.
  *
  * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
  *
@@ -58,6 +58,18 @@ use Throwable;
  * open and the end of one view in different places.
  */
 class SharerFolderAccess {
+
+	/**
+	 * The share types a sharer can create on an object's folder.
+	 */
+	private const GRANT_TYPES = [
+		IShare::TYPE_USER,
+		IShare::TYPE_GROUP,
+		IShare::TYPE_REMOTE,
+		IShare::TYPE_REMOTE_GROUP,
+		IShare::TYPE_LINK,
+		IShare::TYPE_EMAIL,
+	];
 
 	/**
 	 * Constructor.
@@ -187,6 +199,7 @@ class SharerFolderAccess {
 			}
 
 			try {
+				$this->revokeGrantsOf(view: $view);
 				$this->shareManager->deleteShare($view);
 				$ended++;
 			} catch (Throwable $e) {
@@ -199,6 +212,61 @@ class SharerFolderAccess {
 
 		return $ended;
 	}//end endStaleViews()
+
+	/**
+	 * End every sharer view a user holds, with the grants and links they made through it.
+	 *
+	 * Asked before the user is removed: core then deletes the views without
+	 * looking at the grants their holder made on the folders.
+	 *
+	 * @param string $uid The user.
+	 *
+	 * @return int How many views were ended.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function endAllViewsOf(string $uid): int {
+		$views = array_values(
+			array_filter(
+				$this->shareManager->getSharedWith($uid, IShare::TYPE_USER, null, -1),
+				fn (IShare $share): bool => $this->attributes()->isSharerAccess(share: $share)
+			)
+		);
+
+		return $this->endStaleViews(object: null, views: $views);
+	}//end endAllViewsOf()
+
+	/**
+	 * Revoke the grants and links a view's holder made on its folder.
+	 *
+	 * A share is made in its sharer's name and ends with their right to share.
+	 * Revoked before the view itself ends, so core has nothing left to pass on
+	 * to the folder's account.
+	 *
+	 * @param IShare $view The view about to end.
+	 *
+	 * @return void
+	 */
+	private function revokeGrantsOf(IShare $view): void {
+		$holder = (string)$view->getSharedWith();
+		try {
+			$folder = $view->getNode();
+			foreach (self::GRANT_TYPES as $type) {
+				if ($this->shareManager->shareProviderExists($type) === false) {
+					continue;
+				}
+
+				foreach ($this->shareManager->getSharesBy($holder, $type, $folder, false, -1) as $grant) {
+					$this->shareManager->deleteShare($grant);
+				}
+			}
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[SharerFolderAccess] Could not revoke every grant of a former sharer; the view still ends',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'share' => $view->getId(), 'error' => $e->getMessage()]
+			);
+		}
+	}//end revokeGrantsOf()
 
 	/**
 	 * The core permissions the signed-in user holds on an object's files, without the re-share bit.
@@ -241,8 +309,7 @@ class SharerFolderAccess {
 		}
 
 		return $this->grantManage->admittedAs(
-			userId: $uid,
-			userGroups: $this->groupManager->getUserGroupIds($user),
+			caller: new GrantCaller(userId: $uid, userGroups: $this->groupManager->getUserGroupIds($user)),
 			object: $object
 		) !== null;
 	}//end mayShare()
