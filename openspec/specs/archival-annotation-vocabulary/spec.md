@@ -56,11 +56,17 @@ The platform SHALL ship an `OCA\OpenRegister\Service\Archival\ArchivalAnnotation
 
 #### Scenario: Unknown key at the top level is reported, not rejected
 - @e2e exclude schema-save validation — covered by PHPUnit
-- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, category: "Archiefwet 1995 selectielijst", action: "destroy" }`
+- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, aggregatieniveau: "Dossier" }`
 - **WHEN** the schema is saved
 - **THEN** the save SHALL succeed
 - **AND** `SchemaMapper` SHALL log one warning naming the schema and every ignored key
 - **AND** the import of a register declaring that schema SHALL link it, not drop it
+
+#### Scenario: A key the archive reader reads is not unknown
+- @e2e exclude schema-save validation — covered by PHPUnit
+- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, category: "1.1", categoryProperty: "selectielijstCategorie", action: "bewaren" }`
+- **WHEN** the schema is saved
+- **THEN** no `archival-unknown-key` finding SHALL be made, because `ArchivalDeclarationReader` and `ClassificationOverride` read all three keys
 
 #### Scenario: Well-formed annotation passes
 - **GIVEN** a schema declares `x-openregister-archival.retention = { default: "P30D", rules: [{ condition: "statusCode < 400", retention: "PT1H", reason: "successful integrations" }] }`
@@ -129,7 +135,7 @@ The gate SHALL read `Schema::hasArchivalAnnotation()`, which is the single defin
 
 `SchemaDeletionService` is the single implementation of "delete every object of a schema", reached by `POST /api/bulk/{register}/{schema}/delete-objects`, its legacy twin `/delete-schema`, `DELETE /api/schemas/{id}?deleteObjects=true` and `occ openregister:schemas:prune-retired`. It SHALL apply the archival gate that `ObjectService::deleteObject()` applies, reading `Schema::hasArchivalAnnotation()` rather than the annotation itself.
 
-`deleteObjectsBySchema()` SHALL refuse an archival schema unconditionally and SHALL expose no override parameter: both of its callers are HTTP routes, and an override they could pass through would put archival destruction back on the network. `cascadeDeleteSchema()` SHALL refuse unless the caller passes an explicit `archivalOverride`, which only `occ openregister:schemas:prune-retired --force-archival` passes — the same bargain `occ openregister:objects:purge --force` strikes, on the same reasoning that shell access is an authorization boundary an HTTP caller cannot cross.
+`deleteObjectsBySchema()` SHALL refuse an archival schema unconditionally and SHALL expose no override parameter: both of its callers are HTTP routes, and an override they could pass through would put archival destruction back on the network. `cascadeDeleteSchema()` SHALL refuse unless the caller passes a `SchemaTeardownOverride` with `archivalSchema` set, which only `occ openregister:schemas:prune-retired --force-archival` passes — the same bargain `occ openregister:objects:purge --force` strikes, on the same reasoning that shell access is an authorization boundary an HTTP caller cannot cross.
 
 `--force-archival` SHALL be a distinct flag from `--force`. `--force` means "this schema still owns objects"; an operator pruning a retired test schema passes it without having said anything about retained records, so it MUST NOT authorise their destruction.
 

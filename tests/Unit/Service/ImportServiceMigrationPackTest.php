@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -43,8 +44,13 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportMapping;
 
 class ImportServiceMigrationPackTest extends TestCase {
+	use PassThroughL10nTrait;
+
 	/** @var SchemaMapper&MockObject */
 	private SchemaMapper $schemaMapper;
 
@@ -70,15 +76,10 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->validateObjectHandler = $this->createMock(ValidateObject::class);
 
 		$this->service = new ImportService(
-			$this->schemaMapper,
-			$this->objectService,
-			$logger,
-			$groupManager,
-			$translationCsvCodec,
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			new MappingEngine(),
-			$this->validateObjectHandler,
-			$this->createMock(\Psr\Container\ContainerInterface::class)
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->schemaMapper, $this->objectService, $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class), $this->validateObjectHandler),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, new MappingEngine($this->passThroughL10n())),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($this->createMock(\Psr\Container\ContainerInterface::class), new \OCA\OpenRegister\Listener\NotifyPushBatch(), $logger),
+			$groupManager
 		);
 	}
 
@@ -151,7 +152,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -185,7 +192,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -228,7 +241,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -260,7 +279,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->validateObjectHandler->method('validateObject')->willReturn($validResult);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack, dryRun: true);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack, dryRun: true),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -289,7 +314,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObjects');
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack, dryRun: true);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack, dryRun: true),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -351,7 +382,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromJson($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromJson(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -387,7 +424,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromJson($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromJson(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -414,7 +457,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObjects');
 
 		try {
-			$result = $this->service->importFromJson($file, $register, $schema, pack: $pack, dryRun: true);
+			$result = $this->service->importFromJson(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack, dryRun: true),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}

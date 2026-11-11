@@ -9,11 +9,11 @@
  * computed hash is tamper-sensitive to both payload and chain-position
  * changes.
  *
- * sealRow()'s database IO (reading a row, deriving previousHash from the
+ * sealRows()'s database IO (reading a row, deriving previousHash from the
  * prior row, writing hash + previous_hash) is intentionally NOT re-mocked
  * here — it is covered by the live e2e verifyChain() checks (valid chain +
  * tamper detection). What is verified here is the hashing math that
- * sealRow(), verifyChain(), and getHashBefore() all share via
+ * sealRows(), verifyChain(), and getHashBefore() all share via
  * computeHash()/getCanonicalJson(), so a regression in the formula itself
  * would be caught regardless of which caller exercises it.
  *

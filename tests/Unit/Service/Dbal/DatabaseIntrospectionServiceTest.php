@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\IntrospectionTools;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
@@ -125,11 +126,9 @@ class DatabaseIntrospectionServiceTest extends TestCase {
 		};
 
 		return new DatabaseIntrospectionService(
-			connectionFactory: new DbalConnectionFactory(credentialStore: $store, logger: new NullLogger()),
-			typeMapper: new SqlTypeMapper(logger: new NullLogger()),
+			tools: new IntrospectionTools(connectionFactory: new DbalConnectionFactory(credentialStore: $store, logger: new NullLogger()), typeMapper: new SqlTypeMapper(logger: new NullLogger()), diffService: new SchemaDiffService()),
 			registerMapper: (new ReflectionClass(RegisterMapper::class))->newInstanceWithoutConstructor(),
 			schemaMapper: (new ReflectionClass(SchemaMapper::class))->newInstanceWithoutConstructor(),
-			diffService: new SchemaDiffService(),
 			logger: new NullLogger()
 		);
 	}//end service()

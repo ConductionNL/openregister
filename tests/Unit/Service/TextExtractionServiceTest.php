@@ -4,20 +4,25 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\FileExtractionOptions;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
+use OCA\OpenRegister\Files\Service\TextExtraction\SourceText;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -28,6 +33,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\ChunkSizing;
+use OCA\OpenRegister\Files\Service\SplitLevel;
+use OCA\OpenRegister\Files\Service\SourceStamp;
+use OCA\OpenRegister\Files\Service\ExtractionSource;
 
 /**
  * Tests for TextExtractionService
@@ -50,7 +59,7 @@ class TextExtractionServiceTest extends TestCase {
 	private IRootFolder&MockObject $rootFolder;
 	private IDBConnection&MockObject $db;
 	private LoggerInterface&MockObject $logger;
-	private \OCA\OpenRegister\Service\TextExtraction\EmlParser&MockObject $emlParser;
+	private \OCA\OpenRegister\Files\Service\TextExtraction\EmlParser&MockObject $emlParser;
 
 	protected function setUp(): void {
 		$this->fileMapper = $this->createMock(FileMapper::class);
@@ -66,9 +75,9 @@ class TextExtractionServiceTest extends TestCase {
 		$this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
 		$this->settingsService = $this->createMock(SettingsService::class);
 		$this->riskLevelService = $this->createMock(RiskLevelService::class);
-		$this->emlParser = $this->createMock(\OCA\OpenRegister\Service\TextExtraction\EmlParser::class);
+		$this->emlParser = $this->createMock(\OCA\OpenRegister\Files\Service\TextExtraction\EmlParser::class);
 
-		$this->service = new TextExtractionService(
+		$this->service = TextExtractionServiceFactory::create(
 			$this->fileMapper,
 			$this->chunkMapper,
 			$this->rootFolder,
@@ -78,14 +87,12 @@ class TextExtractionServiceTest extends TestCase {
 			$this->schemaMapper,
 			$this->registerMapper,
 			$this->entityHandler,
-			$this->gdprEntityMapper,
-			$this->entityRelationMapper,
 			$this->settingsService,
 			$this->riskLevelService,
 			$this->emlParser,
-			new \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor($this->logger),
-			new \OCA\OpenRegister\Service\TextExtraction\PdfExtractor($this->logger),
-			new \OCA\OpenRegister\Service\TextExtraction\WordExtractor($this->logger)
+			new \OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor($this->logger),
+			new \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor($this->logger),
+			new \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor($this->logger)
 		);
 	}
 
@@ -124,8 +131,9 @@ class TextExtractionServiceTest extends TestCase {
 	}
 
 	public function testChunkDocumentReturnsEmptyArrayForEmptyText(): void {
-		$chunks = $this->service->chunkDocument('');
-		$this->assertIsArray($chunks);
+		$this->assertSame([], $this->service->chunkDocument(''));
+		$this->assertSame([], $this->service->chunkDocument(" \n\t "));
+		$this->assertSame([], $this->service->chunkDocument('', ['strategy' => 'FIXED_SIZE']));
 	}
 
 	public function testChunkDocumentRespectsChunkSizeOption(): void {
@@ -198,6 +206,7 @@ class TextExtractionServiceTest extends TestCase {
 		$chunks = $this->service->chunkDocument($text);
 
 		$this->assertIsArray($chunks);
+		$this->assertSame([['text' => 'This is a short text that fits in one chunk easily.', 'start_offset' => 0, 'end_offset' => 51]], $chunks);
 		// Short text should be a single chunk (if it meets MIN_CHUNK_SIZE).
 		// The text is 51 chars, less than MIN_CHUNK_SIZE (100), so it may be empty.
 		// Let's use a longer short text:
@@ -509,31 +518,31 @@ class TextExtractionServiceTest extends TestCase {
 	// ────────────────────────────────────────────────────────
 
 	public function testIsSourceUpToDateReturnsFalseWhenForceReExtract(): void {
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, true]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), true]);
 		$this->assertFalse($result);
 	}
 
 	public function testIsSourceUpToDateReturnsFalseWhenNoChunks(): void {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(null);
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 		$this->assertFalse($result);
 	}
 
 	public function testIsSourceUpToDateReturnsTrueWhenChunksNewer(): void {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(200);
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 		$this->assertTrue($result);
 	}
 
 	public function testIsSourceUpToDateReturnsTrueWhenChunksEqual(): void {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(100);
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 		$this->assertTrue($result);
 	}
 
 	public function testIsSourceUpToDateReturnsFalseWhenChunksOlder(): void {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(50);
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 		$this->assertFalse($result);
 	}
 
@@ -558,7 +567,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			'file', 42, $chunkData, 'admin', 'test-org', 1000000,
+			new ChunkSource('file', 42, new ChunkOwnership('admin', 'test-org'), 1000000), $chunkData,
 		]);
 
 		$this->assertInstanceOf(Chunk::class, $result);
@@ -588,7 +597,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			'object', 1, $chunkData, null, null, time(),
+			new ChunkSource('object', 1, new ChunkOwnership(null, null), time()), $chunkData,
 		]);
 
 		$this->assertInstanceOf(Chunk::class, $result);
@@ -733,7 +742,7 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testChunkFixedSizeReturnsOneChunkForShortText(): void {
 		$text = str_repeat('A', 100);
-		$result = $this->invokePrivate('chunkFixedSize', [$text, 200, 0]);
+		$result = $this->invokePrivate('chunkFixedSize', [$text, new ChunkSizing(200, 0)]);
 
 		$this->assertCount(1, $result);
 		$this->assertSame($text, $result[0]['text']);
@@ -744,7 +753,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testChunkFixedSizeMultipleChunksWithNoOverlap(): void {
 		// Create text > 200 chars so multiple chunks are generated.
 		$text = str_repeat('Word ', 100); // 500 chars
-		$result = $this->invokePrivate('chunkFixedSize', [$text, 200, 0]);
+		$result = $this->invokePrivate('chunkFixedSize', [$text, new ChunkSizing(200, 0)]);
 
 		$this->assertGreaterThan(1, count($result));
 		foreach ($result as $chunk) {
@@ -759,7 +768,7 @@ class TextExtractionServiceTest extends TestCase {
 	 */
 	public function testChunkFixedSizeWithLargeText(): void {
 		$text = str_repeat('This is a longer sentence for testing purposes. ', 30); // ~1470 chars
-		$result = $this->invokePrivate('chunkFixedSize', [$text, 500, 0]);
+		$result = $this->invokePrivate('chunkFixedSize', [$text, new ChunkSizing(500, 0)]);
 
 		$this->assertGreaterThan(1, count($result));
 		foreach ($result as $chunk) {
@@ -775,7 +784,7 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testChunkRecursiveReturnsOneChunkForShortText(): void {
 		$text = str_repeat('A', 50);
-		$result = $this->invokePrivate('chunkRecursive', [$text, 200, 0]);
+		$result = $this->invokePrivate('chunkRecursive', [$text, new ChunkSizing(200, 0)]);
 
 		$this->assertCount(1, $result);
 		$this->assertSame($text, $result[0]['text']);
@@ -787,7 +796,7 @@ class TextExtractionServiceTest extends TestCase {
 		$para2 = str_repeat('Second paragraph sentence. ', 10); // ~270 chars
 		$text = $para1 . "\n\n" . $para2;
 
-		$result = $this->invokePrivate('chunkRecursive', [$text, 300, 0]);
+		$result = $this->invokePrivate('chunkRecursive', [$text, new ChunkSizing(300, 0)]);
 
 		$this->assertGreaterThanOrEqual(2, count($result));
 	}
@@ -795,7 +804,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testChunkRecursiveSplitsBySentences(): void {
 		// Text without paragraphs, only sentence boundaries.
 		$text = str_repeat('This is a sentence. ', 30); // ~600 chars
-		$result = $this->invokePrivate('chunkRecursive', [$text, 200, 0]);
+		$result = $this->invokePrivate('chunkRecursive', [$text, new ChunkSizing(200, 0)]);
 
 		$this->assertGreaterThan(1, count($result));
 	}
@@ -806,14 +815,14 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testRecursiveSplitWithEmptySeparatorsFallsToFixedSize(): void {
 		$text = str_repeat('X', 500);
-		$result = $this->invokePrivate('recursiveSplit', [$text, [], 200, 0]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: [], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertGreaterThan(1, count($result));
 	}
 
 	public function testRecursiveSplitShortTextReturnsSingleChunk(): void {
 		$text = 'Short text';
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n", ' '], 200, 0]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertCount(1, $result);
 		$this->assertSame('Short text', $result[0]['text']);
@@ -845,7 +854,7 @@ class TextExtractionServiceTest extends TestCase {
 		// Should NOT call rootFolder (no extraction happens).
 		$this->rootFolder->expects($this->never())->method('getById');
 
-		$this->service->extractFile(1, false);
+		$this->service->extractFile(1, new FileExtractionOptions(forceReExtract: false));
 	}
 
 	public function testExtractFileProcessesTextFile(): void {
@@ -907,7 +916,7 @@ class TextExtractionServiceTest extends TestCase {
 			'entityRecognitionEnabled' => false,
 		]);
 
-		$this->service->extractFile(1, true);
+		$this->service->extractFile(1, new FileExtractionOptions(forceReExtract: true));
 	}
 
 	public function testExtractFileWithEntityRecognitionEnabled(): void {
@@ -1273,6 +1282,8 @@ class TextExtractionServiceTest extends TestCase {
 
 		// After cleanText: "Hello\n\nWorld\n\nFoo" — short text, single chunk.
 		$this->assertIsArray($chunks);
+		$this->assertCount(1, $chunks);
+		$this->assertSame("Hello\n\nWorld\n\nFoo", $chunks[0]['text']);
 	}
 
 	public function testChunkDocumentWithZeroOverlap(): void {
@@ -1310,7 +1321,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Text extraction returned no result for source.');
 		$this->invokePrivate('extractSourceText', [
-			'file', 1, ['mimetype' => 'image/png', 'path' => '/image.png'],
+			new ExtractionSource('file', 1, ['mimetype' => 'image/png', 'path' => '/image.png'], 'llphant'),
 		]);
 	}
 
@@ -1323,7 +1334,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Text extraction resulted in an empty payload.');
 		$this->invokePrivate('extractSourceText', [
-			'file', 1, ['mimetype' => 'text/plain', 'path' => '/test.txt'],
+			new ExtractionSource('file', 1, ['mimetype' => 'text/plain', 'path' => '/test.txt'], 'llphant'),
 		]);
 	}
 
@@ -1333,14 +1344,14 @@ class TextExtractionServiceTest extends TestCase {
 		$this->rootFolder->method('getById')->willReturn([$file]);
 
 		$result = $this->invokePrivate('extractSourceText', [
-			'file', 42, [
+			new ExtractionSource('file', 42, [
 				'mimetype' => 'text/plain',
 				'path' => '/files/test.txt',
 				'name' => 'test.txt',
 				'size' => 44,
 				'owner' => 'admin',
 				'organisation' => 'org1',
-			],
+			], 'llphant'),
 		]);
 
 		$this->assertSame('file', $result['source_type']);
@@ -1586,7 +1597,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->rootFolder->method('getById')->willReturn([$file]);
 
 		$result = $this->invokePrivate('extractSourceText', [
-			'file', 1, ['mimetype' => 'text/plain', 'path' => '/test.txt'],
+			new ExtractionSource('file', 1, ['mimetype' => 'text/plain', 'path' => '/test.txt'], 'llphant'),
 		]);
 
 		$this->assertNull($result['owner']);
@@ -1599,7 +1610,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->rootFolder->method('getById')->willReturn([$file]);
 
 		$result = $this->invokePrivate('extractSourceText', [
-			'file', 1, ['mimetype' => 'text/plain'],
+			new ExtractionSource('file', 1, ['mimetype' => 'text/plain'], 'llphant'),
 		]);
 
 		$this->assertNull($result['metadata']['file_path']);
@@ -1613,7 +1624,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->rootFolder->method('getById')->willReturn([$file]);
 
 		$result = $this->invokePrivate('extractSourceText', [
-			'file', 1, ['mimetype' => 'text/plain', 'path' => '/dutch.txt'],
+			new ExtractionSource('file', 1, ['mimetype' => 'text/plain', 'path' => '/dutch.txt'], 'llphant'),
 		]);
 
 		$this->assertSame('nl', $result['language']);
@@ -1692,7 +1703,7 @@ class TextExtractionServiceTest extends TestCase {
 		// Create text where chunks will need word boundary breaking.
 		// Word boundary break happens when lastSpace > chunkSize * 0.8.
 		$text = str_repeat('word ', 100); // 500 chars, spaces every 5 chars
-		$result = $this->invokePrivate('chunkFixedSize', [$text, 200, 0]);
+		$result = $this->invokePrivate('chunkFixedSize', [$text, new ChunkSizing(200, 0)]);
 
 		$this->assertGreaterThan(1, count($result));
 		foreach ($result as $chunk) {
@@ -1704,7 +1715,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testChunkFixedSizeFiltersTinyChunks(): void {
 		// Create text that would produce chunks smaller than MIN_CHUNK_SIZE (100).
 		$text = str_repeat('A', 250);
-		$result = $this->invokePrivate('chunkFixedSize', [$text, 200, 0]);
+		$result = $this->invokePrivate('chunkFixedSize', [$text, new ChunkSizing(200, 0)]);
 
 		// First chunk is 200 chars (>= 100), last is 50 chars (< 100) — filtered out.
 		foreach ($result as $chunk) {
@@ -1719,7 +1730,7 @@ class TextExtractionServiceTest extends TestCase {
 	 */
 	public function testChunkFixedSizeGuardPreventsNegativeOffset(): void {
 		$text = str_repeat('word ', 200); // 1000 chars
-		$result = $this->invokePrivate('chunkFixedSize', [$text, 200, 0]);
+		$result = $this->invokePrivate('chunkFixedSize', [$text, new ChunkSizing(200, 0)]);
 
 		$this->assertIsArray($result);
 		$this->assertGreaterThan(1, count($result));
@@ -1728,7 +1739,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testChunkFixedSizeExactChunkSizeText(): void {
 		// Text exactly equal to chunk size.
 		$text = str_repeat('A', 200);
-		$result = $this->invokePrivate('chunkFixedSize', [$text, 200, 0]);
+		$result = $this->invokePrivate('chunkFixedSize', [$text, new ChunkSizing(200, 0)]);
 
 		$this->assertCount(1, $result);
 		$this->assertSame($text, $result[0]['text']);
@@ -1741,7 +1752,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testChunkRecursiveWithSentenceBoundaries(): void {
 		// Text with only sentence boundaries (no paragraphs or lines).
 		$text = str_repeat('This is a sentence! Another question? Yes indeed. ', 20);
-		$result = $this->invokePrivate('chunkRecursive', [$text, 300, 0]);
+		$result = $this->invokePrivate('chunkRecursive', [$text, new ChunkSizing(300, 0)]);
 
 		$this->assertGreaterThan(1, count($result));
 	}
@@ -1749,7 +1760,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testChunkRecursiveWithClauseBoundaries(): void {
 		// Text with semicolons and commas as main separators.
 		$text = str_repeat('first clause; second clause, third clause; fourth clause, fifth clause ', 15);
-		$result = $this->invokePrivate('chunkRecursive', [$text, 300, 0]);
+		$result = $this->invokePrivate('chunkRecursive', [$text, new ChunkSizing(300, 0)]);
 
 		$this->assertGreaterThan(1, count($result));
 	}
@@ -1757,14 +1768,14 @@ class TextExtractionServiceTest extends TestCase {
 	public function testChunkRecursiveWithWordBoundariesOnly(): void {
 		// Text with only word boundaries (spaces), no other punctuation.
 		$text = str_repeat('word ', 200); // 1000 chars
-		$result = $this->invokePrivate('chunkRecursive', [$text, 300, 0]);
+		$result = $this->invokePrivate('chunkRecursive', [$text, new ChunkSizing(300, 0)]);
 
 		$this->assertGreaterThan(1, count($result));
 	}
 
 	public function testChunkRecursiveExactChunkSizeText(): void {
 		$text = str_repeat('A', 300);
-		$result = $this->invokePrivate('chunkRecursive', [$text, 300, 0]);
+		$result = $this->invokePrivate('chunkRecursive', [$text, new ChunkSizing(300, 0)]);
 
 		$this->assertCount(1, $result);
 	}
@@ -1779,7 +1790,7 @@ class TextExtractionServiceTest extends TestCase {
 		$para2 = str_repeat('Second paragraph content. ', 6); // ~156 chars
 		$text = $para1 . "\n\n" . $para2;
 		// Total ~310 chars, chunkSize=200 triggers splitting at \n\n.
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", ' '], 200, 20]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 20))]);
 
 		$this->assertGreaterThan(1, count($result));
 	}
@@ -1789,7 +1800,7 @@ class TextExtractionServiceTest extends TestCase {
 		$largePart = str_repeat('word ', 100); // 500 chars
 		$text = $largePart . "\n\n" . 'Short part here for testing.';
 
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", ' '], 200, 0]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertGreaterThan(1, count($result));
 	}
@@ -1797,7 +1808,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testRecursiveSplitLastChunkPreserved(): void {
 		// Ensure the last chunk is not lost.
 		$text = str_repeat('Sentence one. ', 10) . "\n\n" . str_repeat('Sentence two. ', 10);
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n"], 200, 0]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n"], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertNotEmpty($result);
 		// Last chunk should contain "Sentence two".
@@ -1808,7 +1819,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testRecursiveSplitLastChunkTooSmallIsFiltered(): void {
 		// Last remaining text below MIN_CHUNK_SIZE (100) should be filtered.
 		$text = str_repeat('A long sentence that exceeds the chunk size limit. ', 8) . "\n\nTiny.";
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", ' '], 200, 0]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		foreach ($result as $chunk) {
 			$this->assertGreaterThanOrEqual(100, strlen(trim($chunk['text'])));
@@ -1817,7 +1828,7 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testRecursiveSplitWithZeroOverlap(): void {
 		$text = str_repeat('Part one. ', 15) . "\n\n" . str_repeat('Part two. ', 15);
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", '. ', ' '], 200, 0]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", '. ', ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertGreaterThan(1, count($result));
 		foreach ($result as $chunk) {
@@ -1833,7 +1844,7 @@ class TextExtractionServiceTest extends TestCase {
 		$para3 = str_repeat('CC ', 40); // ~120 chars
 		$text = $para1 . "\n\n" . $para2 . "\n\n" . $para3;
 
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", ' '], 150, 200]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(150, 200))]);
 
 		$this->assertIsArray($result);
 		$this->assertNotEmpty($result);
@@ -2128,9 +2139,7 @@ class TextExtractionServiceTest extends TestCase {
 		// 1 text chunk + 1 metadata chunk = 2 inserts.
 		$this->chunkMapper->expects($this->exactly(2))->method('insert');
 
-		$this->invokePrivate('persistChunksForSource', [
-			'file', 1, $chunks, 'admin', 'org1', 1000000, $payload,
-		]);
+		$this->invokePrivate('persistChunksForSource', [new SourceText($payload, 1000000), $chunks]);
 	}
 
 	public function testPersistChunksForSourceMultipleChunks(): void {
@@ -2158,9 +2167,7 @@ class TextExtractionServiceTest extends TestCase {
 		// 5 text chunks + 1 metadata chunk = 6 inserts.
 		$this->chunkMapper->expects($this->exactly(6))->method('insert');
 
-		$this->invokePrivate('persistChunksForSource', [
-			'file', 1, $chunks, null, null, time(), $payload,
-		]);
+		$this->invokePrivate('persistChunksForSource', [new SourceText($payload, time()), $chunks]);
 	}
 
 	public function testPersistChunksForSourceWithNullOwnerAndOrg(): void {
@@ -2189,9 +2196,7 @@ class TextExtractionServiceTest extends TestCase {
 			}
 		);
 
-		$this->invokePrivate('persistChunksForSource', [
-			'file', 1, $chunks, null, null, 1000000, $payload,
-		]);
+		$this->invokePrivate('persistChunksForSource', [new SourceText($payload, 1000000), $chunks]);
 
 		foreach ($insertedChunks as $chunk) {
 			$this->assertNull($chunk->getOwner());
@@ -2224,7 +2229,7 @@ class TextExtractionServiceTest extends TestCase {
 			}
 		);
 
-		$this->invokePrivate('persistMetadataChunk', ['file', 42, $payload, 1000000]);
+		$this->invokePrivate('persistMetadataChunk', [new ChunkSource('file', 42, new ChunkOwnership($payload['owner'] ?? null, $payload['organisation'] ?? null), 1000000), $payload]);
 
 		$this->assertNotNull($insertedChunk);
 		$this->assertSame(-1, $insertedChunk->getChunkIndex());
@@ -2250,7 +2255,7 @@ class TextExtractionServiceTest extends TestCase {
 			}
 		);
 
-		$this->invokePrivate('persistMetadataChunk', ['object', 1, [], time()]);
+		$this->invokePrivate('persistMetadataChunk', [new ChunkSource('object', 1, new ChunkOwnership(([])['owner'] ?? null, ([])['organisation'] ?? null), time()), []]);
 
 		$this->assertNotNull($insertedChunk);
 		$this->assertSame(-1, $insertedChunk->getChunkIndex());
@@ -2269,7 +2274,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			'file', 1, $chunkData, null, null, time(),
+			new ChunkSource('file', 1, new ChunkOwnership(null, null), time()), $chunkData,
 		]);
 
 		$this->assertSame(strlen('Hello World Chunk'), $result->getEndOffset());
@@ -2281,7 +2286,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			'file', 1, $chunkData, null, null, time(),
+			new ChunkSource('file', 1, new ChunkOwnership(null, null), time()), $chunkData,
 		]);
 
 		$this->assertNull($result->getLanguage());
@@ -2301,7 +2306,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			'file', 1, $chunkData, null, null, $timestamp,
+			new ChunkSource('file', 1, new ChunkOwnership(null, null), $timestamp), $chunkData,
 		]);
 
 		$this->assertSame($timestamp, $result->getCreatedAt()->getTimestamp());
@@ -2940,9 +2945,7 @@ class TextExtractionServiceTest extends TestCase {
 			1, ['mimetype' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'path' => '/empty.xlsx'],
 		]);
 
-		// "Sheet: Empty\n\n" — after trim this is "Sheet: Empty" which is not empty,
-		// so it returns the text. Let's just verify it's a string.
-		$this->assertIsString($result);
+		$this->assertNull($result);
 	}
 
 	// ────────────────────────────────────────────────────────
@@ -2986,7 +2989,7 @@ class TextExtractionServiceTest extends TestCase {
 			}
 		);
 
-		$this->invokePrivate('persistMetadataChunk', ['file', 1, $payload, time()]);
+		$this->invokePrivate('persistMetadataChunk', [new ChunkSource('file', 1, new ChunkOwnership($payload['owner'] ?? null, $payload['organisation'] ?? null), time()), $payload]);
 
 		$this->assertNotNull($insertedChunk);
 		// When JSON encoding fails, text_content should be 'metadata_encoding_failed'.
@@ -3090,7 +3093,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->rootFolder->method('getById')->willReturn([$file]);
 
 		$result = $this->invokePrivate('extractSourceText', [
-			'file', 1, ['mimetype' => 'text/plain', 'path' => '/test.txt'],
+			new ExtractionSource('file', 1, ['mimetype' => 'text/plain', 'path' => '/test.txt'], 'llphant'),
 		]);
 
 		// Sanitize then hash.
@@ -3106,7 +3109,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testRecursiveSplitSingleLargeSegmentUsesSubChunks(): void {
 		// A single large block (no separators present) — forces recursion on sub-separators.
 		$largePart = str_repeat('X', 600);
-		$result = $this->invokePrivate('recursiveSplit', [$largePart, ["\n\n", ' '], 200, 0]);
+		$result = $this->invokePrivate('recursiveSplit', [$largePart, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertGreaterThan(1, count($result));
 		foreach ($result as $chunk) {
@@ -3118,9 +3121,11 @@ class TextExtractionServiceTest extends TestCase {
 		// Single split element that is <= chunkSize goes into the currentChunk = $split branch.
 		$text = "\n\nsmall part that is exactly small";
 		// text after splitting on \n\n: ['', 'small part that is exactly small']
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", ' '], 200, 0]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertIsArray($result);
+		$this->assertCount(1, $result);
+		$this->assertStringEndsWith('small part that is exactly small', $result[0]['text']);
 	}
 
 	// ────────────────────────────────────────────────────────
@@ -3129,11 +3134,8 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testChunkDocumentWithOnlyNullBytes(): void {
 		$text = "\0\0\0\0\0";
-		$chunks = $this->service->chunkDocument($text);
-		// After cleanText strips null bytes, text = '' — chunkRecursive returns one empty chunk.
-		$this->assertIsArray($chunks);
-		$this->assertCount(1, $chunks);
-		$this->assertSame('', $chunks[0]['text']);
+		// After cleanText strips null bytes nothing is left to chunk.
+		$this->assertSame([], $this->service->chunkDocument($text));
 	}
 
 	// ────────────────────────────────────────────────────────
@@ -3158,15 +3160,23 @@ class TextExtractionServiceTest extends TestCase {
 		$this->db->method('beginTransaction');
 		$this->db->method('commit');
 		$this->chunkMapper->method('deleteBySource');
-		$this->chunkMapper->method('insert');
+		$inserted = [];
+		$this->chunkMapper->expects($this->atLeastOnce())
+			->method('insert')
+			->willReturnCallback(
+				function ($chunk) use (&$inserted) {
+					$inserted[] = $chunk->getTextContent();
+					return $chunk;
+				}
+			);
 
 		$this->settingsService->method('getFileSettingsOnly')->willReturn([
 			'entityRecognitionEnabled' => false,
 		]);
 
 		$this->service->extractFile(1);
-		// Test passes if no exception thrown and extraction succeeds for HTML.
-		$this->assertTrue(true);
+
+		$this->assertStringContainsString('Content.', implode(' ', $inserted));
 	}
 
 	public function testExtractFileWithApplicationJsonMimeType(): void {
@@ -3187,14 +3197,23 @@ class TextExtractionServiceTest extends TestCase {
 		$this->db->method('beginTransaction');
 		$this->db->method('commit');
 		$this->chunkMapper->method('deleteBySource');
-		$this->chunkMapper->method('insert');
+		$inserted = [];
+		$this->chunkMapper->expects($this->atLeastOnce())
+			->method('insert')
+			->willReturnCallback(
+				function ($chunk) use (&$inserted) {
+					$inserted[] = $chunk->getTextContent();
+					return $chunk;
+				}
+			);
 
 		$this->settingsService->method('getFileSettingsOnly')->willReturn([
 			'entityRecognitionEnabled' => false,
 		]);
 
 		$this->service->extractFile(1);
-		$this->assertTrue(true);
+
+		$this->assertStringContainsString('value', implode(' ', $inserted));
 	}
 
 	// ────────────────────────────────────────────────────────
@@ -3265,7 +3284,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			'file', 1, $chunkData, null, null, time(),
+			new ChunkSource('file', 1, new ChunkOwnership(null, null), time()), $chunkData,
 		]);
 
 		$this->assertSame($posRef, $result->getPositionReference());
@@ -3384,7 +3403,7 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testIsWordDocumentReturnsTrueForOdt(): void {
 		// OpenDocument Text (.odt) is now handled by the Word extraction
-		// path (PhpWord supports ODText), so isWordDocument() reports true.
+		// path (WordTextReader reads ODT), so isWordDocument() reports true.
 		// See commit 51a289ec1 (.doc/.odt support).
 		$result = $this->invokePrivate('isWordDocument', [
 			'application/vnd.oasis.opendocument.text',
@@ -3649,13 +3668,9 @@ class TextExtractionServiceTest extends TestCase {
 		$this->expectExceptionMessage('Insert failed');
 
 		$this->invokePrivate('persistChunksForSource', [
-			'object',                    // sourceType
-			1,                           // sourceId
+			// The source (object 1, owner1/org1) and its payload.
+			new SourceText(['source_type' => 'object', 'source_id' => 1, 'owner' => 'owner1', 'organisation' => 'org1'], time()),
 			[['text_content' => 'test', 'chunk_index' => 0, 'start_offset' => 0, 'end_offset' => 4]], // chunks
-			'owner1',                    // owner
-			'org1',                      // organisation
-			time(),                      // sourceTimestamp
-			['source_type' => 'object'], // payload
 		]);
 	}
 
@@ -3672,13 +3687,11 @@ class TextExtractionServiceTest extends TestCase {
 		$this->chunkMapper->method('insert')->willReturnArgument(0);
 
 		$this->invokePrivate('persistChunksForSource', [
-			'file',
-			42,
+			new SourceText(
+				['source_type' => 'file', 'source_id' => 42, 'owner' => 'owner1', 'organisation' => 'org1', 'text' => 'hello world', 'checksum' => 'abc123'],
+				time()
+			),
 			[['text_content' => 'hello world', 'chunk_index' => 0, 'start_offset' => 0, 'end_offset' => 11]],
-			'owner1',
-			'org1',
-			time(),
-			['source_type' => 'file', 'text' => 'hello world', 'checksum' => 'abc123'],
 		]);
 
 		$this->assertTrue(true); // no exception
@@ -3690,9 +3703,9 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testParseEmlStructuredDelegatesToEmlParser(): void {
 		$file = $this->createMock(File::class);
-		$structure = new \OCA\OpenRegister\Service\TextExtraction\EmlStructure(
+		$structure = new \OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure(
 			headers: ['Subject' => 'hello'],
-			body: new \OCA\OpenRegister\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
+			body: new \OCA\OpenRegister\Files\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
 			attachments: []
 		);
 
@@ -3716,9 +3729,9 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testExtractEmlReturnsFlattenedStringOnSuccess(): void {
 		$file = $this->createMock(File::class);
-		$structure = new \OCA\OpenRegister\Service\TextExtraction\EmlStructure(
+		$structure = new \OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure(
 			headers: ['Subject' => 'hello'],
-			body: new \OCA\OpenRegister\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
+			body: new \OCA\OpenRegister\Files\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
 			attachments: []
 		);
 

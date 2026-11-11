@@ -61,6 +61,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class DeckLink extends Entity implements JsonSerializable {
+	use ObjectLinkTypesTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The object uuid.
@@ -153,9 +155,7 @@ class DeckLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addObjectLinkTypes();
 		$this->addType(fieldName: 'boardId', type: 'integer');
 		$this->addType(fieldName: 'stackId', type: 'integer');
 		$this->addType(fieldName: 'cardId', type: 'integer');
@@ -168,46 +168,34 @@ class DeckLink extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * JSON serialization.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * Decodes the JSON `labels` / `assignees` columns into arrays so the
-	 * leaf row is directly consumable by the sidebar tab and picker UX.
-	 * Always returns arrays for those keys even on malformed JSON.
-	 *
-	 * @return array<string,mixed>
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
-		$labels = [];
-		$assignees = [];
-
-		if ($this->labels !== null && $this->labels !== '') {
-			$decoded = json_decode($this->labels, true);
-			if (is_array($decoded) === true) {
-				$labels = $decoded;
-			}
-		}
-
-		if ($this->assignees !== null && $this->assignees !== '') {
-			$decoded = json_decode($this->assignees, true);
-			if (is_array($decoded) === true) {
-				$assignees = $decoded;
-			}
-		}
-
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'boardId' => $this->boardId,
-			'stackId' => $this->stackId,
-			'cardId' => $this->cardId,
-			'cardTitle' => $this->cardTitle,
-			'dueDate' => $this->dueDate?->format(DateTime::ATOM),
-			'labels' => $labels,
-			'assignees' => $assignees,
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+			'labels' => $this->decodeList(json: $this->labels),
+			'assignees' => $this->decodeList(json: $this->assignees),
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
+
+	/**
+	 * Decode a JSON column into an array, or an empty array when it is empty or not a JSON array/object.
+	 *
+	 * @param string|null $json The stored JSON.
+	 *
+	 * @return array<mixed> The decoded value.
+	 */
+	private function decodeList(?string $json): array {
+		if (in_array($json, [null, ''], true) === true) {
+			return [];
+		}
+
+		$decoded = json_decode($json, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return [];
+	}//end decodeList()
 }//end class

@@ -103,46 +103,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			</template>
 
 			<template #row-actions="{ row }">
-				<NcActions>
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton closeAfterClick @click="viewDetails(row)">
-						<template #icon>
-							<Eye :size="20" />
-						</template>
-						{{ t('openregister', 'View Details') }}
-					</NcActionButton>
-					<NcActionButton
-						v-if="hasChanges(row)"
-						closeAfterClick
-						@click="viewChanges(row)">
-						<template #icon>
-							<CompareHorizontal :size="20" />
-						</template>
-						{{ t('openregister', 'View Changes') }}
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="copyData(row)">
-						<template #icon>
-							<Check
-								v-if="copyStates[row.id]"
-								:size="20"
-								class="copySuccessIcon" />
-							<ContentCopy v-else :size="20" />
-						</template>
-						{{
-							copyStates[row.id]
-								? t('openregister', 'Copied!')
-								: t('openregister', 'Copy Data')
-						}}
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="deleteAuditTrail(row)">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="auditTrailActions(row)" />
 			</template>
 
 			<template #empty>
@@ -171,7 +132,6 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
  */
 import {
 	NcActionButton,
-	NcActions,
 	NcAppContent,
 	NcDateTime,
 	NcEmptyContent,
@@ -180,21 +140,145 @@ import Check from 'vue-material-design-icons/Check.vue'
 import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
 import eventBus from '../../eventBus.js'
 import { AUDIT_SORT_FIELDS, headerSortOf } from '../../services/listSort.js'
+import { storePaging } from '../storePaging.js'
+import { recountOnChange } from './recountOnChange.js'
+
+/**
+ * The action column, sortable at a fixed width.
+ *
+ * @return {object} The column
+ */
+function actionColumn() {
+	return {
+		key: 'action',
+		label: t('openregister', 'Action'),
+		width: '100px',
+		sortable: true,
+	}
+}
+
+/**
+ * The timestamp column, sortable at a fixed width.
+ *
+ * @return {object} The column
+ */
+function timestampColumn() {
+	return {
+		key: 'created',
+		label: t('openregister', 'Timestamp'),
+		width: '180px',
+		sortable: true,
+	}
+}
+
+/**
+ * A sortable column whose cells are cut to the column width.
+ *
+ * @param {string} key The row field
+ * @param {string} label The header
+ * @return {object} The column
+ */
+function constrainedColumn(key, label) {
+	return {
+		key,
+		label,
+		class: 'cn-table-col--constrained',
+		sortable: true,
+	}
+}
+
+/**
+ * The export query: the requested format and inclusions, then every
+ * active audit trail filter.
+ *
+ * @param {object} options The export options
+ * @return {URLSearchParams} The query
+ */
+function exportParamsOf(options) {
+	const params = new URLSearchParams()
+	params.append('format', options.format || 'csv')
+	params.append('includeChanges', options.includeChanges || false)
+	params.append('includeMetadata', options.includeMetadata || false)
+
+	// Add current filters. The state field is auditTrailFilters — reading
+	// `filters` silently dropped every active filter, including the
+	// dateFrom/dateTo range the compliance export requires.
+	if (auditTrailStore.auditTrailFilters) {
+		appendSetFilters(params, auditTrailStore.auditTrailFilters)
+	}
+	return params
+}
+
+/**
+ * Add every filter that holds a value to a query.
+ *
+ * @param {URLSearchParams} params The query
+ * @param {object} filters The filters
+ * @return {void}
+ */
+function appendSetFilters(params, filters) {
+	Object.entries(filters).forEach(([key, value]) => {
+		if (value !== null && value !== undefined && value !== '') {
+			params.append(key, value)
+		}
+	})
+}
+
+/**
+ * Ask the server for an export of the filtered audit trails.
+ *
+ * @param {object} options The export options
+ * @return {Promise<object>} The exported file: content, contentType and filename
+ * @throws {Error} The server's reason, or 'Export failed', when it exports nothing
+ */
+async function fetchExport(options) {
+	// Make the API request
+	const response = await fetch(
+		`/index.php/apps/openregister/api/audit-trails/export?${exportParamsOf(options).toString()}`,
+	)
+	const result = await response.json()
+
+	if (!(result.success && result.data)) {
+		throw new Error(result.error || 'Export failed')
+	}
+	return result.data
+}
+
+/**
+ * Let the browser save an exported file.
+ *
+ * @param {object} data The export: content, contentType and filename
+ * @return {void}
+ */
+function downloadExport(data) {
+	// Create and trigger download
+	const blob = new Blob([data.content], {
+		type: data.contentType,
+	})
+	const url = window.URL.createObjectURL(blob)
+	const a = document.createElement('a')
+	a.href = url
+	a.download = data.filename
+	document.body.appendChild(a)
+	a.click()
+	window.URL.revokeObjectURL(url)
+	document.body.removeChild(a)
+}
 
 export default {
 	name: 'AuditTrailIndex',
 	components: {
+		ActionMenu,
 		NcAppContent,
 		NcEmptyContent,
-		NcActions,
 		NcActionButton,
 		NcDateTime,
 		CnIndexPage,
@@ -205,11 +289,15 @@ export default {
 		Eye,
 		Plus,
 		Pencil,
-		CompareHorizontal,
-		ContentCopy,
-		Check,
-		DotsHorizontal,
 	},
+
+	mixins: [
+		storePaging({
+			fetch: (options) => auditTrailStore.fetchAuditTrails(options),
+			limit: () => auditTrailStore.auditTrailPagination.limit,
+			selection: 'selectedAuditTrails',
+		}),
+	],
 
 	data() {
 		return {
@@ -238,42 +326,12 @@ export default {
 		 */
 		tableColumns() {
 			return [
-				{
-					key: 'action',
-					label: t('openregister', 'Action'),
-					width: '100px',
-					sortable: true,
-				},
-				{
-					key: 'created',
-					label: t('openregister', 'Timestamp'),
-					width: '180px',
-					sortable: true,
-				},
-				{
-					key: 'object',
-					label: t('openregister', 'Object ID'),
-					class: 'cn-table-col--constrained',
-					sortable: true,
-				},
-				{
-					key: 'register',
-					label: t('openregister', 'Register ID'),
-					class: 'cn-table-col--constrained',
-					sortable: true,
-				},
-				{
-					key: 'userName',
-					label: t('openregister', 'User'),
-					class: 'cn-table-col--constrained',
-					sortable: true,
-				},
-				{
-					key: 'schema',
-					label: t('openregister', 'Schema ID'),
-					class: 'cn-table-col--constrained',
-					sortable: true,
-				},
+				actionColumn(),
+				timestampColumn(),
+				constrainedColumn('object', t('openregister', 'Object ID')),
+				constrainedColumn('register', t('openregister', 'Register ID')),
+				constrainedColumn('userName', t('openregister', 'User')),
+				constrainedColumn('schema', t('openregister', 'Schema ID')),
 				{ key: 'size', label: t('openregister', 'Size'), width: '100px' },
 			]
 		},
@@ -312,18 +370,10 @@ export default {
 	},
 
 	watch: {
-		paginatedAuditTrails: {
-			/**
-			 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-			 */
-			handler() {
-				this.$nextTick(() => {
-					this.updateCounts()
-				})
-			},
-
-			deep: false,
-		},
+		/**
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		paginatedAuditTrails: recountOnChange,
 	},
 
 	/**
@@ -364,6 +414,44 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The row menu of an audit trail.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The audit trail
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		auditTrailActions(row) {
+			const copied = this.copyStates[row.id]
+			return [
+				{
+					label: t('openregister', 'View Details'),
+					icon: Eye,
+					run: () => this.viewDetails(row),
+				},
+				{
+					label: t('openregister', 'View Changes'),
+					icon: CompareHorizontal,
+					run: () => this.viewChanges(row),
+					hidden: !this.hasChanges(row),
+				},
+				{
+					label: copied
+						? t('openregister', 'Copied!')
+						: t('openregister', 'Copy Data'),
+
+					icon: copied ? Check : ContentCopy,
+					iconClass: copied ? 'copySuccessIcon' : undefined,
+					run: () => this.copyData(row),
+				},
+				{
+					label: t('openregister', 'Delete'),
+					icon: Delete,
+					run: () => this.deleteAuditTrail(row),
+				},
+			]
+		},
+
 		/**
 		 * Load audit trails from API
 		 *
@@ -502,18 +590,7 @@ export default {
 				const data = JSON.stringify(auditTrail, null, 2)
 				await navigator.clipboard.writeText(data)
 
-				// Set successful copy state
-				this.copyStates[auditTrail.id] = true
-
-				// Show success notification with enhanced styling
-				showSuccess(
-					t('openregister', 'Audit trail data copied to clipboard'),
-				)
-
-				// Reset copy state after 2 seconds
-				setTimeout(() => {
-					this.copyStates[auditTrail.id] = false
-				}, 2000)
+				this.markCopied(auditTrail)
 			} catch (error) {
 				console.error('Error copying to clipboard:', error)
 				// Fallback for older browsers or when clipboard API is not available
@@ -525,22 +602,32 @@ export default {
 					document.execCommand('copy')
 					document.body.removeChild(textArea)
 
-					// Set successful copy state for fallback method too
-					this.copyStates[auditTrail.id] = true
-
-					showSuccess(
-						t('openregister', 'Audit trail data copied to clipboard'),
-					)
-
-					// Reset copy state after 2 seconds
-					setTimeout(() => {
-						this.copyStates[auditTrail.id] = false
-					}, 2000)
+					// Same success state for the fallback method
+					this.markCopied(auditTrail)
 				} catch (fallbackError) {
 					console.error('Fallback copy failed:', fallbackError)
 					showError(t('openregister', 'Failed to copy data to clipboard'))
 				}
 			}
+		},
+
+		/**
+		 * Show a successful copy: flag the row's copy icon, tell the user, and
+		 * clear the flag again after 2 seconds.
+		 *
+		 * @param {object} auditTrail The audit trail that was copied
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		markCopied(auditTrail) {
+			this.copyStates[auditTrail.id] = true
+
+			showSuccess(t('openregister', 'Audit trail data copied to clipboard'))
+
+			setTimeout(() => {
+				this.copyStates[auditTrail.id] = false
+			}, 2000)
 		},
 
 		/**
@@ -564,53 +651,8 @@ export default {
 		 */
 		async exportFilteredAuditTrails(options) {
 			try {
-				// Build query parameters
-				const params = new URLSearchParams()
-				params.append('format', options.format || 'csv')
-				params.append('includeChanges', options.includeChanges || false)
-				params.append('includeMetadata', options.includeMetadata || false)
-
-				// Add current filters. The state field is auditTrailFilters — reading
-				// `filters` silently dropped every active filter, including the
-				// dateFrom/dateTo range the compliance export requires.
-				if (auditTrailStore.auditTrailFilters) {
-					Object.entries(auditTrailStore.auditTrailFilters).forEach(
-						([key, value]) => {
-							if (
-								value !== null
-								&& value !== undefined
-								&& value !== ''
-							) {
-								params.append(key, value)
-							}
-						},
-					)
-				}
-
-				// Make the API request
-				const response = await fetch(
-					`/index.php/apps/openregister/api/audit-trails/export?${params.toString()}`,
-				)
-				const result = await response.json()
-
-				if (result.success && result.data) {
-					// Create and trigger download
-					const blob = new Blob([result.data.content], {
-						type: result.data.contentType,
-					})
-					const url = window.URL.createObjectURL(blob)
-					const a = document.createElement('a')
-					a.href = url
-					a.download = result.data.filename
-					document.body.appendChild(a)
-					a.click()
-					window.URL.revokeObjectURL(url)
-					document.body.removeChild(a)
-
-					showSuccess(t('openregister', 'Export completed successfully'))
-				} else {
-					throw new Error(result.error || 'Export failed')
-				}
+				downloadExport(await fetchExport(options))
+				showSuccess(t('openregister', 'Export completed successfully'))
 			} catch (error) {
 				console.error('Error exporting audit trails:', error)
 				showError(
@@ -696,48 +738,6 @@ export default {
 		},
 
 		/**
-		 * Handle page change from pagination component
-		 *
-		 * @param {number} page - The page number to change to
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async onPageChanged(page) {
-			try {
-				await auditTrailStore.fetchAuditTrails({
-					page,
-					limit: auditTrailStore.auditTrailPagination.limit,
-				})
-				// Clear selection when page changes
-				this.selectedAuditTrails = []
-			} catch (error) {
-				console.error('Error loading page:', error)
-			}
-		},
-
-		/**
-		 * Handle page size change from pagination component
-		 *
-		 * @param {number} pageSize - The new page size
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async onPageSizeChanged(pageSize) {
-			try {
-				await auditTrailStore.fetchAuditTrails({
-					page: 1,
-					limit: pageSize,
-				})
-				// Clear selection when page size changes
-				this.selectedAuditTrails = []
-			} catch (error) {
-				console.error('Error changing page size:', error)
-			}
-		},
-
-		/**
 		 * Check if audit trail has changes
 		 *
 		 * @param {object} auditTrail - The audit trail item
@@ -812,7 +812,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 /* Row accent, keyed on the CnStatusBadge variant that getRowClass resolves from
    actionColorMap — so the accent colour is always the Action badge's colour.
 
@@ -847,21 +849,11 @@ export default {
 	animation: copySuccess 0.3s ease-in-out;
 }
 
-@keyframes copySuccess {
-	0% {
-		transform: scale(1);
-	}
-	50% {
-		transform: scale(1.2);
-	}
-	100% {
-		transform: scale(1);
-	}
-}
-
 @media (prefers-reduced-motion: reduce) {
 	:deep(.copySuccessIcon) {
 		animation: none;
 	}
 }
+
+@include keyframes-copy-success-rules;
 </style>

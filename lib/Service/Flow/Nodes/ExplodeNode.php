@@ -39,13 +39,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
+use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
 use UnexpectedValueException;
 
 /**
@@ -53,19 +53,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
  */
-class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-	}//end __construct()
-
+class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * The step type.
 	 *
@@ -111,19 +99,6 @@ class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	}//end getIcon()
 
 	/**
-	 * Available in both scopes.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
 	 * The config vocabulary of an explode step.
 	 *
 	 * @return array<int, string> The accepted config keys.
@@ -166,62 +141,108 @@ class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	 * path holds a SCALAR is a different matter — that is a mis-authored flow,
 	 * and it fails.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array One item per element, across all input items.
 	 *
 	 * @throws UnexpectedValueException When the path holds a scalar.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$context` is part of the
-	 *   IFlowNode contract; this node needs no run metadata to fan out a list.
-	 * @SuppressWarnings(PHPMD.StaticAccess)          `FlowItems::item()` is the item
-	 *   constructor every node uses; injecting a factory for it would add a
-	 *   dependency to describe a shape.
-	 *
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		// `validateConfig()` runs only when a flow is SAVED, and a seeded or
 		// imported flow reaches here unvalidated — at which point returning the
 		// items unchanged would make this a silent pass-through that looks
 		// exactly like a list of one.
 		$this->validateConfig(config: $config);
 
-		$path = trim((string)$config['path']);
-		$under = (string)($config['as'] ?? 'item');
-		$keep = (($config['keepRecord'] ?? true) !== false);
+		return $this->explode(items: $items, config: $config);
+	}//end execute()
 
+	/**
+	 * One item per element of the named list, across all input items.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array The exploded items.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowItems::item()` is the item
+	 *   constructor every node uses; injecting a factory for it would add a
+	 *   dependency to describe a shape.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function explode(array $items, array $config): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$list = $this->valueAt(json: $json, path: $path);
-
-			if ($list === null) {
-				continue;
+			foreach ($this->recordsFrom(json: $json, config: $config) as $record) {
+				$out[] = FlowItems::item(json: $record, options: new FlowItemOptions(fromItemIndex: $index));
 			}
-
-			if (is_array($list) === false) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('The explode path "%s" is not a list.', [$path])
-				);
-			}
-
-			foreach ($list as $entry) {
-				$record = [];
-				if ($keep === true) {
-					$record = $json;
-				}
-
-				$record[$under] = $entry;
-
-				$out[] = FlowItems::item(json: $record, fromItemIndex: $index);
-			}
-		}//end foreach
+		}
 
 		return $out;
-	}//end execute()
+	}//end explode()
+
+	/**
+	 * The records one item explodes into: a copy of it (or nothing) with the element under `as`.
+	 *
+	 * @param array $json   The item's record.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array<int, array> One record per list element, possibly none.
+	 *
+	 * @throws UnexpectedValueException When the path holds a scalar.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function recordsFrom(array $json, array $config): array {
+		$under = (string)($config['as'] ?? 'item');
+		$base = [];
+		if (($config['keepRecord'] ?? true) !== false) {
+			$base = $json;
+		}
+
+		$records = [];
+		foreach ($this->listAt(json: $json, path: trim((string)$config['path'])) as $entry) {
+			$record = $base;
+			$record[$under] = $entry;
+			$records[] = $record;
+		}
+
+		return $records;
+	}//end recordsFrom()
+
+	/**
+	 * The list at the path: empty when the path is absent, refused when it is not a list.
+	 *
+	 * @param array  $json The item's record.
+	 * @param string $path The dotted path.
+	 *
+	 * @return array The entries to explode into, possibly none.
+	 *
+	 * @throws UnexpectedValueException When the path holds something other than a list.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function listAt(array $json, string $path): array {
+		$list = $this->valueAt(json: $json, path: $path);
+
+		if ($list === null) {
+			return [];
+		}
+
+		if (is_array($list) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The explode path "%s" is not a list.', [$path])
+			);
+		}
+
+		return $list;
+	}//end listAt()
 
 	/**
 	 * The value at a dotted path, or null when absent.
@@ -257,16 +278,4 @@ class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

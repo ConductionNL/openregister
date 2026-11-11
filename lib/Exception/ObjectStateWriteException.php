@@ -94,6 +94,13 @@ class ObjectStateWriteException extends Exception {
 	private ?string $occurredAt = null;
 
 	/**
+	 * Why the object was put into that state, as the marker recorded it.
+	 *
+	 * @var string|null
+	 */
+	private ?string $reason = null;
+
+	/**
 	 * Build the refusal for an archived object.
 	 *
 	 * Built here, from the entity's own accessors, so every guard refuses in
@@ -111,21 +118,9 @@ class ObjectStateWriteException extends Exception {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public static function archived(ObjectEntity $object): self {
-		$marker = ($object->getArchived() ?? []);
-		$actor = self::stringOrNull(value: ($marker['by'] ?? null));
-		$occurredAt = self::stringOrNull(value: ($marker['at'] ?? null));
+		$marker = new ObjectStateMarker(marker: ($object->getArchived() ?? []));
 
-		$exception = new self(
-			message: 'Cannot write to this object: it was archived by '
-				. ($actor ?? 'an unknown user') . ' on ' . ($occurredAt ?? 'an unrecorded date')
-				. '. Restore it from the archive before changing it.'
-		);
-
-		$exception->state = 'archived';
-		$exception->actor = $actor;
-		$exception->occurredAt = $occurredAt;
-
-		return $exception;
+		return self::refusal(state: 'archived', marker: $marker);
 	}//end archived()
 
 	/**
@@ -142,27 +137,9 @@ class ObjectStateWriteException extends Exception {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public static function frozen(ObjectEntity $object): self {
-		$marker = ($object->getFrozen() ?? []);
-		$actor = self::stringOrNull(value: ($marker['by'] ?? null));
-		$occurredAt = self::stringOrNull(value: ($marker['at'] ?? null));
-		$state = self::stringOrNull(value: ($marker['state'] ?? null));
+		$marker = new ObjectStateMarker(marker: ($object->getFrozen() ?? []));
 
-		$because = '';
-		if ($state !== null) {
-			$because = ' on entering the state "' . $state . '"';
-		}
-
-		$exception = new self(
-			message: 'Cannot write to this object: it was frozen by '
-				. ($actor ?? 'an unknown user') . ' on ' . ($occurredAt ?? 'an unrecorded date')
-				. $because . '. Unfreeze it before changing it.'
-		);
-
-		$exception->state = 'frozen';
-		$exception->actor = $actor;
-		$exception->occurredAt = $occurredAt;
-
-		return $exception;
+		return self::refusal(state: 'frozen', marker: $marker);
 	}//end frozen()
 
 	/**
@@ -199,23 +176,59 @@ class ObjectStateWriteException extends Exception {
 	}//end getAt()
 
 	/**
-	 * Narrow a marker value to a non-empty string.
+	 * Why the object entered the refusing state.
 	 *
-	 * A marker written by an older version, or by a repair, can hold anything;
-	 * concatenating an array into the message would turn a refusal into a
-	 * PHP notice and lose the sentence the caller needs.
+	 * @return string|null The reason from the marker, or null when it recorded none.
 	 *
-	 * @param mixed $value The raw marker value.
-	 *
-	 * @return string|null The value as a non-empty string, or null.
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
 	 */
-	private static function stringOrNull(mixed $value): ?string {
-		if (is_string($value) === false || $value === '') {
-			return null;
+	public function getReason(): ?string {
+		return $this->reason;
+	}//end getReason()
+
+	/**
+	 * The 409 body a file write answers with: the sentence and the marker.
+	 *
+	 * One shape for every door (the files API, the batch, a consumer that
+	 * relays it), so a client reads `state`, `by`, `at` and `reason` the same
+	 * way wherever the refusal came from.
+	 *
+	 * @return array{error: string, state: string|null, by: string|null, at: string|null, reason: string|null}
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
+	 */
+	public function toResponseBody(): array {
+		return [
+			'error'  => $this->getMessage(),
+			'state'  => $this->state,
+			'by'     => $this->actor,
+			'at'     => $this->occurredAt,
+			'reason' => $this->reason,
+		];
+	}//end toResponseBody()
+
+	/**
+	 * The refusal for one state, carrying the marker's actor, time and reason.
+	 *
+	 * @param string            $state  The state word: `archived` or `frozen`.
+	 * @param ObjectStateMarker $marker The stored marker.
+	 *
+	 * @return self The refusal.
+	 */
+	private static function refusal(string $state, ObjectStateMarker $marker): self {
+		$message = $marker->archivedMessage();
+		if ($state === 'frozen') {
+			$message = $marker->frozenMessage();
 		}
 
-		return $value;
-	}//end stringOrNull()
+		$exception = new self(message: $message);
+		$exception->state = $state;
+		$exception->actor = $marker->field(key: 'by');
+		$exception->occurredAt = $marker->field(key: 'at');
+		$exception->reason = $marker->field(key: 'reason');
+
+		return $exception;
+	}//end refusal()
 
 	/**
 	 * Constructor for ObjectStateWriteException.

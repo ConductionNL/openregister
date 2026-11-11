@@ -1,0 +1,452 @@
+{
+    "refusal ok": "",
+    "refusal unknown fields": "field \"colour\", \"size\" is not a talk conversation field a set may write",
+    "refusal no object": "a talk conversation needs the object it is on (object)",
+    "refusal blank name": "a talk conversation needs a name (name)",
+    "refusal owner not text": "a talk conversation needs an owner (owner)",
+    "refusal stranger owner": "\"zed\" is not an account the set creates or adopts",
+    "refusal stranger participant": "\"yan\" is not an account the set creates or adopts",
+    "refusal participant scalar": "",
+    "refusal call null": "",
+    "refusal call text": "a held call needs a start and an end (call.start, call.end)",
+    "refusal call no end": "a held call needs a start and an end (call.start, call.end)",
+    "refusal call bad date": "call.start or call.end is not a date and time",
+    "refusal call backwards": "a held call ends after it starts",
+    "refusal call same moment": "",
+    "refusal call ok": "",
+    "write no talk": {
+        "answer": {
+            "error": "Talk is not installed",
+            "entry": null
+        },
+        "calls": []
+    },
+    "write no object": {
+        "answer": {
+            "error": "no object \"obj-9\" to put the conversation on",
+            "entry": null
+        },
+        "calls": [
+            [
+                "findUnscoped",
+                "obj-9"
+            ]
+        ]
+    },
+    "write plain": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "token": "tok-Overleg",
+                "room": 41,
+                "createdRoom": true,
+                "object": "obj-1",
+                "link": 12
+            }
+        },
+        "calls": [
+            [
+                "findUnscoped",
+                "obj-1"
+            ],
+            [
+                "room",
+                "anna",
+                "Overleg",
+                [
+                    "anna",
+                    "bob",
+                    "7"
+                ]
+            ],
+            [
+                "findByObjectAndRoom",
+                "obj-1",
+                "tok-Overleg"
+            ],
+            [
+                "insert",
+                {
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 5,
+                    "roomToken": "tok-Overleg",
+                    "roomId": 41,
+                    "roomName": "Overleg",
+                    "roomType": 2,
+                    "participantCount": 3,
+                    "lastActivity": "now",
+                    "linkedBy": "zaak",
+                    "linkedAtIsSet": true
+                }
+            ]
+        ]
+    },
+    "write with call": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "token": "tok-Overleg",
+                "room": 41,
+                "createdRoom": true,
+                "object": "obj-1",
+                "link": 12
+            }
+        },
+        "calls": [
+            [
+                "findUnscoped",
+                "obj-1"
+            ],
+            [
+                "room",
+                "anna",
+                "Overleg",
+                [
+                    "anna",
+                    "bob",
+                    "7"
+                ]
+            ],
+            [
+                "heldCall",
+                "tok-Overleg",
+                "anna",
+                "2026-01-01T10:00:00+01:00",
+                "2026-01-01T11:30:00+01:00",
+                [
+                    "anna",
+                    "bob",
+                    "7"
+                ]
+            ],
+            [
+                "findByObjectAndRoom",
+                "obj-1",
+                "tok-Overleg"
+            ],
+            [
+                "insert",
+                {
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 5,
+                    "roomToken": "tok-Overleg",
+                    "roomId": 41,
+                    "roomName": "Overleg",
+                    "roomType": 2,
+                    "participantCount": 3,
+                    "lastActivity": "2026-01-01T11:30:00+01:00",
+                    "linkedBy": "zaak",
+                    "linkedAtIsSet": true
+                }
+            ]
+        ]
+    },
+    "write call room kept": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "token": "tok-Overleg",
+                "room": 41,
+                "createdRoom": false,
+                "object": "obj-1",
+                "link": 12
+            }
+        },
+        "calls": [
+            [
+                "findUnscoped",
+                "obj-1"
+            ],
+            [
+                "room",
+                "anna",
+                "Overleg",
+                [
+                    "anna",
+                    "bob",
+                    "7"
+                ]
+            ],
+            [
+                "findByObjectAndRoom",
+                "obj-1",
+                "tok-Overleg"
+            ],
+            [
+                "insert",
+                {
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 5,
+                    "roomToken": "tok-Overleg",
+                    "roomId": 41,
+                    "roomName": "Overleg",
+                    "roomType": 2,
+                    "participantCount": 3,
+                    "lastActivity": "2026-01-01T11:30:00+01:00",
+                    "linkedBy": "zaak",
+                    "linkedAtIsSet": true
+                }
+            ]
+        ]
+    },
+    "write already linked": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "token": "tok-Overleg",
+                "room": 41,
+                "createdRoom": true,
+                "object": "obj-1",
+                "link": 7
+            }
+        },
+        "calls": [
+            [
+                "findUnscoped",
+                "obj-1"
+            ],
+            [
+                "room",
+                "anna",
+                "Overleg",
+                [
+                    "anna",
+                    "bob",
+                    "7"
+                ]
+            ],
+            [
+                "heldCall",
+                "tok-Overleg",
+                "anna",
+                "2026-01-01T10:00:00+01:00",
+                "2026-01-01T11:30:00+01:00",
+                [
+                    "anna",
+                    "bob",
+                    "7"
+                ]
+            ],
+            [
+                "findByObjectAndRoom",
+                "obj-1",
+                "tok-Overleg"
+            ]
+        ]
+    },
+    "write room fails": {
+        "answer": {
+            "error": "Talk refused the room",
+            "entry": null
+        },
+        "calls": [
+            [
+                "findUnscoped",
+                "obj-1"
+            ],
+            [
+                "room",
+                "anna",
+                "Overleg",
+                [
+                    "anna",
+                    "bob",
+                    "7"
+                ]
+            ]
+        ]
+    },
+    "write call date fails": {
+        "answer": {
+            "error": "Failed to parse time string (never) at position 0 (n): The timezone could not be found in the database",
+            "entry": null
+        },
+        "calls": [
+            [
+                "findUnscoped",
+                "obj-1"
+            ],
+            [
+                "room",
+                "anna",
+                "Overleg",
+                [
+                    "anna",
+                    "bob",
+                    "7"
+                ]
+            ]
+        ]
+    },
+    "write no participants": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "token": "tok-Solo",
+                "room": 41,
+                "createdRoom": true,
+                "object": "obj-1",
+                "link": 12
+            }
+        },
+        "calls": [
+            [
+                "findUnscoped",
+                "obj-1"
+            ],
+            [
+                "room",
+                "cleo",
+                "Solo",
+                [
+                    "cleo"
+                ]
+            ],
+            [
+                "findByObjectAndRoom",
+                "obj-1",
+                "tok-Solo"
+            ],
+            [
+                "insert",
+                {
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 5,
+                    "roomToken": "tok-Solo",
+                    "roomId": 41,
+                    "roomName": "Solo",
+                    "roomType": 2,
+                    "participantCount": 1,
+                    "lastActivity": "now",
+                    "linkedBy": "zaak",
+                    "linkedAtIsSet": true
+                }
+            ]
+        ]
+    },
+    "entry there created": {
+        "lost": false,
+        "revert": "removed",
+        "calls": [
+            [
+                "roomExists",
+                "tok-1"
+            ],
+            [
+                "deleteByObjectAndRoom",
+                "obj-1",
+                "tok-1"
+            ],
+            [
+                "roomExists",
+                "tok-1"
+            ],
+            [
+                "deleteRoom",
+                "tok-1"
+            ]
+        ]
+    },
+    "entry there kept": {
+        "lost": false,
+        "revert": "removed",
+        "calls": [
+            [
+                "roomExists",
+                "tok-1"
+            ],
+            [
+                "deleteByObjectAndRoom",
+                "obj-1",
+                "tok-1"
+            ]
+        ]
+    },
+    "entry there no flag": {
+        "lost": false,
+        "revert": "removed",
+        "calls": [
+            [
+                "roomExists",
+                "tok-1"
+            ],
+            [
+                "deleteByObjectAndRoom",
+                "obj-1",
+                "tok-1"
+            ]
+        ]
+    },
+    "entry gone": {
+        "lost": true,
+        "revert": "removed",
+        "calls": [
+            [
+                "roomExists",
+                "tok-1"
+            ],
+            [
+                "deleteByObjectAndRoom",
+                "obj-1",
+                "tok-1"
+            ],
+            [
+                "roomExists",
+                "tok-1"
+            ]
+        ]
+    },
+    "entry talk down": {
+        "lost": true,
+        "revert": "failed",
+        "calls": [
+            [
+                "roomExists",
+                "tok-1"
+            ],
+            [
+                "deleteByObjectAndRoom",
+                "obj-1",
+                "tok-1"
+            ],
+            [
+                "roomExists",
+                "tok-1"
+            ]
+        ]
+    },
+    "entry delete fails": {
+        "lost": false,
+        "revert": "failed",
+        "calls": [
+            [
+                "roomExists",
+                "tok-1"
+            ],
+            [
+                "deleteByObjectAndRoom",
+                "obj-1",
+                "tok-1"
+            ]
+        ]
+    },
+    "entry created as text": {
+        "lost": false,
+        "revert": "removed",
+        "calls": [
+            [
+                "roomExists",
+                "tok-1"
+            ],
+            [
+                "deleteByObjectAndRoom",
+                "obj-1",
+                "tok-1"
+            ]
+        ]
+    }
+}

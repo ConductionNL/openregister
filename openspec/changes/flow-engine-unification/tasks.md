@@ -21,7 +21,7 @@
 - [ ] 3.2 Delete `CnEditFlowsModal` + its OpenBuild wiring; ensure `CnFlowCanvas`/`CnFlowCanvasModal` on `codeberg/feat/vue-3` are not merged to `beta`.
 - [ ] 3.3 Delete hermiq `Service/Graph/GraphExecutor`, `Controller/GraphController`, `Flow/HermiqFlowResolver` + listener, `AgentFlow`/`AgentFlowRun` schemas. Keep `HermiqAgentNode`, `HermiqWorkloadNode`, `HermiqFlowNodeListener`.
 - [ ] 3.4 Port GraphExecutor's advances into the engine as ENGINE-WIDE but OPTIONAL behaviour (admin default + nullable per-flow override, mirroring retention):
-  - [ ] 3.4a Per-hop audit trail for every node type. `flow_audit_enabled` default **off** (write volume; step rows already carry operational history).
+  - [x] 3.4a Per-hop audit trail for every node type. `flow_audit_enabled` default **off** (write volume; step rows already carry operational history). `FlowHopAudit`, fed the step row from `FlowStepHistory::record()` and `FlowRunCommit::commitFiring()`.
   - [x] 3.4b `RegisterFlowOversightEvent` + `IFlowOversightCheck`: apps contribute checks the way they contribute nodes. The engine hardcodes none. (verified: lib/Service/Flow/FlowOversightRegistry.php, tests/Unit/Service/Flow/FlowOversightRegistryTest.php)
   - [x] 3.4c Oversight gate consulted before each hop. `flow_oversight_enabled` default **on** (a safety rail that defaults off protects only the flows someone configured). A veto STOPS the run with its reason; a check that throws refuses rather than failing open. (verified: lib/Service/Flow/FlowEngine.php, tests/Unit/Service/Flow/FlowEngineOversightTest.php)
   - [ ] 3.4d hermiq's kill-switch and budget become registered checks, not engine branches.

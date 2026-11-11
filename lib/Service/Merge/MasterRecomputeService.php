@@ -46,7 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Merge;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -56,11 +56,11 @@ use Throwable;
  *
  * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
-class MasterRecomputeService {
+class MasterRecomputeService implements MasterRecomputeInterface {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ObjectService $objectService Object read/write path (RBAC + tenant scoped).
+	 * @param ObjectOperationsInterface $objectService Object read/write path (RBAC + tenant scoped).
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 *
 	 * @return void
@@ -68,7 +68,7 @@ class MasterRecomputeService {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\ConfigurationDraftSet;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationProvenance;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
@@ -88,7 +90,7 @@ final class DeploymentPreviewServiceTest extends TestCase {
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('read')->willReturnCallback(
 			static function (string $layer, ?string $layerRef, string $configKey) use ($liveByKey): ConfigurationSnapshot {
-				return ($liveByKey[$configKey] ?? ConfigurationSnapshot::absent($layer, $layerRef, $configKey));
+				return ($liveByKey[$configKey] ?? ConfigurationSnapshot::absent(new ConfigurationAddress($layer, $layerRef, $configKey)));
 			}
 		);
 
@@ -96,7 +98,7 @@ final class DeploymentPreviewServiceTest extends TestCase {
 	}//end previews()
 
 	private function live(string $key, mixed $value, string $layer = ConfigurationLayer::INSTANCE): ConfigurationSnapshot {
-		return new ConfigurationSnapshot($layer, null, $key, $value, true, 'dep-old', 'admin');
+		return new ConfigurationSnapshot(new ConfigurationAddress($layer, null, $key), $value, true, new ConfigurationProvenance('dep-old', 'admin'));
 	}//end live()
 
 	public function testAChangedValueIsReportedWithBothSides(): void {
@@ -173,7 +175,7 @@ final class DeploymentPreviewServiceTest extends TestCase {
 
 	public function testAKeyThatDidNotExistYetIsACreateRatherThanAChange(): void {
 		$preview = $this->previews(
-			[$this->draft('solr', ['enabled' => true], null, false)],
+			[$this->draft('archival', ['enabled' => true], null, false)],
 			[]
 		)->preview($this->set());
 
@@ -185,12 +187,12 @@ final class DeploymentPreviewServiceTest extends TestCase {
 		$preview = $this->previews(
 			[
 				$this->draft('rbac', ['enabled' => false], ['enabled' => true]),
-				$this->draft('solr', ['enabled' => true], ['enabled' => false]),
+				$this->draft('archival', ['enabled' => true], ['enabled' => false]),
 				$this->draft('llm', 'not-an-object', ['provider' => 'ollama']),
 			],
 			[
 				'rbac' => $this->live('rbac', ['enabled' => true]),
-				'solr' => $this->live('solr', ['enabled' => false]),
+				'archival' => $this->live('archival', ['enabled' => false]),
 				'llm' => $this->live('llm', ['provider' => 'ollama']),
 			]
 		)->preview($this->set());

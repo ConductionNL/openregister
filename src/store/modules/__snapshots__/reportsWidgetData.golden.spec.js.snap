@@ -1,0 +1,858 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`reports dashboard failures golden empty message 1`] = `
+{
+  "list": true,
+  "listState": {
+    "error": "",
+    "loading": false,
+  },
+  "logged": [
+    [
+      "[reports.fetchDashboards]",
+      true,
+    ],
+    [
+      "[reports.fetchDashboard]",
+      true,
+    ],
+  ],
+  "one": true,
+  "oneState": {
+    "error": "",
+    "loading": false,
+  },
+}
+`;
+
+exports[`reports dashboard failures golden message only 1`] = `
+{
+  "list": true,
+  "listState": {
+    "error": "msg",
+    "loading": false,
+  },
+  "logged": [
+    [
+      "[reports.fetchDashboards]",
+      true,
+    ],
+    [
+      "[reports.fetchDashboard]",
+      true,
+    ],
+  ],
+  "one": true,
+  "oneState": {
+    "error": "msg",
+    "loading": false,
+  },
+}
+`;
+
+exports[`reports dashboard failures golden nothing 1`] = `
+{
+  "list": true,
+  "listState": {
+    "error": "Failed to fetch dashboards",
+    "loading": false,
+  },
+  "logged": [
+    [
+      "[reports.fetchDashboards]",
+      true,
+    ],
+    [
+      "[reports.fetchDashboard]",
+      true,
+    ],
+  ],
+  "one": true,
+  "oneState": {
+    "error": "Failed to fetch dashboard",
+    "loading": false,
+  },
+}
+`;
+
+exports[`reports dashboard failures golden server error text 1`] = `
+{
+  "list": true,
+  "listState": {
+    "error": "srv",
+    "loading": false,
+  },
+  "logged": [
+    [
+      "[reports.fetchDashboards]",
+      true,
+    ],
+    [
+      "[reports.fetchDashboard]",
+      true,
+    ],
+  ],
+  "one": true,
+  "oneState": {
+    "error": "srv",
+    "loading": false,
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden aggregation without a name 1`] = `
+{
+  "get": [],
+  "logged": [
+    [
+      "[reports.fetchWidgetData]",
+      {
+        "error": "aggregation data-source requires register, schema, and aggregation name",
+        "widget": {
+          "dataSource": {
+            "mode": "aggregation",
+            "register": "r",
+          },
+        },
+      },
+    ],
+  ],
+  "post": [],
+  "results": [
+    {
+      "cache": {
+        "agg:r::": {
+          "data": null,
+          "error": "aggregation data-source requires register, schema, and aggregation name",
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": null,
+    },
+  ],
+  "widgetData": {
+    "agg:r::": {
+      "data": null,
+      "error": "aggregation data-source requires register, schema, and aggregation name",
+      "fetchedAt": "2026-11-01T10:00:00.000Z",
+    },
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden each mode, then a cache hit each 1`] = `
+{
+  "get": [
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+    [
+      "/index.php/apps/openregister/api/dashboard/statistics",
+      {
+        "params": {
+          "registerId": "r",
+        },
+      },
+    ],
+  ],
+  "logged": [],
+  "post": [
+    [
+      "/index.php/apps/openregister/api/graphql",
+      {
+        "query": "{ q }",
+      },
+    ],
+  ],
+  "results": [
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": {
+        "got": true,
+      },
+    },
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+        "gql:{ q }": {
+          "data": {
+            "posted": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+      },
+      "returned": {
+        "posted": true,
+      },
+    },
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+        "gql:{ q }": {
+          "data": {
+            "posted": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+        "stats:r:": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:02.000Z",
+        },
+      },
+      "returned": {
+        "got": true,
+      },
+    },
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+        "gql:{ q }": {
+          "data": {
+            "posted": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+        "stats:r:": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:02.000Z",
+        },
+      },
+      "returned": {
+        "got": true,
+      },
+    },
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+        "gql:{ q }": {
+          "data": {
+            "posted": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+        "stats:r:": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:02.000Z",
+        },
+      },
+      "returned": {
+        "posted": true,
+      },
+    },
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+        "gql:{ q }": {
+          "data": {
+            "posted": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+        "stats:r:": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:02.000Z",
+        },
+      },
+      "returned": {
+        "got": true,
+      },
+    },
+  ],
+  "widgetData": {
+    "agg:r:s:a": {
+      "data": {
+        "got": true,
+      },
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:00.000Z",
+    },
+    "gql:{ q }": {
+      "data": {
+        "posted": true,
+      },
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:01.000Z",
+    },
+    "stats:r:": {
+      "data": {
+        "got": true,
+      },
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:02.000Z",
+    },
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden failure: empty message, then a retry 1`] = `
+{
+  "get": [
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+  ],
+  "logged": [
+    [
+      "[reports.fetchWidgetData]",
+      {
+        "error": "",
+        "widget": {
+          "dataSource": {
+            "aggregation": "a",
+            "mode": "aggregation",
+            "register": "r",
+            "schema": "s",
+          },
+        },
+      },
+    ],
+  ],
+  "post": [],
+  "results": [
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": null,
+          "error": "",
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": null,
+    },
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+      },
+      "returned": {
+        "got": true,
+      },
+    },
+  ],
+  "widgetData": {
+    "agg:r:s:a": {
+      "data": {
+        "got": true,
+      },
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:01.000Z",
+    },
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden failure: message only, then a retry 1`] = `
+{
+  "get": [
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+  ],
+  "logged": [
+    [
+      "[reports.fetchWidgetData]",
+      {
+        "error": "msg",
+        "widget": {
+          "dataSource": {
+            "aggregation": "a",
+            "mode": "aggregation",
+            "register": "r",
+            "schema": "s",
+          },
+        },
+      },
+    ],
+  ],
+  "post": [],
+  "results": [
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": null,
+          "error": "msg",
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": null,
+    },
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+      },
+      "returned": {
+        "got": true,
+      },
+    },
+  ],
+  "widgetData": {
+    "agg:r:s:a": {
+      "data": {
+        "got": true,
+      },
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:01.000Z",
+    },
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden failure: nothing, then a retry 1`] = `
+{
+  "get": [
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+  ],
+  "logged": [
+    [
+      "[reports.fetchWidgetData]",
+      {
+        "error": undefined,
+        "widget": {
+          "dataSource": {
+            "aggregation": "a",
+            "mode": "aggregation",
+            "register": "r",
+            "schema": "s",
+          },
+        },
+      },
+    ],
+  ],
+  "post": [],
+  "results": [
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": null,
+          "error": "Failed to fetch widget data",
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": null,
+    },
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+      },
+      "returned": {
+        "got": true,
+      },
+    },
+  ],
+  "widgetData": {
+    "agg:r:s:a": {
+      "data": {
+        "got": true,
+      },
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:01.000Z",
+    },
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden failure: server error text, then a retry 1`] = `
+{
+  "get": [
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+  ],
+  "logged": [
+    [
+      "[reports.fetchWidgetData]",
+      {
+        "error": "msg",
+        "widget": {
+          "dataSource": {
+            "aggregation": "a",
+            "mode": "aggregation",
+            "register": "r",
+            "schema": "s",
+          },
+        },
+      },
+    ],
+  ],
+  "post": [],
+  "results": [
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": null,
+          "error": "srv",
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": null,
+    },
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+      },
+      "returned": {
+        "got": true,
+      },
+    },
+  ],
+  "widgetData": {
+    "agg:r:s:a": {
+      "data": {
+        "got": true,
+      },
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:01.000Z",
+    },
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden falsy data is not a cache hit 1`] = `
+{
+  "get": [
+    [
+      "/index.php/apps/openregister/api/dashboard/statistics",
+      {
+        "params": {
+          "registerId": "r",
+        },
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/dashboard/statistics",
+      {
+        "params": {
+          "registerId": "r",
+        },
+      },
+    ],
+  ],
+  "logged": [],
+  "post": [],
+  "results": [
+    {
+      "cache": {
+        "stats:r:": {
+          "data": 0,
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": 0,
+    },
+    {
+      "cache": {
+        "stats:r:": {
+          "data": 0,
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+      },
+      "returned": 0,
+    },
+  ],
+  "widgetData": {
+    "stats:r:": {
+      "data": 0,
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:01.000Z",
+    },
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden forced refresh 1`] = `
+{
+  "get": [
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/aggregations/r/s/a",
+    ],
+  ],
+  "logged": [],
+  "post": [],
+  "results": [
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": {
+        "got": true,
+      },
+    },
+    {
+      "cache": {
+        "agg:r:s:a": {
+          "data": {
+            "got": true,
+          },
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+      },
+      "returned": {
+        "got": true,
+      },
+    },
+  ],
+  "widgetData": {
+    "agg:r:s:a": {
+      "data": {
+        "got": true,
+      },
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:01.000Z",
+    },
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden graphql without a query 1`] = `
+{
+  "get": [],
+  "logged": [
+    [
+      "[reports.fetchWidgetData]",
+      {
+        "error": "graphql data-source requires graphqlQuery",
+        "widget": {
+          "dataSource": {
+            "mode": "graphql",
+          },
+        },
+      },
+    ],
+  ],
+  "post": [],
+  "results": [
+    {
+      "cache": {
+        "gql:": {
+          "data": null,
+          "error": "graphql data-source requires graphqlQuery",
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": null,
+    },
+  ],
+  "widgetData": {
+    "gql:": {
+      "data": null,
+      "error": "graphql data-source requires graphqlQuery",
+      "fetchedAt": "2026-11-01T10:00:00.000Z",
+    },
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden inherited key as mode 1`] = `
+{
+  "get": [],
+  "logged": [],
+  "post": [],
+  "results": [
+    {
+      "cache": {
+        "unknown:toString": {
+          "data": null,
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": null,
+    },
+    {
+      "cache": {
+        "unknown:constructor": {
+          "data": null,
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+        "unknown:toString": {
+          "data": null,
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": null,
+    },
+  ],
+  "widgetData": {
+    "unknown:constructor": {
+      "data": null,
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:01.000Z",
+    },
+    "unknown:toString": {
+      "data": null,
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:00.000Z",
+    },
+  },
+}
+`;
+
+exports[`reports.fetchWidgetData golden no widget 1`] = `
+{
+  "get": [],
+  "logged": [],
+  "post": [],
+  "results": [
+    {
+      "cache": {},
+      "returned": null,
+    },
+    {
+      "cache": {},
+      "returned": null,
+    },
+    {
+      "cache": {},
+      "returned": null,
+    },
+    {
+      "cache": {},
+      "returned": null,
+    },
+  ],
+  "widgetData": {},
+}
+`;
+
+exports[`reports.fetchWidgetData golden unknown mode is cached as null and refetched 1`] = `
+{
+  "get": [],
+  "logged": [],
+  "post": [],
+  "results": [
+    {
+      "cache": {
+        "unknown:other": {
+          "data": null,
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:00.000Z",
+        },
+      },
+      "returned": null,
+    },
+    {
+      "cache": {
+        "unknown:other": {
+          "data": null,
+          "error": null,
+          "fetchedAt": "2026-11-01T10:00:01.000Z",
+        },
+      },
+      "returned": null,
+    },
+  ],
+  "widgetData": {
+    "unknown:other": {
+      "data": null,
+      "error": null,
+      "fetchedAt": "2026-11-01T10:00:01.000Z",
+    },
+  },
+}
+`;

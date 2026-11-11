@@ -140,6 +140,21 @@ import {
 	revokeAccessLink,
 	setAccessLinkDisabled,
 } from '../../services/accessLinks.js'
+import { refusalMessage } from './refusalMessage.js'
+
+/**
+ * The link form the panel starts with: a read link, no expiry yet.
+ *
+ * @return {object} The form
+ */
+function blankLinkForm() {
+	return {
+		label: '',
+		capabilities: ['read'],
+		expiresOn: '',
+		password: '',
+	}
+}
 
 /**
  * Share one object by link with someone who has no account: create a link,
@@ -169,12 +184,7 @@ export default {
 	data() {
 		return {
 			capabilities: CAPABILITIES,
-			form: {
-				label: '',
-				capabilities: ['read'],
-				expiresOn: '',
-				password: '',
-			},
+			form: blankLinkForm(),
 
 			allLinks: [],
 			created: null,
@@ -249,23 +259,39 @@ export default {
 			this.busy = true
 			this.error = ''
 			try {
-				this.created = await mintAccessLink(
-					mintPayload({
-						subjectType: 'object',
-						subjectId: this.objectId,
-						...this.form,
-					}),
-				)
-				this.form.password = ''
-				this.form.label = ''
-				await this.load()
+				this.created = await this.mintObjectLink()
+				await this.clearFormAndReload()
 			} catch (e) {
-				this.error =
-					e?.response?.data?.message
-					|| t('openregister', 'That did not work. Try again later.')
+				this.error = refusalMessage(e)
 			} finally {
 				this.busy = false
 			}
+		},
+
+		/**
+		 * Mint a link to this object from what the form holds.
+		 *
+		 * @return {Promise<object>} The minted link, with `url` and `pageUrl`
+		 */
+		mintObjectLink() {
+			return mintAccessLink(
+				mintPayload({
+					subjectType: 'object',
+					subjectId: this.objectId,
+					...this.form,
+				}),
+			)
+		},
+
+		/**
+		 * Forget the password and label just used, and reload the links.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async clearFormAndReload() {
+			this.form.password = ''
+			this.form.label = ''
+			await this.load()
 		},
 
 		/**
@@ -275,15 +301,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async toggle(link, disabled) {
-			this.busy = true
-			try {
-				await setAccessLinkDisabled(link.id, disabled)
-				await this.load()
-			} catch {
-				showError(t('openregister', 'That did not work. Try again later.'))
-			} finally {
-				this.busy = false
-			}
+			await this.changeLink(() => setAccessLinkDisabled(link.id, disabled))
 		},
 
 		/**
@@ -292,12 +310,25 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async revoke(link) {
-			this.busy = true
-			try {
+			await this.changeLink(async () => {
 				await revokeAccessLink(link.id)
 				if (this.created && this.created.id === link.id) {
 					this.created = null
 				}
+			})
+		},
+
+		/**
+		 * Change a link while busy, then reload the links; say so when it fails.
+		 *
+		 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+		 * @param {function(): Promise} change The change to make
+		 * @return {Promise<void>}
+		 */
+		async changeLink(change) {
+			this.busy = true
+			try {
+				await change()
 				await this.load()
 			} catch {
 				showError(t('openregister', 'That did not work. Try again later.'))

@@ -47,7 +47,7 @@ use OCP\IUserManager;
 /**
  * Resolves `{type: 'agent'}` references.
  */
-class AgentPrincipalResolver implements IPrincipalResolver {
+class AgentPrincipalResolver implements IPrincipalResolver, AgentPrincipalResolverInterface {
 
 	/**
 	 * The type this resolver answers for.

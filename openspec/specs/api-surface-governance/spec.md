@@ -1,7 +1,7 @@
 # api-surface-governance Specification
 
 ## Purpose
-TBD - created by archiving change api-as-a-versioned-surface. Update Purpose after archive.
+The API as a versioned surface that callers can plan against. A schema declares links out of its objects, the instance publishes its versions, capabilities and limits, every call records its caller under a limit and an optional address binding, and the instance answers the well-known paths and uses one administered proxy for outbound calls. Created by the change `api-as-a-versioned-surface`; holds four requirements (REQ-AVS-001 to REQ-AVS-004).
 
 ## Requirements
 

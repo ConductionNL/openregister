@@ -1,7 +1,7 @@
 # flow-execution-mode Specification
 
 ## Purpose
-TBD - created by archiving change openregister-flow-executionmode-and-token. Update Purpose after archive.
+Whether a flow runs inside the request that triggered it or is queued as a background job. A flow declares its mode, an async flow is queued and a sync flow runs inline. Created by the change `openregister-flow-executionmode-and-token`; holds three requirements.
 
 ## Requirements
 

@@ -12,7 +12,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
+ * @spec openspec/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
  */
 
 declare(strict_types=1);
@@ -20,9 +20,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\AssigneeFollowListener;
@@ -33,6 +34,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\AssigneeFollowServices;
 
 /**
  * Who follows on assignment, and who does not.
@@ -107,10 +109,8 @@ class AssigneeFollowListenerTest extends TestCase {
 
 		return new AssigneeFollowListener(
 			$schemaMapper,
-			new SemanticRoleHandler(),
+			new AssigneeFollowServices(new SemanticRoleHandler(), $users, $this->watchers),
 			$permissions,
-			$users,
-			$this->watchers,
 			$this->createMock(originalClassName: LoggerInterface::class)
 		);
 
@@ -143,7 +143,7 @@ class AssigneeFollowListenerTest extends TestCase {
 		$object = $this->makeObject(assignee: 'jan');
 		$this->watchers->expects($this->once())
 			->method('followAssigned')
-			->with($object, 'jan', '3', '12')
+			->with(new AddressedObject(object: $object, register: '3', schema: '12'), 'jan')
 			->willReturn(new Watcher());
 
 		$this->makeListener()->handle(new ObjectCreatedEvent($object));

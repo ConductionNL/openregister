@@ -1,0 +1,1011 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`default shapes golden hands out fresh copies 1`] = `
+[
+  "{"description":"","title":"","type":"string","format":"","pattern":"","default":"","behavior":"","required":false,"deprecated":false,"visible":true,"hideOnCollection":false,"facetable":true,"order":0,"minLength":0,"maxLength":0,"example":"","immutable":false,"minimum":0,"maximum":0,"multipleOf":0,"exclusiveMin":false,"exclusiveMax":false,"minItems":0,"maxItems":0,"cascadeDelete":false,"inversedBy":"","$ref":"","register":"","writeBack":false,"removeAfterWriteBack":false,"items":{"cascadeDelete":false,"$ref":"","type":"","inversedBy":"","register":"","writeBack":false,"removeAfterWriteBack":false,"objectConfiguration":{"handling":"nested-object","schema":"","queryParams":""}},"objectConfiguration":{"handling":"nested-object","schema":"","queryParams":""},"fileConfiguration":{"handling":"ignore","allowedMimeTypes":[],"location":"","maxSize":0},"oneOf":[]}",
+  "{"overview":{"totalCacheSize":0,"totalCacheEntries":0,"overallHitRate":0,"averageResponseTime":0,"cacheEfficiency":0},"services":{"object":{"entries":0,"hits":0,"requests":0,"memoryUsage":0},"schema":{"entries":0,"hits":0,"requests":0,"memoryUsage":0},"facet":{"entries":0,"hits":0,"requests":0,"memoryUsage":0}},"distributed":{"type":"unknown","backend":"Unknown","available":false},"performance":{"averageHitTime":0,"averageMissTime":0,"performanceGain":0,"optimalHitRate":85,"currentTrend":"unknown"},"names":{"cache_size":0,"hit_rate":0,"hits":0,"misses":0,"warmups":0,"enabled":false},"lastUpdated":null,"unavailable":true,"errorMessage":"Loading..."}",
+  "{"warnings":{"objectsWithoutOwner":0,"objectsWithoutOrganisation":0,"auditTrailsWithoutExpiry":0,"searchTrailsWithoutExpiry":0,"expiredAuditTrails":0,"expiredSearchTrails":0,"expiredObjects":0},"totals":{"totalObjects":0,"totalBlobObjects":0,"totalMagicObjects":0,"totalSize":0,"totalBlobSize":0,"totalMagicSize":0,"totalAuditTrails":0,"totalSearchTrails":0,"totalConfigurations":0,"totalDataAccessProfiles":0,"totalOrganisations":0,"totalRegisters":0,"totalSchemas":0,"totalSources":0,"totalWebhookLogs":0,"deletedObjects":0},"lastUpdated":null}",
+]
+`;
+
+exports[`default shapes golden keeps every default shape, in key order 1`] = `
+{
+  "cacheStats": "{
+ "overview": {
+  "totalCacheSize": 0,
+  "totalCacheEntries": 0,
+  "overallHitRate": 0,
+  "averageResponseTime": 0,
+  "cacheEfficiency": 0
+ },
+ "services": {
+  "object": {
+   "entries": 0,
+   "hits": 0,
+   "requests": 0,
+   "memoryUsage": 0
+  },
+  "schema": {
+   "entries": 0,
+   "hits": 0,
+   "requests": 0,
+   "memoryUsage": 0
+  },
+  "facet": {
+   "entries": 0,
+   "hits": 0,
+   "requests": 0,
+   "memoryUsage": 0
+  }
+ },
+ "distributed": {
+  "type": "unknown",
+  "backend": "Unknown",
+  "available": false
+ },
+ "performance": {
+  "averageHitTime": 0,
+  "averageMissTime": 0,
+  "performanceGain": 0,
+  "optimalHitRate": 85,
+  "currentTrend": "unknown"
+ },
+ "names": {
+  "cache_size": 0,
+  "hit_rate": 0,
+  "hits": 0,
+  "misses": 0,
+  "warmups": 0,
+  "enabled": false
+ },
+ "lastUpdated": null,
+ "unavailable": true,
+ "errorMessage": "Loading..."
+}",
+  "propertyDefinition": "{
+ "description": "",
+ "title": "",
+ "type": "string",
+ "format": "",
+ "pattern": "",
+ "default": "",
+ "behavior": "",
+ "required": false,
+ "deprecated": false,
+ "visible": true,
+ "hideOnCollection": false,
+ "facetable": true,
+ "order": 0,
+ "minLength": 0,
+ "maxLength": 0,
+ "example": "",
+ "immutable": false,
+ "minimum": 0,
+ "maximum": 0,
+ "multipleOf": 0,
+ "exclusiveMin": false,
+ "exclusiveMax": false,
+ "minItems": 0,
+ "maxItems": 0,
+ "cascadeDelete": false,
+ "inversedBy": "",
+ "$ref": "",
+ "register": "",
+ "writeBack": false,
+ "removeAfterWriteBack": false,
+ "items": {
+  "cascadeDelete": false,
+  "$ref": "",
+  "type": "",
+  "inversedBy": "",
+  "register": "",
+  "writeBack": false,
+  "removeAfterWriteBack": false,
+  "objectConfiguration": {
+   "handling": "nested-object",
+   "schema": "",
+   "queryParams": ""
+  }
+ },
+ "objectConfiguration": {
+  "handling": "nested-object",
+  "schema": "",
+  "queryParams": ""
+ },
+ "fileConfiguration": {
+  "handling": "ignore",
+  "allowedMimeTypes": [],
+  "location": "",
+  "maxSize": 0
+ },
+ "oneOf": []
+}",
+  "qualityState": "{
+ "selectedRegister": null,
+ "selectedSchema": null,
+ "registers": [],
+ "schemas": [],
+ "qualityStats": null,
+ "lowQualityObjects": [],
+ "lowQualityTotal": 0,
+ "lowQualityLimit": 20,
+ "lowQualityOffset": 0,
+ "duplicates": [],
+ "duplicatesTotal": 0,
+ "duplicatesLimit": 20,
+ "duplicatesOffset": 0,
+ "masterEntities": [],
+ "masterEntitiesTotal": 0,
+ "goldenRecord": null,
+ "mergeOperations": [],
+ "mergeOperationsTotal": 0,
+ "mergeOperationsLimit": 20,
+ "mergeOperationsOffset": 0,
+ "webhooks": [],
+ "webhookStats": {},
+ "webhookFailures": [],
+ "loading": false,
+ "error": null
+}",
+  "searchTrailState": "{
+ "searchTrailLoading": false,
+ "statisticsLoading": false,
+ "popularTermsLoading": false,
+ "activityLoading": false,
+ "searchTrailList": [],
+ "searchTrailItem": null,
+ "searchTrailPagination": {
+  "total": 0,
+  "page": 1,
+  "pages": 1,
+  "limit": 50,
+  "offset": 0
+ },
+ "statistics": {
+  "total": 0,
+  "totalResults": 0,
+  "averageResultsPerSearch": 0,
+  "averageExecutionTime": 0,
+  "successRate": 0,
+  "uniqueSearchTerms": 0,
+  "uniqueUsers": 0,
+  "uniqueOrganizations": 0,
+  "queryComplexity": {
+   "simple": 0,
+   "medium": 0,
+   "complex": 0
+  }
+ },
+ "popularTerms": [],
+ "activity": {
+  "hourly": [],
+  "daily": [],
+  "weekly": [],
+  "monthly": []
+ },
+ "registerSchemaStats": [],
+ "userAgentStats": [],
+ "searchTrailFilters": {},
+ "searchTrailSearch": ""
+}",
+  "settingsState": "{
+ "loading": false,
+ "loadingInProgress": false,
+ "saving": false,
+ "rebasing": false,
+ "loadingStats": false,
+ "loadingCacheStats": false,
+ "loadingVersionInfo": false,
+ "extractionStats": null,
+ "vectorStats": null,
+ "clearingCache": false,
+ "warmingUpCache": false,
+ "showClearCacheConfirmation": false,
+ "clearCacheType": "all",
+ "clearingAppStoreCache": false,
+ "warmupInterval": 3600,
+ "warmupLastRun": null,
+ "loadingWarmupInterval": false,
+ "savingWarmupInterval": false,
+ "massValidating": false,
+ "showMassValidateConfirmation": false,
+ "massValidateResults": null,
+ "clearingAuditTrails": false,
+ "clearingSearchTrails": false,
+ "clearingBlobObjects": false,
+ "showClearAuditTrailsConfirmation": false,
+ "showClearSearchTrailsConfirmation": false,
+ "showClearBlobObjectsConfirmation": false,
+ "rbacOptions": {
+  "enabled": false,
+  "anonymousGroup": "public",
+  "defaultNewUserGroup": "viewer",
+  "defaultObjectOwner": "",
+  "adminOverride": true
+ },
+ "multitenancyOptions": {
+  "enabled": false,
+  "defaultUserTenant": "",
+  "defaultObjectTenant": "",
+  "adminOverride": true
+ },
+ "flowOptions": {
+  "retentionDays": 31,
+  "auditEnabled": false,
+  "killSwitch": false
+ },
+ "retentionOptions": {
+  "objectArchiveRetention": 31536000000,
+  "objectDeleteRetention": 63072000000,
+  "searchTrailRetention": 2592000000,
+  "createLogRetention": 2592000000,
+  "readLogRetention": 86400000,
+  "updateLogRetention": 604800000,
+  "deleteLogRetention": 2592000000,
+  "auditTrailsEnabled": true,
+  "searchTrailsEnabled": true
+ },
+ "llmOptions": {
+  "enabled": false,
+  "providerId": "none",
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "enabledFeatures": []
+ },
+ "fileOptions": {
+  "extractionScope": "objects",
+  "extractionMode": "background",
+  "maxFileSize": 100,
+  "batchSize": 10,
+  "enabledFileTypes": [
+   "txt",
+   "pdf",
+   "docx",
+   "xlsx",
+   "pptx",
+   "html",
+   "md",
+   "json"
+  ]
+ },
+ "loadingLlmSettings": false,
+ "loadingFileSettings": false,
+ "versionInfo": {
+  "appName": "Open Register",
+  "appVersion": "0.2.3"
+ },
+ "groupOptions": [],
+ "userOptions": [],
+ "tenantOptions": [],
+ "stats": {
+  "warnings": {
+   "objectsWithoutOwner": 0,
+   "objectsWithoutOrganisation": 0,
+   "auditTrailsWithoutExpiry": 0,
+   "searchTrailsWithoutExpiry": 0,
+   "expiredAuditTrails": 0,
+   "expiredSearchTrails": 0,
+   "expiredObjects": 0
+  },
+  "totals": {
+   "totalObjects": 0,
+   "totalBlobObjects": 0,
+   "totalMagicObjects": 0,
+   "totalSize": 0,
+   "totalBlobSize": 0,
+   "totalMagicSize": 0,
+   "totalAuditTrails": 0,
+   "totalSearchTrails": 0,
+   "totalConfigurations": 0,
+   "totalDataAccessProfiles": 0,
+   "totalOrganisations": 0,
+   "totalRegisters": 0,
+   "totalSchemas": 0,
+   "totalSources": 0,
+   "totalWebhookLogs": 0,
+   "deletedObjects": 0
+  },
+  "lastUpdated": null
+ },
+ "cacheStats": {
+  "overview": {
+   "totalCacheSize": 0,
+   "totalCacheEntries": 0,
+   "overallHitRate": 0,
+   "averageResponseTime": 0,
+   "cacheEfficiency": 0
+  },
+  "services": {
+   "object": {
+    "entries": 0,
+    "hits": 0,
+    "requests": 0,
+    "memoryUsage": 0
+   },
+   "schema": {
+    "entries": 0,
+    "hits": 0,
+    "requests": 0,
+    "memoryUsage": 0
+   },
+   "facet": {
+    "entries": 0,
+    "hits": 0,
+    "requests": 0,
+    "memoryUsage": 0
+   }
+  },
+  "distributed": {
+   "type": "unknown",
+   "backend": "Unknown",
+   "available": false
+  },
+  "performance": {
+   "averageHitTime": 0,
+   "averageMissTime": 0,
+   "performanceGain": 0,
+   "optimalHitRate": 85,
+   "currentTrend": "unknown"
+  },
+  "names": {
+   "cache_size": 0,
+   "hit_rate": 0,
+   "hits": 0,
+   "misses": 0,
+   "warmups": 0,
+   "enabled": false
+  },
+  "lastUpdated": null,
+  "unavailable": true,
+  "errorMessage": "Loading..."
+ },
+ "showRebaseConfirmation": false
+}",
+  "systemStats": "{
+ "warnings": {
+  "objectsWithoutOwner": 0,
+  "objectsWithoutOrganisation": 0,
+  "auditTrailsWithoutExpiry": 0,
+  "searchTrailsWithoutExpiry": 0,
+  "expiredAuditTrails": 0,
+  "expiredSearchTrails": 0,
+  "expiredObjects": 0
+ },
+ "totals": {
+  "totalObjects": 0,
+  "totalBlobObjects": 0,
+  "totalMagicObjects": 0,
+  "totalSize": 0,
+  "totalBlobSize": 0,
+  "totalMagicSize": 0,
+  "totalAuditTrails": 0,
+  "totalSearchTrails": 0,
+  "totalConfigurations": 0,
+  "totalDataAccessProfiles": 0,
+  "totalOrganisations": 0,
+  "totalRegisters": 0,
+  "totalSchemas": 0,
+  "totalSources": 0,
+  "totalWebhookLogs": 0,
+  "deletedObjects": 0
+ },
+ "lastUpdated": null
+}",
+}
+`;
+
+exports[`default shapes golden registers every page as an async component 1`] = `
+[
+  [
+    "Dashboard",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "RegistersIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "RegisterDetail",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "SchemasIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "SchemaDetails",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "SourcesIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "MigrationPacksIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "MigrationPackDetail",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "OrganisationsIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "ApplicationsIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "ApplicationDetails",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "ObjectsIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "SearchIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "FilesIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "ConfigurationsIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "DeletedIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "AuditTrailIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "SearchTrailIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "WebhooksIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "FlowDetailSidebar",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "WebhookLogsIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "AgentsIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "EndpointsIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "EntitiesIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "EntityDetail",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "TemplatesIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "MyAccount",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "AvgIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "ReportsIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "ReportView",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "FeaturesRoadmapIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "IntegrationsView",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "QualityIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "DuplicatesIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "MasterEntitiesIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "QueueHealthIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "OperationsConsoleIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
+    "MergeOperationsIndex",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+]
+`;

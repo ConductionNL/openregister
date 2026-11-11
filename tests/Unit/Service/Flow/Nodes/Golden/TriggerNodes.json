@@ -1,0 +1,288 @@
+[
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TriggerManualNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowTriggerNode",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TriggerManualNodeInterface"
+        ],
+        "id": "openregister.trigger-manual",
+        "name": "When someone runs it",
+        "description": "Start the flow on demand. Says \"a person starts this\" out loud, which a flow with no trigger at all cannot.",
+        "icon": "core:actions/play.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "event"
+        },
+        "getCategory": {
+            "returned": "triggers"
+        },
+        "configKeys": {
+            "returned": [
+                "next"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "returned": null
+            },
+            "next-null": {
+                "returned": null
+            },
+            "next-good": {
+                "returned": null
+            },
+            "next-bad": {
+                "threw": "UnexpectedValueException",
+                "message": "\"next\" must be one of \"stay\", \"next\" or \"list\"."
+            },
+            "event-unknown": {
+                "returned": null
+            },
+            "no-register": {
+                "returned": null
+            },
+            "no-schema": {
+                "returned": null
+            },
+            "good-object": {
+                "returned": null
+            },
+            "bad-scope": {
+                "returned": null
+            },
+            "good-scope": {
+                "returned": null
+            },
+            "cron-short": {
+                "returned": null
+            },
+            "cron-no-runas": {
+                "returned": null
+            },
+            "cron-unknown-user": {
+                "returned": null
+            },
+            "cron-good": {
+                "returned": null
+            }
+        },
+        "execute": [
+            {
+                "json": {
+                    "a": 1
+                }
+            }
+        ],
+        "events": null
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TriggerObjectNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowTriggerNode",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TriggerObjectNodeInterface"
+        ],
+        "id": "openregister.trigger-object",
+        "name": "When an object changes",
+        "description": "Start the flow when one kind of object is created, updated or deleted. One event, one register, one schema — use a mapping node to normalise other shapes.",
+        "icon": "core:actions/play.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "event"
+        },
+        "getCategory": {
+            "returned": "triggers"
+        },
+        "configKeys": {
+            "returned": [
+                "event",
+                "register",
+                "schema",
+                "scope"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+            },
+            "next-null": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+            },
+            "next-good": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+            },
+            "next-bad": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+            },
+            "event-unknown": {
+                "threw": "InvalidArgumentException",
+                "message": "Unknown trigger event \"object.moved\". The engine fires: object.created, object.updated, object.deleted."
+            },
+            "no-register": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger must name one \"register\". A trigger with no register either matches nothing and never fires, or matches everything — and both are silent."
+            },
+            "no-schema": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger must name one \"schema\". A trigger with no schema either matches nothing and never fires, or matches everything — and both are silent."
+            },
+            "good-object": {
+                "returned": null
+            },
+            "bad-scope": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger scope names one \"property\" and one scalar \"value\", for example {\"property\": \"caseType\", \"value\": \"<uuid>\"}."
+            },
+            "good-scope": {
+                "returned": null
+            },
+            "cron-short": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+            },
+            "cron-no-runas": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+            },
+            "cron-unknown-user": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+            },
+            "cron-good": {
+                "threw": "InvalidArgumentException",
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+            }
+        },
+        "execute": [
+            {
+                "json": {
+                    "a": 1
+                }
+            }
+        ],
+        "events": [
+            "object.created",
+            "object.updated",
+            "object.deleted"
+        ]
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TriggerScheduleNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowTriggerNode",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TriggerScheduleNodeInterface"
+        ],
+        "id": "openregister.trigger-schedule",
+        "name": "On a schedule",
+        "description": "Start the flow on a cron schedule. The run begins with no object — the first node has to fetch what it works on.",
+        "icon": "core:actions/history.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "event"
+        },
+        "getCategory": {
+            "returned": "triggers"
+        },
+        "configKeys": {
+            "returned": [
+                "cron",
+                "runAs"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"cron\" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do."
+            },
+            "next-null": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"cron\" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do."
+            },
+            "next-good": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"cron\" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do."
+            },
+            "next-bad": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"cron\" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do."
+            },
+            "event-unknown": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"cron\" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do."
+            },
+            "no-register": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"cron\" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do."
+            },
+            "no-schema": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"cron\" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do."
+            },
+            "good-object": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"cron\" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do."
+            },
+            "bad-scope": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"cron\" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do."
+            },
+            "good-scope": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"cron\" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do."
+            },
+            "cron-short": {
+                "threw": "InvalidArgumentException",
+                "message": "A cron expression has five space-separated fields (minute hour day month weekday); \"* * *\" has 3."
+            },
+            "cron-no-runas": {
+                "threw": "InvalidArgumentException",
+                "message": "A schedule trigger must carry a \"runAs\" naming the user its runs act as. Nobody is present when a schedule fires, so there is no session to take an identity from, and the flow's owner is not used as a fallback — authoring a flow is not consent to unattended execution as its author."
+            },
+            "cron-unknown-user": {
+                "threw": "InvalidArgumentException",
+                "message": "The schedule trigger's \"runAs\" names \"mallory\", which is not an existing user account. A run that cannot resolve its acting identity is refused rather than started."
+            },
+            "cron-good": {
+                "returned": null
+            }
+        },
+        "execute": [
+            {
+                "json": {
+                    "a": 1
+                }
+            }
+        ],
+        "events": null
+    }
+]

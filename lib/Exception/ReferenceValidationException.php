@@ -37,60 +37,48 @@ use Throwable;
  * reference-existence path.
  */
 class ReferenceValidationException extends ValidationException {
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $propertyName The schema property name
-	 *                             carrying the broken
-	 *                             reference.
-	 * @param string $referencedUuid The UUID that did not resolve.
-	 * @param string $targetSchemaSlug Slug of the target schema
-	 *                                 (or the raw `$ref` value
-	 *                                 if the slug couldn't be
-	 *                                 resolved).
-	 * @param string|null $targetRegister The register the reference
-	 *                                    was searched in, or null
-	 *                                    when no register context
-	 *                                    applies.
-	 * @param string|null $message Optional override for the
-	 *                             human-readable message;
-	 *                             defaults to a structured
-	 *                             sentence built from the
-	 *                             fields above.
-	 * @param int $code HTTP status code (default
-	 *                  422 — Unprocessable
-	 *                  Entity).
-	 * @param Throwable|null $previous The previous exception
-	 *                                 that triggered this
-	 *                                 one.
+	 * @param BrokenReference $reference The property, UUID, target schema and register
+	 *                                   of the reference that did not resolve.
+	 * @param string|null     $message   Optional override for the human-readable message;
+	 *                                   defaults to a structured sentence built from the reference.
+	 * @param int             $code      HTTP status code (default 422 — Unprocessable Entity).
+	 * @param Throwable|null  $previous  The previous exception that triggered this one.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
 	public function __construct(
-		private readonly string $propertyName,
-		private readonly string $referencedUuid,
-		private readonly string $targetSchemaSlug,
-		private readonly ?string $targetRegister = null,
-		?string $message = null,
-		int $code = 422,
-		?Throwable $previous = null,
+		private readonly BrokenReference $reference,
+		?string $message=null,
+		int $code=422,
+		?Throwable $previous=null,
 	) {
-		if ($message === null || $message === '') {
-			$message = sprintf(
-				"Referenced object '%s' not found in schema '%s' for property '%s'",
-				$referencedUuid,
-				$targetSchemaSlug,
-				$propertyName
-			);
+		parent::__construct(message: self::describe(reference: $reference, message: $message), code: $code, previous: $previous);
+	}//end __construct()
+
+	/**
+	 * The caller's message, or the structured default sentence when none was given.
+	 *
+	 * @param BrokenReference $reference The reference that did not resolve.
+	 * @param string|null     $message   The caller's override, if any.
+	 *
+	 * @return string The message.
+	 */
+	private static function describe(BrokenReference $reference, ?string $message): string {
+		if ($message !== null && $message !== '') {
+			return $message;
 		}
 
-		parent::__construct(
-			message: $message,
-			code: $code,
-			previous: $previous
+		return sprintf(
+			"Referenced object '%s' not found in schema '%s' for property '%s'",
+			$reference->referencedUuid,
+			$reference->targetSchemaSlug,
+			$reference->propertyName
 		);
-
-	}//end __construct()
+	}//end describe()
 
 	/**
 	 * Schema property name that holds the broken reference.
@@ -100,7 +88,7 @@ class ReferenceValidationException extends ValidationException {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
 	public function getPropertyName(): string {
-		return $this->propertyName;
+		return $this->reference->propertyName;
 	}//end getPropertyName()
 
 	/**
@@ -111,7 +99,7 @@ class ReferenceValidationException extends ValidationException {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
 	public function getReferencedUuid(): string {
-		return $this->referencedUuid;
+		return $this->reference->referencedUuid;
 	}//end getReferencedUuid()
 
 	/**
@@ -122,7 +110,7 @@ class ReferenceValidationException extends ValidationException {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
 	public function getTargetSchemaSlug(): string {
-		return $this->targetSchemaSlug;
+		return $this->reference->targetSchemaSlug;
 	}//end getTargetSchemaSlug()
 
 	/**
@@ -134,7 +122,7 @@ class ReferenceValidationException extends ValidationException {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
 	public function getTargetRegister(): ?string {
-		return $this->targetRegister;
+		return $this->reference->targetRegister;
 	}//end getTargetRegister()
 
 	/**
@@ -157,10 +145,10 @@ class ReferenceValidationException extends ValidationException {
 	 */
 	public function toArray(): array {
 		return [
-			'propertyName' => $this->propertyName,
-			'referencedUuid' => $this->referencedUuid,
-			'targetSchemaSlug' => $this->targetSchemaSlug,
-			'targetRegister' => $this->targetRegister,
+			'propertyName' => $this->reference->propertyName,
+			'referencedUuid' => $this->reference->referencedUuid,
+			'targetSchemaSlug' => $this->reference->targetSchemaSlug,
+			'targetRegister' => $this->reference->targetRegister,
 			'message' => $this->getMessage(),
 			'code' => $this->getCode(),
 		];

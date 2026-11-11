@@ -1,7 +1,7 @@
 # rbac-default-deny Specification
 
 ## Purpose
-TBD - created by archiving change rbac-default-deny-on-configured-authorization. Update Purpose after archive.
+How the RBAC layer decides an action that a schema's authorization block does not mention. A non-empty block denies every action it does not grant, to everyone but the admin group and the object's owner, and an empty block keeps the open default. The single-object, row-level and SQL list paths reach the same verdict. Created by the change `rbac-default-deny-on-configured-authorization`; holds four requirements.
 
 ## Requirements
 

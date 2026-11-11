@@ -393,7 +393,7 @@ The system MUST cache frequently evaluated permission data to avoid repeated dat
 - **AND** each schema's RBAC groups MUST be reused when generating path operations without re-extraction
 
 ### Requirement: Multi-Tenancy Integration with Scopes
-RBAC scopes MUST integrate with the multi-tenancy system so that organisation-based data isolation works alongside group-based access control. When RBAC conditional rules match on non-`_organisation` fields, they MUST be able to bypass the default multi-tenancy filter, as determined by `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()`.
+RBAC scopes MUST integrate with the multi-tenancy system so that organisation-based data isolation works alongside group-based access control. A conditional rule keeps the organisation filter unless it crosses organisations. A rule whose match pins `_organisation` to the caller's organisation (a token or `{"$eq": token}`) admits only that organisation's rows by itself, so it neither lifts nor keeps the filter. A rule crosses organisations when it binds a field other than `_organisation` to the caller's organisation (the bare `$organisation`, `$activeOrganisation` or `.uuid` token, or `{"$eq": <token>}`) or to the caller's membership (`$memberOf`), or when it declares `"crossOrganisation": true`. Any other match, such as a case type, a status or the caller's uid, selects rows inside the caller's organisation. The filter is lifted only when the caller holds at least one crossing rule and no conditional or `authenticated` rule that stays inside the organisation, because the RBAC predicate ORs every rule the caller holds. A simple group rule the caller holds still reads every row. A conditional `public` read rule (`{"group": "public", "match": {...}}`) that a signed-in, non-admin caller qualifies for (public inheritance on) widens the organisation filter by the rows it admits instead of lifting the filter: the caller reads those rows in every organisation and the rows of their other rules only in their own. An unconditional `public` rule, an anonymous caller and an admin read as before. The aggregation fast path cannot render that branch and falls back to the list. Every read path (list, union search, facets, count, aggregation, export and the single-object read) takes this decision from `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()`.
 
 #### Scenario: Organisation filtering combined with RBAC
 - **GIVEN** user `jan` has active organisation `org-uuid-1` and is in group `behandelaars`
@@ -409,11 +409,56 @@ RBAC scopes MUST integrate with the multi-tenancy system so that organisation-ba
 - **THEN** it MUST detect `aanbieder` as a non-`_organisation` match field
 - **AND** multi-tenancy filtering MUST be bypassed, allowing RBAC's `aanbieder = 'org-1'` condition to handle filtering instead
 
+#### Scenario: A conditional rule on a static value keeps the organisation filter
+- **GIVEN** schema `case` has RBAC: `{ "read": [{ "group": "team-toezicht", "match": { "caseType": { "$in": ["ct-permit"] } } }] }`
+- **AND** user `femke` is in `team-toezicht` with active organisation `org-1`
+- **AND** a `ct-permit` case belongs to `org-2`
+- **WHEN** `femke` lists cases, counts them, or reads that case by id
+- **THEN** the organisation filter MUST apply and the `org-2` case MUST NOT be returned
+- @e2e exclude {enforcement is a query boundary; covered by PHPUnit on the SQL list, the aggregation decision and the single-object query}
+
+#### Scenario: Holding a crossing rule and a rule inside the organisation keeps the filter
+- **GIVEN** schema `catalogi` has the `aanbieder` rule above and a `team-toezicht` rule on `caseType`
+- **AND** user `jan` is in both groups
+- **WHEN** `jan` lists catalogi
+- **THEN** the organisation filter MUST apply, so the `caseType` rule cannot reach other organisations' rows
+- @e2e exclude {covered by PHPUnit on the SQL list}
+
+#### Scenario: An own-organisation rule beside a crossing rule does not keep the filter
+- **GIVEN** schema `usage` has `{ "group": "aanbod-beheerder", "match": { "_organisation": "$organisation" } }` and `{ "group": "aanbod-beheerder", "match": { "provider": "$organisation" } }`
+- **WHEN** a member of `aanbod-beheerder` in `org-1` lists usages
+- **THEN** usages of other organisations whose `provider` is `org-1` MUST be returned, besides `org-1`'s own
+- @e2e exclude {covered by PHPUnit on the SQL list}
+
+#### Scenario: A conditional public rule does not take the caller's other rules across organisations
+- **GIVEN** schema `case` has RBAC: `{ "read": [{ "group": "public", "match": { "status": "open" } }, { "group": "team-toezicht", "match": { "caseType": { "$in": ["ct-permit"] } } }], "inheritFromPublic": true }`
+- **AND** user `femke` is in `team-toezicht` with active organisation `org-1`
+- **WHEN** `femke` lists cases, counts them, or reads one by id
+- **THEN** open cases of every organisation MUST be returned
+- **AND** `ct-permit` cases of other organisations that are not open MUST NOT be returned
+- @e2e exclude {enforcement is a query boundary; covered by PHPUnit on the SQL list, the QueryBuilder single-object read and the aggregation decision}
+
+#### Scenario: A rule may declare that it crosses organisations
+- **GIVEN** a read rule `{ "group": "landelijk-team", "match": { "caseType": "ct-national" }, "crossOrganisation": true }`
+- **WHEN** a member of `landelijk-team` lists the schema
+- **THEN** the organisation filter MUST be lifted for that member
+- **AND** a `crossOrganisation` value other than the boolean `true` MUST be ignored
+- @e2e exclude {covered by PHPUnit on the SQL list}
+
 #### Scenario: Admin users see all organisations
 - **GIVEN** a user in the `admin` group
 - **WHEN** they query any register
 - **THEN** `MagicRbacHandler::applyRbacFilters()` MUST return without filtering (admin bypass)
 - **AND** multi-tenancy filtering MUST also be bypassed for admin users
+
+#### Scenario: A search that names no table reads under each table's rules
+- **GIVEN** user `jan` has active organisation `org-1`
+- **AND** a search names no register or schema and selects by `_ids` or `_relations_contains`
+- **AND** the selected rows lie in several tables, some of them in `org-2`
+- **WHEN** `jan` runs the search
+- **THEN** each table MUST answer under the same organisation boundary and read rules as a listing of that table
+- **AND** the `org-2` rows MUST NOT appear in the results, the total, or the registers and schemas of the response
+- @e2e exclude {enforcement is a query boundary; covered by the PHPUnit tests on a real database in tests/Db}
 
 ### Requirement: Scope Audit (Who Has Access to What)
 The system MUST provide mechanisms to determine which groups/users have access to which schemas and properties, supporting compliance auditing and access reviews.
@@ -985,6 +1030,91 @@ widening the RBAC vocabulary.
 - **THEN** it contains no verb, scope or role expressing "may act as another
   user"
 
+### Requirement: A roles block that resolves to nothing grants nothing
+
+When an authorization block declares `roles` and none of them can be expanded,
+because the parent register declares no role definitions or every role name is
+unknown, the expanded block SHALL grant no verb to anybody: `read`, `create`,
+`update` and `delete` SHALL each be an empty list. It SHALL NOT be read as an
+absent block, which is open to every signed in account. The administrator and
+object owner bypasses SHALL still apply, and a block that keeps any other rule
+after expansion SHALL be evaluated as written.
+
+#### Scenario: A schema with roles only and a register without role definitions
+@e2e exclude An engine verdict with no surface of its own; asserted through hasPermission() in tests/Unit/Service/Object/PermissionHandlerHandlingTeamRuleTest.php.
+- **GIVEN** a schema whose authorization is `{"roles": {"behandelaar": ["behandelaars"]}}`
+- **AND** a parent register that declares no role definitions
+- **WHEN** a signed in user in no group asks to read, update or delete an object of it
+- **THEN** each SHALL be refused
+- **AND** an administrator SHALL still be allowed
+
+#### Scenario: A schema whose role names are all unknown
+@e2e exclude Same engine verdict; asserted in tests/Unit/Service/Object/PermissionHandlerRoleHierarchyTest.php.
+- **GIVEN** a register declaring the role `viewer`
+- **AND** a schema whose authorization assigns only the unknown role `ghost`
+- **WHEN** the block is expanded
+- **THEN** every canonical verb SHALL be an empty list
+
+### Requirement: A matrix row may add conditions and an end
+
+A department matrix row SHALL accept `where`, extra conditions in the scope vocabulary joined with AND to the row's field condition, and `until`, after which the row grants nothing. A `where` key SHALL be a property of the schema or one of the metadata fields `_organisation` and `_owner`, which the system sets and every enforcement path reads from the row's own column; any other key is refused with `matrix.where-unknown-field`. A `where` that binds a field other than `_organisation` to the caller's organisation (`"$organisation"`, `"$activeOrganisation"` or their `.uuid` form) compiles into a rule that reads other organisations' rows, so anyone who may write matrix rows could otherwise open that door. Such a row SHALL declare `"crossOrganisation": true` (the boolean); without it the validator refuses the row with `matrix.where-crosses-organisations` and the compiler drops it whole. The compiled scope SHALL be an ordinary conditional scope, evaluated identically on the PHP and SQL paths. A row whose `where` holds an empty `$in` SHALL be dropped whole.
+
+#### Scenario: an edit right limited to statuses
+
+- **GIVEN** schema `case` with a matrix on `assignedGroup`, a row for group `intakers` with value `team-a`, actions `update` and `where` `{status: {$in: ["s1"]}}`, and a second row for `intakers` with actions `read` and no `where`
+- **AND** user A in groups `intakers` and `team-a`
+- **WHEN** A updates a `team-a` case in status `s1`, then one in status `s2`
+- **THEN** the first update is allowed and the second refused
+- **AND** A still reads the case in `s2`
+- @e2e exclude {enforcement is a service boundary; covered by PHPUnit on both the PHP and the SQL path}
+
+#### Scenario: a row limited to the caller's organisation
+
+- **GIVEN** a matrix row for group `team-toezicht` with `where` `{_organisation: "$organisation"}`
+- **WHEN** the schema is saved, or an app adds the row at check time
+- **THEN** the row is accepted and its compiled scope carries `_organisation: "$organisation"` beside the field condition
+- **AND** a `where` on `_uuid`, `_created` or another metadata field is refused
+- @e2e exclude {covered by unit tests on the validator and compiler}
+
+#### Scenario: a row whose where reads across organisations must say so
+
+- **GIVEN** a matrix row with `where` `{provider: "$organisation"}` and no `crossOrganisation`
+- **WHEN** the schema is saved, or an app adds the row at check time
+- **THEN** it is refused with `matrix.where-crosses-organisations` and the compiler drops it
+- **AND** the same row with `"crossOrganisation": true` compiles into `{provider: "$organisation"}` beside the field condition
+- @e2e exclude {covered by unit tests on the validator and compiler}
+
+#### Scenario: a row past its end
+
+- **GIVEN** a row with `until` yesterday
+- **WHEN** its group lists objects
+- **THEN** the row admits nobody
+- @e2e exclude {covered by unit tests on the compiler}
+
+### Requirement: `$self` can mean a group the caller is in
+
+A matrix user source SHALL accept `{groups: true}`, making the caller's own values their Nextcloud group ids without a prefix.
+
+#### Scenario: own team
+
+- **GIVEN** a matrix on `assignedGroup` with user source `{groups: true}` and a row `$self` for group `handlers` with `read`
+- **AND** user A in `handlers` and `team-a`
+- **WHEN** A lists cases
+- **THEN** A sees the cases assigned to `team-a` and none assigned to `team-b`
+- @e2e exclude {covered by PHPUnit on both paths}
+
+### Requirement: An app contributes matrix rows at check time
+
+A matrix SHALL accept `rowsFrom`, a provider id. At check time OpenRegister SHALL dispatch `MatrixRowsRequestedEvent` once per request and schema and compile the rows listeners add beside the declared rows, through the same validator. A listener failure SHALL contribute no rows.
+
+#### Scenario: a provider row admits, a failing provider admits nobody
+
+- **GIVEN** a schema whose matrix declares `rowsFrom: "dossiq.case-type-rights"` and no rows of its own
+- **WHEN** a listener adds a row granting `read` to group `inspectors` on value `team-a`
+- **THEN** a member of `inspectors` and `team-a` reads a `team-a` object
+- **AND** when the listener throws, the same member reads nothing through the matrix
+- @e2e exclude {covered by PHPUnit with a real event dispatcher}
+
 ### Requirement: The delegation store MUST sit outside the access control it informs
 
 Grant lookups MUST NOT pass through the object-level authorization path. A read
@@ -1012,6 +1142,116 @@ grant store MUST NOT be expressed as a permission verb, scope or role.
 
 - **WHEN** the permission model is read after this change
 - **THEN** it contains no verb, scope or role expressing delegation
+
+### Requirement: A schema declares the property that names its parent (REQ-RIC-001)
+
+A schema MAY declare `x-openregister-hierarchy` with a `parent` property
+name and a `maxDepth`. The named property MUST be a declared reference to
+the same schema; a schema that names anything else SHALL fail to save with
+HTTP 422. A schema without the annotation SHALL resolve authorization
+exactly as it does today.
+
+#### Scenario: a valid hierarchy declaration is accepted
+
+- **GIVEN** a schema `case` with a `parentCase` property declared as a reference to `case`
+- **WHEN** the schema is saved with `x-openregister-hierarchy: {"parent": "parentCase", "maxDepth": 5}`
+- **THEN** the save succeeds
+- @e2e exclude {annotation validator, covered by unit tests}
+
+#### Scenario: a parent property that points elsewhere is refused
+
+- **GIVEN** a schema `case` whose `assignee` property references the schema `user`
+- **WHEN** the schema is saved with `x-openregister-hierarchy: {"parent": "assignee"}`
+- **THEN** the save fails with HTTP 422 and the message names the property
+- @e2e exclude {annotation validator, covered by unit tests}
+
+#### Scenario: an undeclared hierarchy changes nothing
+
+- **GIVEN** a schema without `x-openregister-hierarchy`
+- **WHEN** a per-object grant is evaluated on one of its objects
+- **THEN** the answer is the same as before this change
+- @e2e exclude {regression assertion, covered by unit tests}
+
+### Requirement: A grant on an ancestor answers for its descendants (REQ-RIC-002)
+
+Where a schema declares its hierarchy, a per-object grant on an object
+SHALL grant the same verbs on every descendant reachable through the
+declared parent property, without a second grant. The inherited grant
+SHALL carry the ancestor's verbs and no others. A grant written directly
+on a descendant SHALL be evaluated beside the inherited one under the
+existing most-specific-wins resolution. The object list SHALL return the
+same set the per-object check allows.
+
+#### Scenario: read on the root reaches the grandchild
+
+- **GIVEN** a root object, a child and a grandchild linked by the declared parent property
+- **AND** a user holding a per-object `read` grant on the root only
+- **WHEN** the user reads the grandchild
+- **THEN** the grandchild is returned
+
+#### Scenario: read does not become write
+
+- **GIVEN** the same user and the same `read` grant on the root
+- **WHEN** the user saves a change to the child
+- **THEN** the write is refused
+
+#### Scenario: the list agrees with the read
+
+- **GIVEN** the same user and the same grant
+- **WHEN** the user lists the schema's objects
+- **THEN** the root, the child and the grandchild are all in the result
+- **AND** an object in a different tree they hold no grant on is not
+
+#### Scenario: a direct grant on a descendant still applies
+
+- **GIVEN** a user with `read` on the root and a direct `update` grant on the child
+- **WHEN** the user saves a change to the child
+- **THEN** the write succeeds
+- @e2e exclude {resolution order, covered by unit tests}
+
+### Requirement: Resolution is bounded and fails closed (REQ-RIC-003)
+
+Ancestor resolution SHALL stop at the schema's `maxDepth` and SHALL detect
+a cycle in the parent chain. In both cases the resolution SHALL return no
+grant and SHALL log the refusal with the object and the reason. Resolution
+SHALL be a single recursive query on both the object path and the list
+path.
+
+#### Scenario: a cycle grants nothing
+
+- **GIVEN** two objects that name each other as parent
+- **AND** a user with a per-object grant on neither
+- **WHEN** the user reads one of them
+- **THEN** access is refused and the refusal is logged with the cycle
+- @e2e exclude {fail-closed path, covered by unit tests}
+
+#### Scenario: a chain longer than maxDepth stops
+
+- **GIVEN** a schema with `maxDepth: 3` and a chain of six objects
+- **AND** a user holding a grant on the top object only
+- **WHEN** the user reads the sixth
+- **THEN** access is refused
+- @e2e exclude {depth cap, covered by unit tests}
+
+#### Scenario: a list over a tree stays one query
+
+- **GIVEN** a tree of 500 objects at depth 5
+- **WHEN** a user with a grant on the root lists them
+- **THEN** the list is answered within the performance budget of openregister ADR-009
+- @e2e exclude {performance assertion, covered by the query-count test}
+
+### Requirement: An inherited grant names where it came from (REQ-RIC-004)
+
+`GET /api/scopes` and the scope audit SHALL report an inherited grant with
+the ancestor object that carries it, distinguishable from a grant written
+on the object itself.
+
+#### Scenario: the audit points at the ancestor
+
+- **GIVEN** a user who may read a grandchild only through a grant on the root
+- **WHEN** an administrator asks who has access to the grandchild
+- **THEN** the user is listed with the root named as the source of the grant
+- @e2e exclude {discovery endpoint, covered by Newman}
 
 ### Requirement: The set of grantable permissions is published (REQ-PPD-001)
 
@@ -1288,116 +1528,6 @@ and REQ-PPD-003 SHALL apply in every mode.
 - **WHEN** an administrator saves a block granting and denying `delete` to one group at one level
 - **THEN** the save fails with HTTP 422
 - @e2e exclude {validator, covered by unit tests}
-
-### Requirement: A schema declares the property that names its parent (REQ-RIC-001)
-
-A schema MAY declare `x-openregister-hierarchy` with a `parent` property
-name and a `maxDepth`. The named property MUST be a declared reference to
-the same schema; a schema that names anything else SHALL fail to save with
-HTTP 422. A schema without the annotation SHALL resolve authorization
-exactly as it does today.
-
-#### Scenario: a valid hierarchy declaration is accepted
-
-- **GIVEN** a schema `case` with a `parentCase` property declared as a reference to `case`
-- **WHEN** the schema is saved with `x-openregister-hierarchy: {"parent": "parentCase", "maxDepth": 5}`
-- **THEN** the save succeeds
-- @e2e exclude {annotation validator, covered by unit tests}
-
-#### Scenario: a parent property that points elsewhere is refused
-
-- **GIVEN** a schema `case` whose `assignee` property references the schema `user`
-- **WHEN** the schema is saved with `x-openregister-hierarchy: {"parent": "assignee"}`
-- **THEN** the save fails with HTTP 422 and the message names the property
-- @e2e exclude {annotation validator, covered by unit tests}
-
-#### Scenario: an undeclared hierarchy changes nothing
-
-- **GIVEN** a schema without `x-openregister-hierarchy`
-- **WHEN** a per-object grant is evaluated on one of its objects
-- **THEN** the answer is the same as before this change
-- @e2e exclude {regression assertion, covered by unit tests}
-
-### Requirement: A grant on an ancestor answers for its descendants (REQ-RIC-002)
-
-Where a schema declares its hierarchy, a per-object grant on an object
-SHALL grant the same verbs on every descendant reachable through the
-declared parent property, without a second grant. The inherited grant
-SHALL carry the ancestor's verbs and no others. A grant written directly
-on a descendant SHALL be evaluated beside the inherited one under the
-existing most-specific-wins resolution. The object list SHALL return the
-same set the per-object check allows.
-
-#### Scenario: read on the root reaches the grandchild
-
-- **GIVEN** a root object, a child and a grandchild linked by the declared parent property
-- **AND** a user holding a per-object `read` grant on the root only
-- **WHEN** the user reads the grandchild
-- **THEN** the grandchild is returned
-
-#### Scenario: read does not become write
-
-- **GIVEN** the same user and the same `read` grant on the root
-- **WHEN** the user saves a change to the child
-- **THEN** the write is refused
-
-#### Scenario: the list agrees with the read
-
-- **GIVEN** the same user and the same grant
-- **WHEN** the user lists the schema's objects
-- **THEN** the root, the child and the grandchild are all in the result
-- **AND** an object in a different tree they hold no grant on is not
-
-#### Scenario: a direct grant on a descendant still applies
-
-- **GIVEN** a user with `read` on the root and a direct `update` grant on the child
-- **WHEN** the user saves a change to the child
-- **THEN** the write succeeds
-- @e2e exclude {resolution order, covered by unit tests}
-
-### Requirement: Resolution is bounded and fails closed (REQ-RIC-003)
-
-Ancestor resolution SHALL stop at the schema's `maxDepth` and SHALL detect
-a cycle in the parent chain. In both cases the resolution SHALL return no
-grant and SHALL log the refusal with the object and the reason. Resolution
-SHALL be a single recursive query on both the object path and the list
-path.
-
-#### Scenario: a cycle grants nothing
-
-- **GIVEN** two objects that name each other as parent
-- **AND** a user with a per-object grant on neither
-- **WHEN** the user reads one of them
-- **THEN** access is refused and the refusal is logged with the cycle
-- @e2e exclude {fail-closed path, covered by unit tests}
-
-#### Scenario: a chain longer than maxDepth stops
-
-- **GIVEN** a schema with `maxDepth: 3` and a chain of six objects
-- **AND** a user holding a grant on the top object only
-- **WHEN** the user reads the sixth
-- **THEN** access is refused
-- @e2e exclude {depth cap, covered by unit tests}
-
-#### Scenario: a list over a tree stays one query
-
-- **GIVEN** a tree of 500 objects at depth 5
-- **WHEN** a user with a grant on the root lists them
-- **THEN** the list is answered within the performance budget of openregister ADR-009
-- @e2e exclude {performance assertion, covered by the query-count test}
-
-### Requirement: An inherited grant names where it came from (REQ-RIC-004)
-
-`GET /api/scopes` and the scope audit SHALL report an inherited grant with
-the ancestor object that carries it, distinguishable from a grant written
-on the object itself.
-
-#### Scenario: the audit points at the ancestor
-
-- **GIVEN** a user who may read a grandchild only through a grant on the root
-- **WHEN** an administrator asks who has access to the grandchild
-- **THEN** the user is listed with the root named as the source of the grant
-- @e2e exclude {discovery endpoint, covered by Newman}
 
 ## ZGW Autorisaties Mapping Guide
 

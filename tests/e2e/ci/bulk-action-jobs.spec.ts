@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * BULK ACTION JOBS, end to end, over the HTTP API.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still
- * resolve once `openspec/changes/bulk-action-jobs/specs/` is archived into
+ * resolve once `openspec/changes/archive/2026-10-30-bulk-action-jobs/specs/` is archived into
  * `openspec/specs/`:
  *
  * @e2e bulk-action-jobs::selecting-every-match-is-not-the-same-as-selecting-the-page

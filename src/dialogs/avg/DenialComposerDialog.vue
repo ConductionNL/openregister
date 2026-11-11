@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="t('openregister', 'Compose denial')"
 		size="normal"
-		:canClose="!saving"
+		:noClose="saving"
 		@closing="$emit('close')">
 		<form class="denialForm" @submit.prevent="onSubmit">
 			<p class="denialIntro">
@@ -55,64 +55,36 @@
 				}}
 			</p>
 
-			<NcNoteCard v-if="error" type="error">
-				{{ error }}
-			</NcNoteCard>
-
-			<div class="denialActions">
-				<NcButton
-					variant="tertiary"
-					:disabled="saving"
-					@click="$emit('close')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					variant="primary"
-					type="submit"
-					:disabled="saving || !ground">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-					</template>
-					{{ t('openregister', 'Draft denial') }}
-				</NcButton>
-			</div>
+			<AvgFormFooter
+				:error="error"
+				:saving="saving"
+				:incomplete="!ground"
+				:submitLabel="t('openregister', 'Draft denial')"
+				@close="$emit('close')" />
 		</form>
 	</NcDialog>
 </template>
 
 <script>
 import {
-	NcButton,
 	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-import { resolveGroundOptions, resolveTemplateRef } from '../../store/modules/avg.js'
+import AvgFormFooter from './AvgFormFooter.vue'
+import { resolveTemplateRef } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
+import { caseDialogProps, groundOptions } from './caseDialog.js'
 
 export default {
 	name: 'DenialComposerDialog',
 
 	components: {
+		AvgFormFooter,
 		NcDialog,
 		NcSelect,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
 	},
 
-	props: {
-		caseId: {
-			type: String,
-			required: true,
-		},
-
-		pack: {
-			type: Object,
-			default: null,
-		},
-	},
+	props: caseDialogProps,
 
 	emits: ['close', 'drafted'],
 
@@ -125,12 +97,7 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec exclude Presentation glue: maps the active pack's denial-grounds enum to NcSelect options; resolution owned by the store helper.
-		 */
-		groundOptions() {
-			return resolveGroundOptions(this.pack)
-		},
+		groundOptions,
 
 		/**
 		 * @spec exclude Presentation glue: looks up the selected option for the citation display.
@@ -172,7 +139,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/dialogs.scss' as *;
+
 .denialForm {
 	display: flex;
 	flex-direction: column;
@@ -205,12 +174,5 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 	margin-top: 4px;
-}
-
-.denialActions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 8px;
 }
 </style>

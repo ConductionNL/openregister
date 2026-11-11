@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Service\Flow\RunSignal;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunAssignee;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
@@ -154,15 +155,15 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 		$assignee = new FlowRunAssignee(null, $this->registryOf($positions));
 		$run = $this->runAssignedTo(['type' => 'position', 'id' => 'chair']);
 
-		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'alice'));
-		$this->assertFalse($assignee->mayAnswer(run: $run, uid: 'bob'));
+		$this->assertTrue($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'alice')));
+		$this->assertFalse($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'bob')));
 
 		// June: bob takes the chair.
 		$positions->holders['chair'] = ['bob'];
 
-		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'bob'), 'the new holder must be able to answer');
+		$this->assertTrue($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'bob')), 'the new holder must be able to answer');
 		$this->assertFalse(
-			$assignee->mayAnswer(run: $run, uid: 'alice'),
+			$assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'alice')),
 			'the former holder must not, however the task records who was asked'
 		);
 	}//end testAPositionAuthorisesWhoeverHoldsItNow()
@@ -188,14 +189,14 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 		$assignee = new FlowRunAssignee($groups, $this->registryOf($users));
 
 		$this->assertFalse(
-			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'user', 'id' => 'bezwaar']), uid: 'carol'),
+			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'user', 'id' => 'bezwaar']), signal: new RunSignal(payload: [], actorUid: 'carol')),
 			'a typed user reference must not be satisfied by group membership'
 		);
 
 		// And the SAME instance, the SAME actor, against the legacy string:
 		// still allowed, because that is what every stored flow means.
 		$this->assertTrue(
-			$assignee->mayAnswer(run: $this->runAssignedTo('bezwaar'), uid: 'carol'),
+			$assignee->mayAnswer(run: $this->runAssignedTo('bezwaar'), signal: new RunSignal(payload: [], actorUid: 'carol')),
 			'a bare string keeps its old, wider meaning'
 		);
 	}//end testATypedUserIsNotSatisfiedByAGroupOfTheSameName()
@@ -210,11 +211,11 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 	public function testAnUnassignedStepIsStillOpen(): void {
 		$assignee = new FlowRunAssignee(null, $this->registryOf(new RosterResolver()));
 
-		$this->assertTrue($assignee->mayAnswer(run: $this->runAssignedTo(''), uid: 'anyone'));
-		$this->assertTrue($assignee->mayAnswer(run: $this->runAssignedTo([]), uid: 'anyone'));
-		$this->assertTrue($assignee->mayAnswer(run: $this->runAssignedTo(null), uid: 'anyone'));
+		$this->assertTrue($assignee->mayAnswer(run: $this->runAssignedTo(''), signal: new RunSignal(payload: [], actorUid: 'anyone')));
+		$this->assertTrue($assignee->mayAnswer(run: $this->runAssignedTo([]), signal: new RunSignal(payload: [], actorUid: 'anyone')));
+		$this->assertTrue($assignee->mayAnswer(run: $this->runAssignedTo(null), signal: new RunSignal(payload: [], actorUid: 'anyone')));
 		// Even with no session at all: unassigned is deliberately open.
-		$this->assertTrue($assignee->mayAnswer(run: $this->runAssignedTo(''), uid: null));
+		$this->assertTrue($assignee->mayAnswer(run: $this->runAssignedTo(''), signal: new RunSignal(payload: [], actorUid: null)));
 	}//end testAnUnassignedStepIsStillOpen()
 
 	/**
@@ -228,7 +229,7 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 		$assignee = new FlowRunAssignee(null, $this->registryOf($positions));
 
 		$this->assertFalse(
-			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'position', 'id' => 'chair']), uid: null)
+			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'position', 'id' => 'chair']), signal: new RunSignal(payload: [], actorUid: null))
 		);
 	}//end testAnAssignedStepRefusesAnAnonymousAnswer()
 
@@ -250,9 +251,9 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 			]
 		);
 
-		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'alice'));
-		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'bob'));
-		$this->assertFalse($assignee->mayAnswer(run: $run, uid: 'carol'));
+		$this->assertTrue($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'alice')));
+		$this->assertTrue($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'bob')));
+		$this->assertFalse($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'carol')));
 	}//end testAListAuthorisesTheUnion()
 
 	/**
@@ -268,7 +269,7 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 		$assignee = new FlowRunAssignee();
 
 		$this->assertFalse(
-			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'position', 'id' => 'chair']), uid: 'alice')
+			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'position', 'id' => 'chair']), signal: new RunSignal(payload: [], actorUid: 'alice'))
 		);
 	}//end testATypedAssignmentWithoutAResolverRefuses()
 
@@ -283,7 +284,7 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 		$assignee = new FlowRunAssignee(null, $this->registryOf(new RosterResolver('function')));
 
 		$this->assertFalse(
-			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'position', 'id' => 'chair']), uid: 'alice')
+			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'position', 'id' => 'chair']), signal: new RunSignal(payload: [], actorUid: 'alice'))
 		);
 	}//end testAnUnresolvableTypeRefuses()
 
@@ -307,9 +308,9 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 		$assignee = new FlowRunAssignee($groups, $this->registryOf($agents));
 		$run = $this->runAssignedTo(['type' => 'agent', 'id' => 'scribe']);
 
-		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'scribe'));
+		$this->assertTrue($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'scribe')));
 		$this->assertFalse(
-			$assignee->mayAnswer(run: $run, uid: 'alice'),
+			$assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'alice')),
 			'a human must not answer for the agent, however many groups they share'
 		);
 	}//end testAnAgentStepIsNotAnswerableByTheHumansAroundIt()
@@ -347,14 +348,14 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 
 		// Raised for the agent…
 		$this->assertTrue(
-			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'agent', 'id' => 'scribe']), uid: 'scribe')
+			$assignee->mayAnswer(run: $this->runAssignedTo(['type' => 'agent', 'id' => 'scribe']), signal: new RunSignal(payload: [], actorUid: 'scribe'))
 		);
 
 		// …and reassigned to a person, who may now answer it while the agent
 		// may not.
 		$reassigned = $this->runAssignedTo(['type' => 'user', 'id' => 'alice']);
-		$this->assertTrue($assignee->mayAnswer(run: $reassigned, uid: 'alice'));
-		$this->assertFalse($assignee->mayAnswer(run: $reassigned, uid: 'scribe'));
+		$this->assertTrue($assignee->mayAnswer(run: $reassigned, signal: new RunSignal(payload: [], actorUid: 'alice')));
+		$this->assertFalse($assignee->mayAnswer(run: $reassigned, signal: new RunSignal(payload: [], actorUid: 'scribe')));
 	}//end testAnAgentTaskReassignedToAPersonIsAnswerableByThatPerson()
 
 	/**
@@ -391,9 +392,9 @@ final class FlowRunAssigneeTypedTest extends TestCase {
 			]
 		);
 
-		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'bob'), 'whoever holds the post now may answer');
+		$this->assertTrue($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'bob')), 'whoever holds the post now may answer');
 		$this->assertFalse(
-			$assignee->mayAnswer(run: $run, uid: 'alice'),
+			$assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'alice')),
 			'the recorded resolution must not authorise somebody who has since left'
 		);
 

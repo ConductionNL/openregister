@@ -64,7 +64,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/delegated-identity/spec.md
  */
-class FlowUnattributed extends RuntimeException {
+class FlowUnattributed extends RuntimeException implements FlowUnattributedInterface {
 
 	/**
 	 * Constructor.
@@ -78,22 +78,38 @@ class FlowUnattributed extends RuntimeException {
 	 * @param string $flowId  The flow that could not be attributed.
 	 * @param string $trigger What started the run — `manual`, `schedule`, an
 	 *                        event id, `sub-flow`, `nc-flow`.
+	 * @param string|null $reason Why, when someone was named and may not be used.
 	 */
 	public function __construct(
 		private readonly string $flowId,
 		private readonly string $trigger,
+		?string $reason = null,
 	) {
 		parent::__construct(
 			message: sprintf(
-				'Refusing to start flow "%s": the "%s" trigger named no acting identity. '
-				. 'A run started by a person acts as that person; a run started on a schedule acts as the '
-				. 'user its schedule trigger declares in "runAs". The flow\'s owner is not used as a '
-				. 'fallback — authoring a flow is not consent to unattended execution as its author.',
+				'Refusing to start flow "%s": %s',
 				$flowId,
-				$trigger
+				($reason ?? self::noIdentityReason(trigger: $trigger))
 			)
 		);
 	}//end __construct()
+
+	/**
+	 * Why a run whose trigger named no acting identity is refused.
+	 *
+	 * @param string $trigger What started the run.
+	 *
+	 * @return string The reason.
+	 */
+	private static function noIdentityReason(string $trigger): string {
+		return sprintf(
+			'the "%s" trigger named no acting identity. '
+			. 'A run started by a person acts as that person; a run started on a schedule acts as the '
+			. 'user its schedule trigger declares in "runAs". The flow\'s owner is not used as a '
+			. 'fallback — authoring a flow is not consent to unattended execution as its author.',
+			$trigger
+		);
+	}//end noIdentityReason()
 
 	/**
 	 * The flow that could not be attributed.

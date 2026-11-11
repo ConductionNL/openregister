@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="t('openregister', 'Apply redaction')"
 		size="normal"
-		:canClose="!saving"
+		:noClose="saving"
 		@closing="$emit('close')">
 		<form class="redactionForm" @submit.prevent="onSubmit">
 			<p class="redactionIntro">
@@ -37,66 +37,37 @@
 				:reduce="(o) => o.value"
 				required />
 
-			<NcNoteCard v-if="error" type="error">
-				{{ error }}
-			</NcNoteCard>
-
-			<div class="redactionActions">
-				<NcButton
-					variant="tertiary"
-					:disabled="saving"
-					@click="$emit('close')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					variant="primary"
-					type="submit"
-					:disabled="saving || !form.field || !form.ground">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-					</template>
-					{{ t('openregister', 'Apply redaction') }}
-				</NcButton>
-			</div>
+			<AvgFormFooter
+				:error="error"
+				:saving="saving"
+				:incomplete="!form.field || !form.ground"
+				:submitLabel="t('openregister', 'Apply redaction')"
+				@close="$emit('close')" />
 		</form>
 	</NcDialog>
 </template>
 
 <script>
 import {
-	NcButton,
 	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-import { resolveGroundOptions } from '../../store/modules/avg.js'
+import AvgFormFooter from './AvgFormFooter.vue'
 import { avgStore } from '../../store/store.js'
+import { caseDialogProps, groundOptions } from './caseDialog.js'
 
 export default {
 	name: 'RedactionDialog',
 
 	components: {
+		AvgFormFooter,
 		NcDialog,
 		NcTextField,
 		NcSelect,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
 	},
 
-	props: {
-		caseId: {
-			type: String,
-			required: true,
-		},
-
-		pack: {
-			type: Object,
-			default: null,
-		},
-	},
+	props: caseDialogProps,
 
 	emits: ['close', 'redacted'],
 
@@ -114,12 +85,7 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec exclude Presentation glue: reuses the pack's denial-grounds enum as the redaction-ground options.
-		 */
-		groundOptions() {
-			return resolveGroundOptions(this.pack)
-		},
+		groundOptions,
 	},
 
 	methods: {
@@ -134,11 +100,7 @@ export default {
 			this.saving = true
 			this.error = null
 			try {
-				await avgStore.applyRedaction(this.caseId, {
-					field: this.form.field,
-					after: this.form.after,
-					ground: this.form.ground,
-				})
+				await avgStore.applyRedaction(this.caseId, this.redaction())
 				this.$emit('redacted')
 			} catch (e) {
 				this.error = avgStore.getError ?? e.message ?? 'Redaction failed'
@@ -146,11 +108,27 @@ export default {
 				this.saving = false
 			}
 		},
+
+		/**
+		 * The redaction the form describes: the field, its new value and the
+		 * ground for it.
+		 *
+		 * @return {{field: string, after: string, ground: string}} The redaction
+		 */
+		redaction() {
+			return {
+				field: this.form.field,
+				after: this.form.after,
+				ground: this.form.ground,
+			}
+		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/dialogs.scss' as *;
+
 .redactionForm {
 	display: flex;
 	flex-direction: column;
@@ -160,12 +138,5 @@ export default {
 
 .redactionIntro {
 	color: var(--color-text-maxcontrast);
-}
-
-.redactionActions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 8px;
 }
 </style>

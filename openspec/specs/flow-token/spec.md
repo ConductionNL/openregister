@@ -1,7 +1,7 @@
 # flow-token Specification
 
 ## Purpose
-TBD - created by archiving change openregister-flow-executionmode-and-token. Update Purpose after archive.
+The mutable token a flow run carries from step to step. It survives suspension and resumption, seeds a sub-flow with its parent's token, and comes back to the parent when the parent waited on the sub-flow. Created by the change `openregister-flow-executionmode-and-token`; holds four requirements.
 
 ## Requirements
 

@@ -1,7 +1,7 @@
 # operations-console Specification
 
 ## Purpose
-TBD - created by archiving change admin-operations-console. Update Purpose after archive.
+The administrator's view of the instance's background work and its own health. Every run is listed with its outcome, a run can be started again once, a recurring job's schedule is administered with an alert on repeated failure, maintenance actions run as recorded jobs, a data check is separate from its repair, maintenance mode keeps administration reachable, and a redacted support bundle and the instance facts are readable. Created by the change `admin-operations-console`; holds seven requirements (REQ-AOC-001 to REQ-AOC-007).
 
 ## Requirements
 

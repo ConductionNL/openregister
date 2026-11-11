@@ -27,13 +27,16 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Service\Configuration\GitHubHandler;
-use OCA\OpenRegister\Service\Configuration\GitLabHandler;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Db\ConfigurationSyncResult;
+use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
+use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
+use OCA\OpenRegister\Service\Config\ConfigurationRecords;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 /**
  * Class SyncConfigurationsJob
@@ -46,82 +49,51 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress UnusedClass
  */
 class SyncConfigurationsJob extends TimedJob {
+	/**
+	 * How often, in seconds, the job checks which configurations are due.
+	 *
+	 * @var int
+	 */
+	private const SYNC_CHECK_INTERVAL = 3600;
 
 	/**
-	 * Configuration mapper instance.
+	 * Configuration mapper.
 	 *
-	 * @var ConfigurationMapper The configuration mapper instance.
+	 * @var ConfigurationMapperInterface
 	 */
-	private ConfigurationMapper $configurationMapper;
+	private readonly ConfigurationMapperInterface $configurationMapper;
 
 	/**
-	 * Configuration service instance.
+	 * Imports the fetched configurations.
 	 *
-	 * @var ConfigurationService The configuration service instance.
+	 * @var AppConfigurationImporterInterface
 	 */
-	private ConfigurationService $configurationService;
-
-	/**
-	 * GitHub service instance.
-	 *
-	 * @var GitHubHandler The GitHub service instance.
-	 */
-	private GitHubHandler $githubService;
-
-	/**
-	 * GitLab service instance.
-	 *
-	 * @var GitLabHandler The GitLab service instance.
-	 */
-	private GitLabHandler $gitlabService;
-
-	/**
-	 * HTTP client instance.
-	 *
-	 * @var Client The HTTP client instance.
-	 */
-	private Client $httpClient;
-
-	/**
-	 * Logger instance.
-	 *
-	 * @var LoggerInterface The logger instance.
-	 */
-	private LoggerInterface $logger;
+	private readonly AppConfigurationImporterInterface $configurationService;
 
 	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory $time Time factory for job scheduling
-	 * @param ConfigurationMapper $configurationMapper Configuration mapper
-	 * @param ConfigurationService $configurationService Configuration service
-	 * @param GitHubHandler $githubService GitHub service
-	 * @param GitLabHandler $gitlabService GitLab service
-	 * @param Client $httpClient HTTP client
-	 * @param LoggerInterface $logger Logger
+	 * @param ITimeFactory           $time          Time factory for job scheduling
+	 * @param ConfigurationRecords   $records       Configuration mapper and the service that imports them
+	 * @param GitHubClientInterface  $githubService GitHub service
+	 * @param GitLabHandlerInterface $gitlabService GitLab service
+	 * @param Client                 $httpClient    HTTP client
+	 * @param LoggerInterface        $logger        Logger
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		ConfigurationMapper $configurationMapper,
-		ConfigurationService $configurationService,
-		GitHubHandler $githubService,
-		GitLabHandler $gitlabService,
-		Client $httpClient,
-		LoggerInterface $logger,
+		ConfigurationRecords $records,
+		private readonly GitHubClientInterface $githubService,
+		private readonly GitLabHandlerInterface $gitlabService,
+		private readonly Client $httpClient,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
-
-		$this->configurationMapper = $configurationMapper;
-		$this->configurationService = $configurationService;
-		$this->githubService = $githubService;
-		$this->gitlabService = $gitlabService;
-		$this->httpClient = $httpClient;
-		$this->logger = $logger;
-
-		// Run every hour (3600 seconds).
-		$this->setInterval(seconds: 3600);
+		$this->configurationMapper  = $records->configurationMapper;
+		$this->configurationService = $records->configurationService;
+		$this->setInterval(seconds: self::SYNC_CHECK_INTERVAL);
 	}//end __construct()
 
 	/**
@@ -138,83 +110,78 @@ class SyncConfigurationsJob extends TimedJob {
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	protected function run($argument): void {
-		$this->logger->info(
-			message: '[SyncConfigurationsJob] Starting configuration sync job',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->logInfo(message: 'Starting configuration sync job');
 
 		try {
-			// Get all configurations with sync enabled.
 			$configurations = $this->configurationMapper->findBySyncEnabled();
-			$this->logger->info(
-				message: '[SyncConfigurationsJob] Found ' . count($configurations) . ' configurations with sync enabled',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->logInfo(message: 'Found ' . count($configurations) . ' configurations with sync enabled');
 
-			$synced = 0;
-			$skipped = 0;
-			$failed = 0;
-
+			$tally = ['synced' => 0, 'skipped' => 0, 'failed' => 0];
 			foreach ($configurations as $configuration) {
-				try {
-					// Check if this configuration is due for sync.
-					if ($this->isDueForSync(configuration: $configuration) === false) {
-						$skipped++;
-						continue;
-					}
+				$tally[$this->syncOne(configuration: $configuration)]++;
+			}
 
-					$title = $configuration->getTitle();
-					$id = $configuration->getId();
-					$this->logger->info(
-						message: "[SyncConfigurationsJob] Syncing configuration: {$title} (ID: {$id})",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-
-					// Sync the configuration based on source type.
-					$this->syncConfiguration(configuration: $configuration);
-
-					$synced++;
-					$this->logger->info(
-						message: "[SyncConfigurationsJob] Successfully synced configuration {$configuration->getTitle()}",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-				} catch (Exception $e) {
-					$failed++;
-					$this->logger->error(
-						message: '[SyncConfigurationsJob] Sync error: ' . $e->getMessage(),
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-
-					// Update sync status to failed.
-					try {
-						$this->configurationMapper->updateSyncStatus(
-							id: $configuration->getId(),
-							status: 'failed',
-							syncDate: new DateTime(),
-							_message: $e->getMessage()
-						);
-					} catch (Exception $statusError) {
-						$this->logger->error(
-							message: '[SyncConfigurationsJob] Failed to update sync status: ' . $statusError->getMessage(),
-							context: ['file' => __FILE__, 'line' => __LINE__]
-						);
-					}
-
-					continue;
-				}//end try
-			}//end foreach
-
-			$this->logger->info(
-				message: "[SyncConfigurationsJob] Completed: {$synced} synced, {$skipped} skipped, {$failed} failed",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->logInfo(message: "Completed: {$tally['synced']} synced, {$tally['skipped']} skipped, {$tally['failed']} failed");
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[SyncConfigurationsJob] Configuration sync job failed: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->logError(message: 'Configuration sync job failed: ' . $e->getMessage());
 		}//end try
 	}//end run()
+
+	/**
+	 * Sync one configuration when it is due, and say what happened.
+	 *
+	 * @param Configuration $configuration Configuration to sync
+	 *
+	 * @return string synced, skipped or failed
+	 */
+	private function syncOne(Configuration $configuration): string {
+		try {
+			if ($this->isDueForSync(configuration: $configuration) === false) {
+				return 'skipped';
+			}
+
+			$this->syncAndLog(configuration: $configuration);
+			return 'synced';
+		} catch (Exception $e) {
+			$this->recordFailure(configuration: $configuration, error: $e);
+			return 'failed';
+		}
+	}//end syncOne()
+
+	/**
+	 * Sync one configuration, logging the start and the success.
+	 *
+	 * @param Configuration $configuration Configuration to sync
+	 *
+	 * @return void
+	 * @throws Exception If sync fails
+	 */
+	private function syncAndLog(Configuration $configuration): void {
+		$this->logInfo(message: "Syncing configuration: {$configuration->getTitle()} (ID: {$configuration->getId()})");
+		$this->syncConfiguration(configuration: $configuration);
+		$this->logInfo(message: "Successfully synced configuration {$configuration->getTitle()}");
+	}//end syncAndLog()
+
+	/**
+	 * Log a failed sync and record it on the configuration.
+	 *
+	 * @param Configuration $configuration Configuration whose sync failed
+	 * @param Exception $error Why it failed
+	 *
+	 * @return void
+	 */
+	private function recordFailure(Configuration $configuration, Exception $error): void {
+		$this->logError(message: 'Sync error: ' . $error->getMessage());
+
+		try {
+			$this->configurationMapper->updateSyncStatus(
+				id: $configuration->getId(),
+				result: new ConfigurationSyncResult(status: 'failed', syncDate: new DateTime(), message: $error->getMessage())
+			);
+		} catch (Exception $statusError) {
+			$this->logError(message: 'Failed to update sync status: ' . $statusError->getMessage());
+		}
+	}//end recordFailure()
 
 	/**
 	 * Check if a configuration is due for synchronization
@@ -254,27 +221,14 @@ class SyncConfigurationsJob extends TimedJob {
 	 */
 	private function syncConfiguration(Configuration $configuration): void {
 		$sourceType = $configuration->getSourceType();
-
-		switch ($sourceType) {
-			case 'github':
-				$this->syncFromGitHub(configuration: $configuration);
-				break;
-
-			case 'gitlab':
-				$this->syncFromGitLab(configuration: $configuration);
-				break;
-
-			case 'url':
-				$this->syncFromUrl(configuration: $configuration);
-				break;
-
-			case 'local':
-				$this->syncFromLocal(configuration: $configuration);
-				break;
-
-			default:
-				throw new Exception("Unsupported source type: {$sourceType}");
-		}
+		$sync = match ($sourceType) {
+			'github' => $this->syncFromGitHub(...),
+			'gitlab' => $this->syncFromGitLab(...),
+			'url' => $this->syncFromUrl(...),
+			'local' => $this->syncFromLocal(...),
+			default => throw new Exception("Unsupported source type: {$sourceType}"),
+		};
+		$sync(configuration: $configuration);
 	}//end syncConfiguration()
 
 	/**
@@ -289,43 +243,18 @@ class SyncConfigurationsJob extends TimedJob {
 	 */
 	private function syncFromGitHub(Configuration $configuration): void {
 		$githubRepo = $configuration->getGithubRepo();
-		// Format: owner/repo.
-		$githubBranch = $configuration->getGithubBranch() ?? 'main';
 		$githubPath = $configuration->getGithubPath();
-
 		if (empty($githubRepo) === true || empty($githubPath) === true) {
 			throw new Exception('GitHub repository and path are required');
 		}
 
-		// Split owner/repo.
+		// The repository is stored as owner/repo.
 		[$owner, $repo] = explode('/', $githubRepo);
-
-		// Fetch file content.
 		$configData = $this->githubService->getFileContent(
-			owner: $owner,
-			repo: $repo,
-			path: $githubPath,
-			branch: $githubBranch
+			location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $githubPath, branch: $configuration->getGithubBranch() ?? 'main')
 		);
 
-		// Get app ID and version.
-		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
-		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
-
-		// Import the configuration (force update).
-		$this->configurationService->importFromApp(
-			appId: $appId,
-			data: $configData,
-			version: $version,
-			force: true
-		);
-
-		// Update sync status.
-		$this->configurationMapper->updateSyncStatus(
-			id: $configuration->getId(),
-			status: 'success',
-			syncDate: new DateTime()
-		);
+		$this->importFetched(configuration: $configuration, configData: $configData);
 	}//end syncFromGitHub()
 
 	/**
@@ -345,42 +274,11 @@ class SyncConfigurationsJob extends TimedJob {
 			throw new Exception('Source URL is required for GitLab sync');
 		}
 
-		// Parse GitLab URL to extract namespace, project, ref, and path.
-		// Format: https://gitlab.com/namespace/project/-/blob/branch/path/to/file.json.
-		if (preg_match('#gitlab\.com/([^/]+)/([^/]+)/-/blob/([^/]+)/(.+)$#', $sourceUrl, $matches) !== 1) {
-			throw new Exception('Invalid GitLab URL format');
-		}
-
-		$namespace = $matches[1];
-		$project = $matches[2];
-		$ref = $matches[3];
-		$path = $matches[4];
-
-		// Get project info.
+		[, $namespace, $project, $ref, $path] = $this->gitlabFileLocation(sourceUrl: $sourceUrl);
 		$projectData = $this->gitlabService->getProjectByPath(namespace: $namespace, project: $project);
-		$projectId = $projectData['id'];
+		$configData = $this->gitlabService->getFileContent(projectId: $projectData['id'], path: $path, ref: $ref);
 
-		// Fetch file content.
-		$configData = $this->gitlabService->getFileContent(projectId: $projectId, path: $path, ref: $ref);
-
-		// Get app ID and version.
-		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
-		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
-
-		// Import the configuration (force update).
-		$this->configurationService->importFromApp(
-			appId: $appId,
-			data: $configData,
-			version: $version,
-			force: true
-		);
-
-		// Update sync status.
-		$this->configurationMapper->updateSyncStatus(
-			id: $configuration->getId(),
-			status: 'success',
-			syncDate: new DateTime()
-		);
+		$this->importFetched(configuration: $configuration, configData: $configData);
 	}//end syncFromGitLab()
 
 	/**
@@ -409,24 +307,7 @@ class SyncConfigurationsJob extends TimedJob {
 			throw new Exception('Invalid JSON in URL response: ' . json_last_error_msg());
 		}
 
-		// Get app ID and version.
-		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
-		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
-
-		// Import the configuration (force update).
-		$this->configurationService->importFromApp(
-			appId: $appId,
-			data: $configData,
-			version: $version,
-			force: true
-		);
-
-		// Update sync status.
-		$this->configurationMapper->updateSyncStatus(
-			id: $configuration->getId(),
-			status: 'success',
-			syncDate: new DateTime()
-		);
+		$this->importFetched(configuration: $configuration, configData: $configData);
 	}//end syncFromUrl()
 
 	/**
@@ -458,11 +339,84 @@ class SyncConfigurationsJob extends TimedJob {
 			force: true
 		);
 
-		// Update sync status.
+		$this->markSynced(configuration: $configuration);
+	}//end syncFromLocal()
+
+	/**
+	 * The namespace, project, ref and path of a GitLab file URL.
+	 *
+	 * Format: https://gitlab.com/namespace/project/-/blob/branch/path/to/file.json.
+	 *
+	 * @param string $sourceUrl GitLab blob URL
+	 *
+	 * @return array<int, string> The full match, then namespace, project, ref and path
+	 * @throws Exception When the URL is not a GitLab blob URL
+	 */
+	private function gitlabFileLocation(string $sourceUrl): array {
+		if (preg_match('#gitlab\.com/([^/]+)/([^/]+)/-/blob/([^/]+)/(.+)$#', $sourceUrl, $matches) !== 1) {
+			throw new Exception('Invalid GitLab URL format');
+		}
+
+		return $matches;
+	}//end gitlabFileLocation()
+
+	/**
+	 * Import fetched configuration data with a forced update and record the sync.
+	 *
+	 * The app id and version come from the data's `x-openregister` and `info`
+	 * blocks, falling back to the configuration's app and to 1.0.0.
+	 *
+	 * @param Configuration $configuration Configuration being synced
+	 * @param array $configData Decoded configuration document
+	 *
+	 * @return void
+	 */
+	private function importFetched(Configuration $configuration, array $configData): void {
+		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
+		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
+
+		$this->configurationService->importFromApp(
+			appId: $appId,
+			data: $configData,
+			version: $version,
+			force: true
+		);
+		$this->markSynced(configuration: $configuration);
+	}//end importFetched()
+
+	/**
+	 * Record a successful sync of a configuration now.
+	 *
+	 * @param Configuration $configuration Configuration that was synced
+	 *
+	 * @return void
+	 */
+	private function markSynced(Configuration $configuration): void {
 		$this->configurationMapper->updateSyncStatus(
 			id: $configuration->getId(),
-			status: 'success',
-			syncDate: new DateTime()
+			result: new ConfigurationSyncResult(status: 'success', syncDate: new DateTime())
 		);
-	}//end syncFromLocal()
+	}//end markSynced()
+
+	/**
+	 * Log an info line under this job's prefix.
+	 *
+	 * @param string $message The line, without prefix
+	 *
+	 * @return void
+	 */
+	private function logInfo(string $message): void {
+		$this->logger->info(message: '[SyncConfigurationsJob] ' . $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+	}//end logInfo()
+
+	/**
+	 * Log an error line under this job's prefix.
+	 *
+	 * @param string $message The line, without prefix
+	 *
+	 * @return void
+	 */
+	private function logError(string $message): void {
+		$this->logger->error(message: '[SyncConfigurationsJob] ' . $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+	}//end logError()
 }//end class

@@ -13,6 +13,7 @@ retrofit_extensions:
 @e2e exclude backend workflow/archival — covered by PHPUnit
 
 Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen. This capability builds on the archivering-vernietiging spec and integrates with the immutable audit trail and deletion audit trail for legally required evidence trails.
+
 ## Requirements
 
 ### REQ-001: DestructionCheckJob and Destruction List Generation
@@ -271,22 +272,6 @@ The `DestructionCheckJob` MUST scan for objects whose `archiefactiedatum` falls 
 - **WHEN** the `DestructionCheckJob` runs
 - **THEN** the notification subject MUST be "Object requires e-Depot transfer" rather than "Object approaching destruction date"
 
-### REQ-010: (REMOVED 2026-07-14) ArchivalService::setRetentionMetadata
-
-**Removed** with the `ArchivalService` class in `revive-or-dead-capabilities` (openregister#393).
-
-This requirement was a *retrofit* — reverse-engineered from observed code — and it
-documented a method that **never ran**: `ArchivalService` had zero references anywhere
-in `lib/` (no DI registration, controller, route, or job), so no API or job ever invoked
-`setRetentionMetadata()`. The spec claimed a retention-metadata validation write-path that
-the product did not actually perform.
-
-Rather than keep a requirement whose implementation nothing calls, the class and the
-requirement are removed together. **No live equivalent exists**: OpenRegister currently
-does not validate `archiefnominatie` / `archiefstatus` / `archiefactiedatum` on the object
-write path. If that validation is wanted, it must be wired for real (e.g. a listener on
-`ObjectCreatingEvent` / `ObjectUpdatingEvent`) — tracked as a follow-up on openregister#393.
-
 ### REQ-011: Rejected/excluded objects have their archiefactiedatum extended
 
 When a destruction-list rejection or partial-approval exclusion requires extending an
@@ -365,7 +350,6 @@ field on service failure.
 - **GIVEN** an admin posts updated destruction-scheduling values
 - **WHEN** `updateArchivalSettings` runs
 - **THEN** it MUST persist them via `SettingsService::updateArchivalSettingsOnly()` and return the result
-
 
 ### Requirement: Each matter holds an object with its own legal hold
 
@@ -474,3 +458,12 @@ A schema SHALL declare its selectielijst category (`archive.classification`, or 
 - **THEN** its `retention.classification`, nomination and action date are re-derived from row `2.3`, which is what the destruction sweep and the destruction certificate read
 - **AND** the same change on an object already nominated at its terminal state is refused with 409
 - @e2e exclude {asserted in tests/Unit/Service/RetentionClassificationOverrideTest.php}
+
+### Requirement: An archivist lists the records under an active legal hold
+
+`GET /api/archival/legal-holds` SHALL list every record whose `retention.legalHold` is active, across the magic tables and the legacy blob table, each with its active holds. A released hold SHALL NOT be listed. When the scan stops at its cap the answer SHALL say `truncated: true`. Only an archivist or an administrator SHALL get the list.
+
+#### Scenario: one held record among three
+- **GIVEN** a record with an active hold, one with a released hold and one without a hold
+- **WHEN** an archivist asks for the legal holds
+- **THEN** the answer SHALL list the first record with its hold and `total` 1

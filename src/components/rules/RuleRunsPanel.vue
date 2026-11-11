@@ -48,43 +48,28 @@
 			</template>
 		</NcEmptyContent>
 
-		<table v-else class="runTable">
-			<thead>
-				<tr>
-					<th scope="col">
-						{{ t('openregister', 'When') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'Verdict') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'Object') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'What decided it') }}
-					</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr v-for="run in runs" :key="run.id">
-					<td>{{ run.ranAt || run.created }}</td>
-					<td>{{ run.verdict }}</td>
-					<td>
-						<code>{{ run.objectUuid || '' }}</code>
-					</td>
-					<td>
-						<template v-if="run.operand">
-							<code>{{ run.operand }}</code>
-							<span class="operandValue"
-								>{{ t('openregister', 'read as') }}
-								<code>{{ run.operandValue }}</code></span
-							>
-						</template>
-						<span v-else class="muted">{{ run.message || '' }}</span>
-					</td>
-				</tr>
-			</tbody>
-		</table>
+		<CnDataTable
+			v-else
+			class="runTable"
+			:columns="columns"
+			:rows="runs">
+			<template #column-ranAt="{ row: run }">
+				{{ run.ranAt || run.created }}
+			</template>
+			<template #column-objectUuid="{ row: run }">
+				<code>{{ run.objectUuid || '' }}</code>
+			</template>
+			<template #column-operand="{ row: run }">
+				<template v-if="run.operand">
+					<code>{{ run.operand }}</code>
+					<span class="operandValue"
+						>{{ t('openregister', 'read as') }}
+						<code>{{ run.operandValue }}</code></span
+					>
+				</template>
+				<span v-else class="muted">{{ run.message || '' }}</span>
+			</template>
+		</CnDataTable>
 
 		<p v-if="total > runs.length" class="muted">
 			{{
@@ -102,6 +87,7 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import HistoryIcon from 'vue-material-design-icons/History.vue'
@@ -118,6 +104,7 @@ export default {
 	name: 'RuleRunsPanel',
 
 	components: {
+		CnDataTable,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcSelect,
@@ -150,13 +137,27 @@ export default {
 		 *
 		 * @return {Array<object>} The options.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		verdictOptions() {
 			return this.verdicts.map((row) => ({
 				id: row.verdict,
 				label: row.verdict,
 			}))
+		},
+
+		/**
+		 * The run log columns.
+		 *
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		columns() {
+			return [
+				{ key: 'ranAt', label: t('openregister', 'When') },
+				{ key: 'verdict', label: t('openregister', 'Verdict') },
+				{ key: 'objectUuid', label: t('openregister', 'Object') },
+				{ key: 'operand', label: t('openregister', 'What decided it'), cellClass: 'cn-cell--wrap' },
+			]
 		},
 	},
 
@@ -175,7 +176,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		async load() {
 			if (!this.ruleId) {
@@ -185,44 +186,70 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const filters = {}
-				if (this.verdict?.id) {
-					filters.verdict = this.verdict.id
-				}
-				if (this.since) {
-					filters.since = this.since
-				}
-				if (this.until) {
-					filters.until = this.until
-				}
-
-				const data = await fetchRuns(this.ruleId, filters)
-				this.runs = data.runs ?? []
-				this.total = data.total ?? this.runs.length
+				this.showRuns(await fetchRuns(this.ruleId, this.runFilters()))
 			} catch (failure) {
-				this.error = messageFor(
-					failure,
-					t('openregister', 'The run log could not be read.'),
-				)
-				this.runs = []
-				this.total = 0
+				this.showLoadFailure(failure)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The filters the operator set: verdict and date window, only the ones given.
+		 *
+		 * @return {object} The run log filters
+		 */
+		runFilters() {
+			const filters = {}
+			if (this.verdict?.id) {
+				filters.verdict = this.verdict.id
+			}
+			if (this.since) {
+				filters.since = this.since
+			}
+			if (this.until) {
+				filters.until = this.until
+			}
+			return filters
+		},
+
+		/**
+		 * Show a page of the run log.
+		 *
+		 * @param {object} data The runs and their total
+		 * @return {void}
+		 */
+		showRuns(data) {
+			this.runs = data.runs ?? []
+			this.total = data.total ?? this.runs.length
+		},
+
+		/**
+		 * Say why the run log could not be read, and empty it.
+		 *
+		 * @param {Error} failure What went wrong
+		 * @return {void}
+		 */
+		showLoadFailure(failure) {
+			this.error = messageFor(
+				failure,
+				t('openregister', 'The run log could not be read.'),
+			)
+			this.runs = []
+			this.total = 0
 		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .ruleRuns {
 	margin-bottom: 24px;
 }
 
-.lead {
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 12px;
-}
+@include lead;
 
 .runFilters {
 	display: flex;
@@ -232,28 +259,11 @@ export default {
 	align-items: flex-end;
 }
 
-.runTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.runTable th,
-.runTable td {
-	text-align: start;
-	padding: 6px 10px;
-	border-bottom: 1px solid var(--color-border);
+.runTable :deep(td) {
 	vertical-align: top;
 }
 
-.operandValue {
-	display: block;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-}
-
-.muted {
-	color: var(--color-text-maxcontrast);
-}
+@include rule-detail-text('.operandValue');
 
 .refusal {
 	color: var(--color-error-text, var(--color-error));

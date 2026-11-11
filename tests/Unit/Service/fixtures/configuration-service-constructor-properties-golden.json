@@ -1,0 +1,13 @@
+{
+    "appConfig": "appConfig",
+    "appManager": "appManager",
+    "cacheHandler": "cacheHandler",
+    "configurationMapper": "configurationMapper",
+    "container": "container",
+    "exportHandler": "exportHandler",
+    "githubHandler": "githubHandler",
+    "gitlabHandler": "gitlabHandler",
+    "logger": "logger",
+    "previewHandler": "previewHandler",
+    "uploadHandler": "uploadHandler"
+}

@@ -126,90 +126,9 @@ class DatabaseConstraintException extends Exception {
 	 *
 	 * @return string User-friendly error message explaining the constraint violation
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Constraint parsing requires many conditional error type checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Constraint parsing requires many conditional error type checks
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private static function parseConstraintError(string $dbMessage, string $entityType): string {
-		// Handle unique constraint violations (duplicate key errors).
-		// MySQL/MariaDB format: "Duplicate entry 'value' for key 'constraint_name'".
-		if (str_contains($dbMessage, 'Duplicate entry') === true && str_contains($dbMessage, 'for key') === true) {
-			// Check for specific constraint names to provide more detailed messages.
-			//
-			// BOTH index names are matched, old and new. Version1Date20260723000000
-			// renamed `schemas_organisation_slug_unique` ->
-			// `schemas_org_app_slug_unique` (and the register equivalent) when it
-			// widened the key to (organisation, application, slug), and this
-			// parser was not updated with it — so on every post-migration
-			// instance these friendly messages had been dead since 2026-07-23,
-			// silently degrading to the generic "This schema already exists".
-			// The old names stay so an instance that has not yet migrated keeps
-			// its message too.
-			// Schema slug uniqueness violation.
-			$isSchemaSlugViol = str_contains($dbMessage, 'schemas_organisation_slug_unique') === true
-				|| str_contains($dbMessage, 'schemas_org_app_slug_unique') === true;
-			if ($isSchemaSlugViol === true) {
-				$msg = 'A schema with this slug already exists for this application in your organization. ';
-				return $msg . 'Please choose a different slug or title.';
-			}
-
-			// Register slug uniqueness violation.
-			$isRegisterSlugViol = str_contains($dbMessage, 'registers_organisation_slug_unique') === true
-				|| str_contains($dbMessage, 'registers_org_app_slug_unique') === true;
-			if ($isRegisterSlugViol === true) {
-				$msg = 'A register with this slug already exists for this application in your organization. ';
-				return $msg . 'Please choose a different slug or title.';
-			}
-
-			// Generic unique constraint violation.
-			if (str_contains($dbMessage, 'unique') === true) {
-				return "This {$entityType} already exists. Please check your input and try again.";
-			}
-
-			// Fallback for duplicate entry errors without specific constraint name.
-			return "A {$entityType} with these details already exists. Please modify your input and try again.";
-		}//end if
-
-		// Handle foreign key constraint violations.
-		// Occurs when referencing non-existent records in related tables.
-		$isForeignKeyViol = str_contains($dbMessage, 'foreign key constraint') === true
-			|| str_contains($dbMessage, 'FOREIGN KEY') === true;
-		if ($isForeignKeyViol === true) {
-			$msg = "This {$entityType} cannot be saved because it references data that doesn't exist. ";
-			return $msg . 'Please check your configuration and try again.';
-		}
-
-		// Handle NOT NULL constraint violations.
-		// Occurs when required fields are missing or null.
-		if (str_contains($dbMessage, 'cannot be null') === true || str_contains($dbMessage, 'NOT NULL') === true) {
-			return 'Required information is missing. Please fill in all required fields and try again.';
-		}
-
-		// Handle CHECK constraint violations.
-		// Occurs when data doesn't meet validation rules defined in database.
-		$isCheckViolation = str_contains($dbMessage, 'check constraint') === true
-			|| str_contains($dbMessage, 'CHECK') === true;
-		if ($isCheckViolation === true) {
-			$msg = "The provided data doesn't meet the required format or constraints. ";
-			return $msg . 'Please check your input and try again.';
-		}
-
-		// Handle data too long errors.
-		// Occurs when string length exceeds column maximum length.
-		if (str_contains($dbMessage, 'Data too long') === true || str_contains($dbMessage, 'too long') === true) {
-			return 'Some of the provided information is too long. Please shorten your input and try again.';
-		}
-
-		// Handle general SQL errors (SQLSTATE format).
-		// Generic SQL error format used by PDO and other database abstractions.
-		if (str_contains($dbMessage, 'SQLSTATE') === true) {
-			return "There was a problem saving your {$entityType}. Please check your input and try again.";
-		}
-
-		// Generic database error fallback.
-		// Used when error message doesn't match any known patterns.
-		$msg = "There was a database error while saving your {$entityType}. ";
-		return $msg . 'Please try again or contact support if the problem persists.';
+		return DatabaseConstraintMessages::forMessage(dbMessage: $dbMessage, entityType: $entityType);
 	}//end parseConstraintError()
 }//end class

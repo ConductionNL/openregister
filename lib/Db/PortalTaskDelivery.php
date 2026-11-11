@@ -63,6 +63,7 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
  */
 class PortalTaskDelivery extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The two channels an ask travels by. Nothing Nextcloud-facing is a
@@ -219,65 +220,76 @@ class PortalTaskDelivery extends Entity implements JsonSerializable {
 	 */
 	public static function summarise(array $rows): array {
 		if ($rows === []) {
-			return [
-				'state' => self::STATE_NOT_RECORDED,
-				'channels' => [],
-				'requestedAt' => null,
-				'deliveredAt' => null,
-			];
+			return ['state' => self::STATE_NOT_RECORDED, 'channels' => [], 'requestedAt' => null, 'deliveredAt' => null];
 		}
 
 		$latest = self::latestRequestAt(rows: $rows);
 		$channels = [];
-		$state = self::STATE_REQUESTED;
-		$deliveredAt = null;
-		foreach ($rows as $row) {
-			$requestedAt = $row->getRequestedAt();
-			if ($latest !== null && $requestedAt !== null && $requestedAt < $latest) {
-				continue;
-			}
-
-			$channels[(string)$row->getChannel()] = [
-				'state' => $row->getState(),
-				'kind' => $row->getKind(),
-				'error' => $row->getError(),
-				'deliveredAt' => $row->getDeliveredAt()?->format('c'),
-			];
-
-			[$state, $deliveredAt] = self::foldState(state: $state, deliveredAt: $deliveredAt, row: $row);
+		$summary = [self::STATE_REQUESTED, null];
+		foreach (self::currentRound(rows: $rows, latest: $latest) as $row) {
+			$channels[(string)$row->getChannel()] = self::channelSummary(row: $row);
+			$summary = self::foldState(summary: $summary, row: $row);
 		}
 
-		return [
-			'state' => $state,
-			'channels' => $channels,
-			'requestedAt' => $latest?->format('c'),
-			'deliveredAt' => $deliveredAt,
-		];
+		return ['state' => $summary[0], 'channels' => $channels, 'requestedAt' => $latest?->format('c'), 'deliveredAt' => $summary[1]];
 	}//end summarise()
+
+	/**
+	 * The rows of the newest request round; rows without a request instant always count.
+	 *
+	 * @param array<int, PortalTaskDelivery> $rows The task's delivery rows.
+	 * @param DateTime|null $latest The newest requestedAt, or null when none carries one.
+	 *
+	 * @return array<int, PortalTaskDelivery> The rows that count, in their original order.
+	 */
+	private static function currentRound(array $rows, ?DateTime $latest): array {
+		return array_filter(
+			$rows,
+			static function (PortalTaskDelivery $row) use ($latest): bool {
+				$requestedAt = $row->getRequestedAt();
+				return $latest === null || $requestedAt === null || ($requestedAt < $latest) === false;
+			}
+		);
+	}//end currentRound()
+
+	/**
+	 * The per-channel entry of the summary.
+	 *
+	 * @param PortalTaskDelivery $row The row.
+	 *
+	 * @return array<string, mixed> {state, kind, error, deliveredAt}.
+	 */
+	private static function channelSummary(PortalTaskDelivery $row): array {
+		return [
+			'state' => $row->getState(),
+			'kind' => $row->getKind(),
+			'error' => $row->getError(),
+			'deliveredAt' => $row->getDeliveredAt()?->format('c'),
+		];
+	}//end channelSummary()
 
 	/**
 	 * Fold one row into the summary state: any failure wins; the portal inbox
 	 * going out makes the round delivered (the mail is best-effort).
 	 *
-	 * @param string $state The state so far.
-	 * @param string|null $deliveredAt When the round was delivered, so far.
+	 * @param array{0: string, 1: string|null} $summary The state and deliveredAt so far.
 	 * @param PortalTaskDelivery $row The row folded in.
 	 *
 	 * @return array{0: string, 1: string|null} The state and deliveredAt after.
 	 */
-	private static function foldState(string $state, ?string $deliveredAt, PortalTaskDelivery $row): array {
+	private static function foldState(array $summary, PortalTaskDelivery $row): array {
 		if ($row->getState() === self::STATE_FAILED) {
-			return [self::STATE_FAILED, $deliveredAt];
+			return [self::STATE_FAILED, $summary[1]];
 		}
 
 		if ($row->getChannel() === self::CHANNEL_PORTAL_INBOX
 			&& $row->getState() === self::STATE_DELIVERED
-			&& $state !== self::STATE_FAILED
+			&& $summary[0] !== self::STATE_FAILED
 		) {
 			return [self::STATE_DELIVERED, $row->getDeliveredAt()?->format('c')];
 		}
 
-		return [$state, $deliveredAt];
+		return $summary;
 	}//end foldState()
 
 	/**
@@ -299,28 +311,4 @@ class PortalTaskDelivery extends Entity implements JsonSerializable {
 
 		return $latest;
 	}//end latestRequestAt()
-
-	/**
-	 * Serialise for the API.
-	 *
-	 * @return array<string, mixed> The delivery as plain data.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'taskUuid' => $this->taskUuid,
-			'partyReference' => $this->partyReference,
-			'channel' => $this->channel,
-			'kind' => $this->kind,
-			'state' => $this->state,
-			'message' => $this->message,
-			'error' => $this->error,
-			'requestedAt' => $this->requestedAt?->format('c'),
-			'deliveredAt' => $this->deliveredAt?->format('c'),
-			'created' => $this->created?->format('c'),
-		];
-	}//end jsonSerialize()
 }//end class

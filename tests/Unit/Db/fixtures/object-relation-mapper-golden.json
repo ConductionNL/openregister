@@ -1,0 +1,345 @@
+{
+    "findBySource": {
+        "result": [
+            {
+                "id": 1,
+                "uuid": "rel-1",
+                "source": "s-1",
+                "target": "t-1",
+                "kind": "object",
+                "created": null,
+                "updated": null,
+                "createdIsUpdated": false
+            },
+            {
+                "id": 2,
+                "uuid": "rel-2",
+                "source": "s-1",
+                "target": "t-2",
+                "kind": "object",
+                "created": null,
+                "updated": null,
+                "createdIsUpdated": false
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_object_relations, NULL)",
+            "#1 param :p1 = s-1, 2",
+            "#1 expr.eq(source_uuid, :p1, NULL)",
+            "#1 where(eq(source_uuid, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findBySource, kind": {
+        "result": [
+            {
+                "id": 1,
+                "uuid": "rel-1",
+                "source": "s-1",
+                "target": "t-1",
+                "kind": "object",
+                "created": null,
+                "updated": null,
+                "createdIsUpdated": false
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_object_relations, NULL)",
+            "#1 param :p1 = s-1, 2",
+            "#1 expr.eq(source_uuid, :p1, NULL)",
+            "#1 where(eq(source_uuid, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 param :p2 = external, 2",
+            "#1 expr.eq(kind, :p2, NULL)",
+            "#1 andWhere(eq(kind, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findBySource, empty kind": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_object_relations, NULL)",
+            "#1 param :p1 = s-1, 2",
+            "#1 expr.eq(source_uuid, :p1, NULL)",
+            "#1 where(eq(source_uuid, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 param :p2 = , 2",
+            "#1 expr.eq(kind, :p2, NULL)",
+            "#1 andWhere(eq(kind, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByTarget": {
+        "result": [
+            {
+                "id": 1,
+                "uuid": "rel-1",
+                "source": "s-1",
+                "target": "t-1",
+                "kind": "object",
+                "created": null,
+                "updated": null,
+                "createdIsUpdated": false
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_object_relations, NULL)",
+            "#1 param :p1 = t-1, 2",
+            "#1 expr.eq(target_uuid, :p1, NULL)",
+            "#1 where(eq(target_uuid, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findTouching, none": {
+        "result": [],
+        "queries": []
+    },
+    "findTouching, one": {
+        "result": [
+            {
+                "id": 1,
+                "uuid": "rel-1",
+                "source": "s-1",
+                "target": "t-1",
+                "kind": "object",
+                "created": null,
+                "updated": null,
+                "createdIsUpdated": false
+            }
+        ],
+        "queries": [
+            "#1 param :p1 = [\"a\"], 102",
+            "#1 select(*)",
+            "#1 from(openregister_object_relations, NULL)",
+            "#1 expr.in(source_uuid, :p1, NULL)",
+            "#1 expr.in(target_uuid, :p1, NULL)",
+            "#1 expr.orX(in(source_uuid, :p1, NULL), in(target_uuid, :p1, NULL))",
+            "#1 where(orX(in(source_uuid, :p1, NULL), in(target_uuid, :p1, NULL)))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findTouching, many": {
+        "result": [
+            {
+                "id": 1,
+                "uuid": "rel-1",
+                "source": "s-1",
+                "target": "t-1",
+                "kind": "object",
+                "created": null,
+                "updated": null,
+                "createdIsUpdated": false
+            },
+            {
+                "id": 3,
+                "uuid": "rel-3",
+                "source": "s-1",
+                "target": "t-3",
+                "kind": "object",
+                "created": null,
+                "updated": null,
+                "createdIsUpdated": false
+            }
+        ],
+        "queries": [
+            "#1 param :p1 = [\"a\",\"b\",\"c\"], 102",
+            "#1 select(*)",
+            "#1 from(openregister_object_relations, NULL)",
+            "#1 expr.in(source_uuid, :p1, NULL)",
+            "#1 expr.in(target_uuid, :p1, NULL)",
+            "#1 expr.orX(in(source_uuid, :p1, NULL), in(target_uuid, :p1, NULL))",
+            "#1 where(orX(in(source_uuid, :p1, NULL), in(target_uuid, :p1, NULL)))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByUuid, found": {
+        "result": {
+            "id": 1,
+            "uuid": "rel-1",
+            "source": "s-1",
+            "target": "t-1",
+            "kind": "object",
+            "created": null,
+            "updated": null,
+            "createdIsUpdated": false
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_object_relations, NULL)",
+            "#1 param :p1 = rel-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByUuid, missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_object_relations, NULL)",
+            "#1 param :p1 = rel-9, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByUuid, twice": {
+        "thrown": "OCP\\AppFramework\\Db\\MultipleObjectsReturnedException",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_object_relations, NULL)",
+            "#1 param :p1 = rel-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByAnchor": {
+        "result": [
+            {
+                "id": 2,
+                "uuid": "rel-2",
+                "source": "s-1",
+                "target": "t-2",
+                "kind": "object",
+                "created": null,
+                "updated": null,
+                "createdIsUpdated": false
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_object_relations, NULL)",
+            "#1 param :p1 = s-1, 2",
+            "#1 expr.eq(source_uuid, :p1, NULL)",
+            "#1 where(eq(source_uuid, :p1, NULL))",
+            "#1 param :p2 = anchor-a, 2",
+            "#1 expr.eq(anchor, :p2, NULL)",
+            "#1 andWhere(eq(anchor, :p2, NULL))",
+            "#1 param :p3 = prose, 2",
+            "#1 expr.eq(origin, :p3, NULL)",
+            "#1 andWhere(eq(origin, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "createFromArray, minimal": {
+        "result": {
+            "id": 0,
+            "uuid": "<uuid v4>",
+            "source": "s-1",
+            "target": "t-1",
+            "kind": "object",
+            "created": "now",
+            "updated": "now",
+            "createdIsUpdated": true
+        },
+        "queries": [
+            "#1 insert(openregister_object_relations)",
+            "#1 param :p1 = s-1, 2",
+            "#1 setValue(source_uuid, :p1)",
+            "#1 param :p2 = t-1, 2",
+            "#1 setValue(target_uuid, :p2)",
+            "#1 param :p3 = <uuid v4>, 2",
+            "#1 setValue(uuid, :p3)",
+            "#1 param :p4 = DateTime, datetime",
+            "#1 setValue(created, :p4)",
+            "#1 param :p5 = DateTime, datetime",
+            "#1 setValue(updated, :p5)",
+            "#1 executeStatement()"
+        ]
+    },
+    "createFromArray, given uuid and created": {
+        "result": {
+            "id": 0,
+            "uuid": "rel-given",
+            "source": "s-1",
+            "target": null,
+            "kind": "external",
+            "created": "2001-05-06T07:08:09+00:00",
+            "updated": "now",
+            "createdIsUpdated": false
+        },
+        "queries": [
+            "#1 insert(openregister_object_relations)",
+            "#1 param :p1 = rel-given, 2",
+            "#1 setValue(uuid, :p1)",
+            "#1 param :p2 = s-1, 2",
+            "#1 setValue(source_uuid, :p2)",
+            "#1 param :p3 = external, 2",
+            "#1 setValue(kind, :p3)",
+            "#1 param :p4 = https://example.org/x, 2",
+            "#1 setValue(target_url, :p4)",
+            "#1 param :p5 = prose, 2",
+            "#1 setValue(origin, :p5)",
+            "#1 param :p6 = a1, 2",
+            "#1 setValue(anchor, :p6)",
+            "#1 param :p7 = DateTime(2001-05-06 07:08:09 UTC), datetime",
+            "#1 setValue(created, :p7)",
+            "#1 param :p8 = DateTime, datetime",
+            "#1 setValue(updated, :p8)",
+            "#1 executeStatement()"
+        ]
+    },
+    "save": {
+        "result": {
+            "id": 4,
+            "uuid": "rel-4",
+            "source": null,
+            "target": null,
+            "kind": "object",
+            "created": null,
+            "updated": "now",
+            "createdIsUpdated": false
+        },
+        "queries": [
+            "#1 update(openregister_object_relations, NULL)",
+            "#1 param :p1 = rel-4, 2",
+            "#1 set(uuid, :p1)",
+            "#1 param :p2 = changed, 2",
+            "#1 set(label, :p2)",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 set(updated, :p3)",
+            "#1 param :p4 = 4, 1",
+            "#1 expr.eq(id, :p4, NULL)",
+            "#1 where(eq(id, :p4, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "deleteByAnchor": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_object_relations, NULL)",
+            "#1 param :p1 = s-1, 2",
+            "#1 expr.eq(source_uuid, :p1, NULL)",
+            "#1 where(eq(source_uuid, :p1, NULL))",
+            "#1 param :p2 = anchor-a, 2",
+            "#1 expr.eq(anchor, :p2, NULL)",
+            "#1 andWhere(eq(anchor, :p2, NULL))",
+            "#1 param :p3 = prose, 2",
+            "#1 expr.eq(origin, :p3, NULL)",
+            "#1 andWhere(eq(origin, :p3, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "deleteByObject": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_object_relations, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(source_uuid, :p1, NULL)",
+            "#1 param :p2 = obj-1, 2",
+            "#1 expr.eq(target_uuid, :p2, NULL)",
+            "#1 expr.orX(eq(source_uuid, :p1, NULL), eq(target_uuid, :p2, NULL))",
+            "#1 where(orX(eq(source_uuid, :p1, NULL), eq(target_uuid, :p2, NULL)))",
+            "#1 executeStatement()"
+        ]
+    }
+}

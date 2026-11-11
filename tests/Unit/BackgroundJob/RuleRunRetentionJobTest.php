@@ -35,7 +35,7 @@ use RuntimeException;
  *
  * @package OCA\OpenRegister\Tests\Unit\BackgroundJob
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleRunRetentionJobTest extends TestCase {
 
@@ -92,7 +92,7 @@ class RuleRunRetentionJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testThePruneCutsAtTheConfiguredPeriod(): void {
 		$cutoffs = [];
@@ -115,7 +115,7 @@ class RuleRunRetentionJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testThePruneNeverReachesTheSummary(): void {
 		$source = (string)file_get_contents(
@@ -133,7 +133,7 @@ class RuleRunRetentionJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFailingPruneEndsTheJobRatherThanThrowing(): void {
 		$cutoffs = [];

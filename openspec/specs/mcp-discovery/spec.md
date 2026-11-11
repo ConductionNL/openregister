@@ -474,3 +474,19 @@ MCP Standard Protocol (JSON-RPC 2.0):
         ├── "resources/read"          → McpResourcesService::readResource()
         └── "resources/templates/list"→ McpResourcesService::listTemplates()
 ```
+
+### Requirement: A definition tool holds the caller to the rights of the REST routes
+
+The `openregister.schemas` and `openregister.registers` tools MUST apply the rights of the REST routes for the signed-in user, with or without an agent on the session. Creating needs an administrator. Updating or deleting needs an administrator or a member of a group the definition's `manage` rule names. An update MUST NOT change `id`, `organisation`, `owner` or `created`. A schema write MUST meet the cross-organisation and external-grant refusals of the REST routes.
+
+#### Scenario: A plain user calls a definition tool
+- **GIVEN** a signed-in user who is no administrator and in no group of the `manage` rule
+- **WHEN** the user calls the tool with create, update or delete
+- **THEN** the call MUST answer with a tool error and nothing MUST be written
+- @e2e exclude {provider unit tests, the MCP envelope has its own tests}
+
+#### Scenario: A manager adds a cross-organisation marker
+- **GIVEN** a member of a group the `manage` rule names, who is no administrator
+- **WHEN** the user sends an authorization with a new `crossOrganisation: true` rule, as an array or as JSON text
+- **THEN** the call MUST answer with a tool error and nothing MUST be written
+- @e2e exclude {provider unit tests}

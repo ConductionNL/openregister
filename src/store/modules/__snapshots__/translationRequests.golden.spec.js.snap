@@ -1,0 +1,1467 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`translation requests golden fetchByObject([""]): empty 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": false,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "earlier",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject([""]): full 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": false,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "earlier",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject([""]): rejected 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": false,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "earlier",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject([""]): rejected without message 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": false,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "earlier",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject(["o/2"]): empty 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/translations/object/o%2F2",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o/2": {
+        "completeness": {},
+        "translations": [],
+      },
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": null,
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject(["o/2"]): full 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/translations/object/o%2F2",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o/2": {
+        "completeness": {
+          "nl": 50,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+        ],
+      },
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": null,
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject(["o/2"]): rejected 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "[translations.fetchByObject]",
+      "Error(Server down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Server down",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/translations/object/o%2F2",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "Server down",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject(["o/2"]): rejected without message 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "[translations.fetchByObject]",
+      {},
+    ],
+  ],
+  "outcome": {
+    "thrown": null,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/translations/object/o%2F2",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "Failed to fetch translations",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject(["o1","s1"]): empty 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/translations/object/o1",
+      {
+        "params": {
+          "schema": "s1",
+        },
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {},
+        "translations": [],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": null,
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject(["o1","s1"]): full 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/translations/object/o1",
+      {
+        "params": {
+          "schema": "s1",
+        },
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 50,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": null,
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject(["o1","s1"]): rejected 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "[translations.fetchByObject]",
+      "Error(Server down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Server down",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/translations/object/o1",
+      {
+        "params": {
+          "schema": "s1",
+        },
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "Server down",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden fetchByObject(["o1","s1"]): rejected without message 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "[translations.fetchByObject]",
+      {},
+    ],
+  ],
+  "outcome": {
+    "thrown": null,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/translations/object/o1",
+      {
+        "params": {
+          "schema": "s1",
+        },
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "Failed to fetch translations",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["missing","title","nl","approved"]): empty 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/missing/title/nl/status",
+      {
+        "status": "approved",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": null,
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["missing","title","nl","approved"]): full 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/missing/title/nl/status",
+      {
+        "status": "approved",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": null,
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["missing","title","nl","approved"]): rejected 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "[translations.setStatus]",
+      "Error(Server down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Server down",
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/missing/title/nl/status",
+      {
+        "status": "approved",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "Server down",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["missing","title","nl","approved"]): rejected without message 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "[translations.setStatus]",
+      {},
+    ],
+  ],
+  "outcome": {
+    "thrown": null,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/missing/title/nl/status",
+      {
+        "status": "approved",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "Failed to update status",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o1","title","nl","bogus"]): empty 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": false,
+  },
+  "logged": [],
+  "outcome": {
+    "thrown": "Invalid translation status "bogus"",
+  },
+  "requests": [],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "earlier",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o1","title","nl","bogus"]): full 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": false,
+  },
+  "logged": [],
+  "outcome": {
+    "thrown": "Invalid translation status "bogus"",
+  },
+  "requests": [],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "earlier",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o1","title","nl","bogus"]): rejected 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": false,
+  },
+  "logged": [],
+  "outcome": {
+    "thrown": "Invalid translation status "bogus"",
+  },
+  "requests": [],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "earlier",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o1","title","nl","bogus"]): rejected without message 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": false,
+  },
+  "logged": [],
+  "outcome": {
+    "thrown": "Invalid translation status "bogus"",
+  },
+  "requests": [],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "earlier",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o1","title","nl","human_reviewed"]): empty 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/o1/title/nl/status",
+      {
+        "status": "human_reviewed",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "human_reviewed",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": null,
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o1","title","nl","human_reviewed"]): full 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/o1/title/nl/status",
+      {
+        "status": "human_reviewed",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "human_reviewed",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": null,
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o1","title","nl","human_reviewed"]): rejected 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "[translations.setStatus]",
+      "Error(Server down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Server down",
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/o1/title/nl/status",
+      {
+        "status": "human_reviewed",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "Server down",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o1","title","nl","human_reviewed"]): rejected without message 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "[translations.setStatus]",
+      {},
+    ],
+  ],
+  "outcome": {
+    "thrown": null,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/o1/title/nl/status",
+      {
+        "status": "human_reviewed",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "Failed to update status",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o2","title","nl","human_reviewed"]): empty 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/o2/title/nl/status",
+      {
+        "status": "human_reviewed",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": null,
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o2","title","nl","human_reviewed"]): full 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/o2/title/nl/status",
+      {
+        "status": "human_reviewed",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": null,
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o2","title","nl","human_reviewed"]): rejected 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "[translations.setStatus]",
+      "Error(Server down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Server down",
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/o2/title/nl/status",
+      {
+        "status": "human_reviewed",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "Server down",
+    "loading": false,
+  },
+}
+`;
+
+exports[`translation requests golden setStatus(["o2","title","nl","human_reviewed"]): rejected without message 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "[translations.setStatus]",
+      {},
+    ],
+  ],
+  "outcome": {
+    "thrown": null,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/translations/object/o2/title/nl/status",
+      {
+        "status": "human_reviewed",
+      },
+    ],
+  ],
+  "state": {
+    "byObject": {
+      "o1": {
+        "completeness": {
+          "nl": 10,
+        },
+        "translations": [
+          {
+            "language": "nl",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "en",
+            "property": "title",
+            "status": "draft",
+          },
+          {
+            "language": "nl",
+            "property": "body",
+            "status": "draft",
+          },
+        ],
+      },
+      "o2": {
+        "completeness": {},
+      },
+    },
+    "error": "Failed to update status",
+    "loading": false,
+  },
+}
+`;

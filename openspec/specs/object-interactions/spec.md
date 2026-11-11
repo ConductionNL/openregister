@@ -69,7 +69,7 @@ The system SHALL register `"openregister"` as a valid entity type with Nextcloud
 
 #### Scenario: Listener registered in Application.php
 - **GIVEN** the OpenRegister `Application` class
-- **THEN** `CommentsEntityListener` MUST be registered as a listener for `CommentsEntityEvent` in `registerEventListeners()`
+- **THEN** `CommentsEntityListener` MUST be registered as a listener for `CommentsEntityEvent` in `ListenerRegistrar::register()`
 
 ### Requirement: Tasks on Objects via CalDAV VTODO
 
@@ -592,17 +592,17 @@ The star is retired: starring is following with notifications off. For one relea
 - **GIVEN** a user who follows an object with notifications on
 - **WHEN** the user calls `PUT .../favourite`
 - **THEN** `@self.watchNotify` is still true and the response carries a `Deprecation` header
-- @e2e exclude {the alias is removed next release; asserted by FavouriteServiceTest::testStarringAFollowedObjectKeepsItsNotifySetting}
+- @e2e exclude {the alias is removed next release; asserted by WatcherServiceTest::testStarringAFollowedObjectKeepsItsNotifySetting}
 
 ### Requirement: Favourites and recent are lenses on the object query
 
-The object query SHALL accept `_favourite=true`, returning only the current user's starred objects, and `_recent=true`, returning the objects the current user read most recently according to the audit trail, ordered by the latest read descending. Each lens SHALL compose with every other filter, and RBAC SHALL still decide which objects the caller may see.
+The object query SHALL accept `_recent=true`, returning the current user's viewed objects ordered by last view descending, composing with every other filter. For one release it SHALL also accept `_favourite=true` as a deprecated alias that returns exactly what `_watching=true` returns.
 
 #### Scenario: a favourites chip on an index page
 
-- **GIVEN** a user who starred two of five cases
+- **GIVEN** a user who follows two of five cases, one of them through a former favourite
 - **WHEN** the index page queries with `_favourite=true` and `status=open`
-- **THEN** only the starred cases with status open are returned
+- **THEN** the result equals the one for `_watching=true` and `status=open`
 - @e2e tests/e2e/ci/favourites-and-recent.spec.ts
 
 #### Scenario: a recent chip composes with a filter
@@ -688,7 +688,14 @@ The object query SHALL accept `_watching=true` returning the current user's foll
 - **GIVEN** a case followed by two users, one of them with notifications off, and a team lead with `update`
 - **WHEN** the team lead lists the watchers
 - **THEN** both users are returned with the time they subscribed and no notification setting
-- `@e2e tests/e2e/ci/object-watchers.spec.ts` and tests/newman/openregister-object-watchers.postman_collection.json
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and tests/integration/openregister-object-watchers.postman_collection.json
+
+#### Scenario: the lens is resolved in the query
+
+- **GIVEN** a signed-in user
+- **WHEN** a query asks `_watching=true`
+- **THEN** the query carries the caller's uid as `_watchingFor` and no uuid list on `_ids`
+- @e2e exclude {query construction; asserted by SearchQueryHandlerWatchingLensTest}
 
 #### Scenario: the lens is resolved in the query
 
@@ -707,35 +714,6 @@ Deleting an object SHALL delete its watcher rows.
 - **WHEN** it is deleted permanently
 - **THEN** the watcher table holds no row for it
 - @e2e exclude {deletion cleanup has no HTTP surface to read; asserted by WatcherServiceTest::testDeletingAnObjectRemovesItsWatchers and wired by WatcherPruneListener}
-
-### Requirement: Favourites became follows with notifications off
-
-The upgrade that ships this change SHALL move every favourite into the follow table with notifications off and SHALL then drop the favourites table. When a user had both starred and followed an object, the follow SHALL keep notifications on.
-
-#### Scenario: a favourite survives the upgrade as a quiet follow
-
-- **GIVEN** a user who starred case A and both starred and followed case B
-- **WHEN** the instance upgrades
-- **THEN** the user follows A with notifications off and B with notifications on, and `openregister_favourites` no longer exists
-- @e2e exclude {an upgrade step has no HTTP surface; asserted by Version1Date20261009130000Test}
-
-### Requirement: Being assigned an object follows it with notifications on
-
-When a create or update sets the property a schema marks `x-openregister-role: assignee` to a Nextcloud user who may read the object, the system SHALL make that user follow the object with notifications on, switching an existing quiet follow on. A value that is not a Nextcloud user SHALL be skipped. A reassignment SHALL NOT unfollow the previous assignee. `WatcherService::followAssigned()` SHALL offer the same act to apps whose assignment is not an object property.
-
-#### Scenario: a handler is assigned a case
-
-- **GIVEN** a case schema whose `assignee` property carries `x-openregister-role: assignee`
-- **WHEN** a case is saved with `assignee` set to `jan`, who may read it
-- **THEN** `jan` follows the case with notifications on
-- @e2e exclude {an event listener; asserted by AssigneeFollowListenerTest::testANewAssigneeFollowsWithNotificationsOn}
-
-#### Scenario: a group in the assignee property is not a follower
-
-- **GIVEN** the same schema
-- **WHEN** a case is saved with `assignee` set to the group id `behandelaars`
-- **THEN** no follow is written
-- @e2e exclude {asserted by AssigneeFollowListenerTest::testAValueThatIsNotAUserIsSkipped}
 
 ### Requirement: Recently opened is read from the audit trail
 
@@ -840,6 +818,35 @@ A `_recent=true` search over several schemas or registers, and one over no regis
 - **WHEN** the user asks `_recent=true` with `_limit=2` and `_offset=2`
 - **THEN** the page holds the third and fourth most recently read objects
 - @e2e exclude {paging after ordering; covered by MagicMapperRecentLensTest}
+
+### Requirement: Favourites became follows with notifications off
+
+The upgrade that ships this change SHALL move every favourite into the follow table with notifications off and SHALL then drop the favourites table. When a user had both starred and followed an object, the follow SHALL keep notifications on.
+
+#### Scenario: a favourite survives the upgrade as a quiet follow
+
+- **GIVEN** a user who starred case A and both starred and followed case B
+- **WHEN** the instance upgrades
+- **THEN** the user follows A with notifications off and B with notifications on, and `openregister_favourites` no longer exists
+- @e2e exclude {an upgrade step has no HTTP surface; asserted by Version1Date20261009130000Test}
+
+### Requirement: Being assigned an object follows it with notifications on
+
+When a create or update sets the property a schema marks `x-openregister-role: assignee` to a Nextcloud user who may read the object, the system SHALL make that user follow the object with notifications on, switching an existing quiet follow on. A value that is not a Nextcloud user SHALL be skipped. A reassignment SHALL NOT unfollow the previous assignee. `WatcherService::followAssigned()` SHALL offer the same act to apps whose assignment is not an object property.
+
+#### Scenario: a handler is assigned a case
+
+- **GIVEN** a case schema whose `assignee` property carries `x-openregister-role: assignee`
+- **WHEN** a case is saved with `assignee` set to `jan`, who may read it
+- **THEN** `jan` follows the case with notifications on
+- @e2e exclude {an event listener; asserted by AssigneeFollowListenerTest::testANewAssigneeFollowsWithNotificationsOn}
+
+#### Scenario: a group in the assignee property is not a follower
+
+- **GIVEN** the same schema
+- **WHEN** a case is saved with `assignee` set to the group id `behandelaars`
+- **THEN** no follow is written
+- @e2e exclude {asserted by AssigneeFollowListenerTest::testAValueThatIsNotAUserIsSkipped}
 
 ## Non-Functional Requirements
 
