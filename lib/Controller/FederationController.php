@@ -775,6 +775,16 @@ class FederationController extends Controller {
 			return null;
 		}
 
+		// A share hands out only what its creator still holds, judged on every use.
+		$refusal = $this->shareService->servingRefusal(share: $share);
+		if ($refusal !== null) {
+			$this->logger->warning(
+				'[Federation] share not served: '.$refusal,
+				['shareId' => $share->getId(), 'owner' => (string)$share->getOwner()]
+			);
+			return null;
+		}
+
 		return $share;
 	}//end resolveAcceptedShare()
 
