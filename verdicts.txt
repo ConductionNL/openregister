@@ -2136,3 +2136,4 @@
 4210 cc45fecab2dc9731053bb33fbe54b69ffeb27784 APPROVE no-op against main: main already locks twig/twig v3.30.0, the merge with main changes no file
 5482 9325daffef0923a16361f8fd9065650558f30376 BLOCK superseded: main locks theodo-group/llphant 1.0.10 (with patches); this lock conflicts and would downgrade it to 1.0.8; fix: drop the PR
 7738 96524459176d965598dcb4be5c9507af13310416 BLOCK phpseclib 4 renames the namespace to phpseclib4: lib/Service/Edepot/Transport/SftpTransport.php:29-30 imports phpseclib3 classes, so SFTP transport fails with class-not-found; fix: migrate SftpTransport (namespace and exception-based SFTP API) in the same PR or stay on ^3
+3297 1df93033a8bd9560e993d3c065ff5ade82bc359c BLOCK L3: superseded, main lockfiles already carry newer versions of every bump (postcss-selector-parser 6.1.5, webpack 5.112.2, webpack-dev-server 5.2.7, ws 7.5.13, ip-address 10.7.5); merging would downgrade them; fix: close, dependabot reopens if needed
