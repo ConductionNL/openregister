@@ -2813,24 +2813,36 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $authorization;
 		}
 
-		$registerSlug = null;
-		try {
-			$register = $this->getRegisterForSchema(schema: $schema);
-			if ($register !== null) {
-				$registerSlug = $register->getSlug();
-			}
-		} catch (Throwable $e) {
-			// A register we cannot name is a register the grant cannot be
-			// checked against. That narrows rather than widens: a grant scoped
-			// by register will not cover it.
-			$registerSlug = null;
-		}
+		$registerSlug = $this->registerSlugFor(schema: $schema);
 
 		return $this->grants->derived->tokenGrantNarrower->narrow(
 			authorization: $authorization,
 			use: new TokenGrantUse(grant: $grant, target: new TokenGrantTarget(schemaSlug: $schema->getSlug(), registerSlug: $registerSlug))
 		);
 	}//end narrowByToken()
+
+	/**
+	 * The slug of the register a schema belongs to, for checking a token grant against.
+	 *
+	 * @param Schema $schema The schema being resolved.
+	 *
+	 * @return string|null The slug, or null when the schema belongs to no register or it cannot be read.
+	 */
+	private function registerSlugFor(Schema $schema): ?string {
+		try {
+			$register = $this->getRegisterForSchema(schema: $schema);
+			if ($register !== null) {
+				return $register->getSlug();
+			}
+		} catch (Throwable $e) {
+			// A register we cannot name is a register the grant cannot be
+			// checked against. That narrows rather than widens: a grant scoped
+			// by register will not cover it.
+			return null;
+		}
+
+		return null;
+	}//end registerSlugFor()
 
 	/**
 	 * Compile the schema's department matrix into the block, if it declares one.
@@ -2865,38 +2877,68 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
-			$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
 			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
-
-			$userId = $this->callerId(userId: null);
-			$userGroups = $this->groupsOf(userId: $userId);
-
-			$source = $matrix['userSource'] ?? null;
-			if (is_array($source) === false) {
-				$source = null;
-			}
-
-			// Both sources may be declared; the caller's own values are the
-			// union. The person source is read only when it is declared.
-			$ownValues = $compiler->valuesFromGroups(source: $source, userGroups: $userGroups);
-			if (trim((string)($source['schema'] ?? '')) !== '') {
-				$ownValues = array_values(
-					array_unique(array_merge($ownValues, $this->personValues()->valuesFor(source: $source, userId: $userId)))
-				);
-			}
-
-			return $compiler->merge(
-				authorization: $authorization,
-				compiled: $compiler->compile(matrix: $matrix, ownValues: $ownValues)
-			);
+			$compiled = $this->compiledMatrixRules(compiler: $compiler, matrix: $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix));
+			return $compiler->merge(authorization: $authorization, compiled: $compiled);
 		} catch (\Throwable $e) {
-			$this->data->logger->error(
-				message: '[PermissionHandler] Could not compile a department matrix; the schema keeps its own rules',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
+			$this->logMatrixCompileFailure(error: $e);
 			return $authorization;
 		}
 	}//end compileDepartmentMatrix()
+
+	/**
+	 * The rules a matrix (its app rows added) compiles to for the caller's own values.
+	 *
+	 * @param DepartmentMatrixCompiler $compiler The compiler, for the schema's declared actions.
+	 * @param array<string, mixed>     $matrix   The matrix declaration with its app rows.
+	 *
+	 * @return array<string, mixed> The compiled rules, by action.
+	 */
+	private function compiledMatrixRules(DepartmentMatrixCompiler $compiler, array $matrix): array {
+		$source = self::matrixUserSource(matrix: $matrix);
+		$userId = $this->callerId(userId: null);
+
+		// Both sources may be declared; the caller's own values are the
+		// union. The person source is read only when it is declared.
+		$ownValues = $compiler->valuesFromGroups(source: $source, userGroups: $this->groupsOf(userId: $userId));
+		if (trim((string)($source['schema'] ?? '')) !== '') {
+			$ownValues = array_values(
+				array_unique(array_merge($ownValues, $this->personValues()->valuesFor(source: $source, userId: $userId)))
+			);
+		}
+
+		return $compiler->compile(matrix: $matrix, ownValues: $ownValues);
+	}//end compiledMatrixRules()
+
+	/**
+	 * The matrix's user source, or null when it does not declare one as a map.
+	 *
+	 * @param array<string, mixed> $matrix The matrix declaration.
+	 *
+	 * @return array<string, mixed>|null The user source.
+	 */
+	private static function matrixUserSource(array $matrix): ?array {
+		$source = $matrix['userSource'] ?? null;
+		if (is_array($source) === false) {
+			return null;
+		}
+
+		return $source;
+	}//end matrixUserSource()
+
+	/**
+	 * Log a department matrix that could not be compiled.
+	 *
+	 * @param \Throwable $error Why it could not be compiled.
+	 *
+	 * @return void
+	 */
+	private function logMatrixCompileFailure(\Throwable $error): void {
+		$this->data->logger->error(
+			message: '[PermissionHandler] Could not compile a department matrix; the schema keeps its own rules',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error->getMessage()]
+		);
+	}//end logMatrixCompileFailure()
 
 	/**
 	 * The asker of app-contributed matrix rows, built once.
