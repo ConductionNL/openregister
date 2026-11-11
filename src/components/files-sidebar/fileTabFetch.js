@@ -20,30 +20,61 @@ import { generateUrl } from '@nextcloud/router'
  * @return {Promise<Error|null>} The failure of the request, for the tab to log
  */
 export async function fetchFileTab(tab, endpoint, keep) {
-	let failure = null
-	tab.loading = true
-	tab.error = false
-	tab.errorMessage = ''
-
+	startLoading(tab)
 	try {
 		const url = generateUrl(endpoint, { fileId: tab.fileId })
 		const response = await axios.get(url)
-
-		if (response.data?.success) {
+		if (answered(tab, response.data)) {
 			keep(response.data.data)
-		} else {
-			tab.error = true
-			tab.errorMessage =
-				response.data?.error || t('openregister', 'Unknown error')
 		}
+		return null
 	} catch (err) {
-		tab.error = true
-		tab.errorMessage = err.response?.data?.error || err.message
-		failure = err
+		return failed(tab, err)
 	} finally {
 		tab.loading = false
 	}
-	return failure
+}
+
+/**
+ * Mark a tab loading, without an error.
+ *
+ * @param {object} tab The tab component instance
+ * @return {void}
+ */
+function startLoading(tab) {
+	tab.loading = true
+	tab.error = false
+	tab.errorMessage = ''
+}
+
+/**
+ * Whether the endpoint answered with success; otherwise the tab shows the
+ * error the answer names.
+ *
+ * @param {object} tab The tab component instance
+ * @param {object|undefined} data The response's data
+ * @return {boolean} True for a successful answer
+ */
+function answered(tab, data) {
+	if (data?.success) {
+		return true
+	}
+	tab.error = true
+	tab.errorMessage = data?.error || t('openregister', 'Unknown error')
+	return false
+}
+
+/**
+ * Show a failed request on the tab.
+ *
+ * @param {object} tab The tab component instance
+ * @param {Error} err The failure
+ * @return {Error} The failure, for the tab to log
+ */
+function failed(tab, err) {
+	tab.error = true
+	tab.errorMessage = err.response?.data?.error || err.message
+	return err
 }
 
 /**
@@ -63,28 +94,46 @@ export function fileTab(load) {
 			},
 		},
 
-		data() {
-			return {
-				loading: false,
-				error: false,
-				errorMessage: '',
+		data: fileTabState,
+
+		watch: {
+			fileId: reloadOnFileChange(load),
+		},
+	}
+}
+
+/**
+ * The state a Files sidebar tab starts from: not loading, no error.
+ *
+ * @return {{loading: boolean, error: boolean, errorMessage: string}} The state
+ */
+function fileTabState() {
+	return {
+		loading: false,
+		error: false,
+		errorMessage: '',
+	}
+}
+
+/**
+ * A watcher that reloads the tab through its method `load` whenever it is
+ * given a file, and on creation.
+ *
+ * @param {string} load The name of the tab's method that loads the file's data
+ * @return {object} The watcher
+ */
+function reloadOnFileChange(load) {
+	return {
+		/**
+		 * @param {number} newVal The id of the file now shown
+		 * @spec exclude watcher reloading the tab on fileId change, UI plumbing
+		 */
+		handler(newVal) {
+			if (newVal) {
+				this[load]()
 			}
 		},
 
-		watch: {
-			fileId: {
-				/**
-				 * @param {number} newVal The id of the file now shown
-				 * @spec exclude watcher reloading the tab on fileId change, UI plumbing
-				 */
-				handler(newVal) {
-					if (newVal) {
-						this[load]()
-					}
-				},
-
-				immediate: true,
-			},
-		},
+		immediate: true,
 	}
 }

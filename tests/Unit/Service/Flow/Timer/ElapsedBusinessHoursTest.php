@@ -70,7 +70,7 @@ class ElapsedBusinessHoursTest extends TestCase {
 
 		$this->assertSame(
 			1.0,
-			$sla->elapsedBusinessHours(from: $from, to: $to, calendar: $calendar)
+			$sla->elapsedBusinessHours(new CalendarSpan(from: $from, to: $to, calendar: $calendar))
 		);
 
 		// The control, and the reason this method had to exist: the two
@@ -95,11 +95,7 @@ class ElapsedBusinessHoursTest extends TestCase {
 
 		$this->assertSame(
 			8.0,
-			$sla->elapsedBusinessHours(
-				from: new DateTimeImmutable('2026-09-08T00:00:00+00:00'),
-				to: new DateTimeImmutable('2026-09-09T00:00:00+00:00'),
-				calendar: $this->calendar()
-			)
+			$sla->elapsedBusinessHours(new CalendarSpan(from: new DateTimeImmutable('2026-09-08T00:00:00+00:00'), to: new DateTimeImmutable('2026-09-09T00:00:00+00:00'), calendar: $this->calendar()))
 		);
 	}
 
@@ -117,19 +113,11 @@ class ElapsedBusinessHoursTest extends TestCase {
 
 		$this->assertSame(
 			0.0,
-			$sla->elapsedBusinessHours(
-				from: new DateTimeImmutable('2026-09-08T00:00:00+00:00'),
-				to: new DateTimeImmutable('2026-09-08T09:00:00+00:00'),
-				calendar: $this->calendar()
-			)
+			$sla->elapsedBusinessHours(new CalendarSpan(from: new DateTimeImmutable('2026-09-08T00:00:00+00:00'), to: new DateTimeImmutable('2026-09-08T09:00:00+00:00'), calendar: $this->calendar()))
 		);
 		$this->assertSame(
 			0.0,
-			$sla->elapsedBusinessHours(
-				from: new DateTimeImmutable('2026-09-08T17:00:00+00:00'),
-				to: new DateTimeImmutable('2026-09-08T23:00:00+00:00'),
-				calendar: $this->calendar()
-			)
+			$sla->elapsedBusinessHours(new CalendarSpan(from: new DateTimeImmutable('2026-09-08T17:00:00+00:00'), to: new DateTimeImmutable('2026-09-08T23:00:00+00:00'), calendar: $this->calendar()))
 		);
 	}
 
@@ -152,11 +140,7 @@ class ElapsedBusinessHoursTest extends TestCase {
 		// the 25th is closed, the weekend is closed, and the 28th gives one.
 		$this->assertSame(
 			2.0,
-			$sla->elapsedBusinessHours(
-				from: new DateTimeImmutable('2026-12-24T16:00:00+00:00'),
-				to: new DateTimeImmutable('2026-12-28T10:00:00+00:00'),
-				calendar: $calendar
-			)
+			$sla->elapsedBusinessHours(new CalendarSpan(from: new DateTimeImmutable('2026-12-24T16:00:00+00:00'), to: new DateTimeImmutable('2026-12-28T10:00:00+00:00'), calendar: $calendar))
 		);
 	}
 
@@ -170,11 +154,7 @@ class ElapsedBusinessHoursTest extends TestCase {
 
 		$this->assertSame(
 			-1.0,
-			$sla->elapsedBusinessHours(
-				from: new DateTimeImmutable('2026-09-14T09:00:00+00:00'),
-				to: new DateTimeImmutable('2026-09-11T16:00:00+00:00'),
-				calendar: $this->calendar()
-			)
+			$sla->elapsedBusinessHours(new CalendarSpan(from: new DateTimeImmutable('2026-09-14T09:00:00+00:00'), to: new DateTimeImmutable('2026-09-11T16:00:00+00:00'), calendar: $this->calendar()))
 		);
 	}
 
@@ -197,8 +177,8 @@ class ElapsedBusinessHoursTest extends TestCase {
 		$from = new DateTimeImmutable('2026-09-08T07:00:00+00:00');
 		$to = new DateTimeImmutable('2026-09-08T08:00:00+00:00');
 
-		$this->assertSame(0.5, $sla->elapsedBusinessHours(from: $from, to: $to, calendar: $early));
-		$this->assertSame(0.0, $sla->elapsedBusinessHours(from: $from, to: $to, calendar: $this->calendar()));
+		$this->assertSame(0.5, $sla->elapsedBusinessHours(new CalendarSpan(from: $from, to: $to, calendar: $early)));
+		$this->assertSame(0.0, $sla->elapsedBusinessHours(new CalendarSpan(from: $from, to: $to, calendar: $this->calendar())));
 	}
 
 	/**

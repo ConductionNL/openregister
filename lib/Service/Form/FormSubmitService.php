@@ -48,10 +48,12 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\Object\DraftFinder;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCA\OpenRegister\Service\Object\OwnDraftSearch;
 use Throwable;
 
 /**
@@ -397,7 +399,10 @@ class FormSubmitService implements FormSubmitServiceInterface {
 
 		$owner = DraftOwner::resolve(subject: $submitter->subject, owner: $submitter->owner);
 
-		return $this->drafts->own(register: $pair[0], schema: $pair[1], draftId: $submitter->draftId, owner: $owner) !== null;
+		return $this->drafts->own(
+			address: new DraftAddress(register: $pair[0], schema: $pair[1], draftId: $submitter->draftId),
+			owner: $owner
+		) !== null;
 	}//end isOwnerOfDraft()
 
 	/**
@@ -414,7 +419,10 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	 * @throws FormSubmitRefusedException 404.
 	 */
 	private function draftData(array $plan, OwnedDraft $draft): array {
-		$stored = $this->drafts->own(register: $plan['register'], schema: $plan['schema'], draftId: $draft->draftId, owner: $draft->owner);
+		$stored = $this->drafts->own(
+			address: new DraftAddress(register: $plan['register'], schema: $plan['schema'], draftId: $draft->draftId),
+			owner: $draft->owner
+		);
 		if ($stored === null) {
 			throw $this->refusals->draftGone();
 		}
@@ -441,7 +449,10 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		$register = $this->register(reference: $destination['register'] ?? null);
 		$schema = $this->schema(reference: $destination['schema'] ?? null);
 		$owner = DraftOwner::resolve(subject: $submitter->subject, owner: $submitter->owner);
-		$draft = $this->drafts->own(register: $register, schema: $schema, draftId: (string)$submitter->draftId, owner: $owner);
+		$draft = $this->drafts->own(
+			address: new DraftAddress(register: $register, schema: $schema, draftId: (string)$submitter->draftId),
+			owner: $owner
+		);
 		if ($draft === null) {
 			throw $this->refusals->draftGone();
 		}
@@ -471,7 +482,9 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			return null;
 		}
 
-		return $this->answerOf(draft: $this->drafts->newest(register: $pair[0], schema: $pair[1], owner: $owner, match: $match));
+		return $this->answerOf(draft: $this->drafts->newest(
+			search: new OwnDraftSearch(register: $pair[0], schema: $pair[1], owner: $owner, match: $match)
+		));
 	}//end findDraft()
 
 	/**

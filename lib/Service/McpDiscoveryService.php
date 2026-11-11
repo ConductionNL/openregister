@@ -28,8 +28,6 @@
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\IURLGenerator;
 
@@ -755,24 +753,23 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
 	 */
 	private function buildRegistersCapability(): array {
-		$registers = $this->catalog->registers()->findAll();
-		$context = [];
-		foreach ($registers as $register) {
-			$context[] = [
-				'id' => $register->getId(),
-				'title' => $register->getTitle(),
-				'uuid' => $register->getUuid(),
-			];
-		}
-
 		return [
 			'id' => 'registers',
 			'name' => 'Registers',
 			'description' => 'Data containers that group schemas and their objects.',
-			'context' => ['registers' => $context],
+			'context' => ['registers' => $this->catalogSummaries()->registers()],
 			'endpoints' => self::REGISTERS_ENDPOINTS,
 		];
 	}//end buildRegistersCapability()
+
+	/**
+	 * The live register and schema summaries of the catalog.
+	 *
+	 * @return McpCatalogSummaries
+	 */
+	private function catalogSummaries(): McpCatalogSummaries {
+		return new McpCatalogSummaries(catalog: $this->catalog);
+	}//end catalogSummaries()
 
 	/**
 	 * Build the schemas capability detail
@@ -784,28 +781,11 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
 	 */
 	private function buildSchemasCapability(): array {
-		$schemas = $this->catalog->schemas()->findAll();
-		$context = [];
-		foreach ($schemas as $schema) {
-			$properties = $schema->getProperties();
-			$propertyCount = 0;
-			if (is_array($properties) === true) {
-				$propertyCount = count($properties);
-			}
-
-			$context[] = [
-				'id' => $schema->getId(),
-				'title' => $schema->getTitle(),
-				'uuid' => $schema->getUuid(),
-				'property_count' => $propertyCount,
-			];
-		}
-
 		return [
 			'id' => 'schemas',
 			'name' => 'Schemas',
 			'description' => 'JSON Schema definitions that define object structure.',
-			'context' => ['schemas' => $context],
+			'context' => ['schemas' => $this->catalogSummaries()->schemas()],
 			'endpoints' => self::SCHEMAS_ENDPOINTS,
 		];
 	}//end buildSchemasCapability()
@@ -820,53 +800,14 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
 	 */
 	private function buildObjectsCapability(): array {
-		$registers = $this->catalog->registers()->findAll();
-		$schemaIndex = [];
-		foreach ($this->catalog->schemas()->findAll() as $schema) {
-			$schemaIndex[$schema->getId()] = $schema;
-		}
-
-		$context = [];
-		foreach ($registers as $register) {
-			$context[] = [
-				'id' => $register->getId(),
-				'title' => $register->getTitle(),
-				'schemas' => $this->registerSchemaSummaries(register: $register, schemaIndex: $schemaIndex),
-			];
-		}
-
 		return [
 			'id' => 'objects',
 			'name' => 'Objects',
 			'description' => 'Data records stored in register/schema pairs.',
-			'context' => ['registers' => $context],
+			'context' => ['registers' => $this->catalogSummaries()->registersWithSchemas()],
 			'endpoints' => self::OBJECTS_ENDPOINTS,
 		];
 	}//end buildObjectsCapability()
-
-	/**
-	 * The id and title of each known schema a register lists.
-	 *
-	 * @param Register                  $register    The register
-	 * @param array<int|string, Schema> $schemaIndex All schemas by id
-	 *
-	 * @return array<int, array{id: int|null, title: string|null}>
-	 */
-	private function registerSchemaSummaries(Register $register, array $schemaIndex): array {
-		$schemaIds = $register->getSchemas();
-		if (is_array($schemaIds) === false) {
-			return [];
-		}
-
-		$summaries = [];
-		foreach ($schemaIds as $schemaId) {
-			if (isset($schemaIndex[$schemaId]) === true) {
-				$summaries[] = ['id' => $schemaIndex[$schemaId]->getId(), 'title' => $schemaIndex[$schemaId]->getTitle()];
-			}
-		}
-
-		return $summaries;
-	}//end registerSchemaSummaries()
 
 	/**
 	 * Build the search capability detail

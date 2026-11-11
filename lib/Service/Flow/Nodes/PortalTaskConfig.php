@@ -155,20 +155,43 @@ final class PortalTaskConfig {
 	 */
 	private function refuseNonNumericLimits(array $config): void {
 		foreach (['uploadMaxFiles', 'uploadMaxSizeMb', 'heartbeatMinutes'] as $numeric) {
-			$value = ($config[$numeric] ?? null);
-			if ($value !== null && $value !== '' && is_numeric($value) === false) {
+			if (self::isSetButNotNumeric(value: ($config[$numeric] ?? null)) === true) {
 				throw new UnexpectedValueException(
 					$this->l10n->t('%1$s must be a number.', [$numeric])
 				);
 			}
 		}
 
+		$this->refuseTooFewFiles(config: $config);
+	}//end refuseNonNumericLimits()
+
+	/**
+	 * Whether a limit is given (not null, not empty) but is not a number.
+	 *
+	 * @param mixed $value The configured limit.
+	 *
+	 * @return bool
+	 */
+	private static function isSetButNotNumeric(mixed $value): bool {
+		return ($value !== null && $value !== '' && is_numeric($value) === false);
+	}//end isSetButNotNumeric()
+
+	/**
+	 * Refuse a numeric file count below one.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When fewer than one file is allowed.
+	 */
+	private function refuseTooFewFiles(array $config): void {
 		if (isset($config['uploadMaxFiles']) === true && is_numeric($config['uploadMaxFiles']) === true && (int)$config['uploadMaxFiles'] < 1) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('uploadMaxFiles must be at least 1; turn "Upload required" off to allow a completion without a file.')
 			);
 		}
-	}//end refuseNonNumericLimits()
+	}//end refuseTooFewFiles()
 
 	/**
 	 * The party role the node matches on the case.

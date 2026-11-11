@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Files\Service;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
@@ -410,7 +410,7 @@ class NoteService implements NoteServiceInterface {
 				throw new NoteEditForbiddenException();
 			}
 
-			$this->versions->record(noteId: $noteId, previous: $comment, editedBy: $user->getUID());
+			$this->versions->record(previous: $comment, editedBy: $user->getUID());
 
 			$comment->setMessage($edit->message);
 		}

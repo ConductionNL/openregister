@@ -48,8 +48,8 @@ class DashboardAuditReadsTest extends TestCase {
 	public function testChartForwardsItsPeriodAndScope(): void {
 		$from = new DateTime('2026-01-01');
 		$till = new DateTime('2026-01-31');
-		$this->mapper->expects($this->once())->method('getActionChartData')
-			->with($this->identicalTo($from), $this->identicalTo($till), 1, 2)->willReturn(['labels' => ['a'], 'series' => []]);
+		$this->mapper->expects($this->once())->method('actionChartData')
+			->with($this->callback(static fn (AuditStatisticsScope $s): bool => [$s->from, $s->till, $s->registerId, $s->schemaId] === [$from, $till, 1, 2]))->willReturn(['labels' => ['a'], 'series' => []]);
 
 		$result = $this->reads->getAuditTrailActionChartData((new DashboardScope(1, 2))->during($from, $till));
 

@@ -107,34 +107,8 @@ class StreamingToolInstanceWrapper {
 			]
 		);
 
-		try {
-			$result = $this->wrapped->{$functionName}(...$args);
-		} catch (Throwable $e) {
-			// Surface the failure on the channel before re-raising so
-			// the SSE consumer sees a tool_result frame even when the
-			// tool throws. Mirrors McpToolsService's catch-all envelope.
-			$this->channel->emitToolResult(
-				payload: [
-					'toolId' => $functionName,
-					'result' => ['error' => $e->getMessage()],
-					'isError' => true,
-				]
-			);
-			throw $e;
-		}
-
-		$resultPayload = ['value' => $result];
-		if (is_array($result) === true) {
-			$resultPayload = $result;
-		}
-
-		$this->channel->emitToolResult(
-			payload: [
-				'toolId' => $functionName,
-				'result' => $resultPayload,
-				'isError' => $this->detectIsError(result: $result),
-			]
-		);
+		$result = $this->invokeWrapped(functionName: $functionName, args: $args);
+		$this->emitResult(functionName: $functionName, result: $result);
 
 		// LLPhant's CalledFunction::__construct requires the function
 		// return to be ?string. MCP tools return associative arrays —
@@ -148,6 +122,57 @@ class StreamingToolInstanceWrapper {
 
 		return $result;
 	}//end __call()
+
+	/**
+	 * Call the wrapped tool, surfacing a failure on the channel before re-raising it.
+	 *
+	 * @param string            $functionName The method being called on the tool.
+	 * @param array<int, mixed> $args         Positional arguments as LLPhant dispatches them.
+	 *
+	 * @return mixed The tool's raw return value.
+	 *
+	 * @throws Throwable Whatever the tool throws.
+	 */
+	private function invokeWrapped(string $functionName, array $args): mixed {
+		try {
+			return $this->wrapped->{$functionName}(...$args);
+		} catch (Throwable $e) {
+			// Surface the failure on the channel before re-raising so
+			// the SSE consumer sees a tool_result frame even when the
+			// tool throws. Mirrors McpToolsService's catch-all envelope.
+			$this->channel->emitToolResult(
+				payload: [
+					'toolId' => $functionName,
+					'result' => ['error' => $e->getMessage()],
+					'isError' => true,
+				]
+			);
+			throw $e;
+		}
+	}//end invokeWrapped()
+
+	/**
+	 * Emit the tool_result frame of a call that returned.
+	 *
+	 * @param string $functionName The method that was called.
+	 * @param mixed  $result       What it returned.
+	 *
+	 * @return void
+	 */
+	private function emitResult(string $functionName, mixed $result): void {
+		$resultPayload = ['value' => $result];
+		if (is_array($result) === true) {
+			$resultPayload = $result;
+		}
+
+		$this->channel->emitToolResult(
+			payload: [
+				'toolId' => $functionName,
+				'result' => $resultPayload,
+				'isError' => $this->detectIsError(result: $result),
+			]
+		);
+	}//end emitResult()
 
 	/**
 	 * Flatten the argument array when it's the standard MCP shape

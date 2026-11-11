@@ -186,6 +186,7 @@ class SeedVersionLedger {
 			return $key;
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return $this->prefix . sha1($appId);
 	}//end key()
 }//end class

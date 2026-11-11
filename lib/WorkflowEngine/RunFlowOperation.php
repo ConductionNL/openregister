@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\WorkflowEngine;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -193,7 +194,7 @@ class RunFlowOperation implements RunFlowOperationInterface {
 		try {
 			$matches = array_values(
 				array_filter(
-					$this->flowRuns->flows->findAllFlows(limit: 500),
+					$this->flowRuns->flows->findAllFlows(query: new ListQuery(limit: 500)),
 					static fn ($f): bool => $f->getName() === $name
 				)
 			);

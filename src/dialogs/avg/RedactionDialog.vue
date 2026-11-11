@@ -54,8 +54,8 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import AvgFormFooter from './AvgFormFooter.vue'
-import { resolveGroundOptions } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
+import { caseDialogProps, groundOptions } from './caseDialog.js'
 
 export default {
 	name: 'RedactionDialog',
@@ -67,17 +67,7 @@ export default {
 		NcSelect,
 	},
 
-	props: {
-		caseId: {
-			type: String,
-			required: true,
-		},
-
-		pack: {
-			type: Object,
-			default: null,
-		},
-	},
+	props: caseDialogProps,
 
 	emits: ['close', 'redacted'],
 
@@ -95,12 +85,7 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec exclude Presentation glue: reuses the pack's denial-grounds enum as the redaction-ground options.
-		 */
-		groundOptions() {
-			return resolveGroundOptions(this.pack)
-		},
+		groundOptions,
 	},
 
 	methods: {
@@ -115,16 +100,26 @@ export default {
 			this.saving = true
 			this.error = null
 			try {
-				await avgStore.applyRedaction(this.caseId, {
-					field: this.form.field,
-					after: this.form.after,
-					ground: this.form.ground,
-				})
+				await avgStore.applyRedaction(this.caseId, this.redaction())
 				this.$emit('redacted')
 			} catch (e) {
 				this.error = avgStore.getError ?? e.message ?? 'Redaction failed'
 			} finally {
 				this.saving = false
+			}
+		},
+
+		/**
+		 * The redaction the form describes: the field, its new value and the
+		 * ground for it.
+		 *
+		 * @return {{field: string, after: string, ground: string}} The redaction
+		 */
+		redaction() {
+			return {
+				field: this.form.field,
+				after: this.form.after,
+				ground: this.form.ground,
 			}
 		},
 	},

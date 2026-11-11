@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\ErasureRequest;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -299,8 +300,7 @@ class RetentionSweepService implements RetentionSweepInterface {
 	private function scrubEvidence(string $uuid, string $subjectId): void {
 		try {
 			$this->sources->dsrService->erase(
-				subjectId: $subjectId,
-				eraseMode: DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE
+				request: new ErasureRequest(subjectId: $subjectId, eraseMode: DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

@@ -73,6 +73,16 @@ class DerivedGrantResolver {
 	public const ONE_OF_KEY = 'oneOf';
 
 	/**
+	 * Constructor.
+	 *
+	 * @param GrantConstraints $constraints The reader of `until` and `scopedTo`.
+	 */
+	public function __construct(
+		private readonly GrantConstraints $constraints = new GrantConstraints(),
+	) {
+	}//end __construct()
+
+	/**
 	 * Derive the grants one sign-in produces.
 	 *
 	 * @param array<string, mixed>            $claims The claims the identity provider asserted.
@@ -88,33 +98,70 @@ class DerivedGrantResolver {
 			return ['grants' => [], 'skipped' => []];
 		}
 
-		$grants = [];
-		$skipped = [];
+		return [
+			'grants' => $this->grantsFor(claims: $claims, rules: $rules),
+			'skipped' => $this->skippedIn(rules: $rules),
+		];
+	}//end derive()
 
+	/**
+	 * One grant per readable rule the claims satisfy, in rule order.
+	 *
+	 * @param array<string, mixed> $claims The claims the identity provider asserted.
+	 * @param array<int|string, mixed> $rules The declared rules.
+	 *
+	 * @return array<int, array<string, mixed>> The grants.
+	 */
+	private function grantsFor(array $claims, array $rules): array {
+		$grants = [];
 		foreach ($rules as $index => $rule) {
-			$unreadable = $this->reasonToSkip(rule: $rule, index: (string)$index);
-			if ($unreadable !== null) {
-				$skipped[] = $unreadable;
+			if ($this->reasonToSkip(rule: $rule, index: (string)$index) !== null) {
 				continue;
 			}
 
 			$claim = (string)$rule[self::CLAIM_KEY];
-			if ($this->matches(rule: $rule, asserted: ($claims[$claim] ?? null)) === false) {
-				continue;
+			if ($this->matches(rule: $rule, asserted: ($claims[$claim] ?? null)) === true) {
+				$grants[] = ['rule' => (string)$index, 'claim' => $claim] + $this->grantTerms(rule: $rule);
 			}
+		}
 
-			$grants[] = [
-				'rule' => (string)$index,
-				'claim' => $claim,
-				'groups' => $this->stringsIn(value: ($rule['groups'] ?? [])),
-				'role' => $this->roleNameIn(rule: $rule),
-				GrantConstraints::SCOPED_TO_KEY => ($rule[GrantConstraints::SCOPED_TO_KEY] ?? null),
-				GrantConstraints::UNTIL_KEY => ($rule[GrantConstraints::UNTIL_KEY] ?? null),
-			];
-		}//end foreach
+		return $grants;
+	}//end grantsFor()
 
-		return ['grants' => $grants, 'skipped' => $skipped];
-	}//end derive()
+	/**
+	 * What a fired rule grants: its groups and role, and the constraints it carries.
+	 *
+	 * @param array<string, mixed> $rule The readable rule.
+	 *
+	 * @return array<string, mixed> The grant's groups, role, scope and end.
+	 */
+	private function grantTerms(array $rule): array {
+		return [
+			'groups' => $this->stringsIn(value: ($rule['groups'] ?? [])),
+			'role' => $this->roleNameIn(rule: $rule),
+			GrantConstraints::SCOPED_TO_KEY => ($rule[GrantConstraints::SCOPED_TO_KEY] ?? null),
+			GrantConstraints::UNTIL_KEY => ($rule[GrantConstraints::UNTIL_KEY] ?? null),
+		];
+	}//end grantTerms()
+
+	/**
+	 * One sentence per rule that cannot be read, in rule order.
+	 *
+	 * @param array<int|string, mixed> $rules The declared rules.
+	 *
+	 * @return array<int, string> The reasons.
+	 */
+	private function skippedIn(array $rules): array {
+		$skipped = [];
+		foreach ($rules as $index => $rule) {
+			$unreadable = $this->reasonToSkip(rule: $rule, index: (string)$index);
+			if ($unreadable !== null) {
+				$skipped[] = $unreadable;
+			}
+		}
+
+		return $skipped;
+	}//end skippedIn()
 
 	/**
 	 * Why one rule cannot be read, or null when it can.
@@ -151,19 +198,18 @@ class DerivedGrantResolver {
 	 * at sign-in is asked about once per register a person opens, and the answer
 	 * is different in each.
 	 *
-	 * @param array<int, array<string, mixed>> $grants      The stored grants.
-	 * @param array<string, mixed>             $area        Keys `register` and `schema`.
-	 * @param GrantConstraints                 $constraints The reader of `until` and `scopedTo`.
+	 * @param array<int, array<string, mixed>> $grants The stored grants.
+	 * @param array<string, mixed>             $area   Keys `register` and `schema`.
 	 *
 	 * @return array<int, string> The group ids this caller holds here.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function groupsFor(array $grants, array $area, GrantConstraints $constraints): array {
-		$now = new DateTimeImmutable();
+	public function groupsFor(array $grants, array $area): array {
+		$point    = new ConstraintPoint(area: $area, now: new DateTimeImmutable());
 		$reaching = array_filter(
 			$grants,
-			static fn (mixed $grant): bool => is_array($grant) === true && $constraints->reaches(entry: $grant, point: new ConstraintPoint(area: $area, now: $now)) === true
+			fn (mixed $grant): bool => is_array($grant) === true && $this->constraints->reaches(entry: $grant, point: $point) === true
 		);
 
 		return $this->groupsIn(grants: $reaching);
@@ -206,6 +252,26 @@ class DerivedGrantResolver {
 			return false;
 		}
 
+		$wanted = $this->wantedValues(rule: $rule);
+
+		// A rule that names no value it wants fires on nothing. The other
+		// reading, "any value at all", turns a half-written rule into a grant
+		// for everybody the provider knows about.
+		if ($wanted === []) {
+			return false;
+		}
+
+		return array_intersect($wanted, self::assertedValues(asserted: $asserted)) !== [];
+	}//end matches()
+
+	/**
+	 * The values a rule wants: its scalar `equals`, then its `oneOf` strings.
+	 *
+	 * @param array<string, mixed> $rule The rule.
+	 *
+	 * @return array<int, string> The wanted values.
+	 */
+	private function wantedValues(array $rule): array {
 		$wanted = [];
 		if (array_key_exists(self::EQUALS_KEY, $rule) === true && is_scalar($rule[self::EQUALS_KEY]) === true) {
 			$wanted[] = (string)$rule[self::EQUALS_KEY];
@@ -215,13 +281,17 @@ class DerivedGrantResolver {
 			$wanted[] = $value;
 		}
 
-		// A rule that names no value it wants fires on nothing. The other
-		// reading, "any value at all", turns a half-written rule into a grant
-		// for everybody the provider knows about.
-		if ($wanted === []) {
-			return false;
-		}
+		return $wanted;
+	}//end wantedValues()
 
+	/**
+	 * The scalar values the provider asserted for a claim, one or a list, as strings.
+	 *
+	 * @param mixed $asserted What the provider asserted.
+	 *
+	 * @return array<int, string> The values.
+	 */
+	private static function assertedValues(mixed $asserted): array {
 		$values = [$asserted];
 		if (is_array($asserted) === true) {
 			$values = $asserted;
@@ -234,8 +304,8 @@ class DerivedGrantResolver {
 			}
 		}
 
-		return array_intersect($wanted, $assertedValues) !== [];
-	}//end matches()
+		return $assertedValues;
+	}//end assertedValues()
 
 	/**
 	 * The role one rule names, or null when it names none.

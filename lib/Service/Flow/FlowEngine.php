@@ -608,8 +608,7 @@ class FlowEngine {
 		}
 
 		// THE CLAIM, on every place this firing touches, before anything runs.
-		$places = array_map('strval', array_merge($transition->getFroms(), $transition->getTos()));
-		$claimed = $pass->streams->claim(id: $streamId, transition: $transition->getName(), places: $places);
+		$claimed = $pass->streams->claim(id: $streamId, transition: $transition);
 		if ($claimed === null) {
 			return null;
 		}

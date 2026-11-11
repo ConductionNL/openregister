@@ -773,17 +773,7 @@ class ConfigurationSettingsHandler {
 	 */
 	public function getVersionInfoOnly(): array {
 		try {
-			$appInfo = $this->support->appManager->getAppInfo(AppIdentity::APP_ID);
-
-			return [
-				'version' => ($appInfo['version'] ?? null) ?? 'unknown',
-				'name' => ($appInfo['name'] ?? null) ?? 'OpenRegister',
-				'description' => ($appInfo['description'] ?? null) ?? '',
-				'author' => ($appInfo['author'] ?? null) ?? 'Conduction',
-				'licence' => ($appInfo['licence'] ?? null) ?? 'EUPL-1.2',
-				'timestamp' => time(),
-				'date' => date('Y-m-d H:i:s'),
-			];
+			return self::versionInfoOf(appInfo: $this->support->appManager->getAppInfo(AppIdentity::APP_ID));
 		} catch (\Throwable $e) {
 			return [
 				'version' => 'unknown',
@@ -791,4 +781,23 @@ class ConfigurationSettingsHandler {
 			];
 		}
 	}//end getVersionInfoOnly()
+
+	/**
+	 * The version info an app info block gives, each field defaulted, stamped with now.
+	 *
+	 * @param array<string, mixed>|null $appInfo The app info.
+	 *
+	 * @return array Version info with name, version, description, author, licence, timestamp, and date.
+	 */
+	private static function versionInfoOf(?array $appInfo): array {
+		return [
+			'version' => ($appInfo['version'] ?? null) ?? 'unknown',
+			'name' => ($appInfo['name'] ?? null) ?? 'OpenRegister',
+			'description' => ($appInfo['description'] ?? null) ?? '',
+			'author' => ($appInfo['author'] ?? null) ?? 'Conduction',
+			'licence' => ($appInfo['licence'] ?? null) ?? 'EUPL-1.2',
+			'timestamp' => time(),
+			'date' => date('Y-m-d H:i:s'),
+		];
+	}//end versionInfoOf()
 }//end class

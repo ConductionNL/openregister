@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Audit;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Throwable;
@@ -201,7 +202,9 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 	private function walk(ReadableTrailRun $run): bool {
 		$start = $run->offset;
 		while (count($run->results) < $run->limit && ($run->offset - $start) < self::SCAN_BUDGET) {
-			$batch = $this->auditTrailMapper->findAll(limit: self::BATCH_SIZE, offset: $run->offset, filters: $run->filters, sort: ['created' => 'DESC']);
+			$batch = $this->auditTrailMapper->findTrail(
+				query: new ListQuery(limit: self::BATCH_SIZE, offset: $run->offset, filters: $run->filters, sort: ['created' => 'DESC'])
+			);
 			$consumed = $this->takeReadable(run: $run, batch: $batch);
 			$run->offset += $consumed;
 

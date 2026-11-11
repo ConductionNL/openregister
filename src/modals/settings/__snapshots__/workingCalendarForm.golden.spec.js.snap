@@ -1,0 +1,326 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditWorkingCalendarModal.toDefinition builds the definition of a full form 1`] = `
+{
+  "definition": {
+    "exceptions": [
+      {
+        "date": "2026-12-24",
+        "name": "exception",
+      },
+      {
+        "date": "2026-12-31",
+        "name": "NYE",
+      },
+    ],
+    "hoursPerWorkingDay": 7.5,
+    "organisation": "org-1",
+    "rules": [
+      {
+        "kind": "easter",
+        "name": "Easter Monday",
+        "offset": 1,
+      },
+      {
+        "day": 27,
+        "kind": "fixed",
+        "month": 4,
+        "name": "Kingsday",
+        "observedShift": {
+          "days": -1,
+          "whenWeekday": 7,
+        },
+      },
+      {
+        "day": 25,
+        "kind": "fixed",
+        "month": 12,
+        "name": "Christmas",
+      },
+    ],
+    "slug": "nl",
+    "title": "Netherlands",
+    "workingWeekdays": [
+      1,
+      3,
+      5,
+    ],
+  },
+  "formUntouched": true,
+  "keys": [
+    "slug",
+    "title",
+    "workingWeekdays",
+    "hoursPerWorkingDay",
+    "rules",
+    "exceptions",
+    "organisation",
+  ],
+}
+`;
+
+exports[`EditWorkingCalendarModal.toDefinition builds the definition of a minimal form 1`] = `
+{
+  "definition": {
+    "exceptions": [],
+    "hoursPerWorkingDay": 0,
+    "rules": [],
+    "slug": "x",
+    "title": "X",
+    "workingWeekdays": [],
+  },
+  "formUntouched": true,
+  "keys": [
+    "slug",
+    "title",
+    "workingWeekdays",
+    "hoursPerWorkingDay",
+    "rules",
+    "exceptions",
+  ],
+}
+`;
+
+exports[`EditWorkingCalendarModal.toForm reads a bare calendar into the form 1`] = `
+{
+  "form": {
+    "exceptions": [],
+    "hoursPerWorkingDay": "8",
+    "organisation": "",
+    "rules": [],
+    "serviceHours": {},
+    "slug": "x",
+    "title": "",
+    "workingWeekdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+    ],
+  },
+  "keys": [
+    "slug",
+    "title",
+    "organisation",
+    "workingWeekdays",
+    "hoursPerWorkingDay",
+    "serviceHours",
+    "rules",
+    "exceptions",
+  ],
+}
+`;
+
+exports[`EditWorkingCalendarModal.toForm reads a full calendar into the form 1`] = `
+{
+  "form": {
+    "exceptions": [
+      {
+        "date": "2026-12-24",
+        "name": "Office closed",
+      },
+      {
+        "date": "",
+        "name": "",
+      },
+    ],
+    "hoursPerWorkingDay": "7.5",
+    "organisation": "org-1",
+    "rules": [
+      {
+        "day": "",
+        "kind": "easter",
+        "month": "",
+        "name": "Easter Monday",
+        "offset": "1",
+        "shiftDays": "",
+        "shiftWeekday": "",
+      },
+      {
+        "day": "27",
+        "kind": "fixed",
+        "month": "4",
+        "name": "Kingsday",
+        "offset": "",
+        "shiftDays": "-1",
+        "shiftWeekday": 7,
+      },
+      {
+        "day": "25",
+        "kind": "fixed",
+        "month": "12",
+        "name": "Unnamed kind",
+        "offset": "",
+        "shiftDays": "",
+        "shiftWeekday": "",
+      },
+      {
+        "day": "",
+        "kind": "fixed",
+        "month": "",
+        "name": "",
+        "offset": "",
+        "shiftDays": "",
+        "shiftWeekday": "",
+      },
+    ],
+    "serviceHours": {},
+    "slug": "nl",
+    "title": "Netherlands",
+    "workingWeekdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+    ],
+  },
+  "keys": [
+    "slug",
+    "title",
+    "organisation",
+    "workingWeekdays",
+    "hoursPerWorkingDay",
+    "serviceHours",
+    "rules",
+    "exceptions",
+  ],
+}
+`;
+
+exports[`EditWorkingCalendarModal.toForm reads a none calendar into the form 1`] = `
+{
+  "form": {
+    "exceptions": [],
+    "hoursPerWorkingDay": "8",
+    "organisation": "",
+    "rules": [],
+    "serviceHours": {},
+    "slug": "",
+    "title": "",
+    "workingWeekdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+    ],
+  },
+  "keys": [
+    "slug",
+    "title",
+    "organisation",
+    "workingWeekdays",
+    "hoursPerWorkingDay",
+    "serviceHours",
+    "rules",
+    "exceptions",
+  ],
+}
+`;
+
+exports[`WorkingCalendars.load reads a bare failure 1`] = `
+{
+  "data": {
+    "calendars": [
+      "old",
+    ],
+    "error": "t:The calendars could not be read.",
+    "loading": false,
+  },
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/objects/flow-timers/working-calendar",
+        {
+          "params": {
+            "_limit": 100,
+          },
+        },
+      ],
+      true,
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`WorkingCalendars.load reads a list 1`] = `
+{
+  "data": {
+    "calendars": [
+      {
+        "slug": "nl",
+      },
+    ],
+    "error": "",
+    "loading": false,
+  },
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/objects/flow-timers/working-calendar",
+        {
+          "params": {
+            "_limit": 100,
+          },
+        },
+      ],
+      true,
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`WorkingCalendars.load reads a refusal with an error 1`] = `
+{
+  "data": {
+    "calendars": [
+      "old",
+    ],
+    "error": "Denied",
+    "loading": false,
+  },
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/objects/flow-timers/working-calendar",
+        {
+          "params": {
+            "_limit": 100,
+          },
+        },
+      ],
+      true,
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`WorkingCalendars.load reads an empty answer 1`] = `
+{
+  "data": {
+    "calendars": [],
+    "error": "",
+    "loading": false,
+  },
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/objects/flow-timers/working-calendar",
+        {
+          "params": {
+            "_limit": 100,
+          },
+        },
+      ],
+      true,
+      "",
+    ],
+  ],
+}
+`;

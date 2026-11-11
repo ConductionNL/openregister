@@ -29,11 +29,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -84,6 +86,8 @@ use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectPatch;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\RenderRequest;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
@@ -93,6 +97,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\ResultNameCollector;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -110,7 +115,9 @@ use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\ObjectListRequest;
 use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\LockRequest;
@@ -147,9 +154,14 @@ use OCA\OpenRegister\Service\Object\SearchTrailRecorder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
+use OCA\OpenRegister\Service\Object\DraftSubject;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
+use OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices;
+use OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices;
+use OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices;
+use OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -310,9 +322,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * The row-by-row repeating-group validator, constructed on first use.
      *
-     * Not injected. This class takes forty-odd constructor arguments and a
-     * long tail of unit tests build it positionally, so a new argument is a
-     * bigger change than it looks. Both validators below are pure and have no
+     * Not injected. Both validators below are pure and have no
      * dependencies of their own, which is what makes constructing them here
      * safe: there is no wiring that can be missing, so there is no
      * configuration under which the enforcement quietly stops running.
@@ -329,127 +339,346 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private ?NotSuppliedHandler $notSuppliedHandler = null;
 
     /**
+     * Collaborator taken from the shaping bundle.
+     *
+     * @var DataManipulationHandler
+     */
+    private readonly DataManipulationHandler $dataManipHandler;
+
+    /**
+     * Collaborator taken from the removal bundle.
+     *
+     * @var DeleteObject
+     */
+    private readonly DeleteObject $deleteHandler;
+
+    /**
+     * Collaborator taken from the read bundle.
+     *
+     * @var GetObject
+     */
+    private readonly GetObject $getHandler;
+
+    /**
+     * Collaborator taken from the authorisation bundle.
+     *
+     * @var PermissionHandlerInterface
+     */
+    private readonly PermissionHandlerInterface $permissionHandler;
+
+    /**
+     * Collaborator taken from the read bundle.
+     *
+     * @var RenderObject
+     */
+    private readonly RenderObject $renderHandler;
+
+    /**
+     * Collaborator taken from the save bundle.
+     *
+     * @var SaveObjectInterface
+     */
+    private readonly SaveObjectInterface $saveHandler;
+
+    /**
+     * Collaborator taken from the save bundle.
+     *
+     * @var SaveObjects
+     */
+    private readonly SaveObjects $saveObjectsHandler;
+
+    /**
+     * Collaborator taken from the search bundle.
+     *
+     * @var SearchQueryHandler
+     */
+    private readonly SearchQueryHandler $searchQueryHandler;
+
+    /**
+     * Collaborator taken from the save bundle.
+     *
+     * @var ValidateObjectInterface
+     */
+    private readonly ValidateObjectInterface $validateHandler;
+
+    /**
+     * Collaborator taken from the history bundle.
+     *
+     * @var LockHandler
+     */
+    private readonly LockHandler $lockHandler;
+
+    /**
+     * Collaborator taken from the history bundle.
+     *
+     * @var AuditHandler
+     */
+    private readonly AuditHandler $auditHandler;
+
+    /**
+     * Collaborator taken from the read bundle.
+     *
+     * @var RelationHandler
+     */
+    private readonly RelationHandler $relationHandler;
+
+    /**
+     * Collaborator taken from the removal bundle.
+     *
+     * @var MergeHandler
+     */
+    private readonly MergeHandler $mergeHandler;
+
+    /**
+     * Collaborator taken from the search bundle.
+     *
+     * @var FacetHandler
+     */
+    private readonly FacetHandler $facetHandler;
+
+    /**
+     * Collaborator taken from the read bundle.
+     *
+     * @var MetadataHandler
+     */
+    private readonly MetadataHandler $metadataHandler;
+
+    /**
+     * Collaborator taken from the search bundle.
+     *
+     * @var PerformanceOptimizationHandler
+     */
+    private readonly PerformanceOptimizationHandler $perfOptHandler;
+
+    /**
+     * Collaborator taken from the search bundle.
+     *
+     * @var QueryHandler
+     */
+    private readonly QueryHandler $queryHandler;
+
+    /**
+     * Collaborator taken from the history bundle.
+     *
+     * @var RevertHandler
+     */
+    private readonly RevertHandler $revertHandler;
+
+    /**
+     * Collaborator taken from the shaping bundle.
+     *
+     * @var UtilityHandler
+     */
+    private readonly UtilityHandler $utilityHandler;
+
+    /**
+     * Collaborator taken from the save bundle.
+     *
+     * @var ValidationHandler
+     */
+    private readonly ValidationHandler $validationHandler;
+
+    /**
+     * Collaborator taken from the removal bundle.
+     *
+     * @var CascadingHandler
+     */
+    private readonly CascadingHandler $cascadingHandler;
+
+    /**
+     * Collaborator taken from the removal bundle.
+     *
+     * @var MigrationHandler
+     */
+    private readonly MigrationHandler $migrationHandler;
+
+    /**
+     * Collaborator taken from the mappers bundle.
+     *
+     * @var RegisterMapperInterface
+     */
+    private readonly RegisterMapperInterface $registerMapper;
+
+    /**
+     * Collaborator taken from the mappers bundle.
+     *
+     * @var SchemaMapperInterface
+     */
+    private readonly SchemaMapperInterface $schemaMapper;
+
+    /**
+     * Collaborator taken from the mappers bundle.
+     *
+     * @var ViewMapperInterface
+     */
+    private readonly ViewMapperInterface $viewMapper;
+
+    /**
+     * Collaborator taken from the mappers bundle.
+     *
+     * @var MagicMapperInterface
+     */
+    private readonly MagicMapperInterface $objectMapper;
+
+    /**
+     * Collaborator taken from the storage bundle.
+     *
+     * @var FileFolderServiceInterface
+     */
+    private readonly FileFolderServiceInterface $fileService;
+
+    /**
+     * Collaborator taken from the caller bundle.
+     *
+     * @var IUserSession
+     */
+    private readonly IUserSession $userSession;
+
+    /**
+     * Collaborator taken from the storage bundle.
+     *
+     * @var SearchTrailService
+     */
+    private readonly SearchTrailService $searchTrailService;
+
+    /**
+     * Collaborator taken from the caller bundle.
+     *
+     * @var IGroupManager
+     */
+    private readonly IGroupManager $groupManager;
+
+    /**
+     * Collaborator taken from the caller bundle.
+     *
+     * @var IUserManager
+     */
+    private readonly IUserManager $userManager;
+
+    /**
+     * Collaborator taken from the authorisation bundle.
+     *
+     * @var OrganisationServiceInterface
+     */
+    private readonly OrganisationServiceInterface $organisationService;
+
+    /**
+     * Collaborator taken from the runtime bundle.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
+    /**
+     * Collaborator taken from the storage bundle.
+     *
+     * @var CacheHandlerInterface
+     */
+    private readonly CacheHandlerInterface $cacheHandler;
+
+    /**
+     * Collaborator taken from the runtime bundle.
+     *
+     * @var SettingsServiceInterface
+     */
+    private readonly SettingsServiceInterface $settingsService;
+
+    /**
+     * Collaborator taken from the shaping bundle.
+     *
+     * @var DateTimeNormalizer
+     */
+    private readonly DateTimeNormalizer $dateTimeNormalizer;
+
+    /**
+     * Collaborator taken from the runtime bundle.
+     *
+     * @var IAppContainer
+     */
+    private readonly IAppContainer $container;
+
+    /**
+     * Collaborator taken from the storage bundle.
+     *
+     * @var ObjectSourceRegistry
+     */
+    private readonly ObjectSourceRegistry $objectSourceRegistry;
+
+    /**
+     * Collaborator taken from the history bundle.
+     *
+     * @var AutoTransitionPass|null
+     */
+    private readonly ?AutoTransitionPass $autoTransitions;
+
+    /**
+     * Collaborator taken from the caller bundle.
+     *
+     * @var TokenGrantSource|null
+     */
+    private readonly ?TokenGrantSource $tokenGrantSource;
+
+    /**
      * Constructor for ObjectService.
      *
-     * @param DataManipulationHandler        $dataManipHandler     Handler for data manipulation operations.
-     * @param DeleteObject                   $deleteHandler        Handler for object deletion.
-     * @param GetObject                      $getHandler           Handler for object retrieval.
-     * @param PermissionHandlerInterface              $permissionHandler    Handler for permission checks.
-     * @param RenderObject                   $renderHandler        Handler for object rendering.
-     * @param SaveObjectInterface                     $saveHandler          Handler for individual object saving.
-     * @param SaveObjects                    $saveObjectsHandler   Handler for bulk object saving operations.
-     * @param SearchQueryHandler             $searchQueryHandler   Handler for search query operations.
-     * @param ValidateObjectInterface                 $validateHandler      Handler for object validation.
-     * @param LockHandler                    $lockHandler          Handler for object locking.
-     * @param AuditHandler                   $auditHandler         Handler for audit trail operations.
-     * @param RelationHandler                $relationHandler      Handler for object relationships.
-     * @param MergeHandler                   $mergeHandler         Handler for merge and migration.
-     * @param FacetHandler                   $facetHandler         Handler for facet operations.
-     * @param MetadataHandler                $metadataHandler      Handler for metadata operations.
-     * @param PerformanceOptimizationHandler $perfOptHandler       Handler for performance optimization.
-     * @param QueryHandler                   $queryHandler         Handler for query operations.
-     * @param RevertHandler                  $revertHandler        Handler for revert operations.
-     * @param UtilityHandler                 $utilityHandler       Handler for utility operations.
-     * @param ValidationHandler              $validationHandler    Handler for validation operations.
-     * @param CascadingHandler               $cascadingHandler     Handler for cascading operations.
-     * @param MigrationHandler               $migrationHandler     Handler for migration operations.
-     * @param RegisterMapperInterface                 $registerMapper       Mapper for register operations.
-     * @param SchemaMapperInterface                   $schemaMapper         Mapper for schema operations.
-     * @param ViewMapperInterface                     $viewMapper           Mapper for view operations.
-     * @param MagicMapperInterface                    $objectMapper         Unified mapper for object
-     *                                                             operations (routes to
-     *                                                             magic tables).
-     * @param FileFolderServiceInterface                    $fileService          Service for file operations.
-     * @param IUserSession                   $userSession          User session for getting current user.
-     * @param SearchTrailService             $searchTrailService   Service for search trail operations.
-     * @param IGroupManager                  $groupManager         Group manager for checking user groups.
-     * @param IUserManager                   $userManager          User manager for getting user objects.
-     * @param OrganisationServiceInterface            $organisationService  Service for organisation operations.
-     * @param LoggerInterface                $logger               Logger for performance monitoring.
-     * @param CacheHandlerInterface                   $cacheHandler         Service for entity and query caching.
-     * @param SettingsServiceInterface                $settingsService      Service for settings operations.
-     * @param DateTimeNormalizer             $dateTimeNormalizer   Normaliser for user-supplied datetime input.
-     * @param IAppContainer                  $container            Application container.
-     * @param ObjectSourceRegistry           $objectSourceRegistry Registry of object-source providers (virtual schemas).
-     * @param AutoTransitionPass|null        $autoTransitions      Request-scoped pass applying automatic lifecycle moves.
-     * @param TokenGrantSource|null          $tokenGrantSource     The grant the request's token carries; suspended inside runAsAnonymous().
+     * The collaborators arrive in four autowired bundles; each is unpacked into
+     * its own property here.
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     * @param ObjectWriteServices    $write    Save, removal and history handlers.
+     * @param ObjectQueryServices    $query    Read, search and shaping handlers.
+     * @param ObjectAccessServices   $access   Caller identity and authorisation.
+     * @param ObjectPlatformServices $platform Mappers, storage and runtime services.
      */
     public function __construct(
-        // Legacy handlers - TESTING:..
-        private readonly DataManipulationHandler $dataManipHandler,
-        private readonly DeleteObject $deleteHandler,
-        private readonly GetObject $getHandler,
-        private readonly PermissionHandlerInterface $permissionHandler,
-        private readonly RenderObject $renderHandler,
-        private readonly SaveObjectInterface $saveHandler,
-        private readonly SaveObjects $saveObjectsHandler,
-        private readonly SearchQueryHandler $searchQueryHandler,
-        private readonly ValidateObjectInterface $validateHandler,
-        // New handlers - TESTING FIRST 5:.
-        private readonly LockHandler $lockHandler,
-        private readonly AuditHandler $auditHandler,
-        private readonly RelationHandler $relationHandler,
-        private readonly MergeHandler $mergeHandler,
-        // REFACTORED: CrudHandler removed - was unimplemented stub causing circular dependency.
-        // REFACTORED: BulkOperationsHandler removed - retired with blob objects table.
-        // TODO: CIRCULAR DEPENDENCY ISSUE - These handlers still cause timeouts.
-        // Temporarily disabled until full architectural refactoring is complete.
-        // See DEBUGGING_REGISTER_CREATION_TIMEOUT.md for details.
-        // Private readonly ExportHandler $exportHandler,
-        // Private readonly VectorizationHandler $vectorizationHandler,
-        // STILL COMMENTED - Second half:
-        // REFACTORED: Re-enabled legacy handlers - they have clean dependencies (no circular loops).
-        private readonly FacetHandler $facetHandler,
-        private readonly MetadataHandler $metadataHandler,
-        private readonly PerformanceOptimizationHandler $perfOptHandler,
-        private readonly QueryHandler $queryHandler,
-        private readonly RevertHandler $revertHandler,
-        private readonly UtilityHandler $utilityHandler,
-        private readonly ValidationHandler $validationHandler,
-        private readonly CascadingHandler $cascadingHandler,
-        private readonly MigrationHandler $migrationHandler,
-        private readonly RegisterMapperInterface $registerMapper,
-        private readonly SchemaMapperInterface $schemaMapper,
-        private readonly ViewMapperInterface $viewMapper,
-        private readonly MagicMapperInterface $objectMapper,
-        private readonly FileFolderServiceInterface $fileService,
-        private readonly IUserSession $userSession,
-        private readonly SearchTrailService $searchTrailService,
-        private readonly IGroupManager $groupManager,
-        private readonly IUserManager $userManager,
-        private readonly OrganisationServiceInterface $organisationService,
-        private readonly LoggerInterface $logger,
-        private readonly CacheHandlerInterface $cacheHandler,
-        private readonly SettingsServiceInterface $settingsService,
-        private readonly DateTimeNormalizer $dateTimeNormalizer,
-        private readonly IAppContainer $container,
-        private readonly ObjectSourceRegistry $objectSourceRegistry,
-        // The request-scoped automatic-transition pass. Nullable with a null
-        // default so the many unit tests that build this service positionally
-        // keep working; the container resolves the real, SHARED instance by
-        // type in production, as it does for FlowRunController's attribution.
-        private readonly ?AutoTransitionPass $autoTransitions = null,
-        // The grant the request's API token carries, if it authenticated with
-        // one. Read here for exactly one reason: runAsAnonymous() has to
-        // suspend it. Nullable with a null default for the same reason as
-        // above — the unit tests build this service positionally — and the
-        // container resolves the real, SHARED instance by type in production.
-        private readonly ?TokenGrantSource $tokenGrantSource = null
-        // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
-        // These services have deep circular dependencies:
-        // - ExportService → uses SaveObjects → potentially loops back
-        // - ImportService → SaveObject/SaveObjects → potentially loops back
-        // - VectorizationService → strategies that may depend on ObjectService
-        // Temporarily disabled until full architectural refactoring is complete.
-        // See DEBUGGING_REGISTER_CREATION_TIMEOUT.md for details.
+        ObjectWriteServices $write,
+        ObjectQueryServices $query,
+        ObjectAccessServices $access,
+        ObjectPlatformServices $platform
     ) {
-        // REFACTORED: Removed ExportHandler and VectorizationHandler to break circular deps.
-        // Handlers should not depend on services - using ExportService, ImportService, VectorizationService.
+        $this->dataManipHandler = $query->shaping->dataManipHandler;
+        $this->deleteHandler = $write->removal->deleteHandler;
+        $this->getHandler = $query->read->getHandler;
+        $this->permissionHandler = $access->authorisation->permissionHandler;
+        $this->renderHandler = $query->read->renderHandler;
+        $this->saveHandler = $write->save->saveHandler;
+        $this->saveObjectsHandler = $write->save->saveObjectsHandler;
+        $this->searchQueryHandler = $query->search->searchQueryHandler;
+        $this->validateHandler = $write->save->validateHandler;
+        $this->lockHandler = $write->history->lockHandler;
+        $this->auditHandler = $write->history->auditHandler;
+        $this->relationHandler = $query->read->relationHandler;
+        $this->mergeHandler = $write->removal->mergeHandler;
+        $this->facetHandler = $query->search->facetHandler;
+        $this->metadataHandler = $query->read->metadataHandler;
+        $this->perfOptHandler = $query->search->perfOptHandler;
+        $this->queryHandler = $query->search->queryHandler;
+        $this->revertHandler = $write->history->revertHandler;
+        $this->utilityHandler = $query->shaping->utilityHandler;
+        $this->validationHandler = $write->save->validationHandler;
+        $this->cascadingHandler = $write->removal->cascadingHandler;
+        $this->migrationHandler = $write->removal->migrationHandler;
+        $this->registerMapper = $platform->mappers->registerMapper;
+        $this->schemaMapper = $platform->mappers->schemaMapper;
+        $this->viewMapper = $platform->mappers->viewMapper;
+        $this->objectMapper = $platform->mappers->objectMapper;
+        $this->fileService = $platform->storage->fileService;
+        $this->userSession = $access->caller->userSession;
+        $this->searchTrailService = $platform->storage->searchTrailService;
+        $this->groupManager = $access->caller->groupManager;
+        $this->userManager = $access->caller->userManager;
+        $this->organisationService = $access->authorisation->organisationService;
+        $this->logger = $platform->runtime->logger;
+        $this->cacheHandler = $platform->storage->cacheHandler;
+        $this->settingsService = $platform->runtime->settingsService;
+        $this->dateTimeNormalizer = $query->shaping->dateTimeNormalizer;
+        $this->container = $platform->runtime->container;
+        $this->objectSourceRegistry = $platform->storage->objectSourceRegistry;
+        $this->autoTransitions = $write->history->autoTransitions;
+        $this->tokenGrantSource = $access->caller->tokenGrantSource;
+
         $this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
-            registerMapper: $registerMapper,
-            schemaMapper: $schemaMapper
+            registerMapper: $this->registerMapper,
+            schemaMapper: $this->schemaMapper
         );
 
         $this->logger->debug(
@@ -551,7 +780,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * composes correctly.
      *
      * This does not grant anything. If the named user cannot see a row, neither
-     * can the callable.
+     * can the callable, also when the caller runs inside a system-operation scope:
+     * that scope is lifted for the callable.
      *
      * 🔴 `setVolatileActiveUser()`, NOT `setUser()`. The two differ in one way
      * that matters here: `setUser()` also writes `user_id` into the PHP session,
@@ -574,6 +804,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return mixed Whatever the callable returns.
      *
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::suspend is the static scope helper.
+     *
      * @spec openspec/specs/delegated-identity/spec.md
      * @spec openspec/specs/rbac-scopes/spec.md
      */
@@ -583,7 +815,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->userSession->setVolatileActiveUser($user);
 
         try {
-            return $operation();
+            // A system scope would otherwise answer every check for the named user.
+            return SystemOperationContext::suspend($operation);
         } finally {
             // ALWAYS restore, including on a throw, so a long-lived process
             // (cron worker, queue runner) never leaks this identity forward.
@@ -1891,35 +2124,35 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function loadFindAllRows(array $config, AccessFlags $access): array
     {
         return $this->getHandler->findAll(
-            ...$this->findAllSelection(config: $config),
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
+            request: $this->findAllSelection(config: $config),
             _rbac: $access->rbac,
             _multitenancy: $access->multitenancy
         );
     }//end loadFindAllRows()
 
     /**
-     * The selection arguments of a findAll() configuration, by handler parameter name.
+     * The listing a findAll() configuration asks for, scoped to the current register and schema.
      *
      * @param array $config The prepared findAll() configuration.
      *
-     * @return array<string, mixed> The handler arguments.
+     * @return ObjectListRequest The handler request.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    private function findAllSelection(array $config): array
+    private function findAllSelection(array $config): ObjectListRequest
     {
-        return [
-            'limit'   => ($config['limit'] ?? null),
-            'offset'  => ($config['offset'] ?? null),
-            'filters' => ($config['filters'] ?? []),
-            'sort'    => ($config['sort'] ?? []),
-            'search'  => ($config['search'] ?? null),
-            'files'   => ($config['files'] ?? false),
-            'uses'    => ($config['uses'] ?? null),
-            'ids'     => ($config['ids'] ?? null),
-        ];
+        return new ObjectListRequest(
+            query: new ListQuery(
+                limit: ($config['limit'] ?? ListQuery::UNBOUNDED),
+                offset: ($config['offset'] ?? null),
+                filters: ($config['filters'] ?? []),
+                sort: ($config['sort'] ?? []),
+                search: ($config['search'] ?? null)
+            ),
+            scope: new ReadScope(register: $this->currentRegister, schema: $this->currentSchema),
+            selection: new ObjectSelection(ids: ($config['ids'] ?? null), uses: ($config['uses'] ?? null)),
+            files: ($config['files'] ?? false)
+        );
     }//end findAllSelection()
 
     /**
@@ -3031,8 +3264,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $user = $this->userSession->getUser();
         $kept = (new DraftCallerRule())->keptFromCaller(
-            object: $stored,
-            schema: $this->currentSchema,
+            subject: new DraftSubject(object: $stored, schema: $this->currentSchema),
             caller: new DraftCaller(
                 userId: $user?->getUID(),
                 isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
@@ -3434,8 +3666,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         return $this->validateHandler->validateReadOnlyConstraints(
-            incomingObject: $candidate,
-            existingObject: $existingData,
+            check: new WriteConstraintCheck(incoming: $candidate, stored: $existingData),
             schema: $this->currentSchema
         );
     }//end readOnlyViolations()
@@ -3458,8 +3689,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function immutableViolations(array $candidate, array $existingData): array
     {
         return $this->validateHandler->validateImmutableConstraints(
-            incomingObject: $candidate,
-            existingObject: $existingData,
+            check: new WriteConstraintCheck(incoming: $candidate, stored: $existingData),
             schema: $this->currentSchema
         );
     }//end immutableViolations()
@@ -4391,7 +4621,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $deleter = ($request->currentUser ?? $this->userSession->getUser());
         if ($request->rbac === true && $object !== null && $this->currentSchema !== null
-            && $this->draftKeptFromCaller(object: $object, schema: $this->currentSchema, user: $deleter) === true
+            && (new DraftCallerRule())->keptFromCaller(
+                subject: new DraftSubject(object: $object, schema: $this->currentSchema),
+                caller: $this->draftCaller(user: $deleter)
+            ) === true
         ) {
             throw new OcpDoesNotExistException('Object not found');
         }
@@ -4499,31 +4732,25 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end isDeletableDraft()
 
     /**
-     * Whether a stored draft is kept from the caller (DraftStatusPolicy::keptFromCaller(), the one rule of every draft guard).
+     * The caller as the draft rule sees them (DraftCallerRule::keptFromCaller(), the one rule of every draft guard).
      *
      * One answer for the single delete and the bulk delete: another user's
      * draft is not theirs to remove. An administrator reads every draft, so
      * is not kept from one.
      *
-     * @param ObjectEntity $object The stored object.
-     * @param Schema       $schema Its schema.
-     * @param IUser|null   $user   The caller.
+     * @param IUser|null $user The caller.
      *
-     * @return bool True when the object is a draft the caller may not touch.
+     * @return DraftCaller Their user id, and whether they are an administrator.
      *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
      */
-    private function draftKeptFromCaller(ObjectEntity $object, Schema $schema, ?IUser $user): bool
+    private function draftCaller(?IUser $user): DraftCaller
     {
-        return (new DraftCallerRule())->keptFromCaller(
-            object: $object,
-            schema: $schema,
-            caller: new DraftCaller(
-                userId: $user?->getUID(),
-                isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
-            )
+        return new DraftCaller(
+            userId: $user?->getUID(),
+            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
         );
-    }//end draftKeptFromCaller()
+    }//end draftCaller()
 
     /**
      * Refuse a delete on an archival-annotated schema.
@@ -5613,39 +5840,24 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Renders the rendered object.
      *
-     * @param ObjectEntity $entity        The entity to be rendered
-     * @param array|null   $_extend       Optional array to extend the entity
-     * @param int|null     $depth         Optional depth for rendering
-     * @param array|null   $filter        Optional filters to apply
-     * @param array|null   $fields        Optional fields to include
-     * @param array|null   $unset         Optional fields to exclude
-     * @param bool         $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool         $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * A top-level render: depth 0, nothing preloaded.
+     *
+     * @param ObjectEntity         $entity        The entity to be rendered
+     * @param RenderSelection|null $selection     The extend, filter, fields and unset lists; null renders the plain object
+     * @param bool                 $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true)
      *
      * @return array Rendered entity data
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      *
      * @spec exclude Facade delegating object rendering to the render handler;
      *   render contract owned by files-render-extension / schema-driven-read-coercion.
      */
-    public function renderEntity(
-        ObjectEntity $entity,
-        ?array $_extend=[],
-        ?int $depth=0,
-        ?array $filter=[],
-        ?array $fields=[],
-        ?array $unset=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true
-    ): array {
-        return $this->renderHandler->renderEntity(
+    public function renderEntity(ObjectEntity $entity, ?RenderSelection $selection=null, bool $_rbac=true, bool $_multitenancy=true): array
+    {
+        $selection ??= new RenderSelection(extend: [], filter: [], fields: [], unset: []);
+        return $this->renderHandler->render(
             entity: $entity,
-            _extend: $_extend,
-            depth: $depth,
-            filter: $filter,
-            fields: $fields,
-            unset: $unset,
+            request: RenderRequest::page(selection: $selection),
             _rbac: $_rbac,
             _multitenancy: $_multitenancy
         )->jsonSerialize();
@@ -6071,21 +6283,17 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * Failure isolation differs too: a row that throws is recorded on the
      * returned status and the batch continues, rather than failing the call.
      *
-     * @param array                    $objects  Rows in the shape saveObject() accepts.
-     * @param Register|string|int|null $register Optional register context.
-     * @param Schema|string|int|null   $schema   Optional schema context.
+     * @param StreamingSave $save The rows, in the shape saveObject() accepts, and the optional
+     *                            register and schema context (entity, id, uuid or slug).
      *
      * @return BatchOperationStatus Per-row outcomes plus reference-cache counters.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    public function saveObjectsStreaming(
-        array $objects,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null
-    ): BatchOperationStatus {
-        $target = new ObjectFindTarget(register: $register, schema: $schema);
-        return $this->preservingScope(operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $objects, target: $target));
+    public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus
+    {
+        $target = new ObjectFindTarget(register: $save->register, schema: $save->schema);
+        return $this->preservingScope(operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $save->rows, target: $target));
     }//end saveObjectsStreaming()
 
     /**
@@ -6094,14 +6302,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * A STREAMING SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER. saveObjectsStreaming()
      * runs this inside preservingScope(), the same contract as saveObject(); see restoreScopeContext().
      *
-     * @param array            $objects The rows to stream.
+     * @param iterable         $objects The rows to stream.
      * @param ObjectFindTarget $target  The register and schema the caller named.
      *
      * @return BatchOperationStatus The status of the streamed batch.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    private function streamIntoTarget(array $objects, ObjectFindTarget $target): BatchOperationStatus
+    private function streamIntoTarget(iterable $objects, ObjectFindTarget $target): BatchOperationStatus
     {
         $this->applyScope(register: $target->register, schema: $target->schema);
         return $this->streamIntoContext(objects: $objects);
@@ -6110,13 +6318,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Stream rows into the current register and schema.
      *
-     * @param array $objects The rows to save.
+     * @param iterable $objects The rows to save.
      *
      * @return BatchOperationStatus The status of the run.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    private function streamIntoContext(array $objects): BatchOperationStatus
+    private function streamIntoContext(iterable $objects): BatchOperationStatus
     {
         // The reference cache is request-scoped and this call is a logical
         // boundary: verdicts from an earlier batch must not decide this one.
@@ -6211,11 +6419,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $tableName = $this->objectMapper->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
 
         $written = $this->objectMapper->bulkUpsert(
-            objects: $rows,
-            register: $table->register,
-            schema: $table->schema,
-            tableName: $tableName,
-            needsPreUpdateState: false
+            command: new BulkUpsertCommand(objects: $rows, table: $table, tableName: $tableName, needsPreUpdateState: false)
         );
 
         return count($written);
@@ -6344,43 +6548,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @phpstan-return array<int, array<string, mixed>>
      */
 
-    /**
-     * Migrate objects between registers and/or schemas
-     *
-     * This method migrates multiple objects from one register/schema combination
-     * to another register/schema combination with property mapping.
-     *
-     * @param string|int $sourceRegister The source register ID or slug
-     * @param string|int $sourceSchema   The source schema ID or slug
-     * @param string|int $targetRegister The target register ID or slug
-     * @param string|int $targetSchema   The target schema ID or slug
-     * @param array      $objectIds      Array of object IDs to migrate
-     * @param array      $mapping        Mapping where keys are target properties, values are source properties
-     *
-     * The caller needs create permission on the target schema. Only the source
-     * objects the caller may read (RBAC and multitenancy of the source table) and
-     * update are moved; any other requested id is reported as not found.
-     *
-     * @return array Migration report with success status, statistics, details, warnings, and errors.
-     *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found.
-     * @throws \InvalidArgumentException If invalid parameters provided.
-     * @throws NotAuthorizedException If the caller may not create objects in the target schema.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function migrateObjects(
-        string|int $sourceRegister,
-        string|int $sourceSchema,
-        string|int $targetRegister,
-        string|int $targetSchema,
-        array $objectIds,
-        array $mapping
-    ): array {
-        $source = new RegisterSchemaRef(register: $sourceRegister, schema: $sourceSchema);
-        $target = new RegisterSchemaRef(register: $targetRegister, schema: $targetSchema);
-        return $this->migrate(migration: new ObjectMigration(source: $source, target: $target, objectIds: $objectIds, mapping: $mapping));
-    }//end migrateObjects()
 
     /**
      * Migrate objects between registers and/or schemas.
@@ -6963,7 +7130,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function draftDeleteRefusal(array $scope, array $run): ?array
     {
         if ($scope['draft'] === true && $run['_rbac'] === true
-            && $this->draftKeptFromCaller(object: $scope['row'], schema: $scope['gateSchema'], user: $this->userSession->getUser()) === true
+            && (new DraftCallerRule())->keptFromCaller(
+                subject: new DraftSubject(object: $scope['row'], schema: $scope['gateSchema']),
+                caller: $this->draftCaller(user: $this->userSession->getUser())
+            ) === true
         ) {
             return [
                 'error'   => 'OBJECT_NOT_PERMITTED',
@@ -7249,38 +7419,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
     }//end loadRowSchema()
 
-    /**
-     * Delete all objects belonging to a specific schema
-     *
-     * Every object is snapshotted to the (hash-chained) audit trail before its row is
-     * touched, then the rows are removed in one bulk statement via MagicMapper.
-     *
-     * The work itself lives in SchemaDeletionService, which is shared with the schema
-     * cascade (`DELETE /api/schemas/{id}?deleteObjects=true`). It is resolved lazily
-     * from the container rather than constructor-injected: ObjectService is
-     * constructed on virtually every request, and this is the only method that needs
-     * it.
-     *
-     * @param int  $registerId The ID of the register
-     * @param int  $schemaId   The ID of the schema whose objects should be deleted
-     * @param bool $hardDelete Whether to force hard delete (default: false)
-     *
-     * @return (int|string[])[]
-     *
-     * @throws \Exception If the deletion operation fails
-     *
-     * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
-     *
-     * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, schema_id: int}
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The hard/soft toggle mirrors the mapper primitive it wraps.
-     *
-     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
-     */
-    public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array
-    {
-        return $this->deleteObjectsOfTable(table: new RegisterSchemaRef(register: $registerId, schema: $schemaId), hardDelete: $hardDelete);
-    }//end deleteObjectsBySchema()
 
     /**
      * Delete all objects of one register and schema.
@@ -7317,7 +7455,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * transaction, snapshotting each object to the audit trail first. Refuses the
      * whole request with ArchivalImmutableException, before touching any row, when
      * any of those schemas is archival. The work lives in SchemaDeletionService,
-     * resolved lazily for the reason deleteObjectsBySchema() gives.
+     * resolved lazily for the reason deleteObjectsOfTable() gives.
      *
      * @param int  $registerId The ID of the register whose objects should be deleted
      * @param bool $hardDelete Whether to force hard delete (default: false)
@@ -7460,13 +7598,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * List objects with filtering and pagination
      *
-     * @param array       $query         Search query parameters
-     * @param bool        $_rbac         Apply RBAC filters
-     * @param bool        $_multitenancy Apply multitenancy filters
-     * @param bool        $_deleted      Include deleted objects
-     * @param array|null  $_ids          Optional array of object IDs to filter
-     * @param string|null $_uses         Optional object ID that results must use
-     * @param array|null  $_views        Optional view filters
+     * @param array $query         Search query parameters
+     * @param bool  $_rbac         Apply RBAC filters
+     * @param bool  $_multitenancy Apply multitenancy filters
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
@@ -7476,15 +7610,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @spec exclude Facade alias delegating to searchObjects(); listing behavior owned by zoeken-filteren.
      */
-    public function listObjects(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_deleted=false,
-        ?array $_ids=null,
-        ?string $_uses=null,
-        ?array $_views=null
-    ): array|int {
+    public function listObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true): array|int
+    {
         // REFACTORED: Removed CrudHandler (was unimplemented stub causing circular dependency).
         // Use searchObjects() for actual object listing.
         return $this->searchObjects(
@@ -7835,27 +7962,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         return $this->validationHandler->validateObjectsBySchema(schemaId: $schemaId, saveCallback: [$this, 'saveObject']);
     }//end validateObjectsBySchema()
 
-    /**
-     * Validate and save all objects by schema, updating metadata like _name.
-     *
-     * This method validates all objects belonging to the specified schema and saves them
-     * to update metadata fields. This is useful for bulk updating object metadata after
-     * schema changes or imports.
-     *
-     * @param int      $registerId Register ID
-     * @param int      $schemaId   Schema ID
-     * @param int|null $limit      Maximum number of objects to process (null = all)
-     * @param int      $offset     Number of objects to skip before processing
-     *
-     * @return array{processed: int, updated: int, failed: int, total: int, errors: array} Validation statistics
-     *
-     * @spec exclude Delegation to ValidationHandler::validateAndSaveObjectsBySchema() with a saveObject callback; handler owns the loop.
-     */
-    public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, ?int $limit=null, int $offset=0): array
-    {
-        $query = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset);
-        return $this->validateAndSaveTable(table: new RegisterSchemaRef(register: $registerId, schema: $schemaId), query: $query);
-    }//end validateAndSaveObjectsBySchema()
 
     /**
      * Validate and save one page of a register and schema's objects; an unbounded query processes them all.

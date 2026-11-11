@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
@@ -92,12 +94,7 @@ class NotificationOptInChannelsTest extends TestCase {
 	 * A person who switches the opt-in channel on gets it, for that notification.
 	 */
 	public function testAPersonCanSwitchAnOptInChannelOn(): void {
-		$this->service->setOverride(
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'toegewezen',
-			override: ['enabled' => true, 'channels' => ['nc-notification', 'email']]
-		);
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'toegewezen'), value: ['enabled' => true, 'channels' => ['nc-notification', 'email']]));
 
 		$spec = ['enabled' => true, 'channels' => ['nc-notification'], 'optInChannels' => ['email']];
 		$effective = $this->service->resolveEffective(
@@ -115,12 +112,7 @@ class NotificationOptInChannelsTest extends TestCase {
 	 * A channel the rule does not declare at all can still not be chosen.
 	 */
 	public function testAnUndeclaredChannelCannotBeSwitchedOn(): void {
-		$this->service->setOverride(
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'toegewezen',
-			override: ['enabled' => true, 'channels' => ['nc-notification', 'email']]
-		);
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'toegewezen'), value: ['enabled' => true, 'channels' => ['nc-notification', 'email']]));
 
 		$effective = $this->service->resolveEffective(
 			schemaDefault: ['enabled' => true, 'channels' => ['nc-notification']],

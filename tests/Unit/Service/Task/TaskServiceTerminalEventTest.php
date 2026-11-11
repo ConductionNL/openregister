@@ -33,6 +33,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Terminality is announced AFTER the transaction commits, once per
@@ -149,7 +150,7 @@ class TaskServiceTerminalEventTest extends TestCase {
 				return true;
 			}));
 
-		$this->service()->cancel(uuid: 't-7', reason: 'moot', actor: 'rita');
+		$this->service()->cancel(ref: new TaskActorRef(uuid: 't-7', actor: 'rita'), reason: 'moot');
 
 		$this->assertSame([TaskTransitionedEvent::class, TaskTerminalEvent::class], $seen);
 	}//end testACancellationIsAnnounced()

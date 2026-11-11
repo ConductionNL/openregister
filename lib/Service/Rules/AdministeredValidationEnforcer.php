@@ -82,14 +82,26 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 		}
 
 		$write = new ValidatedWrite(object: $newObject, schema: $schema);
-		$outcome = $this->evaluate(write: $write, document: $this->documentOf(newObject: $newObject, oldObject: $oldObject));
+		return $this->refusalOfWrite(write: $write, document: $this->documentOf(newObject: $newObject, oldObject: $oldObject));
+	}//end refusalFor()
+
+	/**
+	 * Evaluate a write's declared validations, record the outcome, and return its refusal.
+	 *
+	 * @param ValidatedWrite       $write    The object and its schema.
+	 * @param array<string, mixed> $document The document the validations read.
+	 *
+	 * @return array<string, mixed>|null The refusal to put on the event, or null when the write may proceed.
+	 */
+	private function refusalOfWrite(ValidatedWrite $write, array $document): ?array {
+		$outcome = $this->evaluate(write: $write, document: $document);
 		$this->recordOutcome(write: $write, outcome: $outcome);
 		if ($outcome['refusals'] === []) {
 			return null;
 		}
 
 		return $this->refusal(outcome: $outcome);
-	}//end refusalFor()
+	}//end refusalOfWrite()
 
 	/**
 	 * The validations a schema declares, or null when it declares none.

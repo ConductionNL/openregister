@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -41,6 +42,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * `buildRbacRowPredicateSql()` and `callerQualifiesForAction()`.
@@ -71,14 +75,20 @@ class MagicRbacRowPredicateTest extends TestCase {
 		);
 
 		return new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$conditionMatcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(
 				objectScopeResolver: null,
 				objectGrantResolver: null,
 				denyResolver: new DenyResolver(new DenyEntryMatcher())
@@ -108,9 +118,7 @@ class MagicRbacRowPredicateTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAdminGetsNoPredicate(): void {
-		$predicate = $this->handlerFor('root', ['admin'])->buildRbacRowPredicateSql(
-			schema: $this->schemaWith(['read' => ['instructors']])
-		);
+		$predicate = $this->handlerFor('root', ['admin'])->buildRbacRowPredicateSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['instructors']]))));
 
 		$this->assertNull($predicate);
 	}//end testAnAdminGetsNoPredicate()
@@ -121,9 +129,7 @@ class MagicRbacRowPredicateTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheAuthenticatedSelfRuleNarrowsToTheCallersRows(): void {
-		$predicate = $this->handlerFor('learner-a', ['students'])->buildRbacRowPredicateSql(
-			schema: $this->schemaWith(['read' => ['instructors', self::SELF_RULE]])
-		);
+		$predicate = $this->handlerFor('learner-a', ['students'])->buildRbacRowPredicateSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['instructors', self::SELF_RULE]]))));
 
 		$this->assertNotNull($predicate);
 		$this->assertStringContainsString("`learner_id` = 'learner-a'", $predicate);
@@ -136,9 +142,7 @@ class MagicRbacRowPredicateTest extends TestCase {
 	 * @return void
 	 */
 	public function testACallerNoRuleAdmitsIsNotGivenAnEmptyPredicate(): void {
-		$predicate = $this->handlerFor('outsider', ['students'])->buildRbacRowPredicateSql(
-			schema: $this->schemaWith(['read' => ['instructors']])
-		);
+		$predicate = $this->handlerFor('outsider', ['students'])->buildRbacRowPredicateSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['instructors']]))));
 
 		$this->assertNotNull($predicate);
 		$this->assertNotSame('', trim($predicate));

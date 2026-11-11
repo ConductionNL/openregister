@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
@@ -35,6 +36,8 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<SchemaRun>
  */
 class SchemaRunMapper extends QBMapper implements SchemaRunMapperInterface {
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -55,31 +58,22 @@ class SchemaRunMapper extends QBMapper implements SchemaRunMapperInterface {
 	 * @throws DoesNotExistException When not found.
 	 */
 	public function find(int $id): SchemaRun {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
 	 * Find runs for a schema, newest first.
 	 *
 	 * @param int $schemaId The schema id.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param ListQuery $query The page: its size and offset, unbounded for every row.
 	 *
 	 * @return SchemaRun[] The runs.
 	 */
-	public function findBySchema(int $schemaId, ?int $limit = null, ?int $offset = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
-			->orderBy('id', 'DESC');
+	public function findBySchema(int $schemaId, ListQuery $query): array {
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'schema_id', value: $schemaId));
+		$qb->orderBy('id', 'DESC');
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findBySchema()
@@ -92,11 +86,8 @@ class SchemaRunMapper extends QBMapper implements SchemaRunMapperInterface {
 	 * @return SchemaRun|null The active run, or null.
 	 */
 	public function findActiveForSchema(int $schemaId): ?SchemaRun {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->in('state', $qb->createNamedParameter(SchemaRun::ACTIVE_STATES, IQueryBuilder::PARAM_STR_ARRAY)))
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'schema_id', value: $schemaId));
+		$qb->andWhere($qb->expr()->in('state', $qb->createNamedParameter(SchemaRun::ACTIVE_STATES, IQueryBuilder::PARAM_STR_ARRAY)))
 			->setMaxResults(1);
 
 		try {

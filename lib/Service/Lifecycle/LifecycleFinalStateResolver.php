@@ -149,16 +149,27 @@ class LifecycleFinalStateResolver {
 		}
 
 		if ($this->belongsTo(schema: ($resolved['schema'] ?? null), from: $from) === false) {
-			$this->logger->warning(
-				'[LifecycleFinalStateResolver] lifecycle value "' . $state
-				. '" resolves to a row outside the declared schema "' . $from . '".'
-			);
+			$this->warnOutsideSchema(reference: $reference);
 
 			return false;
 		}
 
 		return $this->flagOn(row: $resolved['object'], reference: $reference);
 	}//end read()
+
+	/**
+	 * Say that a lifecycle value resolves to a row outside its declared schema.
+	 *
+	 * @param FinalStateReference $reference The declared schema and the value.
+	 *
+	 * @return void
+	 */
+	private function warnOutsideSchema(FinalStateReference $reference): void {
+		$this->logger->warning(
+			'[LifecycleFinalStateResolver] lifecycle value "' . $reference->state
+			. '" resolves to a row outside the declared schema "' . $reference->from . '".'
+		);
+	}//end warnOutsideSchema()
 
 	/**
 	 * Look the row behind a lifecycle value up, as the system.

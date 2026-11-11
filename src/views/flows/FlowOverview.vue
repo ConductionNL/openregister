@@ -640,14 +640,7 @@ export default {
 		async load() {
 			this.loading = true
 			this.actionError = ''
-			try {
-				const response = await axios.get(
-					generateUrl(`/apps/openregister/api/flows/${this.id}`),
-				)
-				this.flow = response?.data || null
-			} catch {
-				this.flow = null
-				this.loading = false
+			if (!(await this.readFlow())) {
 				return
 			}
 
@@ -659,6 +652,27 @@ export default {
 			this.versions = versions?.results || []
 			this.names = catalogNames(catalog?.results)
 			this.loading = false
+		},
+
+		/**
+		 * Read the flow itself; a flow that cannot be read leaves none and
+		 * ends the loading.
+		 *
+		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
+		 * @return {Promise<boolean>} Whether the flow answered
+		 */
+		async readFlow() {
+			try {
+				const response = await axios.get(
+					generateUrl(`/apps/openregister/api/flows/${this.id}`),
+				)
+				this.flow = response?.data || null
+				return true
+			} catch {
+				this.flow = null
+				this.loading = false
+				return false
+			}
 		},
 
 		/**

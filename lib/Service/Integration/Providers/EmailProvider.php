@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Throwable;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Email (NC Mail link-only) integration provider.
@@ -125,17 +125,15 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * `CnEmailTab` load-more. The `nextCursor` is the zero-indexed next
 	 * page number, present only while more rows remain.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional `_limit` / `_page` (page zero-indexed).
 	 *
 	 * @return array{items:array<int,array<string,mixed>>,total:int,nextCursor:?string}
 	 *
 	 * @spec openspec/specs/integration-email/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->emailPage(objectId: $objectId, paging: new EmailListPaging(filters: $filters));
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->emailPage(objectId: $ref->id, paging: new EmailListPaging(filters: $filters));
 	}//end list()
 
 	/**
@@ -179,17 +177,15 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * with an empty UID, which still de-duplicates on the
 	 * `(objectUuid, accountId, messageId)` subset.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload Picker (Tier-2) or legacy shape.
 	 *
 	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/specs/integration-email/spec.md
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		return $this->linkEmailFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	public function create(ObjectRef $ref, array $payload): array {
+		return $this->linkEmailFor(ref: $ref, payload: $payload);
 	}//end create()
 
 	/**
@@ -220,17 +216,15 @@ class EmailProvider extends AbstractIntegrationProvider {
 	/**
 	 * Unlink an email from an OR object. The message stays in NC Mail.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Numeric link id.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/integration-email/spec.md
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->emailLinkService->unlinkEmail(objectUuid: $objectId, linkId: (int)$entityId);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->emailLinkService->unlinkEmail(objectUuid: $ref->id, linkId: (int)$entityId);
 	}//end delete()
 
 	/**

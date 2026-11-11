@@ -266,63 +266,11 @@ class ViewsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with views or error
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
 	 */
 	public function index(): JSONResponse {
 		try {
-			$userId = $this->viewers->currentUid();
-
-			if (empty($userId) === true) {
-				return $this->unauthenticated();
-			}
-
-			$params = $this->request->getParams();
-
-			// Extract pagination and search parameters (for future use).
-			$limit = null;
-			if (($params['_limit'] ?? null) !== null) {
-				$limit = (int)$params['_limit'];
-			}
-
-			$offset = null;
-			if (($params['_offset'] ?? null) !== null) {
-				$offset = (int)$params['_offset'];
-			}
-
-			$page = null;
-			if (($params['_page'] ?? null) !== null) {
-				$page = (int)$params['_page'];
-			}
-
-			// Note: search parameter not currently used in this endpoint.
-			// Ledger row 9.4: the caller's own views, the ones shared with a
-			// group they are in, and the public ones, each carrying the access
-			// they hold on it.
-			$views = $this->viewService->findAllFor(reach: $this->viewers->reachOf(userId: $userId));
-
-			// Apply client-side pagination if parameters are provided.
-			$total = count($views);
-			if ($limit !== null) {
-				if ($page !== null) {
-					$offset = ($page - 1) * $limit;
-				}
-
-				$sliceOffset = 0;
-				if ($offset !== null) {
-					$sliceOffset = $offset;
-				}
-
-				$views = array_slice(array: $views, offset: $sliceOffset, length: $limit);
-			}
-
-			return new JSONResponse(
-				data: [
-					'results' => array_map(fn ($view) => $view->jsonSerialize(), $views),
-					'total' => $total,
-				]
-			);
+			return $this->listViews();
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error fetching views',
@@ -332,15 +280,109 @@ class ViewsController extends Controller {
 					'exception' => $e->getMessage(),
 				]
 			);
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to fetch views',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->serverError(error: 'Failed to fetch views', e: $e);
 		}//end try
 	}//end index()
+
+	/**
+	 * The views listing of {@see index()} for a signed-in caller.
+	 *
+	 * @return JSONResponse The page of views and the total, or 401 when not signed in.
+	 */
+	private function listViews(): JSONResponse {
+		$userId = $this->viewers->currentUid();
+
+		if (empty($userId) === true) {
+			return $this->unauthenticated();
+		}
+
+		$params = $this->request->getParams();
+
+		// Ledger row 9.4: the caller's own views, the ones shared with a
+		// group they are in, and the public ones, each carrying the access
+		// they hold on it.
+		$views = $this->viewService->findAllFor(reach: $this->viewers->reachOf(userId: $userId));
+
+		return new JSONResponse(
+			data: [
+				'results' => array_map(fn ($view) => $view->jsonSerialize(), $this->pageOfViews(views: $views, params: $params)),
+				'total' => count($views),
+			]
+		);
+	}//end listViews()
+
+	/**
+	 * Apply client-side pagination when a `_limit` is given; without one every view is returned.
+	 *
+	 * @param array<int, View>     $views  The reachable views.
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<int, View> The page of views.
+	 */
+	private function pageOfViews(array $views, array $params): array {
+		$limit = self::intParam(params: $params, key: '_limit');
+		if ($limit === null) {
+			return $views;
+		}
+
+		return array_slice(array: $views, offset: self::sliceOffset(params: $params, limit: $limit), length: $limit);
+	}//end pageOfViews()
+
+	/**
+	 * Where a page starts: derived from `_page` when given, else `_offset`, else the first view.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 * @param int                  $limit  The page size.
+	 *
+	 * @return int The slice offset.
+	 */
+	private static function sliceOffset(array $params, int $limit): int {
+		$page = self::intParam(params: $params, key: '_page');
+		if ($page !== null) {
+			return ($page - 1) * $limit;
+		}
+
+		$offset = self::intParam(params: $params, key: '_offset');
+		if ($offset === null) {
+			return 0;
+		}
+
+		return $offset;
+	}//end sliceOffset()
+
+	/**
+	 * A request parameter as an integer, or null when it is absent or null.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 * @param string               $key    The parameter name.
+	 *
+	 * @return int|null The value.
+	 */
+	private static function intParam(array $params, string $key): ?int {
+		if (($params[$key] ?? null) === null) {
+			return null;
+		}
+
+		return (int)$params[$key];
+	}//end intParam()
+
+	/**
+	 * A 500 response naming what failed and the exception's message.
+	 *
+	 * @param string     $error What failed.
+	 * @param \Exception $e     The failure.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function serverError(string $error, \Exception $e): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $error,
+				'message' => $e->getMessage(),
+			],
+			statusCode: 500
+		);
+	}//end serverError()
 
 	/**
 	 * Get a specific view by ID
@@ -453,19 +495,21 @@ class ViewsController extends Controller {
 			data: $data
 		);
 		$view = $this->viewService->create(
-			definition: new ViewDefinition(
-				name: $data['name'],
-				description: $data['description'] ?? '',
-				query: $write->query(),
-				presentation: $write->presentation()
-			),
-			audience: new ViewAudience(
-				owner: $userId,
-				isPublic: $data['isPublic'] ?? false,
-				isDefault: $data['isDefault'] ?? false,
-				sharedWith: $write->shares()
-			),
-			alert: ViewAlert::declaredIn(body: $data)
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: $data['name'],
+					description: $data['description'] ?? '',
+					query: $write->query(),
+					presentation: $write->presentation()
+				),
+				audience: new ViewAudience(
+					owner: $userId,
+					isPublic: $data['isPublic'] ?? false,
+					isDefault: $data['isDefault'] ?? false,
+					sharedWith: $write->shares()
+				),
+				alert: ViewAlert::declaredIn(body: $data)
+			)
 		);
 		return new JSONResponse(data: ['view' => $view->jsonSerialize()], statusCode: 201);
 	}//end saveNew()
@@ -840,63 +884,121 @@ class ViewsController extends Controller {
 	 */
 	public function calendar(string $id): JSONResponse {
 		try {
-			$userId = $this->viewers->currentUid();
-
-			if (empty($userId) === true) {
-				return $this->unauthenticated();
-			}
-
-			$params = $this->request->getParams();
-			$rangeStart = $params['start'] ?? $params['rangeStart'] ?? null;
-			$rangeEnd = $params['end'] ?? $params['rangeEnd'] ?? null;
-
-			if (empty($rangeStart) === true || empty($rangeEnd) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Both start and end (the visible date range) are required',
-					],
-					statusCode: 400
-				);
-			}
-
-			$view = $this->requireOwnedView(id: $id, userId: $userId);
-			// The whole request is deliberately NOT handed on. The service
-			// took a `$requestParams` array it `unset()` on its first line,
-			// reserved for a filter passthrough nobody wrote, and an argument
-			// that is thrown away is an argument a reader has to check before
-			// they can rule it out.
-			$result = $this->viewPresentationService->getCalendarObjects(
-				view: $view,
-				range: new CalendarRange(start: $rangeStart, end: $rangeEnd)
-			);
-
-			return new JSONResponse(data: $result);
+			return $this->calendarRange(id: $id);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'View not found',
-				],
-				statusCode: 404
-			);
+			return $this->viewNotFound();
 		} catch (InvalidArgumentException $e) {
 			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ViewsController] Error querying calendar range',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to query calendar range',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->calendarFailed(id: $id, e: $e);
 		}//end try
 	}//end calendar()
+
+	/**
+	 * The calendar range query of {@see calendar()} for a signed-in caller.
+	 *
+	 * @param string $id View ID.
+	 *
+	 * @return JSONResponse The objects in range, 401 when not signed in, or 400 without a full range.
+	 */
+	private function calendarRange(string $id): JSONResponse {
+		$userId = $this->viewers->currentUid();
+
+		if (empty($userId) === true) {
+			return $this->unauthenticated();
+		}
+
+		return $this->calendarRangeFor(id: $id, userId: $userId);
+	}//end calendarRange()
+
+	/**
+	 * The calendar range query of a signed-in caller: the range must name both ends.
+	 *
+	 * @param string $id     View ID.
+	 * @param string $userId The caller.
+	 *
+	 * @return JSONResponse The objects in range, or 400 without a full range.
+	 */
+	private function calendarRangeFor(string $id, string $userId): JSONResponse {
+		$params     = $this->request->getParams();
+		$rangeStart = $params['start'] ?? $params['rangeStart'] ?? null;
+		$rangeEnd   = $params['end'] ?? $params['rangeEnd'] ?? null;
+
+		if (empty($rangeStart) === true || empty($rangeEnd) === true) {
+			return $this->rangeRequired();
+		}
+
+		return $this->calendarObjectsOf(
+			view: $this->requireOwnedView(id: $id, userId: $userId),
+			range: new CalendarRange(start: $rangeStart, end: $rangeEnd)
+		);
+	}//end calendarRangeFor()
+
+	/**
+	 * The objects of an owned view that fall in the visible date range.
+	 *
+	 * @param View          $view  The owned view.
+	 * @param CalendarRange $range The visible date range.
+	 *
+	 * @return JSONResponse The calendar range data.
+	 */
+	private function calendarObjectsOf(View $view, CalendarRange $range): JSONResponse {
+		// The whole request is deliberately NOT handed on. The service
+		// took a `$requestParams` array it `unset()` on its first line,
+		// reserved for a filter passthrough nobody wrote, and an argument
+		// that is thrown away is an argument a reader has to check before
+		// they can rule it out.
+		$result = $this->viewPresentationService->getCalendarObjects(view: $view, range: $range);
+
+		return new JSONResponse(data: $result);
+	}//end calendarObjectsOf()
+
+	/**
+	 * The 400 for a calendar query without both ends of the visible range.
+	 *
+	 * @return JSONResponse
+	 */
+	private function rangeRequired(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'Both start and end (the visible date range) are required',
+			],
+			statusCode: 400
+		);
+	}//end rangeRequired()
+
+	/**
+	 * The 404 for a view that does not exist or that the caller cannot reach.
+	 *
+	 * @return JSONResponse
+	 */
+	private function viewNotFound(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'View not found',
+			],
+			statusCode: 404
+		);
+	}//end viewNotFound()
+
+	/**
+	 * Log a failed calendar query and answer 500.
+	 *
+	 * @param string     $id View ID.
+	 * @param \Exception $e  The failure.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function calendarFailed(string $id, \Exception $e): JSONResponse {
+		$this->logger->error(
+			message: '[ViewsController] Error querying calendar range',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'id' => $id,
+				'exception' => $e->getMessage(),
+			]
+		);
+		return $this->serverError(error: 'Failed to query calendar range', e: $e);
+	}//end calendarFailed()
 }//end class

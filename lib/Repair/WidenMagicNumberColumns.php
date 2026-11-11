@@ -75,37 +75,41 @@ class WidenMagicNumberColumns implements IRepairStep {
 	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	public function run(IOutput $output): void {
-		try {
-			$tables = $this->magicMapper->listMagicTableNames();
-		} catch (\Throwable $e) {
-			$this->logger->info('[WidenMagicNumberColumns] Could not list magic tables, skipping: '.$e->getMessage());
+		$sweep  = new MagicTableSweepRun(step: 'WidenMagicNumberColumns', output: $output);
+		$tables = $sweep->listTables(magicMapper: $this->magicMapper, logger: $this->logger);
+		if ($tables === null) {
 			return;
 		}
 
-		$widened = 0;
-		$failed = 0;
 		foreach ($tables as $tableName) {
-			try {
-				$columns = $this->magicMapper->widenNumberColumnsToDefault(tableName: $tableName);
-			} catch (\Throwable $e) {
-				$failed++;
-				$output->warning(sprintf('%s: could not widen its number columns: %s', $tableName, $e->getMessage()));
-				continue;
-			}
-
-			if ($columns !== []) {
-				$widened++;
-				$output->info(sprintf('%s: widened %s', $tableName, implode(', ', $columns)));
-			}
+			$this->widenTable(sweep: $sweep, tableName: $tableName);
 		}
 
-		$output->info(
-			sprintf(
-				'Checked %d object table(s) for narrow number columns: %d widened, %d could not be.',
-				count($tables),
-				$widened,
-				$failed
-			)
-		);
+		$sweep->report(checkedFor: 'narrow number columns', changedAs: 'widened');
 	}//end run()
+
+	/**
+	 * Widen one table's number columns and count the outcome.
+	 *
+	 * @param MagicTableSweepRun $sweep     The pass.
+	 * @param string             $tableName The magic table.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 */
+	private function widenTable(MagicTableSweepRun $sweep, string $tableName): void {
+		try {
+			$columns = $this->magicMapper->widenNumberColumnsToDefault(tableName: $tableName);
+		} catch (\Throwable $e) {
+			$sweep->failed++;
+			$sweep->output->warning(sprintf('%s: could not widen its number columns: %s', $tableName, $e->getMessage()));
+			return;
+		}
+
+		if ($columns !== []) {
+			$sweep->changed++;
+			$sweep->output->info(sprintf('%s: widened %s', $tableName, implode(', ', $columns)));
+		}
+	}//end widenTable()
 }//end class

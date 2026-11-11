@@ -63,6 +63,8 @@ class MappingServiceExecuteMappingGoldenTest extends TestCase {
 			'root hash scalar' => [['mapping' => ['#' => 'name']], $person, false],
 			'root hash null' => [['mapping' => ['#' => 'nothing'], 'cast' => ['#' => 'nullStringToNull']], ['nothing' => 'null'], false],
 			'root hash with other key' => [['mapping' => ['#' => 'name', 'b' => 'age']], $person, false],
+			'root hash missing path' => [['mapping' => ['#' => 'missing']], $person, false],
+			'root hash template' => [['mapping' => ['#' => 'Hi {{ name }}']], $person, false],
 			'list of arrays' => [['mapping' => ['who' => 'name']], [['name' => 'A'], ['name' => 'B']], true],
 			'list keyed' => [['mapping' => ['who' => 'name']], ['x' => ['name' => 'A'], 'y' => ['name' => 'B']], true],
 			'list of scalars' => [['mapping' => ['v' => 'value']], ['p', 'q'], true],

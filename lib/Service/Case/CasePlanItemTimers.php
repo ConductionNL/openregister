@@ -40,6 +40,8 @@ use DateTimeInterface;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
@@ -199,7 +201,10 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 		try {
 			$uuid = (string)$item->getUuid();
 
-			return $this->timers->cancelForSubject(subjectType: self::SUBJECT_TYPE, subjectUuid: $uuid, reason: $reason, actor: self::ACTOR);
+			return $this->timers->cancelForSubject(
+				subject: new TimerSubjectRef(type: self::SUBJECT_TYPE, uuid: $uuid),
+				change: new TimerChange(reason: $reason, actor: self::ACTOR)
+			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[CasePlanItemTimers] Could not cancel a plan item\'s timers; the sweep will find them moot: ' . $failure->getMessage(),
@@ -397,7 +402,7 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	 */
 	private function submit(CaseTimerArmRun $run): bool {
 		try {
-			$this->timers->arm(config: $run->config, actor: $run->actor);
+			$this->timers->arm(config: $run->config, act: FlowTimerAct::of(actor: $run->actor));
 
 			return true;
 		} catch (Throwable $failure) {

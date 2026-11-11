@@ -163,55 +163,17 @@ class FlowRunRetentionJob extends TimedJob {
 	protected function run($argument): void {
 		$defaultDays = $this->instanceRetentionDays();
 
-		try {
-			$overriding = $this->flows->findWithRetentionOverride();
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[FlowRunRetention] Could not list flows with a retention override: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$overriding = $this->overridingFlows();
+		if ($overriding === null) {
 			return;
 		}
 
-		$overrideIds = array_values(
-			array_filter(
-				array_map(static fn (Flow $f): string => (string)$f->getUuid(), $overriding)
-			)
-		);
-
-		$swept = 0;
+		$overrideIds = self::flowIds(flows: $overriding);
 
 		// Pass 1 — everything that follows the instance default.
-		try {
-			$uuids = $this->runs->deleteTerminalOlderThanExcluding(
-				cutoff: new DateTime('-' . $defaultDays . ' days'),
-				excludeFlowIds: $overrideIds
-			);
-			$swept += $this->purgeSteps(uuids: $uuids);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[FlowRunRetention] Instance-wide sweep failed: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
-
+		$swept = $this->sweepInstance(defaultDays: $defaultDays, excludeFlowIds: $overrideIds);
 		// Pass 2 — each flow that declares its own period, shorter or longer.
-		foreach ($overriding as $flow) {
-			$days = $flow->effectiveRetentionDays(defaultDays: $defaultDays);
-
-			try {
-				$uuids = $this->runs->deleteTerminalOlderThan(
-					cutoff: new DateTime('-' . $days . ' days'),
-					flowId: (string)$flow->getUuid()
-				);
-				$swept += $this->purgeSteps(uuids: $uuids);
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					message: '[FlowRunRetention] Sweep failed for flow ' . $flow->getUuid() . ': ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-		}
+		$swept += $this->sweepOverrides(overriding: $overriding, defaultDays: $defaultDays);
 
 		if ($swept > 0) {
 			$this->logger->info(
@@ -219,8 +181,106 @@ class FlowRunRetentionJob extends TimedJob {
 				context: ['retentionDays' => $defaultDays, 'overrides' => count($overrideIds)]
 			);
 		}
-
 	}//end run()
+
+	/**
+	 * The flows that declare their own retention period; null, logged, when they cannot be listed.
+	 *
+	 * @return Flow[]|null
+	 */
+	private function overridingFlows(): ?array {
+		try {
+			return $this->flows->findWithRetentionOverride();
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowRunRetention] Could not list flows with a retention override: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end overridingFlows()
+
+	/**
+	 * The non-empty uuids of some flows.
+	 *
+	 * @param Flow[] $flows The flows.
+	 *
+	 * @return string[]
+	 */
+	private static function flowIds(array $flows): array {
+		return array_values(
+			array_filter(
+				array_map(static fn (Flow $f): string => (string)$f->getUuid(), $flows)
+			)
+		);
+	}//end flowIds()
+
+	/**
+	 * Sweep the terminal runs of every flow that follows the instance default.
+	 *
+	 * @param int      $defaultDays    The instance retention period.
+	 * @param string[] $excludeFlowIds The flows that declare their own period.
+	 *
+	 * @return int How many runs were swept; 0, logged, when the sweep fails.
+	 */
+	private function sweepInstance(int $defaultDays, array $excludeFlowIds): int {
+		try {
+			$uuids = $this->runs->deleteTerminalOlderThanExcluding(
+				cutoff: new DateTime('-' . $defaultDays . ' days'),
+				excludeFlowIds: $excludeFlowIds
+			);
+			return $this->purgeSteps(uuids: $uuids);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowRunRetention] Instance-wide sweep failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return 0;
+		}
+	}//end sweepInstance()
+
+	/**
+	 * Sweep each flow that declares its own period.
+	 *
+	 * @param Flow[] $overriding  The flows that declare their own period.
+	 * @param int    $defaultDays The instance retention period.
+	 *
+	 * @return int How many runs were swept.
+	 */
+	private function sweepOverrides(array $overriding, int $defaultDays): int {
+		$swept = 0;
+		foreach ($overriding as $flow) {
+			$swept += $this->sweepFlow(flow: $flow, defaultDays: $defaultDays);
+		}
+
+		return $swept;
+	}//end sweepOverrides()
+
+	/**
+	 * Sweep the terminal runs of one flow by its own retention period.
+	 *
+	 * @param Flow $flow        The flow.
+	 * @param int  $defaultDays The instance retention period.
+	 *
+	 * @return int How many runs were swept; 0, logged, when the sweep fails.
+	 */
+	private function sweepFlow(Flow $flow, int $defaultDays): int {
+		$days = $flow->effectiveRetentionDays(defaultDays: $defaultDays);
+
+		try {
+			$uuids = $this->runs->deleteTerminalOlderThan(
+				cutoff: new DateTime('-' . $days . ' days'),
+				flowId: (string)$flow->getUuid()
+			);
+			return $this->purgeSteps(uuids: $uuids);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowRunRetention] Sweep failed for flow ' . $flow->getUuid() . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return 0;
+		}
+	}//end sweepFlow()
 
 	/**
 	 * Delete the step rows belonging to a set of removed runs.

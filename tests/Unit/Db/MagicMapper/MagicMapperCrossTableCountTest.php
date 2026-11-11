@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -143,9 +144,9 @@ class MagicMapperCrossTableCountTest extends TestCase {
 		);
 
 		$search = $this->createMock(MagicSearchHandler::class);
-		$search->method('buildWhereConditionsSql')->willReturnCallback(
-			function (array $query, Schema $schema, array $existingColumns): array {
-				$this->whereColumns[] = $existingColumns;
+		$search->method('buildWhereClause')->willReturnCallback(
+			function (WhereClauseRequest $request): array {
+				$this->whereColumns[] = $request->existingColumns;
 				return ['_deleted IS NULL', "status = 'open'"];
 			}
 		);

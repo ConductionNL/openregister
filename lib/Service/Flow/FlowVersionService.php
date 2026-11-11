@@ -205,37 +205,21 @@ class FlowVersionService implements FlowVersionServiceInterface {
 	}//end graphOf()
 
 	/**
-	 * Publish the flow's head, deprecating whatever was published before it.
+	 * Publish the flow's head, deprecating whatever was published before it, in one transaction.
 	 *
-	 * @param Flow        $flow        The flow whose head is being published.
-	 * @param string|null $publishedBy The acting user.
-	 * @param string|null $bump        `major` to raise the derived verdict,
-	 *                                 `minor` to assert there was no removal,
-	 *                                 which is REFUSED when the diff found
-	 *                                 one. Null lets the diff decide.
-	 *
-	 * @return FlowVersion The now-published version.
+	 * @param Flow               $flow    The flow whose head is being published.
+	 * @param FlowPublishOptions $options Who publishes (null: no acting user), and the bump asked for: `major` to
+	 *                                    raise the derived verdict, `minor` to assert there was no removal, which is
+	 *                                    REFUSED when the diff found one; null lets the diff decide.
 	 *
 	 * @throws FlowLifecycleRefused When the head is not a draft, or has a dead end.
 	 * @throws Throwable            When the transaction could not be committed.
 	 *
-	 * @spec openspec/specs/flow-definition-versioning/spec.md
-	 */
-	public function publish(Flow $flow, ?string $publishedBy = null, ?string $bump = null): FlowVersion {
-		return $this->publishWith(flow: $flow, options: new FlowPublishOptions(publishedBy: $publishedBy, bump: $bump));
-	}//end publish()
-
-	/**
-	 * Publish the flow's head, deprecating whatever was published before it, in one transaction.
-	 *
-	 * @param Flow               $flow    The flow whose head is being published.
-	 * @param FlowPublishOptions $options Who publishes, and the bump asked for.
-	 *
 	 * @return FlowVersion The now-published version.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	public function publishWith(Flow $flow, FlowPublishOptions $options): FlowVersion {
+	public function publish(Flow $flow, FlowPublishOptions $options=new FlowPublishOptions()): FlowVersion {
 		$run = new FlowPublishRun(flow: $flow, options: $options);
 		$run->graph = $this->graphOf(flow: $flow);
 		$run->hash = $this->pinPublishable(flow: $flow, graph: $run->graph);
@@ -251,7 +235,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 		}
 
 		return $stored;
-	}//end publishWith()
+	}//end publish()
 
 	/**
 	 * Inside the transaction: deprecate the old published version and store the head as published.
@@ -388,7 +372,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 
 		$this->createDraft(flow: $flow);
 
-		return $this->publish(flow: $flow, publishedBy: null);
+		return $this->publish(flow: $flow);
 
 	}//end publishShippedUpdate()
 
@@ -646,18 +630,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 			return null;
 		}
 
-		try {
-			$graph = $this->pin->graphFor($version->getDefinitionHash());
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[FlowVersionService] Could not read the previously published graph; '
-					. 'the semantic version starts again: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return null;
-		}
-
+		$graph = $this->readPinnedGraph(version: $version);
 		if (is_array($graph) === false) {
 			return null;
 		}
@@ -665,6 +638,27 @@ class FlowVersionService implements FlowVersionServiceInterface {
 		return $graph;
 
 	}//end publishedGraphOf()
+
+	/**
+	 * Read a version's pinned graph; a failed read is logged and reads as nothing.
+	 *
+	 * @param FlowVersion $version The version.
+	 *
+	 * @return array<string, mixed>|null The graph, or null.
+	 */
+	private function readPinnedGraph(FlowVersion $version): ?array {
+		try {
+			return $this->pin->graphFor($version->getDefinitionHash());
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowVersionService] Could not read the previously published graph; '
+					. 'the semantic version starts again: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		return null;
+	}//end readPinnedGraph()
 
 	/**
 	 * The version row for the flow's head, creating it when it does not exist.

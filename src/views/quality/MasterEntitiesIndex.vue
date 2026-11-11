@@ -95,6 +95,30 @@ import GoldenRecordDetail from './GoldenRecordDetail.vue'
 import { qualityStore } from '../../store/store.js'
 import { qualityListPage, QualityPageFrame } from './qualityListPage.js'
 
+/**
+ * The sort option that lists the lowest quality scores first.
+ *
+ * @return {{id: string, label: string}} A fresh option
+ */
+function worstFirstSort() {
+	return {
+		id: 'qualityScore-asc',
+		label: t('openregister', 'Quality score (worst first)'),
+	}
+}
+
+/**
+ * The sort option that lists the highest quality scores first.
+ *
+ * @return {{id: string, label: string}} A fresh option
+ */
+function bestFirstSort() {
+	return {
+		id: 'qualityScore-desc',
+		label: t('openregister', 'Quality score (best first)'),
+	}
+}
+
 export default {
 	name: 'MasterEntitiesIndex',
 
@@ -112,21 +136,8 @@ export default {
 	data() {
 		return {
 			selectedObject: null,
-			sortModel: {
-				id: 'qualityScore-asc',
-				label: t('openregister', 'Quality score (worst first)'),
-			},
-
-			sortOptions: [
-				{
-					id: 'qualityScore-asc',
-					label: t('openregister', 'Quality score (worst first)'),
-				},
-				{
-					id: 'qualityScore-desc',
-					label: t('openregister', 'Quality score (best first)'),
-				},
-			],
+			sortModel: worstFirstSort(),
+			sortOptions: [worstFirstSort(), bestFirstSort()],
 		}
 	},
 
