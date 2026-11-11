@@ -2434,3 +2434,4 @@ dossiq	5575	6ea6b94c728a538f9d8d0e5db47fa36af0d243b9	GREEN	FXL	readiness spec ma
 dossiq	5500	9de1bb9319f722f8f1404188739a8b71d951a0b5	GREEN	FXL	lookup sweep recognises kccCaller; merged
 dossiq	5497	2ce61facf73aca4e01399fea8e6a290f81863218	GREEN	FXL	development merged in, both test sets kept; merged
 dossiq	5446	b6715f18cab8732cb0cd2a2e603476c575b8c299	GREEN	FXL	supplier scope spec reads the emitter loop; merged
+dossiq	5434	670127c0db220268616bb5752a71dd9333c83257	GREEN	FXL	overdue filter spec accepts run->today; merged
