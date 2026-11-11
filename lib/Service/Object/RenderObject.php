@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;

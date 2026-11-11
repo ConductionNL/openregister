@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
@@ -201,7 +202,8 @@ class FlowTriggerValidatorTest extends TestCase {
 				}
 			}
 
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};
@@ -240,7 +242,8 @@ class FlowTriggerValidatorTest extends TestCase {
 				throw new InvalidArgumentException('a step was asked, which it should not be');
 			}
 
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};
@@ -475,7 +478,8 @@ class FlowTriggerValidatorTest extends TestCase {
 				$this->asked->append($config);
 			}
 
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};

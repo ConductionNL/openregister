@@ -84,12 +84,7 @@ class TranslationProjectionJob extends ActorForwardedJob {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	protected function runDeferred(DeferredListenerContext $context): void {
-		foreach ($context->getEntries() as $entry) {
-			$object = $this->resolver->resolve(entry: $entry);
-			if ($object === null) {
-				continue;
-			}
-
+		foreach ($this->liveEntries(context: $context, resolver: $this->resolver) as $entry => $object) {
 			try {
 				$this->projection->project($object);
 			} catch (\Throwable $e) {

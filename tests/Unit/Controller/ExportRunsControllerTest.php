@@ -140,4 +140,58 @@ class ExportRunsControllerTest extends TestCase {
 
 		$this->assertSame(401, $this->controller([], null)->index()->getStatus());
 	}//end testAnAnonymousCallerIsRefused()
+	/**
+	 * Characterisation: filter order, blank parameters, paging clamps and the echoed answer.
+	 */
+	public function testTheListingPassesOrderedFiltersAndClampsThePage(): void {
+		$this->rights->method('seesEveryExportRun')->willReturn(false);
+		$seen = null;
+		$this->runs->expects($this->once())
+			->method('listFor')
+			->with('alice', false, $this->anything(), 200, 0)
+			->willReturnCallback(
+				static function (string $actor, bool $isAdmin, array $filters) use (&$seen): array {
+					$seen = $filters;
+					return [['id' => 1]];
+				}
+			);
+
+		$response = $this->controller(
+			['until' => '2026-10-09', 'status' => 'done', 'schema' => '', 'register' => '5', 'limit' => '500', 'offset' => '-3']
+		)->index();
+
+		$this->assertSame(['register', 'status', 'until'], array_keys($seen));
+		$this->assertInstanceOf(DateTime::class, $seen['until']);
+		$this->assertSame(
+			['results' => [['id' => 1]], 'limit' => 500, 'offset' => -3, 'filters' => ['register' => '5', 'status' => 'done', 'until' => '2026-10-09']],
+			$response->getData()
+		);
+	}//end testTheListingPassesOrderedFiltersAndClampsThePage()
+
+	/**
+	 * Characterisation: the refusals answer exact bodies.
+	 */
+	public function testTheRefusalsAnswerExactBodies(): void {
+		$this->runs->expects($this->never())->method('listFor');
+
+		$response = $this->controller(['from' => '2026-10-01', 'until' => 'soon'])->index();
+		$this->assertSame([400, ['error' => 'The until date "soon" is not a date.']], [$response->getStatus(), $response->getData()]);
+
+		$response = $this->controller(['from' => 'never', 'until' => 'soon'])->index();
+		$this->assertSame([400, ['error' => 'The from date "never" is not a date.']], [$response->getStatus(), $response->getData()]);
+
+		$response = $this->controller([], null)->index();
+		$this->assertSame([401, ['error' => 'Authentication required']], [$response->getStatus(), $response->getData()]);
+	}//end testTheRefusalsAnswerExactBodies()
+
+	/**
+	 * Characterisation: the page size floor is 1.
+	 */
+	public function testThePageSizeHasAFloorOfOne(): void {
+		$this->runs->expects($this->once())->method('listFor')->with('alice', false, [], 1, 4)->willReturn([]);
+
+		$data = $this->controller(['limit' => '0', 'offset' => '4'])->index()->getData();
+
+		$this->assertSame([0, 4, []], [$data['limit'], $data['offset'], $data['filters']]);
+	}//end testThePageSizeHasAFloorOfOne()
 }//end class

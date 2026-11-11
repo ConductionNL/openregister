@@ -30,6 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service\File;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\FileWriterInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -100,9 +102,8 @@ class AttachNodeHandler {
 			}
 
 			$attached[] = $this->fileService->addFile(
-				objectEntity: $object,
-				fileName: $file->getName(),
-				content: $content
+				target: new FileTarget(object: $object),
+				upload: new FileUpload(fileName: $file->getName(), content: $content, share: false)
 			);
 		}
 

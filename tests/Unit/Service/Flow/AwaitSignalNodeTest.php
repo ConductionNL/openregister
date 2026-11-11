@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
@@ -46,7 +47,7 @@ class AwaitSignalNodeTest extends TestCase {
 	public function testItSuspendsWhenNothingHasAnswered(): void {
 		$this->expectException(FlowSuspension::class);
 
-		$this->node->execute($this->items([['id' => 1]]), ['question' => 'Publish it?'], []);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['id' => 1]]), config: ['question' => 'Publish it?'], context: []));
 	}
 
 	/**
@@ -57,7 +58,7 @@ class AwaitSignalNodeTest extends TestCase {
 	 */
 	public function testTheSuspensionCarriesAHeartbeat(): void {
 		try {
-			$this->node->execute($this->items([['id' => 1]]), ['question' => 'Publish it?'], []);
+			$this->node->execute(new FlowNodeCall(items: $this->items([['id' => 1]]), config: ['question' => 'Publish it?'], context: []));
 			$this->fail('Expected the node to suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull(
@@ -74,11 +75,11 @@ class AwaitSignalNodeTest extends TestCase {
 	 */
 	public function testAHeartbeatBelowTheCronPeriodIsClamped(): void {
 		try {
-			$this->node->execute(
-				$this->items([['id' => 1]]),
-				['question' => 'Publish it?', 'heartbeatMinutes' => 1],
-				[]
-			);
+			$this->node->execute(new FlowNodeCall(
+				items: $this->items([['id' => 1]]),
+				config: ['question' => 'Publish it?', 'heartbeatMinutes' => 1],
+				context: []
+			));
 			$this->fail('Expected the node to suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertGreaterThan(
@@ -94,7 +95,7 @@ class AwaitSignalNodeTest extends TestCase {
 	 */
 	public function testTheSuspensionReasonNamesTheQuestion(): void {
 		try {
-			$this->node->execute($this->items([['id' => 1]]), ['question' => 'Publish it?'], []);
+			$this->node->execute(new FlowNodeCall(items: $this->items([['id' => 1]]), config: ['question' => 'Publish it?'], context: []));
 			$this->fail('Expected the node to suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertStringContainsString('Publish it?', $suspension->getMessage());
@@ -106,11 +107,11 @@ class AwaitSignalNodeTest extends TestCase {
 	 * after it can route on it.
 	 */
 	public function testAnAnswerPassesTheItemsThroughCarryingTheDecision(): void {
-		$out = $this->node->execute(
-			$this->items([['id' => 1], ['id' => 2]]),
-			['question' => 'Publish it?'],
-			[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approve', 'by' => 'ruben']]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 1], ['id' => 2]]),
+			config: ['question' => 'Publish it?'],
+			context: [FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approve', 'by' => 'ruben']]
+		));
 
 		$this->assertCount(2, $out);
 		foreach ($out as $item) {
@@ -127,11 +128,11 @@ class AwaitSignalNodeTest extends TestCase {
 	 * invisible to a Switch and silently dropped by the next rebuild.
 	 */
 	public function testTheAnswerLandsInsideTheItemsRecordNotBesideIt(): void {
-		$out = $this->node->execute(
-			$this->items([['id' => 1]]),
-			['question' => 'Publish it?'],
-			[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approve']]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 1]]),
+			config: ['question' => 'Publish it?'],
+			context: [FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approve']]
+		));
 
 		$this->assertArrayNotHasKey('signal', $out[0], 'the answer must not sit at the envelope level');
 		$this->assertSame('approve', $out[0][FlowItems::JSON]['signal']['decision']);
@@ -144,11 +145,11 @@ class AwaitSignalNodeTest extends TestCase {
 	 * the first.
 	 */
 	public function testTheAnswerFieldIsConfigurable(): void {
-		$out = $this->node->execute(
-			$this->items([['id' => 1]]),
-			['question' => 'Publish it?', 'signalKey' => 'legalReview'],
-			[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approve']]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 1]]),
+			config: ['question' => 'Publish it?', 'signalKey' => 'legalReview'],
+			context: [FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approve']]
+		));
 
 		$this->assertSame('approve', $out[0][FlowItems::JSON]['legalReview']['decision']);
 		$this->assertArrayNotHasKey('signal', $out[0][FlowItems::JSON]);
@@ -165,11 +166,11 @@ class AwaitSignalNodeTest extends TestCase {
 	public function testAResumeWithoutADecisionKeepsWaiting(mixed $signal): void {
 		$this->expectException(FlowSuspension::class);
 
-		$this->node->execute(
-			$this->items([['id' => 1]]),
-			['question' => 'Publish it?'],
-			[FlowRunService::SIGNAL_CONTEXT_KEY => $signal]
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 1]]),
+			config: ['question' => 'Publish it?'],
+			context: [FlowRunService::SIGNAL_CONTEXT_KEY => $signal]
+		));
 	}
 
 	/**
@@ -191,11 +192,11 @@ class AwaitSignalNodeTest extends TestCase {
 	 * rejection into a failure.
 	 */
 	public function testARejectionIsNotAFailureByDefault(): void {
-		$out = $this->node->execute(
-			$this->items([['id' => 1]]),
-			['question' => 'Publish it?'],
-			[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'reject', 'reason' => 'not ready']]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 1]]),
+			config: ['question' => 'Publish it?'],
+			context: [FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'reject', 'reason' => 'not ready']]
+		));
 
 		$this->assertSame('reject', $out[0][FlowItems::JSON]['signal']['decision']);
 	}
@@ -206,11 +207,11 @@ class AwaitSignalNodeTest extends TestCase {
 	 */
 	public function testFailOnRejectStopsTheRunWithTheReason(): void {
 		try {
-			$this->node->execute(
-				$this->items([['id' => 1]]),
-				['question' => 'Publish it?', 'failOnReject' => true],
-				[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'reject', 'reason' => 'not ready']]
-			);
+			$this->node->execute(new FlowNodeCall(
+				items: $this->items([['id' => 1]]),
+				config: ['question' => 'Publish it?', 'failOnReject' => true],
+				context: [FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'reject', 'reason' => 'not ready']]
+			));
 			$this->fail('Expected the node to stop the run.');
 		} catch (FlowStop $stop) {
 			$this->assertTrue($stop->isError());
@@ -227,11 +228,11 @@ class AwaitSignalNodeTest extends TestCase {
 		$context = [FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'approval')];
 
 		try {
-			$this->node->execute(
-				$this->items([['id' => 1]]),
-				['question' => 'Publish it?', 'assignee' => 'legal'],
-				$context
-			);
+			$this->node->execute(new FlowNodeCall(
+				items: $this->items([['id' => 1]]),
+				config: ['question' => 'Publish it?', 'assignee' => 'legal'],
+				context: $context
+			));
 		} catch (FlowSuspension $suspension) {
 			// Expected.
 		}
@@ -253,7 +254,7 @@ class AwaitSignalNodeTest extends TestCase {
 		$context = [FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'approval')];
 
 		try {
-			$this->node->execute($this->items([['id' => 1]]), ['question' => 'Publish it?'], $context);
+			$this->node->execute(new FlowNodeCall(items: $this->items([['id' => 1]]), config: ['question' => 'Publish it?'], context: $context));
 		} catch (FlowSuspension $suspension) {
 			// Expected.
 		}
@@ -294,17 +295,17 @@ class AwaitSignalNodeTest extends TestCase {
 	 * `item.firstGate` as undefined for exactly this reason.
 	 */
 	public function testTheAnswerSurvivesASetFieldsRebuild(): void {
-		$answered = $this->node->execute(
-			$this->items([['id' => 1]]),
-			['question' => 'First gate?', 'signalKey' => 'firstGate'],
-			[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approved', 'mark' => 'first']]
-		);
+		$answered = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 1]]),
+			config: ['question' => 'First gate?', 'signalKey' => 'firstGate'],
+			context: [FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approved', 'mark' => 'first']]
+		));
 
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$setFields = new SetFieldsNode($l10n, $this->createMock(IURLGenerator::class));
 
-		$out = $setFields->execute($answered, ['set' => ['finished' => true]], []);
+		$out = $setFields->execute(new FlowNodeCall(items: $answered, config: ['set' => ['finished' => true]], context: []));
 
 		$this->assertTrue($out[0][FlowItems::JSON]['finished']);
 		$this->assertSame(

@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCP\App\IAppManager;
@@ -57,8 +59,11 @@ class MessageDispatchGoldenTest extends TestCase {
 		$warnings = [];
 		$router   = $this->createMock(ExternalIntegrationRouterInterface::class);
 		$router->method('call')->willReturnCallback(
-			static function (object $provider, string $method, string $path, array $options) use (&$calls, $answer): array {
-				$calls[] = [$provider->getOpenConnectorSource(), $method, $path, $options];
+			static function (object $provider, UpstreamRequest $request) use (&$calls, $answer): array {
+				$method  = $request->method;
+				$path    = $request->path;
+				$options = $request->options;
+$calls[] = [$provider->getOpenConnectorSource(), $method, $path, $options];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}
@@ -75,7 +80,7 @@ class MessageDispatchGoldenTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		$provider = new MessageDispatchProvider(new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($router, $this->createMock(IAppManager::class), $l10n), $logger);
-		$result   = $provider->dispatch(...$args);
+		$result   = $provider->dispatch($args[0], new OutboundMessage(path: $args[2], body: $args[1], headers: ($args[3] ?? [])));
 
 		return [
 			'result'   => $result,

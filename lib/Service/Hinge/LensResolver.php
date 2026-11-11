@@ -274,6 +274,21 @@ class LensResolver {
 	 * @return string|null The identifier, or null when there is none.
 	 */
 	private function referenceIdentifier(mixed $value): ?string {
+		if (is_array($value) === true) {
+			return $this->embeddedIdentifier(object: $value);
+		}
+
+		return $this->scalarIdentifier(value: $value);
+	}//end referenceIdentifier()
+
+	/**
+	 * The identifier a scalar reference holds: a bare identifier, the last segment of a uri, or an integer.
+	 *
+	 * @param mixed $value The reference property's value.
+	 *
+	 * @return string|null The identifier, or null when there is none.
+	 */
+	private function scalarIdentifier(mixed $value): ?string {
 		if (is_string($value) === true && $value !== '') {
 			$segments = explode('/', rtrim($value, '/'));
 			return end($segments);
@@ -283,15 +298,24 @@ class LensResolver {
 			return (string)$value;
 		}
 
-		if (is_array($value) === true) {
-			$candidate = ($value['id'] ?? ($value['uuid'] ?? null));
-			if (is_string($candidate) === true && $candidate !== '') {
-				return $candidate;
-			}
+		return null;
+	}//end scalarIdentifier()
+
+	/**
+	 * The id an already-extended referenced object carries: its `id`, else its `uuid`.
+	 *
+	 * @param array $object The extended object.
+	 *
+	 * @return string|null The identifier, or null when it is not a non-empty string.
+	 */
+	private function embeddedIdentifier(array $object): ?string {
+		$candidate = ($object['id'] ?? ($object['uuid'] ?? null));
+		if (is_string($candidate) === true && $candidate !== '') {
+			return $candidate;
 		}
 
 		return null;
-	}//end referenceIdentifier()
+	}//end embeddedIdentifier()
 
 	/**
 	 * Read a dot path out of the referenced record's data.

@@ -52,7 +52,11 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AccessLinkControllerServices;
+use OCA\OpenRegister\Controller\Support\AccessLinkPlatform;
+use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
+use OCA\OpenRegister\Controller\Support\TrimmedRequestParam;
 use OCA\OpenRegister\Db\AccessLink;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
@@ -73,8 +77,8 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
-use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -130,11 +134,11 @@ class AccessLinkController extends Controller {
 	private readonly IUserSession $userSession;
 
 	/**
-	 * Brute-force throttler for rejected anchors.
+	 * Counts rejected anchors and passwords against the brute-force throttler.
 	 *
-	 * @var IThrottler
+	 * @var ObjectShareLinkThrottle
 	 */
-	private readonly IThrottler $throttler;
+	private readonly ObjectShareLinkThrottle $rejections;
 
 	/**
 	 * PSR logger.
@@ -159,9 +163,25 @@ class AccessLinkController extends Controller {
 		$this->mintGuard = $services->domain->mintGuard;
 		$this->acts = $services->domain->acts;
 		$this->userSession = $services->platform->userSession;
-		$this->throttler = $services->platform->throttler;
 		$this->logger = $services->platform->logger;
+		$this->rejections = self::rejectionCounter(platform: $services->platform);
 	}//end __construct()
+
+	/**
+	 * The counter of rejected anchors and passwords on this surface.
+	 *
+	 * @param AccessLinkPlatform $platform The throttler and logger
+	 *
+	 * @return ObjectShareLinkThrottle The counter
+	 */
+	private static function rejectionCounter(AccessLinkPlatform $platform): ObjectShareLinkThrottle {
+		return new ObjectShareLinkThrottle(
+			throttler: $platform->throttler,
+			logger: $platform->logger,
+			action: self::THROTTLE_ACTION,
+			label: 'AccessLinkController'
+		);
+	}//end rejectionCounter()
 
 	/**
 	 * GET /api/public/links/{anchor}
@@ -190,19 +210,10 @@ class AccessLinkController extends Controller {
 
 		$body = $this->reader->read(link: $link, object: $object);
 		if ($body === null) {
-			$this->registerRejectedAttempt();
-
-			return $this->notFound();
+			return $this->rejected();
 		}
 
-		$this->links->recordUse(
-			link: $link,
-			use: new AccessLinkUse(
-				act: AccessLinkServiceInterface::ACT_READ,
-				object: $object,
-				ipAddress: $this->request->getRemoteAddress()
-			)
-		);
+		$this->links->recordUse(link: $link, use: $this->useOf(act: AccessLinkServiceInterface::ACT_READ, object: $object));
 
 		return new JSONResponse(array_merge(['link' => $link->publicDescriptor()], $body));
 	}//end open()
@@ -227,42 +238,40 @@ class AccessLinkController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function comment(string $anchor): JSONResponse {
-		$link = $this->admit(anchor: $anchor, capability: AccessLink::CAP_COMMENT);
-		if ($link instanceof AccessLink === false) {
-			return $link;
-		}
-
-		$object = StoredEntity::object(object: $this->reader->subjectObject(link: $link));
-		if ($object === null) {
-			$this->registerRejectedAttempt();
-
-			return $this->notFound();
+		$act = $this->admitWithSubject(anchor: $anchor, capability: AccessLink::CAP_COMMENT);
+		if ($act instanceof LinkAct === false) {
+			return $act;
 		}
 
 		$message = trim((string)$this->request->getParam('message', ''));
 		if ($message === '') {
-			return new JSONResponse(['message' => 'A comment needs a message.'], Http::STATUS_BAD_REQUEST);
+			return $this->badRequest(message: 'A comment needs a message.');
 		}
 
+		return $this->postComment(act: $act, message: $message);
+	}//end comment()
+
+	/**
+	 * Post a comment on the link's subject and record the use.
+	 *
+	 * @param LinkAct $act     The admitted link and its subject
+	 * @param string  $message The trimmed, non-empty comment
+	 *
+	 * @return JSONResponse 201 with the note, or a 400 when saving failed
+	 */
+	private function postComment(LinkAct $act, string $message): JSONResponse {
 		try {
-			$note = $this->acts->comment(act: new LinkAct(link: $link, object: $object), message: $message);
+			$note = $this->acts->comment(act: $act, message: $message);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link comment failed: ' . $failure->getMessage());
 
-			return new JSONResponse(['message' => 'The comment could not be saved.'], Http::STATUS_BAD_REQUEST);
+			return $this->badRequest(message: 'The comment could not be saved.');
 		}
 
-		$this->links->recordUse(
-			link: $link,
-			use: new AccessLinkUse(
-				act: AccessLinkServiceInterface::ACT_COMMENT,
-				object: $object,
-				ipAddress: $this->request->getRemoteAddress()
-			)
-		);
+		$this->links->recordUse(link: $act->link, use: $this->useOf(act: AccessLinkServiceInterface::ACT_COMMENT, object: $act->object));
 
 		return new JSONResponse($note, Http::STATUS_CREATED);
-	}//end comment()
+	}//end postComment()
 
 	/**
 	 * POST /api/public/links/{anchor}/files
@@ -284,63 +293,99 @@ class AccessLinkController extends Controller {
 	#[AnonRateLimit(limit: 10, period: 60)]
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function upload(string $anchor): JSONResponse {
-		$link = $this->admit(anchor: $anchor, capability: AccessLink::CAP_UPLOAD);
-		if ($link instanceof AccessLink === false) {
-			return $link;
+		$act = $this->admitWithSubject(anchor: $anchor, capability: AccessLink::CAP_UPLOAD);
+		if ($act instanceof LinkAct === false) {
+			return $act;
 		}
 
-		$object = StoredEntity::object(object: $this->reader->subjectObject(link: $link));
-		if ($object === null) {
-			$this->registerRejectedAttempt();
-
-			return $this->notFound();
+		$file = $this->uploadedFile();
+		if ($file instanceof LinkFile === false) {
+			return $file;
 		}
 
+		return $this->storeUpload(act: $act, file: $file);
+	}//end upload()
+
+	/**
+	 * Read the uploaded file from the request.
+	 *
+	 * @return LinkFile|JSONResponse The file, or a 400 when the name or content is missing or unreadable
+	 */
+	private function uploadedFile(): LinkFile | JSONResponse {
 		$fileName = $this->stringParam(name: 'name');
 		$content = $this->request->getParam('content', null);
 		if ($fileName === null || is_string($content) === false) {
-			return new JSONResponse(
-				['message' => 'An upload needs a name and content.'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->badRequest(message: 'An upload needs a name and content.');
 		}
 
-		// A browser cannot put binary bytes in a JSON body, so the holder's page
-		// sends `encoding: base64`. Without it the content is stored as sent,
-		// as it always was.
-		if ($this->stringParam(name: 'encoding') === 'base64') {
-			$content = base64_decode($content, true);
-			if ($content === false) {
-				return new JSONResponse(
-					['message' => 'The upload content is not valid base64.'],
-					Http::STATUS_BAD_REQUEST
-				);
-			}
+		$content = $this->decodedContent(content: $content);
+		if ($content === false) {
+			return $this->badRequest(message: 'The upload content is not valid base64.');
 		}
 
+		return new LinkFile(fileName: $fileName, content: $content);
+	}//end uploadedFile()
+
+	/**
+	 * Decode the upload content as the request says it is encoded.
+	 *
+	 * A browser cannot put binary bytes in a JSON body, so the holder's page
+	 * sends `encoding: base64`. Without it the content is stored as sent, as it
+	 * always was.
+	 *
+	 * @param string $content The content as sent
+	 *
+	 * @return string|false The bytes, or false for unreadable base64
+	 */
+	private function decodedContent(string $content): string | false {
+		if ($this->stringParam(name: 'encoding') !== 'base64') {
+			return $content;
+		}
+
+		return base64_decode($content, true);
+	}//end decodedContent()
+
+	/**
+	 * Store an uploaded file on the link's subject and record the use.
+	 *
+	 * @param LinkAct  $act  The admitted link and its subject
+	 * @param LinkFile $file The uploaded file
+	 *
+	 * @return JSONResponse 201 with the stored file, or a 400 when storing failed
+	 */
+	private function storeUpload(LinkAct $act, LinkFile $file): JSONResponse {
 		try {
-			$stored = $this->acts->upload(
-				act: new LinkAct(link: $link, object: $object),
-				file: new LinkFile(fileName: $fileName, content: $content)
-			);
+			$stored = $this->acts->upload(act: $act, file: $file);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link upload failed: ' . $failure->getMessage());
 
-			return new JSONResponse(['message' => 'The file could not be stored.'], Http::STATUS_BAD_REQUEST);
+			return $this->badRequest(message: 'The file could not be stored.');
 		}
 
-		$this->links->recordUse(
-			link: $link,
-			use: new AccessLinkUse(
-				act: AccessLinkServiceInterface::ACT_UPLOAD,
-				object: $object,
-				ipAddress: $this->request->getRemoteAddress(),
-				context: ['fileName' => $fileName]
-			)
-		);
+		$this->recordUpload(act: $act, file: $file);
 
 		return new JSONResponse($stored, Http::STATUS_CREATED);
-	}//end upload()
+	}//end storeUpload()
+
+	/**
+	 * Record an upload through the link, naming the stored file.
+	 *
+	 * @param LinkAct  $act  The admitted link and its subject
+	 * @param LinkFile $file The stored file
+	 *
+	 * @return void
+	 */
+	private function recordUpload(LinkAct $act, LinkFile $file): void {
+		$this->links->recordUse(
+			link: $act->link,
+			use: new AccessLinkUse(
+				act: AccessLinkServiceInterface::ACT_UPLOAD,
+				object: $act->object,
+				ipAddress: $this->request->getRemoteAddress(),
+				context: ['fileName' => $file->fileName]
+			)
+		);
+	}//end recordUpload()
 
 	/**
 	 * POST /api/access-links
@@ -369,32 +414,66 @@ class AccessLinkController extends Controller {
 			return $this->notFound();
 		}
 
-		$subjectType = (string)$this->request->getParam('subjectType', '');
-		$subjectId = (string)$this->request->getParam('subjectId', '');
-		if ($this->mintGuard->mayMint(subjectType: $subjectType, subjectId: $subjectId) === false) {
+		$mintRequest = $this->mintRequestFor(user: $user);
+		if ($mintRequest === null) {
 			return $this->notFound();
 		}
 
+		return $this->minted(mintRequest: $mintRequest);
+	}//end mint()
+
+	/**
+	 * The mint request for the requested subject, when the caller may publish it.
+	 *
+	 * @param IUser $user The caller
+	 *
+	 * @return LinkMintRequest|null The request, or null when the caller may not mint for the subject
+	 */
+	private function mintRequestFor(IUser $user): ?LinkMintRequest {
+		$subjectType = (string)$this->request->getParam('subjectType', '');
+		$subjectId = (string)$this->request->getParam('subjectId', '');
+		if ($this->mintGuard->mayMint(subjectType: $subjectType, subjectId: $subjectId) === false) {
+			return null;
+		}
+
+		return new LinkMintRequest(
+			minter: $user->getUID(),
+			subjectType: $subjectType,
+			subjectId: $subjectId,
+			terms: $this->requestedTerms()
+		);
+	}//end mintRequestFor()
+
+	/**
+	 * The terms the caller asks the new link to carry.
+	 *
+	 * @return AccessLinkTerms Capabilities, expiry, password and label
+	 */
+	private function requestedTerms(): AccessLinkTerms {
+		return new AccessLinkTerms(
+			capabilities: $this->capabilitiesParam(),
+			expiresAt: $this->stringParam(name: 'expiresAt'),
+			password: $this->stringParam(name: 'password'),
+			label: $this->stringParam(name: 'label')
+		);
+	}//end requestedTerms()
+
+	/**
+	 * Mint the link and answer it.
+	 *
+	 * @param LinkMintRequest $mintRequest What to mint
+	 *
+	 * @return JSONResponse 201 with the minted link, or 400 naming the refused requirement
+	 */
+	private function minted(LinkMintRequest $mintRequest): JSONResponse {
 		try {
-			$minted = $this->links->mint(
-				new LinkMintRequest(
-					minter: $user->getUID(),
-					subjectType: $subjectType,
-					subjectId: $subjectId,
-					terms: new AccessLinkTerms(
-						capabilities: $this->capabilitiesParam(),
-						expiresAt: $this->stringParam(name: 'expiresAt'),
-						password: $this->stringParam(name: 'password'),
-						label: $this->stringParam(name: 'label')
-					)
-				)
-			);
+			$minted = $this->links->mint($mintRequest);
 		} catch (InvalidArgumentException $refused) {
-			return new JSONResponse(['message' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);
+			return $this->badRequest(message: $refused->getMessage());
 		}
 
 		return new JSONResponse($minted, Http::STATUS_CREATED);
-	}//end mint()
+	}//end minted()
 
 	/**
 	 * GET /api/access-links
@@ -503,32 +582,110 @@ class AccessLinkController extends Controller {
 	private function admit(string $anchor, string $capability): AccessLink | JSONResponse {
 		$link = $this->links->resolve(anchor: $anchor);
 		if ($link === null) {
-			$this->registerRejectedAttempt();
-
-			return $this->notFound();
+			return $this->rejected();
 		}
 
 		if ($this->links->passwordAccepted(link: $link, password: $this->password()) === false) {
-			$this->registerRejectedAttempt();
-
-			return new JSONResponse(
-				['message' => 'This link is closed with a password.', 'passwordRequired' => true],
-				Http::STATUS_UNAUTHORIZED
-			);
+			return $this->passwordRefused();
 		}
 
 		if ($link->allows(capability: $capability) === false) {
-			return new JSONResponse(
-				[
-					'message' => 'This link does not allow that.',
-					'capabilities' => $link->declaredCapabilities(),
-				],
-				Http::STATUS_FORBIDDEN
-			);
+			return $this->capabilityRefused(link: $link);
 		}
 
 		return $link;
 	}//end admit()
+
+	/**
+	 * Admit a link for a capability and resolve its subject object.
+	 *
+	 * @param string $anchor     The opaque anchor
+	 * @param string $capability The capability the act needs
+	 *
+	 * @return LinkAct|JSONResponse The link and its subject, or the refusal
+	 */
+	private function admitWithSubject(string $anchor, string $capability): LinkAct | JSONResponse {
+		$link = $this->admit(anchor: $anchor, capability: $capability);
+		if ($link instanceof AccessLink === false) {
+			return $link;
+		}
+
+		$object = StoredEntity::object(object: $this->reader->subjectObject(link: $link));
+		if ($object === null) {
+			return $this->rejected();
+		}
+
+		return new LinkAct(link: $link, object: $object);
+	}//end admitWithSubject()
+
+	/**
+	 * Count a wrong or missing password and ask for it.
+	 *
+	 * @return JSONResponse 401 saying the link needs a password
+	 */
+	private function passwordRefused(): JSONResponse {
+		$this->registerRejectedAttempt();
+
+		return new JSONResponse(
+			['message' => 'This link is closed with a password.', 'passwordRequired' => true],
+			Http::STATUS_UNAUTHORIZED
+		);
+	}//end passwordRefused()
+
+	/**
+	 * Refuse an act the link does not allow, naming what it does allow.
+	 *
+	 * @param AccessLink $link The admitted link
+	 *
+	 * @return JSONResponse 403 with the link's capabilities
+	 */
+	private function capabilityRefused(AccessLink $link): JSONResponse {
+		return new JSONResponse(
+			[
+				'message' => 'This link does not allow that.',
+				'capabilities' => $link->declaredCapabilities(),
+			],
+			Http::STATUS_FORBIDDEN
+		);
+	}//end capabilityRefused()
+
+	/**
+	 * Count a rejected request against the throttler and answer the uniform 404.
+	 *
+	 * @return JSONResponse 404 response
+	 */
+	private function rejected(): JSONResponse {
+		$this->registerRejectedAttempt();
+
+		return $this->notFound();
+	}//end rejected()
+
+	/**
+	 * The audit record of a use of the link, from the caller's address.
+	 *
+	 * @param string            $act    The act (read, comment, ...)
+	 * @param ObjectEntity|null $object The subject acted on
+	 *
+	 * @return AccessLinkUse The use
+	 */
+	private function useOf(string $act, ?ObjectEntity $object): AccessLinkUse {
+		return new AccessLinkUse(
+			act: $act,
+			object: $object,
+			ipAddress: $this->request->getRemoteAddress()
+		);
+	}//end useOf()
+
+	/**
+	 * Answer a request the link cannot act on.
+	 *
+	 * @param string $message Why
+	 *
+	 * @return JSONResponse 400 response
+	 */
+	private function badRequest(string $message): JSONResponse {
+		return new JSONResponse(['message' => $message], Http::STATUS_BAD_REQUEST);
+	}//end badRequest()
 
 	/**
 	 * The password the holder presented, from the header or the body.
@@ -567,16 +724,7 @@ class AccessLinkController extends Controller {
 	 * @return void
 	 */
 	private function registerRejectedAttempt(): void {
-		try {
-			$this->throttler->registerAttempt(
-				action: self::THROTTLE_ACTION,
-				ip: $this->request->getRemoteAddress()
-			);
-		} catch (Throwable $throttlerFailure) {
-			$this->logger->warning(
-				'AccessLinkController: registerAttempt failed: ' . $throttlerFailure->getMessage()
-			);
-		}
+		$this->rejections->countRejected(address: $this->request->getRemoteAddress());
 	}//end registerRejectedAttempt()
 
 	/**
@@ -595,14 +743,7 @@ class AccessLinkController extends Controller {
 			return [];
 		}
 
-		$named = [];
-		foreach ($value as $candidate) {
-			if (is_string($candidate) === true) {
-				$named[] = $candidate;
-			}
-		}
-
-		return $named;
+		return array_values(array_filter($value, 'is_string'));
 	}//end capabilitiesParam()
 
 	/**
@@ -613,17 +754,6 @@ class AccessLinkController extends Controller {
 	 * @return string|null The value, or null.
 	 */
 	private function stringParam(string $name): ?string {
-		$value = $this->request->getParam($name, null);
-
-		if (is_string($value) === false) {
-			return null;
-		}
-
-		$trimmed = trim($value);
-		if ($trimmed === '') {
-			return null;
-		}
-
-		return $trimmed;
+		return TrimmedRequestParam::read(request: $this->request, name: $name);
 	}//end stringParam()
 }//end class

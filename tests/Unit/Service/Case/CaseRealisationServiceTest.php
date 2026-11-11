@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseRealisationTasks;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -295,7 +296,9 @@ class CaseRealisationServiceTest extends TestCase {
 		$taskItem->setRealisationKind(CaseItem::REALISATION_TASK);
 		$taskItem->setRealisationUuid('task-1');
 		$this->tasks->expects($this->exactly(3))->method('terminateAsMoot')->willReturnCallback(
-			static function (string $uuid, string $reason, string $source): Task {
+			static function (string $uuid, TaskTrigger $trigger): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				if ($reason === 'gone') {
 					throw new DoesNotExistException('gone');
 				}

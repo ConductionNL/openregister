@@ -88,7 +88,7 @@ final class NullFilter {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	public static function nullCheck(mixed $criterion): ?bool {
+	public static function nullCheck(mixed $criterion): bool|null {
 		if ($criterion === self::IS_NULL) {
 			return true;
 		}
@@ -148,19 +148,22 @@ final class NullFilter {
 	 */
 	public static function conditionsFor(mixed $criterion, string $column, callable $build): array {
 		[$criterion, $orNull] = self::splitOrNull(criterion: $criterion);
-		$onlyNull = ($orNull === true && $criterion === []);
-		return $onlyNull === true ? [] : self::admitNull(conditions: $build($criterion), column: $column, orNull: $orNull);
+		if ($orNull === false) {
+			return $build($criterion);
+		}
+
+		return $criterion === [] ? [] : self::admitNull(conditions: $build($criterion), column: $column);
 	}//end conditionsFor()
 
 	/**
 	 * Join one field's conditions into `(a AND b) OR column IS NULL`.
 	 *
-	 * Without `orNull`, or without any condition to widen, the list is
-	 * returned as it came: no condition at all already admits NULL.
+	 * Called only when the caller asked for NULL rows too. Without any
+	 * condition to widen, the list is returned as it came: no condition at
+	 * all already admits NULL.
 	 *
 	 * @param list<T> $conditions The field's conditions, each a SQL predicate.
 	 * @param string  $column     The column reference the conditions test.
-	 * @param bool    $orNull     Whether the caller asked for NULL rows too.
 	 *
 	 * @return list<T|string> The conditions to AND into the query.
 	 *
@@ -168,8 +171,8 @@ final class NullFilter {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public static function admitNull(array $conditions, string $column, bool $orNull): array {
-		if ($orNull === false || $conditions === []) {
+	public static function admitNull(array $conditions, string $column): array {
+		if ($conditions === []) {
 			return $conditions;
 		}
 

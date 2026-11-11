@@ -100,21 +100,36 @@ class OAuth2Endpoints implements OAuth2EndpointsInterface {
 		// The app's own page: Connected accounts is in its user settings dialog.
 		$fallback = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
 
-		$candidate = trim($candidate);
-		if ($candidate === '') {
-			return $fallback;
-		}
-
-		$parts = parse_url($candidate);
-		if (is_array($parts) === false || isset($parts['host']) === true || isset($parts['scheme']) === true) {
-			return $fallback;
-		}
-
-		$path = (string)($parts['path'] ?? '');
-		if (str_starts_with($path, '/') === false) {
+		$path = $this->localPath(candidate: trim($candidate));
+		if ($path === null) {
 			return $fallback;
 		}
 
 		return $this->urlGenerator->getAbsoluteURL($path);
 	}//end safeReturnUrl()
+
+	/**
+	 * The path of a candidate return URL that stays on this instance: no scheme, no host, an absolute path.
+	 *
+	 * @param string $candidate The trimmed candidate.
+	 *
+	 * @return string|null The path, or null when the candidate is empty or leaves the instance.
+	 */
+	private function localPath(string $candidate): ?string {
+		if ($candidate === '') {
+			return null;
+		}
+
+		$parts = parse_url($candidate);
+		if (is_array($parts) === false || isset($parts['host']) === true || isset($parts['scheme']) === true) {
+			return null;
+		}
+
+		$path = (string)($parts['path'] ?? '');
+		if (str_starts_with($path, '/') === false) {
+			return null;
+		}
+
+		return $path;
+	}//end localPath()
 }//end class

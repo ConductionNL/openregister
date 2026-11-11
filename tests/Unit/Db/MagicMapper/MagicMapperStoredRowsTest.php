@@ -125,7 +125,7 @@ class MagicMapperStoredRowsTest extends TestCase {
 		$schemas->method('find')->willReturn($schema);
 
 		$statistics = $this->createMock(MagicStatisticsHandler::class);
-		$statistics->method('convertRowToObjectEntity')->willReturnCallback(
+		$statistics->method('toObjectEntity')->willReturnCallback(
 			function (array $row) use ($converts): ?ObjectEntity {
 				$this->converted[] = $row;
 				if ($converts === false) {

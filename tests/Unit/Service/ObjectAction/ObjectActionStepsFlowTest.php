@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -195,11 +196,11 @@ class ObjectActionStepsFlowTest extends TestCase {
 		$node = new ActionInputsNode($this->createMock(IL10N::class), $this->createMock(IURLGenerator::class));
 		$ref = ObjectActionSecrets::hold(['pin' => '1234']);
 
-		$out = $node->execute(
-			[FlowItems::item(json: ['title' => 'Besluit'])],
-			[],
-			['inputs' => ['from' => '2026-11-01'], ObjectActionSecrets::CONTEXT_KEY => $ref]
-		);
+		$out = $node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['title' => 'Besluit'])],
+			config: [],
+			context: ['inputs' => ['from' => '2026-11-01'], ObjectActionSecrets::CONTEXT_KEY => $ref]
+		));
 		ObjectActionSecrets::release($ref);
 
 		$this->assertSame(['from' => '2026-11-01', 'pin' => '1234'], $out[0][FlowItems::JSON]['inputs']);

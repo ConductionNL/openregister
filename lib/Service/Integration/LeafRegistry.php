@@ -232,21 +232,47 @@ class LeafRegistry implements LeafRegistryInterface {
 		// not "says shared entry". Refusing silence would re-create the #3954
 		// failure for every descriptor written before this declaration existed.
 		if ($descriptor->claimsSharedEntry() === true) {
-			$this->logger->error(
-				sprintf(
-					'[LeafRegistry] leaf "%s" declares it loads through the shared "%s" entry, but app '
-					. '"%s" ships no "%s", so the surface cannot render. Refused. Build that entry, or '
-					. 'declare the strategy the app actually uses.',
-					$descriptor->getId(),
-					LeafBundle::ENTRY,
-					$providingApp,
-					$this->leafBundle->expectedFileName(appId: $providingApp)
-				)
-			);
+			$this->logRefusedSharedEntry(descriptor: $descriptor, providingApp: $providingApp);
 
 			return false;
 		}
 
+		$this->logUndeclaredLoadStrategy(descriptor: $descriptor, providingApp: $providingApp);
+
+		return true;
+	}//end judgeMissingBundle()
+
+	/**
+	 * Log the refusal of a leaf that declares the shared entry its app does not ship.
+	 *
+	 * @param LeafDescriptor $descriptor   The leaf.
+	 * @param string         $providingApp The app that provides it.
+	 *
+	 * @return void
+	 */
+	private function logRefusedSharedEntry(LeafDescriptor $descriptor, string $providingApp): void {
+		$this->logger->error(
+			sprintf(
+				'[LeafRegistry] leaf "%s" declares it loads through the shared "%s" entry, but app '
+				. '"%s" ships no "%s", so the surface cannot render. Refused. Build that entry, or '
+				. 'declare the strategy the app actually uses.',
+				$descriptor->getId(),
+				LeafBundle::ENTRY,
+				$providingApp,
+				$this->leafBundle->expectedFileName(appId: $providingApp)
+			)
+		);
+	}//end logRefusedSharedEntry()
+
+	/**
+	 * Report a leaf whose app ships no shared bundle and has not said how it loads.
+	 *
+	 * @param LeafDescriptor $descriptor   The leaf.
+	 * @param string         $providingApp The app that provides it.
+	 *
+	 * @return void
+	 */
+	private function logUndeclaredLoadStrategy(LeafDescriptor $descriptor, string $providingApp): void {
 		$this->logger->error(
 			sprintf(
 				'[LeafRegistry] leaf "%s" declares a render surface but app "%s" ships no "%s" and has '
@@ -257,9 +283,7 @@ class LeafRegistry implements LeafRegistryInterface {
 				$this->leafBundle->expectedFileName(appId: $providingApp)
 			)
 		);
-
-		return true;
-	}//end judgeMissingBundle()
+	}//end logUndeclaredLoadStrategy()
 
 	/**
 	 * Dispatch the collect-event once and collect the announced leaves.
@@ -282,22 +306,42 @@ class LeafRegistry implements LeafRegistryInterface {
 		$this->loaded = true;
 
 		$event = new RegisterLeafProvidersEvent();
+		$this->dispatchLeafEvent(event: $event);
+		$this->collectLeaves(event: $event);
+	}//end ensureLoaded()
 
+	/**
+	 * Ask every app for its leaves.
+	 *
+	 * A broken listener costs its own leaf, not everyone else's: the
+	 * alternative is one bad app removing leaves from the instance.
+	 * Whatever was registered on the event BEFORE the throw is still
+	 * collected, since the event is mutated in place.
+	 *
+	 * @param RegisterLeafProvidersEvent $event The event the apps register on.
+	 *
+	 * @return void
+	 */
+	private function dispatchLeafEvent(RegisterLeafProvidersEvent $event): void {
 		try {
 			$this->eventDispatcher->dispatchTyped($event);
 		} catch (\Throwable $e) {
-			// A broken listener costs its own leaf, not everyone else's: the
-			// alternative is one bad app removing leaves from the instance.
-			// Whatever was registered on the event BEFORE the throw is still
-			// collected below, since the event is mutated in place.
 			$this->logger->warning(
 				'[LeafRegistry] a leaf listener threw during dispatch: {message}',
 				['message' => $e->getMessage(), 'exception' => $e]
 			);
 		}
+	}//end dispatchLeafEvent()
 
-		// Collect every leaf that reached the event, guarding each one so a
-		// single bad descriptor cannot break the rest of the catalogue.
+	/**
+	 * Collect every leaf that reached the event, guarding each one so a
+	 * single bad descriptor cannot break the rest of the catalogue.
+	 *
+	 * @param RegisterLeafProvidersEvent $event The event the apps registered on.
+	 *
+	 * @return void
+	 */
+	private function collectLeaves(RegisterLeafProvidersEvent $event): void {
 		foreach ($event->getLeaves() as $leaf) {
 			try {
 				$this->collectLeaf(descriptor: $leaf['descriptor'], provider: $leaf['provider']);
@@ -308,8 +352,7 @@ class LeafRegistry implements LeafRegistryInterface {
 				);
 			}
 		}
-
-	}//end ensureLoaded()
+	}//end collectLeaves()
 
 	/**
 	 * Validate one contributed leaf and, if it passes, index it (and register
@@ -423,28 +466,49 @@ class LeafRegistry implements LeafRegistryInterface {
 	 * @return string|null The refusal message, or null.
 	 */
 	private static function vocabularyRefusal(LeafDescriptor $descriptor): ?string {
-		$id = $descriptor->getId();
-
-		$unknown = array_diff($descriptor->getKinds(), LeafDescriptor::VALID_KINDS);
-		if ($unknown !== []) {
-			return sprintf(
-				'[LeafRegistry] leaf "%s" declares unknown kind(s) "%s" — skipping',
-				$id,
-				implode(', ', $unknown)
-			);
-		}
-
-		$renderMode = $descriptor->getRenderMode();
-		if (in_array($renderMode, LeafDescriptor::VALID_RENDER_MODES, true) === false) {
-			return sprintf(
-				'[LeafRegistry] leaf "%s" declares unknown renderMode "%s" — skipping',
-				$id,
-				$renderMode
-			);
-		}
-
-		return null;
+		return self::unknownKindsRefusal(descriptor: $descriptor)
+			?? self::unknownRenderModeRefusal(descriptor: $descriptor);
 	}//end vocabularyRefusal()
+
+	/**
+	 * Refuse a leaf that declares a kind outside the vocabulary.
+	 *
+	 * @param LeafDescriptor $descriptor The leaf.
+	 *
+	 * @return string|null The refusal, or null when every kind is known.
+	 */
+	private static function unknownKindsRefusal(LeafDescriptor $descriptor): ?string {
+		$unknown = array_diff($descriptor->getKinds(), LeafDescriptor::VALID_KINDS);
+		if ($unknown === []) {
+			return null;
+		}
+
+		return sprintf(
+			'[LeafRegistry] leaf "%s" declares unknown kind(s) "%s" — skipping',
+			$descriptor->getId(),
+			implode(', ', $unknown)
+		);
+	}//end unknownKindsRefusal()
+
+	/**
+	 * Refuse a leaf that declares a render mode outside the vocabulary.
+	 *
+	 * @param LeafDescriptor $descriptor The leaf.
+	 *
+	 * @return string|null The refusal, or null when the render mode is known.
+	 */
+	private static function unknownRenderModeRefusal(LeafDescriptor $descriptor): ?string {
+		$renderMode = $descriptor->getRenderMode();
+		if (in_array($renderMode, LeafDescriptor::VALID_RENDER_MODES, true) === true) {
+			return null;
+		}
+
+		return sprintf(
+			'[LeafRegistry] leaf "%s" declares unknown renderMode "%s" — skipping',
+			$descriptor->getId(),
+			$renderMode
+		);
+	}//end unknownRenderModeRefusal()
 
 	/**
 	 * The refusal for a data-provider leaf that supplied no provider.

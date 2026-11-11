@@ -99,17 +99,16 @@ final class FlowItems {
 	/**
 	 * Build one well-formed item.
 	 *
-	 * @param array $json The record.
-	 * @param array $binary File attachments, keyed by name.
-	 * @param int|null $fromItemIndex Input item this came from, when known.
-	 * @param string|null $output The output branch this item routes to, when set.
+	 * @param array           $json    The record.
+	 * @param FlowItemOptions $options File attachments keyed by name, the input item this came from, and the
+	 *                                 output branch this item routes to, each when known.
 	 *
 	 * @return array<string, mixed> The item.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	public static function item(array $json, array $binary = [], ?int $fromItemIndex = null, ?string $output = null): array {
-		return FlowItemShape::item(json: $json, options: new FlowItemOptions(binary: $binary, fromItemIndex: $fromItemIndex, output: $output));
+	public static function item(array $json, FlowItemOptions $options=new FlowItemOptions()): array {
+		return FlowItemShape::item(json: $json, options: $options);
 	}//end item()
 
 	/**

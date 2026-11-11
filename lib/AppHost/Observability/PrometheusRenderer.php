@@ -50,29 +50,43 @@ class PrometheusRenderer {
 	 */
 	public function render(string $appId, array $samples): string {
 		$prefix = $this->sanitizePrefix(appId: $appId);
-		$lines = [];
+		$lines  = [];
 
 		foreach ($samples as $sample) {
 			$metricName = $prefix . '_' . $this->sanitizeMetricName(name: $sample->name);
-			$metricType = 'gauge';
-			if ($sample->type === 'counter') {
-				$metricType = 'counter';
-			}
-
-			$lines[] = '# HELP ' . $metricName . ' ' . $this->escapeHelp(text: $sample->help);
-			$lines[] = '# TYPE ' . $metricName . ' ' . $metricType;
-
-			foreach ($sample->samples as $point) {
-				$labels = $point['labels'];
-				$value = $point['value'];
-				$lines[] = $metricName . $this->renderLabels(labels: $labels) . ' ' . $this->renderValue(value: $value);
-			}
-
-			$lines[] = '';
-		}//end foreach
+			$lines      = array_merge($lines, $this->familyLines(metricName: $metricName, sample: $sample));
+		}
 
 		return implode("\n", $lines) . "\n";
 	}//end render()
+
+	/**
+	 * The exposition lines of one metric family: HELP, TYPE, one line per point, then a blank line.
+	 *
+	 * @param string       $metricName The prefixed, sanitised metric name.
+	 * @param MetricSample $sample     The family.
+	 *
+	 * @return string[]
+	 */
+	private function familyLines(string $metricName, MetricSample $sample): array {
+		$metricType = 'gauge';
+		if ($sample->type === 'counter') {
+			$metricType = 'counter';
+		}
+
+		$lines   = [];
+		$lines[] = '# HELP ' . $metricName . ' ' . $this->escapeHelp(text: $sample->help);
+		$lines[] = '# TYPE ' . $metricName . ' ' . $metricType;
+
+		foreach ($sample->samples as $point) {
+			$labels  = $point['labels'];
+			$value   = $point['value'];
+			$lines[] = $metricName . $this->renderLabels(labels: $labels) . ' ' . $this->renderValue(value: $value);
+		}
+
+		$lines[] = '';
+		return $lines;
+	}//end familyLines()
 
 	/**
 	 * Sanitise the app id into a Prometheus-safe metric prefix `[a-z0-9_]`.

@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service\Case;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -365,7 +366,8 @@ class CaseRealisationService {
 	private function terminateTask(CaseItem $item, string $reason): void {
 		$uuid = trim((string)$item->getRealisationUuid());
 		try {
-			$this->tasks->tasks->terminateAsMoot(uuid: $uuid, reason: $reason, source: sprintf('case-item:%s', (string)$item->getUuid()));
+			$trigger = new TaskTrigger(source: sprintf('case-item:%s', (string)$item->getUuid()), reason: $reason);
+			$this->tasks->tasks->terminateAsMoot(uuid: $uuid, trigger: $trigger);
 		} catch (DoesNotExistException) {
 			// Nothing left to terminate.
 			return;

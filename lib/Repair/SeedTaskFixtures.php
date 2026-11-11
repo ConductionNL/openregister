@@ -71,6 +71,207 @@ class SeedTaskFixtures implements IRepairStep {
 	public const FLAG = 'seed_demo_tasks';
 
 	/**
+	 * The task fields of seed group 1: Municipality: a pooled permit check, NO flow attached. Its dates are set when the fixture is built.
+	 */
+	private const MUNICIPAL_PERMIT_CHECK_TASK = [
+		'title' => 'Controleer bouwtekening op welstandseisen',
+		'state' => Task::STATE_ENABLED,
+		'isTerminal' => false,
+		'performerType' => Task::PERFORMER_GROUP,
+		'assignee' => null,
+		'candidateGroups' => ['GEMEENTE_VERGUNNINGEN_TEAM'],
+		'routingStrategy' => 'least-loaded',
+		'priority' => 'normal',
+		'dueAt' => null,
+		'expiresAt' => null,
+		'runUuid' => null,
+		'objectUuid' => '00000000-0000-0000-0000-0000000000aa',
+		'registerId' => 1,
+		'schemaId' => 1,
+		'requester' => 'EXAMPLE_BALIE_USER',
+		'lastAction' => 'offer',
+		'appId' => 'openregister',
+	];
+
+	/**
+	 * The audit rows of seed group 1: Municipality: a pooled permit check, NO flow attached.
+	 */
+	private const MUNICIPAL_PERMIT_CHECK_AUDIT = [
+		[
+			'action' => 'offer',
+			'stateAfter' => Task::STATE_ENABLED,
+			'actor' => 'EXAMPLE_BALIE_USER',
+			'performerType' => Task::PERFORMER_GROUP,
+			'authorized' => true,
+		],
+	];
+
+	/**
+	 * The task fields of seed group 2: Consultancy: a delegated approval with enforcing expiry, on a run. Its dates are set when the fixture is built.
+	 */
+	private const CONSULTANCY_DELEGATED_APPROVAL_TASK = [
+		'title' => 'Keur inkooporder > EUR 10.000 goed',
+		'state' => Task::STATE_ACTIVE,
+		'isTerminal' => false,
+		'performerType' => Task::PERFORMER_USER,
+		'assignee' => 'EXAMPLE_DELEGATE_USER',
+		'onBehalfOf' => 'EXAMPLE_DIRECTOR_USER',
+		'mandate' => 'Volmacht inkoop 2026, artikel 4 lid 2',
+		'priority' => 'high',
+		'dueAt' => null,
+		'expiresAt' => null,
+		'runUuid' => '00000000-0000-0000-0000-0000000000f1',
+		'nodeId' => 'approve-purchase-order',
+		'templateId' => '00000000-0000-0000-0000-0000000000e0',
+		'templateVersion' => 3,
+		'templateSnapshot' => ['checklist' => []],
+		'objectUuid' => '00000000-0000-0000-0000-0000000000bb',
+		'requester' => 'EXAMPLE_CONTROLLER_USER',
+		'lastAction' => 'delegate',
+		'appId' => 'openregister',
+	];
+
+	/**
+	 * The audit rows of seed group 2: Consultancy: a delegated approval with enforcing expiry, on a run.
+	 */
+	private const CONSULTANCY_DELEGATED_APPROVAL_AUDIT = [
+		[
+			'action' => 'delegate',
+			'stateAfter' => Task::STATE_ACTIVE,
+			'actor' => 'EXAMPLE_DIRECTOR_USER',
+			'performerType' => Task::PERFORMER_USER,
+			'onBehalfOf' => 'EXAMPLE_DIRECTOR_USER',
+			'mandate' => 'Volmacht inkoop 2026, artikel 4 lid 2',
+			'authorized' => true,
+		],
+	];
+
+	/**
+	 * The task fields of seed group 3: Travel agency: an agent task with a checklist.
+	 */
+	private const TRAVEL_AGENCY_AGENT_TASK_TASK = [
+		'title' => 'Verifieer visumvereisten voor reisgroep',
+		'state' => Task::STATE_ACTIVE,
+		'isTerminal' => false,
+		'performerType' => Task::PERFORMER_AGENT,
+		'assignee' => 'EXAMPLE_AGENT_IDENTITY',
+		'priority' => 'urgent',
+		'checklist' => [
+			[
+				'id' => 'c1',
+				'label' => 'Paspoortgeldigheid > 6 maanden',
+				'description' => null,
+				'checked' => true,
+			],
+			[
+				'id' => 'c2',
+				'label' => 'Visumplicht per bestemming gecontroleerd',
+				'description' => null,
+				'checked' => false,
+			],
+			[
+				'id' => 'c3',
+				'label' => 'Transitvisum nodig?',
+				'description' => null,
+				'checked' => false,
+			],
+		],
+		'epicTaskId' => null,
+		'objectUuid' => '00000000-0000-0000-0000-0000000000cc',
+		'runUuid' => null,
+		'requester' => 'EXAMPLE_TRAVEL_PLANNER',
+		'lastAction' => 'claim',
+		'appId' => 'openregister',
+	];
+
+	/**
+	 * The audit rows of seed group 3: Travel agency: an agent task with a checklist.
+	 */
+	private const TRAVEL_AGENCY_AGENT_TASK_AUDIT = [
+		[
+			'action' => 'claim',
+			'stateAfter' => Task::STATE_ACTIVE,
+			'actor' => 'EXAMPLE_AGENT_IDENTITY',
+			'performerType' => Task::PERFORMER_AGENT,
+			'authorized' => true,
+		],
+	];
+
+	/**
+	 * The task fields of seed group 4a: Terminal: completed with the collapse-preserved outcome. Its dates are set when the fixture is built.
+	 */
+	private const COMPLETED_APPROVAL_TASK = [
+		'title' => 'Beoordeel offerte serverhal',
+		'state' => Task::STATE_COMPLETED,
+		'isTerminal' => true,
+		'performerType' => Task::PERFORMER_USER,
+		'assignee' => 'EXAMPLE_REVIEWER_USER',
+		'outcome' => 'approved',
+		'priority' => 'normal',
+		'completedAt' => null,
+		'completedBy' => 'EXAMPLE_REVIEWER_USER',
+		'runUuid' => null,
+		'requester' => 'EXAMPLE_CONTROLLER_USER',
+		'lastAction' => 'complete',
+		'appId' => 'openregister',
+	];
+
+	/**
+	 * The audit rows of seed group 4a: Terminal: completed with the collapse-preserved outcome.
+	 */
+	private const COMPLETED_APPROVAL_AUDIT = [
+		[
+			'action' => 'complete',
+			'stateAfter' => Task::STATE_COMPLETED,
+			'actor' => 'EXAMPLE_REVIEWER_USER',
+			'performerType' => Task::PERFORMER_USER,
+			'authorized' => true,
+		],
+		// The DENIED entry: a stranger tried first, and the
+		// append-only denial path has a fixture because of it.
+		[
+			'action' => 'complete',
+			'stateAfter' => Task::STATE_ACTIVE,
+			'actor' => 'EXAMPLE_STRANGER_USER',
+			'performerType' => Task::PERFORMER_USER,
+			'reason' => "Verb 'complete' denied: only the current assignee may perform it.",
+			'authorized' => false,
+		],
+	];
+
+	/**
+	 * The task fields of seed group 4b: Terminal: terminated by propagation from a stopped run.
+	 */
+	private const TERMINATED_BY_PROPAGATION_TASK = [
+		'title' => 'Vraag aanvullende stukken op',
+		'state' => Task::STATE_TERMINATED,
+		'isTerminal' => true,
+		'performerType' => Task::PERFORMER_USER,
+		'assignee' => 'EXAMPLE_CASEWORKER_USER',
+		'outcome' => 'terminated',
+		'priority' => 'normal',
+		'runUuid' => '00000000-0000-0000-0000-0000000000f2',
+		'nodeId' => 'request-documents',
+		'requester' => 'EXAMPLE_CONTROLLER_USER',
+		'lastAction' => 'terminate',
+		'appId' => 'openregister',
+	];
+
+	/**
+	 * The audit rows of seed group 4b: Terminal: terminated by propagation from a stopped run.
+	 */
+	private const TERMINATED_BY_PROPAGATION_AUDIT = [
+		[
+			'action' => 'terminate',
+			'stateAfter' => Task::STATE_TERMINATED,
+			'actor' => 'flow-run:00000000-0000-0000-0000-0000000000f2',
+			'performerType' => Task::PERFORMER_USER,
+			'reason' => "Run '00000000-0000-0000-0000-0000000000f2' reached terminal status 'stopped'.",
+			'authorized' => true,
+		],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RepairPlatform     $platform The app config holding the opt-in flag, and failure reporting.
@@ -111,24 +312,39 @@ class SeedTaskFixtures implements IRepairStep {
 
 		$seeded = 0;
 		foreach ($this->fixtures() as $fixture) {
-			try {
-				if ($this->seedOne(fixture: $fixture) === true) {
-					$seeded++;
-				}
-			} catch (Throwable $failure) {
-				// A fixture must never fail an upgrade — but silence would be
-				// the repair-step defect this fleet already paid for once, so
-				// the skip is visible in the repair log AND the app log.
-				$output->warning(sprintf('Task fixture %s failed: %s', (string)($fixture['uuid'] ?? '?'), $failure->getMessage()));
-				$this->platform->logger->warning(
-					'[SeedTaskFixtures] Fixture failed: ' . $failure->getMessage(),
-					['uuid' => ($fixture['uuid'] ?? null)]
-				);
+			if ($this->seedOrReport(fixture: $fixture, output: $output) === true) {
+				$seeded++;
 			}
 		}
 
 		$output->info(sprintf('Task fixtures: %d seeded, %d already present.', $seeded, count($this->fixtures()) - $seeded));
 	}//end run()
+
+	/**
+	 * Seed one fixture; a failure is reported and counts as not seeded.
+	 *
+	 * @param array<string, mixed> $fixture The fixture.
+	 * @param IOutput              $output  The repair output.
+	 *
+	 * @return boolean True when inserted.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 */
+	private function seedOrReport(array $fixture, IOutput $output): bool {
+		try {
+			return $this->seedOne(fixture: $fixture);
+		} catch (Throwable $failure) {
+			// A fixture must never fail an upgrade — but silence would be
+			// the repair-step defect this fleet already paid for once, so
+			// the skip is visible in the repair log AND the app log.
+			$output->warning(sprintf('Task fixture %s failed: %s', (string)($fixture['uuid'] ?? '?'), $failure->getMessage()));
+			$this->platform->logger->warning(
+				'[SeedTaskFixtures] Fixture failed: ' . $failure->getMessage(),
+				['uuid' => ($fixture['uuid'] ?? null)]
+			);
+			return false;
+		}
+	}//end seedOrReport()
 
 	/**
 	 * Seed one fixture, unless its uuid already exists.
@@ -141,12 +357,8 @@ class SeedTaskFixtures implements IRepairStep {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	private function seedOne(array $fixture): bool {
-		try {
-			$this->mappers->tasks->findByUuid(uuid: (string)$fixture['uuid']);
-
+		if ($this->alreadySeeded(uuid: (string)$fixture['uuid']) === true) {
 			return false;
-		} catch (DoesNotExistException) {
-			// Absent: seed it.
 		}
 
 		$task = new Task();
@@ -156,46 +368,103 @@ class SeedTaskFixtures implements IRepairStep {
 
 		// The one-write-path invariant, preserved by hand: JSON and index
 		// rows land together.
-		$rows = [];
-		foreach (($persisted->getCandidateUsers() ?? []) as $uid) {
-			$rows[] = [
-				'kind' => 'user',
-				'ref' => (string)$uid,
-			];
-		}
-
-		foreach (($persisted->getCandidateGroups() ?? []) as $groupId) {
-			$rows[] = [
-				'kind' => 'group',
-				'ref' => (string)$groupId,
-			];
-		}
-
-		if (trim((string)$persisted->getCandidateRole()) !== '') {
-			$rows[] = [
-				'kind' => 'role',
-				'ref' => (string)$persisted->getCandidateRole(),
-			];
-		}
-
-		$this->mappers->candidates->replaceForTask(taskId: (int)$persisted->getId(), candidates: $rows);
+		$this->mappers->candidates->replaceForTask(taskId: (int)$persisted->getId(), candidates: self::candidateRows(task: $persisted));
 
 		foreach (($fixture['audit'] ?? []) as $auditFixture) {
-			$entry = new TaskAudit();
-			$entry->setTaskId((int)$persisted->getId());
-			$entry->setAction((string)$auditFixture['action']);
-			$entry->setStateAfter($auditFixture['stateAfter'] ?? null);
-			$entry->setActor($auditFixture['actor'] ?? null);
-			$entry->setPerformerType($auditFixture['performerType'] ?? null);
-			$entry->setOnBehalfOf($auditFixture['onBehalfOf'] ?? null);
-			$entry->setMandate($auditFixture['mandate'] ?? null);
-			$entry->setReason($auditFixture['reason'] ?? null);
-			$entry->setAuthorized((bool)($auditFixture['authorized'] ?? true));
-			$this->mappers->audits->insert($entry);
+			$this->insertAudit(taskId: (int)$persisted->getId(), auditFixture: $auditFixture);
 		}
 
 		return true;
 	}//end seedOne()
+
+	/**
+	 * Whether a task with the fixture's uuid already exists.
+	 *
+	 * @param string $uuid The fixture uuid.
+	 *
+	 * @return boolean True when present.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 */
+	private function alreadySeeded(string $uuid): bool {
+		try {
+			$this->mappers->tasks->findByUuid(uuid: $uuid);
+
+			return true;
+		} catch (DoesNotExistException) {
+			// Absent: seed it.
+			return false;
+		}
+	}//end alreadySeeded()
+
+	/**
+	 * The candidate index rows of a persisted task: its users, its groups, then its role.
+	 *
+	 * @param Task $task The persisted task.
+	 *
+	 * @return array<int, array{kind: string, ref: string}> The index rows.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 */
+	private static function candidateRows(Task $task): array {
+		$role = [];
+		if (trim((string)$task->getCandidateRole()) !== '') {
+			$role = [self::candidateRefs(kind: 'role', refs: [$task->getCandidateRole()])[0]];
+		}
+
+		return array_merge(
+			self::candidateRefs(kind: 'user', refs: ($task->getCandidateUsers() ?? [])),
+			self::candidateRefs(kind: 'group', refs: ($task->getCandidateGroups() ?? [])),
+			$role
+		);
+	}//end candidateRows()
+
+	/**
+	 * Index rows of one kind.
+	 *
+	 * @param string            $kind The candidate kind: user, group or role.
+	 * @param array<int, mixed> $refs The candidate references.
+	 *
+	 * @return array<int, array{kind: string, ref: string}> The index rows.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 */
+	private static function candidateRefs(string $kind, array $refs): array {
+		$rows = [];
+		foreach ($refs as $ref) {
+			$rows[] = [
+				'kind' => $kind,
+				'ref' => (string)$ref,
+			];
+		}
+
+		return $rows;
+	}//end candidateRefs()
+
+	/**
+	 * Insert one audit row for a seeded task.
+	 *
+	 * @param int                  $taskId       The seeded task's id.
+	 * @param array<string, mixed> $auditFixture The audit fixture.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 */
+	private function insertAudit(int $taskId, array $auditFixture): void {
+		$entry = new TaskAudit();
+		$entry->setTaskId($taskId);
+		$entry->setAction((string)$auditFixture['action']);
+		$entry->setStateAfter($auditFixture['stateAfter'] ?? null);
+		$entry->setActor($auditFixture['actor'] ?? null);
+		$entry->setPerformerType($auditFixture['performerType'] ?? null);
+		$entry->setOnBehalfOf($auditFixture['onBehalfOf'] ?? null);
+		$entry->setMandate($auditFixture['mandate'] ?? null);
+		$entry->setReason($auditFixture['reason'] ?? null);
+		$entry->setAuthorized((bool)($auditFixture['authorized'] ?? true));
+		$this->mappers->audits->insert($entry);
+	}//end insertAudit()
+
 
 	/**
 	 * The five fixture groups from design.md — Seed Data.
@@ -222,34 +491,8 @@ class SeedTaskFixtures implements IRepairStep {
 	private function municipalPermitCheck(): array {
 		return [
 			'uuid' => '00000000-0000-0000-0000-000000000001',
-			'task' => [
-				'title' => 'Controleer bouwtekening op welstandseisen',
-				'state' => Task::STATE_ENABLED,
-				'isTerminal' => false,
-				'performerType' => Task::PERFORMER_GROUP,
-				'assignee' => null,
-				'candidateGroups' => ['GEMEENTE_VERGUNNINGEN_TEAM'],
-				'routingStrategy' => 'least-loaded',
-				'priority' => 'normal',
-				'dueAt' => new DateTime('2026-09-04T17:00:00+02:00'),
-				'expiresAt' => null,
-				'runUuid' => null,
-				'objectUuid' => '00000000-0000-0000-0000-0000000000aa',
-				'registerId' => 1,
-				'schemaId' => 1,
-				'requester' => 'EXAMPLE_BALIE_USER',
-				'lastAction' => 'offer',
-				'appId' => 'openregister',
-			],
-			'audit' => [
-				[
-					'action' => 'offer',
-					'stateAfter' => Task::STATE_ENABLED,
-					'actor' => 'EXAMPLE_BALIE_USER',
-					'performerType' => Task::PERFORMER_GROUP,
-					'authorized' => true,
-				],
-			],
+			'task' => array_merge(self::MUNICIPAL_PERMIT_CHECK_TASK, ['dueAt' => new DateTime('2026-09-04T17:00:00+02:00')]),
+			'audit' => self::MUNICIPAL_PERMIT_CHECK_AUDIT,
 		];
 	}//end municipalPermitCheck()
 
@@ -261,38 +504,14 @@ class SeedTaskFixtures implements IRepairStep {
 	private function consultancyDelegatedApproval(): array {
 		return [
 			'uuid' => '00000000-0000-0000-0000-000000000002',
-			'task' => [
-				'title' => 'Keur inkooporder > EUR 10.000 goed',
-				'state' => Task::STATE_ACTIVE,
-				'isTerminal' => false,
-				'performerType' => Task::PERFORMER_USER,
-				'assignee' => 'EXAMPLE_DELEGATE_USER',
-				'onBehalfOf' => 'EXAMPLE_DIRECTOR_USER',
-				'mandate' => 'Volmacht inkoop 2026, artikel 4 lid 2',
-				'priority' => 'high',
-				'dueAt' => new DateTime('2026-08-29T12:00:00+02:00'),
-				'expiresAt' => new DateTime('2026-09-01T12:00:00+02:00'),
-				'runUuid' => '00000000-0000-0000-0000-0000000000f1',
-				'nodeId' => 'approve-purchase-order',
-				'templateId' => '00000000-0000-0000-0000-0000000000e0',
-				'templateVersion' => 3,
-				'templateSnapshot' => ['checklist' => []],
-				'objectUuid' => '00000000-0000-0000-0000-0000000000bb',
-				'requester' => 'EXAMPLE_CONTROLLER_USER',
-				'lastAction' => 'delegate',
-				'appId' => 'openregister',
-			],
-			'audit' => [
+			'task' => array_merge(
+				self::CONSULTANCY_DELEGATED_APPROVAL_TASK,
 				[
-					'action' => 'delegate',
-					'stateAfter' => Task::STATE_ACTIVE,
-					'actor' => 'EXAMPLE_DIRECTOR_USER',
-					'performerType' => Task::PERFORMER_USER,
-					'onBehalfOf' => 'EXAMPLE_DIRECTOR_USER',
-					'mandate' => 'Volmacht inkoop 2026, artikel 4 lid 2',
-					'authorized' => true,
-				],
-			],
+					'dueAt' => new DateTime('2026-08-29T12:00:00+02:00'),
+					'expiresAt' => new DateTime('2026-09-01T12:00:00+02:00'),
+				]
+			),
+			'audit' => self::CONSULTANCY_DELEGATED_APPROVAL_AUDIT,
 		];
 	}//end consultancyDelegatedApproval()
 
@@ -304,49 +523,8 @@ class SeedTaskFixtures implements IRepairStep {
 	private function travelAgencyAgentTask(): array {
 		return [
 			'uuid' => '00000000-0000-0000-0000-000000000003',
-			'task' => [
-				'title' => 'Verifieer visumvereisten voor reisgroep',
-				'state' => Task::STATE_ACTIVE,
-				'isTerminal' => false,
-				'performerType' => Task::PERFORMER_AGENT,
-				'assignee' => 'EXAMPLE_AGENT_IDENTITY',
-				'priority' => 'urgent',
-				'checklist' => [
-					[
-						'id' => 'c1',
-						'label' => 'Paspoortgeldigheid > 6 maanden',
-						'description' => null,
-						'checked' => true,
-					],
-					[
-						'id' => 'c2',
-						'label' => 'Visumplicht per bestemming gecontroleerd',
-						'description' => null,
-						'checked' => false,
-					],
-					[
-						'id' => 'c3',
-						'label' => 'Transitvisum nodig?',
-						'description' => null,
-						'checked' => false,
-					],
-				],
-				'epicTaskId' => null,
-				'objectUuid' => '00000000-0000-0000-0000-0000000000cc',
-				'runUuid' => null,
-				'requester' => 'EXAMPLE_TRAVEL_PLANNER',
-				'lastAction' => 'claim',
-				'appId' => 'openregister',
-			],
-			'audit' => [
-				[
-					'action' => 'claim',
-					'stateAfter' => Task::STATE_ACTIVE,
-					'actor' => 'EXAMPLE_AGENT_IDENTITY',
-					'performerType' => Task::PERFORMER_AGENT,
-					'authorized' => true,
-				],
-			],
+			'task' => self::TRAVEL_AGENCY_AGENT_TASK_TASK,
+			'audit' => self::TRAVEL_AGENCY_AGENT_TASK_AUDIT,
 		];
 	}//end travelAgencyAgentTask()
 
@@ -358,40 +536,8 @@ class SeedTaskFixtures implements IRepairStep {
 	private function completedApproval(): array {
 		return [
 			'uuid' => '00000000-0000-0000-0000-000000000004',
-			'task' => [
-				'title' => 'Beoordeel offerte serverhal',
-				'state' => Task::STATE_COMPLETED,
-				'isTerminal' => true,
-				'performerType' => Task::PERFORMER_USER,
-				'assignee' => 'EXAMPLE_REVIEWER_USER',
-				'outcome' => 'approved',
-				'priority' => 'normal',
-				'completedAt' => new DateTime('2026-08-20T09:30:00+02:00'),
-				'completedBy' => 'EXAMPLE_REVIEWER_USER',
-				'runUuid' => null,
-				'requester' => 'EXAMPLE_CONTROLLER_USER',
-				'lastAction' => 'complete',
-				'appId' => 'openregister',
-			],
-			'audit' => [
-				[
-					'action' => 'complete',
-					'stateAfter' => Task::STATE_COMPLETED,
-					'actor' => 'EXAMPLE_REVIEWER_USER',
-					'performerType' => Task::PERFORMER_USER,
-					'authorized' => true,
-				],
-				// The DENIED entry: a stranger tried first, and the
-				// append-only denial path has a fixture because of it.
-				[
-					'action' => 'complete',
-					'stateAfter' => Task::STATE_ACTIVE,
-					'actor' => 'EXAMPLE_STRANGER_USER',
-					'performerType' => Task::PERFORMER_USER,
-					'reason' => "Verb 'complete' denied: only the current assignee may perform it.",
-					'authorized' => false,
-				],
-			],
+			'task' => array_merge(self::COMPLETED_APPROVAL_TASK, ['completedAt' => new DateTime('2026-08-20T09:30:00+02:00')]),
+			'audit' => self::COMPLETED_APPROVAL_AUDIT,
 		];
 	}//end completedApproval()
 
@@ -403,30 +549,8 @@ class SeedTaskFixtures implements IRepairStep {
 	private function terminatedByPropagation(): array {
 		return [
 			'uuid' => '00000000-0000-0000-0000-000000000005',
-			'task' => [
-				'title' => 'Vraag aanvullende stukken op',
-				'state' => Task::STATE_TERMINATED,
-				'isTerminal' => true,
-				'performerType' => Task::PERFORMER_USER,
-				'assignee' => 'EXAMPLE_CASEWORKER_USER',
-				'outcome' => 'terminated',
-				'priority' => 'normal',
-				'runUuid' => '00000000-0000-0000-0000-0000000000f2',
-				'nodeId' => 'request-documents',
-				'requester' => 'EXAMPLE_CONTROLLER_USER',
-				'lastAction' => 'terminate',
-				'appId' => 'openregister',
-			],
-			'audit' => [
-				[
-					'action' => 'terminate',
-					'stateAfter' => Task::STATE_TERMINATED,
-					'actor' => 'flow-run:00000000-0000-0000-0000-0000000000f2',
-					'performerType' => Task::PERFORMER_USER,
-					'reason' => "Run '00000000-0000-0000-0000-0000000000f2' reached terminal status 'stopped'.",
-					'authorized' => true,
-				],
-			],
+			'task' => self::TERMINATED_BY_PROPAGATION_TASK,
+			'audit' => self::TERMINATED_BY_PROPAGATION_AUDIT,
 		];
 	}//end terminatedByPropagation()
 }//end class

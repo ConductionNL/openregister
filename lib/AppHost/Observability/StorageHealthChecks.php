@@ -75,6 +75,7 @@ class StorageHealthChecks {
 		$bytes = file_put_contents($path, 'ok');
 		$ok = ($bytes !== false);
 		// The ITempManager cleans its files on shutdown; unlink eagerly anyway.
+		// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is a temporary file from ITempManager.
 		@unlink($path);
 		if ($ok === true) {
 			return [true, ''];

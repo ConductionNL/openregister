@@ -95,7 +95,7 @@ class FileServiceUpdateFileLockGoldenTest extends TestCase {
 		$object = new ObjectEntity();
 		$file = $this->createMock(File::class);
 		$this->locks->expects($this->once())->method('assertCanModify')->with(7);
-		$this->updater->expects($this->once())->method('updateFile')->with(7, 'x', ['t'], $object)->willReturn($file);
+		$this->updater->expects($this->once())->method('updateFile')->with(new FileOverwrite(filePath: 7, content: 'x', tags: ['t'], object: $object))->willReturn($file);
 
 		$this->assertSame($file, $service->overwriteFile(overwrite: new FileOverwrite(filePath: 7, content: 'x', tags: ['t'], object: $object)));
 	}//end testAnUnlockedFileIdIsWritten()
@@ -109,7 +109,7 @@ class FileServiceUpdateFileLockGoldenTest extends TestCase {
 		$service = $this->service();
 		$file = $this->createMock(File::class);
 		$this->locks->expects($this->never())->method('assertCanModify');
-		$this->updater->expects($this->once())->method('updateFile')->with('a/b.txt', null, [], null)->willReturn($file);
+		$this->updater->expects($this->once())->method('updateFile')->with(new FileOverwrite(filePath: 'a/b.txt'))->willReturn($file);
 
 		$this->assertSame($file, $service->overwriteFile(overwrite: new FileOverwrite(filePath: 'a/b.txt')));
 	}//end testAPathIsHandedOnWithoutALockCheck()

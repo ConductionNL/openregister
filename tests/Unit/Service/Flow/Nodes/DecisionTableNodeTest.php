@@ -39,7 +39,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Dmn\DecisionEvaluationException;
 use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCP\IL10N;
@@ -171,11 +173,11 @@ class DecisionTableNodeTest extends TestCase {
 			'resultKey' => 'advies.evaluatie',
 		];
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [$this->item(['case' => ['severity' => 'ernstig', 'behaviour' => 'opzettelijk', 'actorType' => 'bedrijf']])],
 			config: $config,
 			context: []
-		);
+		));
 
 		$this->assertCount(1, $out);
 		$json = $out[0][FlowItems::JSON];
@@ -194,11 +196,11 @@ class DecisionTableNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testSameNameDefaultsMapInputsAndOutputs(): void {
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [$this->item(['severity' => 'licht', 'behaviour' => 'goedwillend', 'actorType' => 'burger'])],
 			config: ['table' => $this->lhsTable()],
 			context: []
-		);
+		));
 
 		$this->assertSame('waarschuwing', $out[0][FlowItems::JSON]['intervention']);
 
@@ -222,11 +224,11 @@ class DecisionTableNodeTest extends TestCase {
 			],
 		];
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [$this->item(['leeftijd' => 42])],
 			config: ['table' => $table],
 			context: []
-		);
+		));
 
 		$this->assertSame('volwassen', $out[0][FlowItems::JSON]['categorie']);
 
@@ -250,7 +252,7 @@ class DecisionTableNodeTest extends TestCase {
 		$this->expectException(DecisionEvaluationException::class);
 		$this->expectExceptionMessage('hit_policy_violation');
 
-		$this->node->execute(items: [$this->item(['severity' => 'x'])], config: ['table' => $table], context: []);
+		$this->node->execute(new FlowNodeCall(items: [$this->item(['severity' => 'x'])], config: ['table' => $table], context: []));
 
 	}//end testUniqueViolationFailsTheStep()
 
@@ -268,7 +270,7 @@ class DecisionTableNodeTest extends TestCase {
 			]
 		);
 
-		$out = $this->node->execute(items: [$this->item(['severity' => 'x'])], config: ['table' => $table], context: []);
+		$out = $this->node->execute(new FlowNodeCall(items: [$this->item(['severity' => 'x'])], config: ['table' => $table], context: []));
 
 		$this->assertSame('eerste', $out[0][FlowItems::JSON]['intervention']);
 
@@ -290,7 +292,7 @@ class DecisionTableNodeTest extends TestCase {
 			]
 		);
 
-		$out = $this->node->execute(items: [$this->item(['severity' => 'x'])], config: ['table' => $table], context: []);
+		$out = $this->node->execute(new FlowNodeCall(items: [$this->item(['severity' => 'x'])], config: ['table' => $table], context: []));
 
 		$this->assertSame('hoog', $out[0][FlowItems::JSON]['intervention']);
 
@@ -311,7 +313,7 @@ class DecisionTableNodeTest extends TestCase {
 			]
 		);
 
-		$out = $this->node->execute(items: [$this->item(['severity' => 'x'])], config: ['table' => $agreeing], context: []);
+		$out = $this->node->execute(new FlowNodeCall(items: [$this->item(['severity' => 'x'])], config: ['table' => $agreeing], context: []));
 		$this->assertSame('boete', $out[0][FlowItems::JSON]['intervention']);
 
 		$disagreeing = $this->table(
@@ -323,7 +325,7 @@ class DecisionTableNodeTest extends TestCase {
 		);
 
 		$this->expectException(DecisionEvaluationException::class);
-		$this->node->execute(items: [$this->item(['severity' => 'x'])], config: ['table' => $disagreeing], context: []);
+		$this->node->execute(new FlowNodeCall(items: [$this->item(['severity' => 'x'])], config: ['table' => $disagreeing], context: []));
 
 	}//end testAnyAgreesOrFails()
 
@@ -343,10 +345,10 @@ class DecisionTableNodeTest extends TestCase {
 			]
 		);
 
-		$out = $this->node->execute(items: [$this->item(['severity' => 'ernstig'])], config: ['table' => $table], context: []);
+		$out = $this->node->execute(new FlowNodeCall(items: [$this->item(['severity' => 'ernstig'])], config: ['table' => $table], context: []));
 		$this->assertSame(['boete', 'dwangsom'], $out[0][FlowItems::JSON]['intervention']);
 
-		$out = $this->node->execute(items: [$this->item(['severity' => 'anders'])], config: ['table' => $table], context: []);
+		$out = $this->node->execute(new FlowNodeCall(items: [$this->item(['severity' => 'anders'])], config: ['table' => $table], context: []));
 		$this->assertSame([], $out[0][FlowItems::JSON]['intervention']);
 
 	}//end testCollectWritesListsAndEmptyMatchIsAnAnswer()
@@ -366,7 +368,7 @@ class DecisionTableNodeTest extends TestCase {
 		$this->expectException(DecisionEvaluationException::class);
 		$this->expectExceptionMessage('no_rule_matched');
 
-		$this->node->execute(items: [$this->item(['severity' => 'anders'])], config: ['table' => $table], context: []);
+		$this->node->execute(new FlowNodeCall(items: [$this->item(['severity' => 'anders'])], config: ['table' => $table], context: []));
 
 	}//end testNoMatchWithoutDefaultsFailsLoudly()
 
@@ -382,7 +384,7 @@ class DecisionTableNodeTest extends TestCase {
 			[['id' => 'r1', 'inputEntries' => ['ernstig'], 'outputEntries' => ['boete']]]
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [$this->item(['severity' => 'anders'])],
 			config: [
 				'table' => $table,
@@ -390,7 +392,7 @@ class DecisionTableNodeTest extends TestCase {
 				'resultKey' => 'evaluatie',
 			],
 			context: []
-		);
+		));
 
 		$json = $out[0][FlowItems::JSON];
 		$this->assertSame('geen actie', $json['intervention']);
@@ -410,14 +412,14 @@ class DecisionTableNodeTest extends TestCase {
 	public function testMissingInputFailsLoudlyEvenWithDefaults(): void {
 		$this->expectException(DecisionEvaluationException::class);
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			items: [$this->item(['behaviour' => 'opzettelijk', 'actorType' => 'bedrijf'])],
 			config: [
 				'table' => $this->lhsTable(),
 				'defaultOutputs' => ['intervention' => 'geen actie'],
 			],
 			context: []
-		);
+		));
 
 	}//end testMissingInputFailsLoudlyEvenWithDefaults()
 
@@ -431,8 +433,8 @@ class DecisionTableNodeTest extends TestCase {
 		$config = ['table' => $this->lhsTable(), 'resultKey' => 'evaluatie'];
 		$items = [$this->item(['severity' => 'ernstig', 'behaviour' => 'onverschillig', 'actorType' => 'bedrijf'])];
 
-		$first = $this->node->execute(items: $items, config: $config, context: []);
-		$second = $this->node->execute(items: $items, config: $config, context: []);
+		$first = $this->node->execute(new FlowNodeCall(items: $items, config: $config, context: []));
+		$second = $this->node->execute(new FlowNodeCall(items: $items, config: $config, context: []));
 
 		$this->assertSame($first, $second);
 		$this->assertSame('last onder dwangsom', $first[0][FlowItems::JSON]['intervention']);
@@ -446,14 +448,14 @@ class DecisionTableNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testItemsAreIndependentAndProvenanceIsKept(): void {
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [
-				FlowItems::item(json: ['severity' => 'licht', 'behaviour' => 'goedwillend', 'actorType' => 'burger'], binary: ['scan' => 'blob']),
+				FlowItems::item(json: ['severity' => 'licht', 'behaviour' => 'goedwillend', 'actorType' => 'burger'], options: new FlowItemOptions(binary: ['scan' => 'blob'])),
 				FlowItems::item(json: ['severity' => 'ernstig', 'behaviour' => 'opzettelijk', 'actorType' => 'bedrijf']),
 			],
 			config: ['table' => $this->lhsTable()],
 			context: []
-		);
+		));
 
 		$this->assertCount(2, $out);
 		$this->assertSame('waarschuwing', $out[0][FlowItems::JSON]['intervention']);
@@ -470,7 +472,7 @@ class DecisionTableNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testEmptyItemsReturnEmpty(): void {
-		$this->assertSame([], $this->node->execute(items: [], config: [], context: []));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: [], context: [])));
 
 	}//end testEmptyItemsReturnEmpty()
 

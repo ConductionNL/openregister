@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -58,7 +59,7 @@ class _MinimalProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 
@@ -94,22 +95,22 @@ class AbstractIntegrationProviderTest extends TestCase {
 
 	public function testGetThrowsNotImplemented(): void {
 		$this->expectException(NotImplementedException::class);
-		$this->provider->get('r', 's', 'o', 'e');
+		$this->provider->get(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'e');
 	}//end testGetThrowsNotImplemented()
 
 	public function testCreateThrowsNotImplemented(): void {
 		$this->expectException(NotImplementedException::class);
-		$this->provider->create('r', 's', 'o', []);
+		$this->provider->create(new ObjectRef(register: 'r', schema: 's', id: 'o'), []);
 	}//end testCreateThrowsNotImplemented()
 
 	public function testUpdateThrowsNotImplemented(): void {
 		$this->expectException(NotImplementedException::class);
-		$this->provider->update('r', 's', 'o', 'e', []);
+		$this->provider->update(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'e', []);
 	}//end testUpdateThrowsNotImplemented()
 
 	public function testDeleteThrowsNotImplemented(): void {
 		$this->expectException(NotImplementedException::class);
-		$this->provider->delete('r', 's', 'o', 'e');
+		$this->provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'e');
 	}//end testDeleteThrowsNotImplemented()
 
 	public function testHealthReturnsHealthyDescriptor(): void {

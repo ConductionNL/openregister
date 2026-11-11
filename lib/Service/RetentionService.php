@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Archival\HoldStamp;
@@ -160,17 +160,28 @@ class RetentionService implements RetentionServiceInterface {
 			return $object;
 		}
 
-		// The schema's category, unless this record names its own through the
-		// property the schema declares for that (DECISIONS row 48).
-		$classification = (new ClassificationOverride())->effective(
-			declaration: new CategoryDeclaration(archive: $archiveConfig),
-			data: ($object->getObject() ?? [])
-		);
+		$object->setRetention($this->archivalRetention(object: $object, schema: $schema));
 
+		return $object;
+	}//end applyArchivalMetadata()
+
+	/**
+	 * The retention block of a record that has no nomination yet: the schema's (or the
+	 * selection list's) defaults, and the action date when a bewaartermijn applies.
+	 *
+	 * @param ObjectEntity $object The record, archiving enabled on its schema.
+	 * @param Schema       $schema The record's schema.
+	 *
+	 * @return array<string, mixed> The retention block.
+	 */
+	private function archivalRetention(ObjectEntity $object, Schema $schema): array {
+		$archiveConfig = $schema->getArchive();
+
+		$classification = self::effectiveCategory(object: $object, archiveConfig: $archiveConfig);
 		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig, classification: $classification);
 		$retentionPeriod = $applied['bewaartermijn'];
 
-		$retention = $this->withArchivalDefaults(retention: $retention, applied: $applied);
+		$retention = $this->withArchivalDefaults(retention: ($object->getRetention() ?? []), applied: $applied);
 
 		// Calculate archiefactiedatum if bewaartermijn is set.
 		if ($retentionPeriod !== null) {
@@ -179,10 +190,24 @@ class RetentionService implements RetentionServiceInterface {
 			);
 		}
 
-		$object->setRetention($retention);
+		return $retention;
+	}//end archivalRetention()
 
-		return $object;
-	}//end applyArchivalMetadata()
+	/**
+	 * The schema's category, unless this record names its own through the
+	 * property the schema declares for that (DECISIONS row 48).
+	 *
+	 * @param ObjectEntity $object        The record.
+	 * @param array        $archiveConfig The schema's archive block.
+	 *
+	 * @return string|null
+	 */
+	private static function effectiveCategory(ObjectEntity $object, array $archiveConfig): ?string {
+		return (new ClassificationOverride())->effective(
+			declaration: new CategoryDeclaration(archive: $archiveConfig),
+			data: ($object->getObject() ?? [])
+		);
+	}//end effectiveCategory()
 
 	/**
 	 * Write the decided nominatie, period, source and provenance into a retention block.
@@ -238,18 +263,7 @@ class RetentionService implements RetentionServiceInterface {
 			'classification' => $classification,
 		];
 
-		$entry = null;
-		if ($classification !== null) {
-			$entry = $this->rules->listResolver->entryFor(category: $classification);
-		}
-
-		if ($entry !== null) {
-			$data = $entry->getObject();
-			$applied['archiefnominatie'] = ($data['archiefnominatie'] ?? 'nog_niet_bepaald');
-			$applied['bewaartermijn'] = ($data['bewaartermijn'] ?? null);
-			$applied['selectielijstBron'] = ($data['bron'] ?? null);
-			$applied['provenance'] = $this->rules->listResolver->provenanceOf(entry: $entry);
-		}
+		$applied = $this->withSelectionListEntry(applied: $applied, classification: $classification);
 
 		if (empty($archiveConfig['bewaartermijnOverride']) === false) {
 			$applied['bewaartermijn'] = $archiveConfig['bewaartermijnOverride'];
@@ -257,6 +271,33 @@ class RetentionService implements RetentionServiceInterface {
 
 		return $applied;
 	}//end resolveArchivalDefaults()
+
+	/**
+	 * The defaults overwritten by the selection-list entry of the record's category, when it has one.
+	 *
+	 * @param array<string, mixed> $applied        The schema's defaults.
+	 * @param string|null          $classification The record's category.
+	 *
+	 * @return array<string, mixed> The defaults.
+	 */
+	private function withSelectionListEntry(array $applied, ?string $classification): array {
+		$entry = null;
+		if ($classification !== null) {
+			$entry = $this->rules->listResolver->entryFor(category: $classification);
+		}
+
+		if ($entry === null) {
+			return $applied;
+		}
+
+		$data = $entry->getObject();
+		$applied['archiefnominatie'] = ($data['archiefnominatie'] ?? 'nog_niet_bepaald');
+		$applied['bewaartermijn'] = ($data['bewaartermijn'] ?? null);
+		$applied['selectielijstBron'] = ($data['bron'] ?? null);
+		$applied['provenance'] = $this->rules->listResolver->provenanceOf(entry: $entry);
+
+		return $applied;
+	}//end withSelectionListEntry()
 
 	/**
 	 * Refuse a record whose category override names no selectielijst row.
@@ -301,23 +342,53 @@ class RetentionService implements RetentionServiceInterface {
 	 */
 	public function applyClassification(RecordUpdate $update): ObjectEntity {
 		$object   = $update->object;
-		$archive  = ($update->schema->getArchive() ?? []);
-		$override = new ClassificationOverride();
-		$property = $override->propertyOf(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
-		if (($archive['enabled'] ?? false) !== true || $property === null) {
+		$property = self::categoryProperty(update: $update);
+		if ($property === null) {
+			return $object;
+		}
+
+		if (self::requestedCategoryUnchanged(update: $update, property: $property) === true) {
 			return $object;
 		}
 
 		$data = ($object->getObject() ?? []);
-		if ($override->requested(property: $property, data: $data) === $override->requested(property: $property, data: $update->previousData)) {
-			return $object;
-		}
-
 		$this->guardClassificationOverride(schema: $update->schema, data: $data);
 
-		$declaration = new CategoryDeclaration(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
-		return $this->rederiveCategory(update: $update, effective: $override->effective(declaration: $declaration, data: $data));
+		$declaration = new CategoryDeclaration(archive: ($update->schema->getArchive() ?? []), configuration: ($update->schema->getConfiguration() ?? []));
+		return $this->rederiveCategory(update: $update, effective: (new ClassificationOverride())->effective(declaration: $declaration, data: $data));
 	}//end applyClassification()
+
+	/**
+	 * The property a record names its own category through, when its schema archives and declares one.
+	 *
+	 * @param RecordUpdate $update The record before and after.
+	 *
+	 * @return string|null Null when the schema does not archive or declares no such property.
+	 */
+	private static function categoryProperty(RecordUpdate $update): ?string {
+		$archive  = ($update->schema->getArchive() ?? []);
+		$property = (new ClassificationOverride())->propertyOf(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
+		if (($archive['enabled'] ?? false) !== true) {
+			return null;
+		}
+
+		return $property;
+	}//end categoryProperty()
+
+	/**
+	 * Whether an update leaves the category the record requests through its override property as it was.
+	 *
+	 * @param RecordUpdate $update   The record before and after.
+	 * @param string       $property The override property.
+	 *
+	 * @return bool
+	 */
+	private static function requestedCategoryUnchanged(RecordUpdate $update, string $property): bool {
+		$override = new ClassificationOverride();
+		$requested = $override->requested(property: $property, data: ($update->object->getObject() ?? []));
+
+		return $requested === $override->requested(property: $property, data: $update->previousData);
+	}//end requestedCategoryUnchanged()
 
 	/**
 	 * Re-derive a record's archival metadata from its new effective category.
@@ -507,21 +578,6 @@ class RetentionService implements RetentionServiceInterface {
 	}//end validateNotImmutable()
 
 	/**
-	 * Place a legal hold on an object.
-	 *
-	 * @param ObjectEntity $object   The object to place hold on
-	 * @param string       $reason   The reason for the legal hold
-	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
-	 *
-	 * @return ObjectEntity The object with legal hold applied
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function placeLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		return $this->placeHold(object: $object, order: new HoldOrder(reason: $reason, ownerKey: $ownerKey));
-	}//end placeLegalHold()
-
-	/**
 	 * Place a legal hold on an object, as ordered.
 	 *
 	 * @param ObjectEntity $object The object to place the hold on
@@ -542,21 +598,6 @@ class RetentionService implements RetentionServiceInterface {
 
 		return $object;
 	}//end placeHold()
-
-	/**
-	 * Release a legal hold on an object.
-	 *
-	 * @param ObjectEntity $object   The object to release hold from
-	 * @param string       $reason   The reason for releasing the hold
-	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
-	 *
-	 * @return ObjectEntity The object with legal hold released
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function releaseLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		return $this->releaseHold(object: $object, order: new HoldOrder(reason: $reason, ownerKey: $ownerKey));
-	}//end releaseLegalHold()
 
 	/**
 	 * Release a legal hold on an object, as ordered.
@@ -628,22 +669,41 @@ class RetentionService implements RetentionServiceInterface {
 			return $object;
 		}
 
-		if ($extensionPeriod === null) {
-			$settings = $this->rules->settingsHandler->getArchivalSettingsOnly();
-			$extensionPeriod = $settings['defaultExtensionPeriod'] ?? 'P1Y';
-		}
+		$extensionPeriod ??= $this->defaultExtensionPeriod();
 
 		try {
 			$retention = $this->withExtendedActionDate(retention: $retention, extensionPeriod: $extensionPeriod);
 			$object->setRetention($retention);
 		} catch (Exception $e) {
-			$this->logger->warning(
-				'[RetentionService] Failed to extend archiefactiedatum: ' . $e->getMessage()
-			);
+			$this->logExtensionFailure(error: $e);
 		}
 
 		return $object;
 	}//end extendArchiveActionDate()
+
+	/**
+	 * Warn that an action date could not be extended; the record keeps its date.
+	 *
+	 * @param Exception $error Why it could not be extended.
+	 *
+	 * @return void
+	 */
+	private function logExtensionFailure(Exception $error): void {
+		$this->logger->warning(
+			'[RetentionService] Failed to extend archiefactiedatum: ' . $error->getMessage()
+		);
+	}//end logExtensionFailure()
+
+	/**
+	 * The extension the archival settings give an action date when the caller names none.
+	 *
+	 * @return mixed The ISO 8601 duration, P1Y when the settings give none.
+	 */
+	private function defaultExtensionPeriod(): mixed {
+		$settings = $this->rules->settingsHandler->getArchivalSettingsOnly();
+
+		return $settings['defaultExtensionPeriod'] ?? 'P1Y';
+	}//end defaultExtensionPeriod()
 
 	/**
 	 * Move the archiefactiedatum on by a period, remembering the original once.
@@ -944,34 +1004,13 @@ class RetentionService implements RetentionServiceInterface {
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-generate-destruction-lists-via-a-background-job
 	 */
 	public function getObjectsOnPendingDestructionLists(): array {
-		$settings = $this->rules->settingsHandler->getArchivalSettingsOnly();
-
-		$registerId = $settings['destructionListRegister'] ?? null;
-		$schemaId = $settings['destructionListSchema'] ?? null;
-
-		if ($registerId === null || $schemaId === null) {
+		$listTable = $this->destructionListIds();
+		if ($listTable === null) {
 			return [];
 		}
 
 		try {
-			$register = $this->stores->registerMapper->find((int)$registerId);
-			$schema = $this->stores->schemaMapper->find((int)$schemaId);
-
-			// `status`, NOT `object->status`. MagicSearchHandler compares the
-			// filter key against the schema's OWN property names, and anything
-			// it does not recognise becomes `1 = 0` rather than an error, so
-			// this query returned an empty list on every run. The exclusion it
-			// feeds is "objects already on a pending destruction list", which
-			// means every sweep re-listed objects that were already awaiting
-			// approval, and nothing said so.
-			$pendingLists = $this->stores->objectMapper->findAllListed(
-				request: new MagicListRequest(
-					table: new RegisterSchema(register: $register, schema: $schema),
-					query: ListQuery::unbounded(filters: ['status' => ['in_review', 'approved', 'awaiting_second_approval']])
-				)
-			);
-
-			return array_unique($this->listedObjectUuids(lists: $pendingLists));
+			return array_unique($this->listedObjectUuids(lists: $this->pendingDestructionLists(ids: $listTable)));
 		} catch (Exception $e) {
 			$this->logger->warning(
 				'[RetentionService] Failed to get pending destruction list objects: ' . $e->getMessage()
@@ -979,6 +1018,50 @@ class RetentionService implements RetentionServiceInterface {
 			return [];
 		}//end try
 	}//end getObjectsOnPendingDestructionLists()
+
+	/**
+	 * The register and schema the archival settings keep destruction lists in.
+	 *
+	 * @return array{register: mixed, schema: mixed}|null Null when either is not configured.
+	 */
+	private function destructionListIds(): ?array {
+		$settings = $this->rules->settingsHandler->getArchivalSettingsOnly();
+
+		$registerId = $settings['destructionListRegister'] ?? null;
+		$schemaId = $settings['destructionListSchema'] ?? null;
+
+		if ($registerId === null || $schemaId === null) {
+			return null;
+		}
+
+		return ['register' => $registerId, 'schema' => $schemaId];
+	}//end destructionListIds()
+
+	/**
+	 * The destruction lists still under review or awaiting approval.
+	 *
+	 * @param array{register: mixed, schema: mixed} $ids The destruction-list register and schema.
+	 *
+	 * @return array The lists.
+	 */
+	private function pendingDestructionLists(array $ids): array {
+		$register = $this->stores->registerMapper->find((int)$ids['register']);
+		$schema = $this->stores->schemaMapper->find((int)$ids['schema']);
+
+		// `status`, NOT `object->status`. MagicSearchHandler compares the
+		// filter key against the schema's OWN property names, and anything
+		// it does not recognise becomes `1 = 0` rather than an error, so
+		// this query returned an empty list on every run. The exclusion it
+		// feeds is "objects already on a pending destruction list", which
+		// means every sweep re-listed objects that were already awaiting
+		// approval, and nothing said so.
+		return $this->stores->objectMapper->findAllListed(
+			request: new MagicListRequest(
+				table: new RegisterSchema(register: $register, schema: $schema),
+				query: ListQuery::unbounded(filters: ['status' => ['in_review', 'approved', 'awaiting_second_approval']])
+			)
+		);
+	}//end pendingDestructionLists()
 
 	/**
 	 * The UUIDs of every object entry on the given destruction lists, in list order.
@@ -1013,12 +1096,7 @@ class RetentionService implements RetentionServiceInterface {
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function createDestructionList(array $objects): ?array {
-		$settings = $this->rules->settingsHandler->getArchivalSettingsOnly();
-
-		$registerId = $settings['destructionListRegister'] ?? null;
-		$schemaId = $settings['destructionListSchema'] ?? null;
-
-		if ($registerId === null || $schemaId === null) {
+		if ($this->destructionListIds() === null) {
 			$this->logger->warning(
 				'[RetentionService] Cannot create destruction list: register/schema not configured'
 			);
@@ -1032,18 +1110,30 @@ class RetentionService implements RetentionServiceInterface {
 			$objectEntries[] = $this->destructionListEntry(object: $object);
 		}
 
+		return self::newDestructionList(createdBy: $userId, entries: $objectEntries);
+	}//end createDestructionList()
+
+	/**
+	 * A destruction list in review, created now.
+	 *
+	 * @param string                           $createdBy The user (or system) creating it.
+	 * @param array<int, array<string, mixed>> $entries   One entry per object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function newDestructionList(string $createdBy, array $entries): array {
 		return [
 			'status' => 'in_review',
-			'createdBy' => $userId,
+			'createdBy' => $createdBy,
 			'createdAt' => (new DateTime())->format('c'),
-			'objects' => $objectEntries,
+			'objects' => $entries,
 			'excluded' => [],
 			'approvals' => [],
 			// The one decision history: destroy, retain and transfer all
 			// land here, so the record an auditor reads is one artefact.
 			'decisions' => [],
 		];
-	}//end createDestructionList()
+	}//end newDestructionList()
 
 	/**
 	 * The current user's ID, or 'system' when no user is logged in.
@@ -1068,11 +1158,6 @@ class RetentionService implements RetentionServiceInterface {
 	 */
 	private function destructionListEntry(ObjectEntity $object): array {
 		$retention = $object->getRetention() ?? [];
-		// Detect WOO-published status from object data or metadata.
-		$objectData = $object->getObject() ?? [];
-		$isWooPublished = ($objectData['woo_gepubliceerd'] ?? false) === true
-			|| ($objectData['publicatiestatus'] ?? null) === 'gepubliceerd'
-			|| ($retention['wooPublished'] ?? false) === true;
 
 		return [
 			'uuid' => $object->getUuid(),
@@ -1089,12 +1174,28 @@ class RetentionService implements RetentionServiceInterface {
 			'archiefactiedatum' => $retention['archiefactiedatum'] ?? null,
 			'classification' => $retention['classification'] ?? null,
 			'softDeleted' => $object->isSoftDeleted(),
-			'wooGepubliceerd' => $isWooPublished,
+			'wooGepubliceerd' => self::isWooPublished(object: $object, retention: $retention),
 			// Unassigned, said out loud, so a consumer reading a fresh
 			// list can see that nobody is accountable for this entry yet.
 			'reviewer' => null,
 		];
 	}//end destructionListEntry()
+
+	/**
+	 * Whether a record is published under the WOO, from its data or its retention metadata.
+	 *
+	 * @param ObjectEntity         $object    The record.
+	 * @param array<string, mixed> $retention Its retention block.
+	 *
+	 * @return bool
+	 */
+	private static function isWooPublished(ObjectEntity $object, array $retention): bool {
+		$objectData = $object->getObject() ?? [];
+
+		return ($objectData['woo_gepubliceerd'] ?? false) === true
+			|| ($objectData['publicatiestatus'] ?? null) === 'gepubliceerd'
+			|| ($retention['wooPublished'] ?? false) === true;
+	}//end isWooPublished()
 
 	/**
 	 * The destruction certificate for a destruction that was carried out.

@@ -125,7 +125,7 @@ class StoreActionAuthorizerTest extends TestCase {
 		$authorizer = $this->authorizer(new FakeActionAuthService(true));
 
 		$this->assertTrue(
-			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class))
+			$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class)))
 		);
 	}
 
@@ -138,7 +138,7 @@ class StoreActionAuthorizerTest extends TestCase {
 		$authorizer = $this->authorizer(new FakeActionAuthService(false));
 
 		$this->assertFalse(
-			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class))
+			$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class)))
 		);
 	}
 
@@ -164,7 +164,7 @@ class StoreActionAuthorizerTest extends TestCase {
 		$authorizer = $this->authorizer(new RuntimeException('not found'));
 
 		$this->assertFalse(
-			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class)),
+			$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class))),
 			'An unresolvable authorizer must refuse, never silently permit.'
 		);
 	}
@@ -181,7 +181,7 @@ class StoreActionAuthorizerTest extends TestCase {
 		$authorizer = $this->authorizer(new ShapelessActionAuthService());
 
 		$this->assertFalse(
-			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class))
+			$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class)))
 		);
 	}
 
@@ -197,7 +197,7 @@ class StoreActionAuthorizerTest extends TestCase {
 		$authorizer = $this->authorizer(new ThrowingActionAuthService());
 
 		$this->assertFalse(
-			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class))
+			$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class)))
 		);
 	}
 
@@ -219,7 +219,7 @@ class StoreActionAuthorizerTest extends TestCase {
 			->with($this->stringContains('catalog.instantiate'), $this->anything());
 
 		$authorizer = new StoreActionAuthorizer($container, $logger, $this->createMock(IGroupManager::class));
-		$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class));
+		$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class)));
 	}
 
 	/**

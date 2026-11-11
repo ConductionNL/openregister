@@ -190,19 +190,20 @@ class SendEmailNode extends MessagingNodeBase implements
 	 */
 	public function configForm(): array {
 		return [
-			$this->requiredField(key: 'recipients', label: $this->l10n->t('Who to mail'), type: 'text', help: $this->l10n->t(
+			$this->requiredField(field: new NodeFormField(key: 'recipients', label: $this->l10n->t('Who to mail'), type: 'text', help: $this->l10n->t(
 				'User or group ids, email addresses, or a field such as {{ assignee }}. Groups are expanded; addresses need external recipients.'
-			)),
-			$this->formField(key: 'externalRecipients', label: $this->l10n->t('External recipients'), type: 'text', help: $this->l10n->t(
+			))),
+			$this->formField(field: new NodeFormField(
+				key: 'externalRecipients', label: $this->l10n->t('External recipients'), type: 'text', help: $this->l10n->t(
 				'Set to none to refuse email addresses, object to mail only addresses on the item, or any to mail every valid address.'
-			)),
+			))),
 			$this->messageCategoryField(),
-			$this->formField(key: 'subject', label: $this->l10n->t('Subject'), type: 'text', help: $this->l10n->t(
+			$this->formField(field: new NodeFormField(key: 'subject', label: $this->l10n->t('Subject'), type: 'text', help: $this->l10n->t(
 				'Placeholders such as {{ name }} read fields from the item, the same syntax a schema notification uses.'
-			)),
-			$this->requiredField(key: 'body', label: $this->l10n->t('Body'), type: 'textarea', help: $this->l10n->t(
+			))),
+			$this->requiredField(field: new NodeFormField(key: 'body', label: $this->l10n->t('Body'), type: 'textarea', help: $this->l10n->t(
 				'What the email says. Placeholders read fields from the item.'
-			)),
+			))),
 		];
 	}//end configForm()
 

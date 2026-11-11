@@ -473,15 +473,7 @@ class ConditionMatcher {
 	 */
 	private function resolveUserDotProperty(string $property, string $originalToken): mixed {
 		if (in_array($property, self::SUPPORTED_USER_DOT_PROPERTIES, true) === false) {
-			$this->logger->warning(
-				message: '[ConditionMatcher] Unknown $user.<property> dotted token — returning null (deny)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'token' => $originalToken,
-					'supported' => self::SUPPORTED_USER_DOT_PROPERTIES,
-				]
-			);
+			$this->logUnknownUserToken(originalToken: $originalToken);
 			return null;
 		}
 
@@ -491,6 +483,18 @@ class ConditionMatcher {
 			return null;
 		}
 
+		return $this->userProperty(user: $user, property: $property);
+	}//end resolveUserDotProperty()
+
+	/**
+	 * One supported property of the current user.
+	 *
+	 * @param IUser                               $user     The current user.
+	 * @param 'uid'|'email'|'displayName'|'groups' $property A property in SUPPORTED_USER_DOT_PROPERTIES.
+	 *
+	 * @return mixed
+	 */
+	private function userProperty(IUser $user, string $property): mixed {
 		// `default` arm omitted on purpose: SUPPORTED_USER_DOT_PROPERTIES
 		// gates entry; anything else returned earlier via the in_array check.
 		return match ($property) {
@@ -499,7 +503,26 @@ class ConditionMatcher {
 			'displayName' => $user->getDisplayName(),
 			'groups' => $this->resolveUserGroups(user: $user),
 		};
-	}//end resolveUserDotProperty()
+	}//end userProperty()
+
+	/**
+	 * Warn about a `$user.<property>` token outside the supported set; it resolves to null (deny).
+	 *
+	 * @param string $originalToken The token as written.
+	 *
+	 * @return void
+	 */
+	private function logUnknownUserToken(string $originalToken): void {
+		$this->logger->warning(
+			message: '[ConditionMatcher] Unknown $user.<property> dotted token — returning null (deny)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'token' => $originalToken,
+				'supported' => self::SUPPORTED_USER_DOT_PROPERTIES,
+			]
+		);
+	}//end logUnknownUserToken()
 
 	/**
 	 * Resolve the current user's group IDs for `$user.groups`.
@@ -523,13 +546,24 @@ class ConditionMatcher {
 		try {
 			return $this->users->groupManager->getUserGroupIds($user);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ConditionMatcher] Failed to resolve $user.groups',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
+			$this->logGroupLookupFailure(error: $e);
 			return [];
 		}
 	}//end resolveUserGroups()
+
+	/**
+	 * Warn that the current user's groups could not be read; they resolve to none.
+	 *
+	 * @param \Throwable $error Why they could not be read.
+	 *
+	 * @return void
+	 */
+	private function logGroupLookupFailure(\Throwable $error): void {
+		$this->logger->warning(
+			message: '[ConditionMatcher] Failed to resolve $user.groups',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error->getMessage()]
+		);
+	}//end logGroupLookupFailure()
 
 	/**
 	 * Resolve a dotted `$organisation.<property>` token.
@@ -545,15 +579,7 @@ class ConditionMatcher {
 	 */
 	private function resolveOrganisationDotProperty(string $property, string $originalToken): mixed {
 		if (in_array($property, self::SUPPORTED_ORGANISATION_DOT_PROPERTIES, true) === false) {
-			$this->logger->warning(
-				message: '[ConditionMatcher] Unknown $organisation.<property> dotted token — returning null (deny)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'token' => $originalToken,
-					'supported' => self::SUPPORTED_ORGANISATION_DOT_PROPERTIES,
-				]
-			);
+			$this->logUnknownOrganisationToken(originalToken: $originalToken);
 			return null;
 		}
 
@@ -563,6 +589,25 @@ class ConditionMatcher {
 			'uuid' => $this->getActiveOrganisationUuid(),
 		};
 	}//end resolveOrganisationDotProperty()
+
+	/**
+	 * Warn about an `$organisation.<property>` token outside the supported set; it resolves to null (deny).
+	 *
+	 * @param string $originalToken The token as written.
+	 *
+	 * @return void
+	 */
+	private function logUnknownOrganisationToken(string $originalToken): void {
+		$this->logger->warning(
+			message: '[ConditionMatcher] Unknown $organisation.<property> dotted token — returning null (deny)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'token' => $originalToken,
+				'supported' => self::SUPPORTED_ORGANISATION_DOT_PROPERTIES,
+			]
+		);
+	}//end logUnknownOrganisationToken()
 
 	/**
 	 * Get the current user's active organisation UUID

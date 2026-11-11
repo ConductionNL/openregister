@@ -19,6 +19,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\RegisterMapperServices;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 
 /**
  * Unit tests proving RegisterMapper and SchemaMapper re-enabled their
@@ -87,12 +89,14 @@ class RegisterSchemaRbacTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->db,
-					$this->schemaMapperDependency,
-					$this->eventDispatcher,
-					$this->container,
 					new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
 					$this->appConfig,
-					$this->logger,
+					new RegisterMapperServices(
+						$this->schemaMapperDependency,
+						$this->container,
+						$this->eventDispatcher,
+						$this->logger
+					),
 				]
 			)
 			->getMock();
@@ -104,13 +108,17 @@ class RegisterSchemaRbacTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->db,
-					$this->eventDispatcher,
-					$this->validator,
-					$this->organisationMapper,
-					$this->userSession,
-					$this->groupManager,
+					new TenancyServices(
+						$this->organisationMapper,
+						$this->userSession,
+						$this->groupManager
+					),
 					$this->appConfig,
-					$this->logger,
+					new SchemaMapperServices(
+						$this->eventDispatcher,
+						$this->validator,
+						$this->logger
+					),
 				]
 			)
 			->getMock();

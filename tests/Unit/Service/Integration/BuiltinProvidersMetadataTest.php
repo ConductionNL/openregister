@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -88,7 +90,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			$this->buildL10n(),
 		);
 		$this->expectException(NotImplementedException::class);
-		$provider->create('r', 's', 'o', []);
+		$provider->create(new ObjectRef(register: 'r', schema: 's', id: 'o'), []);
 	}//end testFilesProviderCreateThrowsNotImplemented()
 
 	public function testNotesProviderMetadata(): void {
@@ -111,7 +113,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			->willReturn([['id' => 1, 'message' => 'hello']]);
 
 		$provider = new NotesProvider($noteService, $this->buildL10n());
-		$result = $provider->list('reg', 'sch', 'object-uuid');
+		$result = $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'object-uuid'));
 
 		$this->assertSame([['id' => 1, 'message' => 'hello']], $result);
 	}//end testNotesProviderListDelegatesToService()
@@ -128,7 +130,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 	public function testTasksProviderUpdateRejectsBadEntityId(): void {
 		$provider = $this->buildTasksProvider($this->createMock(TaskService::class));
 		$this->expectException(NotImplementedException::class);
-		$provider->update('r', 's', 'o', 'not-a-composite', []);
+		$provider->update(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'not-a-composite', []);
 	}//end testTasksProviderUpdateRejectsBadEntityId()
 
 	public function testTasksProviderCreateResolvesRegisterSchemaAndObjectTitle(): void {
@@ -152,19 +154,19 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			->willReturn($object);
 
 		$taskService->expects($this->once())
-			->method('createTask')
+			->method('createObjectTask')
 			->with(
-				42,
-				7,
-				'obj-uuid-1',
-				'My Object',
-				[
-					'summary' => 'Do the thing',
-					'description' => 'Details here',
-					'priority' => 5,
-					'status' => 'NEEDS-ACTION',
-					'due' => '2026-06-01T12:00:00Z',
-				]
+				new ObjectRef(register: 42, schema: 7, id: 'obj-uuid-1'),
+				new LinkedTaskDraft(
+					objectTitle: 'My Object',
+					data: [
+						'summary' => 'Do the thing',
+						'description' => 'Details here',
+						'priority' => 5,
+						'status' => 'NEEDS-ACTION',
+						'due' => '2026-06-01T12:00:00Z',
+					]
+				)
 			)
 			->willReturn(['id' => 'cal/task.ics', 'summary' => 'Do the thing']);
 
@@ -178,7 +180,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			l10n: $this->buildL10n(),
 		);
 
-		$result = $provider->create('my-register', 'my-schema', 'obj-uuid-1', [
+		$result = $provider->create(new ObjectRef(register: 'my-register', schema: 'my-schema', id: 'obj-uuid-1'), [
 			'summary' => 'Do the thing',
 			'description' => 'Details here',
 			'priority' => 5,
@@ -206,13 +208,10 @@ class BuiltinProvidersMetadataTest extends TestCase {
 		$objectService->method('find')->willReturn(null);
 
 		$taskService->expects($this->once())
-			->method('createTask')
+			->method('createObjectTask')
 			->with(
-				1,
-				2,
-				'missing-uuid',
-				'missing-uuid',
-				$this->callback(static fn (array $d): bool => $d['summary'] === 'x')
+				new ObjectRef(register: 1, schema: 2, id: 'missing-uuid'),
+				$this->callback(static fn (LinkedTaskDraft $d): bool => $d->objectTitle === 'missing-uuid' && $d->data['summary'] === 'x')
 			)
 			->willReturn(['id' => 'cal/task.ics']);
 
@@ -226,7 +225,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			l10n: $this->buildL10n(),
 		);
 
-		$result = $provider->create('r', 's', 'missing-uuid', ['summary' => 'x']);
+		$result = $provider->create(new ObjectRef(register: 'r', schema: 's', id: 'missing-uuid'), ['summary' => 'x']);
 		$this->assertSame(['id' => 'cal/task.ics'], $result);
 	}//end testTasksProviderCreateFallsBackToObjectIdWhenObjectMissing()
 
@@ -263,7 +262,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			$this->buildL10n(),
 		);
 		$this->expectException(NotImplementedException::class);
-		$provider->create('r', 's', 'o', []);
+		$provider->create(new ObjectRef(register: 'r', schema: 's', id: 'o'), []);
 	}//end testTagsProviderCreateThrowsNotImplemented()
 
 	public function testAuditTrailProviderMetadata(): void {
@@ -284,7 +283,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 		$history->method('page')->willThrowException(new \RuntimeException('trail unreadable'));
 		$provider = new AuditTrailProvider($history, $this->buildL10n());
 
-		$this->assertSame([], $provider->list('r', 's', 'o'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'o')));
 	}//end testAuditTrailProviderListSurfacesEmptyOnError()
 
 	public function testAuditTrailProviderMutationsThrowNotImplemented(): void {
@@ -294,7 +293,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 		);
 
 		$this->expectException(NotImplementedException::class);
-		$provider->create('r', 's', 'o', []);
+		$provider->create(new ObjectRef(register: 'r', schema: 's', id: 'o'), []);
 	}//end testAuditTrailProviderMutationsThrowNotImplemented()
 
 }//end class

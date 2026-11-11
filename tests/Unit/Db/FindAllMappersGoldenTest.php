@@ -49,6 +49,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * @coversNothing
@@ -330,13 +331,15 @@ final class FindAllMappersGoldenTest extends TestCase {
 	private function registerMapper(array $persona): RegisterMapper {
 		[$session, $groups, $organisations] = $this->caller(persona: $persona);
 		return new RegisterMapper(
-			$this->connection(),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(ContainerInterface::class),
-			new TenancyServices($organisations, $session, $groups),
-			$this->createMock(IAppConfig::class),
-			new NullLogger()
+			db: $this->connection(),
+			tenancy: new TenancyServices($organisations, $session, $groups),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				container: $this->createMock(ContainerInterface::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: new NullLogger()
+			)
 		);
 	}//end registerMapper()
 
