@@ -3045,3 +3045,4 @@
 2026-11-11T06:48:58Z precheck-20261111T064520-9262b588 GREEN tree 715c11ede1 on dev 2c3fdd3c59 prs 1 front=skip: Tests: 56619, Assertions: 187676, Errors: 6, Failures: 11, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 24.
 2026-11-11T06:49:30Z precheck-20261111T064918-c31f42cf BUILD-LINT #8495 1b6d1c73 does not compile on this tree: lib/Db/MagicMapper.php
 2026-11-11T06:50:41Z precheck-20261111T064918-c31f42cf BUILD-LINT #8837 201f81e9 does not compile on this tree: lib/Controller/OrganisationController.php
+2026-11-11T06:50:57Z session-20261111T063412-9f7228a4 FX5-0 merged main into #9834 (0613c34c): ListQuery namespace + 6 main-side ImportHandler tests moved to new constructor; php -l clean; tests not run (composer dist 403)
