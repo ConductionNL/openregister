@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Dto;
 
+use OCA\OpenRegister\Dto\BulkRowCount;
 use OCA\OpenRegister\Dto\BulkSaveOutcome;
 use PHPUnit\Framework\TestCase;
 
@@ -44,7 +45,7 @@ final class BulkSaveOutcomeBatchErrorCapTest extends TestCase {
 
 		$errors[] = ['type' => 'X'];
 		$errors[] = ['error' => 'e6'];
-		$outcome = BulkSaveOutcome::fromBulkResult(['errors' => $errors], 2, 0);
+		$outcome = BulkSaveOutcome::fromSaveResult(['errors' => $errors], new BulkRowCount(requested: 2, accounted: 0));
 
 		$this->assertSame(
 			'2 object(s) were not written and the save path recorded no per-object reason. Reported errors: e1; e2; e3; e4; ',
