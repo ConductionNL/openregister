@@ -2471,3 +2471,4 @@ stackiq	1542	3d74e71d7bd1a27c64924cbfea5a2a3b6061a33e	CONFLICT	vm1:18168	conflic
 stackiq	1546	5bef21d194abeea8e8f48b2711deca34468f2e9f	CONFLICT	vm1:18168	conflicts with the tree on adb463af44
 stackiq	1552	d77bcfc4d87c8c67c4dc27ebb2c79abc7f3cc845	CONFLICT	vm1:18168	conflicts with the tree on adb463af44
 thematiq	1642	aa26877b55fb15374f23fb738d9d8363dd593352	GREEN	vm2:1	unit 2833 OK (baseline 0 fails); floor holds; refactor keeps outputs
+larpinq	979	a37f77de5458ce16d5c108ab1feaab8c254c91e6	GREEN	vm2:2	unit 672 OK (baseline 0 fails); floor holds; refactor keeps behaviour
