@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -546,7 +546,7 @@ class PropertyVocabularyTest extends TestCase {
 	 * saves, and a value outside the list is refused. `textarea` is the value
 	 * dossiq shipped that refused its whole aanvullingsverzoek schema.
 	 *
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @return void
 	 */

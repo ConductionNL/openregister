@@ -30,6 +30,7 @@ namespace Unit\Service\Credential;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHost;
+use OCA\OpenRegister\Service\Credential\OAuth2InstanceHostInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -48,6 +49,23 @@ class OAuth2InstanceHostTest extends TestCase {
 	public function testAnUnsafeHostIsRefused(string $candidate): void {
 		$this->expectException(InvalidArgumentException::class);
 		OAuth2InstanceHost::normalise(candidate: $candidate);
+	}
+
+	/**
+	 * The instance method the interface exposes gives the same origin as the static rule.
+	 */
+	public function testTheInterfaceOriginIsTheStaticRule(): void {
+		$host = new OAuth2InstanceHost();
+		$this->assertInstanceOf(OAuth2InstanceHostInterface::class, $host);
+		$this->assertSame('https://mastodon.example', $host->origin(candidate: ' https://Mastodon.Example/ '));
+	}
+
+	/**
+	 * @dataProvider unsafeHosts
+	 */
+	public function testTheInterfaceOriginRefusesAnUnsafeHost(string $candidate): void {
+		$this->expectException(InvalidArgumentException::class);
+		(new OAuth2InstanceHost())->origin(candidate: $candidate);
 	}
 
 	/**

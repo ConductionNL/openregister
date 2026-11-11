@@ -1,0 +1,29 @@
+{
+    "qb string false": "refused: TypeError",
+    "sql string false": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')"
+    ],
+    "sql string false events": [
+        "scope true 3 5"
+    ],
+    "qb garbage rbac": "refused: TypeError",
+    "sql garbage rbac": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "sql garbage rbac events": [],
+    "qb garbage mt": "refused: TypeError",
+    "sql garbage mt": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "sql garbage mt events": [
+        "rbac-sql read 'openregister_table_1_5'"
+    ]
+}

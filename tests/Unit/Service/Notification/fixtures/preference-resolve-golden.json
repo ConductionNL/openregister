@@ -1,0 +1,606 @@
+{
+    "channels-map": {
+        "out": {
+            "enabled": true,
+            "channels": [
+                "email",
+                "activity"
+            ],
+            "source": "schema-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": [
+                        "email",
+                        "activity"
+                    ]
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "channels-scalar": {
+        "out": {
+            "enabled": true,
+            "channels": null,
+            "source": "schema-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "disabled-default": {
+        "out": {
+            "enabled": false,
+            "channels": [
+                "email",
+                "nc-notification"
+            ],
+            "source": "schema-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": [
+                        "email",
+                        "nc-notification"
+                    ]
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "group-first-wins": {
+        "out": {
+            "enabled": true,
+            "channels": [
+                "email"
+            ],
+            "source": "group-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                },
+                {
+                    "layer": "group-default",
+                    "group": "g1",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getAppValue",
+                "notif_grp_pref/g1/global/meldingen/created"
+            ],
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "group-int-id": {
+        "out": {
+            "enabled": false,
+            "channels": null,
+            "source": "group-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                },
+                {
+                    "layer": "group-default",
+                    "group": "7",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getAppValue",
+                "notif_grp_pref/7/global/meldingen/created"
+            ],
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "group-scoped": {
+        "out": {
+            "enabled": false,
+            "channels": null,
+            "source": "group-default",
+            "scope": "domain:d",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                },
+                {
+                    "layer": "group-default",
+                    "group": "g1",
+                    "scope": "domain:d",
+                    "enabled": false,
+                    "channels": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getAppValue",
+                "notif_grp_pref/g1/domain:d/meldingen/created"
+            ],
+            [
+                "getUserValue",
+                "alice",
+                "notif_pref_s/domain:d/meldingen/created"
+            ],
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "group-then-user": {
+        "out": {
+            "enabled": false,
+            "channels": [
+                "activity"
+            ],
+            "source": "user-override",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": [
+                        "email",
+                        "activity"
+                    ]
+                },
+                {
+                    "layer": "group-default",
+                    "group": "g1",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": [
+                        "activity"
+                    ]
+                },
+                {
+                    "layer": "user-override",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": [
+                        "activity"
+                    ]
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getAppValue",
+                "notif_grp_pref/g1/global/meldingen/created"
+            ],
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "groups-from-manager": {
+        "out": {
+            "enabled": false,
+            "channels": null,
+            "source": "group-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                },
+                {
+                    "layer": "group-default",
+                    "group": "team",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getAppValue",
+                "notif_grp_pref/team/global/meldingen/created"
+            ],
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "no-group-value": {
+        "out": {
+            "enabled": false,
+            "channels": null,
+            "source": "user-override",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                },
+                {
+                    "layer": "user-override",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getAppValue",
+                "notif_grp_pref/g1/schema:s/meldingen/created"
+            ],
+            [
+                "getAppValue",
+                "notif_grp_pref/g1/global/meldingen/created"
+            ],
+            [
+                "getAppValue",
+                "notif_grp_pref/g2/schema:s/meldingen/created"
+            ],
+            [
+                "getAppValue",
+                "notif_grp_pref/g2/global/meldingen/created"
+            ],
+            [
+                "getUserValue",
+                "alice",
+                "notif_pref_s/schema:s/meldingen/created"
+            ],
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "nothing-stored": {
+        "out": {
+            "enabled": true,
+            "channels": null,
+            "source": "schema-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "opt-in": {
+        "out": {
+            "enabled": true,
+            "channels": [
+                "email",
+                "nc-notification"
+            ],
+            "source": "user-override",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": [
+                        "nc-notification"
+                    ]
+                },
+                {
+                    "layer": "user-override",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": [
+                        "email",
+                        "nc-notification"
+                    ]
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "opt-in-only": {
+        "out": {
+            "enabled": true,
+            "channels": [
+                "nc-notification"
+            ],
+            "source": "schema-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": [
+                        "nc-notification"
+                    ]
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "user-bad-json": {
+        "out": {
+            "enabled": true,
+            "channels": null,
+            "source": "schema-default",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "user-channels-limited": {
+        "out": {
+            "enabled": true,
+            "channels": [
+                "email"
+            ],
+            "source": "user-override",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "layer": "user-override",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "user-channels-scalar": {
+        "out": {
+            "enabled": false,
+            "channels": null,
+            "source": "user-override",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                },
+                {
+                    "layer": "user-override",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "user-global": {
+        "out": {
+            "enabled": false,
+            "channels": null,
+            "source": "user-override",
+            "scope": "global",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                },
+                {
+                    "layer": "user-override",
+                    "scope": "global",
+                    "enabled": false,
+                    "channels": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notif_pref_s/schema:s/meldingen/created"
+            ],
+            [
+                "getUserValue",
+                "alice",
+                "notification_pref/meldingen/created"
+            ]
+        ]
+    },
+    "user-narrowest": {
+        "out": {
+            "enabled": true,
+            "channels": [
+                "activity"
+            ],
+            "source": "user-override",
+            "scope": "schema:s",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                },
+                {
+                    "layer": "user-override",
+                    "scope": "schema:s",
+                    "enabled": true,
+                    "channels": [
+                        "activity"
+                    ]
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notif_pref_s/schema:s/meldingen/created"
+            ]
+        ]
+    },
+    "user-scoped": {
+        "out": {
+            "enabled": true,
+            "channels": [
+                "email"
+            ],
+            "source": "user-override",
+            "scope": "register:r",
+            "layers": [
+                {
+                    "layer": "schema-default",
+                    "scope": "global",
+                    "enabled": true,
+                    "channels": null
+                },
+                {
+                    "layer": "user-override",
+                    "scope": "register:r",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ]
+        },
+        "calls": [
+            [
+                "getUserValue",
+                "alice",
+                "notif_pref_s/schema:s/meldingen/created"
+            ],
+            [
+                "getUserValue",
+                "alice",
+                "notif_pref_s/register:r/meldingen/created"
+            ]
+        ]
+    }
+}

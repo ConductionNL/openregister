@@ -1,0 +1,808 @@
+{
+    "contact all three": {
+        "result": [
+            {
+                "uuid": "u1",
+                "register": {
+                    "id": 1,
+                    "title": "Register 1"
+                },
+                "schema": {
+                    "id": 1,
+                    "title": "Personen"
+                },
+                "title": "Jan",
+                "matchType": "email",
+                "confidence": 1.0,
+                "properties": {
+                    "email": "Jan@Example.nl",
+                    "naam": "Jan de Vries",
+                    "title": "Jan"
+                },
+                "cached": false
+            },
+            {
+                "uuid": "u5",
+                "register": [],
+                "schema": [],
+                "title": "Unknown",
+                "matchType": "email",
+                "confidence": 1.0,
+                "properties": {
+                    "uuid": "u5",
+                    "organisation": "Acme",
+                    "mail": "jan@example.nl",
+                    "count": 3
+                },
+                "cached": false
+            },
+            {
+                "uuid": "u3",
+                "register": {
+                    "id": 1,
+                    "title": "Register 1"
+                },
+                "schema": {
+                    "id": 3,
+                    "title": "Unknown"
+                },
+                "title": "Acme BV",
+                "matchType": "organization",
+                "confidence": 0.5,
+                "properties": {
+                    "name": "Acme BV",
+                    "company": "Acme"
+                },
+                "cached": false
+            },
+            {
+                "uuid": "u2",
+                "register": {
+                    "id": 9,
+                    "title": "Unknown"
+                },
+                "schema": {
+                    "id": 2,
+                    "title": "Unknown"
+                },
+                "title": "u2",
+                "matchType": "name",
+                "confidence": 0.4,
+                "properties": {
+                    "emailadres": "other@example.nl",
+                    "voornaam": "Jan",
+                    "achternaam": "Jansen"
+                },
+                "cached": false
+            },
+            {
+                "uuid": "u4",
+                "register": [],
+                "schema": [],
+                "title": "Vries Holding",
+                "matchType": "name",
+                "confidence": 0.4,
+                "properties": {
+                    "bedrijf": "Vries Holding",
+                    "naam": "Vries Holding"
+                },
+                "cached": false
+            }
+        ],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_email_a5a44ec75c51b7cc477320c7c519e21b911ae44b3b93c9014dfc36164e195a13"
+            ],
+            [
+                "search",
+                {
+                    "_search": "jan@example.nl"
+                }
+            ],
+            [
+                "cache.set",
+                "or_contact_match_email_a5a44ec75c51b7cc477320c7c519e21b911ae44b3b93c9014dfc36164e195a13",
+                [
+                    {
+                        "uuid": "u1",
+                        "register": {
+                            "id": 1,
+                            "title": "Register 1"
+                        },
+                        "schema": {
+                            "id": 1,
+                            "title": "Personen"
+                        },
+                        "title": "Jan",
+                        "matchType": "email",
+                        "confidence": 1,
+                        "properties": {
+                            "email": "Jan@Example.nl",
+                            "naam": "Jan de Vries",
+                            "title": "Jan"
+                        },
+                        "cached": false
+                    },
+                    {
+                        "uuid": "u5",
+                        "register": [],
+                        "schema": [],
+                        "title": "Unknown",
+                        "matchType": "email",
+                        "confidence": 1,
+                        "properties": {
+                            "uuid": "u5",
+                            "organisation": "Acme",
+                            "mail": "jan@example.nl",
+                            "count": 3
+                        },
+                        "cached": false
+                    }
+                ],
+                60
+            ],
+            [
+                "cache.get",
+                "or_contact_match_name_de1f17e7753e890baa4e76ba2dfac186b85898b051da7a67bc7396559195af7b"
+            ],
+            [
+                "search",
+                {
+                    "_search": "Jan de Vries"
+                }
+            ],
+            [
+                "cache.set",
+                "or_contact_match_name_de1f17e7753e890baa4e76ba2dfac186b85898b051da7a67bc7396559195af7b",
+                [
+                    {
+                        "uuid": "u1",
+                        "register": {
+                            "id": 1,
+                            "title": "Register 1"
+                        },
+                        "schema": {
+                            "id": 1,
+                            "title": "Personen"
+                        },
+                        "title": "Jan",
+                        "matchType": "name",
+                        "confidence": 0.7,
+                        "properties": {
+                            "email": "Jan@Example.nl",
+                            "naam": "Jan de Vries",
+                            "title": "Jan"
+                        },
+                        "cached": false
+                    },
+                    {
+                        "uuid": "u2",
+                        "register": {
+                            "id": 9,
+                            "title": "Unknown"
+                        },
+                        "schema": {
+                            "id": 2,
+                            "title": "Unknown"
+                        },
+                        "title": "u2",
+                        "matchType": "name",
+                        "confidence": 0.4,
+                        "properties": {
+                            "emailadres": "other@example.nl",
+                            "voornaam": "Jan",
+                            "achternaam": "Jansen"
+                        },
+                        "cached": false
+                    },
+                    {
+                        "uuid": "u4",
+                        "register": [],
+                        "schema": [],
+                        "title": "Vries Holding",
+                        "matchType": "name",
+                        "confidence": 0.4,
+                        "properties": {
+                            "bedrijf": "Vries Holding",
+                            "naam": "Vries Holding"
+                        },
+                        "cached": false
+                    },
+                    {
+                        "uuid": "u2",
+                        "register": [],
+                        "schema": [],
+                        "title": "Duplicate of u2",
+                        "matchType": "name",
+                        "confidence": 0.4,
+                        "properties": {
+                            "naam": "Jan Jansen bis",
+                            "title": "Duplicate of u2"
+                        },
+                        "cached": false
+                    }
+                ],
+                60
+            ],
+            [
+                "cache.get",
+                "or_contact_match_org_822b33ad87c148a0a20a5ba7cd5ebcaa68d36a18e7aad165554903f52ca82757"
+            ],
+            [
+                "search",
+                {
+                    "_search": "Acme"
+                }
+            ],
+            [
+                "cache.set",
+                "or_contact_match_org_822b33ad87c148a0a20a5ba7cd5ebcaa68d36a18e7aad165554903f52ca82757",
+                [
+                    {
+                        "uuid": "u3",
+                        "register": {
+                            "id": 1,
+                            "title": "Register 1"
+                        },
+                        "schema": {
+                            "id": 3,
+                            "title": "Unknown"
+                        },
+                        "title": "Acme BV",
+                        "matchType": "organization",
+                        "confidence": 0.5,
+                        "properties": {
+                            "name": "Acme BV",
+                            "company": "Acme"
+                        },
+                        "cached": false
+                    }
+                ],
+                60
+            ]
+        ]
+    },
+    "contact email only": {
+        "result": [
+            {
+                "uuid": "u1",
+                "register": {
+                    "id": 1,
+                    "title": "Register 1"
+                },
+                "schema": {
+                    "id": 1,
+                    "title": "Personen"
+                },
+                "title": "Jan",
+                "matchType": "email",
+                "confidence": 1.0,
+                "properties": {
+                    "email": "Jan@Example.nl",
+                    "naam": "Jan de Vries",
+                    "title": "Jan"
+                },
+                "cached": false
+            },
+            {
+                "uuid": "u5",
+                "register": [],
+                "schema": [],
+                "title": "Unknown",
+                "matchType": "email",
+                "confidence": 1.0,
+                "properties": {
+                    "uuid": "u5",
+                    "organisation": "Acme",
+                    "mail": "jan@example.nl",
+                    "count": 3
+                },
+                "cached": false
+            }
+        ],
+        "log": [
+            [
+                "search",
+                {
+                    "_search": "jan@example.nl"
+                }
+            ]
+        ]
+    },
+    "contact name partial": {
+        "result": [
+            {
+                "uuid": "u1",
+                "register": {
+                    "id": 1,
+                    "title": "Register 1"
+                },
+                "schema": {
+                    "id": 1,
+                    "title": "Personen"
+                },
+                "title": "Jan",
+                "matchType": "name",
+                "confidence": 0.4,
+                "properties": {
+                    "email": "Jan@Example.nl",
+                    "naam": "Jan de Vries",
+                    "title": "Jan"
+                },
+                "cached": false
+            },
+            {
+                "uuid": "u2",
+                "register": {
+                    "id": 9,
+                    "title": "Unknown"
+                },
+                "schema": {
+                    "id": 2,
+                    "title": "Unknown"
+                },
+                "title": "u2",
+                "matchType": "name",
+                "confidence": 0.4,
+                "properties": {
+                    "emailadres": "other@example.nl",
+                    "voornaam": "Jan",
+                    "achternaam": "Jansen"
+                },
+                "cached": false
+            }
+        ],
+        "log": [
+            [
+                "search",
+                {
+                    "_search": "Jan Pietersen"
+                }
+            ]
+        ]
+    },
+    "contact org substring": {
+        "result": [],
+        "log": [
+            [
+                "search",
+                {
+                    "_search": "x@y.z"
+                }
+            ],
+            [
+                "search",
+                {
+                    "_search": "Vries"
+                }
+            ]
+        ]
+    },
+    "email bad cache": {
+        "result": [
+            {
+                "uuid": "u1",
+                "register": {
+                    "id": 1,
+                    "title": "Register 1"
+                },
+                "schema": {
+                    "id": 1,
+                    "title": "Personen"
+                },
+                "title": "Jan",
+                "matchType": "email",
+                "confidence": 1.0,
+                "properties": {
+                    "email": "Jan@Example.nl",
+                    "naam": "Jan de Vries",
+                    "title": "Jan"
+                },
+                "cached": false
+            },
+            {
+                "uuid": "u5",
+                "register": [],
+                "schema": [],
+                "title": "Unknown",
+                "matchType": "email",
+                "confidence": 1.0,
+                "properties": {
+                    "uuid": "u5",
+                    "organisation": "Acme",
+                    "mail": "jan@example.nl",
+                    "count": 3
+                },
+                "cached": false
+            }
+        ],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_email_a5a44ec75c51b7cc477320c7c519e21b911ae44b3b93c9014dfc36164e195a13"
+            ],
+            [
+                "search",
+                {
+                    "_search": "jan@example.nl"
+                }
+            ],
+            [
+                "cache.set",
+                "or_contact_match_email_a5a44ec75c51b7cc477320c7c519e21b911ae44b3b93c9014dfc36164e195a13",
+                [
+                    {
+                        "uuid": "u1",
+                        "register": {
+                            "id": 1,
+                            "title": "Register 1"
+                        },
+                        "schema": {
+                            "id": 1,
+                            "title": "Personen"
+                        },
+                        "title": "Jan",
+                        "matchType": "email",
+                        "confidence": 1,
+                        "properties": {
+                            "email": "Jan@Example.nl",
+                            "naam": "Jan de Vries",
+                            "title": "Jan"
+                        },
+                        "cached": false
+                    },
+                    {
+                        "uuid": "u5",
+                        "register": [],
+                        "schema": [],
+                        "title": "Unknown",
+                        "matchType": "email",
+                        "confidence": 1,
+                        "properties": {
+                            "uuid": "u5",
+                            "organisation": "Acme",
+                            "mail": "jan@example.nl",
+                            "count": 3
+                        },
+                        "cached": false
+                    }
+                ],
+                60
+            ]
+        ]
+    },
+    "email cached": {
+        "result": [
+            {
+                "uuid": "c1",
+                "confidence": 0.9,
+                "cached": true
+            }
+        ],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_email_a5a44ec75c51b7cc477320c7c519e21b911ae44b3b93c9014dfc36164e195a13"
+            ]
+        ]
+    },
+    "email not linked": {
+        "result": [],
+        "log": []
+    },
+    "email search scalar": {
+        "result": [],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_email_a5a44ec75c51b7cc477320c7c519e21b911ae44b3b93c9014dfc36164e195a13"
+            ],
+            [
+                "search",
+                {
+                    "_search": "jan@example.nl"
+                }
+            ],
+            [
+                "cache.set",
+                "or_contact_match_email_a5a44ec75c51b7cc477320c7c519e21b911ae44b3b93c9014dfc36164e195a13",
+                [],
+                60
+            ]
+        ]
+    },
+    "email search throws": {
+        "result": [],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_email_a5a44ec75c51b7cc477320c7c519e21b911ae44b3b93c9014dfc36164e195a13"
+            ],
+            [
+                "search",
+                {
+                    "_search": "jan@example.nl"
+                }
+            ],
+            [
+                "cache.set",
+                "or_contact_match_email_a5a44ec75c51b7cc477320c7c519e21b911ae44b3b93c9014dfc36164e195a13",
+                [],
+                60
+            ]
+        ]
+    },
+    "name cached": {
+        "result": [
+            {
+                "uuid": "c1",
+                "confidence": 0.9,
+                "cached": true
+            }
+        ],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_name_6a0ac0fd972c325d6ca5512b67a5e0ad996c4a3e9b59971d125164e6d4db1a1c"
+            ]
+        ]
+    },
+    "name empty": {
+        "result": [],
+        "log": []
+    },
+    "name single letters": {
+        "result": [
+            {
+                "uuid": "u1",
+                "register": {
+                    "id": 1,
+                    "title": "Register 1"
+                },
+                "schema": {
+                    "id": 1,
+                    "title": "Personen"
+                },
+                "title": "Jan",
+                "matchType": "name",
+                "confidence": 0.7,
+                "properties": {
+                    "email": "Jan@Example.nl",
+                    "naam": "Jan de Vries",
+                    "title": "Jan"
+                },
+                "cached": false
+            },
+            {
+                "uuid": "u4",
+                "register": [],
+                "schema": [],
+                "title": "Vries Holding",
+                "matchType": "name",
+                "confidence": 0.7,
+                "properties": {
+                    "bedrijf": "Vries Holding",
+                    "naam": "Vries Holding"
+                },
+                "cached": false
+            }
+        ],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_name_7dfdda475c1e5910c0e3ae0e7601ba843574def33ec84c3f8718532189d374a6"
+            ],
+            [
+                "search",
+                {
+                    "_search": "J x Vries"
+                }
+            ],
+            [
+                "cache.set",
+                "or_contact_match_name_7dfdda475c1e5910c0e3ae0e7601ba843574def33ec84c3f8718532189d374a6",
+                [
+                    {
+                        "uuid": "u1",
+                        "register": {
+                            "id": 1,
+                            "title": "Register 1"
+                        },
+                        "schema": {
+                            "id": 1,
+                            "title": "Personen"
+                        },
+                        "title": "Jan",
+                        "matchType": "name",
+                        "confidence": 0.7,
+                        "properties": {
+                            "email": "Jan@Example.nl",
+                            "naam": "Jan de Vries",
+                            "title": "Jan"
+                        },
+                        "cached": false
+                    },
+                    {
+                        "uuid": "u4",
+                        "register": [],
+                        "schema": [],
+                        "title": "Vries Holding",
+                        "matchType": "name",
+                        "confidence": 0.7,
+                        "properties": {
+                            "bedrijf": "Vries Holding",
+                            "naam": "Vries Holding"
+                        },
+                        "cached": false
+                    }
+                ],
+                60
+            ]
+        ]
+    },
+    "name throws": {
+        "result": [],
+        "log": [
+            [
+                "search",
+                {
+                    "_search": "Jan"
+                }
+            ]
+        ]
+    },
+    "org cached": {
+        "result": [
+            {
+                "uuid": "c1",
+                "confidence": 0.9,
+                "cached": true
+            }
+        ],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_org_822b33ad87c148a0a20a5ba7cd5ebcaa68d36a18e7aad165554903f52ca82757"
+            ]
+        ]
+    },
+    "org empty": {
+        "result": [],
+        "log": []
+    },
+    "org longer term": {
+        "result": [
+            {
+                "uuid": "u3",
+                "register": {
+                    "id": 1,
+                    "title": "Register 1"
+                },
+                "schema": {
+                    "id": 3,
+                    "title": "Unknown"
+                },
+                "title": "Acme BV",
+                "matchType": "organization",
+                "confidence": 0.5,
+                "properties": {
+                    "name": "Acme BV",
+                    "company": "Acme"
+                },
+                "cached": false
+            }
+        ],
+        "log": [
+            [
+                "search",
+                {
+                    "_search": "Acme BV Amsterdam"
+                }
+            ]
+        ]
+    },
+    "org miss": {
+        "result": [
+            {
+                "uuid": "u3",
+                "register": {
+                    "id": 1,
+                    "title": "Register 1"
+                },
+                "schema": {
+                    "id": 3,
+                    "title": "Unknown"
+                },
+                "title": "Acme BV",
+                "matchType": "organization",
+                "confidence": 0.5,
+                "properties": {
+                    "name": "Acme BV",
+                    "company": "Acme"
+                },
+                "cached": false
+            }
+        ],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_org_822b33ad87c148a0a20a5ba7cd5ebcaa68d36a18e7aad165554903f52ca82757"
+            ],
+            [
+                "search",
+                {
+                    "_search": "acme"
+                }
+            ],
+            [
+                "cache.set",
+                "or_contact_match_org_822b33ad87c148a0a20a5ba7cd5ebcaa68d36a18e7aad165554903f52ca82757",
+                [
+                    {
+                        "uuid": "u3",
+                        "register": {
+                            "id": 1,
+                            "title": "Register 1"
+                        },
+                        "schema": {
+                            "id": 3,
+                            "title": "Unknown"
+                        },
+                        "title": "Acme BV",
+                        "matchType": "organization",
+                        "confidence": 0.5,
+                        "properties": {
+                            "name": "Acme BV",
+                            "company": "Acme"
+                        },
+                        "cached": false
+                    }
+                ],
+                60
+            ]
+        ]
+    },
+    "org scalar": {
+        "result": [],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_org_822b33ad87c148a0a20a5ba7cd5ebcaa68d36a18e7aad165554903f52ca82757"
+            ],
+            [
+                "search",
+                {
+                    "_search": "Acme"
+                }
+            ],
+            [
+                "cache.set",
+                "or_contact_match_org_822b33ad87c148a0a20a5ba7cd5ebcaa68d36a18e7aad165554903f52ca82757",
+                [],
+                60
+            ]
+        ]
+    },
+    "org throws": {
+        "result": [],
+        "log": [
+            [
+                "cache.get",
+                "or_contact_match_org_822b33ad87c148a0a20a5ba7cd5ebcaa68d36a18e7aad165554903f52ca82757"
+            ],
+            [
+                "search",
+                {
+                    "_search": "Acme"
+                }
+            ],
+            [
+                "cache.set",
+                "or_contact_match_org_822b33ad87c148a0a20a5ba7cd5ebcaa68d36a18e7aad165554903f52ca82757",
+                [],
+                60
+            ]
+        ]
+    }
+}

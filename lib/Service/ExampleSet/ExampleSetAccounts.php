@@ -21,16 +21,14 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+ * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use OCP\Group\ISubAdmin;
-use OCP\IGroupManager;
-use OCP\IUserManager;
+use OCP\IUser;
 use OCP\Security\ISecureRandom;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -40,7 +38,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One public method per Nextcloud account or group operation, so a test can stand in for each.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+ * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
  */
 class ExampleSetAccounts {
 
@@ -58,20 +56,16 @@ class ExampleSetAccounts {
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserManager    $users  Nextcloud accounts.
-	 * @param IGroupManager   $groups Nextcloud groups.
-	 * @param ISecureRandom   $random Makes passwords.
-	 * @param LoggerInterface $logger Logger; never given a password.
-	 * @param ISubAdmin|null  $subAdmins Nextcloud group sub-admins.
+	 * @param ExampleSetAccountDirectory $directory Nextcloud's accounts, groups and group sub-admins.
+	 * @param ISecureRandom              $random    Makes passwords.
+	 * @param LoggerInterface            $logger    Logger; never given a password.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IUserManager $users,
-		private readonly IGroupManager $groups,
+		private readonly ExampleSetAccountDirectory $directory,
 		private readonly ISecureRandom $random,
 		private readonly LoggerInterface $logger,
-		private readonly ?ISubAdmin $subAdmins=null,
 	) {
 	}//end __construct()
 
@@ -82,10 +76,10 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function userExists(string $uid): bool {
-		return $this->users->userExists($uid) === true;
+		return $this->directory->users->userExists($uid) === true;
 	}//end userExists()
 
 	/**
@@ -93,27 +87,41 @@ class ExampleSetAccounts {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function newPassword(): string {
 		return $this->random->generate(self::PASSWORD_LENGTH, ISecureRandom::CHAR_HUMAN_READABLE).'-Ex7!';
 	}//end newPassword()
 
 	/**
-	 * Create an account.
+	 * Create an account and describe it.
 	 *
-	 * @param string $uid         The account id.
-	 * @param string $displayName The name shown.
-	 * @param string $email       The e-mail address, or ''.
-	 * @param string $password    The password.
+	 * @param ExampleSetNewAccount $account The id, names and first password.
 	 *
-	 * @return string '' when created, otherwise why not.
-	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+	 * @return string '' when created, ALREADY_EXISTS, or why it failed.
 	 */
-	public function createUser(string $uid, string $displayName, string $email, string $password): string {
+	public function createAccount(ExampleSetNewAccount $account): string {
+		$user = $this->newUser(uid: $account->uid, password: $account->password);
+		if (is_string($user) === true) {
+			return $user;
+		}
+
+		$this->describe(user: $user, names: ['displayName' => $account->displayName, 'email' => $account->email]);
+
+		return '';
+	}//end createAccount()
+
+	/**
+	 * Make the account in Nextcloud; the account, or why it was not made.
+	 *
+	 * @param string $uid      The account id.
+	 * @param string $password The password; never logged.
+	 *
+	 * @return IUser|string
+	 */
+	private function newUser(string $uid, string $password): IUser|string {
 		try {
-			$user = $this->users->createUser($uid, $password);
+			$user = $this->directory->users->createUser($uid, $password);
 		} catch (Throwable $e) {
 			if (self::isDuplicate(error: $e) === true) {
 				return self::ALREADY_EXISTS;
@@ -127,13 +135,23 @@ class ExampleSetAccounts {
 			return 'Nextcloud refused the account';
 		}
 
-		$user->setDisplayName($displayName);
-		if ($email !== '') {
-			$user->setSystemEMailAddress($email);
-		}
+		return $user;
+	}//end newUser()
 
-		return '';
-	}//end createUser()
+	/**
+	 * Give a new account its display name and, when there is one, its e-mail address.
+	 *
+	 * @param IUser                                       $user  The new account.
+	 * @param array{displayName: string, email: string} $names The name shown and the e-mail address, or ''.
+	 *
+	 * @return void
+	 */
+	private function describe(IUser $user, array $names): void {
+		$user->setDisplayName($names['displayName']);
+		if ($names['email'] !== '') {
+			$user->setSystemEMailAddress($names['email']);
+		}
+	}//end describe()
 
 	/**
 	 * Delete an account; true when it is gone.
@@ -142,10 +160,10 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	public function deleteUser(string $uid): bool {
-		$user = $this->users->get($uid);
+		$user = $this->directory->users->get($uid);
 		if ($user === null) {
 			return true;
 		}
@@ -160,10 +178,10 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function groupExists(string $gid): bool {
-		return $this->groups->groupExists($gid) === true;
+		return $this->directory->groups->groupExists($gid) === true;
 	}//end groupExists()
 
 	/**
@@ -173,10 +191,10 @@ class ExampleSetAccounts {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-group-display-names/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
 	 */
 	public function groupName(string $gid): string {
-		return (string) $this->groups->get($gid)?->getDisplayName();
+		return (string) $this->directory->groups->get($gid)?->getDisplayName();
 	}//end groupName()
 
 	/**
@@ -187,10 +205,10 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-group-display-names/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
 	 */
 	public function setGroupName(string $gid, string $displayName): bool {
-		return $this->groups->get($gid)?->setDisplayName($displayName) === true;
+		return $this->directory->groups->get($gid)?->setDisplayName($displayName) === true;
 	}//end setGroupName()
 
 	/**
@@ -201,10 +219,10 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function createGroup(string $gid, string $displayName): bool {
-		$group = $this->groups->createGroup($gid);
+		$group = $this->directory->groups->createGroup($gid);
 		if ($group === null) {
 			return false;
 		}
@@ -223,10 +241,10 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	public function deleteGroup(string $gid): bool {
-		$group = $this->groups->get($gid);
+		$group = $this->directory->groups->get($gid);
 		if ($group === null) {
 			return true;
 		}
@@ -242,10 +260,10 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function inGroup(string $gid, string $uid): bool {
-		return $this->groups->isInGroup($uid, $gid) === true;
+		return $this->directory->groups->isInGroup($uid, $gid) === true;
 	}//end inGroup()
 
 	/**
@@ -256,11 +274,11 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function addToGroup(string $gid, string $uid): bool {
-		$group = $this->groups->get($gid);
-		$user  = $this->users->get($uid);
+		$group = $this->directory->groups->get($gid);
+		$user  = $this->directory->users->get($uid);
 		if ($group === null || $user === null) {
 			return false;
 		}
@@ -278,11 +296,11 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	public function removeFromGroup(string $gid, string $uid): bool {
-		$group = $this->groups->get($gid);
-		$user  = $this->users->get($uid);
+		$group = $this->directory->groups->get($gid);
+		$user  = $this->directory->users->get($uid);
 		if ($group === null || $user === null) {
 			return true;
 		}
@@ -300,16 +318,16 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
 	 */
 	public function isSubAdmin(string $gid, string $uid): bool {
-		$group = $this->groups->get($gid);
-		$user  = $this->users->get($uid);
-		if ($group === null || $user === null || $this->subAdmins === null) {
+		$group = $this->directory->groups->get($gid);
+		$user  = $this->directory->users->get($uid);
+		if ($group === null || $user === null || $this->directory->subAdmins === null) {
 			return false;
 		}
 
-		return $this->subAdmins->isSubAdminOfGroup($user, $group);
+		return $this->directory->subAdmins->isSubAdminOfGroup($user, $group);
 	}//end isSubAdmin()
 
 	/**
@@ -320,17 +338,17 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool False when the group, the account or the sub-admin service is not there.
 	 *
-	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
 	 */
 	public function addSubAdmin(string $gid, string $uid): bool {
-		$group = $this->groups->get($gid);
-		$user  = $this->users->get($uid);
-		if ($group === null || $user === null || $this->subAdmins === null) {
+		$group = $this->directory->groups->get($gid);
+		$user  = $this->directory->users->get($uid);
+		if ($group === null || $user === null || $this->directory->subAdmins === null) {
 			return false;
 		}
 
 		try {
-			$this->subAdmins->createSubAdmin($user, $group);
+			$this->directory->subAdmins->createSubAdmin($user, $group);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ExampleSetAccounts] Could not make '.$uid.' sub-admin of '.$gid.': '.$e->getMessage());
 			return false;
@@ -347,17 +365,17 @@ class ExampleSetAccounts {
 	 *
 	 * @return bool True also when there was nothing to take away.
 	 *
-	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
 	 */
 	public function removeSubAdmin(string $gid, string $uid): bool {
-		$group = $this->groups->get($gid);
-		$user  = $this->users->get($uid);
-		if ($group === null || $user === null || $this->subAdmins === null) {
+		$group = $this->directory->groups->get($gid);
+		$user  = $this->directory->users->get($uid);
+		if ($group === null || $user === null || $this->directory->subAdmins === null) {
 			return true;
 		}
 
 		try {
-			$this->subAdmins->deleteSubAdmin($user, $group);
+			$this->directory->subAdmins->deleteSubAdmin($user, $group);
 		} catch (Throwable) {
 			return false;
 		}

@@ -17,6 +17,7 @@ use OCA\OpenRegister\Listener\PartyMergeListener;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -25,7 +26,7 @@ use Psr\Log\LoggerInterface;
  * Two party records that turn out to be one person: the roles both held
  * carry over, and a reversal puts both back.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md
+ * @spec openspec/specs/mdm-merge/spec.md
  */
 class PartyMergeListenerTest extends TestCase {
 
@@ -109,8 +110,8 @@ class PartyMergeListenerTest extends TestCase {
 
 		$this->links->method('findByPartyUuid')->willReturnCallback(fn (): array => $this->loserLinks);
 		$this->links->method('findByObjectContactAndRole')->willReturnCallback(
-			fn (string $objectUuid, string $contactUid, ?string $role): ?ContactLink
-				=> ($this->survivorHolds[$objectUuid . '|' . (string)$role] ?? null)
+			fn (PersonLinkRef $ref): ?ContactLink
+				=> ($this->survivorHolds[$ref->objectUuid . '|' . (string)$ref->role] ?? null)
 		);
 		$this->links->method('update')->willReturnCallback(
 			function (ContactLink $link): ContactLink {
@@ -175,7 +176,7 @@ class PartyMergeListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function testEveryRoleTheMergedPartyHeldCarriesOver(): void {
 		$this->loserLinks = [$this->loserLink(objectUuid: 'case-3', role: 'aanvrager')];
@@ -202,7 +203,7 @@ class PartyMergeListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function testADuplicateRoleIsAbsorbedRatherThanCollided(): void {
 		$held = new ContactLink();
@@ -231,7 +232,7 @@ class PartyMergeListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function testAReversalPutsAMovedRoleBack(): void {
 		$moved = new ContactLink();
@@ -261,7 +262,7 @@ class PartyMergeListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function testAReversalRestoresAnAbsorbedRow(): void {
 		$held = new ContactLink();
@@ -313,7 +314,7 @@ class PartyMergeListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function testAnotherMergesMemoIsLeftAlone(): void {
 		$other = new ContactLink();

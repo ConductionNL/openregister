@@ -20,14 +20,15 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RulesControllerFactory;
 use OCA\OpenRegister\Controller\RulesController;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
+use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleReplayService;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
@@ -42,7 +43,7 @@ use ReflectionClass;
  *
  * @package OCA\OpenRegister\Tests\Unit\Controller
  *
- * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RulesControllerScopeTest extends TestCase {
 
@@ -76,13 +77,11 @@ class RulesControllerScopeTest extends TestCase {
 		);
 
 		$inventory = new RuleInventoryService(
-			triggers: $this->createMock(originalClassName: FlowTriggerMapper::class),
 			summaries: $this->createMock(originalClassName: RuleRunSummaryMapper::class),
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary()
+			flows: new FlowRuleDescriptors(triggers: $this->createMock(originalClassName: FlowTriggerMapper::class), published: null)
 		);
 
-		return new RulesController(
+		return RulesControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			schemaMapper: $schemas,
@@ -114,7 +113,7 @@ class RulesControllerScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheScopeParameterNarrowsTheInventory(): void {
 		$this->assertSame(expected: ['algemeen', 'voorA'], actual: $this->keys(scope: ['caseType' => 'a']));
@@ -126,7 +125,7 @@ class RulesControllerScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testWithoutAUsableScopeEveryRuleIsListed(): void {
 		$this->assertSame(expected: ['algemeen', 'voorA', 'voorB'], actual: $this->keys(scope: []));

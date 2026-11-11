@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
  * of the annotation validator. The expected lists live in
  * `fixtures/notification-annotation-validator-golden.json`.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator
+ * @coversDefaultClass \OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator
  */
 class NotificationAnnotationValidatorCharacterizationTest extends TestCase {
 
@@ -151,7 +151,7 @@ class NotificationAnnotationValidatorCharacterizationTest extends TestCase {
 			'origin-app-int'         => self::schema(['r' => self::rule(['originApp' => 3])]),
 			'origin-app-ok'          => self::schema(['r' => self::rule(['originApp' => 'dossiq'])]),
 			'actions-not-array'      => self::schema(['r' => self::rule(['actions' => 'x'])]),
-			'actions-too-many'       => self::schema(['r' => self::rule(['actions' => [['label' => ['en' => 'a'], 'target' => ['kind' => 'url', 'url' => 'https://a.b']], ['label' => 'b'], ['target' => ['kind' => 'nope']]]])]),
+			'actions-too-many'       => self::schema(['r' => self::rule(['actions' => [['label' => ['en' => 'a'], 'target' => ['kind' => 'url', 'href' => 'https://example.test/a', 'url' => 'https://a.b']], ['label' => 'b'], ['target' => ['kind' => 'nope']]]])]),
 			'actions-task-verb'      => self::schema(['r' => self::rule(['actions' => [['label' => ['en' => 'Claim'], 'target' => ['kind' => 'task-verb', 'verb' => 'steal']]]])]),
 			'subject-missing'        => self::schema(['r' => self::rule(['subject' => null])]),
 			'subject-int'            => self::schema(['r' => self::rule(['subject' => 5])]),
@@ -174,6 +174,19 @@ class NotificationAnnotationValidatorCharacterizationTest extends TestCase {
 			'transports-bad-kind'    => self::schema(['r' => self::rule(['transports' => [['kind' => 'inbound']]])]),
 			'critical-bad'           => self::schema(['r' => self::rule(['critical' => 'yes'])]),
 			'digest-bad'             => self::schema(['r' => self::rule(['digest' => ['at' => '25:00', 'timezone' => 'Mars/Base']])]),
+			'digest-not-object'      => self::schema(['r' => self::rule(['digest' => 'x'])]),
+			'digest-weekly-ok'       => self::schema(['r' => self::rule(['critical' => true, 'digest' => ['schedule' => 'weekly', 'at' => '08:00', 'weekday' => 1, 'timezone' => 'Europe/Amsterdam']])]),
+			'digest-weekly-bad-day'  => self::schema(['r' => self::rule(['digest' => ['schedule' => 'weekly', 'at' => '8:00', 'weekday' => 9]])]),
+			'digest-weekly-no-day'   => self::schema(['r' => self::rule(['digest' => ['schedule' => 'weekly', 'at' => '23:59', 'weekday' => '1']])]),
+			'digest-daily-weekday'   => self::schema(['r' => self::rule(['digest' => ['schedule' => 'daily', 'at' => '07:30', 'weekday' => 2, 'timezone' => ''], 'coalesce' => ['window' => 60]])]),
+			'digest-timezone-int'    => self::schema(['r' => self::rule(['digest' => ['schedule' => 'daily', 'at' => 730, 'timezone' => 5]])]),
+			'actions-shapes'         => self::schema(['r' => self::rule(['actions' => ['x', ['label' => ['nl' => '', 'en' => 'Go'], 'primary' => 'yes', 'target' => 'x']]])]),
+			'actions-label-empty'    => self::schema(['r' => self::rule(['actions' => [['label' => [], 'primary' => true, 'target' => ['kind' => 'task-verb', 'verb' => 'claim']], ['label' => ['en' => 5], 'target' => ['kind' => 'route']]]])]),
+			'message-empty'          => self::schema(['r' => self::rule(['message' => ''])]),
+			'message-map-no-locale'  => self::schema(['r' => self::rule(['message' => ['defaultLocale' => 'nl']])]),
+			'message-map-default'    => self::schema(['r' => self::rule(['message' => ['nl' => 'a', 'en' => 5, 'defaultLocale' => 'de']])]),
+			'message-map-default-int' => self::schema(['r' => self::rule(['message' => ['nl' => 'a', 0 => 'b', 'defaultLocale' => 5]])]),
+			'message-map-ok'         => self::schema(['r' => self::rule(['message' => ['nl' => 'a', 'en' => 'b', 'defaultLocale' => 'en']])]),
 			'recipients-missing'     => self::schema(['r' => self::rule(['recipients' => null]), 's' => self::rule(['subject' => ''])]),
 			'recipients-string'      => self::schema(['r' => self::rule(['recipients' => 'admin'])]),
 			'recipient-malformed'    => self::schema(['r' => self::rule(['recipients' => ['admin', ['kind' => 'users', 'users' => ['a']]]])]),

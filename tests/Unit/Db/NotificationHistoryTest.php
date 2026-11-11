@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\NotificationHistory;
+use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use PHPUnit\Framework\TestCase;
 
 /**

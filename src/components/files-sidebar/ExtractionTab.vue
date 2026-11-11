@@ -6,14 +6,10 @@
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load extraction data')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- No extraction data -->
 		<NcEmptyContent
@@ -23,15 +19,9 @@
 				<FileSearchOutline :size="44" />
 			</template>
 			<template #action>
-				<NcButton
-					:disabled="extracting"
-					variant="primary"
-					@click="triggerExtraction">
-					<template v-if="extracting" #icon>
-						<NcLoadingIcon :size="20" />
-					</template>
-					{{ t('openregister', 'Extract now') }}
-				</NcButton>
+				<ExtractNowButton
+					:extracting="extracting"
+					@extract="triggerExtraction" />
 			</template>
 		</NcEmptyContent>
 
@@ -147,15 +137,9 @@
 			<div
 				v-if="status.extractionStatus === 'failed'"
 				class="extraction-tab__actions">
-				<NcButton
-					:disabled="extracting"
-					variant="primary"
-					@click="triggerExtraction">
-					<template v-if="extracting" #icon>
-						<NcLoadingIcon :size="20" />
-					</template>
-					{{ t('openregister', 'Extract now') }}
-				</NcButton>
+				<ExtractNowButton
+					:extracting="extracting"
+					@extract="triggerExtraction" />
 			</div>
 		</div>
 	</div>
@@ -165,47 +149,51 @@
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import ExtractNowButton from './ExtractNowButton.vue'
+import { fetchFileTab, fileTab } from './fileTabFetch.js'
+
+/**
+ * The extraction status shown before the file's status has loaded: nothing
+ * extracted, nothing anonymised.
+ *
+ * @return {object} The status
+ */
+function unknownStatus() {
+	return {
+		fileId: 0,
+		extractionStatus: 'none',
+		chunkCount: 0,
+		entityCount: 0,
+		riskLevel: 'none',
+		extractedAt: null,
+		entities: [],
+		anonymized: false,
+		anonymizedAt: null,
+		anonymizedFileId: null,
+	}
+}
 
 export default {
 	name: 'ExtractionTab',
 
 	components: {
-		NcButton,
+		TabErrorState,
+		ExtractNowButton,
 		NcEmptyContent,
 		NcLoadingIcon,
-		AlertCircleOutline,
 		FileSearchOutline,
 	},
 
-	props: {
-		fileId: {
-			type: Number,
-			required: true,
-		},
-	},
+	mixins: [fileTab('fetchExtractionStatus')],
 
 	data() {
 		return {
-			loading: false,
 			extracting: false,
-			error: false,
-			errorMessage: '',
 			entitiesExpanded: false,
-			status: {
-				fileId: 0,
-				extractionStatus: 'none',
-				chunkCount: 0,
-				entityCount: 0,
-				riskLevel: 'none',
-				extractedAt: null,
-				entities: [],
-				anonymized: false,
-				anonymizedAt: null,
-				anonymizedFileId: null,
-			},
+			status: unknownStatus(),
 		}
 	},
 
@@ -281,22 +269,6 @@ export default {
 		},
 	},
 
-	watch: {
-		fileId: {
-			/**
-			 * @param newVal
-			 * @spec exclude watcher refetching extraction status on fileId change, UI plumbing
-			 */
-			handler(newVal) {
-				if (newVal) {
-					this.fetchExtractionStatus()
-				}
-			},
-
-			immediate: true,
-		},
-	},
-
 	methods: {
 		t,
 
@@ -306,35 +278,15 @@ export default {
 		 * @spec exclude API passthrough loading extraction status; extraction contract owned by text-extraction capability
 		 */
 		async fetchExtractionStatus() {
-			this.loading = true
-			this.error = false
-			this.errorMessage = ''
-
-			try {
-				const url = generateUrl(
-					'/apps/openregister/api/files/{fileId}/extraction-status',
-					{
-						fileId: this.fileId,
-					},
-				)
-				const response = await axios.get(url)
-
-				if (response.data?.success) {
-					this.status = response.data.data
-				} else {
-					this.error = true
-					this.errorMessage =
-						response.data?.error || t('openregister', 'Unknown error')
-				}
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message
-				console.error(
-					'[ExtractionTab] Failed to fetch extraction status:',
-					err,
-				)
-			} finally {
-				this.loading = false
+			const failure = await fetchFileTab(
+				this,
+				'/apps/openregister/api/files/{fileId}/extraction-status',
+				(data) => {
+					this.status = data
+				},
+			)
+			if (failure) {
+				console.error('[ExtractionTab] Failed to fetch extraction status:', failure)
 			}
 		},
 
@@ -367,7 +319,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .extraction-tab {
 	padding: 10px;
 }
@@ -509,15 +463,7 @@ export default {
 	justify-content: center;
 }
 
-.material-design-icon {
-	display: inline-flex;
-}
-
-.material-design-icon :deep(svg) {
-	width: 64px;
-	height: 64px;
-	fill: currentColor;
-}
+@include material-design-icon-block;
 
 @media (prefers-reduced-motion: reduce) {
 	.extraction-tab__chevron {

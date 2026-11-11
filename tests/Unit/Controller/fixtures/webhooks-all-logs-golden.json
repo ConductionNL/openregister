@@ -1,0 +1,1251 @@
+{
+    "defaults": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    1,
+                    true
+                ],
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 5
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "mapper fails": {
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve webhook logs: db down"
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "log": "[WebhooksController] Error retrieving webhook logs: db down"
+            }
+        ]
+    },
+    "no session": {
+        "status": 403,
+        "data": {
+            "error": "Administrator privileges are required to manage webhooks"
+        },
+        "calls": []
+    },
+    "not admin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator privileges are required to manage webhooks"
+        },
+        "calls": []
+    },
+    "paging": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ]
+            ],
+            "total": 5
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    2,
+                    1
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "success ''": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    1,
+                    true
+                ],
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 5
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "success '0'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    4,
+                    false
+                ]
+            ],
+            "total": 2
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "success '1'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    1,
+                    true
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 3
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "success 'false'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    4,
+                    false
+                ]
+            ],
+            "total": 2
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "success 'true'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    1,
+                    true
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 3
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "success 'yes'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    1,
+                    true
+                ],
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 5
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "success true": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    1,
+                    true
+                ],
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 5
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook ''": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    1,
+                    true
+                ],
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 5
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook '0'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    1,
+                    true
+                ],
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 5
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook '5'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 4
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    50,
+                    0
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook 0": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 4
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    0,
+                    50,
+                    0
+                ]
+            },
+            {
+                "findByWebhook": [
+                    0,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook 5 success ''": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ]
+            ],
+            "total": 4
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    3,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    3,
+                    0
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook 5 success '0'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    4,
+                    false
+                ]
+            ],
+            "total": 2
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    3,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    3,
+                    0
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook 5 success '1'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    3,
+                    true
+                ]
+            ],
+            "total": 2
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    3,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    3,
+                    0
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook 5 success 'false'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    4,
+                    false
+                ]
+            ],
+            "total": 2
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    3,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    3,
+                    0
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook 5 success 'true'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    3,
+                    true
+                ]
+            ],
+            "total": 2
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    3,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    3,
+                    0
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook 5 success 'yes'": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ]
+            ],
+            "total": 4
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    3,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    3,
+                    0
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook 5 success true": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ]
+            ],
+            "total": 4
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    3,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    3,
+                    0
+                ]
+            },
+            {
+                "findByWebhook": [
+                    5,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook 7": {
+        "status": 200,
+        "data": {
+            "results": [
+                [
+                    2,
+                    false
+                ],
+                [
+                    3,
+                    true
+                ],
+                [
+                    4,
+                    false
+                ],
+                [
+                    5,
+                    true
+                ]
+            ],
+            "total": 4
+        },
+        "calls": [
+            {
+                "getParam": "webhook_id"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "getParam": "success"
+            },
+            {
+                "findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "findByWebhook": [
+                    7,
+                    50,
+                    0
+                ]
+            },
+            {
+                "findByWebhook": [
+                    7,
+                    null,
+                    null
+                ]
+            }
+        ]
+    }
+}

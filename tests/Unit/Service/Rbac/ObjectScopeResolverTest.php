@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -162,7 +163,7 @@ class ObjectScopeResolverTest extends TestCase {
 	 * predicate affordable on the list path of every open schema.
 	 */
 	public function testPostgresPredicateShortCircuitsOnNull(): void {
-		$sql = $this->resolver->notPrivateSql('t._authorization', false, true);
+		$sql = $this->resolver->notPrivateSql(new AuthorizationColumn('t._authorization', true), false);
 
 		$this->assertStringStartsWith('(t._authorization IS NULL OR', $sql);
 		$this->assertStringContainsString("->> 'scope'", $sql);
@@ -173,7 +174,7 @@ class ObjectScopeResolverTest extends TestCase {
 	 * The MariaDB predicate uses JSON_EXTRACT, not the Postgres arrow operator.
 	 */
 	public function testMariadbPredicateUsesJsonExtract(): void {
-		$sql = $this->resolver->notPrivateSql('_authorization', false, false);
+		$sql = $this->resolver->notPrivateSql(new AuthorizationColumn('_authorization', false), false);
 
 		$this->assertStringContainsString('JSON_UNQUOTE(JSON_EXTRACT(_authorization', $sql);
 		$this->assertStringNotContainsString('::jsonb', $sql);
@@ -187,7 +188,7 @@ class ObjectScopeResolverTest extends TestCase {
 	 */
 	public function testPrivateDefaultDoesNotAdmitAnUnwrittenColumn(): void {
 		foreach ([true, false] as $isPostgres) {
-			$sql = $this->resolver->notPrivateSql('_authorization', true, $isPostgres);
+			$sql = $this->resolver->notPrivateSql(new AuthorizationColumn('_authorization', $isPostgres), true);
 
 			$this->assertStringContainsString('_authorization IS NOT NULL', $sql);
 			$this->assertStringNotContainsString('_authorization IS NULL', $sql);
@@ -206,7 +207,7 @@ class ObjectScopeResolverTest extends TestCase {
 	public function testPrivateDefaultPredicateIsTwoValued(): void {
 		$this->assertStringContainsString(
 			'COALESCE(',
-			$this->resolver->notPrivateSql('_authorization', true, true)
+			$this->resolver->notPrivateSql(new AuthorizationColumn('_authorization', true), true)
 		);
 	}//end testPrivateDefaultPredicateIsTwoValued()
 
@@ -218,8 +219,8 @@ class ObjectScopeResolverTest extends TestCase {
 	 * a hard-coded column name here would break one of them.
 	 */
 	public function testPredicateHonoursTheCallersColumnName(): void {
-		$aliased = $this->resolver->notPrivateSql('t._authorization', false, true);
-		$bare = $this->resolver->notPrivateSql('_authorization', false, true);
+		$aliased = $this->resolver->notPrivateSql(new AuthorizationColumn('t._authorization', true), false);
+		$bare = $this->resolver->notPrivateSql(new AuthorizationColumn('_authorization', true), false);
 
 		$this->assertStringContainsString('t._authorization', $aliased);
 		$this->assertStringNotContainsString('t._authorization', $bare);

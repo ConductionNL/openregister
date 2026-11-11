@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-email-links/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
  */
 
 declare(strict_types=1);
@@ -119,7 +119,7 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md
+	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md
 	 */
 	public function testALinkCarriesTheSenderNameAndItsDetails(): void {
 		$row = self::subsidyMail(extra: [
@@ -150,6 +150,32 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 		);
 		$this->assertSame(expected: 'example-set:alpha/subsidie', actual: json_decode((string) $link['metadata'], true)['source']);
 	}//end testALinkCarriesTheSenderNameAndItsDetails()
+
+	/**
+	 * `--refresh` writes a held link again from today's declaration, so a
+	 * changed detail reaches it; without `--refresh` the held link is kept.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	public function testARefreshWritesTheLinkAgainFromTodaysDeclaration(): void {
+		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => self::subsidyMail(extra: ['mailboxName' => 'Woo-postvak'])]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => self::subsidyMail(extra: ['mailboxName' => 'het Woo-postvak'])]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$held = array_values($this->emailLinks)[0]->jsonSerialize();
+		$this->assertSame(expected: 'Woo-postvak', actual: $held['details']['mailboxName'], message: 'a plain install keeps the held link');
+
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(expected: ['alpha/subsidie' => 'refreshed'], actual: $report['emailLinks']);
+		$this->assertCount(expectedCount: 1, haystack: $this->emailLinks, message: 'the old link is taken away, not doubled');
+		$this->assertSame(expected: 'het Woo-postvak', actual: array_values($this->emailLinks)[0]->jsonSerialize()['details']['mailboxName']);
+	}//end testARefreshWritesTheLinkAgainFromTodaysDeclaration()
 
 	/**
 	 * A faulty link is refused at check time and nothing is written.

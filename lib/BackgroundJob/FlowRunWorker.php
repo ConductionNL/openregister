@@ -34,15 +34,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\FlowClaimMapper;
+use OCA\OpenRegister\BackgroundJob\Support\AbandonedFlowClaim;
+use OCA\OpenRegister\BackgroundJob\Support\FlowReapRun;
+use OCA\OpenRegister\Db\FlowClaimMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Db\FlowStreamMapper;
-use OCA\OpenRegister\Service\Delegation\DelegationService;
-use OCA\OpenRegister\Service\Flow\FlowConsentParking;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Object\RunLockRegistry;
-use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowRunQueueExpiry;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Object\RunLockReleaseInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunAdvancerInterface;
 use OCA\OpenRegister\Service\Flow\FlowTokenRouter;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -154,50 +156,87 @@ class FlowRunWorker extends TimedJob {
 	private const EXPIRE_BATCH = 500;
 
 	/**
+	 * Run persistence.
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $mapper;
+
+	/**
+	 * Advances one run (shared with sync runs).
+	 *
+	 * @var FlowRunAdvancerInterface
+	 */
+	private readonly FlowRunAdvancerInterface $advancer;
+
+	/**
+	 * Reads the pass tuning settings.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Place claims, for the abandoned-claim reaper.
+	 *
+	 * @var FlowClaimMapperInterface|null
+	 */
+	private readonly ?FlowClaimMapperInterface $claims;
+
+	/**
+	 * Run streams, for failing an abandoned branch.
+	 *
+	 * @var FlowStreamMapperInterface|null
+	 */
+	private readonly ?FlowStreamMapperInterface $streams;
+
+	/**
+	 * Resolves the run's flow, for the abandoned step's `onError` policy.
+	 *
+	 * @var FlowLocatorInterface|null
+	 */
+	private readonly ?FlowLocatorInterface $flows;
+
+	/**
+	 * Run-held object locks, for the orphaned-lock sweep.
+	 *
+	 * @var RunLockReleaseInterface|null
+	 */
+	private readonly ?RunLockReleaseInterface $locks;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Job scheduling clock.
-	 * @param FlowRunMapper $mapper Reads and prunes runs.
-	 * @param FlowRunAdvancer $advancer Advances one run (shared with sync runs).
-	 * @param IAppConfig $appConfig Reads the retention setting.
-	 * @param LoggerInterface $logger The logger.
-	 * @param DelegationService|null $delegation Re-resolves the grant a parked
-	 *                                           run waits on. Nullable so the two
-	 *                                           unit suites that build this
-	 *                                           worker positionally keep working
-	 *                                           — adding a required parameter
-	 *                                           would shift every later slot for
-	 *                                           them. Its absence is REPORTED
-	 *                                           rather than assumed harmless: see
-	 *                                           settleConsent(), which warns when
-	 *                                           runs are actually parked, because
-	 *                                           a sweep that skips looks exactly
-	 *                                           like one that found nothing.
-	 * @param FlowClaimMapper|null $claims Place claims, for the abandoned-claim reaper.
-	 * @param FlowStreamMapper|null $streams Run streams, for failing an abandoned branch.
-	 * @param FlowLocator|null $flows Resolves the run's flow, for the abandoned step's `onError` policy.
-	 * @param RunLockRegistry|null $locks Run-held object locks, for the orphaned-lock sweep.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This worker is the one
-	 * cron entry point for run lifecycle work, and each pass it makes needs a
-	 * different collaborator: reaping, claim release, stream failure, consent,
-	 * and now the orphaned-lock sweep. Every one after the fifth is nullable
-	 * with a default so an older DI graph still constructs it. Splitting the
-	 * worker to satisfy the count would buy a second cron job and a second
-	 * ordering to reason about, which is the more expensive of the two.
+	 * @param ITimeFactory                    $time     Job scheduling clock.
+	 * @param FlowRunWorkerServices           $services The runs, their advancer, the config and the logger.
+	 * @param FlowRunRecoveryServices         $recovery Claims, streams, flows and locks for recovering a dead pass.
+	 * @param FlowConsentSweepInterface|null  $consent  Settles runs parked awaiting consent. Its absence is
+	 *                                                  REPORTED rather than assumed harmless: see
+	 *                                                  settleConsent(), which warns when runs are actually
+	 *                                                  parked, because a sweep that skips looks exactly like
+	 *                                                  one that found nothing.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FlowRunMapper $mapper,
-		private readonly FlowRunAdvancer $advancer,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		private readonly ?DelegationService $delegation = null,
-		private readonly ?FlowClaimMapper $claims = null,
-		private readonly ?FlowStreamMapper $streams = null,
-		private readonly ?FlowLocator $flows = null,
-		private readonly ?RunLockRegistry $locks = null,
+		FlowRunWorkerServices $services,
+		FlowRunRecoveryServices $recovery,
+		private readonly ?FlowConsentSweepInterface $consent = null,
 	) {
+		$this->mapper = $services->mapper;
+		$this->advancer = $services->advancer;
+		$this->appConfig = $services->appConfig;
+		$this->logger = $services->logger;
+		$this->claims = $recovery->claims;
+		$this->streams = $recovery->streams;
+		$this->flows = $recovery->flows;
+		$this->locks = $recovery->locks;
 		parent::__construct(time: $time);
 		// A FLOOR, not a schedule. `setInterval` says "not more often than
 		// this"; how often the job actually runs is how often Nextcloud's cron
@@ -265,11 +304,7 @@ class FlowRunWorker extends TimedJob {
 	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
 	 */
 	private function reapStale(DateTime $now): void {
-		$minutes = (int)$this->appConfig->getValueString(
-			'openregister',
-			'flow_run_stale_minutes',
-			(string)self::DEFAULT_STALE_MINUTES
-		);
+		$minutes = $this->intSetting(key: 'flow_run_stale_minutes', default: self::DEFAULT_STALE_MINUTES);
 
 		if ($minutes <= 0) {
 			// An operator who runs very long single steps can switch the reaper
@@ -277,57 +312,76 @@ class FlowRunWorker extends TimedJob {
 			return;
 		}
 
-		// The reaper must never call a run abandoned while that run is still
-		// inside the time it was GRANTED. Those two numbers used to be set
-		// independently and contradicted each other by default: runs were allowed
-		// an hour and declared dead at fifteen minutes, so any walk between the
-		// two was failed while working perfectly — measured on the dev instance,
-		// a run reaped at 09:20 that went on to import everything it was asked
-		// for.
-		//
-		// The executor beats at every checkpoint, so a run that has gone quiet for
-		// longer than its whole budget really is gone. Waiting that long is the
-		// price of not being able to distinguish "dead" from "inside one long
-		// step" any faster.
-		$maxRuntime = (int)$this->appConfig->getValueString(
-			'openregister',
-			'flow_max_runtime_minutes',
-			(string)self::DEFAULT_MAX_RUNTIME_MINUTES
-		);
+		$reap = new FlowReapRun(now: $now, minutes: $this->staleWindow(minutes: $minutes));
+
+		$this->reapAbandonedClaims(reap: $reap);
+		$this->failStaleRuns(reap: $reap);
+
+	}//end reapStale()
+
+	/**
+	 * The stale window, never shorter than the runtime a run is granted.
+	 *
+	 * The reaper must never call a run abandoned while that run is still
+	 * inside the time it was GRANTED. Those two numbers used to be set
+	 * independently and contradicted each other by default: runs were allowed
+	 * an hour and declared dead at fifteen minutes, so any walk between the
+	 * two was failed while working perfectly — measured on the dev instance,
+	 * a run reaped at 09:20 that went on to import everything it was asked
+	 * for.
+	 *
+	 * The executor beats at every checkpoint, so a run that has gone quiet for
+	 * longer than its whole budget really is gone. Waiting that long is the
+	 * price of not being able to distinguish "dead" from "inside one long
+	 * step" any faster.
+	 *
+	 * @param int $minutes The configured stale window.
+	 *
+	 * @return int The window the reapers use.
+	 */
+	private function staleWindow(int $minutes): int {
+		$maxRuntime = $this->intSetting(key: 'flow_max_runtime_minutes', default: self::DEFAULT_MAX_RUNTIME_MINUTES);
 
 		if ($maxRuntime > 0) {
 			$minutes = max($minutes, ($maxRuntime + self::REAP_GRACE_MINUTES));
 		}
 
-		$cutoff = (clone $now)->modify('-' . $minutes . ' minutes');
+		return $minutes;
+	}//end staleWindow()
 
-		$this->reapAbandonedClaims(cutoff: $cutoff, now: $now, minutes: $minutes);
-
-		foreach ($this->mapper->findStale(before: $cutoff, limit: self::BATCH) as $run) {
+	/**
+	 * Fail every run left in `running` since before the reap's cutoff.
+	 *
+	 * @param FlowReapRun $reap The reap.
+	 *
+	 * @return void
+	 */
+	private function failStaleRuns(FlowReapRun $reap): void {
+		foreach ($this->mapper->findStale(before: $reap->cutoff(), limit: self::BATCH) as $run) {
 			$run->setStatus(FlowRun::STATUS_FAILED);
-			$run->setError(
-				sprintf(
-					'Abandoned: no worker pass has touched this run for over %d minutes, '
-					. 'so the pass that started it did not finish (a fatal, a timeout or a restart). '
-					. 'Retry it to run it again from the start.',
-					$minutes
-				)
-			);
-			$run->setUpdated($now);
+			$run->setError($this->staleRunError(minutes: $reap->minutes));
+			$run->setUpdated($reap->now);
 			$this->mapper->update($run);
 
-			$this->logger->warning(
-				message: '[FlowRunWorker] Failed a run abandoned in `running`',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'run' => $run->getUuid(),
-					'flow' => $run->getFlowId(),
-				]
-			);
-		}//end foreach
+			$this->logFailedRun(message: '[FlowRunWorker] Failed a run abandoned in `running`', run: $run);
+		}
+	}//end failStaleRuns()
 
-	}//end reapStale()
+	/**
+	 * The error a run reaped from `running` is failed with.
+	 *
+	 * @param int $minutes The stale window in minutes.
+	 *
+	 * @return string
+	 */
+	private function staleRunError(int $minutes): string {
+		return sprintf(
+			'Abandoned: no worker pass has touched this run for over %d minutes, '
+			. 'so the pass that started it did not finish (a fatal, a timeout or a restart). '
+			. 'Retry it to run it again from the start.',
+			$minutes
+		);
+	}//end staleRunError()
 
 	/**
 	 * Release claims a dead worker left behind, and FAIL the branch they held.
@@ -340,80 +394,107 @@ class FlowRunWorker extends TimedJob {
 	 * decides the siblings' fate: `continue` keeps them (the run is re-armed
 	 * as queued), anything else stops the run.
 	 *
-	 * @param DateTime $cutoff Claims taken before this moment are abandoned.
-	 * @param DateTime $now Now.
-	 * @param int $minutes The cutoff in minutes, for the message.
+	 * @param FlowReapRun $reap The reap; claims taken before its cutoff are abandoned.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-branch-abandoned-by-a-crashed-worker-must-be-recovered-and-must-not-be-silently-re-run
 	 */
-	private function reapAbandonedClaims(DateTime $cutoff, DateTime $now, int $minutes): void {
+	private function reapAbandonedClaims(FlowReapRun $reap): void {
 		if ($this->claims === null || $this->streams === null) {
 			return;
 		}
 
-		foreach ($this->claims->findOlderThan(before: $cutoff, limit: self::BATCH) as $claim) {
-			$runUuid = (string)$claim->getRunUuid();
-			$branch = (string)($claim->getStreamId() ?? '');
-			$transition = (string)($claim->getTransition() ?? '');
-
-			try {
-				$this->claims->releaseByOwner(runUuid: $runUuid, owner: (string)$claim->getOwner());
-
-				$error = sprintf(
-					'Abandoned branch: worker pass "%s" took stream "%s" at step "%s" and never finished it '
-					. '(no commit for over %d minutes). The step may have performed its side effect; '
-					. 'it was NOT re-run.',
-					(string)$claim->getOwner(),
-					$branch,
-					$transition,
-					$minutes
-				);
-
-				$stream = $this->streams->findByRunAndStream(runUuid: $runUuid, streamId: $branch);
-				if ($stream !== null) {
-					$stream->setStatus(FlowRun::STATUS_FAILED);
-					$stream->setError($error);
-					$stream->setUpdated($now);
-					$this->streams->update($stream);
-				}
-
-				$run = $this->mapper->findByUuid(uuid: $runUuid);
-				// The abandoned step's policy decides the siblings' fate: the
-				// default fails the run; `continue` with a live sibling re-arms
-				// the run for the next pass instead.
-				$run->setStatus(FlowRun::STATUS_FAILED);
-				$run->setError($error);
-				$run->setResumeAt(null);
-				$continues = $this->abandonedStepContinues(run: $run, transition: $transition);
-				if ($continues === true && $this->hasLiveSibling(runUuid: $runUuid, failed: $branch) === true) {
-					$run->setStatus(FlowRun::STATUS_QUEUED);
-					$run->setError(null);
-				}
-
-				$run->setUpdated($now);
-				$this->mapper->update($run);
-
-				$this->logger->warning(
-					message: '[FlowRunWorker] Released an abandoned place claim and failed its branch',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'run' => $runUuid,
-						'stream' => $branch,
-						'transition' => $transition,
-						'owner' => $claim->getOwner(),
-					]
-				);
-			} catch (Throwable $e) {
-				$this->logger->error(
-					message: '[FlowRunWorker] Could not reap an abandoned claim',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $runUuid, 'error' => $e->getMessage()]
-				);
-			}//end try
-		}//end foreach
+		foreach ($this->claims->findOlderThan(before: $reap->cutoff(), limit: self::BATCH) as $claim) {
+			$this->reapClaim(abandoned: new AbandonedFlowClaim(claim: $claim, reap: $reap));
+		}
 	}//end reapAbandonedClaims()
+
+	/**
+	 * Release one abandoned claim and fail the branch it held, logging (never
+	 * throwing) a failure.
+	 *
+	 * @param AbandonedFlowClaim $abandoned The abandoned claim.
+	 *
+	 * @return void
+	 */
+	private function reapClaim(AbandonedFlowClaim $abandoned): void {
+		try {
+			$this->claims->releaseByOwner(runUuid: $abandoned->runUuid, owner: (string)$abandoned->claim->getOwner());
+			$this->failAbandonedBranch(abandoned: $abandoned);
+			$this->failOrRearmClaimedRun(abandoned: $abandoned);
+			$this->logReapedClaim(abandoned: $abandoned);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[FlowRunWorker] Could not reap an abandoned claim',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $abandoned->runUuid, 'error' => $e->getMessage()]
+			);
+		}
+	}//end reapClaim()
+
+	/**
+	 * Fail the stream the abandoned claim held, when it still exists.
+	 *
+	 * @param AbandonedFlowClaim $abandoned The abandoned claim.
+	 *
+	 * @return void
+	 */
+	private function failAbandonedBranch(AbandonedFlowClaim $abandoned): void {
+		$stream = $this->streams->findByRunAndStream(runUuid: $abandoned->runUuid, streamId: $abandoned->branch);
+		if ($stream !== null) {
+			$stream->setStatus(FlowRun::STATUS_FAILED);
+			$stream->setError($abandoned->error);
+			$stream->setUpdated($abandoned->now);
+			$this->streams->update($stream);
+		}
+	}//end failAbandonedBranch()
+
+	/**
+	 * Fail the claimed run, or re-arm it when the step's policy lets a live
+	 * sibling continue.
+	 *
+	 * @param AbandonedFlowClaim $abandoned The abandoned claim.
+	 *
+	 * @return void
+	 */
+	private function failOrRearmClaimedRun(AbandonedFlowClaim $abandoned): void {
+		$run = $this->mapper->findByUuid(uuid: $abandoned->runUuid);
+		// The abandoned step's policy decides the siblings' fate: the
+		// default fails the run; `continue` with a live sibling re-arms
+		// the run for the next pass instead.
+		$run->setStatus(FlowRun::STATUS_FAILED);
+		$run->setError($abandoned->error);
+		$run->setResumeAt(null);
+		$continues = $this->abandonedStepContinues(run: $run, transition: $abandoned->transition);
+		if ($continues === true && $this->hasLiveSibling(runUuid: $abandoned->runUuid, failed: $abandoned->branch) === true) {
+			$run->setStatus(FlowRun::STATUS_QUEUED);
+			$run->setError(null);
+		}
+
+		$run->setUpdated($abandoned->now);
+		$this->mapper->update($run);
+	}//end failOrRearmClaimedRun()
+
+	/**
+	 * Log a reaped claim.
+	 *
+	 * @param AbandonedFlowClaim $abandoned The abandoned claim.
+	 *
+	 * @return void
+	 */
+	private function logReapedClaim(AbandonedFlowClaim $abandoned): void {
+		$this->logger->warning(
+			message: '[FlowRunWorker] Released an abandoned place claim and failed its branch',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'run' => $abandoned->runUuid,
+				'stream' => $abandoned->branch,
+				'transition' => $abandoned->transition,
+				'owner' => $abandoned->claim->getOwner(),
+			]
+		);
+	}//end logReapedClaim()
 
 	/**
 	 * Whether the abandoned step's `onError` policy lets the run's siblings
@@ -485,11 +566,7 @@ class FlowRunWorker extends TimedJob {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	private function expireAbandonedSignals(DateTime $now): void {
-		$days = (int)$this->appConfig->getValueString(
-			'openregister',
-			'flow_signal_wait_days',
-			(string)self::DEFAULT_SIGNAL_WAIT_DAYS
-		);
+		$days = $this->intSetting(key: 'flow_signal_wait_days', default: self::DEFAULT_SIGNAL_WAIT_DAYS);
 
 		if ($days <= 0) {
 			// An operator whose approvals legitimately take months can switch
@@ -497,33 +574,66 @@ class FlowRunWorker extends TimedJob {
 			return;
 		}
 
+		$this->failSignalRuns(now: $now, days: $days);
+
+	}//end expireAbandonedSignals()
+
+	/**
+	 * Fail every run suspended on a signal for longer than the wait window.
+	 *
+	 * @param DateTime $now  The current time.
+	 * @param int      $days The signal wait window in days.
+	 *
+	 * @return void
+	 */
+	private function failSignalRuns(DateTime $now, int $days): void {
 		$cutoff = (clone $now)->modify('-' . $days . ' days');
 
 		foreach ($this->mapper->findAbandonedSignals(before: $cutoff, limit: self::BATCH) as $run) {
 			$run->setStatus(FlowRun::STATUS_FAILED);
-			$run->setError(
-				sprintf(
-					'Abandoned: this run suspended waiting for an external signal '
-					. '(an approval, a webhook, a child run) and none arrived within %d days. '
-					. 'Retry it to run it again from the start.',
-					$days
-				)
-			);
+			$run->setError($this->signalRunError(days: $days));
 			$run->setUpdated($now);
 			$this->mapper->update($run);
 
-			$this->logger->warning(
-				message: '[FlowRunWorker] Failed a run whose signal never arrived',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'run' => $run->getUuid(),
-					'flow' => $run->getFlowId(),
-				]
-			);
-		}//end foreach
+			$this->logFailedRun(message: '[FlowRunWorker] Failed a run whose signal never arrived', run: $run);
+		}
+	}//end failSignalRuns()
 
-	}//end expireAbandonedSignals()
+	/**
+	 * The error a run whose signal never arrived is failed with.
+	 *
+	 * @param int $days The signal wait window in days.
+	 *
+	 * @return string
+	 */
+	private function signalRunError(int $days): string {
+		return sprintf(
+			'Abandoned: this run suspended waiting for an external signal '
+			. '(an approval, a webhook, a child run) and none arrived within %d days. '
+			. 'Retry it to run it again from the start.',
+			$days
+		);
+	}//end signalRunError()
+
+	/**
+	 * Log a run the worker failed.
+	 *
+	 * @param string  $message The log message.
+	 * @param FlowRun $run     The failed run.
+	 *
+	 * @return void
+	 */
+	private function logFailedRun(string $message, FlowRun $run): void {
+		$this->logger->warning(
+			message: $message,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'run' => $run->getUuid(),
+				'flow' => $run->getFlowId(),
+			]
+		);
+	}//end logFailedRun()
 
 	/**
 	 * Release or fail runs parked waiting for somebody to allow a delegation.
@@ -532,7 +642,7 @@ class FlowRunWorker extends TimedJob {
 	 * pass rather than waiting another cron period for no reason.
 	 *
 	 * 🔴 A MISSING COLLABORATOR IS REPORTED, NOT SKIPPED SILENTLY. If the
-	 * delegation service is absent, parked runs simply never move — and a sweep
+	 * consent sweep is absent, parked runs simply never move — and a sweep
 	 * that skipped produces exactly the same output as one that found nothing to
 	 * do. So the absence is only mentioned when runs are ACTUALLY parked, which
 	 * is the only time it is a fault rather than noise.
@@ -544,45 +654,28 @@ class FlowRunWorker extends TimedJob {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	private function settleConsent(DateTime $now): void {
-		if ($this->delegation === null) {
-			$parked = $this->mapper->findAwaitingConsent(limit: 1);
-			if ($parked !== []) {
-				$this->logger->error(
-					message: '[FlowRunWorker] Runs are parked awaiting consent but no delegation service is '
-						. 'available to settle them; they will not move.',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
+		if ($this->consent === null) {
+			$this->reportParkedWithoutSweep();
 			return;
 		}
 
-		$hours = (int)$this->appConfig->getValueString(
-			'openregister',
-			'flow_consent_wait_hours',
-			(string)FlowConsentParking::DEFAULT_WAIT_HOURS
-		);
-
-		if ($hours <= 0) {
-			$hours = FlowConsentParking::DEFAULT_WAIT_HOURS;
-		}
-
-		try {
-			$outcome = (new FlowConsentParking(runs: $this->mapper, delegation: $this->delegation, logger: $this->logger))
-				->sweep(now: $now, waitHours: $hours, limit: self::BATCH);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[FlowRunWorker] The consent sweep failed: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
+		$outcome = $this->sweepConsent(now: $now, hours: $this->consentWaitHours());
+		if ($outcome === null || ($outcome['released'] === 0 && $outcome['failed'] === 0)) {
 			return;
 		}
 
-		if ($outcome['released'] === 0 && $outcome['failed'] === 0) {
-			return;
-		}
+		$this->logSettled(outcome: $outcome);
 
+	}//end settleConsent()
+
+	/**
+	 * Log how many parked runs a consent sweep released and failed.
+	 *
+	 * @param array{released: int, failed: int} $outcome The sweep outcome.
+	 *
+	 * @return void
+	 */
+	private function logSettled(array $outcome): void {
 		$this->logger->info(
 			message: '[FlowRunWorker] Settled parked runs',
 			context: [
@@ -592,8 +685,59 @@ class FlowRunWorker extends TimedJob {
 				'failed' => $outcome['failed'],
 			]
 		);
+	}//end logSettled()
 
-	}//end settleConsent()
+	/**
+	 * Report runs parked awaiting consent while no sweep can settle them.
+	 *
+	 * @return void
+	 */
+	private function reportParkedWithoutSweep(): void {
+		$parked = $this->mapper->findAwaitingConsent(limit: 1);
+		if ($parked !== []) {
+			$this->logger->error(
+				message: '[FlowRunWorker] Runs are parked awaiting consent but no delegation service is '
+					. 'available to settle them; they will not move.',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end reportParkedWithoutSweep()
+
+	/**
+	 * How long a run may wait for consent; the default when unset or not positive.
+	 *
+	 * @return int Hours.
+	 */
+	private function consentWaitHours(): int {
+		$hours = $this->intSetting(key: 'flow_consent_wait_hours', default: FlowConsentSweepInterface::DEFAULT_WAIT_HOURS);
+
+		if ($hours <= 0) {
+			$hours = FlowConsentSweepInterface::DEFAULT_WAIT_HOURS;
+		}
+
+		return $hours;
+	}//end consentWaitHours()
+
+	/**
+	 * Run the consent sweep, logging (never throwing) a failure.
+	 *
+	 * @param DateTime $now   The current time.
+	 * @param int      $hours How long a run may wait for consent.
+	 *
+	 * @return array{released: int, failed: int}|null The outcome, null when the sweep failed.
+	 */
+	private function sweepConsent(DateTime $now, int $hours): ?array {
+		try {
+			return $this->consent->sweep(now: $now, waitHours: $hours);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[FlowRunWorker] The consent sweep failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return null;
+		}
+	}//end sweepConsent()
 
 	/**
 	 * Abandon queued runs that waited so long that running them is wrong.
@@ -620,41 +764,15 @@ class FlowRunWorker extends TimedJob {
 	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
 	private function expireStaleQueued(DateTime $now): void {
-		$hours = (int)$this->appConfig->getValueString(
-			'openregister',
-			'flow_run_queued_ttl_hours',
-			(string)self::DEFAULT_QUEUED_TTL_HOURS
-		);
+		$hours = $this->intSetting(key: 'flow_run_queued_ttl_hours', default: self::DEFAULT_QUEUED_TTL_HOURS);
 
 		if ($hours <= 0) {
 			return;
 		}
 
-		$reason = sprintf(
-			'Expired: this run waited in the queue for more than %d hours, so whatever it was '
-			. 'meant to do now is no longer what it would do. Retry it to run it again from the start.',
-			$hours
-		);
-
 		try {
-			$cutoff = (clone $now)->modify('-' . $hours . ' hours');
-			$expired = $this->mapper->expireQueuedBefore(
-				before: $cutoff,
-				reason: $reason,
-				limit: self::EXPIRE_BATCH
-			);
-
-			if ($expired !== []) {
-				$this->logger->warning(
-					message: '[FlowRunWorker] Expired queued runs that waited past their TTL',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'expired' => count($expired),
-						'ttlHours' => $hours,
-					]
-				);
-			}
+			$expired = $this->mapper->expireQueuedBefore(expiry: $this->queuedExpiry(now: $now, hours: $hours));
+			$this->logExpiredQueued(expired: $expired, hours: $hours);
 		} catch (Throwable $e) {
 			// Expiry is housekeeping; it must never cost the pass its ability
 			// to actually run the queue.
@@ -667,9 +785,50 @@ class FlowRunWorker extends TimedJob {
 	}//end expireStaleQueued()
 
 	/**
+	 * The expiry of runs queued for longer than the TTL, with the reason they get.
+	 *
+	 * @param DateTime $now   The current time.
+	 * @param int      $hours The queued TTL in hours.
+	 *
+	 * @return FlowRunQueueExpiry
+	 */
+	private function queuedExpiry(DateTime $now, int $hours): FlowRunQueueExpiry {
+		$reason = sprintf(
+			'Expired: this run waited in the queue for more than %d hours, so whatever it was '
+			. 'meant to do now is no longer what it would do. Retry it to run it again from the start.',
+			$hours
+		);
+
+		$cutoff = (clone $now)->modify('-' . $hours . ' hours');
+		return new FlowRunQueueExpiry(before: $cutoff, reason: $reason, limit: self::EXPIRE_BATCH);
+	}//end queuedExpiry()
+
+	/**
+	 * Log the queued runs an expiry pass expired, if any.
+	 *
+	 * @param array<int, mixed> $expired The expired runs.
+	 * @param int               $hours   The queued TTL in hours.
+	 *
+	 * @return void
+	 */
+	private function logExpiredQueued(array $expired, int $hours): void {
+		if ($expired !== []) {
+			$this->logger->warning(
+				message: '[FlowRunWorker] Expired queued runs that waited past their TTL',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'expired' => count($expired),
+					'ttlHours' => $hours,
+				]
+			);
+		}
+	}//end logExpiredQueued()
+
+	/**
 	 * Advance one run, never letting its failure stop the batch.
 	 *
-	 * The body lives in {@see FlowRunAdvancer} so a synchronous run executes
+	 * The body lives in {@see FlowRunAdvancerInterface} so a synchronous run executes
 	 * through exactly this path rather than a parallel implementation that
 	 * could drift from it.
 	 *
@@ -699,28 +858,14 @@ class FlowRunWorker extends TimedJob {
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 */
 	private function prune(DateTime $now): void {
-		$days = (int)$this->appConfig->getValueString(
-			'openregister',
-			'flow_run_retention_days',
-			(string)self::DEFAULT_RETENTION_DAYS
-		);
+		$days = $this->intSetting(key: 'flow_run_retention_days', default: self::DEFAULT_RETENTION_DAYS);
 
 		if ($days <= 0) {
 			return;
 		}
 
 		try {
-			$before = (clone $now)->modify(sprintf('-%d days', $days));
-			$deleted = $this->mapper->pruneBefore(before: $before);
-			// Stream and claim rows go with their runs.
-			$this->streams?->deleteOrphans();
-			$this->claims?->deleteOrphans();
-			if ($deleted > 0) {
-				$this->logger->info(
-					message: '[FlowRunWorker] Pruned old flow runs',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'deleted' => $deleted, 'olderThanDays' => $days]
-				);
-			}
+			$this->pruneRunsOlderThan(now: $now, days: $days);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowRunWorker] Retention pass failed',
@@ -729,6 +874,45 @@ class FlowRunWorker extends TimedJob {
 		}//end try
 
 	}//end prune()
+
+	/**
+	 * Delete terminal runs older than the retention window, with their stream
+	 * and claim rows.
+	 *
+	 * @param DateTime $now  The current time.
+	 * @param int      $days The retention window in days.
+	 *
+	 * @return void
+	 */
+	private function pruneRunsOlderThan(DateTime $now, int $days): void {
+		$before = (clone $now)->modify(sprintf('-%d days', $days));
+		$deleted = $this->mapper->pruneBefore(before: $before);
+		// Stream and claim rows go with their runs.
+		$this->streams?->deleteOrphans();
+		$this->claims?->deleteOrphans();
+		if ($deleted > 0) {
+			$this->logger->info(
+				message: '[FlowRunWorker] Pruned old flow runs',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'deleted' => $deleted, 'olderThanDays' => $days]
+			);
+		}
+	}//end pruneRunsOlderThan()
+
+	/**
+	 * Read an integer tuning setting of the worker.
+	 *
+	 * @param string $key     The app-config key.
+	 * @param int    $default The value when the key is unset.
+	 *
+	 * @return int
+	 */
+	private function intSetting(string $key, int $default): int {
+		return (int)$this->appConfig->getValueString(
+			'openregister',
+			$key,
+			(string)$default
+		);
+	}//end intSetting()
 
 	/**
 	 * Release object locks whose holding run is terminal, gone or expired.

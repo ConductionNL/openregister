@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+ * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Merges, proves and restores the destruction-list keys of the archival setting.
  *
- * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+ * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
  */
 class ExampleSetArchival extends ExampleSetEngineRows {
 	/**
@@ -68,7 +68,7 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function part(): string {
 		return 'archival';
@@ -79,7 +79,7 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function noun(): string {
 		return 'archival setting';
@@ -95,7 +95,7 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the engine rows' contract.
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::KEYS);
@@ -107,6 +107,17 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 			return 'it names no key';
 		}
 
+		return $this->idsRefusal(data: $data);
+	}//end refusal()
+
+	/**
+	 * Why a key holds something other than a register or schema id (a number, or text that is not empty), or ''.
+	 *
+	 * @param array<string, mixed> $data The filled keys.
+	 *
+	 * @return string
+	 */
+	private function idsRefusal(array $data): string {
 		foreach ($data as $key => $value) {
 			if (is_int($value) === false && (is_string($value) === false || $value === '')) {
 				return $key.' is a register or schema id';
@@ -114,32 +125,24 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 		}
 
 		return '';
-	}//end refusal()
+	}//end idsRefusal()
 
 	/**
 	 * Merge the keys into the setting, recording what each held.
 	 *
-	 * @param string               $app  The app that ships the fragment.
-	 * @param string               $key  The row's key in the fragment.
-	 * @param array<string, mixed> $data The filled keys.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{hadSetting: bool, set: array<string, mixed>, had: array<string, bool>, old: array<string, mixed>}|null}
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the engine rows' contract.
-	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$had     = $this->has();
 		$setting = $this->setting();
-		$entry   = ['hadSetting' => $had, 'set' => $data, 'had' => [], 'old' => []];
-		foreach ($data as $name => $value) {
-			$entry['had'][$name] = array_key_exists($name, $setting);
-			$entry['old'][$name] = ($setting[$name] ?? null);
-			$setting[$name]      = $value;
-		}
+		$entry   = ['hadSetting' => $had] + self::recordOf(data: $data, setting: $setting);
 
-		$error = $this->store(setting: $setting);
+		$error = $this->store(setting: array_replace($setting, $data));
 		if ($error !== '') {
 			return ['error' => $error, 'entry' => null];
 		}
@@ -148,13 +151,31 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	}//end write()
 
 	/**
+	 * What the merge sets, and whether and what each key held before.
+	 *
+	 * @param array<string, mixed> $data    The keys the set writes.
+	 * @param array<string, mixed> $setting The setting before the merge.
+	 *
+	 * @return array{set: array<string, mixed>, had: array<string, bool>, old: array<string, mixed>}
+	 */
+	private static function recordOf(array $data, array $setting): array {
+		$record = ['set' => $data, 'had' => [], 'old' => []];
+		foreach (array_keys($data) as $name) {
+			$record['had'][$name] = array_key_exists($name, $setting);
+			$record['old'][$name] = ($setting[$name] ?? null);
+		}
+
+		return $record;
+	}//end recordOf()
+
+	/**
 	 * Whether a key no longer holds what the set wrote.
 	 *
 	 * @param array<string, mixed> $entry A record entry from write().
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function lost(array $entry): bool {
 		$setting = $this->setting();
@@ -174,29 +195,12 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function revert(array $entry): string {
-		$setting = $this->setting();
-		foreach ((array) ($entry['set'] ?? []) as $name => $value) {
-			if ($this->same(first: ($setting[$name] ?? null), second: $value) === false) {
-				continue;
-			}
-
-			unset($setting[$name]);
-			if (($entry['had'][$name] ?? false) === true) {
-				$setting[$name] = ($entry['old'][$name] ?? null);
-			}
-		}
-
+		$setting = $this->putBack(setting: $this->setting(), entry: $entry);
 		if ($setting === [] && ($entry['hadSetting'] ?? true) === false) {
-			try {
-				$this->appConfig->deleteKey(self::APP, self::SETTING);
-			} catch (Throwable) {
-				return 'failed';
-			}
-
-			return 'removed';
+			return $this->deleteSetting();
 		}
 
 		if ($this->store(setting: $setting) !== '') {
@@ -221,6 +225,45 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 
 		return (string) $first === (string) $second;
 	}//end same()
+
+	/**
+	 * The setting with each key the set wrote, and that still holds what it wrote, put back to what it held before,
+	 * or taken away when it held nothing; a key changed since stays.
+	 *
+	 * @param array<string, mixed> $setting The setting as stored.
+	 * @param array<string, mixed> $entry   A record entry from write().
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function putBack(array $setting, array $entry): array {
+		foreach ((array) ($entry['set'] ?? []) as $name => $value) {
+			if ($this->same(first: ($setting[$name] ?? null), second: $value) === false) {
+				continue;
+			}
+
+			unset($setting[$name]);
+			if (($entry['had'][$name] ?? false) === true) {
+				$setting[$name] = ($entry['old'][$name] ?? null);
+			}
+		}
+
+		return $setting;
+	}//end putBack()
+
+	/**
+	 * Delete the setting the set brought into being.
+	 *
+	 * @return string `removed` or `failed`.
+	 */
+	private function deleteSetting(): string {
+		try {
+			$this->appConfig->deleteKey(self::APP, self::SETTING);
+		} catch (Throwable) {
+			return 'failed';
+		}
+
+		return 'removed';
+	}//end deleteSetting()
 
 	/**
 	 * Whether the setting is there.

@@ -1,0 +1,224 @@
+{
+    "no join": [],
+    "join null": [],
+    "join string": [
+        {
+            "code": "aggregation-join-malformed",
+            "message": "Aggregation \"agg-2\" join must be an object {through, on, filter?, select}."
+        }
+    ],
+    "join list": [
+        {
+            "code": "aggregation-join-malformed",
+            "message": "Aggregation \"agg-3\" join must be an object {through, on, filter?, select}."
+        }
+    ],
+    "join empty array": [
+        {
+            "code": "aggregation-join-malformed",
+            "message": "Aggregation \"agg-4\" join must be an object {through, on, filter?, select}."
+        }
+    ],
+    "join false": [
+        {
+            "code": "aggregation-join-malformed",
+            "message": "Aggregation \"agg-5\" join must be an object {through, on, filter?, select}."
+        }
+    ],
+    "valid string on": [],
+    "valid map on": [],
+    "map on unknown parents": [
+        {
+            "code": "aggregation-join-on-field-unknown",
+            "message": "Aggregation \"agg-8\" join.on parent field \"colour\" is not declared in the schema properties."
+        },
+        {
+            "code": "aggregation-join-on-field-unknown",
+            "message": "Aggregation \"agg-8\" join.on parent field \"7\" is not declared in the schema properties."
+        },
+        {
+            "code": "aggregation-join-on-field-unknown",
+            "message": "Aggregation \"agg-8\" join.on parent field \"size\" is not declared in the schema properties."
+        }
+    ],
+    "on empty string": [
+        {
+            "code": "aggregation-join-on-malformed",
+            "message": "Aggregation \"agg-9\" join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+        }
+    ],
+    "on list": [
+        {
+            "code": "aggregation-join-on-malformed",
+            "message": "Aggregation \"agg-10\" join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+        }
+    ],
+    "on empty map": [
+        {
+            "code": "aggregation-join-on-malformed",
+            "message": "Aggregation \"agg-11\" join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+        }
+    ],
+    "on integer": [
+        {
+            "code": "aggregation-join-on-malformed",
+            "message": "Aggregation \"agg-12\" join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+        }
+    ],
+    "on missing": [
+        {
+            "code": "aggregation-join-on-malformed",
+            "message": "Aggregation \"agg-13\" join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+        }
+    ],
+    "through empty": [
+        {
+            "code": "aggregation-join-through-empty",
+            "message": "Aggregation \"agg-14\" join must have a non-empty `through` schema ref."
+        }
+    ],
+    "through integer": [
+        {
+            "code": "aggregation-join-through-empty",
+            "message": "Aggregation \"agg-15\" join must have a non-empty `through` schema ref."
+        }
+    ],
+    "select missing": [
+        {
+            "code": "aggregation-join-select-empty",
+            "message": "Aggregation \"agg-16\" join must declare a non-empty `select` list of joined-schema fields."
+        }
+    ],
+    "select empty": [
+        {
+            "code": "aggregation-join-select-empty",
+            "message": "Aggregation \"agg-17\" join must declare a non-empty `select` list of joined-schema fields."
+        }
+    ],
+    "select string": [
+        {
+            "code": "aggregation-join-select-empty",
+            "message": "Aggregation \"agg-18\" join must declare a non-empty `select` list of joined-schema fields."
+        }
+    ],
+    "select mixed entries": [
+        {
+            "code": "aggregation-join-select-malformed",
+            "message": "Aggregation \"agg-19\" join.select entries must be \"Field\" strings or {field, metric?} objects."
+        },
+        {
+            "code": "aggregation-join-select-malformed",
+            "message": "Aggregation \"agg-19\" join.select entries must be \"Field\" strings or {field, metric?} objects."
+        },
+        {
+            "code": "aggregation-join-select-malformed",
+            "message": "Aggregation \"agg-19\" join.select entries must be \"Field\" strings or {field, metric?} objects."
+        },
+        {
+            "code": "aggregation-join-select-malformed",
+            "message": "Aggregation \"agg-19\" join.select entries must be \"Field\" strings or {field, metric?} objects."
+        },
+        {
+            "code": "aggregation-join-select-malformed",
+            "message": "Aggregation \"agg-19\" join.select entries must be \"Field\" strings or {field, metric?} objects."
+        },
+        {
+            "code": "aggregation-join-select-malformed",
+            "message": "Aggregation \"agg-19\" join.select entries must be \"Field\" strings or {field, metric?} objects."
+        },
+        {
+            "code": "aggregation-join-select-malformed",
+            "message": "Aggregation \"agg-19\" join.select entries must be \"Field\" strings or {field, metric?} objects."
+        }
+    ],
+    "select map": [
+        {
+            "code": "aggregation-join-select-malformed",
+            "message": "Aggregation \"agg-20\" join.select entries must be \"Field\" strings or {field, metric?} objects."
+        }
+    ],
+    "filter map": [],
+    "filter string": [
+        {
+            "code": "aggregation-join-filter-malformed",
+            "message": "Aggregation \"agg-22\" join filter/where must be a map."
+        }
+    ],
+    "where string": [
+        {
+            "code": "aggregation-join-filter-malformed",
+            "message": "Aggregation \"agg-23\" join filter/where must be a map."
+        }
+    ],
+    "filter null where bad": [
+        {
+            "code": "aggregation-join-filter-malformed",
+            "message": "Aggregation \"agg-24\" join filter/where must be a map."
+        }
+    ],
+    "filter wins over where": [],
+    "no groupBy": [
+        {
+            "code": "aggregation-join-requires-groupby",
+            "message": "Aggregation \"agg-26\" declares a join but no groupBy — joined values attach per group."
+        }
+    ],
+    "groupBy empty list": [
+        {
+            "code": "aggregation-join-requires-groupby",
+            "message": "Aggregation \"agg-27\" declares a join but no groupBy — joined values attach per group."
+        }
+    ],
+    "groupBy string": [
+        {
+            "code": "aggregation-join-requires-groupby",
+            "message": "Aggregation \"agg-28\" declares a join but no groupBy — joined values attach per group."
+        }
+    ],
+    "groupBy list": [],
+    "groupBy fields form": [],
+    "everything wrong": [
+        {
+            "code": "aggregation-join-through-empty",
+            "message": "Aggregation \"agg-31\" join must have a non-empty `through` schema ref."
+        },
+        {
+            "code": "aggregation-join-on-malformed",
+            "message": "Aggregation \"agg-31\" join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+        },
+        {
+            "code": "aggregation-join-select-malformed",
+            "message": "Aggregation \"agg-31\" join.select entries must be \"Field\" strings or {field, metric?} objects."
+        },
+        {
+            "code": "aggregation-join-filter-malformed",
+            "message": "Aggregation \"agg-31\" join filter/where must be a map."
+        },
+        {
+            "code": "aggregation-join-requires-groupby",
+            "message": "Aggregation \"agg-31\" declares a join but no groupBy — joined values attach per group."
+        }
+    ],
+    "everything wrong, map on": [
+        {
+            "code": "aggregation-join-through-empty",
+            "message": "Aggregation \"agg-32\" join must have a non-empty `through` schema ref."
+        },
+        {
+            "code": "aggregation-join-on-field-unknown",
+            "message": "Aggregation \"agg-32\" join.on parent field \"zz\" is not declared in the schema properties."
+        },
+        {
+            "code": "aggregation-join-select-empty",
+            "message": "Aggregation \"agg-32\" join must declare a non-empty `select` list of joined-schema fields."
+        },
+        {
+            "code": "aggregation-join-filter-malformed",
+            "message": "Aggregation \"agg-32\" join filter/where must be a map."
+        },
+        {
+            "code": "aggregation-join-requires-groupby",
+            "message": "Aggregation \"agg-32\" declares a join but no groupBy — joined values attach per group."
+        }
+    ]
+}

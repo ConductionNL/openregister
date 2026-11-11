@@ -1,4 +1,5 @@
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="viewContainer">
 			<div class="viewHeader">
@@ -66,64 +67,37 @@
 						</template>
 					</NcEmptyContent>
 
-					<table v-else class="consoleTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Action') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'State') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Progress') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Started by') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Failure') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Do') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="job in bulkJobs" :key="job.id">
-								<td>{{ job.action }}</td>
-								<td>{{ job.state }}</td>
-								<td>{{ job.processed }} / {{ job.total }}</td>
-								<td>{{ job.startedBy }}</td>
-								<td class="failureCell">
-									{{ failureOf(job) }}
-								</td>
-								<td class="actionCell">
-									<NcButton
-										v-if="job.actions && job.actions.pause"
-										variant="secondary"
-										:disabled="acting === job.id"
-										@click="act(job, 'pause')">
-										{{ t('openregister', 'Pause') }}
-									</NcButton>
-									<NcButton
-										v-if="job.actions && job.actions.resume"
-										variant="secondary"
-										:disabled="acting === job.id"
-										@click="act(job, 'resume')">
-										{{ t('openregister', 'Resume') }}
-									</NcButton>
-									<NcButton
-										v-if="job.actions && job.actions.retry"
-										variant="secondary"
-										:disabled="acting === job.id"
-										@click="act(job, 'retry')">
-										{{ t('openregister', 'Retry') }}
-									</NcButton>
-								</td>
-							</tr>
-						</tbody>
-					</table>
+					<CnDataTable
+						v-else
+						class="consoleTable"
+						:columns="jobColumns"
+						:rows="bulkJobs"
+						:cellClass="cellClass">
+						<template #column-startedBy="{ value }">
+							{{ value }}
+						</template>
+						<template #column-processed="{ row: job }">
+							{{ job.processed }} / {{ job.total }}
+						</template>
+						<template #column-failure="{ row: job }">
+							{{ failureOf(job) }}
+						</template>
+						<template #actions-header>
+							{{ t('openregister', 'Do') }}
+						</template>
+						<template #row-actions="{ row: job }">
+							<div class="actionCell">
+								<NcButton
+									v-for="action in jobActions(job)"
+									:key="action.id"
+									variant="secondary"
+									:disabled="acting === job.id"
+									@click="act(job, action.id)">
+									{{ action.label }}
+								</NcButton>
+							</div>
+						</template>
+					</CnDataTable>
 
 					<NcNoteCard v-if="unobserved.length > 0" type="warning">
 						{{
@@ -165,28 +139,12 @@
 							)
 						}}
 					</NcNoteCard>
-					<table
+					<CnDataTable
 						v-if="notificationOutcomes.length > 0"
-						class="consoleTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Outcome') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Dispatches') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr
-								v-for="outcome in notificationOutcomes"
-								:key="outcome.status">
-								<td>{{ outcome.status }}</td>
-								<td>{{ outcome.count }}</td>
-							</tr>
-						</tbody>
-					</table>
+						class="consoleTable"
+						:columns="outcomeColumns"
+						:rows="notificationOutcomes"
+						rowKey="status" />
 				</section>
 
 				<section class="consoleSection">
@@ -206,36 +164,23 @@
 						</template>
 					</NcEmptyContent>
 
-					<table v-else class="consoleTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Rule') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Schema') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Last error') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'When') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr
-								v-for="rule in rulesHoldingAnError"
-								:key="rule.ruleId">
-								<td>{{ rule.ruleId }}</td>
-								<td>{{ rule.schemaSlug }}</td>
-								<td class="failureCell">
-									{{ rule.lastError }}
-								</td>
-								<td>{{ rule.lastErrorAt }}</td>
-							</tr>
-						</tbody>
-					</table>
+					<CnDataTable
+						v-else
+						class="consoleTable"
+						:columns="ruleColumns"
+						:rows="rulesHoldingAnError"
+						rowKey="ruleId"
+						:cellClass="cellClass">
+						<template #column-schemaSlug="{ value }">
+							{{ value }}
+						</template>
+						<template #column-lastError="{ value }">
+							{{ value }}
+						</template>
+						<template #column-lastErrorAt="{ value }">
+							{{ value }}
+						</template>
+					</CnDataTable>
 				</section>
 
 				<section class="consoleSection">
@@ -292,47 +237,28 @@
 						</template>
 					</NcEmptyContent>
 
-					<table v-else class="consoleTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Job') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Started') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Took') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Outcome') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Reason') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Started by') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="run in runs" :key="run.id">
-								<td>{{ run.name }}</td>
-								<td>{{ run.started }}</td>
-								<td>{{ durationOf(run) }}</td>
-								<td>{{ outcomeWords(run.outcome) }}</td>
-								<td class="failureCell">
-									{{ run.message || '' }}
-								</td>
-								<td>
-									{{
-										run.actor
-										|| t('openregister', 'The schedule')
-									}}
-								</td>
-							</tr>
-						</tbody>
-					</table>
+					<CnDataTable
+						v-else
+						class="consoleTable"
+						:columns="runColumns"
+						:rows="runs"
+						:cellClass="cellClass">
+						<template #column-started="{ value }">
+							{{ value }}
+						</template>
+						<template #column-duration="{ row: run }">
+							{{ durationOf(run) }}
+						</template>
+						<template #column-outcome="{ row: run }">
+							{{ outcomeWords(run.outcome) }}
+						</template>
+						<template #column-message="{ row: run }">
+							{{ run.message || '' }}
+						</template>
+						<template #column-actor="{ row: run }">
+							{{ run.actor || t('openregister', 'The schedule') }}
+						</template>
+					</CnDataTable>
 				</section>
 
 				<section class="consoleSection">
@@ -392,17 +318,12 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { n, t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import { pageShellComponents } from '../pageShell.js'
 
 /**
  * The operations console.
@@ -411,18 +332,28 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
  * says it allows. The verbs are the bulk job resource's own endpoints, not a
  * second copy on the console: one ownership rule, in one place.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
+/**
+ * Read the console, the bulk jobs and the rule runs at once.
+ *
+ * @return {Promise<Array<object>>} The three responses, in that order
+ */
+function fetchConsole() {
+	return Promise.all([
+		axios.get(generateUrl('/apps/openregister/api/operations/console')),
+		axios.get(generateUrl('/apps/openregister/api/operations/jobs')),
+		axios.get(generateUrl('/apps/openregister/api/operations/rule-runs')),
+	])
+}
+
 export default {
 	name: 'OperationsConsoleIndex',
 
 	components: {
+		CnDataTable,
 		CogOutline,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 	},
 
 	data() {
@@ -444,6 +375,67 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The jobs table columns; the row actions add the "Do" column.
+		 *
+		 * @spec exclude Client-side table layout.
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		jobColumns() {
+			return [
+				{ key: 'action', label: t('openregister', 'Action') },
+				{ key: 'state', label: t('openregister', 'State') },
+				{ key: 'processed', label: t('openregister', 'Progress') },
+				{ key: 'startedBy', label: t('openregister', 'Started by') },
+				{ key: 'failure', label: t('openregister', 'Failure') },
+			]
+		},
+
+		/**
+		 * The notification outcome table columns.
+		 *
+		 * @spec exclude Client-side table layout.
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		outcomeColumns() {
+			return [
+				{ key: 'status', label: t('openregister', 'Outcome') },
+				{ key: 'count', label: t('openregister', 'Dispatches') },
+			]
+		},
+
+		/**
+		 * The erroring rules table columns.
+		 *
+		 * @spec exclude Client-side table layout.
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		ruleColumns() {
+			return [
+				{ key: 'ruleId', label: t('openregister', 'Rule'), cellClass: 'cn-cell--wrap' },
+				{ key: 'schemaSlug', label: t('openregister', 'Schema') },
+				{ key: 'lastError', label: t('openregister', 'Last error') },
+				{ key: 'lastErrorAt', label: t('openregister', 'When') },
+			]
+		},
+
+		/**
+		 * The run history table columns.
+		 *
+		 * @spec exclude Client-side table layout.
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		runColumns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Job'), cellClass: 'cn-cell--wrap' },
+				{ key: 'started', label: t('openregister', 'Started') },
+				{ key: 'duration', label: t('openregister', 'Took') },
+				{ key: 'outcome', label: t('openregister', 'Outcome') },
+				{ key: 'message', label: t('openregister', 'Reason') },
+				{ key: 'actor', label: t('openregister', 'Started by') },
+			]
+		},
+
 		/**
 		 * The notification pane, when the console reported one.
 		 *
@@ -514,6 +506,36 @@ export default {
 		n,
 
 		/**
+		 * The failure and reason cells wrap anywhere instead of widening the table.
+		 *
+		 * @spec exclude Client-side table layout.
+		 * @param {object} row The row
+		 * @param {object} col The column
+		 * @return {string} The cell class
+		 */
+		cellClass(row, col) {
+			return ['failure', 'lastError', 'message'].includes(col.key) ? 'failureCell cn-cell--wrap' : ''
+		},
+
+		/**
+		 * The buttons a job row offers, in the order pause, resume, retry.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} job The bulk job
+		 * @return {Array<object>} `{ id, label }` per action the job allows
+		 */
+		jobActions(job) {
+			const labels = {
+				pause: t('openregister', 'Pause'),
+				resume: t('openregister', 'Resume'),
+				retry: t('openregister', 'Retry'),
+			}
+			return Object.keys(labels)
+				.filter((id) => job.actions && job.actions[id])
+				.map((id) => ({ id, label: labels[id] }))
+		},
+
+		/**
 		 * The words for a pane the backend names by id.
 		 *
 		 * The backend has no locale, so it returns ids and numbers and the
@@ -568,34 +590,15 @@ export default {
 		 * Load the panes and the job rows.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+		 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 		 */
 		async load() {
 			this.loading = true
 			this.error = ''
 
 			try {
-				const [console_, jobs, ruleRuns] = await Promise.all([
-					axios.get(
-						generateUrl('/apps/openregister/api/operations/console'),
-					),
-					axios.get(generateUrl('/apps/openregister/api/operations/jobs')),
-					axios.get(
-						generateUrl('/apps/openregister/api/operations/rule-runs'),
-					),
-				])
-
-				this.panes = console_.data.panes || []
-				this.windowHours = (console_.data.window || {}).hours || 24
-				this.bulkJobs = jobs.data.results || []
-				this.unobserved = jobs.data.unobserved || []
-				this.rulesHoldingAnError = ruleRuns.data.holdingAnError || []
-
-				await Promise.all([
-					this.loadRuns(),
-					this.loadMaintenance(),
-					this.loadFacts(),
-				])
+				this.showConsole(await fetchConsole())
+				await this.loadPanes()
 			} catch {
 				this.error = t(
 					'openregister',
@@ -607,6 +610,36 @@ export default {
 		},
 
 		/**
+		 * Fill the panes, the job rows and the rules holding an error from
+		 * the console, jobs and rule-runs answers.
+		 *
+		 * @param {Array<object>} answers The console, jobs and rule-runs responses.
+		 * @return {void}
+		 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+		 */
+		showConsole([console_, jobs, ruleRuns]) {
+			this.panes = console_.data.panes || []
+			this.windowHours = (console_.data.window || {}).hours || 24
+			this.bulkJobs = jobs.data.results || []
+			this.unobserved = jobs.data.unobserved || []
+			this.rulesHoldingAnError = ruleRuns.data.holdingAnError || []
+		},
+
+		/**
+		 * Load the runs, maintenance and facts panes at once.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+		 */
+		async loadPanes() {
+			await Promise.all([
+				this.loadRuns(),
+				this.loadMaintenance(),
+				this.loadFacts(),
+			])
+		},
+
+		/**
 		 * Run one verb on one job, then read the console again.
 		 *
 		 * The endpoint is the bulk job resource's own, so the refusal a
@@ -615,22 +648,38 @@ export default {
 		 * @param {object} job The job row.
 		 * @param {string} verb One of pause, resume, retry.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+		 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 		 */
 		async act(job, verb) {
-			this.acting = job.id
-			this.error = ''
-
-			try {
+			await this.perform(job.id, 'error', async () => {
 				await axios.post(
 					generateUrl(
 						`/apps/openregister/api/bulk-jobs/${job.id}/${verb}`,
 					),
 				)
 				await this.load()
+			})
+		},
+
+		/**
+		 * Run one console action: mark what is busy, clear the last error,
+		 * and show the server's own words when it refuses.
+		 *
+		 * @param {string} acting What the busy marker names while it runs.
+		 * @param {string} field The answer field the refusal is worded in.
+		 * @param {function(): Promise<void>} work The request and what follows.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+		 */
+		async perform(acting, field, work) {
+			this.acting = acting
+			this.error = ''
+
+			try {
+				await work()
 			} catch (exception) {
 				this.error =
-					(exception.response || {}).data?.error
+					(exception.response || {}).data?.[field]
 					|| t('openregister', 'That did not go through.')
 			} finally {
 				this.acting = null
@@ -641,7 +690,7 @@ export default {
 		 * The run history, under the filters the reader chose.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+		 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 		 */
 		async loadRuns() {
 			const query = new URLSearchParams({
@@ -666,7 +715,7 @@ export default {
 		 * Whether the instance is closed, and what readers are told.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+		 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 		 */
 		async loadMaintenance() {
 			const answer = await axios.get(
@@ -680,7 +729,7 @@ export default {
 		 * The version, build and licence a support call opens with.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+		 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 		 */
 		async loadFacts() {
 			const answer = await axios.get(
@@ -699,74 +748,47 @@ export default {
 		 *
 		 * @param {string} slug The job or maintenance action.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+		 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 		 */
 		async runNow(slug) {
-			this.acting = slug
-			this.error = ''
-
-			try {
+			await this.perform(slug, 'message', async () => {
 				await axios.post(
 					generateUrl('/apps/openregister/api/operations/run-now'),
 					{ job: slug },
 				)
 				await this.loadRuns()
-			} catch (exception) {
-				this.error =
-					(exception.response || {}).data?.message
-					|| t('openregister', 'That did not go through.')
-			} finally {
-				this.acting = null
-			}
+			})
 		},
 
 		/**
 		 * Close the instance, with the message readers are given.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+		 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 		 */
 		async enterMaintenance() {
-			this.acting = 'maintenance'
-			this.error = ''
-
-			try {
+			await this.perform('maintenance', 'message', async () => {
 				const answer = await axios.post(
 					generateUrl('/apps/openregister/api/operations/maintenance'),
 					{ message: this.maintenance.message || undefined },
 				)
 				this.maintenance = answer.data
-			} catch (exception) {
-				this.error =
-					(exception.response || {}).data?.message
-					|| t('openregister', 'That did not go through.')
-			} finally {
-				this.acting = null
-			}
+			})
 		},
 
 		/**
 		 * Open the instance again.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+		 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 		 */
 		async leaveMaintenance() {
-			this.acting = 'maintenance'
-			this.error = ''
-
-			try {
+			await this.perform('maintenance', 'message', async () => {
 				const answer = await axios.delete(
 					generateUrl('/apps/openregister/api/operations/maintenance'),
 				)
 				this.maintenance = answer.data
-			} catch (exception) {
-				this.error =
-					(exception.response || {}).data?.message
-					|| t('openregister', 'That did not go through.')
-			} finally {
-				this.acting = null
-			}
+			})
 		},
 
 		/**
@@ -808,15 +830,10 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 1200px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader h1 {
-	margin-bottom: 4px;
-}
+@include view-container-3-subtitled;
 
 .paneRow {
 	display: flex;
@@ -862,19 +879,7 @@ export default {
 	margin-top: 32px;
 }
 
-.consoleTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.consoleTable th,
-.consoleTable td {
-	text-align: start;
-	padding: 8px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.failureCell {
+.consoleTable :deep(.failureCell) {
 	max-width: 320px;
 	overflow-wrap: anywhere;
 }

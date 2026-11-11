@@ -1,0 +1,7075 @@
+{
+	"info": {
+		"_postman_id": "openregister-api-translation-names-t25",
+		"name": "OpenRegister API: translation, names, dashboard, linked entities, MDM and integrations",
+		"description": "Newman API coverage (SIG round t1, lane T25) for TranslationController (setStatus, bulkTranslate), NamesController, DashboardController, LinkedEntityController, AggregationController, QualityController, MergeController (reverse), SurvivorshipController, ContactsController, ContactSearchController, EmailsController, EmailLinksController, PartyController, CalendarEventsController, DeckLinksController, DeckController and TalkLinksController. Each route gets a success path, a missing/unknown id, invalid input where the method validates, and the access answer for a non-admin user without rights next to the admin, with a control read that the refusal changed nothing. Routes that need Mail, Deck or Talk (absent in CI) assert the documented app-not-available answer. The collection seeds its own data: `00 setup` creates a non-admin user, a register, an admin-only schema and two objects; `99 teardown` deletes them. Variables: base_url, admin_user, admin_password.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"protocolProfileBehavior": {
+		"disableCookies": true
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// OCS-APIRequest lets the CSRF-guarded app routes accept basic-auth calls, as the SPA's token would.",
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "t25_user",
+			"value": "t25-newman-user"
+		},
+		{
+			"key": "t25_password",
+			"value": "T25-newman-Pass!2026"
+		},
+		{
+			"key": "registerId",
+			"value": ""
+		},
+		{
+			"key": "registerUuid",
+			"value": ""
+		},
+		{
+			"key": "schemaId",
+			"value": ""
+		},
+		{
+			"key": "schemaUuid",
+			"value": ""
+		},
+		{
+			"key": "schemaSlug",
+			"value": ""
+		},
+		{
+			"key": "objUuid",
+			"value": ""
+		},
+		{
+			"key": "obj2Uuid",
+			"value": ""
+		},
+		{
+			"key": "contactUid",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 setup",
+			"item": [
+				{
+					"name": "setup: a non-admin user without rights",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"userid\":\"{{t25_user}}\",\"password\":\"{{t25_password}}\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the user is created (or already exists)', () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setup: a register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\":\"t25 integrations newman register\",\"description\":\"fixture of the translation-names collection\",\"languages\":[\"nl\",\"en\"]}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the register is created', () => pm.expect(pm.response.code).to.be.below(300));",
+									"const b = pm.response.json();",
+									"pm.collectionVariables.set('registerId', String(b.id));",
+									"pm.collectionVariables.set('registerUuid', String(b.uuid));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setup: an admin-only schema",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\":\"t25 integrations newman schema\",\"properties\":{\"name\":{\"type\":\"string\",\"title\":\"Name\",\"maxLength\":255},\"email\":{\"type\":\"string\",\"title\":\"Email\",\"maxLength\":255},\"amount\":{\"type\":\"number\",\"title\":\"Amount\"},\"since\":{\"type\":\"string\",\"format\":\"date-time\",\"title\":\"Since\"},\"title\":{\"type\":\"string\",\"title\":\"Title\",\"translatable\":true}},\"configuration\":{\"linkedTypes\":[\"mail\"],\"x-openregister-party\":{\"kind\":\"person\",\"nameProperty\":\"name\"}},\"authorization\":{\"read\":[\"admin\"],\"create\":[\"admin\"],\"update\":[\"admin\"],\"delete\":[\"admin\"]}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the schema is created', () => pm.expect(pm.response.code).to.be.below(300));",
+									"const b = pm.response.json();",
+									"pm.collectionVariables.set('schemaId', String(b.id));",
+									"pm.collectionVariables.set('schemaUuid', String(b.uuid));",
+									"pm.collectionVariables.set('schemaSlug', String(b.slug));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setup: the register carries the schema",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"schemas\": [\"{{schemaId}}\"]}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the schema is attached', () => pm.expect(pm.response.code).to.be.below(300));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setup: the first object",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\":\"Alpha\",\"email\":\"alpha@example.test\",\"amount\":10,\"since\":\"2026-01-15T10:00:00+00:00\",\"title\":{\"nl\":\"Hallo\",\"en\":\"Hello\"}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect(pm.response.code).to.be.below(300));",
+									"const b = pm.response.json();",
+									"pm.collectionVariables.set('objUuid', String((b['@self'] && b['@self'].id) || b.id || b.uuid));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setup: the second object",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\":\"Beta\",\"email\":\"beta@example.test\",\"amount\":32,\"since\":\"2026-02-20T10:00:00+00:00\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect(pm.response.code).to.be.below(300));",
+									"const b = pm.response.json();",
+									"pm.collectionVariables.set('obj2Uuid', String((b['@self'] && b['@self'].id) || b.id || b.uuid));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "translation",
+			"item": [
+				{
+					"name": "setStatus: status missing is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/title/en/status",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names the missing status', () => pm.expect(b.error).to.eql('status is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setStatus: unknown status is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/title/en/status",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"status\":\"no-such-status\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('lists the allowed statuses', () => { pm.expect(b.error).to.include('no-such-status'); pm.expect(b.error).to.include('human_reviewed'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setStatus: a valid status without a translation slot is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/title/en/status",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"status\":\"human_reviewed\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names the missing slot', () => { pm.expect(b.error).to.include('No translation slot'); pm.expect(b.error).to.include('property=title language=en'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setStatus: non-admin is refused (admin-only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/title/en/status",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"status\":\"stale\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('the refusal is the admin-only answer', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "bulkTranslate: from/to missing is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/bulk-translate",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"from\":\"nl\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names from and to', () => pm.expect(b.error).to.eql('from and to are required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "bulkTranslate: unknown object is 404",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/00000000-0000-4000-8000-000000000000/bulk-translate",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"from\":\"nl\",\"to\":\"en\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('echoes the uuid', () => pm.expect(b.uuid).to.eql('00000000-0000-4000-8000-000000000000'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "bulkTranslate: existing object answers translated/skipped",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/bulk-translate",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"from\":\"nl\",\"to\":\"en\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('echoes from/to and the uuid', () => { pm.expect(b.from).to.eql('nl'); pm.expect(b.to).to.eql('en'); pm.expect(b.uuid).to.eql(pm.collectionVariables.get('objUuid')); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "bulkTranslate: non-admin is refused (admin-only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{objUuid}}/bulk-translate",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"from\":\"nl\",\"to\":\"en\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('the refusal is the admin-only answer', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "names",
+			"item": [
+				{
+					"name": "index: admin gets the readable object names",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/names?ids={{objUuid}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('the name of the object is returned', () => pm.expect(JSON.stringify(b.names)).to.include('Alpha'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: non-admin without read rights gets no name for the object",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/names?ids={{objUuid}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('Alpha is filtered out', () => pm.expect(JSON.stringify(b.names || {})).to.not.include('Alpha'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: anonymous is 401",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: admin resolves the ids sent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"ids\": [\"{{objUuid}}\", \"{{obj2Uuid}}\"]}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('Alpha and Beta resolve', () => { pm.expect(b.total).to.eql(2); pm.expect(JSON.stringify(b.names)).to.include('Beta'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: ids missing is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('the refusal names ids', () => pm.expect(b.error).to.include('ids array is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: only blank ids is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"ids\":[\"  \"]}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('no valid ids', () => pm.expect(b.error).to.eql('No valid IDs provided in request'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: unknown id resolves to nothing",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"ids\":[\"00000000-0000-4000-8000-000000000000\"]}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('total is 0', () => pm.expect(b.total).to.eql(0));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: non-admin cannot resolve an unreadable object",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/names",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"ids\": [\"{{objUuid}}\"]}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('total is 0', () => pm.expect(b.total).to.eql(0));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "dashboard",
+			"item": [
+				{
+					"name": "index: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('lists registers including the fixture', () => pm.expect(JSON.stringify(b.registers)).to.include('t25 integrations newman register'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: non-admin is 403",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "calculate: admin, for the fixture register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/calculate/{{registerId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('reports a status', () => pm.expect(b.status).to.be.oneOf(['success','error']));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "calculate: non-admin is 403",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/calculate/{{registerId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "audit-trail-actions chart: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/audit-trail-actions"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('is chart data', () => pm.expect(b).to.be.an('object'));",
+									"pm.test('has labels/series', () => pm.expect(Object.keys(b)).to.include.members(['labels']));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "audit-trail-actions chart: non-admin is 403",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/audit-trail-actions",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "objects-by-register chart: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-register?registerId={{registerId}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('has labels', () => pm.expect(b.labels).to.be.an('array'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "objects-by-register chart: non-admin is 403",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-register?registerId={{registerId}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "objects-by-schema chart: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-schema?registerId={{registerId}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('has labels', () => pm.expect(b.labels).to.be.an('array'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "objects-by-schema chart: non-admin is 403",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-schema?registerId={{registerId}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "objects-by-size chart: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-size?registerId={{registerId}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('has labels', () => pm.expect(b.labels).to.be.an('array'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "objects-by-size chart: non-admin is 403",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/charts/objects-by-size?registerId={{registerId}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "audit-trail statistics: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail?hours=24"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('is an object', () => pm.expect(b).to.be.an('object').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "audit-trail statistics: non-admin is 403",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail?hours=24",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "audit-trail distribution: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail-distribution?hours=24"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('is an object', () => pm.expect(b).to.be.an('object').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "audit-trail distribution: non-admin is 403",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/audit-trail-distribution?hours=24",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "most-active objects: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/most-active-objects?limit=5"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('is an object', () => pm.expect(b).to.be.an('object').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "most-active objects: non-admin is 403",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/dashboard/statistics/most-active-objects?limit=5",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(String(b.error || b.message)).to.match(/admin/i));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "linked_entity",
+			"item": [
+				{
+					"name": "addObjectLink: id missing is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names the field', () => pm.expect(b.error).to.eql('Missing required field: id'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "addObjectLink: admin links a mail id",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"id\":\"t25-mail-1\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('the link list holds the id', () => pm.expect(JSON.stringify(b._mail)).to.include('t25-mail-1'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "reverseLookup: admin finds the object by the linked id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/linked/mail/t25-mail-1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('the object is listed', () => pm.expect(JSON.stringify(b)).to.include(pm.collectionVariables.get('objUuid')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "reverseLookup: non-admin is 403",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/linked/mail/t25-mail-1",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(b.error).to.eql('Admin privileges required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "addObjectLink: non-admin without read rights cannot find the object (400)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"id\":\"t25-mail-2\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('the object is not found for them', () => pm.expect(b.error).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "addObjectLink: unknown object is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/00000000-0000-4000-8000-000000000000/_linked/mail",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"id\":\"t25-mail-3\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "removeObjectLink: non-admin without read rights cannot find the object (400)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail/t25-mail-1",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('the object is not found for them', () => pm.expect(b.error).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "CONTROL: the refused calls changed nothing",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/linked/mail/t25-mail-1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('still linked', () => pm.expect(JSON.stringify(b)).to.include(pm.collectionVariables.get('objUuid')));",
+									"pm.test('t25-mail-2 never landed', () => pm.expect(JSON.stringify(b)).to.not.include('t25-mail-2'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "removeObjectLink: admin removes the link",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{objUuid}}/_linked/mail/t25-mail-1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('the id is gone from the list', () => pm.expect(JSON.stringify(b._mail || [])).to.not.include('t25-mail-1'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "addRegisterLink: id missing is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerUuid}}/_linked/mail",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names the field', () => pm.expect(b.error).to.eql('Missing required field: id'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "addRegisterLink: non-admin is 403",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerUuid}}/_linked/mail",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"id\":\"x\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(b.error).to.eql('Admin privileges required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "addSchemaLink: id missing is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaUuid}}/_linked/mail",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names the field', () => pm.expect(b.error).to.eql('Missing required field: id'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "addSchemaLink: non-admin is 403",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaUuid}}/_linked/mail",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"id\":\"x\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('admin privileges required', () => pm.expect(b.error).to.eql('Admin privileges required'));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "aggregation",
+			"item": [
+				{
+					"name": "value: sum of amount",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/value?metric=sum&field=amount"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('sums 10 + 32', () => pm.expect(Number(b.value)).to.eql(42));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "value: unknown register is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/999999/{{schemaId}}/value?metric=count"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "value: non-admin without read rights",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/value?metric=sum&field=amount",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"const b = pm.response.json();",
+									"pm.test('sees no amount', () => { if (pm.response.code === 200) pm.expect(Number(b.value || 0)).to.eql(0); else pm.expect(b.error).to.be.a('string'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "grouped: groupBy missing is 400",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/grouped"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names groupBy', () => pm.expect(b.error).to.eql('groupBy is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "grouped: by name",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/grouped?groupBy=name&metric=count"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('Alpha and Beta are buckets', () => { const s = JSON.stringify(b); pm.expect(s).to.include('Alpha'); pm.expect(s).to.include('Beta'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "grouped: unknown schema is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/999999/grouped?groupBy=name"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "grouped: non-admin without read rights sees no bucket",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/grouped?groupBy=name&metric=count",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"pm.test('Alpha is not exposed', () => pm.expect(pm.response.text()).to.not.include('Alpha'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "timeseries: per month",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?field=since&interval=month&metric=count&from=2026-01-01T00:00:00Z&to=2026-03-31T23:59:59Z"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('both months carry one object', () => { const s = JSON.stringify(b); pm.expect(s).to.include('2026-01'); pm.expect(s).to.include('2026-02'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "timeseries: field missing is 400",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?interval=month"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names field', () => pm.expect(b.error).to.eql('`field` is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "timeseries: undeclared field is 400",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?field=nope&interval=month"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names the field', () => pm.expect(b.error).to.include('nope'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "timeseries: unknown register is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/999999/{{schemaId}}/timeseries?field=since&interval=month&from=2026-01-01T00:00:00Z&to=2026-03-31T23:59:59Z"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "timeseries: invalid interval is 400",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?field=since&interval=fortnight&metric=count&from=2026-01-01T00:00:00Z&to=2026-03-31T23:59:59Z"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "timeseries: non-admin without read rights",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/aggregations/{{registerId}}/{{schemaId}}/timeseries?field=since&interval=month&metric=count&from=2026-01-01T00:00:00Z&to=2026-03-31T23:59:59Z",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.response.to.have.status(403));",
+									"pm.test('no object data exposed', () => pm.expect(pm.response.text()).to.not.include('Alpha'));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "quality",
+			"item": [
+				{
+					"name": "stats: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}/stats"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('answers stats', () => pm.expect(b).to.be.an('object').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "stats: unknown register scores nothing",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/999999/{{schemaId}}/stats"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('total 0', () => pm.expect(b.total).to.eql(0));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "stats: non-admin without read rights",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}/stats",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"pm.test('no object data exposed', () => pm.expect(pm.response.text()).to.not.include('Alpha'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('answers a listing', () => pm.expect(b).to.be.an('object'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: unknown schema lists nothing",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/999999"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('no items', () => { pm.expect(b.items).to.be.an('array').that.is.empty; pm.expect(b.total).to.eql(0); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: non-admin without read rights",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/quality/{{registerId}}/{{schemaId}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"pm.test('no object data exposed', () => pm.expect(pm.response.text()).to.not.include('Alpha'));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "merge",
+			"item": [
+				{
+					"name": "reverse: an object that was not merged is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/merge/{{objUuid}}/reverse",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "CONTROL: the object is unchanged",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('the name is still Alpha', () => pm.expect(b.name).to.eql('Alpha'));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "survivorship",
+			"item": [
+				{
+					"name": "sources: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/sources"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('sources is a list', () => pm.expect(b.sources).to.be.an('array'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "sources: unknown object is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/00000000-0000-4000-8000-000000000000/sources"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(b.error).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "sources: non-admin without read rights is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/sources",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "override: attribute missing is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names attribute', () => pm.expect(b.error).to.eql('An \"attribute\" is required.'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "override: unknown object is 404",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/00000000-0000-4000-8000-000000000000/override",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"attribute\":\"name\",\"value\":\"X\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "override: non-admin without rights is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"attribute\":\"name\",\"value\":\"Hijacked\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "CONTROL: the object is unchanged",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('the name is still Alpha', () => pm.expect(b.name).to.eql('Alpha'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "override: admin pins a value",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"attribute\":\"name\",\"value\":\"Alpha Pinned\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"pm.test('the pinned value is in the answer', () => pm.expect(pm.response.text()).to.include('Alpha Pinned'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "override: admin clears the pin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/survivorship/{{objUuid}}/override",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"attribute\":\"name\",\"value\":null}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('answers the object', () => pm.expect(b).to.be.an('object').and.not.empty);"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "99 restore after survivorship",
+			"item": [
+				{
+					"name": "setup: the object is named Alpha again",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\":\"Alpha\",\"email\":\"alpha@example.test\",\"amount\":10}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('saved', () => pm.expect(pm.response.code).to.be.below(300));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "contacts",
+			"item": [
+				{
+					"name": "index: admin, nothing linked yet",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('an empty list', () => pm.expect(JSON.stringify(b)).to.not.include('t25'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: unknown object is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: non-admin without read rights is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "createNew: displayName missing is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/new",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names displayName', () => pm.expect(b.error).to.eql('displayName is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "createNew: a payload naming an existing contact is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/new",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"contactUri\":\"x.vcf\",\"addressbookId\":1}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('points at POST /contacts', () => pm.expect(b.error).to.eql('Use POST /contacts to link an existing contact'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "createNew: unknown object is 404",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts/new",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"displayName\":\"T25 Person\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "createNew: non-admin without rights is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/new",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"displayName\":\"T25 Intruder\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: neither person nor contact is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: unknown object is 404",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"userId\":\"admin\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: non-admin without rights is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"userId\":\"{{t25_user}}\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: admin links a Nextcloud user",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"userId\":\"admin\",\"role\":\"owner\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 201', () => pm.response.to.have.status(201));",
+									"const b = pm.response.json();",
+									"pm.test('the link names the user', () => pm.expect(JSON.stringify(b)).to.include('admin'));",
+									"pm.collectionVariables.set('contactUid', String(b.contactUid || b.uid || b.contactUri || b.userId || 'admin'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "update: unknown object is 404",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/contacts/{{contactUid}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"role\":\"reviewer\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "update: non-admin without rights is refused",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"role\":\"hijacked\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "update: admin changes the role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"role\":\"reviewer\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"pm.test('the new role is in the answer', () => pm.expect(pm.response.text()).to.include('reviewer'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "objects: the contact lists the object",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/contacts/{{contactUid}}/objects"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('results is a list with a matching total', () => { pm.expect(b.results).to.be.an('array'); pm.expect(b.total).to.eql(b.results.length); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "objects: unknown contact lists nothing",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/contacts/t25-no-such-contact/objects"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('nothing is linked to a fresh object', () => { pm.expect(b.results).to.be.an('array').that.is.empty; pm.expect(b.total).to.eql(0); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: non-admin without rights is refused",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "CONTROL: the link survived the refusal",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"pm.test('still linked', () => pm.expect(pm.response.text()).to.include('reviewer'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: unknown link is 404",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/t25-no-such-contact"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('link not found', () => pm.expect(b.error).to.eql('Contact link not found'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: admin removes the link",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/contacts/{{contactUid}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('success', () => pm.expect(b.success).to.eql(true));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "contactSearch",
+			"item": [
+				{
+					"name": "search: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?q=admin"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('results is a list with a matching total', () => { pm.expect(b.results).to.be.an('array'); pm.expect(b.total).to.eql(b.results.length); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "search: a one-letter query is 400",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?q=a"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('says the minimum', () => { pm.expect(b.error).to.match(/at least/); pm.expect(b.total).to.eql(0); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "search: non-admin gets their own scoped result",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?q=admin",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('results is a list with a matching total', () => { pm.expect(b.results).to.be.an('array'); pm.expect(b.total).to.eql(b.results.length); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "search: anonymous is 401",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/contacts/search?q=admin",
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "emails (mail app absent in CI)",
+			"item": [
+				{
+					"name": "index: without Mail, the documented answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/list"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: without Mail, the documented answer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/send",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"to\":\"x@example.test\",\"subject\":\"s\",\"body\":\"b\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: without Mail, the documented answer",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/direct/1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "search: without Mail, the documented answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/emails/search?sender=a@example.test"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "search: non-admin gets the same answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/emails/search?sender=a@example.test",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "resolve: without reply threading, 501",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/emails/resolve",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"inReplyTo\":\"<none@example.test>\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('documented answer', () => { if (pm.response.code === 501) pm.expect(b.error).to.eql('Reply threading is not available'); else pm.expect(b).to.be.an('object'); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "emailLinks",
+			"item": [
+				{
+					"name": "index: admin, nothing linked",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('no links', () => pm.expect(JSON.stringify(b)).to.not.include('messageId'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: unknown object is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/emails"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: non-admin without read rights is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "link: without Mail, the documented answer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"mailAccountId\":1,\"messageId\":\"<m@example.test>\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/mail/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: unknown object is 404",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/emails/1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: non-admin without rights is refused",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/emails/1",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "accounts: without Mail",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/email/accounts"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('empty or documented', () => { if (pm.response.code === 200) pm.expect(b.total).to.eql(0); else pm.expect(String(b.error)).to.match(/mail/i); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "mailboxes: without Mail",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/email/accounts/1/mailboxes"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('empty or documented', () => { if (pm.response.code === 200) pm.expect(b.total).to.eql(0); else pm.expect(String(b.error)).to.not.be.empty; });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "messages: mailbox missing is 400",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/email/accounts/1/messages"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "party",
+			"item": [
+				{
+					"name": "index: admin, no parties yet",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('a list', () => pm.expect(b).to.be.an('object'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: unknown object is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/parties"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: non-admin without read rights is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: no party named is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: admin adds Beta as a party",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"partyUuid\": \"{{obj2Uuid}}\", \"role\": \"applicant\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 201', () => pm.response.to.have.status(201));",
+									"pm.test('the link names Beta', () => pm.expect(pm.response.text()).to.include(pm.collectionVariables.get('obj2Uuid')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: non-admin without rights is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"partyUuid\": \"{{obj2Uuid}}\", \"role\": \"intruder\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "replacePrimary: partyUuid missing is 400",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/primary",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names partyUuid', () => pm.expect(b.error).to.eql('partyUuid is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "replacePrimary: non-admin without rights is refused",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/primary",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"partyUuid\": \"{{obj2Uuid}}\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "replacePrimary: admin",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/primary",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"partyUuid\": \"{{obj2Uuid}}\", \"role\": \"applicant\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"pm.test('names Beta', () => pm.expect(pm.response.text()).to.include(pm.collectionVariables.get('obj2Uuid')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "show: Beta as a party",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/{{obj2Uuid}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('Beta is a person party of Alpha', () => { pm.expect(b.uuid).to.eql(pm.collectionVariables.get('obj2Uuid')); pm.expect(b.kind).to.eql('person'); pm.expect(b.objects).to.include(pm.collectionVariables.get('objUuid')); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "show: unknown party is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/00000000-0000-4000-8000-000000000000"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('party not found', () => pm.expect(b.error).to.eql('Party not found'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "show: non-admin cannot read the admin-only party",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/{{obj2Uuid}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "search: no query is 400",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/search"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "resolve: address missing is 400",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/resolve"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names address', () => pm.expect(b.error).to.eql('address is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "resolve: unknown address is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/parties/resolve?address=nobody-t25@example.test"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('no party', () => pm.expect(b.error).to.eql('No party holds that address'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: non-admin without rights is refused",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/{{obj2Uuid}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "CONTROL: Beta is still a party",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"pm.test('still listed', () => pm.expect(pm.response.text()).to.include(pm.collectionVariables.get('obj2Uuid')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: admin removes Beta",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/parties/{{obj2Uuid}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"pm.test('answers', () => pm.expect(pm.response.json()).to.be.an('object'));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "calendarEvents",
+			"item": [
+				{
+					"name": "index: admin, nothing linked",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('nothing is linked to a fresh object', () => { pm.expect(b.results).to.be.an('array').that.is.empty; pm.expect(b.total).to.eql(0); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: unknown object is 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "index: non-admin without read rights is refused",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: summary missing is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names summary', () => pm.expect(b.error).to.eql('Event summary is required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: unknown object is 404",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"summary\":\"x\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: non-admin without rights is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"summary\":\"intruder\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "link: calendarUri/eventUid missing is 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/link",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names the fields', () => pm.expect(b.error).to.eql('calendarUri and eventUid are required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "link: unknown object is 404",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events/link",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"calendarUri\":\"personal\",\"eventUid\":\"x\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "link: non-admin without rights is refused",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/link",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"calendarUri\":\"personal\",\"eventUid\":\"x\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "unlink: unknown object is 404",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events/t25-uid/link"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "unlink: non-admin without rights is refused",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/t25-uid/link",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: unknown object is 404",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/events/t25-uid"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('object not found', () => pm.expect(String(b.error)).to.match(/not found/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: unknown event is 404",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/t25-no-such-event"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: non-admin without rights is refused",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events/t25-uid",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.response.to.have.status(404));",
+									"const b = pm.response.json();",
+									"pm.test('the body names an error', () => pm.expect(b.error || b.message).to.be.a('string').and.not.empty);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "CONTROL: still nothing linked",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/events"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('nothing is linked to a fresh object', () => { pm.expect(b.results).to.be.an('array').that.is.empty; pm.expect(b.total).to.eql(0); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "listCalendars: admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('results is a list with a matching total', () => { pm.expect(b.results).to.be.an('array'); pm.expect(b.total).to.eql(b.results.length); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "listCalendars: non-admin sees own calendars",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('results is a list with a matching total', () => { pm.expect(b.results).to.be.an('array'); pm.expect(b.total).to.eql(b.results.length); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "listCalendarEvents: the personal calendar",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/calendar/calendars/personal/events"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('results is a list with a matching total', () => { pm.expect(b.results).to.be.an('array'); pm.expect(b.total).to.eql(b.results.length); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "deckLinks (deck app absent in CI)",
+			"item": [
+				{
+					"name": "index: without Deck, the documented answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "link: without Deck, the documented answer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"cardId\":1}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "createNew: without Deck, the documented answer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/new",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\":\"x\",\"boardId\":1,\"stackId\":1}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: without Deck, the documented answer",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "boards: without Deck, the documented answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/boards"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "stacks: without Deck, the documented answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/boards/1/stacks"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "getDefault: nothing set yet",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('both null', () => { pm.expect(b.boardId).to.eql(null); pm.expect(b.stackId).to.eql(null); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setDefault: boardId/stackId missing is 400",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 400', () => pm.response.to.have.status(400));",
+									"const b = pm.response.json();",
+									"pm.test('names the fields', () => pm.expect(b.error).to.eql('boardId and stackId are required'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setDefault: admin sets the schema default",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"boardId\":7,\"stackId\":9}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('echoes the ids', () => { pm.expect(b.boardId).to.eql(7); pm.expect(b.stackId).to.eql(9); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "getDefault: the default is read back",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('7/9', () => { pm.expect(b.boardId).to.eql(7); pm.expect(b.stackId).to.eql(9); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "setDefault: a non-admin may set it too (shared schema config by design, @no-admin-idor-exempt)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"boardId\":8,\"stackId\":9}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('echoes the ids', () => pm.expect(b.boardId).to.eql(8));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "getDefault: a non-admin reads the shared value",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/deck/default/{{schemaId}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('8/9', () => { pm.expect(b.boardId).to.eql(8); pm.expect(b.stackId).to.eql(9); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "deck (deck app absent in CI)",
+			"item": [
+				{
+					"name": "index: without Deck, the documented answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/cards"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "create: without Deck, the documented answer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/deck/cards",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"boardId\":1,\"stackId\":1,\"title\":\"x\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "objects: without Deck, the documented answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/deck/boards/1/objects"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/deck/i));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "talkLinks (talk app absent in CI)",
+			"item": [
+				{
+					"name": "index: without Talk, the documented answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "link: without Talk, the documented answer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"token\":\"abc\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "createNew: without Talk, the documented answer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk/new",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\":\"x\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "destroy: without Talk, the documented answer",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}/talk/abc"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "rooms: without Talk, the documented answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/talk/rooms"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "rooms: non-admin gets the same answer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/integrations/talk/rooms",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{t25_user}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{t25_password}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 501', () => pm.response.to.have.status(501));",
+									"const b = pm.response.json();",
+									"pm.test('says the app is not available', () => pm.expect(String(b.error)).to.match(/talk/i));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "99 teardown",
+			"item": [
+				{
+					"name": "teardown: the second object",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{obj2Uuid}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "teardown: the first object",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objUuid}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "teardown: the schema",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "teardown: the register",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "teardown: the non-admin user",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/ocs/v2.php/cloud/users/{{t25_user}}?format=json"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

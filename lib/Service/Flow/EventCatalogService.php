@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Declares the event catalog that backs flow triggers.
  */
-class EventCatalogService {
+class EventCatalogService implements EventCatalogServiceInterface {
 	/**
 	 * The canonical trigger catalog. Order is display order.
 	 *

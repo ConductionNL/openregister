@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * NOTIFICATION ROUTING — end to end, through the HTTP API a real client uses.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/notification-routing-per-group-and-scope/specs/` is
+ * once `openspec/changes/archive/2026-10-30-notification-routing-per-group-and-scope/specs/` is
  * archived into `openspec/specs/`:
  *
  * @e2e notificatie-engine::an-unassigned-case-warns-the-team

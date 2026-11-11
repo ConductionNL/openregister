@@ -9,12 +9,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\PartyControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\PartyController;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
@@ -29,7 +31,7 @@ use PHPUnit\Framework\TestCase;
  * The wire contract of the party endpoints: what each one answers, and with
  * which status, before anything below it is reached.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 class PartyControllerTest extends TestCase {
 
@@ -110,7 +112,7 @@ class PartyControllerTest extends TestCase {
 		$this->permissions = $this->createMock(PermissionHandler::class);
 		$this->objects->method('getCurrentSchemaEntity')->willReturn(new Schema());
 
-		$this->controller = new PartyController(
+		$this->controller = PartyControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objects,
@@ -174,7 +176,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testReplacePrimaryAnswersTheNewLink(): void {
 		$object = $this->objectLayerAnswers($this->caseObject());
@@ -199,7 +201,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testReplacePrimaryWithoutAPartyIs400(): void {
 		$this->objectLayerAnswers($this->caseObject());
@@ -218,7 +220,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testAnUnreadableObjectIs404(): void {
 		$this->objectLayerAnswers(null);
@@ -237,7 +239,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testARefusalKeepsItsStatus(): void {
 		$this->objectLayerAnswers($this->caseObject());
@@ -257,7 +259,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testCreateAnswers201(): void {
 		$this->objectLayerAnswers($this->caseObject());
@@ -277,7 +279,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testACappedQueryIsRefusedWithNoResults(): void {
 		$this->params = ['q' => 'jan'];
@@ -296,7 +298,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function testAnUnknownAddressIs404(): void {
 		$this->params = ['address' => 'niemand@example.org'];
@@ -322,7 +324,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	public function testAReaderCannotLinkAParty(): void {
 		$this->objectLayerAnswers($this->caseObject());
@@ -342,7 +344,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	public function testAReaderCannotUnlinkAParty(): void {
 		$this->objectLayerAnswers($this->caseObject());
@@ -361,7 +363,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	public function testAReaderCannotReplaceThePrimaryParty(): void {
 		$this->objectLayerAnswers($this->caseObject());
@@ -381,7 +383,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	public function testTheUpdateRightIsAskedOnTheObject(): void {
 		$object = $this->caseObject();
@@ -394,10 +396,8 @@ class PartyControllerTest extends TestCase {
 			->with(
 				$this->isInstanceOf(Schema::class),
 				'update',
-				null,
-				'marleen',
-				true,
-				$object
+				new PermissionCheckOptions(objectOwner: 'marleen', object: $object),
+				true
 			);
 		$this->roles->method('addParty')->willReturn($this->link(partyUuid: 'party-a'));
 
@@ -411,7 +411,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	public function testReadingThePartiesDoesNotAskTheUpdateRight(): void {
 		$this->objectLayerAnswers($this->caseObject());

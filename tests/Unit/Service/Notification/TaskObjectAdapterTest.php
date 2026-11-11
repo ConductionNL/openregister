@@ -20,8 +20,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use DateTime;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\Notification\TaskNotificationRules;
-use OCA\OpenRegister\Service\Notification\TaskObjectAdapter;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
 use PHPUnit\Framework\TestCase;
 
 class TaskObjectAdapterTest extends TestCase {

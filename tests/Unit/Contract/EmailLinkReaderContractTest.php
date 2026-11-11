@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/email-link-reader-contract/specs/generic-integrations/spec.md
+ * @spec openspec/specs/generic-integrations/spec.md
  */
 
 declare(strict_types=1);
@@ -27,6 +27,7 @@ use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -54,7 +55,7 @@ class EmailLinkReaderContractTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheContainerBindsTheInterface(): void {
-		$source = (string)file_get_contents(filename: __DIR__.'/../../../lib/AppInfo/Application.php');
+		$source = (string)file_get_contents(filename: __DIR__ . '/../../../lib/Service/ServiceRegistrar.php');
 
 		$this->assertMatchesRegularExpression(
 			pattern: '/registerService\(\s*EmailLinkReaderInterface::class,\s*function \(\$c\) \{\s*return \$c->get\(EmailLinkService::class\);/',
@@ -84,10 +85,12 @@ class EmailLinkReaderContractTest extends TestCase {
 
 		$reader = new EmailLinkService(
 			$mapper,
-			$this->createMock(originalClassName: IAppManager::class),
 			$this->createMock(originalClassName: IDBConnection::class),
-			$this->createMock(originalClassName: IUserSession::class),
-			$this->createMock(originalClassName: LoggerInterface::class)
+			new LinkServiceRuntime(
+				$this->createMock(originalClassName: IAppManager::class),
+				$this->createMock(originalClassName: IUserSession::class),
+				$this->createMock(originalClassName: LoggerInterface::class)
+			)
 		);
 
 		$result = $this->readThrough(reader: $reader);

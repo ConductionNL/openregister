@@ -1,0 +1,491 @@
+{
+    "filters keep unknown keys": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 3,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "register": "5",
+                "schema": "person",
+                "user": "alice",
+                "_extend": "a"
+            },
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "invalid dates are ignored": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "no parameters": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "non numeric limit": {
+        "types": {
+            "limit": "integer",
+            "offset": "integer",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 0,
+            "offset": 1,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "null values are ignored": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "numeric keys": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 2,
+            "offset": null,
+            "page": null,
+            "filters": [
+                "zero"
+            ],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "order without sort": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "page with offset keeps the offset": {
+        "types": {
+            "limit": "integer",
+            "offset": "integer",
+            "page": "integer",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": 3,
+            "page": 4,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "page without offset": {
+        "types": {
+            "limit": "integer",
+            "offset": "integer",
+            "page": "integer",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 25,
+            "offset": 75,
+            "page": 4,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "page zero": {
+        "types": {
+            "limit": "integer",
+            "offset": "integer",
+            "page": "integer",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": -20,
+            "page": 0,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "plain pagination": {
+        "types": {
+            "limit": "integer",
+            "offset": "integer",
+            "page": "integer",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 5,
+            "offset": 10,
+            "page": 3,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "plain wins over underscore": {
+        "types": {
+            "limit": "integer",
+            "offset": "integer",
+            "page": "integer",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 9,
+            "offset": 2,
+            "page": 5,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "search plain": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "string",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": "needle",
+            "from": null,
+            "to": null
+        }
+    },
+    "search underscore wins": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "string",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": "first",
+            "from": null,
+            "to": null
+        }
+    },
+    "sort plain with order": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC",
+                "title": "ASC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "sort underscore wins": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC",
+                "name": "asc"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "sort without order": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "underscore page without offset uses the default limit": {
+        "types": {
+            "limit": "integer",
+            "offset": "integer",
+            "page": "integer",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 20,
+            "offset": 40,
+            "page": 3,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "underscore pagination": {
+        "types": {
+            "limit": "integer",
+            "offset": "integer",
+            "page": "integer",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "NULL",
+            "to": "NULL"
+        },
+        "result": {
+            "limit": 7,
+            "offset": 14,
+            "page": 2,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": null,
+            "to": null
+        }
+    },
+    "valid dates": {
+        "types": {
+            "limit": "integer",
+            "offset": "NULL",
+            "page": "NULL",
+            "filters": "array",
+            "sort": "array",
+            "search": "NULL",
+            "from": "string",
+            "to": "string"
+        },
+        "result": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": {
+                "created": "DESC"
+            },
+            "search": null,
+            "from": "DateTime 2026-01-02T03:04:05+00:00",
+            "to": "DateTime 2026-02-03T00:00:00+02:00"
+        }
+    }
+}

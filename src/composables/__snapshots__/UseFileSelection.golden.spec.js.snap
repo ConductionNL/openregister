@@ -1,0 +1,518 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`useFileSelection onDrop golden allowMultiple undefined 1`] = `
+[
+  {
+    "files": [
+      {
+        "inputIndex": 0,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": null,
+        "tags": null,
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 1,
+    "onFileSelect": 1,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+  {
+    "files": [
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "c",
+        "size": 6,
+        "status": {
+          "configurable": true,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": true,
+          "enumerable": true,
+          "value": [],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 2,
+    "onFileSelect": 2,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+]
+`;
+
+exports[`useFileSelection onDrop golden empty and missing input 1`] = `
+[
+  {
+    "files": null,
+    "onFileDrop": 0,
+    "onFileSelect": 0,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": true,
+  },
+  {
+    "files": null,
+    "onFileDrop": 0,
+    "onFileSelect": 0,
+    "sameArrayAsInput": true,
+    "sameListAsBefore": true,
+  },
+  {
+    "files": null,
+    "onFileDrop": 0,
+    "onFileSelect": 0,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": true,
+  },
+]
+`;
+
+exports[`useFileSelection onDrop golden multiple, FileList onto empty 1`] = `
+[
+  {
+    "files": [
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [
+            "y",
+          ],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 1,
+    "onFileSelect": 1,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+]
+`;
+
+exports[`useFileSelection onDrop golden multiple, all duplicates 1`] = `
+[
+  {
+    "files": [
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 1,
+    "onFileSelect": 1,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+  {
+    "files": [
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": 0,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 2,
+    "onFileSelect": 2,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+]
+`;
+
+exports[`useFileSelection onDrop golden multiple, array onto empty 1`] = `
+[
+  {
+    "files": [
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [
+            "x",
+          ],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "b",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [
+            "x",
+          ],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 1,
+    "onFileSelect": 1,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+]
+`;
+
+exports[`useFileSelection onDrop golden multiple, drops onto a filled list with a duplicate name 1`] = `
+[
+  {
+    "files": [
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [
+            "one",
+          ],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 1,
+    "onFileSelect": 1,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+  {
+    "files": [
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": 0,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [
+            "one",
+          ],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "b",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [
+            "two",
+          ],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 2,
+    "onFileSelect": 2,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+  {
+    "files": [
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": 0,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [
+            "one",
+          ],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": 1,
+        "lastModified": 42,
+        "name": "b",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [
+            "two",
+          ],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "c",
+        "size": 6,
+        "status": {
+          "configurable": false,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": false,
+          "enumerable": true,
+          "value": [
+            "two",
+          ],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 3,
+    "onFileSelect": 3,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+]
+`;
+
+exports[`useFileSelection onDrop golden single, FileList, two files 1`] = `
+[
+  {
+    "files": [
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": {
+          "configurable": true,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": true,
+          "enumerable": true,
+          "value": [
+            "t",
+          ],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 1,
+    "onFileSelect": 1,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+]
+`;
+
+exports[`useFileSelection onDrop golden single, array, two files 1`] = `
+[
+  {
+    "files": [
+      {
+        "inputIndex": 0,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": null,
+        "tags": null,
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 1,
+    "onFileSelect": 1,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+]
+`;
+
+exports[`useFileSelection onDrop golden single, then a second drop 1`] = `
+[
+  {
+    "files": [
+      {
+        "inputIndex": 0,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "a",
+        "size": 6,
+        "status": null,
+        "tags": null,
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 1,
+    "onFileSelect": 1,
+    "sameArrayAsInput": true,
+    "sameListAsBefore": false,
+  },
+  {
+    "files": [
+      {
+        "inputIndex": -1,
+        "isFile": true,
+        "keptFromBefore": -1,
+        "lastModified": 42,
+        "name": "b",
+        "size": 6,
+        "status": {
+          "configurable": true,
+          "enumerable": true,
+          "value": "pending",
+          "writable": true,
+        },
+        "tags": {
+          "configurable": true,
+          "enumerable": true,
+          "value": [],
+          "writable": true,
+        },
+        "type": "text/plain",
+      },
+    ],
+    "onFileDrop": 2,
+    "onFileSelect": 2,
+    "sameArrayAsInput": false,
+    "sameListAsBefore": false,
+  },
+]
+`;

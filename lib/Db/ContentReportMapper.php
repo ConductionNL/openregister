@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -23,20 +23,21 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Reads and writes content reports.
  *
  * @template-extends QBMapper<ContentReport>
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class ContentReportMapper extends QBMapper {
+class ContentReportMapper extends QBMapper implements ContentReportMapperInterface {
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -59,15 +60,10 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @throws DoesNotExistException When no row matches the id.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function find(int $id): ContentReport {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -77,23 +73,15 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @return ContentReport|null Null when no row matches.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findByUuid(string $uuid): ?ContentReport {
-		if ($uuid === '') {
-			return null;
+		$found = $this->findOneByFilledColumn(name: 'uuid', value: $uuid);
+		if ($found instanceof ContentReport) {
+			return $found;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
+		return null;
 	}//end findByUuid()
 
 	/**
@@ -106,7 +94,7 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @return ContentReport[] The reports.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findByObjectUuid(string $objectUuid): array {
 		if ($objectUuid === '') {
@@ -125,28 +113,27 @@ class ContentReportMapper extends QBMapper {
 	/**
 	 * List reports, newest first, optionally filtered.
 	 *
-	 * @param string|null $status Optional review filter.
-	 * @param string|null $organisationId Optional organisation filter.
-	 * @param int|null $limit Optional page size.
+	 * @param ListQuery $query Optional `status` and `organisation_id` filters (empty is no filter) and the page size
+	 *                         (unbounded or not positive is no limit).
 	 *
 	 * @return ContentReport[] The matching reports.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function findAll(?string $status = null, ?string $organisationId = null, ?int $limit = null): array {
+	public function findAll(ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->orderBy('id', 'DESC');
 
-		if ($status !== null && $status !== '') {
-			$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
+		foreach (['status', 'organisation_id'] as $column) {
+			$value = ($query->filters[$column] ?? null);
+			if ($value !== null && $value !== '') {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+			}
 		}
 
-		if ($organisationId !== null && $organisationId !== '') {
-			$qb->andWhere($qb->expr()->eq('organisation_id', $qb->createNamedParameter($organisationId)));
-		}
-
+		$limit = $query->limitOrNull();
 		if ($limit !== null && $limit > 0) {
 			$qb->setMaxResults($limit);
 		}
@@ -161,21 +148,10 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @return ContentReport The persisted report.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
-	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function insert($entity): ContentReport {
-		if ($entity->getUuid() === null || $entity->getUuid() === '') {
-			$entity->setUuid((string)Uuid::v4());
-		}
-
-		$now = new DateTime();
-		if ($entity->getCreated() === null) {
-			$entity->setCreated($now);
-		}
-
-		$entity->setUpdated($now);
+		(new NewRowStamps())->onInsert(entity: $entity);
 
 		return parent::insert(entity: $entity);
 	}//end insert()
@@ -187,7 +163,7 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @return ContentReport The persisted report.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function update($entity): ContentReport {
 		$entity->setUpdated(new DateTime());

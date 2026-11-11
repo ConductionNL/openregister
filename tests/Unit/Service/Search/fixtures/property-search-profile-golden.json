@@ -1,0 +1,482 @@
+{
+    "type string": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": true
+    },
+    "type STRING": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": true
+    },
+    "type integer": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "range",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "range",
+        "participatesInFreeText": false
+    },
+    "type Number": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "range",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "range",
+        "participatesInFreeText": false
+    },
+    "type boolean": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "boolean",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "exact",
+        "autoDetect": "exact",
+        "inputControlFor": "boolean",
+        "participatesInFreeText": false
+    },
+    "type array": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "multiselect",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "exact",
+        "autoDetect": "exact",
+        "inputControlFor": "multiselect",
+        "participatesInFreeText": false
+    },
+    "type object": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "exact",
+        "autoDetect": "exact",
+        "inputControlFor": "text",
+        "participatesInFreeText": false
+    },
+    "type null": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "exact",
+        "autoDetect": "exact",
+        "inputControlFor": "text",
+        "participatesInFreeText": false
+    },
+    "type ": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "exact",
+        "autoDetect": "exact",
+        "inputControlFor": "text",
+        "participatesInFreeText": false
+    },
+    "no type": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": false
+    },
+    "date format": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "date-range",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "date-range",
+        "participatesInFreeText": false
+    },
+    "date-time upper": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "date-range",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "date-range",
+        "participatesInFreeText": false
+    },
+    "datetime on integer": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "date-range",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "date-range",
+        "participatesInFreeText": false
+    },
+    "time format": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "date-range",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "date-range",
+        "participatesInFreeText": false
+    },
+    "email format": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": true
+    },
+    "enum string": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "select",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "select",
+        "participatesInFreeText": true
+    },
+    "enum not array": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": true
+    },
+    "enum on boolean": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "boolean",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "exact",
+        "autoDetect": "exact",
+        "inputControlFor": "boolean",
+        "participatesInFreeText": false
+    },
+    "enum on array": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "multiselect",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "exact",
+        "autoDetect": "exact",
+        "inputControlFor": "multiselect",
+        "participatesInFreeText": false
+    },
+    "enum on object": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "select",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "exact",
+        "autoDetect": "exact",
+        "inputControlFor": "select",
+        "participatesInFreeText": false
+    },
+    "enum null": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "exact",
+        "autoDetect": "exact",
+        "inputControlFor": "text",
+        "participatesInFreeText": false
+    },
+    "declared exact": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "text",
+            "declared": true
+        },
+        "declaresMatchType": true,
+        "matchTypeFor": "exact",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": true
+    },
+    "declared prefix padded": {
+        "declaredBy": {
+            "matchType": "prefix",
+            "inputControl": "text",
+            "declared": true
+        },
+        "declaresMatchType": true,
+        "matchTypeFor": "prefix",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": true
+    },
+    "declared range on string": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "range",
+            "declared": true
+        },
+        "declaresMatchType": true,
+        "matchTypeFor": "range",
+        "autoDetect": "fulltext",
+        "inputControlFor": "range",
+        "participatesInFreeText": false
+    },
+    "declared range on date": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "date-range",
+            "declared": true
+        },
+        "declaresMatchType": true,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "date-range",
+        "participatesInFreeText": false
+    },
+    "declared range on enum": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "range",
+            "declared": true
+        },
+        "declaresMatchType": true,
+        "matchTypeFor": "range",
+        "autoDetect": "fulltext",
+        "inputControlFor": "range",
+        "participatesInFreeText": false
+    },
+    "declared fuzzy": {
+        "declaredBy": {
+            "matchType": "fuzzy",
+            "inputControl": "text",
+            "declared": true
+        },
+        "declaresMatchType": true,
+        "matchTypeFor": "fuzzy",
+        "autoDetect": "range",
+        "inputControlFor": "text",
+        "participatesInFreeText": true
+    },
+    "declared fulltext on boolean": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "boolean",
+            "declared": true
+        },
+        "declaresMatchType": true,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "exact",
+        "inputControlFor": "boolean",
+        "participatesInFreeText": true
+    },
+    "declared unknown": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "range",
+            "declared": true
+        },
+        "declaresMatchType": true,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "range",
+        "participatesInFreeText": false
+    },
+    "declared blank": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": true
+    },
+    "declared not string": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": true
+    },
+    "control select": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "select",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "select",
+        "participatesInFreeText": true
+    },
+    "control padded upper": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "date-range",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "date-range",
+        "participatesInFreeText": false
+    },
+    "control unknown": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "range",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "range",
+        "participatesInFreeText": false
+    },
+    "control not string": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "boolean",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "exact",
+        "autoDetect": "exact",
+        "inputControlFor": "boolean",
+        "participatesInFreeText": false
+    },
+    "control unknown on date": {
+        "declaredBy": {
+            "matchType": "range",
+            "inputControl": "date-range",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "range",
+        "autoDetect": "range",
+        "inputControlFor": "date-range",
+        "participatesInFreeText": false
+    },
+    "control unknown on enum": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "select",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "select",
+        "participatesInFreeText": true
+    },
+    "encrypted string": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": false
+    },
+    "encrypted truthy string": {
+        "declaredBy": {
+            "matchType": "fulltext",
+            "inputControl": "text",
+            "declared": false
+        },
+        "declaresMatchType": false,
+        "matchTypeFor": "fulltext",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": true
+    },
+    "encrypted with declared exact": {
+        "declaredBy": {
+            "matchType": "exact",
+            "inputControl": "text",
+            "declared": true
+        },
+        "declaresMatchType": true,
+        "matchTypeFor": "exact",
+        "autoDetect": "fulltext",
+        "inputControlFor": "text",
+        "participatesInFreeText": false
+    }
+}

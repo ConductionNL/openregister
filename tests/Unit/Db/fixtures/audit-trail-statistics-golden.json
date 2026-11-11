@@ -1,0 +1,1882 @@
+{
+    "getStatistics reg NULL sch NULL rows": {
+        "result": {
+            "total": 7,
+            "size": 120
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics reg NULL sch NULL empty": {
+        "result": {
+            "total": 0,
+            "size": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics exclude reg NULL sch NULL rows": {
+        "result": {
+            "total": 7,
+            "size": 120
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p1 = 1, 1",
+            "#1 expr.neq(register, :p1, NULL)",
+            "#1 expr.isNull(schema)",
+            "#1 param :p2 = 2, 1",
+            "#1 expr.neq(schema, :p2, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p1, NULL), isNull(schema), neq(schema, :p2, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p3 = 3, 1",
+            "#1 expr.neq(register, :p3, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p3, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(schema)",
+            "#1 param :p4 = 4, 1",
+            "#1 expr.neq(schema, :p4, NULL)",
+            "#1 andWhere(orX()+[isNull(schema), neq(schema, :p4, NULL)])",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics exclude reg NULL sch NULL empty": {
+        "result": {
+            "total": 0,
+            "size": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p1 = 1, 1",
+            "#1 expr.neq(register, :p1, NULL)",
+            "#1 expr.isNull(schema)",
+            "#1 param :p2 = 2, 1",
+            "#1 expr.neq(schema, :p2, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p1, NULL), isNull(schema), neq(schema, :p2, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p3 = 3, 1",
+            "#1 expr.neq(register, :p3, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p3, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(schema)",
+            "#1 param :p4 = 4, 1",
+            "#1 expr.neq(schema, :p4, NULL)",
+            "#1 andWhere(orX()+[isNull(schema), neq(schema, :p4, NULL)])",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData reg NULL sch NULL rows": {
+        "result": {
+            "labels": [
+                "2026-01-02",
+                "2026-01-03"
+            ],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": [
+                        3,
+                        0
+                    ]
+                },
+                {
+                    "name": "Update",
+                    "data": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "name": "Delete",
+                    "data": [
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "name": "Read",
+                    "data": [
+                        2,
+                        0
+                    ]
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData reg NULL sch NULL empty": {
+        "result": {
+            "labels": [],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": []
+                },
+                {
+                    "name": "Update",
+                    "data": []
+                },
+                {
+                    "name": "Delete",
+                    "data": []
+                },
+                {
+                    "name": "Read",
+                    "data": []
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData range reg NULL sch NULL rows": {
+        "result": {
+            "labels": [
+                "2026-01-02",
+                "2026-01-03"
+            ],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": [
+                        3,
+                        0
+                    ]
+                },
+                {
+                    "name": "Update",
+                    "data": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "name": "Delete",
+                    "data": [
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "name": "Read",
+                    "data": [
+                        2,
+                        0
+                    ]
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 2026-01-01, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-05, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData range reg NULL sch NULL empty": {
+        "result": {
+            "labels": [],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": []
+                },
+                {
+                    "name": "Update",
+                    "data": []
+                },
+                {
+                    "name": "Delete",
+                    "data": []
+                },
+                {
+                    "name": "Read",
+                    "data": []
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 2026-01-01, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-05, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getDetailedStatistics reg NULL sch NULL rows": {
+        "result": {
+            "total": 7,
+            "creates": 3,
+            "updates": 1,
+            "deletes": 0,
+            "reads": 2
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 executeQuery()",
+            "#2 select(action, COUNT(*) as count)",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p1 = <now -12h>, 2",
+            "#2 expr.gte(created, :p1, NULL)",
+            "#2 where(gte(created, :p1, NULL))",
+            "#2 groupBy(action)",
+            "#2 executeQuery()"
+        ]
+    },
+    "getDetailedStatistics reg NULL sch NULL empty": {
+        "result": {
+            "total": 0,
+            "creates": 0,
+            "updates": 0,
+            "deletes": 0,
+            "reads": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 executeQuery()",
+            "#2 select(action, COUNT(*) as count)",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p1 = <now -12h>, 2",
+            "#2 expr.gte(created, :p1, NULL)",
+            "#2 where(gte(created, :p1, NULL))",
+            "#2 groupBy(action)",
+            "#2 executeQuery()"
+        ]
+    },
+    "getActionCounts reg NULL sch NULL rows": {
+        "result": {
+            "total": 7,
+            "create": 3,
+            "update": 1,
+            "delete": 0,
+            "read": 2
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(action)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionCounts reg NULL sch NULL empty": {
+        "result": {
+            "total": 0,
+            "create": 0,
+            "update": 0,
+            "delete": 0,
+            "read": 0
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(action)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionDistribution reg NULL sch NULL rows": {
+        "result": {
+            "actions": [
+                {
+                    "name": "create",
+                    "count": 3,
+                    "percentage": 42.86
+                },
+                {
+                    "name": "read",
+                    "count": 2,
+                    "percentage": 28.57
+                },
+                {
+                    "name": "update",
+                    "count": 1,
+                    "percentage": 14.29
+                },
+                {
+                    "name": "other",
+                    "count": 1,
+                    "percentage": 14.29
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -48h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(action)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionDistribution reg NULL sch NULL empty": {
+        "result": {
+            "actions": []
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -48h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(action)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getMostActiveObjects reg NULL sch NULL rows": {
+        "result": {
+            "objects": [
+                {
+                    "id": "obj-1",
+                    "name": "Object obj-1",
+                    "count": 3
+                },
+                {
+                    "id": "obj-2",
+                    "name": "Object obj-2",
+                    "count": 2
+                },
+                {
+                    "id": "obj-3",
+                    "name": "Object obj-3",
+                    "count": 1
+                },
+                {
+                    "id": "obj-4",
+                    "name": "Object obj-4",
+                    "count": 1
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(object, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -6h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(object)",
+            "#1 orderBy(count, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getMostActiveObjects reg NULL sch NULL empty": {
+        "result": {
+            "objects": []
+        },
+        "queries": [
+            "#1 select(object, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -6h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(object)",
+            "#1 orderBy(count, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics reg 5 sch NULL rows": {
+        "result": {
+            "total": 7,
+            "size": 120
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics reg 5 sch NULL empty": {
+        "result": {
+            "total": 0,
+            "size": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics exclude reg 5 sch NULL rows": {
+        "result": {
+            "total": 7,
+            "size": 120
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p2 = 1, 1",
+            "#1 expr.neq(register, :p2, NULL)",
+            "#1 expr.isNull(schema)",
+            "#1 param :p3 = 2, 1",
+            "#1 expr.neq(schema, :p3, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p2, NULL), isNull(schema), neq(schema, :p3, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p4 = 3, 1",
+            "#1 expr.neq(register, :p4, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p4, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(schema)",
+            "#1 param :p5 = 4, 1",
+            "#1 expr.neq(schema, :p5, NULL)",
+            "#1 andWhere(orX()+[isNull(schema), neq(schema, :p5, NULL)])",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics exclude reg 5 sch NULL empty": {
+        "result": {
+            "total": 0,
+            "size": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p2 = 1, 1",
+            "#1 expr.neq(register, :p2, NULL)",
+            "#1 expr.isNull(schema)",
+            "#1 param :p3 = 2, 1",
+            "#1 expr.neq(schema, :p3, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p2, NULL), isNull(schema), neq(schema, :p3, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p4 = 3, 1",
+            "#1 expr.neq(register, :p4, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p4, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(schema)",
+            "#1 param :p5 = 4, 1",
+            "#1 expr.neq(schema, :p5, NULL)",
+            "#1 andWhere(orX()+[isNull(schema), neq(schema, :p5, NULL)])",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData reg 5 sch NULL rows": {
+        "result": {
+            "labels": [
+                "2026-01-02",
+                "2026-01-03"
+            ],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": [
+                        3,
+                        0
+                    ]
+                },
+                {
+                    "name": "Update",
+                    "data": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "name": "Delete",
+                    "data": [
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "name": "Read",
+                    "data": [
+                        2,
+                        0
+                    ]
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData reg 5 sch NULL empty": {
+        "result": {
+            "labels": [],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": []
+                },
+                {
+                    "name": "Update",
+                    "data": []
+                },
+                {
+                    "name": "Delete",
+                    "data": []
+                },
+                {
+                    "name": "Read",
+                    "data": []
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData range reg 5 sch NULL rows": {
+        "result": {
+            "labels": [
+                "2026-01-02",
+                "2026-01-03"
+            ],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": [
+                        3,
+                        0
+                    ]
+                },
+                {
+                    "name": "Update",
+                    "data": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "name": "Delete",
+                    "data": [
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "name": "Read",
+                    "data": [
+                        2,
+                        0
+                    ]
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 2026-01-01, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-05, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 param :p3 = 5, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData range reg 5 sch NULL empty": {
+        "result": {
+            "labels": [],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": []
+                },
+                {
+                    "name": "Update",
+                    "data": []
+                },
+                {
+                    "name": "Delete",
+                    "data": []
+                },
+                {
+                    "name": "Read",
+                    "data": []
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 2026-01-01, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-05, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 param :p3 = 5, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getDetailedStatistics reg 5 sch NULL rows": {
+        "result": {
+            "total": 7,
+            "creates": 3,
+            "updates": 1,
+            "deletes": 0,
+            "reads": 2
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(action, COUNT(*) as count)",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p2 = <now -12h>, 2",
+            "#2 expr.gte(created, :p2, NULL)",
+            "#2 where(gte(created, :p2, NULL))",
+            "#2 groupBy(action)",
+            "#2 param :p3 = 5, 2",
+            "#2 expr.eq(register, :p3, NULL)",
+            "#2 andWhere(eq(register, :p3, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "getDetailedStatistics reg 5 sch NULL empty": {
+        "result": {
+            "total": 0,
+            "creates": 0,
+            "updates": 0,
+            "deletes": 0,
+            "reads": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(action, COUNT(*) as count)",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p2 = <now -12h>, 2",
+            "#2 expr.gte(created, :p2, NULL)",
+            "#2 where(gte(created, :p2, NULL))",
+            "#2 groupBy(action)",
+            "#2 param :p3 = 5, 2",
+            "#2 expr.eq(register, :p3, NULL)",
+            "#2 andWhere(eq(register, :p3, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "getActionCounts reg 5 sch NULL rows": {
+        "result": {
+            "total": 7,
+            "create": 3,
+            "update": 1,
+            "delete": 0,
+            "read": 2
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(action)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionCounts reg 5 sch NULL empty": {
+        "result": {
+            "total": 0,
+            "create": 0,
+            "update": 0,
+            "delete": 0,
+            "read": 0
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(action)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionDistribution reg 5 sch NULL rows": {
+        "result": {
+            "actions": [
+                {
+                    "name": "create",
+                    "count": 3,
+                    "percentage": 42.86
+                },
+                {
+                    "name": "read",
+                    "count": 2,
+                    "percentage": 28.57
+                },
+                {
+                    "name": "update",
+                    "count": 1,
+                    "percentage": 14.29
+                },
+                {
+                    "name": "other",
+                    "count": 1,
+                    "percentage": 14.29
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -48h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(action)",
+            "#1 param :p2 = 5, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionDistribution reg 5 sch NULL empty": {
+        "result": {
+            "actions": []
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -48h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(action)",
+            "#1 param :p2 = 5, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getMostActiveObjects reg 5 sch NULL rows": {
+        "result": {
+            "objects": [
+                {
+                    "id": "obj-1",
+                    "name": "Object obj-1",
+                    "count": 3
+                },
+                {
+                    "id": "obj-2",
+                    "name": "Object obj-2",
+                    "count": 2
+                },
+                {
+                    "id": "obj-3",
+                    "name": "Object obj-3",
+                    "count": 1
+                },
+                {
+                    "id": "obj-4",
+                    "name": "Object obj-4",
+                    "count": 1
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(object, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -6h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(object)",
+            "#1 orderBy(count, DESC)",
+            "#1 param :p2 = 5, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getMostActiveObjects reg 5 sch NULL empty": {
+        "result": {
+            "objects": []
+        },
+        "queries": [
+            "#1 select(object, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -6h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(object)",
+            "#1 orderBy(count, DESC)",
+            "#1 param :p2 = 5, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics reg NULL sch 9 rows": {
+        "result": {
+            "total": 7,
+            "size": 120
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 9, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics reg NULL sch 9 empty": {
+        "result": {
+            "total": 0,
+            "size": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 9, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics exclude reg NULL sch 9 rows": {
+        "result": {
+            "total": 7,
+            "size": 120
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 9, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p2 = 1, 1",
+            "#1 expr.neq(register, :p2, NULL)",
+            "#1 expr.isNull(schema)",
+            "#1 param :p3 = 2, 1",
+            "#1 expr.neq(schema, :p3, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p2, NULL), isNull(schema), neq(schema, :p3, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p4 = 3, 1",
+            "#1 expr.neq(register, :p4, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p4, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(schema)",
+            "#1 param :p5 = 4, 1",
+            "#1 expr.neq(schema, :p5, NULL)",
+            "#1 andWhere(orX()+[isNull(schema), neq(schema, :p5, NULL)])",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics exclude reg NULL sch 9 empty": {
+        "result": {
+            "total": 0,
+            "size": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 9, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p2 = 1, 1",
+            "#1 expr.neq(register, :p2, NULL)",
+            "#1 expr.isNull(schema)",
+            "#1 param :p3 = 2, 1",
+            "#1 expr.neq(schema, :p3, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p2, NULL), isNull(schema), neq(schema, :p3, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p4 = 3, 1",
+            "#1 expr.neq(register, :p4, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p4, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(schema)",
+            "#1 param :p5 = 4, 1",
+            "#1 expr.neq(schema, :p5, NULL)",
+            "#1 andWhere(orX()+[isNull(schema), neq(schema, :p5, NULL)])",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData reg NULL sch 9 rows": {
+        "result": {
+            "labels": [
+                "2026-01-02",
+                "2026-01-03"
+            ],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": [
+                        3,
+                        0
+                    ]
+                },
+                {
+                    "name": "Update",
+                    "data": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "name": "Delete",
+                    "data": [
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "name": "Read",
+                    "data": [
+                        2,
+                        0
+                    ]
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 9, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData reg NULL sch 9 empty": {
+        "result": {
+            "labels": [],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": []
+                },
+                {
+                    "name": "Update",
+                    "data": []
+                },
+                {
+                    "name": "Delete",
+                    "data": []
+                },
+                {
+                    "name": "Read",
+                    "data": []
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 9, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData range reg NULL sch 9 rows": {
+        "result": {
+            "labels": [
+                "2026-01-02",
+                "2026-01-03"
+            ],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": [
+                        3,
+                        0
+                    ]
+                },
+                {
+                    "name": "Update",
+                    "data": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "name": "Delete",
+                    "data": [
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "name": "Read",
+                    "data": [
+                        2,
+                        0
+                    ]
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 2026-01-01, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-05, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 param :p3 = 9, 2",
+            "#1 expr.eq(schema, :p3, NULL)",
+            "#1 andWhere(eq(schema, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData range reg NULL sch 9 empty": {
+        "result": {
+            "labels": [],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": []
+                },
+                {
+                    "name": "Update",
+                    "data": []
+                },
+                {
+                    "name": "Delete",
+                    "data": []
+                },
+                {
+                    "name": "Read",
+                    "data": []
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 2026-01-01, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-05, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 param :p3 = 9, 2",
+            "#1 expr.eq(schema, :p3, NULL)",
+            "#1 andWhere(eq(schema, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getDetailedStatistics reg NULL sch 9 rows": {
+        "result": {
+            "total": 7,
+            "creates": 3,
+            "updates": 1,
+            "deletes": 0,
+            "reads": 2
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 9, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(action, COUNT(*) as count)",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p2 = <now -12h>, 2",
+            "#2 expr.gte(created, :p2, NULL)",
+            "#2 where(gte(created, :p2, NULL))",
+            "#2 groupBy(action)",
+            "#2 param :p3 = 9, 2",
+            "#2 expr.eq(schema, :p3, NULL)",
+            "#2 andWhere(eq(schema, :p3, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "getDetailedStatistics reg NULL sch 9 empty": {
+        "result": {
+            "total": 0,
+            "creates": 0,
+            "updates": 0,
+            "deletes": 0,
+            "reads": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 9, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(action, COUNT(*) as count)",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p2 = <now -12h>, 2",
+            "#2 expr.gte(created, :p2, NULL)",
+            "#2 where(gte(created, :p2, NULL))",
+            "#2 groupBy(action)",
+            "#2 param :p3 = 9, 2",
+            "#2 expr.eq(schema, :p3, NULL)",
+            "#2 andWhere(eq(schema, :p3, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "getActionCounts reg NULL sch 9 rows": {
+        "result": {
+            "total": 7,
+            "create": 3,
+            "update": 1,
+            "delete": 0,
+            "read": 2
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(action)",
+            "#1 param :p1 = 9, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionCounts reg NULL sch 9 empty": {
+        "result": {
+            "total": 0,
+            "create": 0,
+            "update": 0,
+            "delete": 0,
+            "read": 0
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(action)",
+            "#1 param :p1 = 9, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionDistribution reg NULL sch 9 rows": {
+        "result": {
+            "actions": [
+                {
+                    "name": "create",
+                    "count": 3,
+                    "percentage": 42.86
+                },
+                {
+                    "name": "read",
+                    "count": 2,
+                    "percentage": 28.57
+                },
+                {
+                    "name": "update",
+                    "count": 1,
+                    "percentage": 14.29
+                },
+                {
+                    "name": "other",
+                    "count": 1,
+                    "percentage": 14.29
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -48h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(action)",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionDistribution reg NULL sch 9 empty": {
+        "result": {
+            "actions": []
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -48h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(action)",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getMostActiveObjects reg NULL sch 9 rows": {
+        "result": {
+            "objects": [
+                {
+                    "id": "obj-1",
+                    "name": "Object obj-1",
+                    "count": 3
+                },
+                {
+                    "id": "obj-2",
+                    "name": "Object obj-2",
+                    "count": 2
+                },
+                {
+                    "id": "obj-3",
+                    "name": "Object obj-3",
+                    "count": 1
+                },
+                {
+                    "id": "obj-4",
+                    "name": "Object obj-4",
+                    "count": 1
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(object, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -6h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(object)",
+            "#1 orderBy(count, DESC)",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getMostActiveObjects reg NULL sch 9 empty": {
+        "result": {
+            "objects": []
+        },
+        "queries": [
+            "#1 select(object, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -6h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(object)",
+            "#1 orderBy(count, DESC)",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics reg 5 sch 9 rows": {
+        "result": {
+            "total": 7,
+            "size": 120
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics reg 5 sch 9 empty": {
+        "result": {
+            "total": 0,
+            "size": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics exclude reg 5 sch 9 rows": {
+        "result": {
+            "total": 7,
+            "size": 120
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p3 = 1, 1",
+            "#1 expr.neq(register, :p3, NULL)",
+            "#1 expr.isNull(schema)",
+            "#1 param :p4 = 2, 1",
+            "#1 expr.neq(schema, :p4, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p3, NULL), isNull(schema), neq(schema, :p4, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p5 = 3, 1",
+            "#1 expr.neq(register, :p5, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p5, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(schema)",
+            "#1 param :p6 = 4, 1",
+            "#1 expr.neq(schema, :p6, NULL)",
+            "#1 andWhere(orX()+[isNull(schema), neq(schema, :p6, NULL)])",
+            "#1 executeQuery()"
+        ]
+    },
+    "getStatistics exclude reg 5 sch 9 empty": {
+        "result": {
+            "total": 0,
+            "size": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p3 = 1, 1",
+            "#1 expr.neq(register, :p3, NULL)",
+            "#1 expr.isNull(schema)",
+            "#1 param :p4 = 2, 1",
+            "#1 expr.neq(schema, :p4, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p3, NULL), isNull(schema), neq(schema, :p4, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(register)",
+            "#1 param :p5 = 3, 1",
+            "#1 expr.neq(register, :p5, NULL)",
+            "#1 andWhere(orX()+[isNull(register), neq(register, :p5, NULL)])",
+            "#1 expr.orX()",
+            "#1 expr.isNull(schema)",
+            "#1 param :p6 = 4, 1",
+            "#1 expr.neq(schema, :p6, NULL)",
+            "#1 andWhere(orX()+[isNull(schema), neq(schema, :p6, NULL)])",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData reg 5 sch 9 rows": {
+        "result": {
+            "labels": [
+                "2026-01-02",
+                "2026-01-03"
+            ],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": [
+                        3,
+                        0
+                    ]
+                },
+                {
+                    "name": "Update",
+                    "data": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "name": "Delete",
+                    "data": [
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "name": "Read",
+                    "data": [
+                        2,
+                        0
+                    ]
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData reg 5 sch 9 empty": {
+        "result": {
+            "labels": [],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": []
+                },
+                {
+                    "name": "Update",
+                    "data": []
+                },
+                {
+                    "name": "Delete",
+                    "data": []
+                },
+                {
+                    "name": "Read",
+                    "data": []
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData range reg 5 sch 9 rows": {
+        "result": {
+            "labels": [
+                "2026-01-02",
+                "2026-01-03"
+            ],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": [
+                        3,
+                        0
+                    ]
+                },
+                {
+                    "name": "Update",
+                    "data": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "name": "Delete",
+                    "data": [
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "name": "Read",
+                    "data": [
+                        2,
+                        0
+                    ]
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 2026-01-01, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-05, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 param :p3 = 5, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 param :p4 = 9, 2",
+            "#1 expr.eq(schema, :p4, NULL)",
+            "#1 andWhere(eq(schema, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionChartData range reg 5 sch 9 empty": {
+        "result": {
+            "labels": [],
+            "series": [
+                {
+                    "name": "Create",
+                    "data": []
+                },
+                {
+                    "name": "Update",
+                    "data": []
+                },
+                {
+                    "name": "Delete",
+                    "data": []
+                },
+                {
+                    "name": "Read",
+                    "data": []
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(DATE(created) as date, action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(date, action)",
+            "#1 orderBy(date, ASC)",
+            "#1 param :p1 = 2026-01-01, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-05, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 param :p3 = 5, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 param :p4 = 9, 2",
+            "#1 expr.eq(schema, :p4, NULL)",
+            "#1 andWhere(eq(schema, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getDetailedStatistics reg 5 sch 9 rows": {
+        "result": {
+            "total": 7,
+            "creates": 3,
+            "updates": 1,
+            "deletes": 0,
+            "reads": 2
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 executeQuery()",
+            "#2 select(action, COUNT(*) as count)",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p3 = <now -12h>, 2",
+            "#2 expr.gte(created, :p3, NULL)",
+            "#2 where(gte(created, :p3, NULL))",
+            "#2 groupBy(action)",
+            "#2 param :p4 = 5, 2",
+            "#2 expr.eq(register, :p4, NULL)",
+            "#2 andWhere(eq(register, :p4, NULL))",
+            "#2 param :p5 = 9, 2",
+            "#2 expr.eq(schema, :p5, NULL)",
+            "#2 andWhere(eq(schema, :p5, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "getDetailedStatistics reg 5 sch 9 empty": {
+        "result": {
+            "total": 0,
+            "creates": 0,
+            "updates": 0,
+            "deletes": 0,
+            "reads": 0
+        },
+        "queries": [
+            "#1 select(COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 executeQuery()",
+            "#2 select(action, COUNT(*) as count)",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p3 = <now -12h>, 2",
+            "#2 expr.gte(created, :p3, NULL)",
+            "#2 where(gte(created, :p3, NULL))",
+            "#2 groupBy(action)",
+            "#2 param :p4 = 5, 2",
+            "#2 expr.eq(register, :p4, NULL)",
+            "#2 andWhere(eq(register, :p4, NULL))",
+            "#2 param :p5 = 9, 2",
+            "#2 expr.eq(schema, :p5, NULL)",
+            "#2 andWhere(eq(schema, :p5, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "getActionCounts reg 5 sch 9 rows": {
+        "result": {
+            "total": 7,
+            "create": 3,
+            "update": 1,
+            "delete": 0,
+            "read": 2
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(action)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionCounts reg 5 sch 9 empty": {
+        "result": {
+            "total": 0,
+            "create": 0,
+            "update": 0,
+            "delete": 0,
+            "read": 0
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(action)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 param :p2 = 9, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionDistribution reg 5 sch 9 rows": {
+        "result": {
+            "actions": [
+                {
+                    "name": "create",
+                    "count": 3,
+                    "percentage": 42.86
+                },
+                {
+                    "name": "read",
+                    "count": 2,
+                    "percentage": 28.57
+                },
+                {
+                    "name": "update",
+                    "count": 1,
+                    "percentage": 14.29
+                },
+                {
+                    "name": "other",
+                    "count": 1,
+                    "percentage": 14.29
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -48h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(action)",
+            "#1 param :p2 = 5, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 param :p3 = 9, 2",
+            "#1 expr.eq(schema, :p3, NULL)",
+            "#1 andWhere(eq(schema, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getActionDistribution reg 5 sch 9 empty": {
+        "result": {
+            "actions": []
+        },
+        "queries": [
+            "#1 select(action, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -48h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(action)",
+            "#1 param :p2 = 5, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 param :p3 = 9, 2",
+            "#1 expr.eq(schema, :p3, NULL)",
+            "#1 andWhere(eq(schema, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getMostActiveObjects reg 5 sch 9 rows": {
+        "result": {
+            "objects": [
+                {
+                    "id": "obj-1",
+                    "name": "Object obj-1",
+                    "count": 3
+                },
+                {
+                    "id": "obj-2",
+                    "name": "Object obj-2",
+                    "count": 2
+                },
+                {
+                    "id": "obj-3",
+                    "name": "Object obj-3",
+                    "count": 1
+                },
+                {
+                    "id": "obj-4",
+                    "name": "Object obj-4",
+                    "count": 1
+                }
+            ]
+        },
+        "queries": [
+            "#1 select(object, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -6h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(object)",
+            "#1 orderBy(count, DESC)",
+            "#1 param :p2 = 5, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 param :p3 = 9, 2",
+            "#1 expr.eq(schema, :p3, NULL)",
+            "#1 andWhere(eq(schema, :p3, NULL))",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getMostActiveObjects reg 5 sch 9 empty": {
+        "result": {
+            "objects": []
+        },
+        "queries": [
+            "#1 select(object, COUNT(*) as count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = <now -6h>, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 where(gte(created, :p1, NULL))",
+            "#1 groupBy(object)",
+            "#1 orderBy(count, DESC)",
+            "#1 param :p2 = 5, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 param :p3 = 9, 2",
+            "#1 expr.eq(schema, :p3, NULL)",
+            "#1 andWhere(eq(schema, :p3, NULL))",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    }
+}

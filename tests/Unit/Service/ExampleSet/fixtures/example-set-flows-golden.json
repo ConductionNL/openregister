@@ -1,0 +1,368 @@
+{
+    "refusal ok": "",
+    "refusal unknown fields": "field \"colour\", \"owner\" is not a flow field a set may write",
+    "refusal no name": "a flow needs a name",
+    "refusal blank name": "a flow needs a name",
+    "refusal name not text": "a flow needs a name",
+    "refusal no nodes": "a flow needs its steps (nodes)",
+    "refusal empty nodes": "a flow needs its steps (nodes)",
+    "refusal nodes text": "a flow needs its steps (nodes)",
+    "refusal node without type": "every step needs an id and a type",
+    "refusal node id number": "every step needs an id and a type",
+    "refusal node object": "",
+    "refusal edge to nowhere": "every line runs from one step of the flow to another (from, to)",
+    "refusal edge from nowhere": "every line runs from one step of the flow to another (from, to)",
+    "refusal edge object": "",
+    "refusal edges scalar": "every line runs from one step of the flow to another (from, to)",
+    "refusal publish text": "publish is true or false",
+    "refusal enabled number": "enabled is true or false",
+    "refusal publish null": "",
+    "refusal slug number": "applicationSlug is text",
+    "refusal slug text": "",
+    "refusal on unpublished": "a flow that is switched on is published: it runs its published version",
+    "refusal on published": "",
+    "refusal on default": "",
+    "refusal off unpublished": "",
+    "refusal runs text": "runs is a list",
+    "refusal runs bad": "a run is finished (status is one of completed, stopped, dead_letter, failed) or waits on a step (suspended)",
+    "update unchanged": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "uuid": "f-1",
+                "runs": {
+                    "r1": "run-1"
+                },
+                "waitsOn": {
+                    "run-1": "wait"
+                }
+            }
+        },
+        "calls": [
+            [
+                "findByUuid",
+                "f-1"
+            ]
+        ]
+    },
+    "update changed": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "uuid": "f-1",
+                "runs": {
+                    "r1": "run-1"
+                },
+                "waitsOn": {
+                    "run-1": "wait"
+                }
+            }
+        },
+        "calls": [
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "update",
+                {
+                    "name": "Intake v2",
+                    "description": "Uses f-1 here",
+                    "trigger": "object.created",
+                    "triggerRegister": "zaken",
+                    "triggerSchema": "zaak",
+                    "cron": "0 * * * *",
+                    "executionMode": "sync",
+                    "nodes": [
+                        {
+                            "id": "a",
+                            "type": "start",
+                            "config": {
+                                "self": "f-1",
+                                "n": 3
+                            }
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a",
+                            "to": "a"
+                        }
+                    ],
+                    "annotations": [
+                        {
+                            "text": "note"
+                        }
+                    ],
+                    "limits": {
+                        "runs": 5
+                    },
+                    "applicationSlug": "zaak",
+                    "updatedIsSet": true
+                }
+            ],
+            [
+                "publishShippedUpdate",
+                "f-1"
+            ]
+        ]
+    },
+    "update changed unpublished": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "uuid": "f-1",
+                "runs": {
+                    "r1": "run-1"
+                },
+                "waitsOn": {
+                    "run-1": "wait"
+                }
+            }
+        },
+        "calls": [
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "update",
+                {
+                    "name": "Intake v2",
+                    "description": "Uses f-1 here",
+                    "trigger": "object.created",
+                    "triggerRegister": "zaken",
+                    "triggerSchema": "zaak",
+                    "cron": "0 * * * *",
+                    "executionMode": "sync",
+                    "nodes": [
+                        {
+                            "id": "a",
+                            "type": "start",
+                            "config": {
+                                "self": "f-1",
+                                "n": 3
+                            }
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a",
+                            "to": "a"
+                        }
+                    ],
+                    "annotations": [
+                        {
+                            "text": "note"
+                        }
+                    ],
+                    "limits": {
+                        "runs": 5
+                    },
+                    "applicationSlug": "zaak",
+                    "updatedIsSet": true
+                }
+            ]
+        ]
+    },
+    "update changed publish on": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "uuid": "f-1"
+            }
+        },
+        "calls": [
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "update",
+                {
+                    "name": "Intake v2",
+                    "description": "Uses f-1 here",
+                    "trigger": "object.created",
+                    "triggerRegister": "zaken",
+                    "triggerSchema": "zaak",
+                    "cron": "0 * * * *",
+                    "executionMode": "sync",
+                    "nodes": [
+                        {
+                            "id": "a",
+                            "type": "start",
+                            "config": {
+                                "self": "f-1",
+                                "n": 3
+                            }
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a",
+                            "to": "a"
+                        }
+                    ],
+                    "annotations": [
+                        {
+                            "text": "note"
+                        }
+                    ],
+                    "limits": {
+                        "runs": 5
+                    },
+                    "applicationSlug": "zaak",
+                    "updatedIsSet": true
+                }
+            ],
+            [
+                "publishShippedUpdate",
+                "f-1"
+            ]
+        ]
+    },
+    "update update fails": {
+        "answer": {
+            "error": "update refused",
+            "entry": null
+        },
+        "calls": [
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "update",
+                {
+                    "name": "Intake v2",
+                    "description": "Uses f-1 here",
+                    "trigger": "object.created",
+                    "triggerRegister": "zaken",
+                    "triggerSchema": "zaak",
+                    "cron": "0 * * * *",
+                    "executionMode": "sync",
+                    "nodes": [
+                        {
+                            "id": "a",
+                            "type": "start",
+                            "config": {
+                                "self": "f-1",
+                                "n": 3
+                            }
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a",
+                            "to": "a"
+                        }
+                    ],
+                    "annotations": [
+                        {
+                            "text": "note"
+                        }
+                    ],
+                    "limits": {
+                        "runs": 5
+                    },
+                    "applicationSlug": "zaak",
+                    "updatedIsSet": true
+                }
+            ]
+        ]
+    },
+    "update gone rewrites": {
+        "answer": {
+            "error": "no inserts in this test",
+            "entry": null
+        },
+        "calls": [
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "insert"
+            ]
+        ]
+    },
+    "update no uuid": {
+        "answer": {
+            "error": "no inserts in this test",
+            "entry": null
+        },
+        "calls": [
+            [
+                "findByUuid",
+                ""
+            ],
+            [
+                "insert"
+            ]
+        ]
+    },
+    "entry there": {
+        "lost": false,
+        "revert": "removed",
+        "calls": [
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "deleteStored",
+                "f-1"
+            ]
+        ]
+    },
+    "entry gone": {
+        "lost": true,
+        "revert": "removed",
+        "calls": [
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "findByUuid",
+                "f-1"
+            ]
+        ]
+    },
+    "entry down": {
+        "lost": true,
+        "revert": "failed",
+        "calls": [
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "findByUuid",
+                "f-1"
+            ]
+        ]
+    },
+    "entry delete fails": {
+        "lost": false,
+        "revert": "failed",
+        "calls": [
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "findByUuid",
+                "f-1"
+            ],
+            [
+                "deleteStored",
+                "f-1"
+            ]
+        ]
+    }
+}

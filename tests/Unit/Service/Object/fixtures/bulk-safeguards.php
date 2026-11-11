@@ -977,14 +977,6 @@ return array (
   array (
     'passed' => 
     array (
-      0 => 
-      array (
-        '@self' => 
-        array (
-          'schema' => 8,
-        ),
-        'title' => 'x',
-      ),
     ),
     'result' => 
     array (
@@ -999,9 +991,29 @@ return array (
       ),
       'invalid' => 
       array (
+        0 => 
+        array (
+          'object' => 
+          array (
+            '@self' => 
+            array (
+              'schema' => 8,
+            ),
+            'title' => 'x',
+          ),
+          'error' => 'Permission denied for action create on schema schema-7',
+          'index' => 0,
+          'type' => 'BulkSafeguardException',
+        ),
       ),
       'errors' => 
       array (
+        0 => 
+        array (
+          'error' => 'Permission denied for action create on schema schema-7',
+          'type' => 'BulkSafeguardException',
+          'index' => 0,
+        ),
       ),
       'statistics' => 
       array (
@@ -1009,17 +1021,17 @@ return array (
         'saved' => 0,
         'updated' => 0,
         'unchanged' => 0,
-        'invalid' => 0,
-        'errors' => 0,
+        'invalid' => 1,
+        'errors' => 1,
       ),
     ),
     'calls' => 
     array (
-      0 => 'schema find 8',
-      1 => 'hasPermission [8,"create","bob",null,true,null]',
+      0 => 'hasPermission [7,"create","bob",null,true,null]',
     ),
     'log' => 
     array (
+      0 => 'info: [SaveObjects] Wave-12 bulk safeguard rejected row {"reason":"Permission denied for action create on schema schema-7","index":0}',
     ),
   ),
   'row names an unknown schema' => 
@@ -1064,8 +1076,56 @@ return array (
     ),
     'calls' => 
     array (
-      0 => 'schema find 404',
-      1 => 'hasPermission [7,"create","bob",null,true,null]',
+      0 => 'hasPermission [7,"create","bob",null,true,null]',
+    ),
+    'log' => 
+    array (
+    ),
+  ),
+  'mixed batch row names its schema' => 
+  array (
+    'passed' => 
+    array (
+      0 => 
+      array (
+        '@self' => 
+        array (
+          'schema' => 8,
+        ),
+        'title' => 'x',
+      ),
+    ),
+    'result' => 
+    array (
+      'saved' => 
+      array (
+      ),
+      'updated' => 
+      array (
+      ),
+      'unchanged' => 
+      array (
+      ),
+      'invalid' => 
+      array (
+      ),
+      'errors' => 
+      array (
+      ),
+      'statistics' => 
+      array (
+        'totalProcessed' => 1,
+        'saved' => 0,
+        'updated' => 0,
+        'unchanged' => 0,
+        'invalid' => 0,
+        'errors' => 0,
+      ),
+    ),
+    'calls' => 
+    array (
+      0 => 'schema find 8',
+      1 => 'hasPermission [8,"create","bob",null,true,null]',
     ),
     'log' => 
     array (
@@ -1262,9 +1322,8 @@ return array (
     ),
     'calls' => 
     array (
-      0 => 'register find 11',
-      1 => 'prefetch [["11111111-1111-1111-1111-111111111111"],11,7]',
-      2 => 'hasPermission [7,"update","bob","bob",true,"11111111-1111-1111-1111-111111111111"]',
+      0 => 'prefetch [["11111111-1111-1111-1111-111111111111"],10,7]',
+      1 => 'hasPermission [7,"update","bob","bob",true,"11111111-1111-1111-1111-111111111111"]',
     ),
     'log' => 
     array (
@@ -1485,13 +1544,76 @@ return array (
   array (
     'passed' => 
     array (
+    ),
+    'result' => 
+    array (
+      'saved' => 
+      array (
+      ),
+      'updated' => 
+      array (
+      ),
+      'unchanged' => 
+      array (
+      ),
+      'invalid' => 
+      array (
+        0 => 
+        array (
+          'object' => 
+          array (
+            '@self' => 
+            array (
+              'uuid' => '11111111-1111-1111-1111-111111111111',
+            ),
+            'title' => 'changed',
+          ),
+          'error' => 'Permission denied for action create on schema schema-7',
+          'index' => 0,
+          'type' => 'BulkSafeguardException',
+        ),
+      ),
+      'errors' => 
+      array (
+        0 => 
+        array (
+          'error' => 'Permission denied for action create on schema schema-7',
+          'type' => 'BulkSafeguardException',
+          'index' => 0,
+        ),
+      ),
+      'statistics' => 
+      array (
+        'totalProcessed' => 1,
+        'saved' => 0,
+        'updated' => 0,
+        'unchanged' => 0,
+        'invalid' => 1,
+        'errors' => 1,
+      ),
+    ),
+    'calls' => 
+    array (
+      0 => 'prefetch [["11111111-1111-1111-1111-111111111111"],10,7]',
+      1 => 'find ["11111111-1111-1111-1111-111111111111",10,7]',
+    ),
+    'log' => 
+    array (
+      0 => 'warning: [SaveObjects] Batch existence prefetch failed; falling back to per-row lookup {"group":"10\\/7","uuids":1,"error":"probe failed"}',
+      1 => 'info: [SaveObjects] Wave-12 bulk safeguard rejected row {"reason":"Permission denied for action create on schema schema-7","index":0}',
+    ),
+  ),
+  'prefetch fails and find finds none' => 
+  array (
+    'passed' => 
+    array (
       0 => 
       array (
         '@self' => 
         array (
-          'uuid' => '11111111-1111-1111-1111-111111111111',
+          'uuid' => '99999999-9999-9999-9999-999999999999',
         ),
-        'title' => 'changed',
+        'title' => 'new',
       ),
     ),
     'result' => 
@@ -1523,8 +1645,8 @@ return array (
     ),
     'calls' => 
     array (
-      0 => 'prefetch [["11111111-1111-1111-1111-111111111111"],10,7]',
-      1 => 'find ["11111111-1111-1111-1111-111111111111",10,7]',
+      0 => 'prefetch [["99999999-9999-9999-9999-999999999999"],10,7]',
+      1 => 'find ["99999999-9999-9999-9999-999999999999",10,7]',
       2 => 'hasPermission [7,"create","bob",null,true,null]',
     ),
     'log' => 
@@ -2039,7 +2161,7 @@ return array (
       1 => 'hasPermission [7,"create","bob",null,true,null]',
       2 => 'getUnauthorizedProperties [[],{"title":"new"},true]',
       3 => 'hasPermission [7,"update","bob","bob",true,"11111111-1111-1111-1111-111111111111"]',
-      4 => 'getUnauthorizedProperties [{"id":"11111111-1111-1111-1111-111111111111","title":"stored","secret":"s3cret"},{"title":"changed"},false]',
+      4 => 'getUnauthorizedProperties [{"id":"11111111-1111-1111-1111-111111111111","title":"stored","secret":"s3cret","@self":{"id":"11111111-1111-1111-1111-111111111111","slug":null,"name":"11111111-1111-1111-1111-111111111111","description":null,"summary":null,"image":null,"uri":null,"version":null,"register":null,"schema":null,"schemaVersion":null,"files":[],"relations":[],"locked":null,"owner":"bob","organisation":null,"groups":[],"authorization":[],"folder":null,"application":null,"validation":[],"quality":[],"geo":[],"retention":[],"tmlo":[],"size":null,"updated":null,"lastUserActivity":null,"created":null,"deleted":[],"archived":[],"frozen":[],"status":null,"source":null,"mail":null,"contacts":null,"notes":null,"todos":null,"calendar":null,"talk":null,"deck":null,"expires":null}},{"title":"changed"},false]',
     ),
     'log' => 
     array (
@@ -2092,7 +2214,7 @@ return array (
     array (
       0 => 'prefetch [["11111111-1111-1111-1111-111111111111"],10,7]',
       1 => 'hasPermission [7,"update","bob","bob",true,"11111111-1111-1111-1111-111111111111"]',
-      2 => 'getUnauthorizedProperties [{"id":"11111111-1111-1111-1111-111111111111","title":"stored","secret":"s3cret"},{"title":"changed"},false]',
+      2 => 'getUnauthorizedProperties [{"id":"11111111-1111-1111-1111-111111111111","title":"stored","secret":"s3cret","@self":{"id":"11111111-1111-1111-1111-111111111111","slug":null,"name":"11111111-1111-1111-1111-111111111111","description":null,"summary":null,"image":null,"uri":null,"version":null,"register":null,"schema":null,"schemaVersion":null,"files":[],"relations":[],"locked":null,"owner":"bob","organisation":null,"groups":[],"authorization":[],"folder":null,"application":null,"validation":[],"quality":[],"geo":[],"retention":[],"tmlo":[],"size":null,"updated":null,"lastUserActivity":null,"created":null,"deleted":[],"archived":[],"frozen":[],"status":null,"source":null,"mail":null,"contacts":null,"notes":null,"todos":null,"calendar":null,"talk":null,"deck":null,"expires":null}},{"title":"changed"},false]',
     ),
     'log' => 
     array (

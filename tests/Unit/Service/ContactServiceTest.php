@@ -8,12 +8,15 @@ use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\ContactCardRef;
+use OCA\OpenRegister\Service\ContactPlacement;
 
 class ContactServiceTest extends TestCase {
 	private ContactLinkMapper&MockObject $contactLinkMapper;
@@ -39,8 +42,7 @@ class ContactServiceTest extends TestCase {
 		$this->service = new ContactService(
 			$this->contactLinkMapper,
 			$this->cardDavBackend,
-			$this->userSession,
-			$this->logger,
+			new LinkSessionRuntime($this->userSession, $this->logger),
 			$this->urlGenerator
 		);
 	}
@@ -267,7 +269,7 @@ class ContactServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Contact not found');
 
-		$this->service->linkContact('abc-123', 5, 1, 'nonexistent.vcf', 'applicant');
+		$this->service->linkCard(new ContactCardRef(1, 'nonexistent.vcf'), new ContactPlacement('abc-123', 5, null, 'applicant'));
 	}
 
 	public function testLinkContactSuccess(): void {
@@ -293,7 +295,7 @@ class ContactServiceTest extends TestCase {
 				return $link;
 			});
 
-		$this->service->linkContact('abc-123', 5, 1, 'jan.vcf', 'applicant');
+		$this->service->linkCard(new ContactCardRef(1, 'jan.vcf'), new ContactPlacement('abc-123', 5, null, 'applicant'));
 	}
 
 	/**
@@ -330,7 +332,7 @@ class ContactServiceTest extends TestCase {
 				return $link;
 			});
 
-		$this->service->linkContact('abc-123', 5, 1, 'jan.vcf', 'applicant');
+		$this->service->linkCard(new ContactCardRef(1, 'jan.vcf'), new ContactPlacement('abc-123', 5, null, 'applicant'));
 	}
 
 	public function testUnlinkContactNotFound(): void {
@@ -341,6 +343,96 @@ class ContactServiceTest extends TestCase {
 		$this->expectExceptionMessage('Contact link not found');
 
 		$this->service->unlinkContact(999);
+	}
+
+	/**
+	 * A role change scoped to an object is refused, and changes nothing, when the link belongs to another object.
+	 *
+	 * @return void
+	 */
+	public function testUpdateRoleRefusesALinkOfAnotherObject(): void {
+		$link = new ContactLink();
+		$link->setId(77);
+		$link->setObjectUuid('other-object');
+		$link->setAddressbookId(1);
+		$link->setContactUri('someone.vcf');
+
+		$this->contactLinkMapper->method('find')->with(77)->willReturn($link);
+		$this->cardDavBackend->expects($this->never())->method('getCard');
+		$this->cardDavBackend->expects($this->never())->method('updateCard');
+		$this->contactLinkMapper->expects($this->never())->method('update');
+
+		try {
+			$this->service->updateRole(77, 'applicant', 'abc-123');
+			$this->fail('Expected a 404');
+		} catch (Exception $e) {
+			$this->assertSame(404, $e->getCode());
+			$this->assertSame('Contact link not found', $e->getMessage());
+		}
+	}
+
+	/**
+	 * A role change scoped to the link's own object goes through.
+	 *
+	 * @return void
+	 */
+	public function testUpdateRoleChangesALinkOfTheGivenObject(): void {
+		$link = new ContactLink();
+		$link->setId(78);
+		$link->setObjectUuid('abc-123');
+		$link->setAddressbookId(1);
+		$link->setContactUri('jan.vcf');
+
+		$this->contactLinkMapper->method('find')->with(78)->willReturn($link);
+		$this->cardDavBackend->method('getCard')->willReturn(false);
+		$this->contactLinkMapper->expects($this->once())->method('update')->with($link)->willReturn($link);
+
+		$this->assertSame('applicant', $this->service->updateRole(78, 'applicant', 'abc-123')->getRole());
+	}
+
+	/**
+	 * A link id scoped to an object is refused, and left alone, when the link belongs to another object.
+	 *
+	 * @return void
+	 */
+	public function testUnlinkContactRefusesALinkOfAnotherObject(): void {
+		$link = new ContactLink();
+		$link->setId(77);
+		$link->setObjectUuid('other-object');
+		$link->setAddressbookId(1);
+		$link->setContactUri('someone.vcf');
+
+		$this->contactLinkMapper->method('find')->with(77)->willReturn($link);
+		$this->cardDavBackend->expects($this->never())->method('getCard');
+		$this->cardDavBackend->expects($this->never())->method('updateCard');
+		$this->contactLinkMapper->expects($this->never())->method('delete');
+
+		try {
+			$this->service->unlinkContact(77, 'abc-123');
+			$this->fail('Expected a 404');
+		} catch (Exception $e) {
+			$this->assertSame(404, $e->getCode());
+			$this->assertSame('Contact link not found', $e->getMessage());
+		}
+	}
+
+	/**
+	 * A link id scoped to its own object is removed as before.
+	 *
+	 * @return void
+	 */
+	public function testUnlinkContactRemovesALinkOfTheGivenObject(): void {
+		$link = new ContactLink();
+		$link->setId(78);
+		$link->setObjectUuid('abc-123');
+		$link->setAddressbookId(1);
+		$link->setContactUri('jan.vcf');
+
+		$this->contactLinkMapper->method('find')->with(78)->willReturn($link);
+		$this->cardDavBackend->method('getCard')->willReturn(false);
+		$this->contactLinkMapper->expects($this->once())->method('delete')->with($link);
+
+		$this->service->unlinkContact(78, 'abc-123');
 	}
 
 	/**

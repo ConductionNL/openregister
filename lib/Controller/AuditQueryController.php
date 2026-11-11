@@ -31,13 +31,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Service\AuditQueryService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
+use OCA\OpenRegister\Controller\Support\AuditQueryControllerServices;
+use OCA\OpenRegister\Service\AuditQueryServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Handles GET /api/v2/audit and GET /api/v2/audit/export.
@@ -53,22 +57,40 @@ use OCP\IUserSession;
  */
 class AuditQueryController extends Controller {
 	/**
+	 * Cross-schema audit-entry query service.
+	 *
+	 * @var AuditQueryServiceInterface
+	 */
+	private readonly AuditQueryServiceInterface $auditQueryService;
+
+	/**
+	 * Active user session for the admin gate.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for the admin gate.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request object.
-	 * @param AuditQueryService $auditQueryService Cross-schema audit-entry query service.
-	 * @param IUserSession $userSession Active user session for the admin gate.
-	 * @param IGroupManager $groupManager Group manager for the admin gate.
+	 * @param AuditQueryControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly AuditQueryService $auditQueryService,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		AuditQueryControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->auditQueryService = $services->auditQueryService;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 
 	}//end __construct()
 
@@ -78,22 +100,9 @@ class AuditQueryController extends Controller {
 	 * @return JSONResponse|null 401 when anonymous, 403 when non-admin, null when allowed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Authentication required'],
-				statusCode: 401
-			);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: this endpoint is admin-only'],
-				statusCode: 403
-			);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: this endpoint is admin-only');
 	}//end requireAdmin()
 
 	/**
@@ -132,7 +141,7 @@ class AuditQueryController extends Controller {
 		$limit = (int)$this->request->getParam('limit', '50');
 		$offset = (int)$this->request->getParam('offset', '0');
 
-		$result = $this->auditQueryService->query(filters: $filters, limit: $limit, offset: $offset);
+		$result = $this->auditQueryService->query(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 
 		return new JSONResponse(data: $result);
 	}//end query()
@@ -162,7 +171,7 @@ class AuditQueryController extends Controller {
 		$limit = (int)$this->request->getParam('limit', '200');
 		$offset = (int)$this->request->getParam('offset', '0');
 
-		$result = $this->auditQueryService->query(filters: $filters, limit: $limit, offset: $offset);
+		$result = $this->auditQueryService->query(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 		$entries = $result['entries'];
 
 		if (strtolower($format) === 'json') {
@@ -187,7 +196,7 @@ class AuditQueryController extends Controller {
 	 *
 	 * Columns: id, registerId, schemaId, objectId, data (JSON), created, userId.
 	 *
-	 * @param array<int, array<string, mixed>> $entries Entries as returned by AuditQueryService::query().
+	 * @param array<int, array<string, mixed>> $entries Entries as returned by AuditQueryServiceInterface::query().
 	 *
 	 * @return string The CSV document (including header row).
 	 *

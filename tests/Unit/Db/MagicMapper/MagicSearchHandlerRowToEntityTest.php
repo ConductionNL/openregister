@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+ * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
  */
 
 declare(strict_types=1);
@@ -33,6 +33,8 @@ use Psr\Log\AbstractLogger;
 use ReflectionMethod;
 use ReflectionObject;
 use Stringable;
+use OCA\OpenRegister\Db\MagicMapper\TableSearch;
+use OCA\OpenRegister\Db\RegisterSchema;
 
 /**
  * Pins every entity field, the set of fields marked as updated, the object data
@@ -243,7 +245,7 @@ class MagicSearchHandlerRowToEntityTest extends TestCase {
 		$schema->setProperties(self::PROPERTIES);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'convertRowToObjectEntity');
-		$entity = $method->invoke($handler, $case['row'], $register, $schema, 'oc_table');
+		$entity = $method->invoke($handler, $case['row'], new TableSearch(table: new RegisterSchema(register: $register, schema: $schema), tableName: 'oc_table'));
 
 		return [
 			'entity' => $this->describe(entity: $entity),

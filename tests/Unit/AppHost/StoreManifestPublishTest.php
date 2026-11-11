@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+ * @spec openspec/specs/apphost-store-plane/spec.md
  */
 
 declare(strict_types=1);
@@ -17,7 +17,7 @@ use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+ * @spec openspec/specs/apphost-store-plane/spec.md
  */
 class StoreManifestPublishTest extends TestCase {
 

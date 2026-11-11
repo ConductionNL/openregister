@@ -1,0 +1,742 @@
+{
+    "admin with folder": {
+        "grant group": {
+            "returned": {
+                "id": "ocinternal:41",
+                "type": "group",
+                "sharedWith": "juristen",
+                "permissions": 15,
+                "verbs": [
+                    "read",
+                    "",
+                    "read",
+                    "export"
+                ],
+                "nodeId": 9,
+                "sharedBy": "root",
+                "shareType": 1
+            },
+            "share": [
+                "attribute=[\"openregister\",\"verbs\",\"[\\\"read\\\",\\\"export\\\"]\"]",
+                "setAttributes=\"object\"",
+                "setNode=\"object\"",
+                "setPermissions=15",
+                "setShareType=1",
+                "setSharedBy=\"root\"",
+                "setSharedWith=\"juristen\""
+            ],
+            "trail": [
+                [
+                    {
+                        "id": "ocinternal:41",
+                        "type": "group",
+                        "sharedWith": "juristen",
+                        "permissions": 15,
+                        "verbs": [
+                            "read",
+                            "",
+                            "read",
+                            "export"
+                        ]
+                    },
+                    "owner"
+                ]
+            ]
+        },
+        "grant user": {
+            "returned": {
+                "id": "ocinternal:41",
+                "type": "user",
+                "sharedWith": "tvisser",
+                "permissions": 1,
+                "verbs": [],
+                "nodeId": 9,
+                "sharedBy": "root",
+                "shareType": 0
+            },
+            "share": [
+                "setNode=\"object\"",
+                "setPermissions=1",
+                "setShareType=0",
+                "setSharedBy=\"root\"",
+                "setSharedWith=\"tvisser\""
+            ],
+            "trail": [
+                [
+                    {
+                        "id": "ocinternal:41",
+                        "type": "user",
+                        "sharedWith": "tvisser",
+                        "permissions": 1,
+                        "verbs": []
+                    },
+                    "owner"
+                ]
+            ]
+        },
+        "grant bad type": {
+            "refused": [
+                "InvalidArgumentException",
+                "Grant type must be one of: user, group, remote, remote_group"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant no principal": {
+            "refused": [
+                "InvalidArgumentException",
+                "A grant needs a principal to grant to"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link": {
+            "returned": {
+                "id": "ocinternal:41",
+                "type": "link",
+                "token": "tok",
+                "permissions": 15,
+                "expiration": "2026-12-01T00:00:00+00:00",
+                "hasPassword": true
+            },
+            "share": [
+                "setExpirationDate=\"2026-12-01\"",
+                "setNode=\"object\"",
+                "setPassword=\"geheim\"",
+                "setPermissions=15",
+                "setShareType=3",
+                "setSharedBy=\"root\""
+            ],
+            "trail": [
+                [
+                    {
+                        "id": "ocinternal:41",
+                        "type": "link",
+                        "sharedWith": null,
+                        "permissions": 15,
+                        "verbs": []
+                    },
+                    null
+                ]
+            ]
+        },
+        "link bad expiry": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not read that expiry date"
+            ],
+            "share": [
+                "setNode=\"object\"",
+                "setPermissions=1",
+                "setShareType=3",
+                "setSharedBy=\"root\""
+            ],
+            "trail": []
+        },
+        "email": {
+            "returned": {
+                "id": "ocinternal:41",
+                "type": "email",
+                "sharedWith": "a@example.nl",
+                "token": "tok",
+                "permissions": 3,
+                "expiration": null
+            },
+            "share": [
+                "setNode=\"object\"",
+                "setPermissions=3",
+                "setShareType=4",
+                "setSharedBy=\"root\"",
+                "setSharedWith=\"a@example.nl\""
+            ],
+            "trail": [
+                [
+                    {
+                        "id": "ocinternal:41",
+                        "type": "email",
+                        "sharedWith": "a@example.nl",
+                        "permissions": 3,
+                        "verbs": []
+                    },
+                    null
+                ]
+            ]
+        },
+        "email bad address": {
+            "refused": [
+                "InvalidArgumentException",
+                "A valid email address is required"
+            ],
+            "share": [],
+            "trail": []
+        }
+    },
+    "admin without folder": {
+        "grant group": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not resolve the object folder to share"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant user": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not resolve the object folder to share"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant bad type": {
+            "refused": [
+                "InvalidArgumentException",
+                "Grant type must be one of: user, group, remote, remote_group"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant no principal": {
+            "refused": [
+                "InvalidArgumentException",
+                "A grant needs a principal to grant to"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not resolve the object folder to share"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link bad expiry": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not resolve the object folder to share"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not resolve the object folder to share"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email bad address": {
+            "refused": [
+                "InvalidArgumentException",
+                "A valid email address is required"
+            ],
+            "share": [],
+            "trail": []
+        }
+    },
+    "anonymous with folder": {
+        "grant group": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant user": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant bad type": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant no principal": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link bad expiry": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email bad address": {
+            "refused": [
+                "InvalidArgumentException",
+                "A valid email address is required"
+            ],
+            "share": [],
+            "trail": []
+        }
+    },
+    "anonymous without folder": {
+        "grant group": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant user": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant bad type": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant no principal": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link bad expiry": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email bad address": {
+            "refused": [
+                "InvalidArgumentException",
+                "A valid email address is required"
+            ],
+            "share": [],
+            "trail": []
+        }
+    },
+    "owner with folder": {
+        "grant group": {
+            "returned": {
+                "id": "ocinternal:41",
+                "type": "group",
+                "sharedWith": "juristen",
+                "permissions": 15,
+                "verbs": [
+                    "read",
+                    "",
+                    "read",
+                    "export"
+                ],
+                "nodeId": 9,
+                "sharedBy": "pjansen",
+                "shareType": 1
+            },
+            "share": [
+                "attribute=[\"openregister\",\"verbs\",\"[\\\"read\\\",\\\"export\\\"]\"]",
+                "setAttributes=\"object\"",
+                "setNode=\"object\"",
+                "setPermissions=15",
+                "setShareType=1",
+                "setSharedBy=\"pjansen\"",
+                "setSharedWith=\"juristen\""
+            ],
+            "trail": [
+                [
+                    {
+                        "id": "ocinternal:41",
+                        "type": "group",
+                        "sharedWith": "juristen",
+                        "permissions": 15,
+                        "verbs": [
+                            "read",
+                            "",
+                            "read",
+                            "export"
+                        ]
+                    },
+                    "owner"
+                ]
+            ]
+        },
+        "grant user": {
+            "returned": {
+                "id": "ocinternal:41",
+                "type": "user",
+                "sharedWith": "tvisser",
+                "permissions": 1,
+                "verbs": [],
+                "nodeId": 9,
+                "sharedBy": "pjansen",
+                "shareType": 0
+            },
+            "share": [
+                "setNode=\"object\"",
+                "setPermissions=1",
+                "setShareType=0",
+                "setSharedBy=\"pjansen\"",
+                "setSharedWith=\"tvisser\""
+            ],
+            "trail": [
+                [
+                    {
+                        "id": "ocinternal:41",
+                        "type": "user",
+                        "sharedWith": "tvisser",
+                        "permissions": 1,
+                        "verbs": []
+                    },
+                    "owner"
+                ]
+            ]
+        },
+        "grant bad type": {
+            "refused": [
+                "InvalidArgumentException",
+                "Grant type must be one of: user, group, remote, remote_group"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant no principal": {
+            "refused": [
+                "InvalidArgumentException",
+                "A grant needs a principal to grant to"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link": {
+            "returned": {
+                "id": "ocinternal:41",
+                "type": "link",
+                "token": "tok",
+                "permissions": 15,
+                "expiration": "2026-12-01T00:00:00+00:00",
+                "hasPassword": true
+            },
+            "share": [
+                "setExpirationDate=\"2026-12-01\"",
+                "setNode=\"object\"",
+                "setPassword=\"geheim\"",
+                "setPermissions=15",
+                "setShareType=3",
+                "setSharedBy=\"pjansen\""
+            ],
+            "trail": [
+                [
+                    {
+                        "id": "ocinternal:41",
+                        "type": "link",
+                        "sharedWith": null,
+                        "permissions": 15,
+                        "verbs": []
+                    },
+                    null
+                ]
+            ]
+        },
+        "link bad expiry": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not read that expiry date"
+            ],
+            "share": [
+                "setNode=\"object\"",
+                "setPermissions=1",
+                "setShareType=3",
+                "setSharedBy=\"pjansen\""
+            ],
+            "trail": []
+        },
+        "email": {
+            "returned": {
+                "id": "ocinternal:41",
+                "type": "email",
+                "sharedWith": "a@example.nl",
+                "token": "tok",
+                "permissions": 3,
+                "expiration": null
+            },
+            "share": [
+                "setNode=\"object\"",
+                "setPermissions=3",
+                "setShareType=4",
+                "setSharedBy=\"pjansen\"",
+                "setSharedWith=\"a@example.nl\""
+            ],
+            "trail": [
+                [
+                    {
+                        "id": "ocinternal:41",
+                        "type": "email",
+                        "sharedWith": "a@example.nl",
+                        "permissions": 3,
+                        "verbs": []
+                    },
+                    null
+                ]
+            ]
+        },
+        "email bad address": {
+            "refused": [
+                "InvalidArgumentException",
+                "A valid email address is required"
+            ],
+            "share": [],
+            "trail": []
+        }
+    },
+    "owner without folder": {
+        "grant group": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not resolve the object folder to share"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant user": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not resolve the object folder to share"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant bad type": {
+            "refused": [
+                "InvalidArgumentException",
+                "Grant type must be one of: user, group, remote, remote_group"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant no principal": {
+            "refused": [
+                "InvalidArgumentException",
+                "A grant needs a principal to grant to"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not resolve the object folder to share"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link bad expiry": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not resolve the object folder to share"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email": {
+            "refused": [
+                "InvalidArgumentException",
+                "Could not resolve the object folder to share"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email bad address": {
+            "refused": [
+                "InvalidArgumentException",
+                "A valid email address is required"
+            ],
+            "share": [],
+            "trail": []
+        }
+    },
+    "stranger with folder": {
+        "grant group": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant user": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant bad type": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant no principal": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link bad expiry": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email bad address": {
+            "refused": [
+                "InvalidArgumentException",
+                "A valid email address is required"
+            ],
+            "share": [],
+            "trail": []
+        }
+    },
+    "stranger without folder": {
+        "grant group": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant user": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant bad type": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "grant no principal": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "link bad expiry": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email": {
+            "refused": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "Only the owner or an administrator may change sharing on this object"
+            ],
+            "share": [],
+            "trail": []
+        },
+        "email bad address": {
+            "refused": [
+                "InvalidArgumentException",
+                "A valid email address is required"
+            ],
+            "share": [],
+            "trail": []
+        }
+    }
+}

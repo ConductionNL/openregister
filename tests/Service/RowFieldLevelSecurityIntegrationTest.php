@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -171,16 +173,16 @@ class RowFieldLevelSecurityIntegrationTest extends TestCase {
 	public function testCanReadPropertyForAdminAlwaysTrue(): void {
 		$object = ['title' => 'x', 'salary' => '95000', 'ssn' => '123-45-6789'];
 
-		$this->assertTrue($this->propertyRbacHandler->canReadProperty($this->authedSchema, 'title', $object));
-		$this->assertTrue($this->propertyRbacHandler->canReadProperty($this->authedSchema, 'salary', $object));
-		$this->assertTrue($this->propertyRbacHandler->canReadProperty($this->authedSchema, 'ssn', $object));
+		$this->assertTrue($this->propertyRbacHandler->canReadProperty(new SchemaProperty($this->authedSchema, 'title'), new PropertyAccessRequest($object)));
+		$this->assertTrue($this->propertyRbacHandler->canReadProperty(new SchemaProperty($this->authedSchema, 'salary'), new PropertyAccessRequest($object)));
+		$this->assertTrue($this->propertyRbacHandler->canReadProperty(new SchemaProperty($this->authedSchema, 'ssn'), new PropertyAccessRequest($object)));
 	}
 
 	public function testCanUpdatePropertyForAdminAlwaysTrue(): void {
 		$object = ['title' => 'x', 'salary' => '95000'];
 
-		$this->assertTrue($this->propertyRbacHandler->canUpdateProperty($this->authedSchema, 'salary', $object));
-		$this->assertTrue($this->propertyRbacHandler->canUpdateProperty($this->authedSchema, 'salary', $object, isCreate: true));
+		$this->assertTrue($this->propertyRbacHandler->canUpdateProperty(new SchemaProperty($this->authedSchema, 'salary'), new PropertyAccessRequest($object)));
+		$this->assertTrue($this->propertyRbacHandler->canUpdateProperty(new SchemaProperty($this->authedSchema, 'salary'), new PropertyAccessRequest($object, true)));
 	}
 
 	private function createTestFixtures(): void {

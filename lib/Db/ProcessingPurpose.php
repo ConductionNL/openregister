@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\ProcessingPurpose\ProcessingPurposeFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -56,9 +57,11 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class ProcessingPurpose extends Entity implements JsonSerializable {
+	use StatusVocabularyTrait;
+
 	/**
 	 * A purpose a caller may name today.
 	 *
@@ -156,34 +159,10 @@ class ProcessingPurpose extends Entity implements JsonSerializable {
 	 * Register the entity's typed columns.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'code', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'activity', type: 'string');
-		$this->addType(fieldName: 'activityUuid', type: 'string');
-		$this->addType(fieldName: 'organisationId', type: 'string');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-	}//end __construct()
-
-	/**
-	 * Whether the supplied status string is in the lifecycle vocabulary.
-	 *
-	 * @param string|null $status Candidate status string.
-	 *
-	 * @return bool True when the status is one this entity recognises.
-	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
-	 */
-	public static function isValidStatus(?string $status): bool {
-		if ($status === null || $status === '') {
-			return false;
+		foreach (ProcessingPurposeFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
 		}
-
-		return in_array(needle: $status, haystack: self::STATUS_VOCABULARY, strict: true);
-	}//end isValidStatus()
+	}//end __construct()
 
 	/**
 	 * Whether this purpose may be named on a query right now.
@@ -194,7 +173,7 @@ class ProcessingPurpose extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the purpose is active AND bound to an activity.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function isUsable(): bool {
 		return $this->status === self::STATUS_ACTIVE && $this->isBound() === true;
@@ -205,7 +184,7 @@ class ProcessingPurpose extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when an activity uuid is present.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function isBound(): bool {
 		return $this->activityUuid !== null && $this->activityUuid !== '';
@@ -216,22 +195,12 @@ class ProcessingPurpose extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The serialized purpose.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'code' => $this->code,
-			'name' => $this->name,
-			'description' => $this->description,
-			'activity' => $this->activity,
-			'activityUuid' => $this->activityUuid,
-			'bound' => $this->isBound(),
-			'organisationId' => $this->organisationId,
-			'status' => $this->status,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-		];
+		$typed = new TypedFieldsJson();
+		$json = $typed->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
+
+		return $typed->inserted(json: $json, entriesAfter: ['activityUuid' => ['bound' => $this->isBound()]]);
 	}//end jsonSerialize()
 }//end class

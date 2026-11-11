@@ -1,0 +1,292 @@
+[
+    [
+        "preconditions",
+        "obj-1"
+    ],
+    [
+        "temp",
+        ".bag-part1.zip"
+    ],
+    [
+        "info",
+        "[SipPackageBuilder] Built SIP package",
+        {
+            "transferId": "transfer-9",
+            "sequence": "1/2",
+            "objects": 1,
+            "format": "bagit",
+            "path": "<tmp>.bag-part1.zip"
+        }
+    ],
+    [
+        "preconditions",
+        "obj-2"
+    ],
+    [
+        "preconditions",
+        "obj-3"
+    ],
+    [
+        "temp",
+        ".bag-part2.zip"
+    ],
+    [
+        "info",
+        "[SipPackageBuilder] Built SIP package",
+        {
+            "transferId": "transfer-9",
+            "sequence": "2/2",
+            "objects": 2,
+            "format": "bagit",
+            "path": "<tmp>.bag-part2.zip"
+        }
+    ],
+    [
+        "packages",
+        2
+    ],
+    [
+        "package",
+        [
+            [
+                "data/objects/obj-1/mdto.xml",
+                "<mdto object=\"obj-1\" files=\"2\"/>"
+            ],
+            [
+                "data/objects/obj-1/metadata.json",
+                "{\n    \"title\": \"Object obj-1\",\n    \"@self\": {\n        \"id\": \"obj-1\",\n        \"slug\": null,\n        \"name\": \"obj-1\",\n        \"description\": null,\n        \"summary\": null,\n        \"image\": null,\n        \"uri\": null,\n        \"version\": null,\n        \"register\": null,\n        \"schema\": null,\n        \"schemaVersion\": null,\n        \"files\": [],\n        \"relations\": [],\n        \"locked\": null,\n        \"owner\": null,\n        \"organisation\": null,\n        \"groups\": [],\n        \"authorization\": [],\n        \"folder\": null,\n        \"application\": null,\n        \"validation\": [],\n        \"quality\": [],\n        \"geo\": [],\n        \"retention\": [],\n        \"tmlo\": [],\n        \"size\": null,\n        \"updated\": null,\n        \"lastUserActivity\": null,\n        \"created\": null,\n        \"deleted\": [],\n        \"archived\": [],\n        \"frozen\": [],\n        \"status\": null,\n        \"source\": null,\n        \"mail\": null,\n        \"contacts\": null,\n        \"notes\": null,\n        \"todos\": null,\n        \"calendar\": null,\n        \"talk\": null,\n        \"deck\": null\n    },\n    \"id\": \"obj-1\"\n}"
+            ],
+            [
+                "data/objects/obj-1/content/original/brief.docx",
+                "original bytes"
+            ],
+            [
+                "data/objects/obj-1/content/original/brief.docx.bestand.MDTO.xml",
+                "<bestand object=\"obj-1\" name=\"brief.docx\"/>"
+            ],
+            [
+                "data/objects/obj-1/content/rendition/brief.pdf",
+                "rendition bytes, longer"
+            ],
+            [
+                "data/objects/obj-1/content/rendition/brief.pdf.bestand.MDTO.xml",
+                "<bestand object=\"obj-1\" name=\"brief.pdf\"/>"
+            ],
+            [
+                "data/mets.xml",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<mets:mets xmlns:mets=\"http://www.loc.gov/METS/\" OBJID=\"transfer-9\" TYPE=\"SIP\">\n  <mets:fileSec>\n    <mets:fileGrp USE=\"ORIGINAL\">\n      <mets:file xmlns:xlink=\"http://www.w3.org/1999/xlink\" ID=\"FILE-1\" SIZE=\"14\" MIMETYPE=\"application/msword\" CHECKSUM=\"52c3935626c104b2cbc9031291a1c4d56614c38f52072a361d658a58a9c48698\" CHECKSUMTYPE=\"SHA-256\">\n        <mets:FLocat xmlns:xlink=\"http://www.w3.org/1999/xlink\" LOCTYPE=\"URL\" xlink:href=\"objects/obj-1/content/original/brief.docx\"/>\n      </mets:file>\n    </mets:fileGrp>\n    <mets:fileGrp USE=\"RENDITION\">\n      <mets:file xmlns:xlink=\"http://www.w3.org/1999/xlink\" ID=\"FILE-2\" SIZE=\"23\" MIMETYPE=\"application/pdf\" CHECKSUM=\"31efc4b9a591fa187d3224dd78f481c23f8a87ba36954e996b3ea8895ef28871\" CHECKSUMTYPE=\"SHA-256\">\n        <mets:FLocat xmlns:xlink=\"http://www.w3.org/1999/xlink\" LOCTYPE=\"URL\" xlink:href=\"objects/obj-1/content/rendition/brief.pdf\"/>\n      </mets:file>\n    </mets:fileGrp>\n    <mets:fileGrp USE=\"METADATA\">\n      <mets:file xmlns:xlink=\"http://www.w3.org/1999/xlink\" ID=\"MD-3\" SIZE=\"32\" MIMETYPE=\"application/xml\" CHECKSUM=\"f2b9df3cf1f88ccdf90e2fbbe1aff200a07eccabd4e865855c955ce7e4f9b16d\" CHECKSUMTYPE=\"SHA-256\">\n        <mets:FLocat xmlns:xlink=\"http://www.w3.org/1999/xlink\" LOCTYPE=\"URL\" xlink:href=\"objects/obj-1/mdto.xml\"/>\n      </mets:file>\n      <mets:file xmlns:xlink=\"http://www.w3.org/1999/xlink\" ID=\"MD-4\" SIZE=\"43\" MIMETYPE=\"application/xml\" CHECKSUM=\"902bda702934dcb05f2e18e73b31fbe8d83a833b7fce9a4c74e64ea9f845a246\" CHECKSUMTYPE=\"SHA-256\">\n        <mets:FLocat xmlns:xlink=\"http://www.w3.org/1999/xlink\" LOCTYPE=\"URL\" xlink:href=\"objects/obj-1/content/original/brief.docx.bestand.MDTO.xml\"/>\n      </mets:file>\n      <mets:file xmlns:xlink=\"http://www.w3.org/1999/xlink\" ID=\"MD-5\" SIZE=\"42\" MIMETYPE=\"application/xml\" CHECKSUM=\"60b66e2334c9ba00b5366f9e42fbffe9e82d7fb5fd2ae14043c4959240adfb37\" CHECKSUMTYPE=\"SHA-256\">\n        <mets:FLocat xmlns:xlink=\"http://www.w3.org/1999/xlink\" LOCTYPE=\"URL\" xlink:href=\"objects/obj-1/content/rendition/brief.pdf.bestand.MDTO.xml\"/>\n      </mets:file>\n    </mets:fileGrp>\n  </mets:fileSec>\n  <mets:structMap TYPE=\"physical\">\n    <mets:div LABEL=\"SIP-transfer-9\">\n      <mets:div LABEL=\"obj-1\" TYPE=\"object\">\n        <mets:fptr FILEID=\"FILE-1\"/>\n        <mets:fptr FILEID=\"FILE-2\"/>\n        <mets:fptr FILEID=\"MD-3\"/>\n        <mets:fptr FILEID=\"MD-4\"/>\n        <mets:fptr FILEID=\"MD-5\"/>\n      </mets:div>\n    </mets:div>\n  </mets:structMap>\n</mets:mets>\n"
+            ],
+            [
+                "data/premis.xml",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<premis:premis xmlns:premis=\"info:lc/xmlns/premis-v2\" version=\"2.0\">\n  <premis:event>\n    <premis:eventIdentifier>\n      <premis:eventIdentifierType>UUID</premis:eventIdentifierType>\n      <premis:eventIdentifierValue>transfer-9</premis:eventIdentifierValue>\n    </premis:eventIdentifier>\n    <premis:eventType>creation</premis:eventType>\n    <premis:eventDateTime><now></premis:eventDateTime>\n  </premis:event>\n  <premis:object xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:type=\"premis:file\">\n    <premis:objectIdentifier>\n      <premis:objectIdentifierType>filepath</premis:objectIdentifierType>\n      <premis:objectIdentifierValue>objects/obj-1/content/original/brief.docx</premis:objectIdentifierValue>\n    </premis:objectIdentifier>\n    <premis:objectCharacteristics>\n      <premis:fixity>\n        <premis:messageDigestAlgorithm>SHA-256</premis:messageDigestAlgorithm>\n        <premis:messageDigest>52c3935626c104b2cbc9031291a1c4d56614c38f52072a361d658a58a9c48698</premis:messageDigest>\n      </premis:fixity>\n      <premis:size>14</premis:size>\n      <premis:format>\n        <premis:formatDesignation>\n          <premis:formatName>application/msword</premis:formatName>\n        </premis:formatDesignation>\n      </premis:format>\n    </premis:objectCharacteristics>\n  </premis:object>\n  <premis:object xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:type=\"premis:file\">\n    <premis:objectIdentifier>\n      <premis:objectIdentifierType>filepath</premis:objectIdentifierType>\n      <premis:objectIdentifierValue>objects/obj-1/content/rendition/brief.pdf</premis:objectIdentifierValue>\n    </premis:objectIdentifier>\n    <premis:objectCharacteristics>\n      <premis:fixity>\n        <premis:messageDigestAlgorithm>SHA-256</premis:messageDigestAlgorithm>\n        <premis:messageDigest>31efc4b9a591fa187d3224dd78f481c23f8a87ba36954e996b3ea8895ef28871</premis:messageDigest>\n      </premis:fixity>\n      <premis:size>23</premis:size>\n      <premis:format>\n        <premis:formatDesignation>\n          <premis:formatName>application/pdf</premis:formatName>\n        </premis:formatDesignation>\n      </premis:format>\n    </premis:objectCharacteristics>\n  </premis:object>\n</premis:premis>\n"
+            ],
+            [
+                "data/sip-sequence.json",
+                "{\n    \"transferId\": \"transfer-9\",\n    \"sequenceNumber\": 1,\n    \"totalPackages\": 2\n}"
+            ],
+            [
+                "data/sip-manifest.json",
+                [
+                    {
+                        "path": "objects/obj-1/mdto.xml",
+                        "size": 32,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "objects/obj-1/metadata.json",
+                        "size": 1072,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "objects/obj-1/content/original/brief.docx",
+                        "size": 14,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "objects/obj-1/content/original/brief.docx.bestand.MDTO.xml",
+                        "size": 43,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "objects/obj-1/content/rendition/brief.pdf",
+                        "size": 23,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "objects/obj-1/content/rendition/brief.pdf.bestand.MDTO.xml",
+                        "size": 42,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "mets.xml",
+                        "size": 2508,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "premis.xml",
+                        "size": 2267,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "sip-sequence.json",
+                        "size": 83,
+                        "checksum": "<sha256 ok>"
+                    }
+                ]
+            ],
+            [
+                "bagit.txt",
+                "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"
+            ],
+            [
+                "bag-info.txt",
+                "Bagging-Date: <today>\nPayload-Oxum: 7654.10\nSource-Organization: OpenRegister\nExternal-Identifier: transfer-9\n"
+            ],
+            [
+                "manifest-sha256.txt",
+                [
+                    "<sha256 ok>  data/objects/obj-1/mdto.xml",
+                    "<sha256 ok>  data/objects/obj-1/metadata.json",
+                    "<sha256 ok>  data/objects/obj-1/content/original/brief.docx",
+                    "<sha256 ok>  data/objects/obj-1/content/original/brief.docx.bestand.MDTO.xml",
+                    "<sha256 ok>  data/objects/obj-1/content/rendition/brief.pdf",
+                    "<sha256 ok>  data/objects/obj-1/content/rendition/brief.pdf.bestand.MDTO.xml",
+                    "<sha256 ok>  data/mets.xml",
+                    "<sha256 ok>  data/premis.xml",
+                    "<sha256 ok>  data/sip-sequence.json",
+                    "<sha256 ok>  data/sip-manifest.json"
+                ]
+            ],
+            [
+                "tagmanifest-sha256.txt",
+                [
+                    "<sha256 ok>  bagit.txt",
+                    "<sha256 ok>  bag-info.txt",
+                    "<sha256 ok>  manifest-sha256.txt"
+                ]
+            ]
+        ]
+    ],
+    [
+        "package",
+        [
+            [
+                "data/objects/obj-2/mdto.xml",
+                "<mdto object=\"obj-2\" files=\"2\"/>"
+            ],
+            [
+                "data/objects/obj-2/metadata.json",
+                "{\n    \"title\": \"Object obj-2\",\n    \"@self\": {\n        \"id\": \"obj-2\",\n        \"slug\": null,\n        \"name\": \"obj-2\",\n        \"description\": null,\n        \"summary\": null,\n        \"image\": null,\n        \"uri\": null,\n        \"version\": null,\n        \"register\": null,\n        \"schema\": null,\n        \"schemaVersion\": null,\n        \"files\": [],\n        \"relations\": [],\n        \"locked\": null,\n        \"owner\": null,\n        \"organisation\": null,\n        \"groups\": [],\n        \"authorization\": [],\n        \"folder\": null,\n        \"application\": null,\n        \"validation\": [],\n        \"quality\": [],\n        \"geo\": [],\n        \"retention\": [],\n        \"tmlo\": [],\n        \"size\": null,\n        \"updated\": null,\n        \"lastUserActivity\": null,\n        \"created\": null,\n        \"deleted\": [],\n        \"archived\": [],\n        \"frozen\": [],\n        \"status\": null,\n        \"source\": null,\n        \"mail\": null,\n        \"contacts\": null,\n        \"notes\": null,\n        \"todos\": null,\n        \"calendar\": null,\n        \"talk\": null,\n        \"deck\": null\n    },\n    \"id\": \"obj-2\"\n}"
+            ],
+            [
+                "data/objects/obj-2/content/original/third.txt",
+                "third"
+            ],
+            [
+                "data/objects/obj-2/content/original/third.txt.bestand.MDTO.xml",
+                "<bestand object=\"obj-2\" name=\"third.txt\"/>"
+            ],
+            [
+                "data/objects/obj-3/mdto.xml",
+                "<mdto object=\"obj-3\" files=\"0\"/>"
+            ],
+            [
+                "data/objects/obj-3/metadata.json",
+                "{\n    \"title\": \"Object obj-3\",\n    \"@self\": {\n        \"id\": \"obj-3\",\n        \"slug\": null,\n        \"name\": \"obj-3\",\n        \"description\": null,\n        \"summary\": null,\n        \"image\": null,\n        \"uri\": null,\n        \"version\": null,\n        \"register\": null,\n        \"schema\": null,\n        \"schemaVersion\": null,\n        \"files\": [],\n        \"relations\": [],\n        \"locked\": null,\n        \"owner\": null,\n        \"organisation\": null,\n        \"groups\": [],\n        \"authorization\": [],\n        \"folder\": null,\n        \"application\": null,\n        \"validation\": [],\n        \"quality\": [],\n        \"geo\": [],\n        \"retention\": [],\n        \"tmlo\": [],\n        \"size\": null,\n        \"updated\": null,\n        \"lastUserActivity\": null,\n        \"created\": null,\n        \"deleted\": [],\n        \"archived\": [],\n        \"frozen\": [],\n        \"status\": null,\n        \"source\": null,\n        \"mail\": null,\n        \"contacts\": null,\n        \"notes\": null,\n        \"todos\": null,\n        \"calendar\": null,\n        \"talk\": null,\n        \"deck\": null\n    },\n    \"id\": \"obj-3\"\n}"
+            ],
+            [
+                "data/mets.xml",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<mets:mets xmlns:mets=\"http://www.loc.gov/METS/\" OBJID=\"transfer-9\" TYPE=\"SIP\">\n  <mets:fileSec>\n    <mets:fileGrp USE=\"ORIGINAL\">\n      <mets:file xmlns:xlink=\"http://www.w3.org/1999/xlink\" ID=\"FILE-1\" SIZE=\"5\" MIMETYPE=\"text/plain\" CHECKSUM=\"abc\" CHECKSUMTYPE=\"SHA-256\">\n        <mets:FLocat xmlns:xlink=\"http://www.w3.org/1999/xlink\" LOCTYPE=\"URL\" xlink:href=\"objects/obj-2/content/original/gone.txt\"/>\n      </mets:file>\n      <mets:file xmlns:xlink=\"http://www.w3.org/1999/xlink\" ID=\"FILE-2\" SIZE=\"5\" MIMETYPE=\"text/plain\" CHECKSUM=\"b1e99324505bd32da0e1f85dcf5e19a09db0481e8a15f62c41eb320304a8e927\" CHECKSUMTYPE=\"SHA-256\">\n        <mets:FLocat xmlns:xlink=\"http://www.w3.org/1999/xlink\" LOCTYPE=\"URL\" xlink:href=\"objects/obj-2/content/original/third.txt\"/>\n      </mets:file>\n    </mets:fileGrp>\n    <mets:fileGrp USE=\"RENDITION\"/>\n    <mets:fileGrp USE=\"METADATA\">\n      <mets:file xmlns:xlink=\"http://www.w3.org/1999/xlink\" ID=\"MD-3\" SIZE=\"32\" MIMETYPE=\"application/xml\" CHECKSUM=\"5f355e8141f04b07f94740a24c4cdede53ea69d51dae908901d0da4c738b0371\" CHECKSUMTYPE=\"SHA-256\">\n        <mets:FLocat xmlns:xlink=\"http://www.w3.org/1999/xlink\" LOCTYPE=\"URL\" xlink:href=\"objects/obj-2/mdto.xml\"/>\n      </mets:file>\n      <mets:file xmlns:xlink=\"http://www.w3.org/1999/xlink\" ID=\"MD-4\" SIZE=\"42\" MIMETYPE=\"application/xml\" CHECKSUM=\"c0760b2cb364f67ab9c91a4da3f4410bd0bea53a409cd4f0a66044f8e1aec6be\" CHECKSUMTYPE=\"SHA-256\">\n        <mets:FLocat xmlns:xlink=\"http://www.w3.org/1999/xlink\" LOCTYPE=\"URL\" xlink:href=\"objects/obj-2/content/original/third.txt.bestand.MDTO.xml\"/>\n      </mets:file>\n      <mets:file xmlns:xlink=\"http://www.w3.org/1999/xlink\" ID=\"MD-5\" SIZE=\"32\" MIMETYPE=\"application/xml\" CHECKSUM=\"0c48b6474394e0fd73b574b7ea33d8c8daa465f90e8b8da017d22db9fd27697b\" CHECKSUMTYPE=\"SHA-256\">\n        <mets:FLocat xmlns:xlink=\"http://www.w3.org/1999/xlink\" LOCTYPE=\"URL\" xlink:href=\"objects/obj-3/mdto.xml\"/>\n      </mets:file>\n    </mets:fileGrp>\n  </mets:fileSec>\n  <mets:structMap TYPE=\"physical\">\n    <mets:div LABEL=\"SIP-transfer-9\">\n      <mets:div LABEL=\"obj-2\" TYPE=\"object\">\n        <mets:fptr FILEID=\"FILE-1\"/>\n        <mets:fptr FILEID=\"FILE-2\"/>\n        <mets:fptr FILEID=\"MD-3\"/>\n        <mets:fptr FILEID=\"MD-4\"/>\n      </mets:div>\n      <mets:div LABEL=\"obj-3\" TYPE=\"object\">\n        <mets:fptr FILEID=\"MD-5\"/>\n      </mets:div>\n    </mets:div>\n  </mets:structMap>\n</mets:mets>\n"
+            ],
+            [
+                "data/premis.xml",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<premis:premis xmlns:premis=\"info:lc/xmlns/premis-v2\" version=\"2.0\">\n  <premis:event>\n    <premis:eventIdentifier>\n      <premis:eventIdentifierType>UUID</premis:eventIdentifierType>\n      <premis:eventIdentifierValue>transfer-9</premis:eventIdentifierValue>\n    </premis:eventIdentifier>\n    <premis:eventType>creation</premis:eventType>\n    <premis:eventDateTime><now></premis:eventDateTime>\n  </premis:event>\n  <premis:object xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:type=\"premis:file\">\n    <premis:objectIdentifier>\n      <premis:objectIdentifierType>filepath</premis:objectIdentifierType>\n      <premis:objectIdentifierValue>objects/obj-2/content/original/gone.txt</premis:objectIdentifierValue>\n    </premis:objectIdentifier>\n    <premis:objectCharacteristics>\n      <premis:fixity>\n        <premis:messageDigestAlgorithm>SHA-256</premis:messageDigestAlgorithm>\n        <premis:messageDigest>abc</premis:messageDigest>\n      </premis:fixity>\n      <premis:size>5</premis:size>\n      <premis:format>\n        <premis:formatDesignation>\n          <premis:formatName>text/plain</premis:formatName>\n        </premis:formatDesignation>\n      </premis:format>\n    </premis:objectCharacteristics>\n  </premis:object>\n  <premis:object xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:type=\"premis:file\">\n    <premis:objectIdentifier>\n      <premis:objectIdentifierType>filepath</premis:objectIdentifierType>\n      <premis:objectIdentifierValue>objects/obj-2/content/original/third.txt</premis:objectIdentifierValue>\n    </premis:objectIdentifier>\n    <premis:objectCharacteristics>\n      <premis:fixity>\n        <premis:messageDigestAlgorithm>SHA-256</premis:messageDigestAlgorithm>\n        <premis:messageDigest>b1e99324505bd32da0e1f85dcf5e19a09db0481e8a15f62c41eb320304a8e927</premis:messageDigest>\n      </premis:fixity>\n      <premis:size>5</premis:size>\n      <premis:format>\n        <premis:formatDesignation>\n          <premis:formatName>text/plain</premis:formatName>\n        </premis:formatDesignation>\n      </premis:format>\n    </premis:objectCharacteristics>\n  </premis:object>\n</premis:premis>\n"
+            ],
+            [
+                "data/sip-sequence.json",
+                "{\n    \"transferId\": \"transfer-9\",\n    \"sequenceNumber\": 2,\n    \"totalPackages\": 2\n}"
+            ],
+            [
+                "data/sip-manifest.json",
+                [
+                    {
+                        "path": "objects/obj-2/mdto.xml",
+                        "size": 32,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "objects/obj-2/metadata.json",
+                        "size": 1072,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "objects/obj-2/content/original/third.txt",
+                        "size": 5,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "objects/obj-2/content/original/third.txt.bestand.MDTO.xml",
+                        "size": 42,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "objects/obj-3/mdto.xml",
+                        "size": 32,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "objects/obj-3/metadata.json",
+                        "size": 1072,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "mets.xml",
+                        "size": 2436,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "premis.xml",
+                        "size": 2188,
+                        "checksum": "<sha256 ok>"
+                    },
+                    {
+                        "path": "sip-sequence.json",
+                        "size": 83,
+                        "checksum": "<sha256 ok>"
+                    }
+                ]
+            ],
+            [
+                "bagit.txt",
+                "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"
+            ],
+            [
+                "bag-info.txt",
+                "Bagging-Date: <today>\nPayload-Oxum: 8477.10\nSource-Organization: OpenRegister\nExternal-Identifier: transfer-9\n"
+            ],
+            [
+                "manifest-sha256.txt",
+                [
+                    "<sha256 ok>  data/objects/obj-2/mdto.xml",
+                    "<sha256 ok>  data/objects/obj-2/metadata.json",
+                    "<sha256 ok>  data/objects/obj-2/content/original/third.txt",
+                    "<sha256 ok>  data/objects/obj-2/content/original/third.txt.bestand.MDTO.xml",
+                    "<sha256 ok>  data/objects/obj-3/mdto.xml",
+                    "<sha256 ok>  data/objects/obj-3/metadata.json",
+                    "<sha256 ok>  data/mets.xml",
+                    "<sha256 ok>  data/premis.xml",
+                    "<sha256 ok>  data/sip-sequence.json",
+                    "<sha256 ok>  data/sip-manifest.json"
+                ]
+            ],
+            [
+                "tagmanifest-sha256.txt",
+                [
+                    "<sha256 ok>  bagit.txt",
+                    "<sha256 ok>  bag-info.txt",
+                    "<sha256 ok>  manifest-sha256.txt"
+                ]
+            ]
+        ]
+    ]
+]

@@ -1,0 +1,54 @@
+{
+    "empty": {
+        "refused": "Register not found: 'want' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "list": {
+        "refused": "Register not found: 'want' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "list of objects": {
+        "refused": "Register not found: 'unknown' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "no components": {
+        "refused": "Register not found: 'want' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "components not an array": {
+        "refused": "Register not found: 'want' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "no registers": {
+        "refused": "Register not found: 'want' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "registers null": {
+        "refused": "Register not found: 'want' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "registers string": {
+        "refused": "Register not found: 'want' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "registers empty": {
+        "refused": "Register not found: 'unknown' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "registers keyed": {
+        "autoCreate": "container asked for OCA\\OpenRegister\\Service\\Configuration\\ImportHandler"
+    },
+    "registers list": {
+        "autoCreate": "container asked for OCA\\OpenRegister\\Service\\Configuration\\ImportHandler"
+    },
+    "registers list of null": {
+        "autoCreate": "container asked for OCA\\OpenRegister\\Service\\Configuration\\ImportHandler"
+    },
+    "non-list keys": {
+        "autoCreate": "container asked for OCA\\OpenRegister\\Service\\Configuration\\ImportHandler"
+    },
+    "slug null": {
+        "refused": "Register not found: 'unknown' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    }
+}

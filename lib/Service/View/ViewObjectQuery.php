@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\View;
  *
  * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-alert-fires-once-per-crossing-and-re-arms
  */
-final class ViewObjectQuery {
+final class ViewObjectQuery implements ViewObjectQueryInterface {
 
 	/**
 	 * The search query for a view's stored query.

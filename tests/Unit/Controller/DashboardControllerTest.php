@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\DashboardController;
-use OCA\OpenRegister\Service\DashboardService;
+use OCA\OpenRegister\Search\Controller\DashboardController;
+use DateTime;
+use OCA\OpenRegister\Search\Service\ActivityWindow;
+use OCA\OpenRegister\Search\Service\DashboardAuditReads;
+use OCA\OpenRegister\Search\Service\DashboardPeriod;
+use OCA\OpenRegister\Search\Service\DashboardScope;
+use OCA\OpenRegister\Search\Service\DashboardService;
+use OCA\OpenRegister\Search\Service\DashboardSizes;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -19,6 +25,8 @@ class DashboardControllerTest extends TestCase {
 	private DashboardController $controller;
 	private IRequest&MockObject $request;
 	private DashboardService&MockObject $dashboardService;
+	private DashboardSizes&MockObject $sizes;
+	private DashboardAuditReads&MockObject $auditReads;
 	private LoggerInterface&MockObject $logger;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
@@ -28,6 +36,10 @@ class DashboardControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->dashboardService = $this->createMock(DashboardService::class);
+		$this->sizes = $this->createMock(DashboardSizes::class);
+		$this->auditReads = $this->createMock(DashboardAuditReads::class);
+		$this->dashboardService->method('sizes')->willReturn($this->sizes);
+		$this->dashboardService->method('auditReads')->willReturn($this->auditReads);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
@@ -40,12 +52,11 @@ class DashboardControllerTest extends TestCase {
 		$this->groupManager->method('isAdmin')->willReturn(true);
 
 		$this->controller = new DashboardController(
-			'openregister',
 			$this->request,
-			$this->dashboardService,
-			$this->logger,
-			$this->userSession,
-			$this->groupManager
+			new \OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices(
+				$this->dashboardService,
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->logger)
+			)
 		);
 	}
 
@@ -58,12 +69,11 @@ class DashboardControllerTest extends TestCase {
 		$groupManager->method('isAdmin')->willReturn(false);
 
 		$controller = new DashboardController(
-			'openregister',
 			$this->request,
-			$this->dashboardService,
-			$this->logger,
-			$session,
-			$groupManager
+			new \OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices(
+				$this->dashboardService,
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $groupManager, $this->logger)
+			)
 		);
 
 		// None of the tenant-wide aggregations must be computed for a non-admin.
@@ -83,6 +93,8 @@ class DashboardControllerTest extends TestCase {
 	public function testPage(): void {
 		$result = $this->controller->page();
 		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertSame('index', $result->getTemplateName());
+		$this->assertSame('openregister', $result->getApp());
 	}
 
 	/**
@@ -124,7 +136,7 @@ class DashboardControllerTest extends TestCase {
 	}
 
 	public function testCalculateSuccess(): void {
-		$this->dashboardService->method('calculate')->willReturn(['status' => 'success']);
+		$this->sizes->method('calculate')->willReturn(['status' => 'success']);
 
 		$result = $this->controller->calculate(1, 2);
 
@@ -132,7 +144,7 @@ class DashboardControllerTest extends TestCase {
 	}
 
 	public function testCalculateException(): void {
-		$this->dashboardService->method('calculate')
+		$this->sizes->method('calculate')
 			->willThrowException(new \Exception('Error'));
 
 		$result = $this->controller->calculate();
@@ -143,7 +155,7 @@ class DashboardControllerTest extends TestCase {
 	}
 
 	public function testGetAuditTrailActionChartSuccess(): void {
-		$this->dashboardService->method('getAuditTrailActionChartData')
+		$this->auditReads->method('getAuditTrailActionChartData')
 			->willReturn(['labels' => [], 'series' => []]);
 
 		$result = $this->controller->getAuditTrailActionChart();
@@ -152,7 +164,7 @@ class DashboardControllerTest extends TestCase {
 	}
 
 	public function testGetAuditTrailActionChartException(): void {
-		$this->dashboardService->method('getAuditTrailActionChartData')
+		$this->auditReads->method('getAuditTrailActionChartData')
 			->willThrowException(new \Exception('Chart error'));
 
 		$result = $this->controller->getAuditTrailActionChart();
@@ -188,7 +200,7 @@ class DashboardControllerTest extends TestCase {
 	}
 
 	public function testGetAuditTrailStatisticsSuccess(): void {
-		$this->dashboardService->method('getAuditTrailStatistics')
+		$this->auditReads->method('getAuditTrailStatistics')
 			->willReturn(['total' => 100]);
 
 		$result = $this->controller->getAuditTrailStatistics();
@@ -197,7 +209,7 @@ class DashboardControllerTest extends TestCase {
 	}
 
 	public function testGetAuditTrailActionDistributionSuccess(): void {
-		$this->dashboardService->method('getAuditTrailActionDistribution')
+		$this->auditReads->method('getAuditTrailActionDistribution')
 			->willReturn(['actions' => []]);
 
 		$result = $this->controller->getAuditTrailActionDistribution();
@@ -205,8 +217,25 @@ class DashboardControllerTest extends TestCase {
 		$this->assertEquals(200, $result->getStatus());
 	}
 
+	public function testAuditReadsHandTheirFiltersToTheService(): void {
+		$scope = new DashboardScope(registerId: 1, schemaId: 2);
+		$this->auditReads->expects($this->once())->method('getAuditTrailActionChartData')
+			->with(new DashboardPeriod($scope, new DateTime('2026-01-01'), new DateTime('2026-01-31')))->willReturn([]);
+		$this->auditReads->expects($this->once())->method('getAuditTrailStatistics')
+			->with($scope, 48)->willReturn([]);
+		$this->auditReads->expects($this->once())->method('getAuditTrailActionDistribution')
+			->with($scope, 72)->willReturn([]);
+		$this->auditReads->expects($this->once())->method('getMostActiveObjects')
+			->with(new ActivityWindow($scope, 5, 96))->willReturn([]);
+
+		$this->controller->getAuditTrailActionChart('2026-01-01', '2026-01-31', 1, 2);
+		$this->controller->getAuditTrailStatistics(1, 2, 48);
+		$this->controller->getAuditTrailActionDistribution(1, 2, 72);
+		$this->controller->getMostActiveObjects(1, 2, 5, 96);
+	}
+
 	public function testGetMostActiveObjectsSuccess(): void {
-		$this->dashboardService->method('getMostActiveObjects')
+		$this->auditReads->method('getMostActiveObjects')
 			->willReturn(['objects' => []]);
 
 		$result = $this->controller->getMostActiveObjects();
@@ -215,7 +244,7 @@ class DashboardControllerTest extends TestCase {
 	}
 
 	public function testGetMostActiveObjectsException(): void {
-		$this->dashboardService->method('getMostActiveObjects')
+		$this->auditReads->method('getMostActiveObjects')
 			->willThrowException(new \Exception('Error'));
 
 		$result = $this->controller->getMostActiveObjects();
@@ -227,7 +256,12 @@ class DashboardControllerTest extends TestCase {
 	 * @dataProvider chartExceptionProvider
 	 */
 	public function testChartMethodsHandleExceptions(string $method, string $serviceMethod): void {
-		$this->dashboardService->method($serviceMethod)
+		$target = $this->dashboardService;
+		if (method_exists(DashboardAuditReads::class, $serviceMethod) === true) {
+			$target = $this->auditReads;
+		}
+
+		$target->method($serviceMethod)
 			->willThrowException(new \Exception('Error'));
 
 		$result = $this->controller->$method();

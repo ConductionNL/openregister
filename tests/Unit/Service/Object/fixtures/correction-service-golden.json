@@ -1,0 +1,750 @@
+{
+    "signed-out": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+            "message": "Sign in to correct a value.",
+            "code": 403,
+            "previous": null
+        },
+        "trace": []
+    },
+    "no-right": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+            "message": "Correcting a value needs the 'object.correct' right. no right",
+            "code": 403,
+            "previous": "no right"
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ]
+        ]
+    },
+    "no-reason": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\CorrectionRefusedException",
+            "message": "A correction needs a reason. Say why the recorded value is wrong.",
+            "code": 0,
+            "previous": null
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ]
+        ]
+    },
+    "null-reason": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\CorrectionRefusedException",
+            "message": "A correction needs a reason. Say why the recorded value is wrong.",
+            "code": 0,
+            "previous": null
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ]
+        ]
+    },
+    "nothing-correctable": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\CorrectionRefusedException",
+            "message": "A correction needs at least one value to correct.",
+            "code": 0,
+            "previous": null
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ]
+        ]
+    },
+    "amended": {
+        "outcome": {
+            "object": {
+                "id": "u-1",
+                "name": "new",
+                "age": 3,
+                "0": "zero"
+            },
+            "audit": "correction",
+            "changed": {
+                "name": {
+                    "old": "old",
+                    "new": "new"
+                },
+                "correction": {
+                    "reason": "typo",
+                    "right": "object.correct",
+                    "actor": "alice",
+                    "fields": {
+                        "name": {
+                            "old": "old",
+                            "new": "new"
+                        },
+                        "0": {
+                            "old": null,
+                            "new": "zero"
+                        }
+                    }
+                }
+            }
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ],
+            [
+                "setRegister",
+                "reg"
+            ],
+            [
+                "setSchema",
+                "sch"
+            ],
+            [
+                "findSilent",
+                [
+                    "id-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    false,
+                    false
+                ]
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "id": "u-1",
+                        "name": "new",
+                        "age": 3,
+                        "0": "zero"
+                    },
+                    [],
+                    "reg",
+                    "sch",
+                    "u-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "find",
+                12
+            ],
+            [
+                "update",
+                "correction",
+                {
+                    "name": {
+                        "old": "old",
+                        "new": "new"
+                    },
+                    "correction": {
+                        "reason": "typo",
+                        "right": "object.correct",
+                        "actor": "alice",
+                        "fields": {
+                            "name": {
+                                "old": "old",
+                                "new": "new"
+                            },
+                            "0": {
+                                "old": null,
+                                "new": "zero"
+                            }
+                        }
+                    }
+                }
+            ]
+        ]
+    },
+    "sealed": {
+        "outcome": {
+            "object": {
+                "id": "u-1",
+                "name": "new",
+                "age": 3,
+                "0": "zero"
+            },
+            "audit": "correction",
+            "changed": []
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ],
+            [
+                "setRegister",
+                "reg"
+            ],
+            [
+                "setSchema",
+                "sch"
+            ],
+            [
+                "findSilent",
+                [
+                    "id-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    false,
+                    false
+                ]
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "id": "u-1",
+                        "name": "new",
+                        "age": 3,
+                        "0": "zero"
+                    },
+                    [],
+                    "reg",
+                    "sch",
+                    "u-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "find",
+                12
+            ],
+            [
+                "create",
+                "u-1",
+                "correction",
+                {
+                    "correction": {
+                        "reason": "typo",
+                        "right": "object.correct",
+                        "actor": "alice",
+                        "fields": {
+                            "name": {
+                                "old": "old",
+                                "new": "new"
+                            },
+                            "0": {
+                                "old": null,
+                                "new": "zero"
+                            }
+                        }
+                    }
+                },
+                "alice"
+            ]
+        ]
+    },
+    "no-last-log": {
+        "outcome": {
+            "object": {
+                "id": "u-1",
+                "name": "new",
+                "age": 3,
+                "0": "zero"
+            },
+            "audit": "correction",
+            "changed": []
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ],
+            [
+                "setRegister",
+                "reg"
+            ],
+            [
+                "setSchema",
+                "sch"
+            ],
+            [
+                "findSilent",
+                [
+                    "id-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    false,
+                    false
+                ]
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "id": "u-1",
+                        "name": "new",
+                        "age": 3,
+                        "0": "zero"
+                    },
+                    [],
+                    "reg",
+                    "sch",
+                    "u-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "create",
+                "u-1",
+                "correction",
+                {
+                    "correction": {
+                        "reason": "typo",
+                        "right": "object.correct",
+                        "actor": "alice",
+                        "fields": {
+                            "name": {
+                                "old": "old",
+                                "new": "new"
+                            },
+                            "0": {
+                                "old": null,
+                                "new": "zero"
+                            }
+                        }
+                    }
+                },
+                "alice"
+            ]
+        ]
+    },
+    "non-numeric-log": {
+        "outcome": {
+            "object": {
+                "id": "u-1",
+                "name": "new",
+                "age": 3,
+                "0": "zero"
+            },
+            "audit": "correction",
+            "changed": []
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ],
+            [
+                "setRegister",
+                "reg"
+            ],
+            [
+                "setSchema",
+                "sch"
+            ],
+            [
+                "findSilent",
+                [
+                    "id-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    false,
+                    false
+                ]
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "id": "u-1",
+                        "name": "new",
+                        "age": 3,
+                        "0": "zero"
+                    },
+                    [],
+                    "reg",
+                    "sch",
+                    "u-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "create",
+                "u-1",
+                "correction",
+                {
+                    "correction": {
+                        "reason": "typo",
+                        "right": "object.correct",
+                        "actor": "alice",
+                        "fields": {
+                            "name": {
+                                "old": "old",
+                                "new": "new"
+                            },
+                            "0": {
+                                "old": null,
+                                "new": "zero"
+                            }
+                        }
+                    }
+                },
+                "alice"
+            ]
+        ]
+    },
+    "find-fails": {
+        "outcome": {
+            "object": {
+                "id": "u-1",
+                "name": "new",
+                "age": 3,
+                "0": "zero"
+            },
+            "audit": "correction",
+            "changed": []
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ],
+            [
+                "setRegister",
+                "reg"
+            ],
+            [
+                "setSchema",
+                "sch"
+            ],
+            [
+                "findSilent",
+                [
+                    "id-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    false,
+                    false
+                ]
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "id": "u-1",
+                        "name": "new",
+                        "age": 3,
+                        "0": "zero"
+                    },
+                    [],
+                    "reg",
+                    "sch",
+                    "u-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "find",
+                5
+            ],
+            [
+                "create",
+                "u-1",
+                "correction",
+                {
+                    "correction": {
+                        "reason": "typo",
+                        "right": "object.correct",
+                        "actor": "alice",
+                        "fields": {
+                            "name": {
+                                "old": "old",
+                                "new": "new"
+                            },
+                            "0": {
+                                "old": null,
+                                "new": "zero"
+                            }
+                        }
+                    }
+                },
+                "alice"
+            ]
+        ]
+    },
+    "update-fails": {
+        "outcome": {
+            "object": {
+                "id": "u-1",
+                "name": "new",
+                "age": 3,
+                "0": "zero"
+            },
+            "audit": "correction",
+            "changed": []
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ],
+            [
+                "setRegister",
+                "reg"
+            ],
+            [
+                "setSchema",
+                "sch"
+            ],
+            [
+                "findSilent",
+                [
+                    "id-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    false,
+                    false
+                ]
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "id": "u-1",
+                        "name": "new",
+                        "age": 3,
+                        "0": "zero"
+                    },
+                    [],
+                    "reg",
+                    "sch",
+                    "u-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "find",
+                5
+            ],
+            [
+                "update",
+                "correction",
+                {
+                    "name": {
+                        "old": "old",
+                        "new": "new"
+                    },
+                    "correction": {
+                        "reason": "typo",
+                        "right": "object.correct",
+                        "actor": "alice",
+                        "fields": {
+                            "name": {
+                                "old": "old",
+                                "new": "new"
+                            },
+                            "0": {
+                                "old": null,
+                                "new": "zero"
+                            }
+                        }
+                    }
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[CorrectionService] Could not relabel the audit entry as a correction",
+                {
+                    "auditId": 5,
+                    "error": "locked"
+                }
+            ],
+            [
+                "create",
+                "u-1",
+                "correction",
+                {
+                    "correction": {
+                        "reason": "typo",
+                        "right": "object.correct",
+                        "actor": "alice",
+                        "fields": {
+                            "name": {
+                                "old": "old",
+                                "new": "new"
+                            },
+                            "0": {
+                                "old": null,
+                                "new": "zero"
+                            }
+                        }
+                    }
+                },
+                "alice"
+            ]
+        ]
+    },
+    "create-fails": {
+        "outcome": {
+            "object": {
+                "id": "u-1",
+                "name": "new",
+                "age": 3,
+                "0": "zero"
+            },
+            "audit": null,
+            "changed": null
+        },
+        "trace": [
+            [
+                "requireAction",
+                "object.correct"
+            ],
+            [
+                "setRegister",
+                "reg"
+            ],
+            [
+                "setSchema",
+                "sch"
+            ],
+            [
+                "findSilent",
+                [
+                    "id-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    false,
+                    false
+                ]
+            ],
+            [
+                "saveObject",
+                [
+                    {
+                        "id": "u-1",
+                        "name": "new",
+                        "age": 3,
+                        "0": "zero"
+                    },
+                    [],
+                    "reg",
+                    "sch",
+                    "u-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "create",
+                "u-1",
+                "correction",
+                {
+                    "correction": {
+                        "reason": "typo",
+                        "right": "object.correct",
+                        "actor": "alice",
+                        "fields": {
+                            "name": {
+                                "old": "old",
+                                "new": "new"
+                            },
+                            "0": {
+                                "old": null,
+                                "new": "zero"
+                            }
+                        }
+                    }
+                },
+                "alice"
+            ],
+            [
+                "log",
+                "error",
+                "[CorrectionService] The correction landed and the audit entry did not",
+                {
+                    "uuid": "u-1",
+                    "error": "disk"
+                }
+            ]
+        ]
+    }
+}

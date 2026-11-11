@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Lifecycle\Action;
 
+use OCA\OpenRegister\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
 use RuntimeException;
 
@@ -57,10 +58,8 @@ final class SetFieldsAction implements LifecycleActionInterface {
 	 *  - `set-field`: the field map lives under a `set` key
 	 *    (e.g. `{ "set": { "submittedAt": "@now" } }`).
 	 *
-	 * @param array<string, mixed> $objectData Object payload after the lifecycle move.
-	 * @param array<string, mixed> $previousData Object payload before the transition (unused).
-	 * @param array<string, mixed> $parameters The declared `actionParameters` block.
-	 * @param string $actionName The declared action name (`set-fields` or `set-field`).
+	 * @param LifecycleActionContext $context The payload after the lifecycle move, the declared
+	 *                                        `actionParameters` block and the action name.
 	 *
 	 * @return array<string, mixed> The payload with the declared fields stamped.
 	 *
@@ -68,20 +67,45 @@ final class SetFieldsAction implements LifecycleActionInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function execute(array $objectData, array $previousData, array $parameters, string $actionName): array {
-		$fields = $this->resolveFieldMap(parameters: $parameters);
+	public function execute(LifecycleActionContext $context): array {
+		$fields = $this->resolveFieldMap(parameters: $context->parameters);
+		$this->assertDeclaresFields(fields: $fields, actionName: $context->actionName);
+		return $this->stampFields(objectData: $context->objectData, fields: $fields);
+	}//end execute()
+
+	/**
+	 * Refuse an action whose field map is empty: declared but useless, so fail loud.
+	 *
+	 * @param array<string, mixed> $fields     The resolved field map.
+	 * @param string               $actionName The declared action name.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the field map is empty.
+	 */
+	private function assertDeclaresFields(array $fields, string $actionName): void {
 		if ($fields === []) {
 			throw new RuntimeException(
 				sprintf('Lifecycle action "%s" declares no fields to set.', $actionName)
 			);
 		}
+	}//end assertDeclaresFields()
 
+	/**
+	 * Stamp the resolved field values onto the payload.
+	 *
+	 * @param array<string, mixed> $objectData The object payload.
+	 * @param array<string, mixed> $fields     The field → declared value map.
+	 *
+	 * @return array<string, mixed> The payload with the fields stamped.
+	 */
+	private function stampFields(array $objectData, array $fields): array {
 		foreach ($fields as $key => $value) {
 			$objectData[(string)$key] = $this->resolveValue(value: $value);
 		}
 
 		return $objectData;
-	}//end execute()
+	}//end stampFields()
 
 	/**
 	 * Resolve the field map from either authoring shape.

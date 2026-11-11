@@ -18,6 +18,8 @@ use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SettingsDirectory;
+use OCA\OpenRegister\Service\Settings\ConfigurationSettingsSupport;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroup;
@@ -83,11 +85,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 
 		$this->handler = new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$this->groupManager,
-			$this->userManager,
-			$this->organisationMapper,
-			$this->logger,
-			$this->appManager
+			new SettingsDirectory($this->groupManager, $this->userManager, $this->organisationMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager)
 		);
 	}
 
@@ -144,11 +143,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 
 		return new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$groupManager,
-			$userManager,
-			$orgMapper,
-			$this->logger,
-			$this->appManager
+			new SettingsDirectory($groupManager, $userManager, $orgMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager)
 		);
 	}
 
@@ -259,28 +255,7 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->assertTrue($result['retention']['auditTrailsEnabled']);
 		$this->assertTrue($result['retention']['searchTrailsEnabled']);
 
-		// Solr defaults.
-		$this->assertArrayHasKey('solr', $result);
-		$this->assertFalse($result['solr']['enabled']);
-		$this->assertSame('solr', $result['solr']['host']);
-		$this->assertSame(8983, $result['solr']['port']);
-		$this->assertSame('/solr', $result['solr']['path']);
-		$this->assertSame('openregister', $result['solr']['core']);
-		$this->assertSame('_default', $result['solr']['configSet']);
-		$this->assertSame('http', $result['solr']['scheme']);
-		$this->assertSame('solr', $result['solr']['username']);
-		$this->assertSame('SolrRocks', $result['solr']['password']);
-		$this->assertSame(30, $result['solr']['timeout']);
-		$this->assertTrue($result['solr']['autoCommit']);
-		$this->assertSame(1000, $result['solr']['commitWithin']);
-		$this->assertTrue($result['solr']['enableLogging']);
-		$this->assertSame('zookeeper:2181', $result['solr']['zookeeperHosts']);
-		$this->assertSame('', $result['solr']['zookeeperUsername']);
-		$this->assertSame('', $result['solr']['zookeeperPassword']);
-		$this->assertSame('openregister', $result['solr']['collection']);
-		$this->assertTrue($result['solr']['useCloud']);
-		$this->assertNull($result['solr']['objectCollection']);
-		$this->assertNull($result['solr']['fileCollection']);
+		$this->assertArrayNotHasKey('solr', $result);
 
 		// Groups, tenants, users.
 		$this->assertArrayHasKey('availableGroups', $result);
@@ -390,36 +365,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	}
 
 	/**
-	 * Test getSettings with stored Solr config
-	 *
-	 * @return void
-	 */
-	public function testGetSettingsWithStoredSolrConfig(): void {
-		$solrConfig = json_encode([
-			'enabled' => true,
-			'host' => 'solr-server',
-			'port' => 8984,
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($appName, $key, $default) use ($solrConfig) {
-				if ($key === 'solr') {
-					return $solrConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getSettings();
-
-		$this->assertTrue($result['solr']['enabled']);
-		$this->assertSame('solr-server', $result['solr']['host']);
-		$this->assertSame(8984, $result['solr']['port']);
-		// Defaults for unset keys.
-		$this->assertSame('/solr', $result['solr']['path']);
-		$this->assertSame('openregister', $result['solr']['core']);
-	}
-
-	/**
 	 * Test getSettings with all configs stored simultaneously
 	 *
 	 * @return void
@@ -429,7 +374,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 			'rbac' => json_encode(['enabled' => false]),
 			'multitenancy' => json_encode(['enabled' => false]),
 			'retention' => json_encode(['objectArchiveRetention' => 999]),
-			'solr' => json_encode(['enabled' => true, 'host' => 'custom-solr']),
 		];
 
 		$this->appConfig->method('getValueString')
@@ -442,8 +386,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->assertFalse($result['rbac']['enabled']);
 		$this->assertFalse($result['multitenancy']['enabled']);
 		$this->assertSame(999, $result['retention']['objectArchiveRetention']);
-		$this->assertTrue($result['solr']['enabled']);
-		$this->assertSame('custom-solr', $result['solr']['host']);
 	}
 
 	/**
@@ -523,11 +465,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 
 		$handler = new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$this->groupManager,
-			$userManager,
-			$this->organisationMapper,
-			$this->logger,
-			$this->appManager
+			new SettingsDirectory($this->groupManager, $userManager, $this->organisationMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager)
 		);
 
 		$this->appConfig->method('getValueString')->willReturn('');
@@ -553,11 +492,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 
 		$handler = new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$this->groupManager,
-			$userManager,
-			$this->organisationMapper,
-			$this->logger,
-			$this->appManager
+			new SettingsDirectory($this->groupManager, $userManager, $this->organisationMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager)
 		);
 
 		$this->appConfig->method('getValueString')->willReturn('');
@@ -580,11 +516,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 
 		$handler = new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$this->groupManager,
-			$this->userManager,
-			$orgMapper,
-			$this->logger,
-			$this->appManager
+			new SettingsDirectory($this->groupManager, $this->userManager, $orgMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager)
 		);
 
 		$this->appConfig->method('getValueString')->willReturn('');
@@ -703,46 +636,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	}
 
 	/**
-	 * Test updateSettings stores Solr config
-	 *
-	 * @return void
-	 */
-	public function testUpdateSettingsStoresSolrConfig(): void {
-		$storedValues = [];
-		$this->appConfig->method('setValueString')
-			->willReturnCallback(function ($app, $key, $value) use (&$storedValues) {
-				$storedValues[$key] = $value;
-				return true;
-			});
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use (&$storedValues) {
-				return $storedValues[$key] ?? '';
-			});
-
-		$data = [
-			'solr' => [
-				'enabled' => true,
-				'host' => 'my-solr',
-				'port' => '9999',
-				'timeout' => '60',
-				'commitWithin' => '2000',
-			],
-		];
-
-		$result = $this->handler->updateSettings($data);
-
-		$this->assertArrayHasKey('version', $result);
-		$this->assertArrayHasKey('solr', $result);
-		$this->assertTrue($result['solr']['enabled']);
-		$this->assertSame('my-solr', $result['solr']['host']);
-		// Port should be cast to int.
-		$this->assertSame(9999, $result['solr']['port']);
-		$this->assertSame(60, $result['solr']['timeout']);
-		$this->assertSame(2000, $result['solr']['commitWithin']);
-	}
-
-	/**
 	 * Test updateSettings with empty data (no sections) returns getSettings
 	 *
 	 * @return void
@@ -779,7 +672,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 			'rbac' => ['enabled' => false],
 			'multitenancy' => ['enabled' => false],
 			'retention' => ['auditTrailsEnabled' => false],
-			'solr' => ['enabled' => true],
 		];
 
 		$result = $this->handler->updateSettings($data);
@@ -787,7 +679,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->assertFalse($result['rbac']['enabled']);
 		$this->assertFalse($result['multitenancy']['enabled']);
 		$this->assertFalse($result['retention']['auditTrailsEnabled']);
-		$this->assertTrue($result['solr']['enabled']);
 	}
 
 	/**
@@ -1395,547 +1286,17 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	// getLLMSettingsOnly
 	// =========================================================================
 
-	/**
-	 * Test getLLMSettingsOnly returns defaults when empty
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyReturnsDefaults(): void {
-		$this->appConfig->method('getValueString')
-			->willReturn('');
-
-		$result = $this->handler->getLLMSettingsOnly();
-
-		$this->assertArrayHasKey('enabled', $result);
-		$this->assertFalse($result['enabled']);
-		$this->assertNull($result['embeddingProvider']);
-		$this->assertNull($result['chatProvider']);
-
-		// OpenAI config.
-		$this->assertArrayHasKey('openaiConfig', $result);
-		$this->assertSame('', $result['openaiConfig']['apiKey']);
-		$this->assertNull($result['openaiConfig']['model']);
-		$this->assertNull($result['openaiConfig']['chatModel']);
-		$this->assertSame('', $result['openaiConfig']['organizationId']);
-
-		// Ollama config.
-		$this->assertArrayHasKey('ollamaConfig', $result);
-		$this->assertSame('http://localhost:11434', $result['ollamaConfig']['url']);
-		$this->assertNull($result['ollamaConfig']['model']);
-		$this->assertNull($result['ollamaConfig']['chatModel']);
-
-		// Fireworks config.
-		$this->assertArrayHasKey('fireworksConfig', $result);
-		$this->assertSame('', $result['fireworksConfig']['apiKey']);
-		$this->assertNull($result['fireworksConfig']['embeddingModel']);
-		$this->assertNull($result['fireworksConfig']['chatModel']);
-		$this->assertSame('https://api.fireworks.ai/inference/v1', $result['fireworksConfig']['baseUrl']);
-
-		// Vector config.
-		$this->assertArrayHasKey('vectorConfig', $result);
-		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
-	}
-
-	/**
-	 * Test getLLMSettingsOnly parses stored config
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyParsesStoredConfig(): void {
-		$storedConfig = json_encode([
-			'enabled' => true,
-			'embeddingProvider' => 'openai',
-			'chatProvider' => 'ollama',
-			'openaiConfig' => [
-				'apiKey' => 'sk-test',
-				'model' => 'text-embedding-3-small',
-			],
-			'ollamaConfig' => [
-				'url' => 'http://ollama:11434',
-				'chatModel' => 'llama3',
-			],
-			'vectorConfig' => [
-				'backend' => 'solr',
-				'solrField' => '_vector_',
-			],
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use ($storedConfig) {
-				if ($key === 'llm') {
-					return $storedConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getLLMSettingsOnly();
-
-		$this->assertTrue($result['enabled']);
-		$this->assertSame('openai', $result['embeddingProvider']);
-		$this->assertSame('ollama', $result['chatProvider']);
-		$this->assertSame('sk-test', $result['openaiConfig']['apiKey']);
-		$this->assertSame('solr', $result['vectorConfig']['backend']);
-		$this->assertSame('_vector_', $result['vectorConfig']['solrField']);
-	}
-
-	/**
-	 * Test getLLMSettingsOnly adds enabled=false when missing
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyAddsEnabledWhenMissing(): void {
-		$storedConfig = json_encode([
-			'embeddingProvider' => 'openai',
-			'vectorConfig' => ['backend' => 'solr', 'solrField' => '_v_'],
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use ($storedConfig) {
-				if ($key === 'llm') {
-					return $storedConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getLLMSettingsOnly();
-
-		$this->assertFalse($result['enabled']);
-	}
-
-	/**
-	 * Test getLLMSettingsOnly adds vectorConfig when missing
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyAddsVectorConfigWhenMissing(): void {
-		$storedConfig = json_encode([
-			'enabled' => true,
-			'embeddingProvider' => 'openai',
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use ($storedConfig) {
-				if ($key === 'llm') {
-					return $storedConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getLLMSettingsOnly();
-
-		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
-	}
-
-	/**
-	 * Test getLLMSettingsOnly fills missing vectorConfig fields
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyFillsMissingVectorConfigFields(): void {
-		$storedConfig = json_encode([
-			'enabled' => true,
-			'vectorConfig' => [],
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use ($storedConfig) {
-				if ($key === 'llm') {
-					return $storedConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getLLMSettingsOnly();
-
-		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
-	}
-
-	/**
-	 * Test getLLMSettingsOnly fills missing backend in vectorConfig
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyFillsMissingBackendOnly(): void {
-		$storedConfig = json_encode([
-			'enabled' => true,
-			'vectorConfig' => ['solrField' => '_custom_'],
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use ($storedConfig) {
-				if ($key === 'llm') {
-					return $storedConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getLLMSettingsOnly();
-
-		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_custom_', $result['vectorConfig']['solrField']);
-	}
-
-	/**
-	 * Test getLLMSettingsOnly fills missing solrField in vectorConfig
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyFillsMissingSolrFieldOnly(): void {
-		$storedConfig = json_encode([
-			'enabled' => true,
-			'vectorConfig' => ['backend' => 'solr'],
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use ($storedConfig) {
-				if ($key === 'llm') {
-					return $storedConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getLLMSettingsOnly();
-
-		$this->assertSame('solr', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
-	}
-
-	/**
-	 * Test getLLMSettingsOnly removes deprecated solrCollection
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyRemovesDeprecatedSolrCollection(): void {
-		$storedConfig = json_encode([
-			'enabled' => true,
-			'vectorConfig' => [
-				'backend' => 'solr',
-				'solrField' => '_v_',
-				'solrCollection' => 'old_collection',
-			],
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use ($storedConfig) {
-				if ($key === 'llm') {
-					return $storedConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getLLMSettingsOnly();
-
-		$this->assertArrayNotHasKey('solrCollection', $result['vectorConfig']);
-	}
-
-	/**
-	 * Test getLLMSettingsOnly throws RuntimeException on error
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyThrowsRuntimeExceptionOnError(): void {
-		$this->appConfig->method('getValueString')
-			->willThrowException(new Exception('DB error'));
-
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('Failed to retrieve LLM settings');
-
-		$this->handler->getLLMSettingsOnly();
-	}
-
 	// =========================================================================
 	// updateLLMSettingsOnly
 	// =========================================================================
-
-	/**
-	 * Test updateLLMSettingsOnly stores and returns merged config
-	 *
-	 * @return void
-	 */
-	public function testUpdateLLMSettingsOnlyStoresAndReturns(): void {
-		$this->appConfig->method('getValueString')->willReturn('');
-
-		$this->appConfig->expects($this->once())
-			->method('setValueString')
-			->with('openregister', 'llm', $this->isType('string'));
-
-		$result = $this->handler->updateLLMSettingsOnly([
-			'enabled' => true,
-			'embeddingProvider' => 'openai',
-			'openaiConfig' => ['apiKey' => 'sk-new'],
-		]);
-
-		$this->assertTrue($result['enabled']);
-		$this->assertSame('openai', $result['embeddingProvider']);
-		$this->assertSame('sk-new', $result['openaiConfig']['apiKey']);
-		// Defaults for unset.
-		$this->assertNull($result['chatProvider']);
-		$this->assertSame('php', $result['vectorConfig']['backend']);
-	}
-
-	/**
-	 * Test updateLLMSettingsOnly merges with existing config (PATCH behavior)
-	 *
-	 * @return void
-	 */
-	public function testUpdateLLMSettingsOnlyMergesWithExisting(): void {
-		$existingConfig = json_encode([
-			'enabled' => true,
-			'embeddingProvider' => 'openai',
-			'chatProvider' => 'ollama',
-			'openaiConfig' => [
-				'apiKey' => 'sk-old',
-				'model' => 'text-embedding-3-small',
-			],
-			'ollamaConfig' => [
-				'url' => 'http://ollama:11434',
-				'chatModel' => 'llama3',
-			],
-			'vectorConfig' => [
-				'backend' => 'solr',
-				'solrField' => '_v_',
-			],
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use ($existingConfig) {
-				if ($key === 'llm') {
-					return $existingConfig;
-				}
-				return '';
-			});
-
-		$this->appConfig->expects($this->once())
-			->method('setValueString');
-
-		// Only update apiKey; everything else should be preserved.
-		$result = $this->handler->updateLLMSettingsOnly([
-			'openaiConfig' => ['apiKey' => 'sk-updated'],
-		]);
-
-		$this->assertSame('sk-updated', $result['openaiConfig']['apiKey']);
-		// Preserved from existing.
-		$this->assertTrue($result['enabled']);
-		$this->assertSame('openai', $result['embeddingProvider']);
-		$this->assertSame('ollama', $result['chatProvider']);
-		$this->assertSame('text-embedding-3-small', $result['openaiConfig']['model']);
-		$this->assertSame('http://ollama:11434', $result['ollamaConfig']['url']);
-		$this->assertSame('solr', $result['vectorConfig']['backend']);
-	}
-
-	/**
-	 * Test updateLLMSettingsOnly with full fireworks config
-	 *
-	 * @return void
-	 */
-	public function testUpdateLLMSettingsOnlyWithFireworksConfig(): void {
-		$this->appConfig->method('getValueString')->willReturn('');
-
-		$this->appConfig->expects($this->once())
-			->method('setValueString');
-
-		$result = $this->handler->updateLLMSettingsOnly([
-			'fireworksConfig' => [
-				'apiKey' => 'fw-key',
-				'embeddingModel' => 'nomic-embed',
-				'chatModel' => 'llama-3',
-				'baseUrl' => 'https://custom.fireworks.ai',
-			],
-		]);
-
-		$this->assertSame('fw-key', $result['fireworksConfig']['apiKey']);
-		$this->assertSame('nomic-embed', $result['fireworksConfig']['embeddingModel']);
-		$this->assertSame('llama-3', $result['fireworksConfig']['chatModel']);
-		$this->assertSame('https://custom.fireworks.ai', $result['fireworksConfig']['baseUrl']);
-	}
-
-	/**
-	 * Test updateLLMSettingsOnly throws RuntimeException on error
-	 *
-	 * @return void
-	 */
-	public function testUpdateLLMSettingsOnlyThrowsRuntimeExceptionOnError(): void {
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')
-			->willThrowException(new Exception('DB error'));
-
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('Failed to update LLM settings');
-
-		$this->handler->updateLLMSettingsOnly(['enabled' => true]);
-	}
 
 	// =========================================================================
 	// getFileSettingsOnly
 	// =========================================================================
 
-	/**
-	 * Test getFileSettingsOnly returns defaults
-	 *
-	 * @return void
-	 */
-	public function testGetFileSettingsOnlyReturnsDefaults(): void {
-		$this->appConfig->method('getValueString')
-			->willReturn('');
-
-		$result = $this->handler->getFileSettingsOnly();
-
-		$this->assertFalse($result['vectorizationEnabled']);
-		$this->assertNull($result['provider']);
-		$this->assertSame('RECURSIVE_CHARACTER', $result['chunkingStrategy']);
-		$this->assertSame(1000, $result['chunkSize']);
-		$this->assertSame(200, $result['chunkOverlap']);
-		$this->assertIsArray($result['enabledFileTypes']);
-		$this->assertContains('pdf', $result['enabledFileTypes']);
-		$this->assertContains('docx', $result['enabledFileTypes']);
-		$this->assertFalse($result['ocrEnabled']);
-		$this->assertSame(100, $result['maxFileSizeMB']);
-		$this->assertSame('objects', $result['extractionScope']);
-		$this->assertSame('llphant', $result['textExtractor']);
-		$this->assertSame('background', $result['extractionMode']);
-		$this->assertSame(100, $result['maxFileSize']);
-		$this->assertSame(10, $result['batchSize']);
-		$this->assertSame('', $result['dolphinApiEndpoint']);
-		$this->assertSame('', $result['dolphinApiKey']);
-		$this->assertSame('', $result['presidioApiEndpoint']);
-		$this->assertFalse($result['entityRecognitionEnabled']);
-		$this->assertSame('hybrid', $result['entityRecognitionMethod']);
-	}
-
-	/**
-	 * Test getFileSettingsOnly parses stored config
-	 *
-	 * @return void
-	 */
-	public function testGetFileSettingsOnlyParsesStoredConfig(): void {
-		$storedConfig = json_encode([
-			'vectorizationEnabled' => true,
-			'provider' => 'openai',
-			'chunkSize' => 500,
-			'ocrEnabled' => true,
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use ($storedConfig) {
-				if ($key === 'fileManagement') {
-					return $storedConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getFileSettingsOnly();
-
-		$this->assertTrue($result['vectorizationEnabled']);
-		$this->assertSame('openai', $result['provider']);
-		$this->assertSame(500, $result['chunkSize']);
-		$this->assertTrue($result['ocrEnabled']);
-	}
-
-	/**
-	 * Test getFileSettingsOnly throws RuntimeException on error
-	 *
-	 * @return void
-	 */
-	public function testGetFileSettingsOnlyThrowsRuntimeExceptionOnError(): void {
-		$this->appConfig->method('getValueString')
-			->willThrowException(new Exception('DB error'));
-
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('Failed to retrieve File Management settings');
-
-		$this->handler->getFileSettingsOnly();
-	}
-
 	// =========================================================================
 	// updateFileSettingsOnly
 	// =========================================================================
-
-	/**
-	 * Test updateFileSettingsOnly stores and returns config
-	 *
-	 * @return void
-	 */
-	public function testUpdateFileSettingsOnlyStoresAndReturns(): void {
-		$this->appConfig->expects($this->once())
-			->method('setValueString')
-			->with('openregister', 'fileManagement', $this->isType('string'));
-
-		$result = $this->handler->updateFileSettingsOnly([
-			'vectorizationEnabled' => true,
-			'provider' => 'openai',
-			'chunkSize' => 500,
-			'ocrEnabled' => true,
-			'extractionScope' => 'all',
-			'textExtractor' => 'dolphin',
-			'extractionMode' => 'immediate',
-			'dolphinApiEndpoint' => 'http://dolphin:8000',
-			'dolphinApiKey' => 'dk-123',
-			'presidioApiEndpoint' => 'http://presidio:5002',
-			'entityRecognitionEnabled' => true,
-			'entityRecognitionMethod' => 'presidio',
-		]);
-
-		$this->assertTrue($result['vectorizationEnabled']);
-		$this->assertSame('openai', $result['provider']);
-		$this->assertSame(500, $result['chunkSize']);
-		$this->assertTrue($result['ocrEnabled']);
-		$this->assertSame('all', $result['extractionScope']);
-		$this->assertSame('dolphin', $result['textExtractor']);
-		$this->assertSame('immediate', $result['extractionMode']);
-		$this->assertSame('http://dolphin:8000', $result['dolphinApiEndpoint']);
-		$this->assertSame('dk-123', $result['dolphinApiKey']);
-		$this->assertSame('http://presidio:5002', $result['presidioApiEndpoint']);
-		$this->assertTrue($result['entityRecognitionEnabled']);
-		$this->assertSame('presidio', $result['entityRecognitionMethod']);
-	}
-
-	/**
-	 * Test updateFileSettingsOnly with defaults for missing keys
-	 *
-	 * @return void
-	 */
-	public function testUpdateFileSettingsOnlyDefaultsMissingKeys(): void {
-		$this->appConfig->expects($this->once())
-			->method('setValueString');
-
-		$result = $this->handler->updateFileSettingsOnly([]);
-
-		$this->assertFalse($result['vectorizationEnabled']);
-		$this->assertNull($result['provider']);
-		$this->assertSame('RECURSIVE_CHARACTER', $result['chunkingStrategy']);
-		$this->assertSame(1000, $result['chunkSize']);
-		$this->assertSame(200, $result['chunkOverlap']);
-		$this->assertFalse($result['ocrEnabled']);
-		$this->assertSame(100, $result['maxFileSizeMB']);
-		$this->assertSame('objects', $result['extractionScope']);
-		$this->assertSame('llphant', $result['textExtractor']);
-		$this->assertSame('background', $result['extractionMode']);
-		$this->assertSame(100, $result['maxFileSize']);
-		$this->assertSame(10, $result['batchSize']);
-		$this->assertSame('', $result['dolphinApiEndpoint']);
-		$this->assertSame('', $result['dolphinApiKey']);
-		$this->assertSame('', $result['presidioApiEndpoint']);
-		$this->assertFalse($result['entityRecognitionEnabled']);
-		$this->assertSame('hybrid', $result['entityRecognitionMethod']);
-	}
-
-	/**
-	 * Test updateFileSettingsOnly throws RuntimeException on error
-	 *
-	 * @return void
-	 */
-	public function testUpdateFileSettingsOnlyThrowsRuntimeExceptionOnError(): void {
-		$this->appConfig->method('setValueString')
-			->willThrowException(new Exception('DB error'));
-
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('Failed to update File Management settings');
-
-		$this->handler->updateFileSettingsOnly(['vectorizationEnabled' => true]);
-	}
 
 	// =========================================================================
 	// getVersionInfoOnly
@@ -2007,11 +1368,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	public function testConstructorWithCustomAppName(): void {
 		$handler = new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$this->groupManager,
-			$this->userManager,
-			$this->organisationMapper,
-			$this->logger,
-			$this->appManager,
+			new SettingsDirectory($this->groupManager, $this->userManager, $this->organisationMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager),
 			'custom-app'
 		);
 
@@ -2056,52 +1414,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Solr config with partial stored data
-	// =========================================================================
-
-	/**
-	 * Test getSettings Solr config uses defaults for missing keys
-	 *
-	 * @return void
-	 */
-	public function testGetSettingsSolrPartialConfigUsesDefaults(): void {
-		$solrConfig = json_encode([
-			'enabled' => true,
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($appName, $key, $default) use ($solrConfig) {
-				if ($key === 'solr') {
-					return $solrConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getSettings();
-
-		$this->assertTrue($result['solr']['enabled']);
-		$this->assertSame('solr', $result['solr']['host']);
-		$this->assertSame(8983, $result['solr']['port']);
-		$this->assertSame('/solr', $result['solr']['path']);
-		$this->assertSame('openregister', $result['solr']['core']);
-		$this->assertSame('_default', $result['solr']['configSet']);
-		$this->assertSame('http', $result['solr']['scheme']);
-		$this->assertSame('solr', $result['solr']['username']);
-		$this->assertSame('SolrRocks', $result['solr']['password']);
-		$this->assertSame(30, $result['solr']['timeout']);
-		$this->assertTrue($result['solr']['autoCommit']);
-		$this->assertSame(1000, $result['solr']['commitWithin']);
-		$this->assertTrue($result['solr']['enableLogging']);
-		$this->assertSame('zookeeper:2181', $result['solr']['zookeeperHosts']);
-		$this->assertSame('', $result['solr']['zookeeperUsername']);
-		$this->assertSame('', $result['solr']['zookeeperPassword']);
-		$this->assertSame('openregister', $result['solr']['collection']);
-		$this->assertTrue($result['solr']['useCloud']);
-		$this->assertNull($result['solr']['objectCollection']);
-		$this->assertNull($result['solr']['fileCollection']);
-	}
-
-	// =========================================================================
 	// updateSettings retention defaults
 	// =========================================================================
 
@@ -2131,42 +1443,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->assertSame(63072000000, $result['retention']['objectDeleteRetention']);
 		$this->assertTrue($result['retention']['auditTrailsEnabled']);
 		$this->assertTrue($result['retention']['searchTrailsEnabled']);
-	}
-
-	// =========================================================================
-	// updateSettings solr port/timeout/commitWithin casting
-	// =========================================================================
-
-	/**
-	 * Test updateSettings Solr config casts numeric string values
-	 *
-	 * @return void
-	 */
-	public function testUpdateSettingsSolrCastsNumericValues(): void {
-		$storedValues = [];
-		$this->appConfig->method('setValueString')
-			->willReturnCallback(function ($app, $key, $value) use (&$storedValues) {
-				$storedValues[$key] = $value;
-				return true;
-			});
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use (&$storedValues) {
-				return $storedValues[$key] ?? '';
-			});
-
-		$this->handler->updateSettings([
-			'solr' => [
-				'port' => '1234',
-				'timeout' => '45',
-				'commitWithin' => '3000',
-			],
-		]);
-
-		$decoded = json_decode($storedValues['solr'], true);
-		$this->assertSame(1234, $decoded['port']);
-		$this->assertSame(45, $decoded['timeout']);
-		$this->assertSame(3000, $decoded['commitWithin']);
 	}
 
 	// =========================================================================
@@ -2245,116 +1521,11 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// updateSettings with Solr objectCollection/fileCollection
-	// =========================================================================
-
-	/**
-	 * Test updateSettings Solr with objectCollection and fileCollection
-	 *
-	 * @return void
-	 */
-	public function testUpdateSettingsSolrWithCollectionFields(): void {
-		$storedValues = [];
-		$this->appConfig->method('setValueString')
-			->willReturnCallback(function ($app, $key, $value) use (&$storedValues) {
-				$storedValues[$key] = $value;
-				return true;
-			});
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use (&$storedValues) {
-				return $storedValues[$key] ?? '';
-			});
-
-		$result = $this->handler->updateSettings([
-			'solr' => [
-				'enabled' => true,
-				'objectCollection' => 'obj_col',
-				'fileCollection' => 'file_col',
-			],
-		]);
-
-		$this->assertSame('obj_col', $result['solr']['objectCollection']);
-		$this->assertSame('file_col', $result['solr']['fileCollection']);
-	}
-
-	// =========================================================================
 	// updateLLMSettingsOnly with empty existing and full new
 	// =========================================================================
-
-	/**
-	 * Test updateLLMSettingsOnly with full config from empty state
-	 *
-	 * @return void
-	 */
-	public function testUpdateLLMSettingsOnlyFullConfigFromEmpty(): void {
-		$this->appConfig->method('getValueString')->willReturn('');
-
-		$this->appConfig->expects($this->once())
-			->method('setValueString');
-
-		$result = $this->handler->updateLLMSettingsOnly([
-			'enabled' => true,
-			'embeddingProvider' => 'openai',
-			'chatProvider' => 'ollama',
-			'openaiConfig' => [
-				'apiKey' => 'sk-test',
-				'model' => 'embed-3',
-				'chatModel' => 'gpt-4',
-				'organizationId' => 'org-1',
-			],
-			'ollamaConfig' => [
-				'url' => 'http://ollama:11434',
-				'model' => 'nomic-embed',
-				'chatModel' => 'llama3',
-			],
-			'fireworksConfig' => [
-				'apiKey' => 'fw-key',
-				'embeddingModel' => 'nomic',
-				'chatModel' => 'llama',
-				'baseUrl' => 'https://fw.ai/v1',
-			],
-			'vectorConfig' => [
-				'backend' => 'solr',
-				'solrField' => '_vec_',
-			],
-		]);
-
-		$this->assertTrue($result['enabled']);
-		$this->assertSame('openai', $result['embeddingProvider']);
-		$this->assertSame('ollama', $result['chatProvider']);
-		$this->assertSame('sk-test', $result['openaiConfig']['apiKey']);
-		$this->assertSame('embed-3', $result['openaiConfig']['model']);
-		$this->assertSame('gpt-4', $result['openaiConfig']['chatModel']);
-		$this->assertSame('org-1', $result['openaiConfig']['organizationId']);
-		$this->assertSame('http://ollama:11434', $result['ollamaConfig']['url']);
-		$this->assertSame('nomic-embed', $result['ollamaConfig']['model']);
-		$this->assertSame('llama3', $result['ollamaConfig']['chatModel']);
-		$this->assertSame('fw-key', $result['fireworksConfig']['apiKey']);
-		$this->assertSame('nomic', $result['fireworksConfig']['embeddingModel']);
-		$this->assertSame('llama', $result['fireworksConfig']['chatModel']);
-		$this->assertSame('https://fw.ai/v1', $result['fireworksConfig']['baseUrl']);
-		$this->assertSame('solr', $result['vectorConfig']['backend']);
-		$this->assertSame('_vec_', $result['vectorConfig']['solrField']);
-	}
 
 	// =========================================================================
 	// updateFileSettingsOnly with custom enabledFileTypes
 	// =========================================================================
 
-	/**
-	 * Test updateFileSettingsOnly with custom file types list
-	 *
-	 * @return void
-	 */
-	public function testUpdateFileSettingsOnlyWithCustomFileTypes(): void {
-		$this->appConfig->expects($this->once())
-			->method('setValueString');
-
-		$result = $this->handler->updateFileSettingsOnly([
-			'enabledFileTypes' => ['pdf', 'txt'],
-		]);
-
-		$this->assertSame(['pdf', 'txt'], $result['enabledFileTypes']);
-	}
 }

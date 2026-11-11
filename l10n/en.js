@@ -1,6 +1,7 @@
 OC.L10N.register(
     "openregister",
     {
+        "Marketplace" : "Marketplace",
         "3": "3",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.",
@@ -435,6 +436,7 @@ OC.L10N.register(
         "Costs": "Costs",
         "Count": "Count",
         "Counting objects...": "Counting objects...",
+        "We could not count the objects. Close this window and try again." : "We could not count the objects. Close this window and try again.",
         "Create": "Create",
         "Create API Token": "Create API Token",
         "Create Agent": "Create Agent",
@@ -3669,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Who approved the list, and when.",
         "Who made it.": "Who made it.",
         "Who rejected the list, and why.": "Who rejected the list, and why.",
-        "Woo published": "Woo published"
+        "Woo published": "Woo published",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.",
+        "The report could not be downloaded.": "The report could not be downloaded."
     },
     "nplurals=2; plural=(n != 1);"
 )

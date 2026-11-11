@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -17,6 +17,49 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetRefreshSkipsUnchangedTest extends ExampleSetTestCase {
 	/**
@@ -53,7 +96,7 @@ class ExampleSetRefreshSkipsUnchangedTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
 	 */
 	public function testASameDayRefreshWritesNothing(): void {
 		$this->incident();
@@ -76,7 +119,7 @@ class ExampleSetRefreshSkipsUnchangedTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
 	 */
 	public function testAMovedDateIsStillWritten(): void {
 		$this->incident();
@@ -98,7 +141,7 @@ class ExampleSetRefreshSkipsUnchangedTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
 	 */
 	public function testAnInstanceEditIsWrittenBack(): void {
 		$this->incident();

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 
 declare(strict_types=1);
@@ -118,7 +118,7 @@ final class GrantExportWhereReadIsGrantedTest extends TestCase {
 
 	public function testAMapperThatCannotListSchemasDoesNotAbortTheUpgrade(): void {
 		$mapper = $this->createMock(SchemaMapper::class);
-		$mapper->method('findAll')->willThrowException(new \RuntimeException('database busy'));
+		$mapper->expects($this->once())->method('findAll')->willThrowException(new \RuntimeException('database busy'));
 
 		(new GrantExportWhereReadIsGranted($mapper, new NullLogger()))
 			->run($this->createMock(IOutput::class));

@@ -1,0 +1,2537 @@
+{
+    "both-denied-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 30
+        },
+        "calls": [
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 30
+                    }
+                ]
+            }
+        ]
+    },
+    "cache-hit": {
+        "result": {
+            "name": "agg",
+            "value": 99,
+            "cached": true
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            }
+        ]
+    },
+    "count-default": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 3
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "current-user-placeholder": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 0
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "owner": "alice"
+                        },
+                        "groupBy": null,
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "owner": "alice"
+                        },
+                        "groupBy": null,
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 0
+                    }
+                ]
+            }
+        ]
+    },
+    "field-non-string": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 3
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": 7,
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": 7,
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "filter-alias": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 2
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "status": "open"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "status": "open"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 2
+                    }
+                ]
+            }
+        ]
+    },
+    "group-by-list": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "keys": {
+                        "status": "open",
+                        "team": "a"
+                    },
+                    "value": 15
+                },
+                {
+                    "keys": {
+                        "status": "done",
+                        "team": "b"
+                    },
+                    "value": 20
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": [],
+                        "groupBy": [
+                            "status",
+                            "team"
+                        ],
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": [],
+                        "groupBy": [
+                            "status",
+                            "team"
+                        ],
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "keys": {
+                                    "status": "open",
+                                    "team": "a"
+                                },
+                                "value": 15
+                            },
+                            {
+                                "keys": {
+                                    "status": "done",
+                                    "team": "b"
+                                },
+                                "value": 20
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "group-by-string": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 3
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": [],
+                        "groupBy": "status",
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": [],
+                        "groupBy": "status",
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-empty": {
+        "result": {
+            "name": "agg",
+            "metric": "max",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 20
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "max",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "max",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "max",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 20
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-grouped": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "metrics": [
+                {
+                    "metric": "count"
+                },
+                {
+                    "metric": "sum",
+                    "field": "amount"
+                }
+            ],
+            "groups": [
+                {
+                    "key": "open",
+                    "values": {
+                        "count": 2,
+                        "sum_amount": 15
+                    }
+                },
+                {
+                    "key": "done",
+                    "values": {
+                        "count": 1,
+                        "sum_amount": 20
+                    }
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "field": null,
+                        "where": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "field": null,
+                        "where": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "groups": [
+                            {
+                                "key": "open",
+                                "values": {
+                                    "count": 2,
+                                    "sum_amount": 15
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "values": {
+                                    "count": 1,
+                                    "sum_amount": 20
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-two": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "metrics": [
+                {
+                    "metric": "count"
+                },
+                {
+                    "metric": "sum",
+                    "field": "amount",
+                    "as": "total"
+                }
+            ],
+            "values": {
+                "count": 3,
+                "total": 35
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount",
+                                "as": "total"
+                            }
+                        ],
+                        "field": null,
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount",
+                                "as": "total"
+                            }
+                        ],
+                        "field": null,
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount",
+                                "as": "total"
+                            }
+                        ],
+                        "values": {
+                            "count": 3,
+                            "total": 35
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "missing-target": {
+        "error": "RuntimeException",
+        "message": "Schema \"nowhere\" not found.",
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "nowhere"
+            }
+        ]
+    },
+    "native-grouped": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "postgres",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3
+                },
+                {
+                    "key": "done",
+                    "value": 1
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "tableName": [
+                    "treg",
+                    "lines"
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*oc_or_4_7\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"team\" = ? GROUP BY \"status\"",
+                "bindings": [
+                    "__none__",
+                    "a"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "postgres",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 3
+                            },
+                            {
+                                "key": "done",
+                                "value": 1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "native-grouped-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "postgres",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3
+                },
+                {
+                    "key": "done",
+                    "value": 1
+                }
+            ]
+        },
+        "calls": [
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "tableName": [
+                    "treg",
+                    "lines"
+                ]
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*oc_or_4_7\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND \"_organisation\" IN (?) AND \"team\" = ? GROUP BY \"status\"",
+                "bindings": [
+                    "__none__",
+                    "a"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "postgres",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 3
+                            },
+                            {
+                                "key": "done",
+                                "value": 1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "native-grouped-user": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "postgres",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3
+                },
+                {
+                    "key": "done",
+                    "value": 1
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "userId": "alice",
+                        "org": "org-2"
+                    }
+                ]
+            },
+            {
+                "tableName": [
+                    "treg",
+                    "lines"
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*oc_or_4_7\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"team\" = ? GROUP BY \"status\"",
+                "bindings": [
+                    "alice",
+                    "__none__",
+                    "a"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "userId": "alice",
+                        "org": "org-2"
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "postgres",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 3
+                            },
+                            {
+                                "key": "done",
+                                "value": 1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "native-scalar-sum": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 35
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 35
+                    }
+                ]
+            }
+        ]
+    },
+    "native-skipped-for-metrics": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "metrics": [
+                {
+                    "metric": "count"
+                }
+            ],
+            "values": {
+                "count": 3
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            }
+                        ],
+                        "field": null,
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            }
+                        ],
+                        "field": null,
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            }
+                        ],
+                        "values": {
+                            "count": 3
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "no-target-register": {
+        "error": "RuntimeException",
+        "message": "No register found that contains schema \"lines\".",
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "parent-denied": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "You do not have permission to aggregate schema \"parent\".",
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "permission": [
+                    "parent",
+                    "list",
+                    null
+                ]
+            },
+            {
+                "qualifies": [
+                    "parent",
+                    "read"
+                ]
+            }
+        ]
+    },
+    "parent-row-empty": {
+        "error": "RuntimeException",
+        "message": "Cannot resolve \"@self.slug\": the parent row supplies no \"slug\" field. A cross-schema aggregation correlating on @self requires the caller to pass the parent object as parentRow.",
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "row-cap": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": true,
+            "value": 10000
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": true,
+                        "value": 10000
+                    }
+                ]
+            }
+        ]
+    },
+    "select-alias": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 3
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "self-missing-field": {
+        "error": "RuntimeException",
+        "message": "Cannot resolve \"@self.unknown\": the parent row supplies no \"unknown\" field. A cross-schema aggregation correlating on @self requires the caller to pass the parent object as parentRow.",
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "sum-field": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 35
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": [],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 35
+                    }
+                ]
+            }
+        ]
+    },
+    "target-denied": {
+        "error": "RuntimeException",
+        "message": "Forbidden: caller lacks read permission on cross-schema target \"lines\".",
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "permission": [
+                    "lines",
+                    "list",
+                    null
+                ]
+            },
+            {
+                "qualifies": [
+                    "lines",
+                    "read"
+                ]
+            }
+        ]
+    },
+    "target-denied-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 30
+        },
+        "calls": [
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 30
+                    }
+                ]
+            }
+        ]
+    },
+    "target-denied-qualifies": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 30
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "permission": [
+                    "lines",
+                    "list",
+                    null
+                ]
+            },
+            {
+                "qualifies": [
+                    "lines",
+                    "read"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 30
+                    }
+                ]
+            }
+        ]
+    },
+    "user-and-org": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 30
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": "alice",
+                        "org": "org-1"
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": "alice",
+                        "org": "org-1"
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 30
+                    }
+                ]
+            }
+        ]
+    },
+    "where-beats-filter": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 2
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "status": "open"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": {
+                            "status": "open"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 2
+                    }
+                ]
+            }
+        ]
+    },
+    "where-not-array": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 0
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": [
+                            "status"
+                        ],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "where": [
+                            "status"
+                        ],
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 0
+                    }
+                ]
+            }
+        ]
+    },
+    "where-operator": {
+        "result": {
+            "name": "agg",
+            "metric": "avg",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 15
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "avg",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "amount": {
+                                "gte": 10
+                            }
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "avg",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "amount": {
+                                "gte": 10
+                            }
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "avg",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 15
+                    }
+                ]
+            }
+        ]
+    },
+    "where-self": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "from": "lines",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 30
+        },
+        "calls": [
+            {
+                "permission": [
+                    "parent",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "schemaFind": "lines"
+            },
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "parent",
+                    "agg",
+                    {
+                        "cross": true,
+                        "from": "lines",
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "where": {
+                            "parent": "p1"
+                        },
+                        "groupBy": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "from": "lines",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 30
+                    }
+                ]
+            }
+        ]
+    }
+}

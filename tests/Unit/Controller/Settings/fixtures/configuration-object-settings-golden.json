@@ -1,0 +1,168 @@
+{
+    "get": {
+        "calls": [
+            {
+                "settings.getObjectSettingsOnly": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "provider": "database"
+            }
+        }
+    },
+    "get throws": {
+        "calls": [
+            {
+                "settings.getObjectSettingsOnly": []
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "settings unavailable"
+        }
+    },
+    "patch provider object": {
+        "calls": [
+            {
+                "settings.updateObjectSettingsOnly": [
+                    {
+                        "provider": "db"
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Object settings updated successfully",
+            "data": {
+                "saved": {
+                    "provider": "db"
+                }
+            }
+        }
+    },
+    "update nothing": {
+        "calls": [
+            {
+                "settings.updateObjectSettingsOnly": [
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Object settings updated successfully",
+            "data": {
+                "saved": []
+            }
+        }
+    },
+    "update provider id": {
+        "calls": [
+            {
+                "settings.updateObjectSettingsOnly": [
+                    {
+                        "provider": "solr"
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Object settings updated successfully",
+            "data": {
+                "saved": {
+                    "provider": "solr"
+                }
+            }
+        }
+    },
+    "update provider null": {
+        "calls": [
+            {
+                "settings.updateObjectSettingsOnly": [
+                    {
+                        "provider": null
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Object settings updated successfully",
+            "data": {
+                "saved": {
+                    "provider": null
+                }
+            }
+        }
+    },
+    "update provider object": {
+        "calls": [
+            {
+                "settings.updateObjectSettingsOnly": [
+                    {
+                        "provider": "solr",
+                        "x": 1
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Object settings updated successfully",
+            "data": {
+                "saved": {
+                    "provider": "solr",
+                    "x": 1
+                }
+            }
+        }
+    },
+    "update provider object without id": {
+        "calls": [
+            {
+                "settings.updateObjectSettingsOnly": [
+                    {
+                        "provider": null
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Object settings updated successfully",
+            "data": {
+                "saved": {
+                    "provider": null
+                }
+            }
+        }
+    },
+    "update throws": {
+        "calls": [
+            {
+                "settings.updateObjectSettingsOnly": [
+                    {
+                        "provider": "solr"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "save failed"
+        }
+    }
+}

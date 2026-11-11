@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use UnexpectedValueException;
@@ -51,14 +51,14 @@ class FlowRunSubjectRecorder {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper   $runs     Reads and stores the run row.
+	 * @param FlowRunMapperInterface   $runs     Reads and stores the run row.
 	 * @param FlowRunSubjects $subjects The subject rules.
 	 * @param LoggerInterface $logger   Where a failure to record is reported.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunSubjects $subjects,
 		private readonly LoggerInterface $logger,
 	) {
@@ -68,25 +68,16 @@ class FlowRunSubjectRecorder {
 	/**
 	 * Record an object under a role, when the step declared one.
 	 *
-	 * @param array<string, mixed> $context  The run context, carrying the run uuid.
-	 * @param string               $role     The role the step declared, or ''.
-	 * @param string               $uuid     The object it worked on.
-	 * @param string               $register Its register, when known.
-	 * @param string               $schema   Its schema, when known.
+	 * @param array<string, mixed> $context The run context, carrying the run uuid.
+	 * @param FlowSubjectClaim     $claim   The role, the object, and its register and schema.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	public function record(
-		array $context,
-		string $role,
-		string $uuid,
-		string $register = '',
-		string $schema = ''
-	): void {
-		$role = trim($role);
-		if ($role === '' || trim($uuid) === '') {
+	public function record(array $context, FlowSubjectClaim $claim): void {
+		$role = trim($claim->role);
+		if ($role === '' || trim($claim->uuid) === '') {
 			// No role declared, or nothing to record under it. Both are the
 			// ordinary case: recording is opt-in.
 			return;
@@ -98,13 +89,7 @@ class FlowRunSubjectRecorder {
 		}
 
 		try {
-			$this->subjects->record(
-				run: $run,
-				role: $role,
-				uuid: $uuid,
-				register: $register,
-				schema: $schema
-			);
+			$this->subjects->record(run: $run, claim: $claim);
 			$this->runs->update($run);
 		} catch (Throwable $e) {
 			// See the class docblock: the work already landed.
@@ -133,37 +118,25 @@ class FlowRunSubjectRecorder {
 	 * which is louder and closer to the mistake than a write step refusing after
 	 * its write already landed.
 	 *
-	 * @param array<string, mixed> $context  The run context.
-	 * @param string               $role     The role the step named, or '' for none.
-	 * @param array<int, string>   $uuids    The distinct objects the step acted on.
-	 * @param string               $register Their register, when the step resolved one.
-	 * @param string               $schema   Their schema, when the step resolved one.
+	 * @param array<string, mixed>  $context    The run context.
+	 * @param FlowSubjectCandidates $candidates The role the step named ('' for none), the
+	 *                                          distinct objects it acted on, and their
+	 *                                          register and schema when it resolved them.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	public function recordOne(
-		array $context,
-		string $role,
-		array $uuids,
-		string $register = '',
-		string $schema = ''
-	): void {
-		$role = trim($role);
+	public function recordOne(array $context, FlowSubjectCandidates $candidates): void {
+		$role = trim($candidates->role);
 		if ($role === '') {
 			// Recording is opt-in. See the class docblock.
 			return;
 		}
 
-		if (count($uuids) === 1) {
-			$this->record(
-				context: $context,
-				role: $role,
-				uuid: $uuids[array_key_first($uuids)],
-				register: $register,
-				schema: $schema
-			);
+		$claim = $candidates->sole();
+		if ($claim !== null) {
+			$this->record(context: $context, claim: $claim);
 
 			return;
 		}
@@ -172,7 +145,7 @@ class FlowRunSubjectRecorder {
 
 		$this->logger->info(
 			message: '[FlowRunSubjectRecorder] A step on run "' . $runUuid . '" records its object as "'
-				. $role . '" but acted on ' . (string)count($uuids) . ' of them, so nothing was recorded. '
+				. $role . '" but acted on ' . (string)count($candidates->uuids) . ' of them, so nothing was recorded. '
 				. 'A subject role names one object; act on one per step, or split the step.',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $runUuid]
 		);
@@ -237,6 +210,24 @@ class FlowRunSubjectRecorder {
 			return [];
 		}
 
+		// Throws, naming the roles the run DOES hold.
+		$subject = $this->subjects->addressed(run: $this->readableRun(context: $context, role: $role), role: $role);
+
+		return $this->anchorOf(subject: $subject);
+
+	}//end anchorFor()
+
+	/**
+	 * The run a step attaches for, or a refusal when it cannot be read.
+	 *
+	 * @param array<string, mixed> $context The step's context.
+	 * @param string               $role    The role the step attaches to, for the refusal.
+	 *
+	 * @return FlowRun The run.
+	 *
+	 * @throws UnexpectedValueException When the run cannot be read.
+	 */
+	private function readableRun(array $context, string $role): FlowRun {
 		$run = $this->runFor(context: $context);
 		if ($run === null) {
 			throw new UnexpectedValueException(
@@ -245,9 +236,17 @@ class FlowRunSubjectRecorder {
 			);
 		}
 
-		// Throws, naming the roles the run DOES hold.
-		$subject = $this->subjects->addressed(run: $run, role: $role);
+		return $run;
+	}//end readableRun()
 
+	/**
+	 * The anchor a subject entry gives: its object, and its register and schema ids when numeric.
+	 *
+	 * @param array<string, mixed> $subject The subject entry.
+	 *
+	 * @return array<string, int|string> The anchor.
+	 */
+	private function anchorOf(array $subject): array {
 		$anchor = ['objectUuid' => trim((string)($subject['uuid'] ?? ''))];
 
 		$register = trim((string)($subject['register'] ?? ''));
@@ -261,6 +260,5 @@ class FlowRunSubjectRecorder {
 		}
 
 		return $anchor;
-
-	}//end anchorFor()
+	}//end anchorOf()
 }//end class

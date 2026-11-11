@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Terminar: {outcome}",
         "Could not load the task": "L'incumbensa n'ha betg pudì vegnir chargiada",
         "The task refused that action": "L'incumbensa ha refusà questa acziun",
-        "Store": "Butia",
+        "Marketplace": "Butia",
         "Install registers, schemas and flows that other organisations have published.": "Installescha registers, schemas e process ch'autras organisaziuns han publitgà.",
         "No such run": "Nagina tala execuziun",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'execuziun n'exista betg, u Vus na dastgais betg la vesair. Sche Vus stizzais in flux, vegnan er sias execuziuns stizzadas.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Tgi che ha approvà la glista, e cura.",
         "Who made it.": "Tgi che al ha fatg.",
         "Who rejected the list, and why.": "Tgi che ha refusà la glista, e pertge.",
-        "Woo published": "Publitgà tenor la Woo"
+        "Woo published": "Publitgà tenor la Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "In PDF dovra in server d'uffizi (Collabora u Euro-Office), ed i n'è installà nagin. Dumonda tes administratur dad installar in, u chargia giu il rapport en in auter format.",
+        "The report could not be downloaded.": "Il rapport n'ha betg pudì vegnir chargià giu."
     },
     "nplurals=2; plural=(n != 1);"
 )

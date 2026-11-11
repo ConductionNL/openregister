@@ -17,8 +17,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
-use OCA\OpenRegister\Controller\ContactSearchController;
-use OCA\OpenRegister\Service\Integration\ContactSearch;
+use OCA\OpenRegister\Search\Controller\ContactSearchController;
+use OCA\OpenRegister\Search\Service\Integration\ContactSearch;
 use OCP\Contacts\IManager;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -115,7 +115,7 @@ class ContactSearchTest extends TestCase {
 		$user = $this->createMock(\OCP\IUser::class);
 		$session = $this->createMock(\OCP\IUserSession::class);
 		$session->method('getUser')->willReturn($user);
-		$controller = new ContactSearchController('openregister', $request, $this->search(), $session);
+		$controller = new ContactSearchController($request, new \OCA\OpenRegister\Search\Controller\Support\ContactSearchControllerServices($this->search(), $session));
 
 		$found = $controller->search();
 		$refused = $controller->search();
