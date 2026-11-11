@@ -81,6 +81,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that a stored draft can be deleted on every schema, for good, and that nothing else gets past the archival gate.
@@ -160,7 +161,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 			}
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -199,7 +200,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}//end setUp()

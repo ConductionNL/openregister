@@ -74,6 +74,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The Schema, View, Register entities and the provider are real. MagicMapper
@@ -215,7 +216,7 @@ class ViewBackedTypeTest extends TestCase {
 			static fn (array $obj, mixed $schema, ?string $uuid, ?int $register): array => [$obj, $uuid]
 		);
 
-		$service = new ObjectService(
+		$service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$delete,
 			$this->createMock(GetObject::class),
@@ -254,7 +255,7 @@ class ViewBackedTypeTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$prop = (new ReflectionClass(ObjectService::class))->getProperty('currentSchema');
 		$prop->setAccessible(true);

@@ -74,6 +74,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Real ObjectService and SharedMasterDataService; the mapper finds the row, as the read filter
@@ -177,7 +178,7 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 			static fn (string|int $identifier): ObjectEntity => self::row((string)$identifier)
 		);
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -216,7 +217,7 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$container,
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end service()
 
 	/**

@@ -85,19 +85,40 @@ class SharedMasterDataWriteException extends Exception {
 	 * @return string The message.
 	 */
 	private function refusal(?string $resourceTitle): string {
-		$holder = $this->holderName;
-		if ($holder === null || $holder === '') {
-			$holder = $this->holderUuid;
-		}
-
-		$subject = $this->resourceType;
-		if ($resourceTitle !== null && $resourceTitle !== '') {
-			$subject = $this->resourceType . ' "' . $resourceTitle . '"';
-		}
+		$holder  = $this->holderLabel();
+		$subject = $this->subjectLabel(resourceTitle: $resourceTitle);
 
 		return 'This ' . $subject . ' is shared master data held by ' . $holder
 			. '. Your organisation reads it and cannot change it. Ask ' . $holder . ' to make the change.';
 	}//end refusal()
+
+	/**
+	 * The holder as the sentence names it: its name, or its uuid when it has none.
+	 *
+	 * @return string The holder.
+	 */
+	private function holderLabel(): string {
+		if ($this->holderName === null || $this->holderName === '') {
+			return $this->holderUuid;
+		}
+
+		return $this->holderName;
+	}//end holderLabel()
+
+	/**
+	 * The refused resource as the sentence names it: its type, with its title when known.
+	 *
+	 * @param string|null $resourceTitle The title of the register or schema, when known.
+	 *
+	 * @return string The resource.
+	 */
+	private function subjectLabel(?string $resourceTitle): string {
+		if ($resourceTitle === null || $resourceTitle === '') {
+			return $this->resourceType;
+		}
+
+		return $this->resourceType . ' "' . $resourceTitle . '"';
+	}//end subjectLabel()
 
 	/**
 	 * The UUID of the organisation that holds the shared resource.

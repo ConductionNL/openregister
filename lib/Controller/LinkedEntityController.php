@@ -114,6 +114,33 @@ class LinkedEntityController extends Controller {
 		return $this->groupManager->isAdmin($user->getUID());
 	}//end isCurrentUserAdmin()
 
+	/**
+	 * The refusal for a caller who is not an administrator.
+	 *
+	 * @return JSONResponse 403
+	 */
+	private function adminRequired(): JSONResponse {
+		return new JSONResponse(['error' => 'Admin privileges required'], 403);
+	}//end adminRequired()
+
+	/**
+	 * The link the request body names by its `id`.
+	 *
+	 * @param string $type The link type
+	 *
+	 * @return EntityLink|JSONResponse The link, or a 400 when the id is missing
+	 */
+	private function requestedLink(string $type): EntityLink|JSONResponse {
+		$body = $this->request->getParams();
+		$entityId = $body['id'] ?? null;
+
+		if ($entityId === null || $entityId === '') {
+			return new JSONResponse(['error' => 'Missing required field: id'], 400);
+		}
+
+		return new EntityLink(type: $type, entityId: (string)$entityId);
+	}//end requestedLink()
+
 	// SEC-CTRL-8: CSRF protection retained — this is an SPA-called authenticated write
 	// (axios sends the CSRF token); #[NoCSRFRequired] removed.
 
@@ -134,14 +161,12 @@ class LinkedEntityController extends Controller {
 	#[NoAdminRequired]
 	public function addObjectLink(string $uuid, string $type): JSONResponse {
 		try {
-			$body = $this->request->getParams();
-			$entityId = $body['id'] ?? null;
-
-			if ($entityId === null || $entityId === '') {
-				return new JSONResponse(['error' => 'Missing required field: id'], 400);
+			$link = $this->requestedLink(type: $type);
+			if ($link instanceof JSONResponse) {
+				return $link;
 			}
 
-			$result = $this->linkedEntityService->addLink(objectUuid: $uuid, link: new EntityLink(type: $type, entityId: (string)$entityId));
+			$result = $this->linkedEntityService->addLink(objectUuid: $uuid, link: $link);
 
 			return new JSONResponse(['_' . $type => $result]);
 		} catch (NotAuthorizedException $e) {
@@ -230,18 +255,16 @@ class LinkedEntityController extends Controller {
 	public function addRegisterLink(string $uuid, string $type): JSONResponse {
 		// SEC-CTRL: admin-only — mutates register configuration.
 		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+			return $this->adminRequired();
 		}
 
 		try {
-			$body = $this->request->getParams();
-			$entityId = $body['id'] ?? null;
-
-			if ($entityId === null || $entityId === '') {
-				return new JSONResponse(['error' => 'Missing required field: id'], 400);
+			$link = $this->requestedLink(type: $type);
+			if ($link instanceof JSONResponse) {
+				return $link;
 			}
 
-			$result = $this->linkedEntityService->addLinkToRegister(registerUuid: $uuid, link: new EntityLink(type: $type, entityId: (string)$entityId));
+			$result = $this->linkedEntityService->addLinkToRegister(registerUuid: $uuid, link: $link);
 
 			return new JSONResponse(['_' . $type => $result]);
 		} catch (Exception $e) {
@@ -269,18 +292,16 @@ class LinkedEntityController extends Controller {
 	public function addSchemaLink(string $uuid, string $type): JSONResponse {
 		// SEC-CTRL: admin-only — mutates schema configuration.
 		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+			return $this->adminRequired();
 		}
 
 		try {
-			$body = $this->request->getParams();
-			$entityId = $body['id'] ?? null;
-
-			if ($entityId === null || $entityId === '') {
-				return new JSONResponse(['error' => 'Missing required field: id'], 400);
+			$link = $this->requestedLink(type: $type);
+			if ($link instanceof JSONResponse) {
+				return $link;
 			}
 
-			$result = $this->linkedEntityService->addLinkToSchema(schemaUuid: $uuid, link: new EntityLink(type: $type, entityId: (string)$entityId));
+			$result = $this->linkedEntityService->addLinkToSchema(schemaUuid: $uuid, link: $link);
 
 			return new JSONResponse(['_' . $type => $result]);
 		} catch (Exception $e) {
@@ -312,7 +333,7 @@ class LinkedEntityController extends Controller {
 		// TODO #1273). Until per-tenant scoping lands, restrict to admins so an
 		// arbitrary user cannot enumerate cross-tenant object links by entity id.
 		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+			return $this->adminRequired();
 		}
 
 		try {

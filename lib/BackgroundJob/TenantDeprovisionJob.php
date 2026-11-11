@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\BackgroundJob\TimedJob;
@@ -91,11 +92,31 @@ class TenantDeprovisionJob extends TimedJob {
 	protected function run(mixed $argument): void {
 		$this->logger->info('[TenantDeprovisionJob] Starting deprovisioning check');
 
+		$organisations = $this->deprovisioningTenants();
+		if ($organisations === null) {
+			return;
+		}
+
+		foreach ($organisations as $organisation) {
+			$this->archiveTenant(organisation: $organisation);
+		}
+
+		$this->logger->info(
+			'[TenantDeprovisionJob] Completed, processed ' . count($organisations) . ' organisations'
+		);
+	}//end run()
+
+	/**
+	 * The local tenants in deprovisioning; null, logged, when they cannot be read.
+	 *
+	 * @return Organisation[]|null
+	 */
+	private function deprovisioningTenants(): ?array {
 		try {
 			// Tenant-scoped read, not findAll: a federated counterparty is an
 			// organisation in this table but NOT a tenant of this installation, and
 			// selecting on status alone would sweep it up with the tenants.
-			$organisations = $this->organisationMapper->findLocalTenants(
+			return $this->organisationMapper->findLocalTenants(
 				filters: ['status' => TenantLifecycleServiceInterface::STATUS_DEPROVISIONING]
 			);
 		} catch (\Exception $e) {
@@ -103,29 +124,32 @@ class TenantDeprovisionJob extends TimedJob {
 				'[TenantDeprovisionJob] Failed to query deprovisioning organisations',
 				['error' => $e->getMessage()]
 			);
-			return;
+			return null;
 		}
+	}//end deprovisioningTenants()
 
-		foreach ($organisations as $organisation) {
-			try {
-				// Transition to archived — actual data cleanup is handled by
-				// the purge job after the retention period expires.
-				$this->tenantLifecycleService->archive($organisation);
+	/**
+	 * Archive one deprovisioning tenant, containing its failure.
+	 *
+	 * @param Organisation $organisation The tenant organisation.
+	 *
+	 * @return void
+	 */
+	private function archiveTenant(Organisation $organisation): void {
+		try {
+			// Transition to archived — actual data cleanup is handled by
+			// the purge job after the retention period expires.
+			$this->tenantLifecycleService->archive($organisation);
 
-				$this->logger->info(
-					'[TenantDeprovisionJob] Organisation archived',
-					['uuid' => $organisation->getUuid()]
-				);
-			} catch (\Exception $e) {
-				$this->logger->error(
-					'[TenantDeprovisionJob] Failed to archive organisation',
-					['uuid' => $organisation->getUuid(), 'error' => $e->getMessage()]
-				);
-			}
+			$this->logger->info(
+				'[TenantDeprovisionJob] Organisation archived',
+				['uuid' => $organisation->getUuid()]
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				'[TenantDeprovisionJob] Failed to archive organisation',
+				['uuid' => $organisation->getUuid(), 'error' => $e->getMessage()]
+			);
 		}
-
-		$this->logger->info(
-			'[TenantDeprovisionJob] Completed, processed ' . count($organisations) . ' organisations'
-		);
-	}//end run()
+	}//end archiveTenant()
 }//end class

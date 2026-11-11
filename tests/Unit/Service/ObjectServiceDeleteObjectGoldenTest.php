@@ -62,6 +62,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Golden record of deleteObject() over every branch: the scope it resolves, every object lookup
@@ -393,7 +394,7 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 			);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->createMock(DataManipulationHandler::class),
 			deleteHandler: $deleteHandler,
 			getHandler: $this->createMock(GetObject::class),
@@ -432,6 +433,6 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
 			container: $this->createMock(IAppContainer::class),
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end service()
 }//end class

@@ -82,6 +82,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
 use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Comprehensive unit tests for ObjectService.
@@ -192,7 +193,7 @@ class ObjectServiceTest extends TestCase {
 		$this->schema->setId(2);
 
 		// Instantiate ObjectService with all constructor params (positional).
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->getHandler,
@@ -231,7 +232,7 @@ class ObjectServiceTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}
