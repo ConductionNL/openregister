@@ -3138,3 +3138,28 @@ humaniq	1057	f762c289b27ca0a53ddf429fe087bf51b66eab95	GREEN	FV9-08:3	tree of 25 
 humaniq	1058	6bdf6d8b8e594c23fee5e8745852ef3e115a3b6e	GREEN	FV9-08:3	tree of 25 green: phpunit 3682 ok (0 inherited failures), floor held
 humaniq	1059	8be6bb6f2501fdb9a11473d11ebfd02f9270f12a	GREEN	FV9-08:3	tree of 25 green: phpunit 3682 ok (0 inherited failures), floor held
 humaniq	1060	aa80b2bf7e12fb03f2dae991331b53b88505c1e5	GREEN	FV9-08:3	tree of 25 green: phpunit 3682 ok (0 inherited failures), floor held
+learniq	2291	b3c97aa85858670f8a6ffb95873c39159b483a8d	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2292	b603fcb825ece4b034968765b681cc51d94583aa	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2294	175b672963b8f60b6914c4f96c72493dca630ea2	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2295	8d4fa5993d4fd8beef30e7ee6ea9a97c9ce0e018	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2296	594c0d68238374584d422991e0ae37d8f1ea7d38	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2297	bec4f30ab691b389c7ab2127aa7ebf7c05b6ac24	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2298	226a694afce0bf508855429188eb847ff9d67dcc	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2299	9ba6159ccb2c094021c8b62fcc673d4faf069451	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2300	9cd266fce36358a1b399e19fdf5bbdea49c9de75	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2301	1d32f037ab600b5ebd4afbfc0a02551fb17de4d4	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2302	73f7cb06d89c1cf8ae451c6c24a4781904c12582	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2303	190296a161b6d889e359e3a647a402e896b04329	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2304	fb013b8da18ec201ef839d1c293f34750355f6c8	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2305	c888d99c7c0e3d14ddbef25b2c1c714416582b1e	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2306	6d4dc4868fd54d1a3c2424f32a8aae9bd53539e4	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2307	824b4c292881ea4c1e283b93967d02e3b260917a	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2308	c1194e0551dd5715b199ca5631f52e7a5d95e507	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2309	7ac36ca910f8a8893fbbb09c08edc49f4cb04575	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2310	3d253e510df891ba4a856a8b58b599f756b6e367	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2311	f0c1f585bc23349edc78196d341374fbdbd77e6e	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2312	2fa31a8f94c77b69e16c8b359117b2db967547ea	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2313	2963e3c02a0c870a7afd6633a9a9ebc8d9262ff4	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2314	c735c33b42d43b34a5346e28802c5a382241e344	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2315	6643bd1e72175c8c063c94e7d888674f573cbe1f	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+learniq	2293	a7a8c4bfc14543c72aeb136c042b4a9fefdb6dd1	RED	FV9-02:4	FindAllConfigScopeTest::testNoFindAllInLibFiltersOnAnObjectId fails: new pokId() in lib/Lifecycle/PokActivationGuard.php:186 reads id/uuid off $pok and the scope test flags it as a findAll() filter on id/uuid
