@@ -38,6 +38,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -107,7 +108,7 @@ final class ObjectPreviewFormatterBehaviourTest extends TestCase {
 
 	public function testAReferenceIsComposedFromTheObjectItsSchemaRegisterAndDeepLink(): void {
 		$this->objects->expects($this->once())->method('find')
-			->with(self::UUID, [], false, 3, 4)
+			->with(...FindCallShape::findArgs(self::UUID, [], false, 3, 4))
 			->willReturn($this->object([
 				'@self' => ['name' => 'Melding 12', 'updated' => '2026-01-01T00:00:00+00:00', 'owner' => 'anna'],
 				'id' => 'internal',

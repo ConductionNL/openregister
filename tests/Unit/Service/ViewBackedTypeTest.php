@@ -269,7 +269,7 @@ class ViewBackedTypeTest extends TestCase {
 		$save->expects($this->never())->method('saveObject');
 
 		try {
-			$this->objectService($save, $this->createMock(DeleteObject::class))->saveObject(object: ['name' => 'x'], uuid: null);
+			$this->objectService($save, $this->createMock(DeleteObject::class))->saveObject(object: ['name' => 'x']);
 			$this->fail('a view-backed type must refuse a create');
 		} catch (ReadOnlyTypeException $e) {
 			// The controllers map the append-only family to 405; this is one of it.

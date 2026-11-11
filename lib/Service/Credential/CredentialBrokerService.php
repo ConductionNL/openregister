@@ -70,6 +70,7 @@ namespace OCA\OpenRegister\Service\Credential;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Sharing\ShareGrantee;
@@ -80,6 +81,7 @@ use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
@@ -508,8 +510,7 @@ class CredentialBrokerService {
 		// below, which already bypasses RBAC for exactly this reason.
 		$saved = $this->sources->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -731,8 +732,7 @@ class CredentialBrokerService {
 		try {
 			$credential = WriteCause::asLookup(fn () => $this->sources->objectService->find(
 				id: $credentialId,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
 				_rbac: false
 			));
 		} catch (Throwable $e) {
