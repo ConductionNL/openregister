@@ -1314,22 +1314,16 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * custom verb an app declared, because those are the ones an object screen
 	 * offers.
 	 *
-	 * @param Schema            $schema The schema the row belongs to.
-	 * @param ObjectEntity|null $object The row, when the question is about one.
-	 * @param string|null       $userId The caller, or null to resolve from the session.
+	 * @param VerbListing $listing The schema, the row when the question is about one, and the caller (null for the session user).
 	 *
 	 * @return array<int, string> The verbs, in catalogue order.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function permittedActionsFor(
-		Schema $schema,
-		?ObjectEntity $object = null,
-		?string $userId = null,
-	): array {
-		$asks = static fn (string $verb): PermissionAsk => (new PermissionAsk(schema: $schema, action: $verb))
-			->askedBy(userId: $userId, objectOwner: $object?->getOwner())
-			->about(object: $object, register: null);
+	public function permittedActionsFor(VerbListing $listing): array {
+		$asks = static fn (string $verb): PermissionAsk => (new PermissionAsk(schema: $listing->schema, action: $verb))
+			->askedBy(userId: $listing->userId, objectOwner: $listing->object?->getOwner())
+			->about(object: $listing->object, register: null);
 
 		return array_values(
 			array_filter($this->rowVerbs(), fn (string $verb): bool => $this->permits(ask: $asks($verb), _rbac: true))
@@ -1369,29 +1363,13 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * that would remove it is reported as `stagedDeny`, so the field that says
 	 * why a person may act also says what stops them the day the switch moves.
 	 *
-	 * @param Schema             $schema  The schema being reported on.
-	 * @param array<int, string> $actions The verbs to report.
-	 * @param string|null        $userId  The caller, or null to resolve from the session.
-	 * @param ObjectEntity|null  $object  The row, when the question is about one.
+	 * @param ProvenanceRequest $request The schema, the actions, the caller (null for the session user) and the optional row.
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function provenanceFor(Schema $schema, array $actions, ?string $userId = null, ?ObjectEntity $object = null): array {
-		return $this->provenance(request: new ProvenanceRequest(schema: $schema, actions: $actions, userId: $userId, object: $object));
-	}//end provenanceFor()
-
-	/**
-	 * Where the caller's answer for each requested action comes from (see provenanceFor()).
-	 *
-	 * @param ProvenanceRequest $request The schema, the actions, the caller and the optional object.
-	 *
-	 * @return array<string, array<string, mixed>> One provenance record per action.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private function provenance(ProvenanceRequest $request): array {
+	public function provenanceFor(ProvenanceRequest $request): array {
 		$userId = $this->callerId(userId: $request->userId);
 		$principals = $this->denyResolver()->principalsFor(userId: $userId, userGroups: $this->groupsOf(userId: $userId));
 
@@ -1417,7 +1395,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$enforced = $this->denyEnforcementMode()->enforces();
 
 		return $resolver->forActions(actions: $request->actions, options: new ProvenanceOptions(blocks: $blocks, denials: $denials, enforced: $enforced));
-	}//end provenance()
+	}//end provenanceFor()
 
 	/**
 	 * The blocks provenance reads: object, schema, register and the register's role definitions.

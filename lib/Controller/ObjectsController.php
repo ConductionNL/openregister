@@ -144,6 +144,7 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
+use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
@@ -3307,7 +3308,8 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$renderedData['@self']['actions'] = $shown->show->services->permissions->permittedActionsFor(schema: $schema, object: $shown->entity);
+			$listing = new VerbListing(schema: $schema, object: $shown->entity);
+			$renderedData['@self']['actions'] = $shown->show->services->permissions->permittedActionsFor(listing: $listing);
 		} catch (\Throwable $e) {
 			$context = ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'error' => $e->getMessage()];
 			$this->logger->warning(message: '[ObjectsController] Could not resolve the actions for a record; returning it without them', context: $context);
