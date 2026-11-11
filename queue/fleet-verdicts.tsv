@@ -2657,6 +2657,7 @@ integriq	3312	f23a1ff2fbc5531f44e59a1818b0e8be27bdf8ec	GREEN	FV9-03:1	phpunit gr
 integriq	3313	d71e60f482596787dcc608841261c4fd5fe264ff	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
 integriq	3314	8688f24e5e2d8362be729fd08d5b46fd26b9c754	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
 integriq	3315	e4f9415514d63122d4bd3828da3abb7ef77bf111	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+pipelinq	3471	c07ef2f9c951f6b3325e1aa63330edd39c7dfc38	CONFLICT	FV9-08:1	conflicts with #3453 in lib/Service/CtiService.php
 filinq	1914	bbe0cb9d6cecb1012509541b854b28fa8c584311	GREEN	FV9-09:1	phpunit 5150 ok, vitest 449 ok, baseline 0 failures; floor not measured (floor_check run not permitted in this session)
 filinq	1915	fb4a8c672ceded96989d5eb2c01a2f2bb066efd6	GREEN	FV9-09:1	phpunit 5150 ok, vitest 449 ok, baseline 0 failures; floor not measured (floor_check run not permitted in this session)
 filinq	1916	94de5baa46aa09686f71c945b823f03c1a10620c	GREEN	FV9-09:1	phpunit 5150 ok, vitest 449 ok, baseline 0 failures; floor not measured (floor_check run not permitted in this session)
