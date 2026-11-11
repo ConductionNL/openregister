@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Merge;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -56,7 +57,7 @@ class MasterRecomputeServiceTest extends TestCase {
 	 */
 	public function testAMissingMasterIsNotSaved(): void {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
-		$objects->expects($this->once())->method('find')->with('m-1')->willReturn(null);
+		$objects->expects($this->once())->method('find')->with(...FindCallShape::findArgs('m-1'))->willReturn(null);
 		$objects->expects($this->never())->method('saveObject');
 
 		(new MasterRecomputeService($objects, $this->createMock(LoggerInterface::class)))->recompute('m-1');
@@ -74,7 +75,7 @@ class MasterRecomputeServiceTest extends TestCase {
 		$master->setSchema('7');
 		$master->setObject(['born' => '2001-02-03 04:05:06', 'name' => 'Ann', 'address' => ['since' => '2020-01-01 00:00:00']]);
 		$objects = $this->createMock(ObjectOperationsInterface::class);
-		$objects->method('find')->with('m-1', [], false, null, null, true, true)->willReturn($master);
+		$objects->method('find')->with(...FindCallShape::findArgs('m-1', [], false, null, null, true, true))->willReturn($master);
 		$saved = null;
 		$objects->expects($this->once())->method('saveObject')
 			->with($this->identicalTo($master), [], '3', '7', 'm-1')
