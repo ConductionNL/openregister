@@ -3836,29 +3836,68 @@ class ImportHandler {
 	 */
 	private function resolveSeedReferenceTokens(array $data, ?string $appId = null): array {
 		$objects = ($data['components']['objects'] ?? null);
-		if (is_array($objects) === false) {
+		$index = $this->seedReferenceIndex(objects: $objects);
+		if ($index === null) {
 			return $data;
 		}
 
-		// Only genuine reference targets get a pre-resolved identity, and the
-		// work is skipped entirely when no object references another.
-		$index = new SeedReferenceIndex(logger: $this->logger);
-		$index->collectFromObjects(objects: $objects);
-		if ($index->isEmpty() === true) {
-			return $data;
-		}
-
-		foreach ($this->referencedSeeds(objects: $objects, index: $index) as $position => $targetData) {
-			$uuid = $this->seedReferenceTargetUuid(targetData: $targetData, appId: $appId);
-			if ($uuid !== null) {
-				$objects[$position]['@self']['id'] = $uuid;
-				$index->record(self: $objects[$position]['@self']);
-			}
+		$targetIds = $this->referenceTargetIds(targets: $this->referencedSeeds(objects: $objects, index: $index), appId: $appId);
+		foreach ($targetIds as $position => $uuid) {
+			$objects[$position]['@self']['id'] = $uuid;
+			$index->record(self: $objects[$position]['@self']);
 		}
 
 		$data['components']['objects'] = $index->replaceInObjects(objects: $objects);
 		return $data;
 	}//end resolveSeedReferenceTokens()
+
+	/**
+	 * The reference index of the listed seed objects, or null when there is nothing to resolve.
+	 *
+	 * Only genuine reference targets get a pre-resolved identity, and the
+	 * work is skipped entirely when no object references another.
+	 *
+	 * @param mixed $objects The raw `components.objects` list.
+	 *
+	 * @return SeedReferenceIndex|null The index, or null when the list is absent or references nothing.
+	 */
+	private function seedReferenceIndex(mixed $objects): ?SeedReferenceIndex {
+		if (is_array($objects) === false) {
+			return null;
+		}
+
+		$index = new SeedReferenceIndex(logger: $this->logger);
+		$index->collectFromObjects(objects: $objects);
+		if ($index->isEmpty() === true) {
+			return null;
+		}
+
+		return $index;
+	}//end seedReferenceIndex()
+
+	/**
+	 * The UUID each referenced seed target is stored under, by its position in the list.
+	 *
+	 * A target that resolves to no UUID is left out. The index is not read
+	 * here, so resolving every target before recording them gives the same
+	 * UUIDs, in the same order, as resolving and recording one by one.
+	 *
+	 * @param array       $targets The referenced seed objects, by position.
+	 * @param string|null $appId   The importing app, for the foreign-schema guard.
+	 *
+	 * @return array<int|string, mixed> The UUIDs, by position.
+	 */
+	private function referenceTargetIds(array $targets, ?string $appId): array {
+		$targetIds = [];
+		foreach ($targets as $position => $targetData) {
+			$uuid = $this->seedReferenceTargetUuid(targetData: $targetData, appId: $appId);
+			if ($uuid !== null) {
+				$targetIds[$position] = $uuid;
+			}
+		}
+
+		return $targetIds;
+	}//end referenceTargetIds()
 
 	/**
 	 * The seed objects another seed refers to, under their list positions.
