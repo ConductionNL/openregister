@@ -22,6 +22,23 @@ const ORIGINAL_ONLY_METADATA = [
 ]
 
 /**
+ * The name a copy is named after: the original's `@self` name, its own name
+ * or its `@self` title, else `Object <id>`.
+ *
+ * @param {object|null|undefined} object The original object.
+ * @return {string}
+ * @spec exclude client-side helper for the copy modals
+ */
+export function originalName(object) {
+	return (
+		object?.['@self']?.name
+		|| object?.name
+		|| object?.['@self']?.title
+		|| `Object ${object?.['@self']?.id}`
+	)
+}
+
+/**
  * The name of a copy: the pattern with `{name}` and `{id}` filled in.
  *
  * @param {object} object The original object.
@@ -30,14 +47,8 @@ const ORIGINAL_ONLY_METADATA = [
  * @spec exclude client-side helper for the mass-copy modal
  */
 export function copyName(object, pattern) {
-	const originalName =
-		object['@self']?.name
-		|| object.name
-		|| object['@self']?.title
-		|| `Object ${object['@self']?.id}`
-
 	return pattern
-		.replace('{name}', originalName)
+		.replace('{name}', originalName(object))
 		.replace('{id}', object['@self']?.id || object.id || 'ID')
 }
 

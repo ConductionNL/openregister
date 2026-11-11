@@ -3,18 +3,20 @@
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */
-import { copyRows } from './objectCopy.js'
+import { copyName, copyRows, originalName } from './objectCopy.js'
 
 const rows = [
 	{ id: 'a', title: 'One', nested: { n: 1 }, '@self': { id: 'a', register: 1 } },
 	{ id: 'b', title: 'Two' },
 ]
-const request = (save, ids = ['a', 'b']) => ({
-	rows,
-	ids,
-	nameOf: (row) => `Copy of ${row.title}`,
-	save,
-})
+function request(save, ids = ['a', 'b']) {
+	return {
+		rows,
+		ids,
+		nameOf: (row) => `Copy of ${row.title}`,
+		save,
+	}
+}
 
 describe('copyRows', () => {
 	it('saves each copy without the identity of its row, under the new name', async () => {
@@ -71,5 +73,23 @@ describe('copyRows', () => {
 
 		expect(save).not.toHaveBeenCalled()
 		expect(outcome.failedIds).toEqual(['gone'])
+	})
+})
+
+describe('originalName', () => {
+	it.each([
+		[{ '@self': { name: 'Self', title: 'T', id: 3 }, name: 'Own' }, 'Self'],
+		[{ '@self': { title: 'T', id: 3 }, name: 'Own' }, 'Own'],
+		[{ '@self': { title: 'Self title', id: 3 } }, 'Self title'],
+		[{ '@self': { id: 3 } }, 'Object 3'],
+		[null, 'Object undefined'],
+	])('names %j after %s', (object, name) => {
+		expect(originalName(object)).toBe(name)
+	})
+
+	it('is what copyName fills {name} with', () => {
+		const object = { '@self': { id: 3 }, title: 'Own title' }
+
+		expect(copyName(object, '{name} ({id})')).toBe('Object 3 (3)')
 	})
 })
