@@ -220,3 +220,4 @@
 2026-11-11T09:40:18Z dev=2c3fdd3c59 prs=8495,8837,9834,9838,9839,9840,9842,9843,9848,9849,9850,9851,9852,9854,9855,9856,9857,9858,9861,9862,9863,9866,9867,9868,9870,9853,9859,9865,9869,9871 Tests: 56646, Assertions: 187784, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=ok
 2026-11-11T11:28:56Z dev=2933261ca4 prs=9831 Tests: 56647, Assertions: 187782, Errors: 3, Failures: 6, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
 2026-11-11T11:53:25Z dev=2933261ca4 prs=9256 Tests: 56684, Assertions: 187827, Errors: 3, Failures: 6, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
+2026-11-11T16:17:12Z dev=0f9070ce39 prs=9760 Tests: 56756, Assertions: 187949, Errors: 10, Failures: 17, Warnings: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 24. front=skip
