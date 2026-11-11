@@ -130,11 +130,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/modals.scss' as *;
 
-.file-config-content {
-	padding: 20px;
-	max-height: 70vh;
-	overflow-y: auto;
-}
+@include config-content('file-config');
 
 @include info-box;
 

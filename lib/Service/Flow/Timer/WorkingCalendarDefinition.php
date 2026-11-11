@@ -215,10 +215,12 @@ final class WorkingCalendarDefinition {
 		$this->exceptions = $dates->validExceptions(value: ($this->raw['exceptions'] ?? []));
 		$this->refuseEnumeratedOnly();
 		$this->organisation = $this->validOrganisation();
-		$this->serviceHours = ServiceHours::fromArray(
+		$this->serviceHours = ServiceHours::fromDeclaration(
 			value: ($this->raw['serviceHours'] ?? null),
-			workingWeekdays: $this->workingWeekdays,
-			slug: $this->slug
+			declaration: new ServiceHoursDeclaration(
+				slug: $this->slug,
+				workingWeekdays: $this->workingWeekdays
+			)
 		);
 		$this->hoursPerWorkingDay = $this->effectiveHours(hours: $hours);
 		$this->dayStartsAtMinute = $this->validDayStart();

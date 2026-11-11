@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Service\CalendarPickerWindow;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
@@ -361,12 +362,10 @@ class CalendarEventsController extends Controller {
 			return new JSONResponse(['error' => 'calendarUri and eventUid are required'], 400);
 		}
 
-		$link = $this->calendarLinkService->linkEvent(
-			objectUuid: $object->getUuid(),
-			registerId: (int)$object->getRegister(),
-			schemaId: (int)$object->getSchema(),
-			calendarUri: $calendarUri,
-			eventUid: $eventUid
+		$link = $this->calendarLinkService->linkLocatedEvent(
+			target: (new LinkTarget(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister()))
+				->inSchema(schemaId: (int)$object->getSchema()),
+			key: new CalendarEventKey(calendarUri: $calendarUri, eventUid: $eventUid)
 		);
 
 		return new JSONResponse($link->jsonSerialize(), 201);
@@ -476,19 +475,7 @@ class CalendarEventsController extends Controller {
 		try {
 			$params = $this->request->getParams();
 			$limit = (int)($params['limit'] ?? 100);
-			$after = null;
-			if (empty($params['after']) === false) {
-				try {
-					$after = new DateTime((string)$params['after']);
-				} catch (Exception $e) {
-					$after = null;
-				}
-			}
-
-			if ($after === null) {
-				// Default: now − 1 week.
-				$after = (new DateTime())->modify('-1 week');
-			}
+			$after = $this->pickerWindowStart(after: ($params['after'] ?? null));
 
 			$events = $this->calendarLinkService->getEventsForCalendar(
 				calendarUri: $calendarUri,
@@ -497,14 +484,60 @@ class CalendarEventsController extends Controller {
 
 			return new JSONResponse(['results' => $events, 'total' => count($events)]);
 		} catch (Exception $e) {
-			$status = 500;
-			if ($e->getCode() === 404) {
-				$status = 404;
-			}
-
-			return new JSONResponse(['error' => $e->getMessage()], $status);
+			return new JSONResponse(['error' => $e->getMessage()], $this->listingFailureStatus(error: $e));
 		}//end try
 	}//end listCalendarEvents()
+
+	/**
+	 * Where the event picker's window starts: the requested date, else one week ago.
+	 *
+	 * @param mixed $after The `after` request parameter.
+	 *
+	 * @return DateTime The window start.
+	 */
+	private function pickerWindowStart(mixed $after): DateTime {
+		$requested = $this->requestedWindowStart(after: $after);
+		if ($requested === null) {
+			// Default: now − 1 week.
+			return (new DateTime())->modify('-1 week');
+		}
+
+		return $requested;
+	}//end pickerWindowStart()
+
+	/**
+	 * The date the `after` parameter names, or null when it is empty or cannot be parsed.
+	 *
+	 * @param mixed $after The `after` request parameter.
+	 *
+	 * @return DateTime|null The requested start.
+	 */
+	private function requestedWindowStart(mixed $after): ?DateTime {
+		if (empty($after) === true) {
+			return null;
+		}
+
+		try {
+			return new DateTime((string)$after);
+		} catch (Exception $e) {
+			return null;
+		}
+	}//end requestedWindowStart()
+
+	/**
+	 * The status of a failed event listing: 404 for the service's unknown-calendar refusal, else 500.
+	 *
+	 * @param Exception $error The failure.
+	 *
+	 * @return int The HTTP status.
+	 */
+	private function listingFailureStatus(Exception $error): int {
+		if ($error->getCode() === 404) {
+			return 404;
+		}
+
+		return 500;
+	}//end listingFailureStatus()
 
 	/**
 	 * Validate that the object exists.

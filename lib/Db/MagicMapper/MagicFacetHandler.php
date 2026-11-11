@@ -82,40 +82,6 @@ class MagicFacetHandler {
 	use MagicColumnNameTrait;
 
 	/**
-	 * Reserved query parameters that are never object field filters.
-	 *
-	 * @var array<int, string>
-	 */
-	private const RESERVED_FILTER_PARAMS = [
-		'_limit',
-		'_offset',
-		'_page',
-		'_order',
-		'_sort',
-		'_search',
-		'_extend',
-		'_fields',
-		'_filter',
-		'_unset',
-		'_facets',
-		'_facetable',
-		'_aggregations',
-		'_debug',
-		'_source',
-		'_rbac',
-		'_multitenancy',
-		'_validation',
-		'_events',
-		'_register',
-		'_schema',
-		'_schemas',
-		'_includeDeleted',
-		'_deleted',
-		'_empty',
-		'@self',
-	];
-
-	/**
 	 * Maximum number of buckets to return per facet.
 	 * Set to high value to effectively disable limit (was 50).
 	 */
@@ -398,18 +364,17 @@ class MagicFacetHandler {
 	 * This method provides faceting capabilities for dynamically created
 	 * schema-based tables, optimized for column-based storage.
 	 *
-	 * @param string $tableName The magic mapper table name (without oc_ prefix).
-	 * @param array $query The search query array containing filters and facet configuration.
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param MagicTableTarget $target The register, schema and magic mapper table name (without oc_ prefix).
+	 * @param array            $query  The search query array containing filters and facet configuration.
 	 *
 	 * @return array Facet results with buckets.
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
-	public function getSimpleFacets(string $tableName, array $query, Register $register, Schema $schema): array {
-		$table = new TermsFacetTable(tableName: $tableName, baseQuery: $this->withoutFacets(query: $query), register: $register, schema: $schema);
+	public function getSimpleFacets(MagicTableTarget $target, array $query): array {
+		$baseQuery = $this->withoutFacets(query: $query);
+		$table     = new TermsFacetTable(tableName: $target->tableName, baseQuery: $baseQuery, register: $target->register, schema: $target->schema);
 		return $this->tableFacets(table: $table, facetConfig: $query['_facets'] ?? []);
 	}//end getSimpleFacets()
 
@@ -956,12 +921,9 @@ class MagicFacetHandler {
 	 * @return string|null The conditions, or null when the filters rule the table out.
 	 */
 	private function tableWhereSql(array $baseQuery, array $tableConfig): ?string {
-		$whereConditions = $this->searchHandler->buildWhereConditionsSql(
-			query: $baseQuery,
-			schema: $tableConfig['schema'],
-			registerId: ($tableConfig['register'] ?? null)?->getId(),
-			tableName: $tableConfig['tableName']
-		);
+		$registerId      = ($tableConfig['register'] ?? null)?->getId();
+		$table           = new MagicReadTable(schema: $tableConfig['schema'], registerId: $registerId, tableName: $tableConfig['tableName']);
+		$whereConditions = $this->searchHandler->buildWhereClause(request: new WhereClauseRequest(query: $baseQuery, table: $table));
 
 		return $this->conditionsSql(whereConditions: $whereConditions);
 	}//end tableWhereSql()
@@ -1914,9 +1876,7 @@ class MagicFacetHandler {
 		// answers to a different question.
 		$queryBuilder = $this->searchHandler->buildFilteredQuery(
 			query: $facet->baseQuery,
-			schema: $facet->schema,
-			tableName: $facet->tableName,
-			registerId: $facet->register->getId()
+			table: new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName)
 		);
 		$columnRef = "t.{$facet->field}";
 		$queryBuilder->selectAlias($columnRef, 'facet_value')
@@ -2208,9 +2168,7 @@ class MagicFacetHandler {
 		// draws a shape of the unfiltered set beside a filtered list.
 		$queryBuilder = $this->searchHandler->buildFilteredQuery(
 			query: $facet->baseQuery,
-			schema: $facet->schema,
-			tableName: $facet->tableName,
-			registerId: $facet->register->getId()
+			table: new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName)
 		);
 
 		// The date-key SQL expression is platform-specific; buildFilteredQuery aliases the table as 't'.
@@ -2484,7 +2442,9 @@ class MagicFacetHandler {
 	}//end applyObjectFieldFilters()
 
 	/**
-	 * The query terms that filter on an object field: no reserved or underscore-prefixed parameter.
+	 * The query terms that filter on an object field: no `@self` and no underscore-prefixed parameter.
+	 *
+	 * Every reserved query parameter but `@self` starts with an underscore.
 	 *
 	 * @param array $baseQuery The base query.
 	 *
@@ -2493,7 +2453,7 @@ class MagicFacetHandler {
 	private function objectFieldFilterTerms(array $baseQuery): array {
 		$terms = [];
 		foreach ($baseQuery as $key => $value) {
-			if (in_array($key, self::RESERVED_FILTER_PARAMS, true) === true || str_starts_with($key, '_') === true) {
+			if ($key === '@self' || str_starts_with($key, '_') === true) {
 				continue;
 			}
 

@@ -37,6 +37,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 
 final class DestructionRecorderTest extends TestCase {
 	private function session(?string $uid): IUserSession {
@@ -78,16 +79,12 @@ final class DestructionRecorderTest extends TestCase {
 			));
 
 		$recorder = new DestructionRecorder($mapper, $this->session('recordmanager-1'), new NullLogger());
-		$record = $recorder->record(
-			$this->object(),
-			[
+		$record = $recorder->recordDestruction(new RecordDestructionCommand($this->object(), [
 				'scope' => [DestructionScope::NOTES, DestructionScope::FILES],
 				'destroyed' => [DestructionScope::NOTES => 4, DestructionScope::FILES => 2],
 				'total' => 6,
 				'failed' => [],
-			],
-			'destroy-right-granted'
-		);
+			], 'destroy-right-granted'));
 
 		// The action is the one name every scope excludes, so the record can
 		// never be inside the scope it describes.
@@ -110,7 +107,7 @@ final class DestructionRecorderTest extends TestCase {
 
 		$this->expectException(DestructionRefusedException::class);
 		$this->expectExceptionMessage('nothing was destroyed');
-		$recorder->record($this->object(), [], 'destroy-right-granted');
+		$recorder->recordDestruction(new RecordDestructionCommand($this->object(), [], 'destroy-right-granted'));
 	}//end testAnUnrecordableDestructionRefusesRatherThanProceeding()
 
 	public function testASystemActorIsNamedRatherThanLeftBlank(): void {
@@ -118,7 +115,7 @@ final class DestructionRecorderTest extends TestCase {
 		$mapper->method('recordObjectEvent')->willReturn(new AuditTrail());
 
 		$recorder = new DestructionRecorder($mapper, $this->session(null), new NullLogger());
-		$record = $recorder->record($this->object(), [], 'retention-sweep');
+		$record = $recorder->recordDestruction(new RecordDestructionCommand($this->object(), [], 'retention-sweep'));
 
 		self::assertSame('system', $record['destroyedBy']);
 		self::assertSame('System', $record['destroyedByName']);

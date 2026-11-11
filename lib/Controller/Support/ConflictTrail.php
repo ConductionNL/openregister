@@ -27,6 +27,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -67,7 +68,9 @@ final class ConflictTrail {
 			return [];
 		}
 
-		$entries = $this->auditTrail->findAll(filters: ['object_uuid' => $mismatch->stored->getUuid()], limit: 25);
+		$entries = $this->auditTrail->findTrail(
+			query: new ListQuery(limit: 25, filters: ['object_uuid' => $mismatch->stored->getUuid()], sort: ['created' => 'DESC'])
+		);
 
 		return array_values(array_filter($entries, fn ($entry): bool => $this->isAfter(entry: $entry, read: $read)));
 	}//end interveningChanges()

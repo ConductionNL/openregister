@@ -30,12 +30,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
-use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -50,7 +52,7 @@ use RuntimeException;
  * inside the mutation methods so the provider's surface stays
  * uniform.
  */
-class TasksProvider extends AbstractIntegrationProvider {
+class TasksProvider extends CoreIntegrationProvider {
 	/**
 	 * Tasks service.
 	 *
@@ -125,24 +127,6 @@ class TasksProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Group identifier for UI grouping (or null).
-	 *
-	 * @return string|null Group identifier for UI grouping.
-	 */
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	/**
-	 * Required NC app id (null = built-in).
-	 *
-	 * @return string|null Required app id (null = built-in).
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Storage strategy hint for the registry.
 	 *
 	 * @return string Storage strategy hint for the registry.
@@ -152,28 +136,17 @@ class TasksProvider extends AbstractIntegrationProvider {
 	}//end getStorageStrategy()
 
 	/**
-	 * True when the provider is available for use.
-	 *
-	 * @return bool True when the provider is available for use.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
-
-	/**
 	 * List VTODO tasks linked to the given OR object.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Reserved.
 	 *
 	 * @return array<int,array<string,mixed>> Tasks rows.
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->tasksOf(objectId: $objectId);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->tasksOf(objectId: $ref->id);
 	}//end list()
 
 	/**
@@ -201,16 +174,14 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 * Accepts the per-provider `(register, schema, objectId)` triple
 	 * (slugs OR ids) and a free-form payload. Resolves the register +
 	 * schema entities so the task carries the int ids that
-	 * `TaskService::createTask` expects, and looks up the object for the
+	 * `TaskService::createObjectTask` expects, and looks up the object for the
 	 * RFC 9253 LINK label. The user's default VTODO calendar is
 	 * auto-discovered downstream — `payload.calendarId` is ignored.
 	 *
 	 * Payload keys honoured: `summary`, `description`, `priority`, `due`,
 	 * `status`. Anything else is ignored.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload Task payload.
 	 *
 	 * @return array<string,mixed> Created task row.
@@ -222,8 +193,8 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		return $this->createTaskFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	public function create(ObjectRef $ref, array $payload): array {
+		return $this->createTaskFor(ref: $ref, payload: $payload);
 	}//end create()
 
 	/**
@@ -238,16 +209,13 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 */
 	private function createTaskFor(ObjectRef $ref, array $payload): array {
 		$table = new RegisterSchema(register: $this->registerMapper->find(id: $ref->register), schema: $this->schemaMapper->find(id: $ref->schema));
-		$task = $this->taskService->createTask(
-			registerId: $table->registerId(),
-			schemaId: $table->schemaId(),
-			objectUuid: $ref->id,
-			objectTitle: $this->objectTitle(table: $table, objectId: $ref->id),
-			data: self::taskData(payload: $payload)
+		$task = $this->taskService->createObjectTask(
+			ref: new ObjectRef(register: $table->registerId(), schema: $table->schemaId(), id: $ref->id),
+			draft: new LinkedTaskDraft(objectTitle: $this->objectTitle(table: $table, objectId: $ref->id), data: self::taskData(payload: $payload))
 		);
 
 		if ($task === null) {
-			throw new RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
+			throw new RuntimeException('TaskService::createObjectTask returned null — calendar invalid or auth failure.');
 		}
 
 		return $task;
@@ -300,9 +268,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 	/**
 	 * Update a VTODO task linked to the OR object.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Composite calendar/task id.
 	 * @param array<string,mixed> $payload Update payload.
 	 *
@@ -310,10 +276,10 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		[$calendarId, $taskUri] = $this->ownedTask(objectId: $objectId, entityId: $entityId);
+	public function update(ObjectRef $ref, string $entityId, array $payload): array {
+		[$calendarId, $taskUri] = $this->ownedTask(objectId: $ref->id, entityId: $entityId);
 
-		return self::updatedOrFail(updated: $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload));
+		return self::updatedOrFail(updated: $this->taskService->changeTask(at: new TaskLocation(calendarId: $calendarId, uri: $taskUri), data: $payload));
 	}//end update()
 
 	/**
@@ -327,7 +293,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 */
 	private static function updatedOrFail(?array $updated): array {
 		if ($updated === null) {
-			throw new RuntimeException('TaskService::updateTask returned null — entity may not exist.');
+			throw new RuntimeException('TaskService::changeTask returned null — entity may not exist.');
 		}
 
 		return $updated;
@@ -336,17 +302,15 @@ class TasksProvider extends AbstractIntegrationProvider {
 	/**
 	 * Delete a VTODO task linked to the OR object.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Composite calendar/task id.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		[$calendarId, $taskUri] = $this->ownedTask(objectId: $objectId, entityId: $entityId);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		[$calendarId, $taskUri] = $this->ownedTask(objectId: $ref->id, entityId: $entityId);
 		$this->taskService->deleteTask(calendarId: $calendarId, taskUri: $taskUri);
 	}//end delete()
 
@@ -363,7 +327,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 */
 	private function ownedTask(string $objectId, string $entityId): array {
 		[$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
-		$this->taskService->requireTaskOf(objectUuid: $objectId, calendarId: $calendarId, taskUri: $taskUri);
+		$this->taskService->requireTaskAt(objectUuid: $objectId, at: new TaskLocation(calendarId: $calendarId, uri: $taskUri));
 
 		return [$calendarId, $taskUri];
 	}//end ownedTask()

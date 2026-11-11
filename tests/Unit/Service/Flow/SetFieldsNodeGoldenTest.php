@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -154,7 +155,7 @@ class SetFieldsNodeGoldenTest extends TestCase {
 
 	private function runCase(array $case): mixed {
 		try {
-			return $this->node->execute($case['items'], $case['config'], $case['context']);
+			return $this->node->execute(new FlowNodeCall(items: $case['items'], config: $case['config'], context: $case['context']));
 		} catch (Throwable $e) {
 			// A TypeError names the calling file and line; that is a source
 			// position, not behaviour.

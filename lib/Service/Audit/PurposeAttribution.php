@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use Psr\Container\ContainerInterface;
-use Throwable;
 
 /**
  * Writes the accepted purpose onto a row, in both places it belongs.
@@ -74,43 +74,62 @@ class PurposeAttribution implements PurposeAttributionInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
-		try {
-			$context = $this->container->get(PurposeContext::class);
-		} catch (Throwable $e) {
+		$rows    = new AuditRowAttribution();
+		$context = $rows->requestContext(container: $this->container, class: PurposeContext::class);
+		if ($context === null) {
 			return;
 		}
 
-		if (($context instanceof PurposeContext) === false) {
-			return;
-		}
-
-		$purpose = $context->accepted();
-		if ($purpose === null) {
-			return;
-		}
-
-		$code = $purpose->getCode();
-		if ($code === null || $code === '') {
+		$code = $this->acceptedCode(context: $context);
+		if ($code === null) {
 			return;
 		}
 
 		$activity = $context->acceptedActivity();
-		$activityUuid = $activity?->getUuid();
-
 		$auditTrail->setPurpose($code);
 
 		// Merge rather than replace: an MCP tool invocation already carries its
 		// outcome here, and a read made inside one must not erase it.
-		$summary = ($auditTrail->getResultSummary() ?? []);
-		$summary['purpose'] = [
+		$rows->mergeIntoSummary(auditTrail: $auditTrail, entries: ['purpose' => $this->purposeEntry(code: $code, activity: $activity)]);
+
+		$this->claimActivity(auditTrail: $auditTrail, activityUuid: $activity?->getUuid());
+	}//end apply()
+
+	/**
+	 * The code of the purpose the context accepted, or null when it accepted none or one without a code.
+	 *
+	 * @param PurposeContext $context The request-scoped purpose context.
+	 *
+	 * @return string|null The purpose code.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function acceptedCode(PurposeContext $context): ?string {
+		$code = $context->accepted()?->getCode();
+		if ($code === null || $code === '') {
+			return null;
+		}
+
+		return $code;
+	}//end acceptedCode()
+
+	/**
+	 * The summary entry of an accepted purpose: its code and the activity it resolved to.
+	 *
+	 * @param string                     $code     The purpose code.
+	 * @param Verwerkingsactiviteit|null $activity The activity the purpose resolved to, if any.
+	 *
+	 * @return array{code: string, activity: string|null, activityUuid: string|null} The entry.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function purposeEntry(string $code, ?Verwerkingsactiviteit $activity): array {
+		return [
 			'code' => $code,
 			'activity' => $activity?->getCode(),
-			'activityUuid' => $activityUuid,
+			'activityUuid' => $activity?->getUuid(),
 		];
-		$auditTrail->setResultSummary($summary);
-
-		$this->claimActivity(auditTrail: $auditTrail, activityUuid: $activityUuid);
-	}//end apply()
+	}//end purposeEntry()
 
 	/**
 	 * Attribute the row to the purpose's activity, if nothing else claimed it.

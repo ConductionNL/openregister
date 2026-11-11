@@ -96,6 +96,22 @@ class AggregateVisibility implements AggregateVisibilityInterface {
 			return true;
 		}
 
+		if (self::isUngoverned(schema: $schema, property: $property) === true) {
+			return true;
+		}
+
+		return $this->readRuleAdmits(property: new SchemaProperty(schema: $schema, name: $property));
+	}//end maySummarise()
+
+	/**
+	 * Whether the property carries no read rule of its own, so there is nothing to ask.
+	 *
+	 * @param Schema $schema   The schema the property belongs to.
+	 * @param string $property The property name.
+	 *
+	 * @return bool True when the property is not governed at property level.
+	 */
+	private static function isUngoverned(Schema $schema, string $property): bool {
 		if ($schema->hasPropertyAuthorization() === false) {
 			// Nothing on this schema is governed at property level, so there is
 			// no question to ask and no handler to resolve. This short-circuit
@@ -115,22 +131,29 @@ class AggregateVisibility implements AggregateVisibilityInterface {
 		// so `canReadProperty()` already returns true for it. Answering here
 		// changes nothing when the rule is available and keeps the fallback
 		// proportionate when it is not.
-		if ($schema->getPropertyAuthorization($property) === null) {
-			return true;
-		}
+		return ($schema->getPropertyAuthorization($property) === null);
+	}//end isUngoverned()
 
+	/**
+	 * Ask the property read rule; with no rule to ask, or one that fails, withhold the summary.
+	 *
+	 * @param SchemaProperty $property The schema and the property name.
+	 *
+	 * @return bool Whether the summary may be shown.
+	 */
+	private function readRuleAdmits(SchemaProperty $property): bool {
 		if ($this->rbac === null) {
-			$this->warn(property: $property, reason: 'no property read rule available to ask');
+			$this->warn(property: $property->name, reason: 'no property read rule available to ask');
 			return false;
 		}
 
 		try {
-			return $this->rbac->canReadProperty(property: new SchemaProperty(schema: $schema, name: $property), request: new PropertyAccessRequest(object: []));
+			return $this->rbac->canReadProperty(property: $property, request: new PropertyAccessRequest(object: []));
 		} catch (Throwable $e) {
-			$this->warn(property: $property, reason: $e->getMessage());
+			$this->warn(property: $property->name, reason: $e->getMessage());
 			return false;
 		}
-	}//end maySummarise()
+	}//end readRuleAdmits()
 
 	/**
 	 * Whether this caller could read this property on some row.
@@ -179,6 +202,7 @@ class AggregateVisibility implements AggregateVisibilityInterface {
 			return false;
 		}
 
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		$trusted = ($this->reveal?->isTrusted() ?? SystemOperationContext::isActive());
 
 		return $trusted === false;

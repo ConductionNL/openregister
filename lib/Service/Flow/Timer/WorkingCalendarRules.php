@@ -75,14 +75,7 @@ final class WorkingCalendarRules {
 	private function validRule(mixed $rule): array {
 		$kind = (string)($rule['kind'] ?? '');
 		if (is_array($rule) === false || in_array($kind, WorkingCalendar::RULE_KINDS, true) === false) {
-			throw new FlowTimerValidationException(
-				message: sprintf(
-					"Working calendar '%s' has a rule of unknown kind '%s'; known kinds: %s.",
-					$this->slug,
-					$kind,
-					implode(', ', WorkingCalendar::RULE_KINDS)
-				)
-			);
+			throw $this->unknownKind(kind: $kind);
 		}
 
 		if ($kind === 'easter') {
@@ -91,6 +84,24 @@ final class WorkingCalendarRules {
 
 		return $this->validFixedRule(rule: $rule, kind: $kind);
 	}//end validRule()
+
+	/**
+	 * The refusal of a rule of a kind the calendar does not know.
+	 *
+	 * @param string $kind The declared kind.
+	 *
+	 * @return FlowTimerValidationException The refusal.
+	 */
+	private function unknownKind(string $kind): FlowTimerValidationException {
+		return new FlowTimerValidationException(
+			message: sprintf(
+				"Working calendar '%s' has a rule of unknown kind '%s'; known kinds: %s.",
+				$this->slug,
+				$kind,
+				implode(', ', WorkingCalendar::RULE_KINDS)
+			)
+		);
+	}//end unknownKind()
 
 	/**
 	 * Validate an Easter-offset rule.

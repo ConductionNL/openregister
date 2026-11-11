@@ -245,16 +245,40 @@ class ObjectShareReader {
 			return $node;
 		}
 
+		return $this->folderFromRoot(folderId: (int)$folderId);
+	}//end existingFolder()
+
+	/**
+	 * Confirm a folder against the root: the first folder among its nodes for the id.
+	 *
+	 * @param int $folderId The folder's node id.
+	 *
+	 * @return Folder|null The folder, or null when the root has none.
+	 *
+	 * @throws RuntimeException When no root is wired or the root lookup fails.
+	 */
+	private function folderFromRoot(int $folderId): ?Folder {
 		if ($this->rootFolder === null) {
 			throw new RuntimeException('No read-only folder lookup is wired');
 		}
 
 		try {
-			$nodes = $this->rootFolder->getById((int)$folderId);
+			$nodes = $this->rootFolder->getById($folderId);
 		} catch (Throwable $e) {
 			throw new RuntimeException('The folder of an object could not be looked up', 0, $e);
 		}
 
+		return self::firstFolder(nodes: $nodes);
+	}//end folderFromRoot()
+
+	/**
+	 * The first folder among nodes.
+	 *
+	 * @param array<mixed> $nodes The nodes.
+	 *
+	 * @return Folder|null
+	 */
+	private static function firstFolder(array $nodes): ?Folder {
 		foreach ($nodes as $node) {
 			if (($node instanceof Folder) === true) {
 				return $node;
@@ -262,7 +286,7 @@ class ObjectShareReader {
 		}
 
 		return null;
-	}//end existingFolder()
+	}//end firstFolder()
 
 	/**
 	 * Resolve the object's NC folder, creating it if it has none.

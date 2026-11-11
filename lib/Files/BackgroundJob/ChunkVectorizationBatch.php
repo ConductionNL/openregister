@@ -193,9 +193,8 @@ final class ChunkVectorizationBatch {
 	private function storeVector(Chunk $chunk, array $embeddingData): void {
 		$this->storageHandler->storeVector(
 			vector: $this->vectors->forChunk(
-				source: new ChunkAsVectorSource(chunk: $chunk),
-				embeddingData: $embeddingData,
-				totalChunks: $this->totalChunksOf(chunk: $chunk)
+				source: new ChunkAsVectorSource(chunk: $chunk, totalChunks: $this->totalChunksOf(chunk: $chunk)),
+				embeddingData: $embeddingData
 			)
 		);
 	}//end storeVector()

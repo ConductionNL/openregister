@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
+use OCP\IGroup;
 use OCP\IGroupManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -78,49 +79,93 @@ class GroupProvisioner {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function provision(array $groups, string $declaredBy): array {
-		$result = [
-			'created' => [],
-			'existing' => [],
-			'failed' => [],
-		];
+		$run = new GroupProvisionRun();
+		$run->declaredBy = $declaredBy;
 
 		foreach ($groups as $group) {
-			try {
-				if ($this->groupManager->groupExists($group) === true) {
-					$result['existing'][] = $group;
-					continue;
-				}
-
-				$this->groupManager->createGroup($group);
-				$result['created'][] = $group;
-			} catch (Throwable $e) {
-				$result['failed'][] = $group;
-				$this->logger->error(
-					message: sprintf(
-						'[GroupProvisioner] could not create group "%s" declared by "%s": %s',
-						$group,
-						$declaredBy,
-						$e->getMessage()
-					),
-					context: ['exception' => $e]
-				);
-			}//end try
-		}//end foreach
-
-		if (empty($result['created']) === false) {
-			$this->logger->info(
-				message: sprintf(
-					'[GroupProvisioner] created %d declared group(s) for "%s": %s — each starts EMPTY and '
-					. 'therefore denies every caller until an administrator adds members',
-					count($result['created']),
-					$declaredBy,
-					implode(', ', $result['created'])
-				)
-			);
+			$run->group = $group;
+			$this->provisionGroup(run: $run);
 		}
 
-		return $result;
+		$this->announceCreated(run: $run);
+
+		return [
+			'created' => $run->created,
+			'existing' => $run->existing,
+			'failed' => $run->failed,
+		];
 	}//end provision()
+
+	/**
+	 * Create the group in hand unless it exists; a failure is recorded and logged, never thrown.
+	 *
+	 * @param GroupProvisionRun $run The provisioning pass, holding the group in hand.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function provisionGroup(GroupProvisionRun $run): void {
+		try {
+			if ($this->groupManager->groupExists($run->group) === true) {
+				$run->existing[] = $run->group;
+				return;
+			}
+
+			$this->groupManager->createGroup($run->group);
+			$run->created[] = $run->group;
+		} catch (Throwable $e) {
+			$run->failed[] = $run->group;
+			$this->logCreateFailure(run: $run, error: $e);
+		}
+	}//end provisionGroup()
+
+	/**
+	 * Log that the group in hand could not be created.
+	 *
+	 * @param GroupProvisionRun $run   The provisioning pass, holding the group in hand.
+	 * @param Throwable         $error Why it failed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function logCreateFailure(GroupProvisionRun $run, Throwable $error): void {
+		$this->logger->error(
+			message: sprintf(
+				'[GroupProvisioner] could not create group "%s" declared by "%s": %s',
+				$run->group,
+				$run->declaredBy,
+				$error->getMessage()
+			),
+			context: ['exception' => $error]
+		);
+	}//end logCreateFailure()
+
+	/**
+	 * Announce the groups a pass created: each starts empty and denies every caller.
+	 *
+	 * @param GroupProvisionRun $run The finished provisioning pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function announceCreated(GroupProvisionRun $run): void {
+		if (empty($run->created) === true) {
+			return;
+		}
+
+		$this->logger->info(
+			message: sprintf(
+				'[GroupProvisioner] created %d declared group(s) for "%s": %s — each starts EMPTY and '
+				. 'therefore denies every caller until an administrator adds members',
+				count($run->created),
+				$run->declaredBy,
+				implode(', ', $run->created)
+			)
+		);
+	}//end announceCreated()
 
 	/**
 	 * Report the live membership state of a set of declared groups.
@@ -144,27 +189,51 @@ class GroupProvisioner {
 	public function inventory(array $groups): array {
 		$inventory = [];
 		foreach ($groups as $group) {
-			$resolved = $this->groupManager->get($group);
-			if ($resolved === null) {
-				$inventory[$group] = [
-					'exists' => false,
-					'members' => null,
-				];
-				continue;
-			}
-
-			$count = $resolved->count();
-			$members = null;
-			if (is_int($count) === true) {
-				$members = $count;
-			}
-
-			$inventory[$group] = [
-				'exists' => true,
-				'members' => $members,
-			];
-		}//end foreach
+			$inventory[$group] = $this->liveState(group: $group);
+		}
 
 		return $inventory;
 	}//end inventory()
+
+	/**
+	 * The live state of one group: whether it exists, and its member count when known.
+	 *
+	 * @param string $group The group id.
+	 *
+	 * @return array{exists: bool, members: int|null} The state; members null = unknown.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function liveState(string $group): array {
+		$resolved = $this->groupManager->get($group);
+		if ($resolved === null) {
+			return [
+				'exists' => false,
+				'members' => null,
+			];
+		}
+
+		return [
+			'exists' => true,
+			'members' => $this->knownMemberCount(group: $resolved),
+		];
+	}//end liveState()
+
+	/**
+	 * A group's member count, or null when its backend cannot count.
+	 *
+	 * @param IGroup $group The resolved group.
+	 *
+	 * @return int|null The count; null = unknown.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function knownMemberCount(IGroup $group): ?int {
+		$count = $group->count();
+		if (is_int($count) === true) {
+			return $count;
+		}
+
+		return null;
+	}//end knownMemberCount()
 }//end class

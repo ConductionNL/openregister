@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
@@ -132,34 +133,33 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 *
 	 * Retrieves all webhooks with organisation filtering for multi-tenancy.
 	 * Returns only webhooks belonging to the current organisation.
-	 * Supports pagination and filtering.
+	 * Supports pagination and column filtering; the listing's sort and search are not applied.
 	 *
-	 * @param int|null $limit Maximum number of results to return
-	 * @param int|null $offset Number of results to skip
-	 * @param array $filters Optional filters to apply
+	 * @param ListQuery $query The page (limitOrNull() and offset) and the column filters.
 	 *
 	 * @return Webhook[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array {
+	public function findAll(ListQuery $query): array {
 		// Check if table exists before querying (migrations might not have run yet).
 		if ($this->tableExists() === false) {
 			return [];
 		}
 
-		return $this->findEntities(query: $this->listQuery(page: new QueryPage(limit: $limit, offset: $offset), filters: $filters));
+		$page = new QueryPage(limit: $query->limitOrNull(), offset: $query->offset);
+		return $this->findEntities(query: $this->listQuery(page: $page, filters: $query->filters));
 	}//end findAll()
 
 	/**
 	 * The listing query: one page, the column filters, and the organisation filter for multi-tenancy.
 	 *
-	 * @param QueryPage  $page    The page to take.
-	 * @param array|null $filters Column filters to apply.
+	 * @param QueryPage $page    The page to take.
+	 * @param array     $filters Column filters to apply.
 	 *
 	 * @return IQueryBuilder The query, ready to run.
 	 */
-	private function listQuery(QueryPage $page, ?array $filters): IQueryBuilder {
+	private function listQuery(QueryPage $page, array $filters): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName());

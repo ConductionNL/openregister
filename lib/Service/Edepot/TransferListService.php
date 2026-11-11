@@ -176,11 +176,7 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 		}
 
 		$transferList['status']           = self::STATUS_REJECTED;
-		$transferList['approvalMetadata'] = [
-			'rejectedBy' => $rejection->archivistId,
-			'rejectedAt' => (new DateTime())->format('c'),
-			'rejectionReason' => $rejection->reason,
-		];
+		$transferList['approvalMetadata'] = self::rejectionMetadata(rejection: $rejection);
 		$this->logStep(
 			message: 'Transfer list rejected',
 			context: ['uuid' => $transferList['uuid'], 'rejectedBy' => $rejection->archivistId, 'reason' => $rejection->reason]
@@ -188,6 +184,21 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 
 		return $this->persist(transferList: $transferList);
 	}//end reject()
+
+	/**
+	 * Who rejected the list, when, and why.
+	 *
+	 * @param TransferRejection $rejection The rejection.
+	 *
+	 * @return array{rejectedBy: string, rejectedAt: string, rejectionReason: string} The metadata.
+	 */
+	private static function rejectionMetadata(TransferRejection $rejection): array {
+		return [
+			'rejectedBy' => $rejection->archivistId,
+			'rejectedAt' => (new DateTime())->format('c'),
+			'rejectionReason' => $rejection->reason,
+		];
+	}//end rejectionMetadata()
 
 
 	/**

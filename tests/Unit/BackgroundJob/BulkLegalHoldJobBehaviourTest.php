@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 use OCA\OpenRegister\BackgroundJob\BulkLegalHoldJob;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
@@ -126,7 +127,7 @@ class BulkLegalHoldJobBehaviourTest extends TestCase {
 			->with('[BulkLegalHoldJob] Error: mapper unavailable', ['exception' => $failure]);
 
 		$retention = $this->createMock(RetentionServiceInterface::class);
-		$retention->expects($this->never())->method('placeLegalHold');
+		$retention->expects($this->never())->method('placeHold');
 
 		$requested = [];
 		$container = $this->createMock(ContainerInterface::class);
@@ -166,8 +167,8 @@ class BulkLegalHoldJobBehaviourTest extends TestCase {
 		$mapper->expects($this->exactly(2))->method('update');
 
 		$retention = $this->createMock(RetentionServiceInterface::class);
-		$retention->expects($this->exactly(2))->method('placeLegalHold')
-			->willReturnCallback(fn (ObjectEntity $object, string $reason): ObjectEntity => $object);
+		$retention->expects($this->exactly(2))->method('placeHold')
+			->willReturnCallback(fn (ObjectEntity $object, HoldOrder $order): ObjectEntity => $object);
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(

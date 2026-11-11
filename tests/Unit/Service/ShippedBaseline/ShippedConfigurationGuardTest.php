@@ -232,6 +232,11 @@ class ShippedConfigurationGuardTest extends TestCase {
 
 		$this->assertFalse($report['baseline'], 'no baseline is a different answer from no divergence');
 		$this->assertSame([], $report['divergences']);
+		$this->assertSame(
+			['baseline' => false, 'app' => '', 'appVersion' => '', 'recordedAt' => '', 'divergences' => []],
+			$report,
+			'the whole no-baseline answer, key for key'
+		);
 	}//end testWithNoBaselineTheReportSaysSo()
 
 	/**

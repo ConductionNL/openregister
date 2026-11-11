@@ -48,9 +48,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\HandoffExecutedEvent;
+use OCA\OpenRegister\Event\HandoffExecutedSource;
+use OCA\OpenRegister\Event\HandoffExecutedTarget;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\WriteCause;
 use Symfony\Component\Uid\Uuid;
 
@@ -276,8 +281,7 @@ class HandoffService implements HandoffServiceInterface {
 		$this->objects->permissionHandler->checkPermission(
 			schema: $plan->sourceSchema,
 			action: 'update',
-			objectOwner: $plan->source->getOwner(),
-			object: $plan->source
+			options: new PermissionCheckOptions(objectOwner: $plan->source->getOwner(), object: $plan->source)
 		);
 
 		// 3. Resolve the provider (complete-binding filter on the resolver result).
@@ -439,18 +443,24 @@ class HandoffService implements HandoffServiceInterface {
 		$source = $plan->source;
 		$this->requesters->eventDispatcher->dispatchTyped(
 			new HandoffExecutedEvent(
-				sourceApp: (string)($plan->sourceSchema->getApplication() ?? ''),
-				sourceRegister: (int)$source->getRegister(),
-				sourceSchema: (int)$source->getSchema(),
-				sourceObjectUuid: (string)$source->getUuid(),
-				subjectLabel: $source->getName(),
-				targetSemanticType: $plan->kindUri(),
-				targetRegister: (int)$target->getRegister(),
-				targetSchema: (int)$target->getSchema(),
-				targetObjectUuid: (string)$target->getUuid(),
-				handoffId: $plan->request->handoffId,
-				correlationId: $plan->request->correlationId,
-				deferred: $plan->request->deferred
+				source: new HandoffExecutedSource(
+					app: (string)($plan->sourceSchema->getApplication() ?? ''),
+					object: new ObjectRef(
+						register: (int)$source->getRegister(),
+						schema: (int)$source->getSchema(),
+						id: (string)$source->getUuid()
+					),
+					label: $source->getName()
+				),
+				target: new HandoffExecutedTarget(
+					semanticType: $plan->kindUri(),
+					object: new ObjectRef(
+						register: (int)$target->getRegister(),
+						schema: (int)$target->getSchema(),
+						id: (string)$target->getUuid()
+					)
+				),
+				request: $plan->request
 			)
 		);
 	}//end dispatchExecuted()
@@ -507,9 +517,17 @@ class HandoffService implements HandoffServiceInterface {
 	 *
 	 * @param HandoffQueueEntry $entry The parked entry.
 	 *
-	 * @return string `skipped` (still no provider), `drained` or `failed`.
+	 * @return string `skipped` (still no provider, or inside a system-operation scope), `drained` or `failed`.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is a process-scoped flag with no instance to inject.
 	 */
 	private function drainOutcome(HandoffQueueEntry $entry): string {
+		// Inside a system-operation scope every permission check passes, so the
+		// requester's own rights could not be re-evaluated: leave it parked.
+		if (SystemOperationContext::isActive() === true) {
+			return 'skipped';
+		}
+
 		// Cheap pre-check: still no provider → leave parked.
 		$this->providers->semanticTypeResolver->clearCache();
 		if ($this->resolveProvider(kindUri: $entry->getTargetKind(), consumingRegisterId: $entry->getSourceRegister()) === null) {

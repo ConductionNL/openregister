@@ -35,6 +35,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -291,13 +294,19 @@ class CredentialControllerOrganisationTest extends TestCase {
 		// behaviour under test (the D4 admin gate, the persisted property bag, the vault
 		// scope) is unchanged — only the seam the call travels through moved.
 		$broker = new CredentialBrokerService(
-			$this->objectService,
-			$this->store,
-			$catalogue,
-			$session,
-			$this->createMock(IClientService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->orgService
+			sources: new CredentialSources(
+				objectService: $this->objectService,
+				credentialStore: $this->store,
+				catalogue: $catalogue
+			),
+			principals: new CredentialPrincipals(
+				userSession: $session,
+				organisationService: $this->orgService
+			),
+			outbound: new CredentialOutbound(
+				clientService: $this->createMock(IClientService::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		return CredentialControllerFactory::create(

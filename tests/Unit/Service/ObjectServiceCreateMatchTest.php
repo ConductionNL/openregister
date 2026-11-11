@@ -69,6 +69,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The create check sees the incoming object, so a `match` on it can pass.
@@ -132,7 +133,7 @@ class ObjectServiceCreateMatchTest extends TestCase {
 			$container
 		);
 
-		$this->objectService = new ObjectService(
+		$this->objectService = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -171,7 +172,7 @@ class ObjectServiceCreateMatchTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		// planninq's plannedTimeEntry: a member books time for themselves.
 		$schema = new Schema();

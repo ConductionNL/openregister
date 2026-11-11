@@ -76,8 +76,6 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -173,10 +171,8 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * A merged-away organisation resolves to its survivor, so a reference stored
 	 * before a merge keeps pointing at a real record.
 	 *
-	 * @param Register             $register The register the schema belongs to.
-	 * @param Schema               $schema   The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string               $id       The organisation uuid.
-	 * @param array<string, mixed> $config   The object-source config block (unused).
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent or denied.
 	 *
@@ -184,8 +180,8 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-an-organisation-is-addressable-as-an-object-req-orp-101
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return $this->findOrganisation(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findOrganisation(binding: $source->binding(), id: $id);
 	}//end find()
 
 	/**
@@ -217,10 +213,8 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * Honours `filters.search` / `_search`, `limit` and `offset`. An admin sees
 	 * every organisation; anyone else sees only the ones they belong to.
 	 *
-	 * @param Register             $register The register the schema belongs to.
-	 * @param Schema               $schema   The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query    Query (filters/search/limit/offset).
-	 * @param array<string, mixed> $config   The object-source config block (unused).
 	 *
 	 * @return ObjectEntity[] The matching virtual objects.
 	 *
@@ -228,8 +222,8 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-an-organisation-is-addressable-as-an-object-req-orp-101
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->listOrganisations(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->listOrganisations(binding: $source->binding(), query: $query);
 	}//end findAll()
 
 	/**
@@ -261,10 +255,8 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * The remaining identity fields are applied afterwards, because
 	 * `createOrganisation()` takes only a name and a description.
 	 *
-	 * @param Register             $register The register the schema belongs to.
-	 * @param Schema               $schema   The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $data     The validated object data.
-	 * @param array<string, mixed> $config   The object-source config block (unused).
 	 *
 	 * @return ObjectEntity The created organisation, projected.
 	 *
@@ -274,10 +266,10 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-an-organisation-can-be-created-through-the-projection-req-orp-104
 	 */
-	public function insert(Register $register, Schema $schema, array $data, array $config = []): ObjectEntity {
+	public function insert(SourcedTable $source, array $data): ObjectEntity {
 		$organisation = $this->createdOrganisation(data: $data);
 
-		return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), organisation: $organisation);
+		return $this->toObjectEntity(binding: $source->binding(), organisation: $organisation);
 	}//end insert()
 
 	/**
@@ -317,11 +309,9 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * (quota, users, groups, authorization) is not projected and so cannot be
 	 * reached here, which is the same boundary the read side draws.
 	 *
-	 * @param Register             $register The register the schema belongs to.
-	 * @param Schema               $schema   The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string               $id       The organisation uuid.
 	 * @param array<string, mixed> $data     The validated object data.
-	 * @param array<string, mixed> $config   The object-source config block (unused).
 	 *
 	 * @return ObjectEntity The updated organisation, projected.
 	 *
@@ -332,10 +322,10 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-only-an-organisations-administrator-may-write-it-req-orp-105
 	 */
-	public function update(Register $register, Schema $schema, string $id, array $data, array $config = []): ObjectEntity {
+	public function update(SourcedTable $source, string $id, array $data): ObjectEntity {
 		$organisation = $this->applyProjectedFields(organisation: $this->writableOrganisation(id: $id), data: $data);
 
-		return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), organisation: $organisation);
+		return $this->toObjectEntity(binding: $source->binding(), organisation: $organisation);
 	}//end update()
 
 	/**
@@ -389,10 +379,8 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * Merging is the operation that exists for retiring an organisation, and it
 	 * keeps every stored reference pointing at a record that still owns something.
 	 *
-	 * @param Register             $register The register the schema belongs to.
-	 * @param Schema               $schema   The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string               $id       The organisation uuid.
-	 * @param array<string, mixed> $config   The object-source config block (unused).
 	 *
 	 * @return bool Never returns.
 	 *
@@ -402,7 +390,7 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-an-organisation-cannot-be-deleted-through-the-projection-req-orp-106
 	 */
-	public function remove(Register $register, Schema $schema, string $id, array $config = []): bool {
+	public function remove(SourcedTable $source, string $id): bool {
 		throw new RuntimeException(self::undeletableMessage(id: $id));
 	}//end remove()
 
@@ -444,8 +432,29 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-only-the-identity-facet-is-writable-req-orp-107
 	 */
 	private function applyProjectedFields(Organisation $organisation, array $data): Organisation {
-		$changed = false;
+		$values = $this->projectedValues(data: $data);
+		foreach ($values as $property => $value) {
+			$organisation->{'set'.ucfirst($property)}($value);
+		}
 
+		if ($values === []) {
+			return $organisation;
+		}
+
+		return $this->organisationMapper->save($organisation);
+	}//end applyProjectedFields()
+
+	/**
+	 * The projected properties the data carries, as strings or null, in PROJECTED order.
+	 *
+	 * A non-scalar value is skipped rather than rejected.
+	 *
+	 * @param array<string, mixed> $data The object data.
+	 *
+	 * @return array<string, string|null> Property name to the value to write.
+	 */
+	private function projectedValues(array $data): array {
+		$values = [];
 		foreach (self::PROJECTED as $property) {
 			if (array_key_exists($property, $data) === false) {
 				continue;
@@ -456,20 +465,26 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 				continue;
 			}
 
-			if ($value !== null) {
-				$value = (string)$value;
-			}
-
-			$organisation->{'set'.ucfirst($property)}($value);
-			$changed = true;
+			$values[$property] = $this->nullableString(value: $value);
 		}
 
-		if ($changed === false) {
-			return $organisation;
+		return $values;
+	}//end projectedValues()
+
+	/**
+	 * A scalar as a string, null as null.
+	 *
+	 * @param mixed $value A scalar or null.
+	 *
+	 * @return string|null
+	 */
+	private function nullableString(mixed $value): ?string {
+		if ($value === null) {
+			return null;
 		}
 
-		return $this->organisationMapper->save($organisation);
-	}//end applyProjectedFields()
+		return (string)$value;
+	}//end nullableString()
 
 	/**
 	 * Whether the acting user may write this organisation.
@@ -612,12 +627,7 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-the-projection-carries-the-identity-facet-only-req-orp-102
 	 */
 	public static function matching(array $organisations, string $search): array {
-		$live = array_filter(
-			$organisations,
-			static function ($organisation) {
-				return ($organisation instanceof Organisation && $organisation->isMerged() === false);
-			}
-		);
+		$live = array_filter($organisations, self::isLive(...));
 
 		if ($search === '') {
 			return $live;
@@ -627,17 +637,38 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 
 		return array_filter(
 			$live,
-			static function (Organisation $organisation) use ($needle) {
-				foreach ([$organisation->getName(), $organisation->getOin(), $organisation->getRsin(), $organisation->getKvk()] as $field) {
-					if ($field !== null && str_contains(strtolower((string)$field), $needle) === true) {
-						return true;
-					}
-				}
-
-				return false;
-			}
+			static fn (Organisation $organisation): bool => self::mentions(organisation: $organisation, needle: $needle)
 		);
 	}//end matching()
+
+	/**
+	 * Whether a candidate is an organisation that has not been merged away.
+	 *
+	 * @param mixed $organisation The candidate.
+	 *
+	 * @return bool
+	 */
+	private static function isLive(mixed $organisation): bool {
+		return ($organisation instanceof Organisation && $organisation->isMerged() === false);
+	}//end isLive()
+
+	/**
+	 * Whether the organisation's name, OIN, RSIN or KvK number contains the lower-cased needle.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 * @param string       $needle       The lower-cased search term.
+	 *
+	 * @return bool
+	 */
+	private static function mentions(Organisation $organisation, string $needle): bool {
+		foreach ([$organisation->getName(), $organisation->getOin(), $organisation->getRsin(), $organisation->getKvk()] as $field) {
+			if ($field !== null && str_contains(strtolower((string)$field), $needle) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end mentions()
 
 	/**
 	 * Map an organisation onto a non-persisted virtual ObjectEntity.

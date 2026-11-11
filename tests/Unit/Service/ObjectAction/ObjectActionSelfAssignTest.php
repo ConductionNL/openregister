@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionCatalogue;
@@ -74,6 +75,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * Who may take an unassigned object, and what the action may write.
@@ -322,8 +325,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 	private function take(Schema $schema, ObjectEntity $object, array $given = []): array {
 		return $this->runner(schema: $schema)->run(
 			target: new ObjectActionTarget(object: $object, schema: $schema, register: '3', schemaRef: '7'),
-			key: self::ACTION,
-			given: $given
+			request: new ObjectActionRequest(key: self::ACTION, given: $given)
 		);
 	}//end take()
 
@@ -729,14 +731,18 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 */
 	public function testTheSchemaSaveReadsTheDeclaredActionsIntoTheMatrixCheck(): void {
 		$mapper = new SchemaMapper(
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			new NullLogger()
+			db: $this->createMock(IDBConnection::class),
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: new NullLogger()
+			)
 		);
 		$validate = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
 		$matrix = static fn (string $action): array => [

@@ -118,6 +118,46 @@ import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { navigationStore, organisationStore } from '../../store/store.js'
 
 /**
+ * The organisation the modal starts from: unnamed, without roles.
+ *
+ * @return {{name: string, roles: Array}} The organisation
+ */
+function unnamedOrganisation() {
+	return {
+		name: '',
+		roles: [],
+	}
+}
+
+/**
+ * Fetch the Nextcloud groups from the OCS API (v1, for compatibility).
+ *
+ * @return {Promise<object>} The axios response
+ */
+function fetchNextcloudGroups() {
+	return axios.get(generateUrl('/ocs/v1.php/cloud/groups?format=json'), {
+		headers: {
+			'OCS-APIRequest': 'true',
+			Accept: 'application/json',
+		},
+	})
+}
+
+/**
+ * Group ids as role options.
+ *
+ * @param {Array<string>} groupIds The group ids
+ * @return {Array<{id: string, name: string, userCount: number}>} The options
+ */
+function groupOptions(groupIds) {
+	return groupIds.map((groupId) => ({
+		id: groupId,
+		name: groupId,
+		userCount: 0, // v1 API doesn't provide user count in list
+	}))
+}
+
+/**
  * ManageOrganisationRoles
  * Modal component for managing organisation roles using Nextcloud groups
  *
@@ -146,10 +186,7 @@ export default {
 
 	data() {
 		return {
-			organisationItem: {
-				name: '',
-				roles: [],
-			},
+			organisationItem: unnamedOrganisation(),
 
 			selectedRoles: [],
 			originalRoles: [],
@@ -232,36 +269,31 @@ export default {
 		async loadNextcloudGroups() {
 			this.loadingGroups = true
 			try {
-				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
-				const response = await axios.get(
-					generateUrl('/ocs/v1.php/cloud/groups?format=json'),
-					{
-						headers: {
-							'OCS-APIRequest': 'true',
-							Accept: 'application/json',
-						},
-					},
-				)
+				const response = await fetchNextcloudGroups()
 
 				// v1 API returns groups as a simple array of group IDs
 				if (response.data?.ocs?.data?.groups) {
-					this.availableGroups = response.data.ocs.data.groups.map(
-						(groupId) => ({
-							id: groupId,
-							name: groupId,
-							userCount: 0, // v1 API doesn't provide user count in list
-						}),
-					)
+					this.availableGroups = groupOptions(response.data.ocs.data.groups)
 				}
 			} catch (error) {
-				console.error('Error loading Nextcloud groups:', error)
-				this.error = this.t(
-					'openregister',
-					'Failed to load Nextcloud groups',
-				)
+				this.showGroupsFailure(error)
 			} finally {
 				this.loadingGroups = false
 			}
+		},
+
+		/**
+		 * Log a failed group load and say so.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showGroupsFailure(error) {
+			console.error('Error loading Nextcloud groups:', error)
+			this.error = this.t(
+				'openregister',
+				'Failed to load Nextcloud groups',
+			)
 		},
 
 		/**
@@ -304,23 +336,43 @@ export default {
 			this.error = null
 
 			try {
-				await organisationStore.saveOrganisation({
-					...this.organisationItem,
-					roles: this.selectedRoles,
-				})
-
-				this.success = true
-				this.originalRoles = [...this.selectedRoles]
-
-				// Auto-close after 2 seconds
-				this.closeModalTimeout = setTimeout(this.closeModal, 2000)
+				await this.storeRoles()
 			} catch (error) {
-				console.error('Error saving roles:', error)
-				this.error =
-					error.message || this.t('openregister', 'Failed to save roles')
+				this.showSaveFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Store the chosen roles on the organisation, remember them as saved
+		 * and close after two seconds.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async storeRoles() {
+			await organisationStore.saveOrganisation({
+				...this.organisationItem,
+				roles: this.selectedRoles,
+			})
+
+			this.success = true
+			this.originalRoles = [...this.selectedRoles]
+
+			// Auto-close after 2 seconds
+			this.closeModalTimeout = setTimeout(this.closeModal, 2000)
+		},
+
+		/**
+		 * Log a failed save and say why it failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showSaveFailure(error) {
+			console.error('Error saving roles:', error)
+			this.error =
+				error.message || this.t('openregister', 'Failed to save roles')
 		},
 
 		/**

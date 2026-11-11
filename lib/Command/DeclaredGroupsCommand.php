@@ -100,25 +100,70 @@ class DeclaredGroupsCommand extends Command {
 			return 0;
 		}
 
-		foreach ($report['groups'] as $row) {
-			if ($problemsOnly === true && $row['grantsNobody'] === false) {
-				continue;
-			}
-
+		foreach (self::rowsToShow(groups: $report['groups'], problemsOnly: $problemsOnly) as $row) {
 			$output->writeln($this->formatRow(row: $row));
 		}
 
 		$output->writeln('');
-		$output->writeln(
-			sprintf(
-				'%d declared · %d missing · %d empty · %d uncountable',
-				$report['declared'],
-				$report['missing'],
-				$report['empty'],
-				$report['unknown']
-			)
-		);
+		$output->writeln(self::totalsLine(report: $report));
+		$this->warnAboutMemberlessGroups(report: $report, output: $output);
 
+		return 0;
+	}//end execute()
+
+	/**
+	 * The rows to print: all of them, or with --problems-only only the groups that grant nobody.
+	 *
+	 * @param array<int, array<string, mixed>> $groups       The inventory rows.
+	 * @param bool                             $problemsOnly Whether --problems-only was given.
+	 *
+	 * @return array<int, array<string, mixed>> The rows, in inventory order.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private static function rowsToShow(array $groups, bool $problemsOnly): array {
+		$rows = [];
+		foreach ($groups as $row) {
+			if ($problemsOnly === true && $row['grantsNobody'] === false) {
+				continue;
+			}
+
+			$rows[] = $row;
+		}
+
+		return $rows;
+	}//end rowsToShow()
+
+	/**
+	 * The totals line: declared, missing, empty and uncountable groups.
+	 *
+	 * @param array<string, mixed> $report The inventory.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private static function totalsLine(array $report): string {
+		return sprintf(
+			'%d declared · %d missing · %d empty · %d uncountable',
+			$report['declared'],
+			$report['missing'],
+			$report['empty'],
+			$report['unknown']
+		);
+	}//end totalsLine()
+
+	/**
+	 * Explain, when a group is missing or empty, that such a group denies every caller.
+	 *
+	 * @param array<string, mixed> $report The inventory.
+	 * @param OutputInterface      $output The console output.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function warnAboutMemberlessGroups(array $report, OutputInterface $output): void {
 		if ($report['missing'] > 0 || $report['empty'] > 0) {
 			$output->writeln('');
 			$output->writeln(
@@ -126,9 +171,7 @@ class DeclaredGroupsCommand extends Command {
 				. 'test alone, so these rules read as configured and behave as denied until you add members.</comment>'
 			);
 		}
-
-		return 0;
-	}//end execute()
+	}//end warnAboutMemberlessGroups()
 
 	/**
 	 * Render one inventory row.

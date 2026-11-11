@@ -129,10 +129,7 @@ class FlowRunMigrationController extends Controller {
 			// Fail CLOSED, like `refuseUnlessRunnable`: without the collaborator
 			// there is no validator, and a migration that skipped validation is
 			// the silent move this whole change exists to prevent.
-			return new JSONResponse(
-				['error' => 'Run migration is not available on this instance.'],
-				Http::STATUS_SERVICE_UNAVAILABLE
-			);
+			return $this->migrationUnavailable();
 		}
 
 		$run = $this->findRun(uuid: $uuid);
@@ -245,10 +242,7 @@ class FlowRunMigrationController extends Controller {
 	#[NoCSRFRequired]
 	public function migrateRuns(string $flow): JSONResponse {
 		if ($this->migrations === null) {
-			return new JSONResponse(
-				['error' => 'Run migration is not available on this instance.'],
-				Http::STATUS_SERVICE_UNAVAILABLE
-			);
+			return $this->migrationUnavailable();
 		}
 
 		$actor = $this->authorisedActor(flowId: $flow);
@@ -264,23 +258,45 @@ class FlowRunMigrationController extends Controller {
 			);
 		}
 
+		$request = new VersionRunsMigration(
+			flowId: $flow,
+			sourceVersion: (int)$this->request->getParam('sourceVersion', 0),
+			target: $this->versionMigrationTarget(reason: $reason, actor: $actor),
+		);
+
+		return new JSONResponse($this->migrations->migrateRunsOfVersion(request: $request));
+	}//end migrateRuns()
+
+	/**
+	 * Where a bulk migration moves the runs to: the target version, why, who and the node mapping.
+	 *
+	 * @param string $reason The non-empty reason, kept on each run
+	 * @param IUser  $actor  Who asked
+	 *
+	 * @return FlowRunMigrationTarget The target
+	 */
+	private function versionMigrationTarget(string $reason, IUser $actor): FlowRunMigrationTarget {
 		$nodeMapping = $this->nodeMappingParam();
 
-		return new JSONResponse(
-			$this->migrations->migrateRunsOfVersion(
-				request: new VersionRunsMigration(
-					flowId: $flow,
-					sourceVersion: (int)$this->request->getParam('sourceVersion', 0),
-					target: new FlowRunMigrationTarget(
-						targetVersion: (int)$this->request->getParam('targetVersion', 0),
-						reason: $reason,
-						actor: $actor->getUID(),
-						mapping: $nodeMapping
-					),
-				)
-			)
+		return new FlowRunMigrationTarget(
+			targetVersion: (int)$this->request->getParam('targetVersion', 0),
+			reason: $reason,
+			actor: $actor->getUID(),
+			mapping: $nodeMapping
 		);
-	}//end migrateRuns()
+	}//end versionMigrationTarget()
+
+	/**
+	 * The answer when run migration is not wired on this instance.
+	 *
+	 * @return JSONResponse 503
+	 */
+	private function migrationUnavailable(): JSONResponse {
+		return new JSONResponse(
+			['error' => 'Run migration is not available on this instance.'],
+			Http::STATUS_SERVICE_UNAVAILABLE
+		);
+	}//end migrationUnavailable()
 	/**
 	 * Ask the service for a preview or for the write, as the request says.
 	 *

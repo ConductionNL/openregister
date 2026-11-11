@@ -118,6 +118,29 @@ class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRows
 			return 'field "'.implode('", "', $unknown).'" is not a view field a set may write';
 		}
 
+		$refusal = $this->nameAndOwnerRefusal(data: $data, users: $users);
+		if ($refusal === '') {
+			$refusal = $this->objectFieldRefusal(data: $data);
+		}
+
+		if ($refusal === '') {
+			$refusal = $this->shareRefusal(shares: ($data['sharedWith'] ?? []), users: $users);
+		}
+
+		return $refusal;
+	}//end refusal()
+
+	/**
+	 * Why a view's name or owner cannot be written, or ''.
+	 *
+	 * @param array<string, mixed> $data  The filled view fields.
+	 * @param array<int, string>   $users The account ids the set creates or adopts.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	private function nameAndOwnerRefusal(array $data, array $users): string {
 		if (is_string($data['name'] ?? null) === false || trim($data['name']) === '') {
 			return 'a view needs a name';
 		}
@@ -127,14 +150,27 @@ class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRows
 			return 'owner "'.$owner.'" is not an account the set creates or adopts';
 		}
 
+		return '';
+	}//end nameAndOwnerRefusal()
+
+	/**
+	 * Why a view's query, presentation or alert cannot be written, or ''.
+	 *
+	 * @param array<string, mixed> $data The filled view fields.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	private function objectFieldRefusal(array $data): string {
 		foreach (['query', 'presentation', 'alert'] as $field) {
 			if (isset($data[$field]) === true && is_array($data[$field]) === false) {
 				return $field.' must be an object';
 			}
 		}
 
-		return $this->shareRefusal(shares: ($data['sharedWith'] ?? []), users: $users);
-	}//end refusal()
+		return '';
+	}//end objectFieldRefusal()
 
 	/**
 	 * Why a view's shares cannot be written, or ''.
@@ -155,24 +191,43 @@ class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRows
 		}
 
 		foreach ($shares as $share) {
-			$user  = (string) (((array) $share)['user'] ?? '');
-			$group = (string) (((array) $share)['group'] ?? '');
-			if (($user === '') === ($group === '')) {
-				return 'a share names one user or one group';
-			}
-
-			if ($user !== '' && in_array($user, $users, true) === false) {
-				return 'share to "'.$user.'" is not an account the set creates or adopts';
-			}
-
-			$mode = (string) (((array) $share)['mode'] ?? 'read');
-			if (in_array($mode, self::SHARE_MODES, true) === false) {
-				return 'share mode "'.$mode.'" is not one of '.implode(', ', self::SHARE_MODES);
+			$refusal = $this->oneShareRefusal(share: (array) $share, users: $users);
+			if ($refusal !== '') {
+				return $refusal;
 			}
 		}
 
 		return '';
 	}//end shareRefusal()
+
+	/**
+	 * Why one share cannot be written, or ''.
+	 *
+	 * @param array<string, mixed> $share The share.
+	 * @param array<int, string>   $users The account ids the set creates or adopts.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	private function oneShareRefusal(array $share, array $users): string {
+		$user  = (string) ($share['user'] ?? '');
+		$group = (string) ($share['group'] ?? '');
+		if (($user === '') === ($group === '')) {
+			return 'a share names one user or one group';
+		}
+
+		if ($user !== '' && in_array($user, $users, true) === false) {
+			return 'share to "'.$user.'" is not an account the set creates or adopts';
+		}
+
+		$mode = (string) ($share['mode'] ?? 'read');
+		if (in_array($mode, self::SHARE_MODES, true) === false) {
+			return 'share mode "'.$mode.'" is not one of '.implode(', ', self::SHARE_MODES);
+		}
+
+		return '';
+	}//end oneShareRefusal()
 
 	/**
 	 * Write a view through the view service, under the uuid its app and key give it.
@@ -198,18 +253,20 @@ class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRows
 
 		try {
 			$view = $this->service()->create(
-				definition: new ViewDefinition(
-					name: (string) $data['name'],
-					description: (string) ($data['description'] ?? ''),
-					query: (array) ($data['query'] ?? []),
-					presentation: $this->optional(data: $data, field: 'presentation')
-				),
-				audience: new ViewAudience(
-					owner: (string) $data['owner'],
-					isPublic: ($data['isPublic'] ?? false) === true,
-					sharedWith: $this->shares(declared: ($data['sharedWith'] ?? []))
-				),
-				alert: $this->optional(data: $data, field: 'alert'),
+				edit: new ViewEdit(
+					definition: new ViewDefinition(
+						name: (string) $data['name'],
+						description: (string) ($data['description'] ?? ''),
+						query: (array) ($data['query'] ?? []),
+						presentation: $this->optional(data: $data, field: 'presentation')
+					),
+					audience: new ViewAudience(
+						owner: (string) $data['owner'],
+						isPublic: ($data['isPublic'] ?? false) === true,
+						sharedWith: $this->shares(declared: ($data['sharedWith'] ?? []))
+					),
+					alert: $this->optional(data: $data, field: 'alert'),
+				)
 			);
 			$view->setUuid($uuid);
 			$this->mapper()->update($view);
@@ -285,6 +342,7 @@ class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRows
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
 	public static function uuidFor(string $app, string $key): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5('openregister-example-set-view:'.$app.'/'.$key);
 
 		return sprintf(

@@ -85,32 +85,47 @@ class GroupReconciler implements GroupReconcilerInterface {
 	 */
 	public function reconcile(): array {
 		try {
-			$declared = $this->collectDeclared();
-			if (empty($declared) === true) {
-				return [
-					'declared' => [],
-					'created' => [],
-				];
-			}
-
-			$result = $this->provisioner->provision(groups: $declared, declaredBy: 'group-reconciler');
-
-			return [
-				'declared' => $declared,
-				'created' => $result['created'],
-			];
+			return $this->sweep();
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[GroupReconciler] sweep failed: ' . $e->getMessage(),
 				context: ['exception' => $e]
 			);
 
-			return [
-				'declared' => [],
-				'created' => [],
-			];
-		}//end try
+			return $this->nothingReconciled();
+		}
 	}//end reconcile()
+
+	/**
+	 * Provision every group the declarations name.
+	 *
+	 * @return array{declared: string[], created: string[]} What was declared and what was created.
+	 */
+	private function sweep(): array {
+		$declared = $this->collectDeclared();
+		if (empty($declared) === true) {
+			return $this->nothingReconciled();
+		}
+
+		$result = $this->provisioner->provision(groups: $declared, declaredBy: 'group-reconciler');
+
+		return [
+			'declared' => $declared,
+			'created' => $result['created'],
+		];
+	}//end sweep()
+
+	/**
+	 * The outcome of a sweep that declared nothing, or failed.
+	 *
+	 * @return array{declared: string[], created: string[]} Empty lists.
+	 */
+	private function nothingReconciled(): array {
+		return [
+			'declared' => [],
+			'created' => [],
+		];
+	}//end nothingReconciled()
 
 	/**
 	 * Collect every declared group id on the instance.

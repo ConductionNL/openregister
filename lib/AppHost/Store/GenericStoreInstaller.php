@@ -204,31 +204,63 @@ class GenericStoreInstaller {
 	 * @spec openspec/changes/store-plane-install-ops/specs/apphost-store-plane/spec.md#requirement-a-config-write-must-be-allowlisted-by-key-and-scoped-to-the-declaring-app
 	 */
 	private function setAppConfig(StoreManifest $store, array $component): array {
-		$key = (string)($component['key'] ?? '');
-
-		if ($store->isConfigurable(key: $key) === false) {
+		$key     = (string)($component['key'] ?? '');
+		$refusal = self::configRefusal(store: $store, component: $component);
+		if ($refusal !== null) {
 			return [
 				'schema' => $key,
 				'status' => 'refused',
-				'message' => 'This app does not allow the store to write that setting.',
+				'message' => $refusal,
 			];
 		}
 
-		$value = ($component['value'] ?? null);
-		if (is_scalar($value) === false) {
+		if ($this->writeConfig(store: $store, component: $component) === false) {
+			return [
+				'schema' => $key,
+				'status' => 'error',
+				'message' => 'The setting could not be written.',
+			];
+		}
+
+		return ['schema' => $key, 'status' => 'installed', 'message' => ''];
+	}//end setAppConfig()
+
+	/**
+	 * Why a setting component may not be written; null when it may.
+	 *
+	 * @param StoreManifest        $store     The calling app's store manifest.
+	 * @param array<string, mixed> $component The `setAppConfig` component.
+	 *
+	 * @return string|null The refusal message.
+	 */
+	private static function configRefusal(StoreManifest $store, array $component): ?string {
+		if ($store->isConfigurable(key: (string)($component['key'] ?? '')) === false) {
+			return 'This app does not allow the store to write that setting.';
+		}
+
+		if (is_scalar(($component['value'] ?? null)) === false) {
 			// Config is a flat key-value store. Serialising a structure into it
 			// produces a value the app later reads back as a string it never
 			// wrote.
-			return [
-				'schema' => $key,
-				'status' => 'refused',
-				'message' => 'A setting must be a boolean, string or number.',
-			];
+			return 'A setting must be a boolean, string or number.';
 		}
 
+		return null;
+	}//end configRefusal()
+
+	/**
+	 * Write an allowed setting into the app's config.
+	 *
+	 * @param StoreManifest        $store     The calling app's store manifest.
+	 * @param array<string, mixed> $component The `setAppConfig` component.
+	 *
+	 * @return bool Whether it was written; a failure is logged.
+	 */
+	private function writeConfig(StoreManifest $store, array $component): bool {
+		$key = (string)($component['key'] ?? '');
 		try {
-			$this->appConfig->setValueString($store->appId, $key, (string)$value);
-			return ['schema' => $key, 'status' => 'installed', 'message' => ''];
+			$this->appConfig->setValueString($store->appId, $key, (string)($component['value'] ?? null));
+			return true;
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: sprintf(
@@ -239,13 +271,9 @@ class GenericStoreInstaller {
 				),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return [
-				'schema' => $key,
-				'status' => 'error',
-				'message' => 'The setting could not be written.',
-			];
+			return false;
 		}
-	}//end setAppConfig()
+	}//end writeConfig()
 
 	/**
 	 * Read the components a resolved item declares.

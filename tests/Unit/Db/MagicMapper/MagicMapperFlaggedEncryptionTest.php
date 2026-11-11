@@ -22,8 +22,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use PHPUnit\Framework\TestCase;
@@ -73,9 +75,9 @@ class MagicMapperFlaggedEncryptionTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($handler);
 		$bulk = $this->createMock(MagicBulkHandler::class);
-		$bulk->method('bulkUpsert')->willReturnCallback(
-			function (array $objects): array {
-				$this->handedToBulk = $objects;
+		$bulk->method('upsert')->willReturnCallback(
+			function (BulkUpsertCommand $command): array {
+				$this->handedToBulk = $command->objects;
 				return [];
 			}
 		);
@@ -106,7 +108,7 @@ class MagicMapperFlaggedEncryptionTest extends TestCase {
 	}//end prepare()
 
 	private function bulk(MagicMapper $mapper, array $rows, Schema $schema): void {
-		$mapper->bulkUpsert($rows, new Register(), $schema, 't');
+		$mapper->bulkUpsert(new BulkUpsertCommand($rows, new RegisterSchema(new Register(), $schema), 't'));
 	}//end bulk()
 
 	public function testASingleWriteStoresTheEnvelope(): void {
