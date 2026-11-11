@@ -1448,6 +1448,7 @@ stackiq	1449	1281f8804e97d42ba2537e8e9f35e8776703b9e1	GREEN	FV14:s1	unit suites 
 stackiq	1450	9956f8eba733a68578db3dc507b0a5bd0cf18607	GREEN	FV14:s1	unit suites green on the tree (baseline failures excluded)
 stackiq	1451	cbbaa4f7ea28b2d5018333cc865fd6c3a90e6675	GREEN	FV14:s1	unit suites green on the tree (baseline failures excluded)
 stackiq	1452	14402d64e859b68bc4419c741d1ef85e67c842c6	GREEN	FV14:s1	unit suites green on the tree (baseline failures excluded)
+<<<<<<< HEAD
 decidiq	1952	b9b0e06fd15e23858d954bf236bbb08960a340bb	GREEN	fv13:1	unit PHP+JS green on tree; diff read clean
 decidiq	1953	a8b5ddfa9f9cf25bd816c588bbc5084beae9cd0f	GREEN	fv13:1	unit PHP+JS green on tree; diff read clean
 decidiq	1954	20b06e002457e178fe125276c8150c80c9322f69	GREEN	fv13:1	unit PHP+JS green on tree; diff read clean
@@ -1482,3 +1483,8 @@ decidiq	1991	0a9f20f348028aad6878616c6cfe1c6f91dace22	GREEN	fv13:2	unit PHP+JS g
 decidiq	1992	e8711da5ad9c923e831195fc4adca4b3ab34451c	GREEN	fv13:2	unit PHP+JS green on tree; diff read clean
 decidiq	1993	4e155c7253b0fdbcd3a1b3df8a3e8b23acc20313	GREEN	fv13:2	unit PHP+JS green on tree; diff read clean
 decidiq	1994	75b778c665c3828559cdaed49c30c6e377b44a84	GREEN	fv13:2	unit PHP+JS green on tree; diff read clean
+=======
+stackiq	1453	50832445f0304cc4f49ef8908c2043788953788b	GREEN	FV14:s1	unit suites green on the tree (baseline failures excluded)
+stackiq	1454	cb908c9b77f54093ae6878d2c02ae09c1230d9fa	GREEN	FV14:s1	unit suites green on the tree (baseline failures excluded)
+stackiq	1455	d42a6f684bbb573b84356b480e86d6e723a59b82	GREEN	FV14:s1	unit suites green on the tree (baseline failures excluded)
+>>>>>>> origin/sig-pipeline/state
