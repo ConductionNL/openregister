@@ -552,6 +552,7 @@ class MagicSearchHandler {
 		$schema = $table->schema;
 		// A filter or sort on a value that is only shown masked would read it without the reveal.
 		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
+		$this->refuseUnreadablePropertyQuery(query: $query, schema: $schema);
 
 		// Extract options from query (prefixed with _).
 		$_rbac = $query['_rbac'] ?? true;
@@ -918,6 +919,29 @@ class MagicSearchHandler {
 	}//end applyLensAndSearchFilters()
 
 	/**
+	 * Refuse a filter or sort on a property the caller may not read; reserved keys are not filters.
+	 *
+	 * @param array<mixed> $query  The search query.
+	 * @param Schema       $schema The schema being searched.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\ExplicitRevealQueryException When the query filters or sorts on such a property.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function refuseUnreadablePropertyQuery(array $query, Schema $schema): void {
+		$this->relatedRows->refuseUnreadableFilterOrSort(
+			query: array_filter(
+				$query,
+				fn ($key): bool => str_starts_with((string)$key, '_') === true || $this->isObjectFieldFilterKey(key: (string)$key) === true,
+				ARRAY_FILTER_USE_KEY
+			),
+			schema: $schema
+		);
+	}//end refuseUnreadablePropertyQuery()
+
+	/**
 	 * Decide whether a query key is a genuine object-field filter.
 	 *
 	 * Excludes the `@self` metadata bag, every underscore-prefixed system
@@ -974,6 +998,7 @@ class MagicSearchHandler {
 		$schema = $request->table->schema;
 		$this->refuseRelatedRowFilters(query: $query);
 		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
+		$this->refuseUnreadablePropertyQuery(query: $query, schema: $schema);
 
 		// Get connection for value quoting through QueryBuilder.
 		$qb = $this->db->getQueryBuilder();
