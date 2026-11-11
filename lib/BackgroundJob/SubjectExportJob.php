@@ -72,11 +72,7 @@ class SubjectExportJob extends QueuedJob {
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	protected function run($argument): void {
-		$uuid = '';
-		if (is_array($argument) === true) {
-			$uuid = trim((string)($argument['uuid'] ?? ''));
-		}
-
+		$uuid = self::exportUuidOf(argument: $argument);
 		if ($uuid === '') {
 			$this->logger->warning(
 				message: '[SubjectExportJob] Queued with no export uuid, so there is nothing to assemble'
@@ -95,4 +91,20 @@ class SubjectExportJob extends QueuedJob {
 			);
 		}
 	}//end run()
+
+	/**
+	 * The export uuid a job was queued with; empty when it has none.
+	 *
+	 * @param mixed $argument The job arguments.
+	 *
+	 * @return string
+	 */
+	private static function exportUuidOf(mixed $argument): string {
+		$uuid = '';
+		if (is_array($argument) === true) {
+			$uuid = trim((string)($argument['uuid'] ?? ''));
+		}
+
+		return $uuid;
+	}//end exportUuidOf()
 }//end class
