@@ -31,6 +31,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * ObjectsToolProvider
@@ -208,9 +210,10 @@ class ObjectsToolProvider extends AbstractBuiltInToolProvider {
 		$existing = WriteCause::asLookup(fn () => $this->objectService->find($arguments['id']));
 		$object = $this->objectService->saveObject(
 			object: $arguments['data'],
-			register: $existing->getRegister(),
-			schema: $existing->getSchema(),
-			uuid: ($existing->getUuid() ?? (string)$arguments['id'])
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $existing->getRegister(), schema: $existing->getSchema()),
+				uuid: ($existing->getUuid() ?? (string)$arguments['id'])
+			)
 		);
 		return $object->jsonSerialize();
 	}//end updateObject()

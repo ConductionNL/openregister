@@ -135,7 +135,7 @@ class ExampleSetTalkStoreRoomTest extends TestCase {
 			}
 		);
 
-		return new ExampleSetTalkStore($container, $this->createMock(IAppManager::class), $users);
+		return new ExampleSetTalkStore(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $container, apps: $this->createMock(IAppManager::class), users: $users));
 	}
 
 	public function testAnExistingGroupRoomOfTheSameNameIsFound(): void {
