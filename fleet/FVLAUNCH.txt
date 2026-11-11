@@ -1,0 +1,27 @@
+Commit as this account: `git config --global user.name "Juan Claude" && git config --global user.email "juan.claude@conduction.nl"`.
+STEP 1, claim a slot using a worktree of this session's own openregister repository; do not make a fresh clone. In one bash call:
+`cd /home/user/openregister && git fetch -q origin +refs/heads/sig-pipeline/state:refs/remotes/origin/sig-pipeline/state && git worktree add -q --detach ~/vstate origin/sig-pipeline/state && export ST=~/vstate ST_ME_FILE=~/.fv-id && source ~/vstate/bin/state.sh && st_sync; for k in 02 03 04 05 06 07 08 09 10 11 12 13 14 15; do lease_acquire fleet-verify-$k 360 && { echo MINE=$k; break; }; done`
+Repeat the exports and the source in every later state call. If no slot is free, stop.
+Your lane is FV<k>. The lanes, by k:
+- 02: dossiq, all PRs
+- 03: shillinq, even PR numbers
+- 04: shillinq, odd PR numbers
+- 05: portaliq, even PR numbers
+- 06: portaliq, odd PR numbers
+- 07: pipelinq
+- 08: opencatalogi
+- 09: integriq
+- 10: hermiq
+- 11: launchpad
+- 12: keepiq, then learniq
+- 13: decidiq, then filinq
+- 14: humaniq, then stackiq
+- 15: buildiq, thematiq, larpinq, planninq, versioniq
+STEP 2: fetch https://raw.githubusercontent.com/ConductionNL/openregister/sig-lane-briefs/pipeline/fleet/FV.txt with `curl -sf`, read all of it and follow it exactly.
+Overrides:
+1. Your PRs are the open ones whose head starts with `quality/f` or `quality/g`.
+2. Every fleet app is a session source under /home/user/<app>. Work in that checkout: git fetch, then git checkout -B the verify branch from origin/development. Do not make a fresh clone.
+3. GitHub GraphQL is unavailable, so use `gh api` REST calls, paging by number. If gh api answers 403 for an app, call add_repo with access push, then retry once.
+4. Your lease is already taken. Release it at the end with lease_release.
+5. Rows already in queue/fleet-verdicts.tsv at the same head sha are done; skip them.
+Never merge, close or comment on PRs. Never write SIG, sig, Sigrid or sig- in public text. Decide every question yourself; never ask. Foreground only; never end your turn while waiting.
