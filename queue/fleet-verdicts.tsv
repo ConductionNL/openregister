@@ -2465,3 +2465,4 @@ stackiq	1484	0499fba8d1970652bbf1ae36d0628b64f9cebfeb	GREEN	FXL	golden passes un
 stackiq	1466	fa5f4cae9dbca0d8003e9d0f9099acedeab0d4c3	GREEN	FXL	development merged in, both imports kept; golden passes; catalogPanelsGolden red inherited from development; merged
 larpinq	971	b02cc5d39bb55ac036405a7ee34c2d64eacf346f	GREEN	FXL	resolver test no longer declares the OpenRegister class (leak source); unit suite reds = development's 7 HeaderUtils; merged
 thematiq	1616	5c5ecb3cd2748f0a070fac663d23cd522b5a57a5	GREEN	FXL	unit bootstrap maps OCA\Thematiq\Tests to tests/ (inherited FileList autoload gap); merged
+thematiq	1583	288fb7d9812943ff4719514aaf2cd79a0e5c7027	GREEN	FXL	development merged in (carries the bootstrap autoload fix from #1616); RuntimeFile tests 44/44; merged
