@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\TenantUsage\UsageBucket;
+use OCA\OpenRegister\Db\TenantUsage\UsageRange;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -56,25 +58,13 @@ class TenantUsageMapper extends QBMapper implements TenantUsageMapperInterface {
 	 * @return TenantUsage|null The usage record or null
 	 */
 	public function findByOrgAndPeriod(string $organisationUuid, DateTime $period): ?TenantUsage {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'organisation_uuid',
-					$qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)
-				)
+		$qb = $this->organisationRowsQuery(organisationUuid: $organisationUuid);
+		$qb->andWhere(
+			$qb->expr()->eq(
+				'period',
+				$qb->createNamedParameter($period->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
 			)
-			->andWhere(
-				$qb->expr()->eq(
-					'period',
-					$qb->createNamedParameter(
-						$period->format('Y-m-d H:i:s'),
-						IQueryBuilder::PARAM_STR
-					)
-				)
-			);
+		);
 
 		try {
 			return $this->findEntity(query: $qb);
@@ -87,19 +77,14 @@ class TenantUsageMapper extends QBMapper implements TenantUsageMapperInterface {
 	 * Find usage records for an organisation within a date range.
 	 *
 	 * @param string $organisationUuid Organisation UUID
-	 * @param DateTime $from Start date
-	 * @param DateTime $to End date
+	 * @param UsageRange $range The first and last bucket, inclusive
 	 *
 	 * @return TenantUsage[] Array of usage records
 	 */
-	public function findByOrgAndDateRange(
-		string $organisationUuid,
-		DateTime $from,
-		DateTime $to,
-	): array {
+	public function findByOrgAndDateRange(string $organisationUuid, UsageRange $range): array {
 		$qb = $this->organisationRowsQuery(organisationUuid: $organisationUuid);
-		$this->wherePeriodFrom(qb: $qb, from: $from);
-		$this->wherePeriodTo(qb: $qb, to: $to);
+		$this->wherePeriodFrom(qb: $qb, from: $range->from);
+		$this->wherePeriodTo(qb: $qb, to: $range->to);
 		$qb->orderBy('period', 'ASC');
 
 		return $this->findEntities(query: $qb);
@@ -164,14 +149,13 @@ class TenantUsageMapper extends QBMapper implements TenantUsageMapperInterface {
 	/**
 	 * Upsert a usage record (insert or update on conflict).
 	 *
-	 * @param string           $organisationUuid Organisation UUID
-	 * @param DateTime         $period           Hourly bucket
-	 * @param UsageMeasurement $measurement      The traffic to add and the current storage
+	 * @param UsageBucket      $bucket      The organisation and the hourly bucket
+	 * @param UsageMeasurement $measurement The traffic to add and the current storage
 	 *
 	 * @return TenantUsage The upserted entity
 	 */
-	public function upsertUsage(string $organisationUuid, DateTime $period, UsageMeasurement $measurement): TenantUsage {
-		$existing = $this->findByOrgAndPeriod(organisationUuid: $organisationUuid, period: $period);
+	public function upsertUsage(UsageBucket $bucket, UsageMeasurement $measurement): TenantUsage {
+		$existing = $this->findByOrgAndPeriod(organisationUuid: $bucket->organisationUuid, period: $bucket->period);
 
 		if ($existing !== null) {
 			$measurement->addTo(row: $existing);
@@ -180,8 +164,8 @@ class TenantUsageMapper extends QBMapper implements TenantUsageMapperInterface {
 		}
 
 		$entity = new TenantUsage();
-		$entity->setOrganisationUuid($organisationUuid);
-		$entity->setPeriod($period);
+		$entity->setOrganisationUuid($bucket->organisationUuid);
+		$entity->setPeriod($bucket->period);
 		$measurement->writeTo(row: $entity);
 		$entity->setCreated(new DateTime());
 		$entity->setUpdated(new DateTime());

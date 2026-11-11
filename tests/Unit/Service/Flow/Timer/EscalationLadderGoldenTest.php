@@ -32,7 +32,9 @@ use DateTimeInterface;
 use DateTimeZone;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Service\Flow\Timer\EscalationAudience;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
+use OCA\OpenRegister\Service\Flow\Timer\RungTimeline;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
@@ -177,16 +179,16 @@ class EscalationLadderGoldenTest extends TestCase {
 		$fireAt = self::at('2026-06-30 17:00:00');
 		$anchors = ['anchor early' => '2026-05-01 09:00:00', 'anchor late' => '2026-06-25 09:00:00', 'anchor exact' => '2026-06-30 17:00:00'];
 		foreach ($anchors as $name => $anchor) {
-			$actual['validateAgainstTimeline / ' . $name] = self::capture(fn () => $this->ladder->validateAgainstTimeline(rungs: $rungs, anchorAt: self::at($anchor), fireAt: $fireAt, calendar: $this->calendar) ?? 'passed');
+			$actual['validateAgainstTimeline / ' . $name] = self::capture(fn () => $this->ladder->validateAgainstTimeline(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: [], calendar: $this->calendar), anchorAt: self::at($anchor)) ?? 'passed');
 		}
 
 		foreach ($rungs as $rung) {
-			$actual['rungInstant / ' . $rung['key']] = self::instants($this->ladder->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $this->calendar));
+			$actual['rungInstant / ' . $rung['key']] = self::instants($this->ladder->rungInstant(rung: $rung, timeline: new RungTimeline(rungs: [], fireAt: $fireAt, firedKeys: [], calendar: $this->calendar)));
 		}
 
 		$fired = ['none' => [], 'first two' => [$rungs[0]['key'], $rungs[1]['key']], 'all' => array_column($rungs, 'key')];
 		foreach ($fired as $name => $keys) {
-			$actual['nextRungAt / ' . $name] = self::instants($this->ladder->nextRungAt(rungs: $rungs, fireAt: $fireAt, firedKeys: $keys, calendar: $this->calendar));
+			$actual['nextRungAt / ' . $name] = self::instants($this->ladder->nextRungAt(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: $keys, calendar: $this->calendar)));
 			foreach (['2026-06-01 00:00:00', '2026-06-29 12:00:00', '2026-06-30 17:00:00', '2026-08-01 00:00:00'] as $now) {
 				$actual['dueRungs / ' . $name . ' / ' . $now] = self::instants($this->ladder->dueRungs(timeline: new \OCA\OpenRegister\Service\Flow\Timer\RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: $keys, calendar: $this->calendar), now: self::at($now)));
 			}
@@ -204,8 +206,8 @@ class EscalationLadderGoldenTest extends TestCase {
 			'nobody' => self::task(null, 'user', null, null),
 		];
 		foreach ($subjects as $name => $subject) {
-			$actual['resolveRecipients / ' . $name] = $this->ladder->resolveRecipients(rung: $rung, subject: $subject, roleBindings: $bindings);
-			$actual['resolveRecipients / ' . $name . ' / bound handler'] = $this->ladder->resolveRecipients(rung: $rung, subject: $subject, roleBindings: ['handler' => 'group:desk']);
+			$actual['resolveRecipients / ' . $name] = $this->ladder->resolveRecipients(rung: $rung, audience: new EscalationAudience(subject: $subject, roleBindings: $bindings));
+			$actual['resolveRecipients / ' . $name . ' / bound handler'] = $this->ladder->resolveRecipients(rung: $rung, audience: new EscalationAudience(subject: $subject, roleBindings: ['handler' => 'group:desk']));
 		}
 
 		$actual = json_decode((string)json_encode($actual), true);

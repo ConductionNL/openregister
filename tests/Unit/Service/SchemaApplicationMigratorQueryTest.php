@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\ApplicationMove;
 use OCA\OpenRegister\Service\SchemaApplicationMigrator;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -148,7 +149,7 @@ class SchemaApplicationMigratorQueryTest extends TestCase {
 	public function testMoveApplicationRewritesTheApplicationColumn(): void {
 		$migrator = new SchemaApplicationMigrator($this->connection([], ['openregister_schemas' => 3]));
 
-		$this->assertSame(3, $migrator->moveApplication('openregister_schemas', 'old', 'new'));
+		$this->assertSame(3, $migrator->moveTable('openregister_schemas', new ApplicationMove('old', 'new')));
 		$this->assertSame('openregister_schemas', $this->queries[0]['update']);
 		$this->assertSame(['application', ':p0'], $this->queries[0]['set']);
 		$this->assertSame('application = :p1', $this->queries[0]['where']);

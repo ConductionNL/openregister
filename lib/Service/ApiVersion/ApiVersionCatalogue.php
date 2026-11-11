@@ -265,25 +265,42 @@ class ApiVersionCatalogue implements ApiVersionCatalogueInterface {
 	private function resolve(): array {
 		$rejected = [];
 
-		$administered = $this->readAdministered(rejected: $rejected);
-		if ($administered !== []) {
-			$candidate = $this->buildVersions(declarations: $administered, rejected: $rejected);
-			if ($this->isUsable(versions: $candidate, rejected: $rejected) === true) {
-				$this->rejected = $rejected;
-				return $candidate;
-			}
-
-			$this->logger->error(
-				'OpenRegister: the administered API version declaration is not usable; falling back to the built-in contract.',
-				['rejections' => $rejected]
-			);
-		}
-
+		$candidate      = $this->administeredVersions(rejected: $rejected);
 		$this->rejected = $rejected;
+		if ($candidate !== null) {
+			return $candidate;
+		}
 
 		return $this->buildVersions(declarations: self::BUILT_IN, rejected: $rejected);
 
 	}//end resolve()
+
+	/**
+	 * The administered versions, when there are any and they can be served; a set that cannot is logged.
+	 *
+	 * @param array<string, string> $rejected Refusals collected so far, added to in place.
+	 *
+	 * @return array<string, ApiVersion>|null The versions, or null to fall back to the built-in contract.
+	 */
+	private function administeredVersions(array &$rejected): ?array {
+		$administered = $this->readAdministered(rejected: $rejected);
+		if ($administered === []) {
+			return null;
+		}
+
+		$candidate = $this->buildVersions(declarations: $administered, rejected: $rejected);
+		if ($this->isUsable(versions: $candidate, rejected: $rejected) === true) {
+			return $candidate;
+		}
+
+		$this->logger->error(
+			'OpenRegister: the administered API version declaration is not usable; falling back to the built-in contract.',
+			['rejections' => $rejected]
+		);
+
+		return null;
+
+	}//end administeredVersions()
 
 	/**
 	 * Why a candidate declaration could not be served, without storing it.
@@ -326,17 +343,8 @@ class ApiVersionCatalogue implements ApiVersionCatalogueInterface {
 	 * @return array<int, array<string, mixed>> The declarations, or an empty list.
 	 */
 	private function readAdministered(array &$rejected): array {
-		try {
-			$raw = trim((string)$this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, ''));
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'OpenRegister: could not read the API version configuration; using the built-in contract.',
-				['exception' => $e]
-			);
-			return [];
-		}
-
-		if ($raw === '') {
+		$raw = $this->administeredRaw();
+		if ($raw === null || $raw === '') {
 			return [];
 		}
 
@@ -349,6 +357,24 @@ class ApiVersionCatalogue implements ApiVersionCatalogueInterface {
 		return array_values(array_filter($decoded, 'is_array'));
 
 	}//end readAdministered()
+
+	/**
+	 * The administered configuration, trimmed; null (logged) when it cannot be read.
+	 *
+	 * @return string|null The raw configuration.
+	 */
+	private function administeredRaw(): ?string {
+		try {
+			return trim((string)$this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, ''));
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'OpenRegister: could not read the API version configuration; using the built-in contract.',
+				['exception' => $e]
+			);
+			return null;
+		}
+
+	}//end administeredRaw()
 
 	/**
 	 * Turn declarations into versions, recording each refusal.
@@ -397,16 +423,46 @@ class ApiVersionCatalogue implements ApiVersionCatalogueInterface {
 	 * @return bool True when the set can be served.
 	 */
 	private function isUsable(array $versions, array &$rejected): bool {
+		if ($this->hasSupportedVersion(versions: $versions) === false) {
+			$rejected['*'] = 'No version is supported; a caller naming no version would have nothing to be answered with.';
+			return false;
+		}
+
+		$broken = $this->brokenSuccessorLink(versions: $versions);
+		if ($broken !== null) {
+			$rejected[$broken->id] = 'Its successor ' . $broken->successor . ' is not a version this instance serves.';
+			return false;
+		}
+
+		return true;
+
+	}//end isUsable()
+
+	/**
+	 * Whether a candidate set has a supported version to answer a caller that names none.
+	 *
+	 * @param array<string, ApiVersion> $versions The candidate set.
+	 *
+	 * @return bool True when one is supported.
+	 */
+	private function hasSupportedVersion(array $versions): bool {
 		$supported = array_filter(
 			$versions,
 			static fn (ApiVersion $version): bool => ($version->status === ApiVersion::STATUS_SUPPORTED)
 		);
 
-		if ($supported === []) {
-			$rejected['*'] = 'No version is supported; a caller naming no version would have nothing to be answered with.';
-			return false;
-		}
+		return $supported !== [];
 
+	}//end hasSupportedVersion()
+
+	/**
+	 * The first version whose successor is not a version this set serves.
+	 *
+	 * @param array<string, ApiVersion> $versions The candidate set.
+	 *
+	 * @return ApiVersion|null The version, or null when every successor answers.
+	 */
+	private function brokenSuccessorLink(array $versions): ?ApiVersion {
 		foreach ($versions as $version) {
 			if ($version->successor === null) {
 				continue;
@@ -414,12 +470,11 @@ class ApiVersionCatalogue implements ApiVersionCatalogueInterface {
 
 			$successor = ($versions[$version->successor] ?? null);
 			if ($successor === null || $successor->isServed() === false) {
-				$rejected[$version->id] = 'Its successor ' . $version->successor . ' is not a version this instance serves.';
-				return false;
+				return $version;
 			}
 		}
 
-		return true;
+		return null;
 
-	}//end isUsable()
+	}//end brokenSuccessorLink()
 }//end class

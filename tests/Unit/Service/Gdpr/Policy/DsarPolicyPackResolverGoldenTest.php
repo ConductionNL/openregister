@@ -21,10 +21,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Gdpr\Policy;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\Gdpr\PrivacyOfficerRecipientResolver;
 use OCP\IGroup;
 use OCP\IGroupManager;
+use OCP\IUserSession;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -203,8 +205,7 @@ class DsarPolicyPackResolverGoldenTest extends TestCase {
 			$this->reads = [];
 			$resolver = new PrivacyOfficerRecipientResolver(
 				packResolver: $this->resolver([['jurisdiction' => 'nl', 'privacyOfficerGroup' => $gid]]),
-				groupManager: $groupManager,
-				logger: $this->createMock(LoggerInterface::class)
+				membership: new GdprCallerMembership(userSession: $this->createMock(IUserSession::class), groupManager: $groupManager, logger: $this->createMock(LoggerInterface::class))
 			);
 			$this->assertSame($expected, $resolver->resolve(object: $case, context: []), (string)$gid);
 			$this->assertFalse($this->reads[0][1]);
@@ -213,15 +214,13 @@ class DsarPolicyPackResolverGoldenTest extends TestCase {
 
 		$nonString = new PrivacyOfficerRecipientResolver(
 			packResolver: $this->resolver([['jurisdiction' => 'nl', 'privacyOfficerGroup' => ['officers']]]),
-			groupManager: $groupManager,
-			logger: $this->createMock(LoggerInterface::class)
+			membership: new GdprCallerMembership(userSession: $this->createMock(IUserSession::class), groupManager: $groupManager, logger: $this->createMock(LoggerInterface::class))
 		);
 		$this->assertSame([], $nonString->resolve(object: $case, context: []));
 
 		$noPack = new PrivacyOfficerRecipientResolver(
 			packResolver: $this->resolver([]),
-			groupManager: $groupManager,
-			logger: $this->createMock(LoggerInterface::class)
+			membership: new GdprCallerMembership(userSession: $this->createMock(IUserSession::class), groupManager: $groupManager, logger: $this->createMock(LoggerInterface::class))
 		);
 		$this->assertSame([], $noPack->resolve(object: $case, context: []));
 

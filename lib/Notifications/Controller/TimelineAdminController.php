@@ -39,6 +39,7 @@ use OCA\OpenRegister\Notifications\Service\Timeline\TextBlockService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+use OCA\OpenRegister\Notifications\Controller\Support\QueryText;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -151,8 +152,8 @@ class TimelineAdminController extends Controller {
 				'results' => array_map(
 					static fn ($kind) => $kind->jsonSerialize(),
 					$this->kinds->listKinds(
-						register: $this->optional(params: $params, key: 'register'),
-						schema: $this->optional(params: $params, key: 'schema')
+						register: (new QueryText(params: $params))->value(key: 'register'),
+						schema: (new QueryText(params: $params))->value(key: 'schema')
 					)
 				),
 			]
@@ -327,8 +328,8 @@ class TimelineAdminController extends Controller {
 				'results' => array_map(
 					static fn ($block) => $block->jsonSerialize(),
 					$this->blocks->listBlocks(
-						register: $this->optional(params: $params, key: 'register'),
-						schema: $this->optional(params: $params, key: 'schema')
+						register: (new QueryText(params: $params))->value(key: 'register'),
+						schema: (new QueryText(params: $params))->value(key: 'schema')
 					)
 				),
 			]
@@ -413,26 +414,6 @@ class TimelineAdminController extends Controller {
 		return null;
 	}//end requireAdmin()
 
-	/**
-	 * Read one optional string off the query.
-	 *
-	 * @param array<string,mixed> $params The request parameters.
-	 * @param string              $key    The key.
-	 *
-	 * @return string|null The value, or null when absent or empty.
-	 */
-	private function optional(array $params, string $key): ?string {
-		if (isset($params[$key]) === false || is_string($params[$key]) === false) {
-			return null;
-		}
-
-		$value = trim($params[$key]);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end optional()
 
 	/**
 	 * The one answer for something nobody expected.

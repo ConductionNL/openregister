@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Db\Tenancy;
 
 use Exception;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCP\AppFramework\Db\Entity;
 use OCP\IAppConfig;
 use Symfony\Component\HttpFoundation\Response;
@@ -196,7 +197,7 @@ trait OrganisationWriteGuardTrait {
 			'entityType' => get_class($entity),
 			'entityId' => $entity->getId(),
 		];
-		$this->logRedacted(level: 'warning', message: '[MultiTenancyTrait] Cross-tenant access denied', context: $context);
+		$this->warnRedacted(message: '[MultiTenancyTrait] Cross-tenant access denied', context: $context);
 	}//end logCrossTenantDenial()
 
 	/**
@@ -245,7 +246,7 @@ trait OrganisationWriteGuardTrait {
 	 */
 	private function assertSharedMasterDataWritable(string $table, int $entityId): void {
 		try {
-			$this->sharedMasterData()->assertWritable(table: $table, id: $entityId, activeOrgUuids: $this->getActiveOrganisationUuids());
+			$this->sharedMasterData()->assertWritable(row: new DeclaredRow(table: $table, id: $entityId), activeOrgUuids: $this->getActiveOrganisationUuids());
 		} catch (SharedMasterDataWriteException $refusal) {
 			$this->logSharedMasterDataRefusal(refusal: $refusal, entityId: $entityId);
 			throw $refusal;
@@ -267,7 +268,7 @@ trait OrganisationWriteGuardTrait {
 			return;
 		}
 
-		$this->logRedacted(level: 'warning', message: '[MultiTenancyTrait] Shared master data is read-only to a consumer', context: [
+		$this->warnRedacted(message: '[MultiTenancyTrait] Shared master data is read-only to a consumer', context: [
 			'type' => 'shared_master_data_write_denied',
 			'sourceOrganisation' => $this->getActiveOrganisationUuid(),
 			'holderOrganisation' => $refusal->getHolderUuid(),

@@ -9,10 +9,25 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Service\Notification\MailingRequest;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCP\Activity\IManager as IActivityManager;
@@ -1114,8 +1129,8 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		$calls = [];
 		$parties = $this->createMock(PartyNotificationService::class);
 		$parties->method('notifyParties')->willReturnCallback(
-			function (string $objectUuid, string $subject, string $body, ?string $role = null, string $category = 'service') use (&$calls): array {
-				$calls[] = ['objectUuid' => $objectUuid, 'subject' => $subject, 'body' => $body, 'role' => $role, 'category' => $category];
+			function (PartyMessage $message, ?string $role = null) use (&$calls): array {
+				$calls[] = ['objectUuid' => $message->objectUuid, 'subject' => $message->subject, 'body' => $message->body, 'role' => $role, 'category' => $message->category];
 				return [];
 			}
 		);
@@ -1177,9 +1192,15 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	public function testAnEmailRuleIsSentThroughTheReferencedAddressNotifier(): void {
 		$calls = [];
 		$notifier = $this->createMock(ReferencedAddressNotifier::class);
-		$notifier->method('notify')->willReturnCallback(
-			function (ObjectEntity $object, array $data, array $recipientsSpec, string $subject, string $body, string $category) use (&$calls): array {
-				$calls[] = ['uuid' => $object->getUuid(), 'recipients' => $recipientsSpec, 'subject' => $subject, 'body' => $body, 'category' => $category];
+		$notifier->method('mail')->willReturnCallback(
+			function (ReferenceOrigin $origin, MailingRequest $request) use (&$calls): array {
+				$calls[] = [
+					'uuid' => $origin->object->getUuid(),
+					'recipients' => $request->recipients,
+					'subject' => $request->subject,
+					'body' => $request->body,
+					'category' => $request->category,
+				];
 				return [['field' => 'supplierRef.contactEmail', 'outcome' => EmailSender::OUTCOME_DISPATCHED]];
 			}
 		);
@@ -1215,7 +1236,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	 */
 	public function testAnEmailEntryWithoutTheEmailChannelIsNotSent(): void {
 		$notifier = $this->createMock(ReferencedAddressNotifier::class);
-		$notifier->expects($this->never())->method('notify');
+		$notifier->expects($this->never())->method('mail');
 		$this->serverServices[ReferencedAddressNotifierInterface::class] = $notifier;
 
 		$schema = $this->schemaWithNotification(
@@ -1260,28 +1281,53 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		?IAppManager $appManager = null,
 	): AnnotationNotificationDispatcher {
 		return new AnnotationNotificationDispatcher(
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->logger,
-			$this->groupManager,
-			$this->userManager,
-			$this->mailer,
-			$this->activityManager,
-			$this->httpClient,
-			$this->serverContainer,
-			null,
-			$config,
-			null,
-			null,
-			null,
-			$dispatchLogMapper,
-			$preferenceService,
-			null,
-			null,
-			null,
-			null,
-			null,
-			$appManager
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->notificationManager,
+					logger: $this->logger,
+					userManager: $this->userManager
+				),
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->mailer,
+					logger: $this->logger
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->httpClient,
+					logger: $this->logger,
+					config: ($config ?? $this->serverContainer->get(IConfig::class))
+				),
+				activityManager: $this->activityManager
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold(),
+				preferenceService: $preferenceService
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->httpClient,
+				serverContainer: $this->serverContainer,
+				appManager: $appManager
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->logger,
+				dispatchLogMapper: $dispatchLogMapper
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->schemaMapper,
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->groupManager,
+					logger: $this->logger,
+					serverContainer: $this->serverContainer
+				),
+				config: $config
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $this->logger
+				)
+			)
 		);
 	}//end makeDispatcher()
 

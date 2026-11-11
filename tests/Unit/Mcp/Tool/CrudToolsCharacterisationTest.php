@@ -37,6 +37,8 @@ use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
 use OCA\OpenRegister\Mcp\Tool\RegisterTool;
 use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -336,15 +338,15 @@ class CrudToolsCharacterisationTest extends TestCase
 
             $versioning = $this->createMock(SchemaVersioningService::class);
             $versioning->method('classify')->willReturnCallback(
-                function (Schema $existing, array $newDefinition) use (&$log, $changeSet): SchemaChangeSet {
-                    $log[] = 'classify:' . $existing->getTitle() . ':' . json_encode($newDefinition);
+                function (Schema $existing, IncomingDefinition $incoming) use (&$log, $changeSet): SchemaChangeSet {
+                    $log[] = 'classify:' . $existing->getTitle() . ':' . json_encode($incoming->definition);
                     return $changeSet;
                 }
             );
             $versioning->method('nextVersion')->willReturn('2.0.0');
-            $versioning->method('recordChangelog')->willReturnCallback(
-                function (int $schemaId, ?string $version, SchemaChangeSet $set, bool $acknowledged, ?string $origin) use (&$log) {
-                    $log[] = 'changelog:' . $schemaId . ':' . $version . ':' . var_export($acknowledged, true) . ':' . $origin;
+            $versioning->method('recordChange')->willReturnCallback(
+                function (int $schemaId, SchemaChangeRecord $record) use (&$log) {
+                    $log[] = 'changelog:' . $schemaId . ':' . $record->version . ':' . var_export($record->acknowledged, true) . ':' . $record->origin;
                     return null;
                 }
             );

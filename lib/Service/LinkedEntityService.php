@@ -32,7 +32,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionEnforcementInterface;
 use Psr\Log\LoggerInterface;
 
@@ -168,8 +169,7 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 		$this->permissionHandler->checkPermission(
 			schema: $schema,
 			action: 'update',
-			objectOwner: $object->getOwner(),
-			object: $object
+			options: new PermissionCheckOptions(objectOwner: $object->getOwner(), object: $object)
 		);
 	}//end assertCanWriteObject()
 
@@ -206,24 +206,6 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	/**
 	 * Remove a linked entity ID from an object's metadata column.
 	 *
-	 * @param string $objectUuid The object UUID
-	 * @param string $type The linked entity type
-	 * @param string $entityId The entity ID to remove
-	 *
-	 * @throws Exception If the type is invalid or the object is not found
-	 *
-	 * @return array The updated linked IDs array
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	public function removeLink(string $objectUuid, string $type, string $entityId): array {
-		return $this->removeLinkFrom(objectUuid: $objectUuid, link: new EntityLink(type: $type, entityId: $entityId));
-	}//end removeLink()
-
-	/**
-	 * Remove a linked entity ID from an object's metadata column.
-	 *
 	 * @param string     $objectUuid The object UUID
 	 * @param EntityLink $link       The linked entity type and id to remove
 	 *
@@ -234,7 +216,7 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function removeLinkFrom(string $objectUuid, EntityLink $link): array {
+	public function removeLink(string $objectUuid, EntityLink $link): array {
 		$this->validateType(type: $link->type);
 
 		$object = $this->magicMapper->find($objectUuid);
@@ -248,7 +230,7 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 		$this->writeObjectIds(object: $object, type: $link->type, ids: $existingIds);
 
 		return $existingIds;
-	}//end removeLinkFrom()
+	}//end removeLink()
 
 	/**
 	 * Store an object's new linked ids, after the write permission check.
@@ -485,20 +467,22 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'schemaId' => $schemaId,
 			'schemaIcon' => $schema->getIcon(),
 			'register' => $registerId,
-			'url' => $this->deepLink(registerId: $registerId, schemaId: $schemaId, uuid: $object->getUuid()),
+			'url' => $this->deepLink(object: $object, schemaId: $schemaId),
 		];
 	}//end objectResult()
 
 	/**
 	 * The owning app's detail route for an object, or null when none is registered.
 	 *
-	 * @param int         $registerId The object's register id
-	 * @param int         $schemaId   The object's schema id
-	 * @param string|null $uuid       The object's uuid
+	 * @param ObjectEntity $object   The object, carrying its register id and uuid
+	 * @param int          $schemaId The object's schema id
 	 *
 	 * @return string|null
 	 */
-	private function deepLink(int $registerId, int $schemaId, ?string $uuid): ?string {
+	private function deepLink(ObjectEntity $object, int $schemaId): ?string {
+		$registerId = (int)$object->getRegister();
+		$uuid = $object->getUuid();
+
 		return $this->deepLinkRegistry->resolveUrl(
 			registerId: $registerId,
 			schemaId: $schemaId,

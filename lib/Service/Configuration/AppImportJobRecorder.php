@@ -119,24 +119,6 @@ class AppImportJobRecorder {
 	}//end end()
 
 	/**
-	 * Record a finished job for an app id when it created at least one traceable object.
-	 *
-	 * @param string $appId          The app id the import ran under (e.g. `learniq.demo`).
-	 * @param string $importJobId    The job id begin() returned.
-	 * @param string $version        The version the app imported.
-	 * @param int    $objectsWritten How many objects the import reported writing.
-	 *
-	 * @return bool True when the job was recorded.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
-	 */
-	public function record(string $appId, string $importJobId, string $version, int $objectsWritten): bool {
-		return $this->recordFinished(
-			job: new FinishedImportJob(appId: $appId, importJobId: $importJobId, version: $version, objectsWritten: $objectsWritten)
-		);
-	}//end record()
-
-	/**
 	 * Record a finished job for its app id when it created at least one traceable object.
 	 *
 	 * @param FinishedImportJob $job The job that ended.
@@ -152,17 +134,29 @@ class AppImportJobRecorder {
 			return false;
 		}
 
-		$jobs = $this->jobs(appId: $job->appId);
-		$jobs[] = [
+		$jobs   = $this->jobs(appId: $job->appId);
+		$jobs[] = $this->jobEntry(job: $job, created: $created);
+		$this->store(appId: $job->appId, jobs: array_slice($jobs, -self::MAX_JOBS));
+
+		return true;
+	}//end recordFinished()
+
+	/**
+	 * The record of one finished import job: its id, version, the objects it created, and when.
+	 *
+	 * @param FinishedImportJob $job     The finished job.
+	 * @param int               $created The objects it created.
+	 *
+	 * @return array<string, mixed> The record.
+	 */
+	private function jobEntry(FinishedImportJob $job, int $created): array {
+		return [
 			'jobId' => $job->importJobId,
 			'version' => $job->version,
 			'created' => $created,
 			'importedAt' => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
 		];
-		$this->store(appId: $job->appId, jobs: array_slice($jobs, -self::MAX_JOBS));
-
-		return true;
-	}//end recordFinished()
+	}//end jobEntry()
 
 	/**
 	 * The recorded jobs of an app id, oldest first.
@@ -292,6 +286,17 @@ class AppImportJobRecorder {
 			return;
 		}
 
+		$this->warnUntraceable(job: $job);
+	}//end warnWhenUntraceable()
+
+	/**
+	 * Warn that an import wrote objects none of which carries its job, so it cannot be removed by job.
+	 *
+	 * @param FinishedImportJob $job The finished job.
+	 *
+	 * @return void
+	 */
+	private function warnUntraceable(FinishedImportJob $job): void {
 		$this->logger->warning(
 			message: sprintf(
 				'[AppImportJobRecorder] The import for %s wrote %d object(s) and none carries import job %s. '
@@ -302,7 +307,7 @@ class AppImportJobRecorder {
 			),
 			context: ['app' => 'openregister', 'importJobId' => $job->importJobId]
 		);
-	}//end warnWhenUntraceable()
+	}//end warnUntraceable()
 
 	/**
 	 * Write an app id's job list.
@@ -359,6 +364,7 @@ class AppImportJobRecorder {
 			return $key;
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return self::KEY_PREFIX . sha1($appId);
 	}//end key()
 }//end class

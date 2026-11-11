@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
@@ -99,9 +100,6 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 		$this->macros = $this->createMock(MacroActionResolver::class);
 		$this->definitions = $this->createMock(ObjectActionDefinitions::class);
 		$this->runner = $this->createMock(ObjectActionRunner::class);
-		$this->runner->method('target')->willReturnCallback(
-			static fn (ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget => new ObjectActionTarget($object, $schema, $register, $schemaRef)
-		);
 
 		return ObjectActionsControllerFactory::create(
 			$request,
@@ -142,7 +140,7 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 				],
 			]
 		);
-		$definition = (new ObjectActionDefinitions($this->createMock(RegisterMapper::class)))->find($declaring, 'declared');
+		$definition = (new ObjectActionDefinitions($this->createMock(RegisterMapper::class)))->forSchema($declaring)['declared'] ?? null;
 		$this->assertNotNull($definition);
 
 		return $definition;
@@ -165,11 +163,12 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 				return $schema;
 			}
 		);
-		$this->definitions->expects($this->once())->method('find')->with($schema, 'assign', 'r')
-			->willReturn($this->definition(bulk: true));
+		$this->definitions->expects($this->once())->method('forSchema')->with($schema, 'r')
+			->willReturn(['assign' => $this->definition(bulk: true)]);
 		$subjects = [];
 		$this->runner->expects($this->exactly(2))->method('run')->willReturnCallback(
-			static function (ObjectActionTarget $target, string $key, array $given) use (&$subjects): array {
+			static function (ObjectActionTarget $target, ObjectActionRequest $request) use (&$subjects): array {
+				[$key, $given] = [$request->key, $request->given];
 				$subject    = $target->subject();
 				$subjects[] = [$key, $given, $subject];
 
@@ -200,8 +199,8 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 	public function testAnActionNotOfferedOnASelectionNeverRuns(): void {
 		$controller = $this->controller(params: ['ids' => ['a'], 'inputs' => []]);
 		$this->macros->method('loadSchema')->willReturn(new Schema());
-		$this->definitions->expects($this->once())->method('find')->with($this->anything(), 'publish', 'r')
-			->willReturn($this->definition(bulk: false));
+		$this->definitions->expects($this->once())->method('forSchema')->with($this->anything(), 'r')
+			->willReturn(['publish' => $this->definition(bulk: false)]);
 		$this->runner->expects($this->never())->method('run');
 
 		$response = $controller->invokeOnSelection('r', 'ticket', 'publish');
@@ -220,7 +219,7 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 	public function testASchemaThatDoesNotLoadIsNotOffered(): void {
 		$controller = $this->controller(params: ['ids' => ['a'], 'inputs' => []]);
 		$this->macros->method('loadSchema')->willReturn(null);
-		$this->definitions->expects($this->never())->method('find');
+		$this->definitions->expects($this->never())->method('forSchema');
 		$this->runner->expects($this->never())->method('run');
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $controller->invokeOnSelection('r', 'ticket', 'assign')->getStatus());
@@ -235,7 +234,7 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 		$controller = $this->controller(params: ['inputs' => ['y' => 2]]);
 		$this->macros->method('loadSchema')->willReturn(new Schema());
 		$this->runner->expects($this->once())->method('run')
-			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 'uuid-7', 'register' => 'reg', 'schema' => 'sch']), 'close', ['y' => 2])
+			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 'uuid-7', 'register' => 'reg', 'schema' => 'sch']), new ObjectActionRequest('close', ['y' => 2]))
 			->willReturn(['status' => Http::STATUS_FORBIDDEN, 'body' => ['error' => 'refused']]);
 
 		$response = $controller->invoke('reg', 'sch', '7', 'close');

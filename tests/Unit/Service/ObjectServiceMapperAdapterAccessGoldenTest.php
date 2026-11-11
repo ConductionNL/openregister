@@ -28,6 +28,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -75,14 +76,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 		$adapter = $this->findAllAdapter($captured, 3, 'sch');
 
 		$result = $adapter->findAll(
-			['limit' => 1, 'keep' => 'x', 'filters' => ['a' => 1]],
-			['b' => 2],
-			[7, 8],
-			20,
-			40,
-			['title' => 'asc'],
-			['owner'],
-			'term'
+			['limit' => 20, 'keep' => 'x', 'filters' => ['b' => 2], 'ids' => [7, 8], 'offset' => 40, 'sort' => ['title' => 'asc'], 'extend' => ['owner'], 'search' => 'term']
 		);
 
 		$this->assertSame(['r'], $result);
@@ -164,7 +158,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 		$cause = null;
 		$service->expects($this->once())->method('find')->willReturnCallback(
 			static function (...$args) use (&$findArgs, &$cause, $existing): ObjectEntity {
-				$findArgs = $args;
+				$findArgs = FindCallShape::find(args: $args);
 				$cause = WriteCause::current()['cause'];
 				return $existing;
 			}
@@ -176,7 +170,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 
 		$adapter = new ObjectServiceMapperAdapter($service, 1, 10);
 
-		$this->assertSame($saved, $adapter->updateFromArray(7, ['b' => 3, 'c' => 4], true, true));
+		$this->assertSame($saved, $adapter->patchFromArray(7, ['b' => 3, 'c' => 4]));
 		$this->assertSame(['7', [], false, 1, 10, true, true, true, true], $findArgs);
 		$this->assertSame(WriteCause::LOOKUP, $cause);
 	}//end testPatchAllowedMergesOverTheExistingObject()
@@ -196,7 +190,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 		$this->expectException(ValidationException::class);
 		$this->expectExceptionMessage('Object "abc" not found or not accessible');
 
-		$adapter->updateFromArray('abc', ['b' => 3], true, true);
+		$adapter->patchFromArray('abc', ['b' => 3]);
 	}//end testPatchRefusedWhenTheScopedReadFindsNothing()
 
 	/**
@@ -214,6 +208,6 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 
 		$adapter = new ObjectServiceMapperAdapter($service, 2, 20);
 
-		$this->assertSame($saved, $adapter->updateFromArray(5, ['b' => 3, 'id' => 'ignored']));
+		$this->assertSame($saved, $adapter->replaceFromArray(5, ['b' => 3, 'id' => 'ignored']));
 	}//end testPutSavesWithoutReading()
 }//end class

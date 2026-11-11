@@ -26,6 +26,8 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\DeckPlacement;
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
@@ -115,16 +117,12 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 */
 	private IConfig $config;
 
-
-
 	/**
 	 * Database connection (lazy-loaded when needed)
 	 *
 	 * @var IDBConnection|null
 	 */
 	private ?IDBConnection $db = null;
-
-
 
 	/**
 	 * Validation operations handler
@@ -188,10 +186,6 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @var MagicMapperInterface|null
 	 */
 	// Private ?MagicMapper $objectMapper;.
-
-
-
-
 
 	/**
 	 * This property holds the name of the application, which is used for identification and configuration purposes.
@@ -754,7 +748,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * Validate all objects in the system
 	 *
 	 * Triggers validation logic for all objects without re-saving them.
-	 * This is a lighter-weight operation compared to massValidateObjects.
+	 * This is a lighter-weight operation compared to massValidate.
 	 *
 	 * @return array Validation results
 	 *
@@ -771,27 +765,6 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 *
 	 * Re-saves all objects in the system to ensure all business logic
 	 * is triggered and objects are properly processed according to current rules.
-	 *
-	 * @param int $maxObjects Maximum number of objects to process (0 = all).
-	 * @param int $batchSize Batch size for processing (default: 1000).
-	 * @param string $mode Processing mode: 'serial' or 'parallel'.
-	 * @param bool $collectErrors Whether to collect all errors or stop on first.
-	 *
-	 * @return array Mass validation results
-	 *
-	 * @throws Exception If mass validation operation fails.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for error collection behavior
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
-	 */
-	public function massValidateObjects(int $maxObjects = 0, int $batchSize = 1000, string $mode = 'serial', bool $collectErrors = false): array {
-		$request = new MassValidationRequest(maxObjects: $maxObjects, batchSize: $batchSize, mode: $mode, collectErrors: $collectErrors);
-		return $this->massValidate(request: $request);
-	}//end massValidateObjects()
-
-	/**
-	 * Mass validate the stored objects, as {@see massValidateObjects()} describes.
 	 *
 	 * @param MassValidationRequest $request How many objects, the batch size, the mode and whether errors are collected.
 	 *
@@ -1316,16 +1289,15 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	/**
 	 * Persist the Deck default board+stack for a schema. Overwrites any prior value.
 	 *
-	 * @param string $schemaSlug Schema slug or numeric id used to scope the default.
-	 * @param int $boardId NC Deck board id.
-	 * @param int $stackId NC Deck stack id on that board.
+	 * @param string        $schemaSlug Schema slug or numeric id used to scope the default.
+	 * @param DeckPlacement $placement  The NC Deck board id and the stack id on that board.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
-	public function setDeckDefault(string $schemaSlug, int $boardId, int $stackId): void {
-		$payload = json_encode(['boardId' => $boardId, 'stackId' => $stackId]);
+	public function setDeckDefault(string $schemaSlug, DeckPlacement $placement): void {
+		$payload = json_encode(['boardId' => $placement->boardId, 'stackId' => $placement->stackId]);
 		if ($payload === false) {
 			return;
 		}

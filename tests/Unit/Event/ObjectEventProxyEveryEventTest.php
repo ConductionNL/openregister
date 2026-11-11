@@ -35,7 +35,10 @@ use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\ObjectEventProxyListener;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\EventDispatcher\IEventListener;
@@ -170,7 +173,7 @@ class ObjectEventProxyEveryEventTest extends TestCase {
 			'reverted'     => [ObjectRevertedEvent::class, fn (ObjectEntity $o): Event => new ObjectRevertedEvent($o)],
 			'transitioned' => [
 				ObjectTransitionedEvent::class,
-				fn (ObjectEntity $o): Event => new ObjectTransitionedEvent($o, 'approve', 'draft', 'approved', 'u1', (string)$o->getRegister(), (string)$o->getSchema()),
+				fn (ObjectEntity $o): Event => new ObjectTransitionedEvent(object: $o, move: new TransitionMove(action: 'approve', from: 'draft', to: 'approved'), scope: new RegisterSchemaRef(register: (string)$o->getRegister(), schema: (string)$o->getSchema()), actor: new TransitionActor(userId: 'u1')),
 			],
 			'activated'    => [
 				ObjectActivatedEvent::class,

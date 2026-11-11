@@ -41,6 +41,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\HoldOrder;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Archival\HoldAction;
 
 /**
  * Golden outcomes of legal holds, the retention guard and retention evaluation.
@@ -129,9 +132,9 @@ class RetentionHoldGoldenTest extends TestCase {
 		$object->setRetention(['archiefactiedatum' => '2030-01-01']);
 
 		$service = $this->holds();
-		$service->placeHold($object, 'WOO-1', 'case:a');
-		$service->placeHold($object, 'manual');
-		$service->placeHold($object, 'WOO-1 restated', 'case:a');
+		$service->placeHold($object, new HoldOrder('WOO-1', 'case:a'));
+		$service->placeHold($object, new HoldOrder('manual'));
+		$service->placeHold($object, new HoldOrder('WOO-1 restated', 'case:a'));
 
 		$this->assertTrue($service->hasActiveHold($object));
 		$this->assertTrue($service->hasActiveHoldFromRetention($object->getRetention()));
@@ -152,7 +155,7 @@ class RetentionHoldGoldenTest extends TestCase {
 			$this->mask($object->getRetention())
 		);
 
-		$this->holds(uid: null)->releaseHold($object, 'case closed', 'case:a');
+		$this->holds(uid: null)->releaseHold($object, new HoldOrder('case closed', 'case:a'));
 		$this->assertSame(
 			[
 				'active' => true, 'reason' => 'manual', 'placedBy' => 'officer', 'placedDate' => '<now>',
@@ -162,7 +165,7 @@ class RetentionHoldGoldenTest extends TestCase {
 			$this->mask($object->getRetention()['legalHold'])
 		);
 
-		$service->releaseHold($object, 'all done');
+		$service->releaseHold($object, new HoldOrder('all done'));
 		$this->assertFalse($service->hasActiveHold($object));
 		$this->assertFalse($service->hasActiveHoldFromRetention($object->getRetention()));
 		$this->assertSame(
@@ -197,26 +200,26 @@ class RetentionHoldGoldenTest extends TestCase {
 					'history' => [],
 				],
 			],
-			$ledger->place($legacy, 'old2', '  ', new HoldStamp('u', 'now'))
+			$ledger->placeAction($legacy, new HoldAction(ownerKey: '  ', reason: 'old2', stamp: new HoldStamp('u', 'now')))
 		);
 
 		$this->assertSame(
 			['legalHold' => ['active' => true, 'reason' => 'old', 'placedBy' => 'p', 'placedDate' => 'd', 'holds' => $ledger->activeHolds($legacy), 'history' => []]],
-			$ledger->release($legacy, 'case:none', 'r', new HoldStamp('u', 'now'))
+			$ledger->releaseAction($legacy, new HoldAction(ownerKey: 'case:none', reason: 'r', stamp: new HoldStamp('u', 'now')))
 		);
-		$this->assertSame([], $ledger->release($legacy, ' openregister:manual', 'r', new HoldStamp('u', 'now'))['legalHold']['history']);
+		$this->assertSame([], $ledger->releaseAction($legacy, new HoldAction(ownerKey: ' openregister:manual', reason: 'r', stamp: new HoldStamp('u', 'now')))['legalHold']['history']);
 		$this->assertSame(
 			['active' => false, 'reason' => null, 'placedBy' => null, 'placedDate' => null, 'holds' => [], 'history' => [['h' => 1], ['ownerKey' => 'k', 'releasedBy' => 'u', 'releasedDate' => 'now', 'releaseReason' => 'r']]],
-			$ledger->release(['legalHold' => ['holds' => [['ownerKey' => 'k']], 'history' => [['h' => 1]]]], null, 'r', new HoldStamp('u', 'now'))['legalHold']
+			$ledger->releaseAction(['legalHold' => ['holds' => [['ownerKey' => 'k']], 'history' => [['h' => 1]]]], new HoldAction(ownerKey: null, reason: 'r', stamp: new HoldStamp('u', 'now')))['legalHold']
 		);
 		$this->assertSame(
 			['active' => false, 'reason' => null, 'placedBy' => null, 'placedDate' => null, 'holds' => [], 'history' => []],
-			$ledger->release(['legalHold' => ['history' => 'bad']], null, 'r', new HoldStamp('u', 'now'))['legalHold']
+			$ledger->releaseAction(['legalHold' => ['history' => 'bad']], new HoldAction(ownerKey: null, reason: 'r', stamp: new HoldStamp('u', 'now')))['legalHold']
 		);
 	}//end testTheLedgerReadsALegacySlotAndOddShapes()
 
 	public function testBulkHoldsAreQueuedAndHeldRecordsListed(): void {
-		$this->holds()->bulkPlaceHold(4, 2, 'WOO');
+		$this->holds()->bulkPlaceHold(new RegisterSchemaRef(2, 4), 'WOO');
 		$this->assertSame([[BulkLegalHoldJob::class, ['schemaId' => 4, 'registerId' => 2, 'reason' => 'WOO', 'placedBy' => 'officer']]], $this->jobs);
 
 		$this->assertSame(['results' => [], 'total' => 0, 'truncated' => false], $this->holds()->listActiveHolds());

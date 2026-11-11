@@ -26,10 +26,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -160,7 +164,10 @@ class CorrectionService implements CorrectionServiceInterface {
 		$this->objectService->setSchema(schema: $target->schema);
 
 		return $this->objectService->findSilent(
-			id: $target->id, _extend: [], files: false, register: $target->register, schema: $target->schema, _rbac: false, _multitenancy: false
+			id: $target->id,
+			options: new ObjectFindOptions(register: $target->register, schema: $target->schema),
+			_rbac: false,
+			_multitenancy: false
 		);
 	}//end storedRecord()
 
@@ -294,7 +301,11 @@ class CorrectionService implements CorrectionServiceInterface {
 	private function writeCorrectionEntry(ObjectEntity $object, array $context): ?AuditTrail {
 		$actor = $context['correction']['actor'];
 		try {
-			return $this->auditing->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::ACTION, context: $context, actorId: $actor);
+			$options = new ObjectAuditEventOptions(actor: new NamedActor(id: $actor));
+
+			$event = new ObjectAuditEvent(object: $object, action: self::ACTION, context: $context, options: $options);
+
+			return $this->auditing->auditTrailMapper->recordObjectEvent(event: $event);
 		} catch (Throwable $e) {
 			$this->auditing->logger->error(
 				message: '[CorrectionService] The correction landed and the audit entry did not',

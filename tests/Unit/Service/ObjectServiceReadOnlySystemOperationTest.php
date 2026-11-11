@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\SystemOperationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * The readOnly rule of the update path, for a client and for a system operation.
@@ -119,13 +120,13 @@ class ObjectServiceReadOnlySystemOperationTest extends TestCase {
 		$mapper->method('find')->willReturn($stored);
 
 		$incoming = $this->callback(
-			static fn (array $candidate): bool => $candidate === ['title' => 'Case 2']
+			static fn (WriteConstraintCheck $check): bool => $check->incoming === ['title' => 'Case 2']
 		);
 		$validate = $this->createMock(ValidateObject::class);
 		$validate->expects($this->once())->method('validateReadOnlyConstraints')
-			->with($incoming, $this->anything(), $this->anything())->willReturn([]);
+			->with($incoming, $this->anything())->willReturn([]);
 		$validate->expects($this->once())->method('validateImmutableConstraints')
-			->with($incoming, $this->anything(), $this->anything())->willReturn([]);
+			->with($incoming, $this->anything())->willReturn([]);
 
 		$reflection = new ReflectionClass(ObjectService::class);
 		$service = $reflection->newInstanceWithoutConstructor();

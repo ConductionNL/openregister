@@ -196,11 +196,7 @@ class RetentionRowScanner {
 			$criteria = new RetentionScanCriteria(accept: Closure::fromCallable($accept), remaining: ($cap - count($run['objects'])));
 			$outcome = $this->scanRetentionSource(scan: new SourceScan(source: $source, criteria: $criteria));
 
-			$run['scanned'] += $outcome['scanned'];
-			array_push($run['objects'], ...$outcome['objects']);
-
-			if ($outcome['truncated'] === true) {
-				$run['truncated'] = true;
+			if ($this->absorb(run: $run, outcome: $outcome) === true) {
 				$this->warnTruncated(run: $run, cap: $cap);
 				break;
 			}
@@ -208,6 +204,25 @@ class RetentionRowScanner {
 
 		return $run;
 	}//end scan()
+
+	/**
+	 * Add one source's outcome to the run.
+	 *
+	 * @param array{objects: ObjectEntity[], scanned: int, truncated: bool} $run     The run so far.
+	 * @param array{objects: ObjectEntity[], scanned: int, truncated: bool} $outcome The source's outcome.
+	 *
+	 * @return bool True when the source was truncated, so the run is too and stops.
+	 */
+	private function absorb(array &$run, array $outcome): bool {
+		$run['scanned'] += $outcome['scanned'];
+		array_push($run['objects'], ...$outcome['objects']);
+		if ($outcome['truncated'] === false) {
+			return false;
+		}
+
+		$run['truncated'] = true;
+		return true;
+	}//end absorb()
 
 	/**
 	 * Say, at warning level, that a run stopped at its cap.

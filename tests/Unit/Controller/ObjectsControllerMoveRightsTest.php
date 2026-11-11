@@ -102,7 +102,7 @@ class ObjectsControllerMoveRightsTest extends TestCase {
 	private function moveHolding(array $rights): array {
 		$moved = false;
 		$mover = $this->createMock(MoveObject::class);
-		$mover->method('move')->willReturnCallback(
+		$mover->method('perform')->willReturnCallback(
 			static function () use (&$moved): array {
 				$moved = true;
 				return ['moved' => true, 'uuid' => 'u-1', 'from' => [], 'to' => [], 'errors' => []];

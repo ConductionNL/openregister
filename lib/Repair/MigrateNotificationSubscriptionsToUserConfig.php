@@ -42,6 +42,8 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Repair\Support\SubscriptionMigrationRun;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -202,12 +204,8 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep {
 
 		$slug = (string)($schema->getSlug() ?? $schema->getId());
 		foreach (array_keys($notifications) as $key) {
-			$run->prefs->setOverride(
-				userId: $userId,
-				schemaSlug: $slug,
-				notificationKey: (string)$key,
-				override: ['enabled' => true]
-			);
+			$address = new PreferenceAddress(schemaSlug: $slug, notificationKey: (string)$key);
+			$run->prefs->storeOverride(write: new PreferenceWrite(party: $userId, address: $address, value: ['enabled' => true]));
 		}
 
 		return count($notifications);

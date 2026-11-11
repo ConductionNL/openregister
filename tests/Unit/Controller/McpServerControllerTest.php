@@ -160,10 +160,6 @@ class McpServerControllerTest extends TestCase {
 	// Instantiation
 	// ---------------------------------------------------------------
 
-	public function testControllerInstantiation(): void {
-		$this->assertInstanceOf(McpServerController::class, $this->controller);
-	}
-
 	// ---------------------------------------------------------------
 	// handle() — Unauthenticated requests (#4284)
 	// ---------------------------------------------------------------

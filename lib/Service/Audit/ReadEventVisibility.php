@@ -34,9 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 use Throwable;
 
 /**
@@ -70,14 +69,12 @@ class ReadEventVisibility {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig    $appConfig    Where the groups are configured.
-	 * @param IGroupManager $groupManager Administrators and group membership.
-	 * @param IUserSession  $userSession  The caller.
+	 * @param IAppConfig    $appConfig Where the groups are configured.
+	 * @param CallerContext $caller    The caller's session, and administrators and group membership.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserSession $userSession,
+		private readonly CallerContext $caller,
 	) {
 	}//end __construct()
 
@@ -94,20 +91,31 @@ class ReadEventVisibility {
 	 */
 	public function maySeeReadEvents(?string $userId = null): bool {
 		if ($userId === null) {
-			$userId = $this->userSession->getUser()?->getUID();
+			$userId = $this->caller->userSession->getUser()?->getUID();
 		}
 
 		if ($userId === null || $userId === '') {
 			return false;
 		}
 
+		return $this->isAdminOrReadEventReader(userId: $userId);
+	}//end maySeeReadEvents()
+
+	/**
+	 * Whether a user is an administrator or in a group that may see read events; a failing lookup refuses.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return bool True when the user may see read events.
+	 */
+	private function isAdminOrReadEventReader(string $userId): bool {
 		try {
-			if ($this->groupManager->isAdmin($userId) === true) {
+			if ($this->caller->groupManager->isAdmin($userId) === true) {
 				return true;
 			}
 
 			foreach ($this->groups() as $group) {
-				if ($this->groupManager->isInGroup($userId, $group) === true) {
+				if ($this->caller->groupManager->isInGroup($userId, $group) === true) {
 					return true;
 				}
 			}
@@ -116,7 +124,7 @@ class ReadEventVisibility {
 		}
 
 		return false;
-	}//end maySeeReadEvents()
+	}//end isAdminOrReadEventReader()
 
 	/**
 	 * Whether an audit action is a read.

@@ -37,6 +37,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\History;
 
 use DateTime;
+use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -86,7 +87,7 @@ class StateHistoryProjector implements StateHistoryProjectorInterface, StateHist
 		}
 
 		$objectUuid = (string)$move->getObject()->getUuid();
-		$this->mapper->closeOpenInterval(objectUuid: $objectUuid, property: $property, leftAt: $stampedAt);
+		$this->mapper->closeOpenInterval(tracked: new TrackedProperty(objectUuid: $objectUuid, property: $property), leftAt: $stampedAt);
 
 		$interval = new StateHistory();
 		$interval->setObjectUuid($objectUuid);
@@ -150,7 +151,18 @@ class StateHistoryProjector implements StateHistoryProjectorInterface, StateHist
 			return null;
 		}
 
-		$annotation = (($schema->getConfiguration() ?? [])['x-openregister-lifecycle'] ?? null);
+		return $this->lifecycleField(configuration: ($schema->getConfiguration() ?? []));
+	}//end declaredProperty()
+
+	/**
+	 * The `field` (else `property`) of a schema configuration's `x-openregister-lifecycle` block.
+	 *
+	 * @param array $configuration The schema configuration.
+	 *
+	 * @return string|null The declared property name, or null when the block names none.
+	 */
+	private function lifecycleField(array $configuration): ?string {
+		$annotation = ($configuration['x-openregister-lifecycle'] ?? null);
 		if (is_array($annotation) === false) {
 			return null;
 		}
@@ -161,5 +173,5 @@ class StateHistoryProjector implements StateHistoryProjectorInterface, StateHist
 		}
 
 		return $field;
-	}//end declaredProperty()
+	}//end lifecycleField()
 }//end class

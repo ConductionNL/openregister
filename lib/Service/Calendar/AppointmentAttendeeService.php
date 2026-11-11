@@ -36,6 +36,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 
 /**
@@ -124,8 +125,7 @@ class AppointmentAttendeeService implements AppointmentAttendeeServiceInterface 
 		try {
 			return $this->objects->find(
 				id: $objectUuid,
-				_render: false,
-				_audit: false
+				options: new ObjectFindOptions(render: false, audit: false)
 			) !== null;
 		} catch (\Throwable $denied) {
 			unset($denied);
@@ -141,29 +141,6 @@ class AppointmentAttendeeService implements AppointmentAttendeeServiceInterface 
 	 * caller who may not write the object cannot record an answer on it.
 	 * A second answer from the same invitee replaces the first: an attendance
 	 * list is a current state, not a log of everyone's changes of mind.
-	 *
-	 * @param string $objectUuid The object the appointment was created from.
-	 * @param string $attendee The invitee identifier, as the object stores it.
-	 * @param string $status One of STATUSES.
-	 * @param string|null $respondedBy The principal that submitted the answer.
-	 *
-	 * @return array<int, array<string, mixed>> The full response list after the write.
-	 *
-	 * @throws InvalidArgumentException When the status is not an answer, or the object is unknown.
-	 *
-	 * @spec openspec/specs/calendar-provider/spec.md
-	 */
-	public function recordResponse(string $objectUuid, string $attendee, string $status, ?string $respondedBy = null): array {
-		$response = new AttendeeResponse(objectUuid: $objectUuid, attendee: $attendee, status: $status, respondedBy: $respondedBy);
-		return $this->recordAttendeeResponse(response: $response);
-	}//end recordResponse()
-
-	/**
-	 * Record one invitee's answer on the object.
-	 *
-	 * The write goes through the ordinary object save path with RBAC on, so a
-	 * caller who may not write the object cannot record an answer on it.
-	 * A second answer from the same invitee replaces the first.
 	 *
 	 * @param AttendeeResponse $response The answer as submitted.
 	 *

@@ -29,6 +29,7 @@ use OCA\OpenRegister\Exception\PackChangedException;
 use OCA\OpenRegister\Exception\PackSlugExistsException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackImportResult;
+use OCA\OpenRegister\Service\MigrationPack\PackRevision;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -80,8 +81,7 @@ interface MigrationPackServiceInterface {
 	 * built-in again by its own flag.
 	 *
 	 * @param array<string, mixed> $definition The pack definition document (the JSON body).
-	 * @param string|null $ownerUid The creating admin's uid, or null for a system/built-in seed.
-	 * @param bool $builtin Whether to mark this row as a built-in reference pack.
+	 * @param string|null          $ownerUid   The creating admin's uid.
 	 *
 	 * @return MigrationPack
 	 *
@@ -90,7 +90,23 @@ interface MigrationPackServiceInterface {
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
-	public function create(array $definition, ?string $ownerUid = null, bool $builtin = false): MigrationPack;
+	public function create(array $definition, ?string $ownerUid = null): MigrationPack;
+
+	/**
+	 * Seed a built-in reference pack (no owner).
+	 *
+	 * Takes the slug off the deleted-built-in list once the row is stored.
+	 *
+	 * @param array<string, mixed> $definition The pack definition document.
+	 *
+	 * @return MigrationPack
+	 *
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
+	 * @throws PackSlugExistsException When its slug already exists.
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	public function seedBuiltin(array $definition): MigrationPack;
 
 	/**
 	 * Update an existing migration pack's definition.
@@ -105,9 +121,8 @@ interface MigrationPackServiceInterface {
 	 * a Unix time, so the comparison does not depend on the offset the caller
 	 * wrote the time in.
 	 *
-	 * @param int $id The migration pack id.
-	 * @param array<string, mixed> $definition The replacement pack definition document.
-	 * @param int|null $expectedUpdatedAt The `updatedAt` the caller read, as a Unix time, or null for no check.
+	 * @param int          $id       The migration pack id.
+	 * @param PackRevision $revision The replacement definition and the `updatedAt` the caller read.
 	 *
 	 * @return MigrationPack
 	 *
@@ -119,7 +134,24 @@ interface MigrationPackServiceInterface {
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
-	public function update(int $id, array $definition, ?int $expectedUpdatedAt = null): MigrationPack;
+	public function revise(int $id, PackRevision $revision): MigrationPack;
+
+	/**
+	 * Overwrite an existing migration pack's definition, without a check on when it was saved.
+	 *
+	 * @param int                  $id         The migration pack id.
+	 * @param array<string, mixed> $definition The replacement pack definition document.
+	 *
+	 * @return MigrationPack
+	 *
+	 * @throws DoesNotExistException When no row matches.
+	 * @throws BuiltinPackSlugLockedException When the definition renames a built-in pack.
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
+	 * @throws PackSlugExistsException When its slug collides with a different pack.
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
+	 */
+	public function update(int $id, array $definition): MigrationPack;
 
 	/**
 	 * Delete a migration pack.

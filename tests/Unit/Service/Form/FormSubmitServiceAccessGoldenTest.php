@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryLockingProvider;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
@@ -53,6 +54,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * The submit path's allowed and refused outcomes, with the flags of every call.
@@ -129,14 +131,17 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('saveObject')->willReturnCallback($this->save(...));
 		$objects->method('find')->willReturnCallback(
-			function (int|string $id, ?array $_extend = [], bool $files = false, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true, bool $_audit = true): ?ObjectEntity {
+			function (...$args): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy, $_render, $_audit] = FindCallShape::find(args: $args);
 				$this->calls[] = ['find', (string)$id, $_rbac, $_multitenancy, $_audit];
 
 				return ($this->stored[(string)$id] ?? null);
 			}
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false, ?IUser $currentUser = null, bool $permanent = false): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
+				$permanent = $deletion->permanent;
 				$this->calls[] = ['delete', $uuid, $_rbac, $_multitenancy, $permanent];
 				unset($this->stored[$uuid]);
 

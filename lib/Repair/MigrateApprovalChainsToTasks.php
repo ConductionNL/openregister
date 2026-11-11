@@ -544,58 +544,139 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @throws RuntimeException Naming the chain, the object and the step.
 	 */
 	private function verifyStep(array $step): int {
-		$status = (string)$step['status'];
-		$where = sprintf(
+		$task = $this->migratedTask(step: $step);
+		self::assertSameOrdinal(task: $task, step: $step);
+		self::assertOpenStepIsNotTerminal(task: $task, step: $step);
+
+		if ((string)$step['status'] !== 'pending') {
+			return 0;
+		}
+
+		self::assertPendingStepIsEnabled(task: $task, step: $step);
+
+		return 1;
+	}//end verifyStep()
+
+	/**
+	 * The step's place, as every reconciliation failure names it.
+	 *
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return string The chain, object and step.
+	 */
+	private static function stepLabel(array $step): string {
+		return sprintf(
 			'chain %d, object %s, step %d',
 			(int)$step['chain_id'],
 			(string)$step['object_uuid'],
 			(int)$step['id']
 		);
+	}//end stepLabel()
 
+	/**
+	 * The task the step was migrated onto, or STOP when none is recorded or it is gone.
+	 *
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return Task The migrated task.
+	 *
+	 * @throws RuntimeException Naming the chain, the object and the step.
+	 */
+	private function migratedTask(array $step): Task {
+		$taskUuid = self::migratedTaskUuid(step: $step);
+
+		try {
+			return $this->tasks->findByUuid(uuid: $taskUuid);
+		} catch (Throwable $gone) {
+			throw new RuntimeException(
+				'Approval migration failed: migrated task ' . $taskUuid . ' for ' . self::stepLabel(step: $step)
+				. ' does not exist. The migration did NOT succeed.'
+			);
+		}
+	}//end migratedTask()
+
+	/**
+	 * The uuid of the task a step was migrated into.
+	 *
+	 * @param array $step The approval_steps row.
+	 *
+	 * @return string The recorded task uuid.
+	 *
+	 * @throws RuntimeException When the step records no migrated task.
+	 */
+	private static function migratedTaskUuid(array $step): string {
 		$taskUuid = trim((string)($step['migrated_task_uuid'] ?? ''));
 		if ($taskUuid === '') {
 			throw new RuntimeException(
-				'Approval migration failed: no migrated task recorded for ' . $where . '. The migration did NOT succeed.'
+				'Approval migration failed: no migrated task recorded for ' . self::stepLabel(step: $step) . '. The migration did NOT succeed.'
 			);
 		}
 
-		try {
-			$task = $this->tasks->findByUuid(uuid: $taskUuid);
-		} catch (Throwable $gone) {
-			throw new RuntimeException(
-				'Approval migration failed: migrated task ' . $taskUuid . ' for ' . $where . ' does not exist. The migration did NOT succeed.'
-			);
+		return $taskUuid;
+	}//end migratedTaskUuid()
+
+	/**
+	 * STOP when the task does not sit at its step's ordinal.
+	 *
+	 * @param Task                 $task The migrated task.
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException Naming the task, both ordinals and the step.
+	 */
+	private static function assertSameOrdinal(Task $task, array $step): void {
+		if ((int)$task->getSequencePosition() === (int)$step['step_order']) {
+			return;
 		}
 
-		if ((int)$task->getSequencePosition() !== (int)$step['step_order']) {
-			throw new RuntimeException(sprintf(
-				'Approval migration failed: task %s sits at ordinal %d while its step holds %d (%s). The migration did NOT succeed.',
-				$taskUuid,
-				(int)$task->getSequencePosition(),
-				(int)$step['step_order'],
-				$where
-			));
-		}
+		throw new RuntimeException(sprintf(
+			'Approval migration failed: task %s sits at ordinal %d while its step holds %d (%s). The migration did NOT succeed.',
+			trim((string)($step['migrated_task_uuid'] ?? '')),
+			(int)$task->getSequencePosition(),
+			(int)$step['step_order'],
+			self::stepLabel(step: $step)
+		));
+	}//end assertSameOrdinal()
 
+	/**
+	 * STOP when a pending or waiting step maps to a terminal task.
+	 *
+	 * @param Task                 $task The migrated task.
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException Naming the step and the task.
+	 */
+	private static function assertOpenStepIsNotTerminal(Task $task, array $step): void {
+		$status = (string)$step['status'];
 		$openStep = ($status === 'pending' || $status === 'waiting');
 		if ($openStep === true && $task->isInTerminalState() === true) {
 			throw new RuntimeException(
-				'Approval migration failed: non-terminal ' . $where . ' maps to terminal task ' . $taskUuid . '. The migration did NOT succeed.'
+				'Approval migration failed: non-terminal ' . self::stepLabel(step: $step) . ' maps to terminal task '
+				. trim((string)($step['migrated_task_uuid'] ?? '')) . '. The migration did NOT succeed.'
 			);
 		}
+	}//end assertOpenStepIsNotTerminal()
 
-		if ($status !== 'pending') {
-			return 0;
-		}
-
+	/**
+	 * STOP when a pending step's task is not the enabled one.
+	 *
+	 * @param Task                 $task The migrated task.
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException Naming the step.
+	 */
+	private static function assertPendingStepIsEnabled(Task $task, array $step): void {
 		if ((string)$task->getState() !== Task::STATE_ENABLED) {
 			throw new RuntimeException(
-				'Approval migration failed: pending ' . $where . ' maps to a task that is not enabled. The migration did NOT succeed.'
+				'Approval migration failed: pending ' . self::stepLabel(step: $step) . ' maps to a task that is not enabled. The migration did NOT succeed.'
 			);
 		}
-
-		return 1;
-	}//end verifyStep()
+	}//end assertPendingStepIsEnabled()
 
 	/**
 	 * No (anchor, template) may hold two running sequences.
@@ -683,6 +764,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			$schemaPart = (string)$schemaId;
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5(self::TEMPLATE_ID_NS . ':' . $schemaPart . ':' . (string)$chain['name']);
 
 		return [

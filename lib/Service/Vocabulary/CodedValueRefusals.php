@@ -124,13 +124,14 @@ final class CodedValueRefusals {
 			return null;
 		}
 
-		$already = $subject->check->claim(key: $subject->declaration->scheme."\0".$group, label: $this->labelOf(match: $match));
+		$label   = $this->labelOf(match: $match);
+		$already = $subject->check->claim(key: $subject->declaration->scheme."\0".$group, label: $label);
 		if ($already === null) {
 			return null;
 		}
 
 		$format = 'The values "%s" and "%s" both belong to the group "%s", of which only one may be held.';
-		return sprintf($format, $already, $this->labelOf(match: $match), $group);
+		return sprintf($format, $already, $label, $group);
 	}//end exclusiveGroupViolation()
 
 	/**

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -50,6 +51,8 @@ use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Token-scoped federation serving endpoints (read; write-through in a later phase).
@@ -476,9 +479,10 @@ class FederationController extends Controller {
 		$share = $target['share'];
 		try {
 			$ok = $this->objectService->deleteObject(
-				uuid: $target['uuid'],
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				deletion: new ObjectDeletion(
+					uuid: $target['uuid'],
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema())
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -588,8 +592,7 @@ class FederationController extends Controller {
 		try {
 			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				options: new ObjectFindOptions(register: $share->getRegister(), schema: $share->getSchema()),
 				_rbac: false,
 				_multitenancy: false
 			));

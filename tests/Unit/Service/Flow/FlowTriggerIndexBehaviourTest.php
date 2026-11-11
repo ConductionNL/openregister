@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
+use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Flow\FlowTriggerDerivation;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
@@ -66,7 +67,8 @@ class FlowTriggerIndexBehaviourTest extends TestCase {
 		parent::setUp();
 		$this->mapper = $this->createMock(FlowTriggerMapperInterface::class);
 		$this->mapper->method('replaceFor')->willReturnCallback(
-			function (string $flowUuid, array $triggers, bool $enabled): int {
+			function (FlowTriggerSet $set): int {
+				[$flowUuid, $triggers, $enabled] = [$set->flowUuid, $set->triggers, $set->enabled];
 				$this->written[] = ['flow' => $flowUuid, 'triggers' => $triggers, 'enabled' => $enabled];
 
 				return count($triggers);

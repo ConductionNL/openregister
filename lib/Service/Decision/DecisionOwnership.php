@@ -118,34 +118,61 @@ class DecisionOwnership {
 	 * @return bool True when the change may go through.
 	 */
 	private function mayByEvent(Decision $decision, DecisionQuestion $question): bool {
-		$actorId = $question->actorId;
-		$event   = new DecisionChangeRequestedEvent(
+		$event = new DecisionChangeRequestedEvent(
 			decision: $decision,
-			actorId: $actorId,
+			actorId: $question->actorId,
 			policy: $question->policy,
 			subject: $question->subject,
-			allowed: $this->isSupervisor(actorId: $actorId, policy: $question->policy)
+			allowed: $this->isSupervisor(actorId: $question->actorId, policy: $question->policy)
 		);
 
+		if ($this->dispatchChangeRequest(event: $event, actorId: $question->actorId) === false) {
+			return false;
+		}
+
+		$this->logOwnerRefusal(event: $event, actorId: $question->actorId);
+
+		return $event->isAllowed();
+	}//end mayByEvent()
+
+	/**
+	 * Ask the app that owns the subject; a listener that fails refuses the change.
+	 *
+	 * @param DecisionChangeRequestedEvent $event   The change request.
+	 * @param string                       $actorId Who asks.
+	 *
+	 * @return bool False when a listener failed (logged).
+	 */
+	private function dispatchChangeRequest(DecisionChangeRequestedEvent $event, string $actorId): bool {
 		try {
 			$this->platform->eventDispatcher->dispatchTyped($event);
 		} catch (Throwable $error) {
 			$this->platform->logger->warning(
 				message: '[DecisionOwnership] A listener failed; the change is refused.',
-				context: ['decision' => $decision->getUuid(), 'actor' => $actorId, 'error' => $error->getMessage()]
+				context: ['decision' => $event->getDecision()->getUuid(), 'actor' => $actorId, 'error' => $error->getMessage()]
 			);
 			return false;
 		}
 
+		return true;
+	}//end dispatchChangeRequest()
+
+	/**
+	 * Log a refusal the owning app gave a reason for.
+	 *
+	 * @param DecisionChangeRequestedEvent $event   The answered change request.
+	 * @param string                       $actorId Who asked.
+	 *
+	 * @return void
+	 */
+	private function logOwnerRefusal(DecisionChangeRequestedEvent $event, string $actorId): void {
 		if ($event->isAllowed() === false && $event->getReason() !== null) {
 			$this->platform->logger->info(
 				message: '[DecisionOwnership] Refused by the app that owns the subject.',
-				context: ['decision' => $decision->getUuid(), 'actor' => $actorId, 'reason' => $event->getReason()]
+				context: ['decision' => $event->getDecision()->getUuid(), 'actor' => $actorId, 'reason' => $event->getReason()]
 			);
 		}
-
-		return $event->isAllowed();
-	}//end mayByEvent()
+	}//end logOwnerRefusal()
 
 	/**
 	 * Whether the user is in one of the policy's supervisor groups.

@@ -214,7 +214,7 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 			['rows' => [], 'fetched' => 0, 'lastId' => 1]
 		);
 		$this->magicMapper->expects($this->never())->method('updateSlugColumn');
-		$this->auditTrail->expects($this->never())->method('createSlugBackfillEntry');
+		$this->auditTrail->expects($this->never())->method('recordSlugBackfill');
 
 		$tester = $this->tester();
 		$exit = $tester->execute(['register' => 'woo', 'schema' => 'convenanten', '--dry-run' => true]);

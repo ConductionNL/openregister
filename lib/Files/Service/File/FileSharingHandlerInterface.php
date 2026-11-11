@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service\File;
 
 use Exception;
-use OCP\Files\File;
 use OCP\Files\Node;
 use OCP\Share\IShare;
 
@@ -68,11 +67,9 @@ interface FileSharingHandlerInterface {
 	public function createShare(array $shareData): IShare;
 
 	/**
-	 * Share a file with a specific user.
+	 * Share a file with a user unless it already is.
 	 *
-	 * @param File   $file        The file to share.
-	 * @param string $userId      The user ID to share with.
-	 * @param int    $permissions The permissions to grant (default: 31 = all).
+	 * @param UserShareGrant $grant The file, the user and the permissions (default 31 = all).
 	 *
 	 * @throws Exception If sharing fails.
 	 *
@@ -80,18 +77,16 @@ interface FileSharingHandlerInterface {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function shareFileWithUser(File $file, string $userId, int $permissions=31): void;
+	public function shareFileWithUser(UserShareGrant $grant): void;
 
 	/**
-	 * Share a folder with a specific user.
+	 * Share a folder with an existing user.
 	 *
-	 * @param Node   $folder      The folder to share.
-	 * @param string $userId      The user ID to share with.
-	 * @param int    $permissions The permissions to grant (default: 31 = all).
+	 * @param UserShareGrant $grant The folder, the user and the permissions (default 31 = all).
 	 *
-	 * @return IShare|null The created share or null if user doesn't exist.
+	 * @return IShare|null The created share, or null when the user does not exist or sharing fails.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function shareFolderWithUser(Node $folder, string $userId, int $permissions=31): ?IShare;
+	public function shareFolderWithUser(UserShareGrant $grant): ?IShare;
 }//end interface

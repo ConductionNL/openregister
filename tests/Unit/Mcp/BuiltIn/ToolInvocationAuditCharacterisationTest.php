@@ -20,10 +20,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
 
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\ToolAuditTarget;
+use OCA\OpenRegister\Mcp\BuiltIn\AuditedInvocation;
 use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationAudit;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -46,19 +48,18 @@ class ToolInvocationAuditCharacterisationTest extends TestCase
     public function testSuccessWritesSummaryAndResultId(): void
     {
         $mapper = $this->createMock(AuditTrailMapperInterface::class);
-        $mapper->expects($this->once())->method('createToolInvocationEntry')->with(
-            'app.tool',
-            hash('sha256', '{"a":1}'),
-            ['isError' => false, 'n' => 1],
-            new AuditedObject(4, 7, null, 'obj-1')
+        $mapper->expects($this->once())->method('recordToolInvocation')->with(
+            new ToolInvocation('app.tool', hash('sha256', '{"a":1}'), ['isError' => false, 'n' => 1], new AuditedObject(4, 7, null, 'obj-1'))
         )->willReturn($this->createMock(AuditTrail::class));
 
         $runner = new ToolInvocationAudit($mapper, $this->createMock(LoggerInterface::class), 'Src');
         $result = $runner->run(
             new ToolAuditTarget('app.tool', 4, 7),
-            ['a' => 1],
-            static fn (): array => ['id' => 'obj-1'],
-            static fn (array $r): array => ['isError' => false, 'n' => count($r)]
+            new AuditedInvocation(
+                ['a' => 1],
+                static fn (): array => ['id' => 'obj-1'],
+                static fn (array $r): array => ['isError' => false, 'n' => count($r)]
+            )
         );
 
         $this->assertSame(['id' => 'obj-1'], $result);
@@ -73,11 +74,13 @@ class ToolInvocationAuditCharacterisationTest extends TestCase
     {
         $error  = new RuntimeException('boom');
         $mapper = $this->createMock(AuditTrailMapperInterface::class);
-        $mapper->expects($this->once())->method('createToolInvocationEntry')->with(
-            'app.tool',
-            hash('sha256', '[]'),
-            ['isError' => true, 'errorClass' => RuntimeException::class, 'message' => 'boom'],
-            new AuditedObject(null, null, null, null)
+        $mapper->expects($this->once())->method('recordToolInvocation')->with(
+            new ToolInvocation(
+                'app.tool',
+                hash('sha256', '[]'),
+                ['isError' => true, 'errorClass' => RuntimeException::class, 'message' => 'boom'],
+                new AuditedObject(null, null, null, null)
+            )
         )->willReturn($this->createMock(AuditTrail::class));
 
         $runner = new ToolInvocationAudit($mapper, $this->createMock(LoggerInterface::class), 'Src');
@@ -85,11 +88,13 @@ class ToolInvocationAuditCharacterisationTest extends TestCase
         try {
             $runner->run(
                 new ToolAuditTarget('app.tool'),
-                [],
-                static function () use ($error): array {
-                    throw $error;
-                },
-                static fn (array $r): array => []
+                new AuditedInvocation(
+                    [],
+                    static function () use ($error): array {
+                        throw $error;
+                    },
+                    static fn (array $r): array => []
+                )
             );
             $this->fail('The invocation error must be rethrown.');
         } catch (RuntimeException $caught) {
@@ -105,7 +110,7 @@ class ToolInvocationAuditCharacterisationTest extends TestCase
     public function testFailedWriteIsLoggedAndResultStillReturned(): void
     {
         $mapper = $this->createMock(AuditTrailMapperInterface::class);
-        $mapper->method('createToolInvocationEntry')->willThrowException(new RuntimeException('db down'));
+        $mapper->method('recordToolInvocation')->willThrowException(new RuntimeException('db down'));
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects($this->once())->method('error')->with(
@@ -116,9 +121,11 @@ class ToolInvocationAuditCharacterisationTest extends TestCase
         $runner = new ToolInvocationAudit($mapper, $logger, 'Src');
         $result = $runner->run(
             new ToolAuditTarget('app.tool'),
-            [],
-            static fn (): array => ['ok' => true],
-            static fn (array $r): array => ['isError' => false]
+            new AuditedInvocation(
+                [],
+                static fn (): array => ['ok' => true],
+                static fn (array $r): array => ['isError' => false]
+            )
         );
 
         $this->assertSame(['ok' => true], $result);

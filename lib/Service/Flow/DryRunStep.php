@@ -41,4 +41,14 @@ final class DryRunStep {
 		public readonly array $context,
 	) {
 	}//end __construct()
+	/**
+	 * What the step's node is called with.
+	 *
+	 * @return FlowNodeCall The items, the step configuration and the context.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 */
+	public function nodeCall(): FlowNodeCall {
+		return new FlowNodeCall(items: $this->items, config: $this->config, context: $this->context);
+	}//end nodeCall()
 }//end class

@@ -138,7 +138,8 @@ final class ReversibilityAnnotationValidator implements ReversibilityAnnotationV
 	}//end validate()
 
 	/**
-	 * Validate one declared action.
+	 * Validate one declared action: its shape first, then — when it claims to be
+	 * reversible — whether what it does can be undone at all.
 	 *
 	 * @param string               $key        The action key.
 	 * @param array<string, mixed> $definition The declaration.
@@ -156,41 +157,73 @@ final class ReversibilityAnnotationValidator implements ReversibilityAnnotationV
 			return [];
 		}
 
-		$kind = ($definition['kind'] ?? null);
-
-		if (is_string($kind) === true && in_array($kind, self::IRREVERSIBLE_KINDS, true) === true) {
-			return [
-				[
-					'code' => 'reversibility-irreversible-kind',
-					'message' => sprintf(
-						'The action "%s" declares kind "%s" and reversible true. A %s leaves nothing to write '
-						.'back, so it cannot be undone.',
-						$key,
-						$kind,
-						$kind
-					),
-				],
-			];
-		}
-
-		if ($kind === null && $this->readsAsIrreversible(key: $key) === true) {
-			return [
-				[
-					'code' => 'reversibility-undeclared-kind',
-					'message' => sprintf(
-						'The action "%s" declares reversible true and names no kind, and its key reads as an act '
-						.'that cannot be undone. Add "kind" naming what it really does.',
-						$key
-					),
-				],
-			];
-		}
-
-		return [];
+		return $this->irreversibilityRefusals(key: $key, definition: $definition);
 	}//end validateEntry()
 
 	/**
-	 * Check the three keys hold the shapes they must hold.
+	 * Refuse a reversible claim on an act that cannot be undone: a declared
+	 * irreversible kind, or no kind on a key that reads as one.
+	 *
+	 * @param string               $key        The action key.
+	 * @param array<string, mixed> $definition The declaration, declaring reversible true.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusals.
+	 */
+	private function irreversibilityRefusals(string $key, array $definition): array {
+		$kind = ($definition['kind'] ?? null);
+
+		if (is_string($kind) === true && in_array($kind, self::IRREVERSIBLE_KINDS, true) === true) {
+			return [$this->irreversibleKindRefusal(key: $key, kind: $kind)];
+		}
+
+		if ($kind === null && $this->readsAsIrreversible(key: $key) === true) {
+			return [$this->undeclaredKindRefusal(key: $key)];
+		}
+
+		return [];
+	}//end irreversibilityRefusals()
+
+	/**
+	 * The refusal for an irreversible kind that declares itself reversible.
+	 *
+	 * @param string $key  The action key.
+	 * @param string $kind The declared irreversible kind.
+	 *
+	 * @return array{code: string, message: string} The refusal.
+	 */
+	private function irreversibleKindRefusal(string $key, string $kind): array {
+		return [
+			'code' => 'reversibility-irreversible-kind',
+			'message' => sprintf(
+				'The action "%s" declares kind "%s" and reversible true. A %s leaves nothing to write '
+				.'back, so it cannot be undone.',
+				$key,
+				$kind,
+				$kind
+			),
+		];
+	}//end irreversibleKindRefusal()
+
+	/**
+	 * The refusal for a reversible action without a kind whose key reads as irreversible.
+	 *
+	 * @param string $key The action key.
+	 *
+	 * @return array{code: string, message: string} The refusal.
+	 */
+	private function undeclaredKindRefusal(string $key): array {
+		return [
+			'code' => 'reversibility-undeclared-kind',
+			'message' => sprintf(
+				'The action "%s" declares reversible true and names no kind, and its key reads as an act '
+				.'that cannot be undone. Add "kind" naming what it really does.',
+				$key
+			),
+		];
+	}//end undeclaredKindRefusal()
+
+	/**
+	 * Check the three keys hold the shapes they must hold: kind, reversible, reversal window.
 	 *
 	 * @param string               $key        The action key.
 	 * @param array<string, mixed> $definition The declaration.
@@ -198,75 +231,133 @@ final class ReversibilityAnnotationValidator implements ReversibilityAnnotationV
 	 * @return array<int, array{code: string, message: string}> The refusals.
 	 */
 	private function validateShape(string $key, array $definition): array {
-		$errors = [];
-		$kind = ($definition['kind'] ?? null);
-		$reversible = ($definition['reversible'] ?? null);
-		$window = ($definition['reversalWindow'] ?? null);
-
-		$known = array_merge([self::KIND_WRITE], self::IRREVERSIBLE_KINDS);
-		if ($kind !== null && (is_string($kind) === false || in_array($kind, $known, true) === false)) {
-			$errors[] = [
-				'code' => 'reversibility-unknown-kind',
-				'message' => sprintf(
-					'The action "%s" names a kind the vocabulary does not hold. Use one of %s.',
-					$key,
-					implode(', ', $known)
-				),
-			];
-		}
-
-		if ($reversible !== null && is_bool($reversible) === false) {
-			$errors[] = [
-				'code' => 'reversibility-not-a-boolean',
-				'message' => sprintf('The action "%s" must declare reversible as true or false.', $key),
-			];
-		}
-
-		if ($window !== null) {
-			$errors = array_merge($errors, $this->validateWindow(key: $key, definition: $definition));
-		}
-
-		return $errors;
+		return array_merge(
+			$this->validateKind(key: $key, definition: $definition),
+			$this->validateReversibleFlag(key: $key, definition: $definition),
+			$this->validateWindow(key: $key, definition: $definition)
+		);
 	}//end validateShape()
 
 	/**
-	 * Check a reversal window is a bound somebody can act inside.
+	 * Check a declared kind is one the vocabulary holds.
+	 *
+	 * @param string               $key        The action key.
+	 * @param array<string, mixed> $definition The declaration.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusals.
+	 */
+	private function validateKind(string $key, array $definition): array {
+		$kind  = ($definition['kind'] ?? null);
+		$known = array_merge([self::KIND_WRITE], self::IRREVERSIBLE_KINDS);
+		if ($kind !== null && (is_string($kind) === false || in_array($kind, $known, true) === false)) {
+			return [
+				[
+					'code' => 'reversibility-unknown-kind',
+					'message' => sprintf(
+						'The action "%s" names a kind the vocabulary does not hold. Use one of %s.',
+						$key,
+						implode(', ', $known)
+					),
+				],
+			];
+		}
+
+		return [];
+	}//end validateKind()
+
+	/**
+	 * Check a declared reversible flag is a boolean.
+	 *
+	 * @param string               $key        The action key.
+	 * @param array<string, mixed> $definition The declaration.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusals.
+	 */
+	private function validateReversibleFlag(string $key, array $definition): array {
+		$reversible = ($definition['reversible'] ?? null);
+		if ($reversible !== null && is_bool($reversible) === false) {
+			return [
+				[
+					'code' => 'reversibility-not-a-boolean',
+					'message' => sprintf('The action "%s" must declare reversible as true or false.', $key),
+				],
+			];
+		}
+
+		return [];
+	}//end validateReversibleFlag()
+
+	/**
+	 * Check a declared reversal window is a bound somebody can act inside.
 	 *
 	 * @param string               $key        The action key.
 	 * @param array<string, mixed> $definition The declaration, carrying the window and the reversibility.
 	 *
-	 * @return array<int, array{code: string, message: string}> The refusals.
+	 * @return array<int, array{code: string, message: string}> The refusals; none when no window is declared.
 	 */
 	private function validateWindow(string $key, array $definition): array {
 		$window = ($definition['reversalWindow'] ?? null);
-		if (is_int($window) === false || $window < 1 || $window > self::MAX_WINDOW) {
-			return [
-				[
-					'code' => 'reversibility-window-out-of-range',
-					'message' => sprintf(
-						'The action "%s" must declare reversalWindow as a whole number of seconds between 1 and %d.',
-						$key,
-						self::MAX_WINDOW
-					),
-				],
-			];
+		if ($window === null) {
+			return [];
+		}
+
+		if ($this->isWindowInRange(window: $window) === false) {
+			return [$this->windowOutOfRangeRefusal(key: $key)];
 		}
 
 		if (($definition['reversible'] ?? null) === true) {
 			return [];
 		}
 
-		return [
-			[
-				'code' => 'reversibility-window-without-reversible',
-				'message' => sprintf(
-					'The action "%s" names a reversalWindow but does not declare itself reversible, so the window '
-					.'bounds nothing.',
-					$key
-				),
-			],
-		];
+		return [$this->windowWithoutReversibleRefusal(key: $key)];
 	}//end validateWindow()
+
+	/**
+	 * Whether a reversal window is a whole number of seconds between 1 and MAX_WINDOW.
+	 *
+	 * @param mixed $window The declared window.
+	 *
+	 * @return bool True when it is in range.
+	 */
+	private function isWindowInRange(mixed $window): bool {
+		return is_int($window) === true && $window >= 1 && $window <= self::MAX_WINDOW;
+	}//end isWindowInRange()
+
+	/**
+	 * The refusal for a reversal window outside its bounds.
+	 *
+	 * @param string $key The action key.
+	 *
+	 * @return array{code: string, message: string} The refusal.
+	 */
+	private function windowOutOfRangeRefusal(string $key): array {
+		return [
+			'code' => 'reversibility-window-out-of-range',
+			'message' => sprintf(
+				'The action "%s" must declare reversalWindow as a whole number of seconds between 1 and %d.',
+				$key,
+				self::MAX_WINDOW
+			),
+		];
+	}//end windowOutOfRangeRefusal()
+
+	/**
+	 * The refusal for a reversal window on an action that is not reversible.
+	 *
+	 * @param string $key The action key.
+	 *
+	 * @return array{code: string, message: string} The refusal.
+	 */
+	private function windowWithoutReversibleRefusal(string $key): array {
+		return [
+			'code' => 'reversibility-window-without-reversible',
+			'message' => sprintf(
+				'The action "%s" names a reversalWindow but does not declare itself reversible, so the window '
+				.'bounds nothing.',
+				$key
+			),
+		];
+	}//end windowWithoutReversibleRefusal()
 
 	/**
 	 * Whether an action key reads as one of the irreversible kinds.

@@ -290,21 +290,34 @@ function objectFromEntryRows(rows) {
  */
 export function transformFromStored(transform) {
 	const base = isPlainObject(transform) ? clone(transform) : {}
-	let defaultMode = 'none'
-	if (has(base, 'default')) {
-		defaultMode = base.default === null ? 'empty' : 'value'
-	}
 	return {
 		base,
 		type: str(base.type),
 		sourceFormat: str(base.sourceFormat),
 		targetFormat: str(base.targetFormat),
 		mapRows: entryRowsFrom(base.map),
-		defaultMode,
-		defaultCell: cellFromValue(defaultMode === 'value' ? base.default : ''),
+		...defaultFields(base),
 		fields: Array.isArray(base.fields) ? base.fields.map((f) => String(f)) : [],
 		separator: typeof base.separator === 'string' ? base.separator : ' ',
 		valueCell: cellFromValue(has(base, 'value') ? base.value : ''),
+	}
+}
+
+/**
+ * How a stored transform treats an unmapped value: its default mode (no
+ * `default` key, `null`, or a value) and the cell holding that value.
+ *
+ * @param {object} base The stored transform.
+ * @return {{defaultMode: string, defaultCell: {text: string, json: boolean}}} The fields.
+ */
+function defaultFields(base) {
+	let defaultMode = 'none'
+	if (has(base, 'default')) {
+		defaultMode = base.default === null ? 'empty' : 'value'
+	}
+	return {
+		defaultMode,
+		defaultCell: cellFromValue(defaultMode === 'value' ? base.default : ''),
 	}
 }
 
@@ -557,7 +570,6 @@ export function parseSkipRows(text) {
  */
 export function draftFromStored(definition) {
 	const base = isPlainObject(definition) ? clone(definition) : {}
-	const idStrategy = isPlainObject(base.idStrategy) ? base.idStrategy : {}
 	return {
 		base,
 		slug: str(base.id),
@@ -565,13 +577,35 @@ export function draftFromStored(definition) {
 		description: str(base.description),
 		version: str(base.version),
 		sourceFormat: str(base.sourceFormat),
-		idStrategyType: str(idStrategy.type) || 'generate',
-		idStrategyField: str(idStrategy.field),
-		rows: Array.isArray(base.fieldMappings)
-			? base.fieldMappings.map(rowFromMapping)
-			: [],
+		...idStrategyFields(base.idStrategy),
+		rows: mappingRowsFrom(base.fieldMappings),
 		defaults: entryRowsFrom(base.defaults),
 		skipRows: Array.isArray(base.skipRows) ? base.skipRows.join(', ') : '',
+	}
+}
+
+/**
+ * The editable mapping rows of the stored field mappings, in order.
+ *
+ * @param {unknown} fieldMappings The stored field mappings.
+ * @return {Array<object>} The rows; none when the mappings are not a list.
+ */
+function mappingRowsFrom(fieldMappings) {
+	return Array.isArray(fieldMappings) ? fieldMappings.map(rowFromMapping) : []
+}
+
+/**
+ * The draft fields of a stored idStrategy: its type (generate by default)
+ * and its source field.
+ *
+ * @param {unknown} stored The stored idStrategy.
+ * @return {{idStrategyType: string, idStrategyField: string}} The fields.
+ */
+function idStrategyFields(stored) {
+	const idStrategy = isPlainObject(stored) ? stored : {}
+	return {
+		idStrategyType: str(idStrategy.type) || 'generate',
+		idStrategyField: str(idStrategy.field),
 	}
 }
 
@@ -615,24 +649,67 @@ function idStrategyPayload(draft, base) {
  */
 export function payloadFromDraft(draft) {
 	const base = draft.base || {}
-	const values = { id: draft.slug, name: draft.name }
+	const values = {
+		id: draft.slug,
+		name: draft.name,
+		...descriptionPayload(draft, base),
+		sourceFormat: draft.sourceFormat,
+		version: draft.version,
+		fieldMappings: draft.rows.map(mappingPayload),
+		...defaultsPayload(draft, base),
+		...skipRowsPayload(draft, base),
+		idStrategy: idStrategyPayload(draft, base),
+	}
+	return ordered(base, values, TOP_LEVEL_KEYS)
+}
+
+/**
+ * The description to save: only when the draft has one or the stored
+ * definition had the key.
+ *
+ * @param {object} draft The draft.
+ * @param {object} base The stored definition.
+ * @return {object} `{description}`, or nothing.
+ */
+function descriptionPayload(draft, base) {
 	if (draft.description !== '' || has(base, 'description')) {
-		values.description = draft.description
+		return { description: draft.description }
 	}
-	values.sourceFormat = draft.sourceFormat
-	values.version = draft.version
-	values.fieldMappings = draft.rows.map(mappingPayload)
+	return {}
+}
+
+/**
+ * The defaults to save: the draft's rows, else the stored empty defaults
+ * when the stored definition had the key.
+ *
+ * @param {object} draft The draft.
+ * @param {object} base The stored definition.
+ * @return {object} `{defaults}`, or nothing.
+ */
+function defaultsPayload(draft, base) {
 	if (draft.defaults.length > 0) {
-		values.defaults = objectFromEntryRows(draft.defaults)
-	} else if (has(base, 'defaults')) {
-		values.defaults = storedEmptyDefaults(base.defaults)
+		return { defaults: objectFromEntryRows(draft.defaults) }
 	}
+	if (has(base, 'defaults')) {
+		return { defaults: storedEmptyDefaults(base.defaults) }
+	}
+	return {}
+}
+
+/**
+ * The rows to skip: only when the draft names some or the stored definition
+ * had the key.
+ *
+ * @param {object} draft The draft.
+ * @param {object} base The stored definition.
+ * @return {object} `{skipRows}`, or nothing.
+ */
+function skipRowsPayload(draft, base) {
 	const skip = parseSkipRows(draft.skipRows).rows
 	if (skip.length > 0 || has(base, 'skipRows')) {
-		values.skipRows = skip
+		return { skipRows: skip }
 	}
-	values.idStrategy = idStrategyPayload(draft, base)
-	return ordered(base, values, TOP_LEVEL_KEYS)
+	return {}
 }
 
 /**
@@ -760,21 +837,43 @@ export function sampleRowFrom(columns, sample) {
 			setOwn(row, column, value)
 			continue
 		}
-		const segments = column
-			.replace(/^\/+/, '')
-			.split('/')
-			.map((segment) => segment.replace(/~1/g, '/').replace(/~0/g, '~'))
-		let cursor = row
-		segments.slice(0, -1).forEach((segment) => {
-			const next = Object.hasOwn(cursor, segment) ? cursor[segment] : null
-			if (next === null || typeof next !== 'object') {
-				setOwn(cursor, segment, {})
-			}
-			cursor = cursor[segment]
-		})
-		setOwn(cursor, segments[segments.length - 1], value)
+		const segments = pointerSegments(column)
+		setOwn(parentAt(row, segments), segments[segments.length - 1], value)
 	}
 	return row
+}
+
+/**
+ * The unescaped segments of a JSON pointer column (`~1` is `/`, `~0` is `~`).
+ *
+ * @param {string} column The column, starting with `/`.
+ * @return {Array<string>} The segments.
+ */
+function pointerSegments(column) {
+	return column
+		.replace(/^\/+/, '')
+		.split('/')
+		.map((segment) => segment.replace(/~1/g, '/').replace(/~0/g, '~'))
+}
+
+/**
+ * The object the last segment is set on, creating the objects on the way
+ * where the row holds none.
+ *
+ * @param {object} row The row being built.
+ * @param {Array<string>} segments The pointer segments.
+ * @return {object} The parent object.
+ */
+function parentAt(row, segments) {
+	let cursor = row
+	segments.slice(0, -1).forEach((segment) => {
+		const next = Object.hasOwn(cursor, segment) ? cursor[segment] : null
+		if (next === null || typeof next !== 'object') {
+			setOwn(cursor, segment, {})
+		}
+		cursor = cursor[segment]
+	})
+	return cursor
 }
 
 /**

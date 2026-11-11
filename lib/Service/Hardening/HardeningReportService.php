@@ -142,15 +142,7 @@ class HardeningReportService implements HardeningReportServiceInterface {
 	 */
 	public function report(): array {
 		$controls = $this->controls();
-
-		$failing = [];
-		foreach ($controls as $control) {
-			if ($control->meetsFloor() === false) {
-				$failing[] = $control->label->id;
-			}
-		}
-
-		$origins = $this->posture->policy->allowedOrigins();
+		$failing = $this->failingIds(controls: $controls);
 
 		return [
 			'generated' => (new DateTimeImmutable())->format(DATE_ATOM),
@@ -160,16 +152,45 @@ class HardeningReportService implements HardeningReportServiceInterface {
 				static fn (HardeningControl $control): array => $control->jsonSerialize(),
 				$controls
 			),
-			'observed' => [
-				'bruteForce' => $this->posture->platform->bruteForceState(),
-				'throttledSurfaces' => ThrottledSurfaces::ALL,
-				'allowedOrigins' => $origins,
-				'reflectsAnyOrigin' => ($origins === []),
-				'passwordPolicyRuns' => $this->posture->platform->passwordPolicyRuns(),
-			],
+			'observed' => $this->observed(),
 		];
 
 	}//end report()
+
+	/**
+	 * The ids of the controls that do not meet their floor.
+	 *
+	 * @param array<int, HardeningControl> $controls The controls.
+	 *
+	 * @return array<int, string> The failing ids, in control order.
+	 */
+	private function failingIds(array $controls): array {
+		$failing = [];
+		foreach ($controls as $control) {
+			if ($control->meetsFloor() === false) {
+				$failing[] = $control->label->id;
+			}
+		}
+
+		return $failing;
+	}//end failingIds()
+
+	/**
+	 * What the platform is observed to do: brute-force state, throttled surfaces, origins and password policy.
+	 *
+	 * @return array<string, mixed> The observations.
+	 */
+	private function observed(): array {
+		$origins = $this->posture->policy->allowedOrigins();
+
+		return [
+			'bruteForce' => $this->posture->platform->bruteForceState(),
+			'throttledSurfaces' => ThrottledSurfaces::ALL,
+			'allowedOrigins' => $origins,
+			'reflectsAnyOrigin' => ($origins === []),
+			'passwordPolicyRuns' => $this->posture->platform->passwordPolicyRuns(),
+		];
+	}//end observed()
 
 	/**
 	 * Every control, with the value in force and the floor beside it.

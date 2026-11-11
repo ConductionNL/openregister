@@ -49,6 +49,7 @@ use OCP\Files\IRootFolder;
 use OCP\IUser;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Export\ProfileProjection;
 
 /**
  * The built-in whole-set export.
@@ -192,15 +193,10 @@ class ExportWholeSetAction implements BulkActionInterface {
 	/**
 	 * Write one object into its schema's file, or say why it was not written.
 	 *
-	 * @param ObjectEntity $object The object to export.
-	 * @param array<string, mixed> $parameters The job's parameters.
-	 * @param bool $commit False to rehearse, true to write.
-	 * @param IUser|null $actor The user the job runs as.
+	 * @param BulkStep $step The member, the job's parameters, rehearsal or commit, and the actor.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the
-	 *     rehearsal and the commit is the design property of the bulk engine.
 	 * @SuppressWarnings(PHPMD.StaticAccess) BulkActionResult's named
 	 *     constructors are its only constructor: the class is immutable and its
 	 *     private __construct exists so an outcome cannot be built without
@@ -208,18 +204,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		return $this->applyStep(step: new BulkStep(object: $object, parameters: $parameters, commit: $commit, actor: $actor));
-	}//end apply()
-
-	/**
-	 * Export the step's object, as the job's actor, or say why not.
-	 *
-	 * @param BulkStep $step The member, the job's parameters, rehearsal or commit, and the actor.
-	 *
-	 * @return BulkActionResult What happened, or what would happen.
-	 */
-	private function applyStep(BulkStep $step): BulkActionResult {
+	public function apply(BulkStep $step): BulkActionResult {
 		if ($step->actor === null) {
 			return BulkActionResult::refused('not-authenticated');
 		}
@@ -239,7 +224,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 		$run->schema = $this->schemaFor(schemaId: $run->schemaId);
 
 		return $this->exportRow(run: $run);
-	}//end applyStep()
+	}//end apply()
 
 	/**
 	 * The schema with this id, read without RBAC or multitenancy, or null.
@@ -273,7 +258,10 @@ class ExportWholeSetAction implements BulkActionInterface {
 			return $this->refuse(run: $run, refusal: $refusal);
 		}
 
-		$line = $this->writer->csvLineFor(profile: $run->profile, object: $run->step->object, schema: $run->schema);
+		$line = $this->writer->csvLineFor(
+			projection: new ProfileProjection(profile: $run->profile, schema: $run->schema),
+			object: $run->step->object
+		);
 		if ($line === '') {
 			return BulkActionResult::skipped('The object carries none of the fields the profile declares.');
 		}

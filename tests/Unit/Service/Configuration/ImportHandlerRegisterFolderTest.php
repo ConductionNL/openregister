@@ -123,12 +123,17 @@ class ImportHandlerRegisterFolderTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn('');
 
 		$this->handler = new ImportHandler(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->registerMapper,
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $configurationMapper,
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $appConfig,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $configurationMapper,
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
 			objectService: $this->createMock(ObjectService::class)

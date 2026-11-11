@@ -36,10 +36,13 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FormLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Db\FormLink;
+use OCA\OpenRegister\Db\FormSubmissionRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\FormLinkScope;
 use OCA\OpenRegister\Service\FormLinkServiceInterface;
+use OCA\OpenRegister\Service\NewForm;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -181,25 +184,15 @@ class FormLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	private function linkToObject(ObjectEntity $object, array $ids): FormLink {
-		$registerId = (int)$object->getRegister();
-		$schemaId = $this->linkSchemaId(object: $object);
+		$scope = (new FormLinkScope(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister()))
+			->inSchema(schemaId: $this->linkSchemaId(object: $object));
 
 		if ($ids['submissionId'] > 0) {
-			return $this->formLinkService->linkFormSubmission(
-				objectUuid: $object->getUuid(),
-				registerId: $registerId,
-				formId: $ids['formId'],
-				submissionId: $ids['submissionId'],
-				schemaId: $schemaId
-			);
+			$submission = new FormSubmissionRef(formId: $ids['formId'], submissionId: $ids['submissionId']);
+			return $this->formLinkService->linkSubmissionTo(scope: $scope, submission: $submission);
 		}
 
-		return $this->formLinkService->linkForm(
-			objectUuid: $object->getUuid(),
-			registerId: $registerId,
-			formId: $ids['formId'],
-			schemaId: $schemaId
-		);
+		return $this->formLinkService->linkFormTo(scope: $scope, formId: $ids['formId']);
 	}//end linkToObject()
 
 	/**
@@ -301,18 +294,10 @@ class FormLinksController extends Controller {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	public function destroySubmission(
-		string $register,
-		string $schema,
-		string $id,
-		string $formId,
-		string $submissionId,
-	): JSONResponse {
-		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
-		$ids = ['formId' => (int)$formId, 'submissionId' => (int)$submissionId];
-
-		return $this->unlinking(ref: $ref, action: fn (ObjectEntity $object): JSONResponse => $this->removedSubmission(object: $object, ids: $ids));
-
+	public function destroySubmission(string $register, string $schema, string $id, string $formId, string $submissionId): JSONResponse {
+		$submission = new FormSubmissionRef(formId: (int)$formId, submissionId: (int)$submissionId);
+		$action     = fn (ObjectEntity $object): JSONResponse => $this->removedSubmission(object: $object, submission: $submission);
+		return $this->unlinking(ref: new ObjectRef(register: $register, schema: $schema, id: $id), action: $action);
 	}//end destroySubmission()
 
 	/**
@@ -399,7 +384,7 @@ class FormLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	private function onObject(ObjectRef $ref, callable $action): JSONResponse {
-		$object = $this->validateObject(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		$object = $this->resolveLinkedObject(ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 		if ($object === null) {
 			return $this->objectNotFound();
 		}
@@ -456,12 +441,11 @@ class FormLinksController extends Controller {
 			return new JSONResponse(['error' => $this->l10n->t('title is required')], 400);
 		}
 
-		$link = $this->formLinkService->createAndLinkForm(
-			objectUuid: $object->getUuid(),
-			registerId: (int)$object->getRegister(),
-			title: $title,
-			description: (string)($data['description'] ?? ''),
-			schemaId: $this->linkSchemaId(object: $object)
+		$scope = (new FormLinkScope(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister()))
+			->inSchema(schemaId: $this->linkSchemaId(object: $object));
+		$link  = $this->formLinkService->createAndLinkForm(
+			scope: $scope,
+			form: new NewForm(title: $title, description: (string)($data['description'] ?? ''))
 		);
 
 		return new JSONResponse($link, 201);
@@ -486,19 +470,15 @@ class FormLinksController extends Controller {
 	/**
 	 * Unlink one submission from the object.
 	 *
-	 * @param ObjectEntity                          $object The object.
-	 * @param array{formId: int, submissionId: int} $ids    The parent form and the submission.
+	 * @param ObjectEntity      $object     The object.
+	 * @param FormSubmissionRef $submission The parent form and the submission.
 	 *
 	 * @return JSONResponse Whether the submission was unlinked.
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	private function removedSubmission(ObjectEntity $object, array $ids): JSONResponse {
-		$removed = $this->formLinkService->unlinkSubmission(
-			objectUuid: $object->getUuid(),
-			formId: $ids['formId'],
-			submissionId: $ids['submissionId']
-		);
+	private function removedSubmission(ObjectEntity $object, FormSubmissionRef $submission): JSONResponse {
+		$removed = $this->formLinkService->unlinkSubmission(objectUuid: $object->getUuid(), submission: $submission);
 
 		return new JSONResponse(['success' => $removed]);
 	}//end removedSubmission()

@@ -150,7 +150,9 @@
             "card8.getDuedate([])",
             "card8.getLabels([])",
             "card8.getAssignedUsers([])",
+            "debug [DeckLinkService] Card assignees not readable: no users",
             "card8.getRelatedBoard([])",
+            "debug [DeckLinkService] Card relation title not readable via getRelatedBoard: no board",
             "card8.getRelatedStack([])",
             "stack.getTitle([])",
             "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BoardId\":0,\"StackId\":0,\"CardId\":8,\"CardTitle\":\"\",\"DueDate\":null,\"Labels\":null,\"Assignees\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"boardId\",\"stackId\",\"cardId\",\"cardTitle\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
@@ -195,7 +197,9 @@
             "card9.getLabels([])",
             "card9.getAssignedUsers([])",
             "card9.getRelatedBoard([])",
+            "debug [DeckLinkService] Card relation title not readable via getRelatedBoard: Call to undefined method getRelatedBoard",
             "card9.getRelatedStack([])",
+            "debug [DeckLinkService] Card relation title not readable via getRelatedStack: Call to undefined method getRelatedStack",
             "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BoardId\":0,\"StackId\":2,\"CardId\":9,\"CardTitle\":\"Bare\",\"DueDate\":null,\"Labels\":null,\"Assignees\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"boardId\",\"stackId\",\"cardId\",\"cardTitle\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
         ]
     },
@@ -358,7 +362,9 @@
             "card8.getDuedate([])",
             "card8.getLabels([])",
             "card8.getAssignedUsers([])",
+            "debug [DeckLinkService] Card assignees not readable: no users",
             "card8.getRelatedBoard([])",
+            "debug [DeckLinkService] Card relation title not readable via getRelatedBoard: no board",
             "card8.getRelatedStack([])",
             "stack.getTitle([])",
             "CardService.find([99])",
@@ -792,6 +798,7 @@
             "card8.getDuedate([])",
             "card8.getLabels([])",
             "card8.getAssignedUsers([])",
+            "debug [DeckCardService] Card assignees not readable: no users",
             "CardService.find([99])",
             "linkToRoute(deck.page.index)",
             "CardService.find([10])"
@@ -915,6 +922,7 @@
             "card8.getDuedate([])",
             "card8.getLabels([])",
             "card8.getAssignedUsers([])",
+            "debug [DeckCardService] Card assignees not readable: no users",
             "CardService.find([99])",
             "linkToRoute(deck.page.index)",
             "CardService.find([10])"

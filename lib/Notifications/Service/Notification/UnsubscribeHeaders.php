@@ -89,16 +89,8 @@ class UnsubscribeHeaders {
 		}
 
 		try {
-			$email   = $message->getSymfonyEmail();
-			$headers = $email->getHeaders();
-			foreach ([self::HEADER_UNSUBSCRIBE, self::HEADER_UNSUBSCRIBE_POST] as $name) {
-				if ($headers->has($name) === true) {
-					$headers->remove($name);
-				}
-			}
-
-			$headers->addTextHeader(self::HEADER_UNSUBSCRIBE, '<' . $url . '>');
-			$headers->addTextHeader(self::HEADER_UNSUBSCRIBE_POST, self::ONE_CLICK);
+			$email = $message->getSymfonyEmail();
+			$this->replaceHeaders(headers: $email->getHeaders(), url: $url);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'[UnsubscribeHeaders] could not set the headers; sending with the body link only',
@@ -109,6 +101,27 @@ class UnsubscribeHeaders {
 
 		return true;
 	}//end apply()
+
+	/**
+	 * Replace any List-Unsubscribe headers in a header set with the one-click pair.
+	 *
+	 * @param mixed  $headers The mail object's header set.
+	 * @param string $url     The one-click url.
+	 *
+	 * @return void
+	 *
+	 * @throws Throwable When the mail object refuses a header.
+	 */
+	private function replaceHeaders(mixed $headers, string $url): void {
+		foreach ([self::HEADER_UNSUBSCRIBE, self::HEADER_UNSUBSCRIBE_POST] as $name) {
+			if ($headers->has($name) === true) {
+				$headers->remove($name);
+			}
+		}
+
+		$headers->addTextHeader(self::HEADER_UNSUBSCRIBE, '<' . $url . '>');
+		$headers->addTextHeader(self::HEADER_UNSUBSCRIBE_POST, self::ONE_CLICK);
+	}//end replaceHeaders()
 
 	/**
 	 * The one-click url, or null when the material has none that is safe in a header.
