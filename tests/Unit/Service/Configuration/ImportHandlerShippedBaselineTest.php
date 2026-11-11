@@ -152,16 +152,22 @@ class ImportHandlerShippedBaselineTest extends TestCase {
 		);
 
 		return new ImportHandler(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->schemaMapper,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(
+				shippedGuard: $guard
+			),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
-			objectService: $this->createMock(ObjectService::class),
-			shippedGuard: $guard
+			objectService: $this->createMock(ObjectService::class)
 		);
 	}//end handler()
 

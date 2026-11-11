@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Object\PlannedAccountsCheck;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
@@ -118,7 +119,10 @@ class ExampleSetStore {
 
 		try {
 			$validator = $this->container->get(ValidateObject::class);
-			$result    = $validator->validateObjectWithPlannedUsers(object: $check->object, schema: $schemaId, plannedUsers: $check->plannedUsers);
+			$result    = $validator->validateWithPlannedAccounts(
+				object: $check->object,
+				check: new PlannedAccountsCheck(schema: $schemaId, plannedUsers: $check->plannedUsers)
+			);
 			if ($result->isValid() === true) {
 				return [];
 			}

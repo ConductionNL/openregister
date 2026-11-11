@@ -95,7 +95,7 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	}//end resolve()
 
 	/**
-	 * Resolve a recipients spec, and say which entries resolved to nobody.
+	 * Resolve a recipients spec against one source, and say which entries resolved to nobody.
 	 *
 	 * The plain {@see resolve()} answers only "who gets told", which cannot
 	 * distinguish a group that is deliberately empty from one that no longer
@@ -108,33 +108,6 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	 * An entry that resolves to a real but EMPTY group is not unresolved: the
 	 * group exists, it simply has no members, and reporting that as a fault
 	 * would make every quiet team look broken.
-	 *
-	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
-	 * @param array<string, mixed> $data The object's stored data (or a flow item's json).
-	 * @param ObjectEntity|null $object The object, for `object-acl` and `expression` kinds.
-	 * @param array<string, mixed> $context Trigger-specific extras handed to expression resolvers.
-	 * @param array<string, array<int, string>> $roleGroups Role name to assigned group ids, for the `role` kind.
-	 *
-	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
-	 */
-	public function resolveWithDiagnostics(
-		array $recipientsSpec,
-		array $data,
-		?ObjectEntity $object = null,
-		array $context = [],
-		array $roleGroups = [],
-	): array {
-		$source = new RecipientSource(data: $data, object: $object, context: $context, roleGroups: $roleGroups);
-
-		return $this->resolveFromSource(recipientsSpec: $recipientsSpec, source: $source);
-	}//end resolveWithDiagnostics()
-
-	/**
-	 * Resolve a recipients spec against one source, and say which entries resolved to nobody.
-	 *
-	 * The outcome of {@see resolveWithDiagnostics()}, for a caller that holds the source.
 	 *
 	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
 	 * @param RecipientSource   $source         The object, its data, the trigger context and the role assignment.

@@ -36,7 +36,6 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
 use OCA\OpenRegister\Service\Flow\FlowAdvanceBudget;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
-use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCP\IL10N;
 use UnexpectedValueException;
@@ -49,6 +48,8 @@ use UnexpectedValueException;
  * dependency to say the same thing.
  */
 final class UserTaskConfig {
+	use TaskConfigReadingsTrait;
+
 
 	/**
 	 * The config keys whose value must come from a published vocabulary, with that vocabulary.
@@ -221,7 +222,7 @@ final class UserTaskConfig {
 
 		$data = [
 			'title' => $this->renderedTitle(config: $config, items: $items),
-			'description' => $this->renderedOrNull(value: ($config['description'] ?? null), json: $json),
+			'description' => $this->common->renderedOrNull(value: ($config['description'] ?? null), json: $json),
 			'state' => $state,
 			'performerType' => UserTaskPerformers::kindFor(config: $config, performers: $this->performers(config: $config)),
 			'priority' => trim((string)($config['priority'] ?? 'normal')),
@@ -231,8 +232,8 @@ final class UserTaskConfig {
 			'candidateRole' => $this->nullIfEmpty(value: trim((string)($config['candidateRole'] ?? ''))),
 			'routingStrategy' => $this->nullIfEmpty(value: trim((string)($config['routingStrategy'] ?? ''))),
 			'routingFallback' => $this->nullIfEmpty(value: trim((string)($config['routingFallback'] ?? ''))),
-			'dueAt' => $this->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
-			'expiresAt' => $this->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
+			'dueAt' => $this->common->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
+			'expiresAt' => $this->common->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
 			'onTimeout' => $this->nullIfEmpty(value: trim((string)($config['onTimeout'] ?? ''))),
 			'onReject' => $this->nullIfEmpty(value: trim((string)($config['onReject'] ?? ''))),
 			'metadata' => [
@@ -310,46 +311,6 @@ final class UserTaskConfig {
 	}//end assigneeValue()
 
 	/**
-	 * The item key the outcome is written under.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 *
-	 * @return string The key.
-	 *
-	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
-	 */
-	public function outcomeKey(array $config): string {
-		return $this->common->outcomeKey(config: $config);
-	}//end outcomeKey()
-
-	/**
-	 * The title, templated against the representative item.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 * @param array $items The input items.
-	 *
-	 * @return string The rendered title.
-	 *
-	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
-	 */
-	public function renderedTitle(array $config, array $items): string {
-		return $this->common->renderedTitle(config: $config, items: $items);
-	}//end renderedTitle()
-
-	/**
-	 * When to wake up and re-ask, absent a wake. Never null.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 *
-	 * @return DateTime The next heartbeat.
-	 *
-	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
-	 */
-	public function heartbeatAt(array $config): DateTime {
-		return $this->common->heartbeatAt(config: $config);
-	}//end heartbeatAt()
-
-	/**
 	 * Whether the config names anybody who could perform the task.
 	 *
 	 * @param array<string, mixed> $config The step configuration.
@@ -419,27 +380,6 @@ final class UserTaskConfig {
 			$this->l10n->t('%1$s "%2$s" is not one of %3$s.', [$key, $value, implode(', ', $vocabulary)])
 		);
 	}//end refuseOutsideVocabulary()
-
-	/**
-	 * A templated string, or null when it renders to nothing.
-	 *
-	 * @param mixed $value The configured value.
-	 * @param array<string, mixed> $json The representative record.
-	 *
-	 * @return string|null The rendered string, or null.
-	 */
-	private function renderedOrNull(mixed $value, array $json): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		$rendered = FlowValueTemplate::render(value: $value, json: $json);
-		if (is_scalar($rendered) === false) {
-			return null;
-		}
-
-		return $this->nullIfEmpty(value: trim((string)$rendered));
-	}//end renderedOrNull()
 
 	/**
 	 * Null for an empty string.
