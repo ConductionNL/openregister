@@ -3004,3 +3004,4 @@ hermiq	1509	8b076f0952de771a0627a92da58f1730402479a5	GREEN	vm1:25334	tree of 25 
 hermiq	1510	dd7716f4ba7cf6f788f5004bf90d2866bdceb161	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
 hermiq	1511	8df98ad88f60d2649f8f53b4d80d027492e182f7	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
 hermiq	1513	4453f9a2d43cebdf219f66ed0463b1c480520766	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+learniq	2182	bb5dc9f749ad678ae14cd1ddfc7ada71f9232509	CONFLICT	vm1:26094	conflicts with the tree on 8484f38f00
