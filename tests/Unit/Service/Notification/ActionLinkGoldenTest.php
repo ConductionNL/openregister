@@ -25,6 +25,19 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\ActionTargetContext;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\Http\Client\IClientService;
@@ -245,18 +258,51 @@ final class ActionLinkGoldenTest extends TestCase {
 		);
 
 		return new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $logger,
-			groupManager: $this->createMock(IGroupManager::class),
-			userManager: $this->createMock(IUserManager::class),
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $this->createMock(IActivityManager::class),
-			httpClient: $this->createMock(IClientService::class),
-			serverContainer: $this->createMock(IServerContainer::class),
-			urlGenerator: $wired === true ? $this->urlGenerator() : null,
-			objectService: $wired === true ? $this->objectService() : null,
-			deepLinkRegistry: $wired === true ? $this->registry() : null,
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->createMock(INotificationManager::class),
+					logger: $logger,
+					userManager: $this->createMock(IUserManager::class)
+				),
+				emailSender: new EmailSender(
+					userManager: $this->createMock(IUserManager::class),
+					mailer: $this->createMock(IMailer::class),
+					logger: $logger
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $logger
+				),
+				activityManager: $this->createMock(IActivityManager::class)
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold()
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->createMock(IClientService::class),
+				serverContainer: $this->createMock(IServerContainer::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: $logger
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->createMock(IUserManager::class),
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: $logger,
+					serverContainer: $this->createMock(IServerContainer::class)
+				)
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $logger
+				),
+				urlGenerator: $wired === true ? $this->urlGenerator() : null,
+				objectService: $wired === true ? $this->objectService() : null,
+				deepLinkRegistry: $wired === true ? $this->registry() : null
+			)
 		);
 	}//end makeDispatcher()
 }//end class
