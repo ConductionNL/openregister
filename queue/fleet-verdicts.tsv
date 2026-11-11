@@ -912,3 +912,28 @@ pipelinq	3288	eb6037db0703ff23ca24a4da8e9154569f132386	GREEN	FV07:5	tree green: 
 pipelinq	3289	51f0b01f90eade154f563d7d5691d07ae7fdb55c	GREEN	FV07:5	tree green: phpunit 0 new failures, vitest 0 new failures
 pipelinq	3290	e630d62d8f2591f0ed553868445137aaef5ba969	GREEN	FV07:5	tree green: phpunit 0 new failures, vitest 0 new failures
 integriq	3127	8f0759d3b4e3b44caec5367909d6a7316d6c0d0b	RED	FV09:3	phpunit AppOwnedInterfaceBindingTest::testEveryBareAppOwnedInterfaceIsBound (BrokeredCallRefusals injected by BrokeredJsonDispatch.php is not bound)
+shillinq	2530	465f99f464890a6da2c26cf6eceed9ca3a3bf477	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2532	4c8f1320793f4fe6def8d5dbe57562e10214f4b5	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2534	409d6774394b8458be2f233f0de594a6b4eb9147	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2536	d4b05d62d312464a50e52130e314d4458e2ef1cf	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2538	3dbb11452a82dd75355382be9601e250aa8f1e88	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2540	0e93fe685ee65a0f0ccddd6b25dfb7d6f7d3b7d4	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2542	5aa0d5cf44ed5eb781495cee381c7e069eea5e6b	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2544	5170726d7212bf0fc62c587f5955b4053666e2b2	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2546	95e4466172e9d2d74313ce505609cc8d349e954e	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2548	201f45908e98a69dd62c03c4c644bfff5afbdac8	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2550	5b16fb9c9ef0951d02db70f6479d67a250598e60	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2552	cd3608996cc007b351329705cf413b4ceb713929	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2554	57a7e891b825260d1284242df3fd74074c43b8bc	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2556	470cdc3b004db1dd41f2bd053a6c3df8e6d2cb32	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2558	bd0b219c5a8ad4f7fcab0de4d99c42d219dabc58	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2560	6c6e622889fc4131fec431505e1657042b65883a	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2562	4f1280944738fa436fb65af5b3b43fb5127f7ca9	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2564	67e26c921519a2e2d2a990eeb52cf0b0b751a733	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2566	5840417d165f2ef264355a216808c2746c4ced59	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2568	5ea12359c31d402232da63bf7b276cdbae50d814	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2570	1cb63f9b1cecf9de6a80e15834366036a5b939f6	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2572	6449392efe506314d027d70c7fae9e901d87b6a2	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2574	2e6742bbeedcce2fba23010af7849515aecee39e	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2576	be3d2530ddfc10ad3279dc53fb9096a307031821	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+shillinq	2578	57fa9a23011459cf362a36f75b8c9ce22028a793	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
