@@ -48,6 +48,7 @@ use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationScope;
 
 final class ConfigurationDeploymentControllerTest extends TestCase {
 
@@ -258,7 +259,7 @@ final class ConfigurationDeploymentControllerTest extends TestCase {
 		$explainer = $this->createMock(ConfigurationExplainer::class);
 		$explainer->expects($this->once())
 			->method('explain')
-			->with('integration.mail', 'zaken', 'standaard', 'zaak')
+			->with('integration.mail', new ConfigurationScope('zaken', 'standaard', 'zaak'))
 			->willReturn(['key' => 'integration.mail', 'found' => true]);
 
 		$request = $this->request(

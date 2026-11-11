@@ -22,6 +22,19 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
@@ -113,24 +126,49 @@ class TaskVerbActionTest extends TestCase {
 		);
 
 		$dispatcher = new AnnotationNotificationDispatcher(
-			$this->createMock(SchemaMapper::class),
-			$notifications,
-			new NullLogger(),
-			$this->createMock(IGroupManager::class),
-			$users,
-			$this->createMock(IMailer::class),
-			$this->createMock(IActivityManager::class),
-			$this->createMock(IClientService::class),
-			$this->createMock(IServerContainer::class),
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			$urls
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $notifications,
+					logger: new NullLogger(),
+					userManager: $users
+				),
+				emailSender: new EmailSender(
+					userManager: $users,
+					mailer: $this->createMock(IMailer::class),
+					logger: new NullLogger()
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: new NullLogger()
+				),
+				activityManager: $this->createMock(IActivityManager::class)
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold()
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->createMock(IClientService::class),
+				serverContainer: $this->createMock(IServerContainer::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: new NullLogger()
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $users,
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: new NullLogger(),
+					serverContainer: $this->createMock(IServerContainer::class)
+				)
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: new NullLogger()
+				),
+				urlGenerator: $urls
+			)
 		);
 
 		$task = new Task();
@@ -205,7 +243,7 @@ class TaskVerbActionTest extends TestCase {
 		$notification->method('setParsedSubject')->willReturnSelf();
 		$notification->method('addParsedAction')->willReturnSelf();
 
-		(new \OCA\OpenRegister\Notification\AnnotationNotifier($factory, $urls))->prepare($notification, 'nl');
+		(new \OCA\OpenRegister\Notification\AnnotationNotifier($factory, new \OCA\OpenRegister\Notifications\Service\ObjectDeepLinks($urls)))->prepare($notification, 'nl');
 
 		$this->assertSame([
 			['https://x/complete?outcome=approved', 'POST'],

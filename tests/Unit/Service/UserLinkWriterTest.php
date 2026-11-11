@@ -12,6 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Service\UserLinkRequest;
 use OCA\OpenRegister\Service\UserLinkWriter;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -120,7 +121,7 @@ class UserLinkWriterTest extends TestCase {
 				}
 			);
 
-		$this->writer->write(objectUuid: 'case-1', registerId: 5, schemaId: 7, userId: 'jan', role: 'handler');
+		$this->writer->write(request: new UserLinkRequest(objectUuid: 'case-1', registerId: 5, schemaId: 7, userId: 'jan'), role: 'handler');
 	}//end testANewUserLinkCarriesTheAccountsIdentity()
 
 	/**
@@ -144,7 +145,7 @@ class UserLinkWriterTest extends TestCase {
 				}
 			);
 
-		$link = $this->writer->write(objectUuid: 'case-1', registerId: 5, schemaId: 7, userId: 'jan', role: 'handler');
+		$link = $this->writer->write(request: new UserLinkRequest(objectUuid: 'case-1', registerId: 5, schemaId: 7, userId: 'jan'), role: 'handler');
 
 		$this->assertSame('jan', $link->getUserId());
 	}//end testTheSameUserInTheSameRoleUpdatesTheRow()
@@ -162,7 +163,7 @@ class UserLinkWriterTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(404);
 
-		$this->writer->write(objectUuid: 'case-1', registerId: 5, schemaId: 7, userId: 'ghost', role: null);
+		$this->writer->write(request: new UserLinkRequest(objectUuid: 'case-1', registerId: 5, schemaId: 7, userId: 'ghost'), role: null);
 	}//end testAnUnknownUserIsRefused()
 
 	/**
@@ -180,6 +181,6 @@ class UserLinkWriterTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->writer->write(objectUuid: 'case-1', registerId: 5, schemaId: 7, userId: 'jan', role: null);
+		$this->writer->write(request: new UserLinkRequest(objectUuid: 'case-1', registerId: 5, schemaId: 7, userId: 'jan'), role: null);
 	}//end testAnAnonymousCallerCannotLink()
 }//end class

@@ -303,12 +303,15 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 	 */
 	private function dueDate(object $card): ?string {
 		try {
-			$due = $card->getDuedate();
-			if ($due instanceof \DateTimeInterface) {
-				return $due->format(\DateTime::ATOM);
-			}
+			return AtomMoment::of(value: $card->getDuedate());
 		} catch (Throwable $e) {
 			// Getter missing on this Deck version — leave null.
+			$this->logger->debug(
+				message: '[DeckObjectSourceProvider] Card due date not readable',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return null;

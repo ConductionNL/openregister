@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\HierarchyLevel;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCP\Constants;
@@ -102,7 +103,7 @@ final class HierarchyGrantExpanderDeclarationGoldenTest extends TestCase {
 			[['table' => 't', 'parentColumn' => 'p', 'maxDepth' => 3, 'verbs' => [], 'schemaId' => 9]]
 		);
 		$descender->method('childrenOf')->willReturnCallback(
-			static function (string $table, string $column, array $parents): array {
+			static function (HierarchyLevel $level, array $parents): array {
 				if ($parents === ['root']) {
 					// 'stray' names a parent nobody was granted; 42 is an int key.
 					return ['stray' => 'elsewhere', 42 => 'root', 'kid' => 'root'];

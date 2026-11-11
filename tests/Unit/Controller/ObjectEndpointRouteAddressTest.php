@@ -156,12 +156,12 @@ final class ObjectEndpointRouteAddressTest extends TestCase {
 
 		return new ObjectReadStateController(
 			request: $request,
-			objectService: $this->objectService(),
 			services: new ObjectReadStateControllerServices(
 				readState: $this->createMock(ReadStateServiceInterface::class),
-				clearing: $this->createMock(NotificationClearingServiceInterface::class)
-			),
-			logger: $logger
+				clearing: $this->createMock(NotificationClearingServiceInterface::class),
+				objectService: $this->objectService(),
+				logger: $logger
+			)
 		);
 	}//end controller()
 }//end class

@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\History;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * Rebuilding one object's state-history line, as the rebuild job does. Only the method that caller calls.
  */
@@ -30,14 +32,12 @@ interface StateHistoryRebuildInterface {
 	/**
 	 * Rebuild one object's line.
 	 *
-	 * @param string $objectUuid The object.
-	 * @param string $property   The declared lifecycle property.
-	 * @param string $register   The register slug.
-	 * @param string $schema     The schema slug.
+	 * @param ObjectRef $ref      The object, with its register and schema slugs.
+	 * @param string    $property The declared lifecycle property.
 	 *
 	 * @return int Intervals written.
 	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	public function rebuildObject(string $objectUuid, string $property, string $register, string $schema): int;
+	public function rebuild(ObjectRef $ref, string $property): int;
 }//end interface

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notification;
 
 use OCA\OpenRegister\Notification\AnnotationNotifier;
+use OCA\OpenRegister\Notifications\Service\ObjectDeepLinks;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
@@ -28,7 +29,7 @@ class AnnotationNotifierTest extends TestCase {
 		parent::setUp();
 		$this->factory = $this->createMock(IFactory::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
-		$this->notifier = new AnnotationNotifier($this->factory, $this->urlGenerator);
+		$this->notifier = new AnnotationNotifier($this->factory, new ObjectDeepLinks($this->urlGenerator));
 	}
 
 	public function testGetId(): void {

@@ -25,8 +25,11 @@ use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\RemovalOptions;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\Files\Folder;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -251,12 +254,12 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 				return new AuditTrail();
 			}
 		);
-		$auditMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$auditMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null) use (&$calls): AuditTrail {
 				$calls[] = ['auditEntry' => $action, 'object' => $object->getUuid(), 'context' => $context, 'actorId' => $actorId];
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$settings = $this->createMock(SettingsService::class);
 		if ($audit === null) {
@@ -348,10 +351,7 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 		try {
 			$result = $handler->delete(
 				object: $object,
-				cascadeContext: $cascade,
-				permanent: $permanent,
-				register: $passRegister === true ? $passedRegister : null,
-				schema: $passSchema === true ? $passedSchema : null
+				options: new RemovalOptions(cascadeContext: $cascade, permanent: $permanent, table: ($passRegister === true && $passSchema === true) ? new RegisterSchema(register: $passedRegister, schema: $passedSchema) : null)
 			);
 		} catch (Exception $e) {
 			$exception = [get_class($e), $e->getMessage()];

@@ -1,0 +1,44 @@
+Register registers-a: created
+Register registers-b: already there
+Register registers-c: adopted
+Group groups-a: created
+Group groups-b: already there
+Account users-a: created
+Account users-b: already there
+Account users-c: adopted
+Membership memberships-a: created
+Membership memberships-b: already there
+Change changes-a: created
+Change changes-b: already there
+Change changes-c: adopted
+App config appConfig-a: created
+App config appConfig-b: already there
+User preference userPreferences-a: created
+User preference userPreferences-b: already there
+User preference userPreferences-c: adopted
+Task tasks-a: created
+Task tasks-b: already there
+View views-a: created
+View views-b: already there
+View views-c: adopted
+Watcher watchers-a: created
+Watcher watchers-b: already there
+Party parties-a: created
+Party parties-b: already there
+Party parties-c: adopted
+Note notes-a: created
+Note notes-b: already there
+Read state readStates-a: created
+Read state readStates-b: already there
+Read state readStates-c: adopted
+Flow flows-a: created
+Flow flows-b: already there
+brp person: 2 declared, 1 created, 1 already there (1 refreshed, 0 unchanged), 2 found afterwards
+Files attached: 3
+Left as it is: a note
+Not written: x
+Not on the instance: y
+Written but not kept: z
+New passwords, shown once and stored nowhere:
+  sanne: pw-1
+  jan: pw-2

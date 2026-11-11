@@ -29,6 +29,8 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use Throwable;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * Saves a whole dossier's file metadata in one act.
@@ -90,39 +92,47 @@ class FileMetadataFormHandler {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function save(ObjectEntity $object, array $entries): array {
-		$changed = [];
-		$unchanged = [];
-		$failed = [];
+		$result = [
+			'changed' => [],
+			'unchanged' => [],
+			'failed' => [],
+		];
 
 		foreach ($entries as $entry) {
-			if (is_array($entry) === false || is_numeric($entry['fileId'] ?? null) === false) {
-				$failed[] = ['fileId' => null, 'error' => "Every row needs a 'fileId'."];
-				continue;
-			}
+			[$bucket, $value] = $this->rowOutcome(object: $object, entry: $entry);
+			$result[$bucket][] = $value;
+		}
 
-			$fileId = (int)$entry['fileId'];
-
-			try {
-				$outcome = $this->saveOne(object: $object, fileId: $fileId, entry: $entry);
-			} catch (Throwable $e) {
-				$failed[] = ['fileId' => $fileId, 'error' => $e->getMessage()];
-				continue;
-			}
-
-			if ($outcome === null) {
-				$unchanged[] = $fileId;
-				continue;
-			}
-
-			$changed[] = $outcome;
-		}//end foreach
-
-		return [
-			'changed' => $changed,
-			'unchanged' => $unchanged,
-			'failed' => $failed,
-		];
+		return $result;
 	}//end save()
+
+	/**
+	 * Apply one row and say where its outcome goes: changed, unchanged or failed.
+	 *
+	 * @param ObjectEntity $object The object the files belong to.
+	 * @param mixed        $entry  The row as posted.
+	 *
+	 * @return array{0: string, 1: mixed} The bucket and the entry for it.
+	 */
+	private function rowOutcome(ObjectEntity $object, mixed $entry): array {
+		if (is_array($entry) === false || is_numeric($entry['fileId'] ?? null) === false) {
+			return ['failed', ['fileId' => null, 'error' => "Every row needs a 'fileId'."]];
+		}
+
+		$fileId = (int)$entry['fileId'];
+
+		try {
+			$outcome = $this->saveOne(object: $object, entry: $entry);
+		} catch (Throwable $e) {
+			return ['failed', ['fileId' => $fileId, 'error' => $e->getMessage()]];
+		}
+
+		if ($outcome === null) {
+			return ['unchanged', $fileId];
+		}
+
+		return ['changed', $outcome];
+	}//end rowOutcome()
 
 	/**
 	 * Apply one row, and record it only if it changed something.
@@ -131,8 +141,7 @@ class FileMetadataFormHandler {
 	 * say, which is the signal that no audit entry belongs to it.
 	 *
 	 * @param ObjectEntity $object The object the file belongs to.
-	 * @param integer $fileId The file.
-	 * @param array $entry The row.
+	 * @param array $entry The row; its numeric 'fileId' names the file.
 	 *
 	 * @return array|null What changed, or null when nothing did.
 	 *
@@ -140,43 +149,89 @@ class FileMetadataFormHandler {
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function saveOne(ObjectEntity $object, int $fileId, array $entry): ?array {
-		$node = $this->fileService->getFile(object: $object, file: (string)$fileId);
-		if ($node === null) {
-			throw new Exception(message: "File $fileId is not on this object.");
-		}
+	private function saveOne(ObjectEntity $object, array $entry): ?array {
+		$edit = new FileMetadataEdit(object: $object, entry: $entry);
+		$edit->current = $this->currentMetadata(edit: $edit);
 
-		$current = $this->fileService->formatFile($node);
-		$currentName = (string)($current['name'] ?? '');
-		$currentDescription = ($current['description'] ?? null);
+		$this->applyName(edit: $edit);
+		$this->applyDescription(edit: $edit);
 
-		$diff = [];
-
-		$name = $this->requested(entry: $entry, key: 'name');
-		if ($name !== null && $name !== $currentName && $name !== '') {
-			$this->fileService->renameFile(object: $object, fileId: $fileId, newName: $name);
-			$diff['name'] = ['old' => $currentName, 'new' => $name];
-		}
-
-		$description = $this->requested(entry: $entry, key: 'description');
-		if ($description !== null && $description !== (string)$currentDescription) {
-			$this->fileService->updateFileMetadata(fileId: $fileId, description: $description);
-			$diff['description'] = ['old' => $currentDescription, 'new' => $description];
-		}
-
-		if ($diff === []) {
+		if ($edit->diff === []) {
 			return null;
 		}
 
-		$this->fileService->getAuditHandler()->logFileAction(
-			object: $object,
-			fileId: $fileId,
-			action: self::ACTION,
-			data: $diff
-		);
+		$this->recordAudit(edit: $edit);
 
-		return array_merge(['fileId' => $fileId], $diff);
+		return array_merge(['fileId' => $edit->fileId], $edit->diff);
 	}//end saveOne()
+
+	/**
+	 * Write the audit entry of a row that changed something.
+	 *
+	 * @param FileMetadataEdit $edit The applied row with its changes.
+	 *
+	 * @return void
+	 */
+	private function recordAudit(FileMetadataEdit $edit): void {
+		$this->fileService->getAuditHandler()->logFileAction(
+			object: $edit->object,
+			fileId: $edit->fileId,
+			action: self::ACTION,
+			data: $edit->diff
+		);
+	}//end recordAudit()
+
+	/**
+	 * What the row's file says now.
+	 *
+	 * @param FileMetadataEdit $edit The row being applied.
+	 *
+	 * @return array<string, mixed> The formatted file.
+	 *
+	 * @throws Exception When the file is not on the object.
+	 */
+	private function currentMetadata(FileMetadataEdit $edit): array {
+		$node = $this->fileService->getFile(object: $edit->object, file: (string)$edit->fileId);
+		if ($node === null) {
+			throw new Exception(message: "File {$edit->fileId} is not on this object.");
+		}
+
+		return $this->fileService->formatFile($node);
+	}//end currentMetadata()
+
+	/**
+	 * Rename the file when the row asks for a different, non-empty name.
+	 *
+	 * @param FileMetadataEdit $edit The row being applied; receives the name change.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the rename is refused.
+	 */
+	private function applyName(FileMetadataEdit $edit): void {
+		$currentName = (string)($edit->current['name'] ?? '');
+		$name = $this->requested(entry: $edit->entry, key: 'name');
+		if ($name !== null && $name !== $currentName && $name !== '') {
+			$this->fileService->renameAttachedFile(rename: new FileRename(object: $edit->object, fileId: $edit->fileId, newName: $name));
+			$edit->diff['name'] = ['old' => $currentName, 'new' => $name];
+		}
+	}//end applyName()
+
+	/**
+	 * Change the description when the row asks for a different one.
+	 *
+	 * @param FileMetadataEdit $edit The row being applied; receives the description change.
+	 *
+	 * @return void
+	 */
+	private function applyDescription(FileMetadataEdit $edit): void {
+		$currentDescription = ($edit->current['description'] ?? null);
+		$description = $this->requested(entry: $edit->entry, key: 'description');
+		if ($description !== null && $description !== (string)$currentDescription) {
+			$this->fileService->changeFileMetadata(change: new FileMetadataChange(fileId: $edit->fileId, description: $description));
+			$edit->diff['description'] = ['old' => $currentDescription, 'new' => $description];
+		}
+	}//end applyDescription()
 
 	/**
 	 * The value a row asks for, or null when the row does not mention the key.

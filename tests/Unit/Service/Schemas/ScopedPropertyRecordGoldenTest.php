@@ -160,11 +160,11 @@ final class ScopedPropertyRecordGoldenTest extends TestCase {
 	public function testTheCeilingAllowsAnEditAndRefusesAnAddition(): void {
 		$schema = $this->schema([0 => ['scope' => 'team-a'], 'b' => ['scope' => 'team-a']]);
 
-		$this->governance('alice')->assertBelowCeiling(schema: $schema, scope: 'team-a', property: '0');
-		$this->governance('alice', 3)->assertBelowCeiling(schema: $schema, scope: 'team-a', property: 'new');
+		$this->governance('alice')->assertBelowCeiling(schema: $schema, field: new ScopedField(property: '0', scope: 'team-a'));
+		$this->governance('alice', 3)->assertBelowCeiling(schema: $schema, field: new ScopedField(property: 'new', scope: 'team-a'));
 
 		try {
-			$this->governance('alice')->assertBelowCeiling(schema: $schema, scope: 'team-a', property: 'new');
+			$this->governance('alice')->assertBelowCeiling(schema: $schema, field: new ScopedField(property: 'new', scope: 'team-a'));
 		} catch (ScopedPropertyException $exception) {
 			$this->assertSame(
 				"Scope 'team-a' already holds 2 scoped properties, which is its ceiling of 2, so 'new' is refused. "

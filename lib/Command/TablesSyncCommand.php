@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Repair\AdminUserIds;
 use OCA\OpenRegister\Service\ObjectSource\TablesCatalogueInterface;
 use OCA\OpenRegister\Service\ObjectSource\TablesSchemaReconcilerInterface;
 use OCP\IGroupManager;
@@ -97,12 +98,7 @@ class TablesSyncCommand extends Command {
 			return Command::SUCCESS;
 		}
 
-		$userOption = $input->getOption('user');
-		$userIds = $this->adminUserIds();
-		if ($userOption !== null && $userOption !== '') {
-			$userIds = [(string)$userOption];
-		}
-
+		$userIds = $this->userIds(input: $input);
 		if (empty($userIds) === true) {
 			$output->writeln('<comment>No user to enumerate Tables for (pass --user=UID).</comment>');
 			return Command::SUCCESS;
@@ -110,38 +106,49 @@ class TablesSyncCommand extends Command {
 
 		$tables = $this->reader->collectTableDescriptors(userIds: $userIds);
 		$stats = $this->syncService->reconcile(tables: $tables);
-
-		$output->writeln(
-			sprintf(
-				'<info>Reconciled the "tables" register: seeded=%d, retired=%d, skipped=%d (from %d table(s)).</info>',
-				$stats['seeded'],
-				$stats['retired'],
-				$stats['skipped'],
-				count($tables)
-			)
-		);
+		$output->writeln(self::describeReconcile(stats: $stats, tableCount: count($tables)));
 
 		return Command::SUCCESS;
 	}//end execute()
 
 	/**
-	 * Resolve the instance's admin user ids for table enumeration.
+	 * The users to enumerate tables for: the --user, or else the admin users.
 	 *
-	 * @return array<int, string> The admin user ids (may be empty).
+	 * The admin users are looked up either way.
+	 *
+	 * @param InputInterface $input Console input.
+	 *
+	 * @return array<int, string> The user ids (may be empty).
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function adminUserIds(): array {
-		$admins = $this->groupManager->get('admin');
-		if ($admins === null) {
-			return [];
+	private function userIds(InputInterface $input): array {
+		$userOption = $input->getOption('user');
+		$userIds = AdminUserIds::of(groupManager: $this->groupManager);
+		if ($userOption !== null && $userOption !== '') {
+			$userIds = [(string)$userOption];
 		}
 
-		$ids = [];
-		foreach ($admins->getUsers() as $user) {
-			$ids[] = $user->getUID();
-		}
+		return $userIds;
+	}//end userIds()
 
-		return $ids;
-	}//end adminUserIds()
+	/**
+	 * The closing line: the reconcile's counts and the number of tables it saw.
+	 *
+	 * @param array{seeded: int, retired: int, skipped: int} $stats      The reconcile's counts.
+	 * @param int                                            $tableCount The tables enumerated.
+	 *
+	 * @return string The line to print.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private static function describeReconcile(array $stats, int $tableCount): string {
+		return sprintf(
+			'<info>Reconciled the "tables" register: seeded=%d, retired=%d, skipped=%d (from %d table(s)).</info>',
+			$stats['seeded'],
+			$stats['retired'],
+			$stats['skipped'],
+			$tableCount
+		);
+	}//end describeReconcile()
 }//end class

@@ -111,21 +111,15 @@ interface EmailLinkServiceInterface extends EmailLinkReaderInterface {
 	 * per row is `{id, uid, subject, sender, date}` and the response
 	 * wraps `{items, nextCursor}`.
 	 *
-	 * @param int $accountId Mail account id (ownership-checked).
-	 * @param string $mailbox Mailbox path (matches mail_mailboxes.name).
-	 * @param string|null $afterCursor Numeric message id to start after; null for first page.
-	 * @param int $limit Page size (clamped to [1, MAX_LIMIT]).
+	 * @param MailboxPage $page The mail account id (ownership-checked), the mailbox path (matches mail_mailboxes.name),
+	 *                          the numeric message id to start after (null for the first page) and the page size
+	 *                          (clamped to [1, MAX_LIMIT]).
 	 *
 	 * @return array{items: array<int,array{id:int,uid:string,subject:?string,sender:?string,date:?string}>, nextCursor: ?int}
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function getMessagesForMailbox(
-		int $accountId,
-		string $mailbox,
-		?string $afterCursor,
-		int $limit = 50,
-	): array;
+	public function getMessagesForMailbox(MailboxPage $page): array;
 
 	/**
 	 * Verify the active user owns the Mail account; throw on mismatch.

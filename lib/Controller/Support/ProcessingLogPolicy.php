@@ -111,6 +111,17 @@ final class ProcessingLogPolicy {
 			return null;
 		}
 
+		return $this->rangeTooLong(maxDays: $maxDays);
+	}//end rangeRefusal()
+
+	/**
+	 * The 422 refusal of a period longer than the maximum, naming the maximum.
+	 *
+	 * @param int $maxDays The configured maximum, in days.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function rangeTooLong(int $maxDays): JSONResponse {
 		return new JSONResponse(
 			data: [
 				'error' => 'Requested period exceeds the maximum extract range',
@@ -118,5 +129,5 @@ final class ProcessingLogPolicy {
 			],
 			statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
 		);
-	}//end rangeRefusal()
+	}//end rangeTooLong()
 }//end class

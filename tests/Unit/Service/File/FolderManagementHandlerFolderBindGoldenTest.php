@@ -42,6 +42,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\File\FolderAccessCheck;
 
 /**
  * Golden tests for the folder-bind check, its denial audit and the folder bookkeeping.
@@ -212,7 +213,7 @@ class FolderManagementHandlerFolderBindGoldenTest extends TestCase {
 	 */
 	private function refused(string $folder, ?IUser $user): array {
 		try {
-			$this->handler->assertFolderIsAccessible(folderId: $folder, currentUser: $user, objectEntity: $this->object(folder: $folder));
+			$this->handler->assertFolderIsAccessible(check: new FolderAccessCheck(folderId: $folder, currentUser: $user, objectEntity: $this->object(folder: $folder)));
 			$this->fail('The bind must be refused');
 		} catch (FolderAccessDeniedException $e) {
 			$this->assertStringContainsString($folder, $e->getMessage());
@@ -234,7 +235,7 @@ class FolderManagementHandlerFolderBindGoldenTest extends TestCase {
 		$this->rootFolder->method('getUserFolder')->willThrowException(new \RuntimeException('mount gone'));
 
 		try {
-			$this->handler->assertFolderIsAccessible(folderId: '42', currentUser: $this->user('bob'), objectEntity: $this->object(folder: '42'));
+			$this->handler->assertFolderIsAccessible(check: new FolderAccessCheck(folderId: '42', currentUser: $this->user('bob'), objectEntity: $this->object(folder: '42')));
 			$this->fail('The bind must be refused');
 		} catch (FolderAccessDeniedException $e) {
 			$this->assertInstanceOf(\RuntimeException::class, $e->getPrevious());
@@ -271,7 +272,7 @@ class FolderManagementHandlerFolderBindGoldenTest extends TestCase {
 		$this->lookup('bob', 42, []);
 
 		try {
-			$this->handler->assertFolderIsAccessible(folderId: '42', currentUser: $this->user('bob'), objectEntity: 'obj-uuid');
+			$this->handler->assertFolderIsAccessible(check: new FolderAccessCheck(folderId: '42', currentUser: $this->user('bob'), objectEntity: 'obj-uuid'));
 			$this->fail('The bind must be refused');
 		} catch (FolderAccessDeniedException) {
 			$row = $this->onlyAudit();
@@ -289,7 +290,7 @@ class FolderManagementHandlerFolderBindGoldenTest extends TestCase {
 
 		$this->assertSame(
 			$folder,
-			$this->handler->assertFolderIsAccessible(folderId: '42', currentUser: $this->user('bob'), objectEntity: $this->object(folder: '42'))
+			$this->handler->assertFolderIsAccessible(check: new FolderAccessCheck(folderId: '42', currentUser: $this->user('bob'), objectEntity: $this->object(folder: '42')))
 		);
 		$this->assertSame([], $this->audits);
 	}//end testReadableFolderIsAllowedWithoutAudit()

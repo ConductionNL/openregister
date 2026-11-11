@@ -28,6 +28,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Consumer\EndpointAudience;
 
 /**
  * @covers \OCA\OpenRegister\Service\Consumer\EndpointAllowList
@@ -72,7 +73,7 @@ class EndpointAllowListGoldenTest extends TestCase
 
         $outcome = 'allowed';
         try {
-            (new EndpointAllowList($manager))->assertAllowed($user, $users, $groups);
+            (new EndpointAllowList($manager))->assertAdmits($user, new EndpointAudience($users, $groups));
         } catch (AuthenticationException $e) {
             $outcome = 'refused';
             $this->assertSame('Not authorized', $e->getMessage());

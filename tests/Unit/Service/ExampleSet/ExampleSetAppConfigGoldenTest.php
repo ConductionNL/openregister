@@ -112,7 +112,7 @@ class ExampleSetAppConfigGoldenTest extends TestCase {
 			'refusal missing' => ['a', 'nope', false],
 			'refusal throws' => ['a', 'boom', false],
 		] as $name => [$app, $key, $generate]) {
-			$cases[$name] = static fn (ExampleSetAppConfig $s) => $s->refusal($app, $key, $generate);
+			$cases[$name] = static fn (ExampleSetAppConfig $s) => $s->refusal(new ExampleSetConfigKey($app, $key), $generate);
 		}
 
 		foreach ([

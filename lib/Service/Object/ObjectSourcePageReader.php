@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\ObjectSourceRead;
 use Psr\Log\LoggerInterface;
@@ -63,10 +65,8 @@ final class ObjectSourcePageReader {
 		}
 
 		$results = $read->provider->findAll(
-			register: $register,
-			schema: $read->schema,
-			query: $read->query,
-			config: $read->config
+			source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $read->schema), config: $read->config),
+			query: $read->query
 		);
 		return $window->page(results: $results, counted: $this->countedTotal(read: $read, register: $register));
 	}//end read()
@@ -99,10 +99,8 @@ final class ObjectSourcePageReader {
 	private function countedTotal(ObjectSourceRead $read, Register $register): ?int {
 		try {
 			return $read->provider->count(
-				register: $register,
-				schema: $read->schema,
-				query: $read->query,
-				config: $read->config
+				source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $read->schema), config: $read->config),
+				query: $read->query
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

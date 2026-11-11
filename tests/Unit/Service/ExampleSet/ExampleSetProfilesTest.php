@@ -20,6 +20,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProfiles;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount;
 
 /**
  * Profiles of the cast's accounts.
@@ -95,7 +96,7 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 			}
 		};
 
-		$this->accounts->createUser(uid: 'adopted.one', displayName: 'Adopted', email: '', password: 'x');
+		$this->accounts->createAccount(account: new ExampleSetNewAccount(uid: 'adopted.one', displayName: 'Adopted', email: '', password: 'x'));
 		$people = new ExampleSetPeople(accounts: $this->accounts, record: $this->record, profiles: $profiles);
 		$plan   = [
 			'set'       => 'demo',

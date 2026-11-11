@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -82,10 +83,8 @@ class MagicFacetHandlerSimpleFacetsGoldenTest extends TestCase {
 			$this->events = [];
 			try {
 				$facets = $this->handler(columns: $columns)->getSimpleFacets(
-					tableName: 'openregister_table_3_7',
-					query: $query,
-					register: new Register(),
-					schema: $this->schema()
+					target: self::facetTarget('openregister_table_3_7', new Register(), $this->schema()),
+					query: $query
 				);
 				if (isset($facets['_metrics']) === true) {
 					$facets['_metrics']['total_ms'] = 'T';
@@ -163,6 +162,17 @@ class MagicFacetHandlerSimpleFacetsGoldenTest extends TestCase {
 			);
 		}
 
-		return new MagicFacetHandler($db, $logger, null, null, null, $container, null);
+		return new MagicFacetHandler($db, $logger, null, $container);
 	}//end handler()
+
+	/**
+	 * The facet target of one magic table.
+	 *
+	 * @return MagicTableTarget
+	 */
+	private static function facetTarget(string $tableName, Register $register, Schema $schema): MagicTableTarget {
+		$target            = new MagicTableTarget(register: $register, schema: $schema);
+		$target->tableName = $tableName;
+		return $target;
+	}//end facetTarget()
 }//end class

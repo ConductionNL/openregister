@@ -53,6 +53,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * learniq session (O8) and enrolment (O9), each one row.
@@ -119,7 +120,7 @@ class RematerialiseRestoresStringTypedValuesTest extends TestCase {
 					}
 				}
 
-				$violations = $rules->validateReadOnlyConstraints(incomingObject: $object, existingObject: $stored, schema: $schema);
+				$violations = $rules->validateReadOnlyConstraints(check: new WriteConstraintCheck(incoming: $object, stored: $stored), schema: $schema);
 				if ($violations !== []) {
 					throw new RuntimeException('Cannot modify readOnly properties: ' . implode(', ', array_column($violations, 'property')));
 				}

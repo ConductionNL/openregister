@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Hardening;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrail\HardeningChange as HardeningAuditChange;
 use Throwable;
 
 /**
@@ -78,13 +79,10 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 		}
 
 		$change = new HardeningChange(control: $control, before: $this->posture->policy->administered(control: $control), after: $value);
-
-		try {
-			$this->guard->assertValue(control: $control, proposed: $value);
-		} catch (HardeningFloorException $refusal) {
-			$this->record(change: $change, refusal: $refusal->getMessage());
-			throw $refusal;
-		}
+		$this->assertOrRecordRefusal(
+			change: $change,
+			assertion: fn () => $this->guard->assertValue(control: $control, proposed: $value)
+		);
 
 		[$key] = HardeningPolicy::CONTROLS[$control];
 		$this->posture->store->appConfig->setValueInt(HardeningPolicy::APP_ID, $key, $value);
@@ -107,6 +105,31 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function setAllowedOrigins(array $origins): array {
+		$cleaned = $this->cleanedOrigins(origins: $origins);
+
+		$change = new HardeningChange(control: 'origins.allowlistEntries', before: $this->posture->policy->allowedOrigins(), after: $cleaned);
+		$this->assertOrRecordRefusal(
+			change: $change,
+			assertion: fn () => $this->guard->assertValue(control: 'origins.allowlistEntries', proposed: count($cleaned))
+		);
+
+		$this->posture->store->appConfig->setValueString(HardeningPolicy::APP_ID, HardeningPolicy::ORIGINS_KEY, implode(',', $cleaned));
+		$this->record(change: $change);
+
+		return $cleaned;
+
+	}//end setAllowedOrigins()
+
+	/**
+	 * The submitted origins normalised, blanks dropped, each once in order.
+	 *
+	 * @param array<int, mixed> $origins The submitted origins.
+	 *
+	 * @return array<int, string> The cleaned origins.
+	 *
+	 * @throws InvalidArgumentException When an origin is not text or not an origin.
+	 */
+	private function cleanedOrigins(array $origins): array {
 		$cleaned = [];
 		foreach ($origins as $candidate) {
 			if (is_string($candidate) === false) {
@@ -119,21 +142,27 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 			}
 		}
 
-		$change = new HardeningChange(control: 'origins.allowlistEntries', before: $this->posture->policy->allowedOrigins(), after: $cleaned);
+		return $cleaned;
+	}//end cleanedOrigins()
 
+	/**
+	 * Run a floor assertion; a refusal is recorded against the change and thrown on.
+	 *
+	 * @param HardeningChange $change    The change being made.
+	 * @param callable        $assertion The guard's assertion for it.
+	 *
+	 * @return void
+	 *
+	 * @throws HardeningFloorException When the change would go below a floor.
+	 */
+	private function assertOrRecordRefusal(HardeningChange $change, callable $assertion): void {
 		try {
-			$this->guard->assertValue(control: 'origins.allowlistEntries', proposed: count($cleaned));
+			$assertion();
 		} catch (HardeningFloorException $refusal) {
 			$this->record(change: $change, refusal: $refusal->getMessage());
 			throw $refusal;
 		}
-
-		$this->posture->store->appConfig->setValueString(HardeningPolicy::APP_ID, HardeningPolicy::ORIGINS_KEY, implode(',', $cleaned));
-		$this->record(change: $change);
-
-		return $cleaned;
-
-	}//end setAllowedOrigins()
+	}//end assertOrRecordRefusal()
 
 	/**
 	 * Declare a floor for one control.
@@ -158,14 +187,27 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 		}
 
 		$change = new HardeningChange(control: ($control . '.floor'), before: $this->posture->policy->floor(control: $control), after: $floor);
+		$this->assertOrRecordRefusal(
+			change: $change,
+			assertion: fn () => $this->guard->assertFloor(control: $control, proposed: $floor)
+		);
 
-		try {
-			$this->guard->assertFloor(control: $control, proposed: $floor);
-		} catch (HardeningFloorException $refusal) {
-			$this->record(change: $change, refusal: $refusal->getMessage());
-			throw $refusal;
-		}
+		$this->storeFloor(control: $control, floor: $floor);
+		$this->record(change: $change);
 
+		return $floor;
+
+	}//end setFloor()
+
+	/**
+	 * Store one control's floor among the declared floors.
+	 *
+	 * @param string $control The control.
+	 * @param int    $floor   Its floor.
+	 *
+	 * @return void
+	 */
+	private function storeFloor(string $control, int $floor): void {
 		$declared = $this->posture->policy->declaredFloors();
 		$declared[$control] = $floor;
 		$this->posture->store->appConfig->setValueString(
@@ -173,11 +215,7 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 			HardeningPolicy::FLOORS_KEY,
 			(string)json_encode($declared)
 		);
-		$this->record(change: $change);
-
-		return $floor;
-
-	}//end setFloor()
+	}//end storeFloor()
 
 	/**
 	 * Reduce an origin to its scheme, host and port.
@@ -200,7 +238,28 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 			return '';
 		}
 
-		$parts = parse_url($trimmed);
+		$parts = self::originParts(origin: $trimmed);
+
+		$normalised = ($parts['scheme'] . '://' . $parts['host']);
+		if (isset($parts['port']) === true) {
+			$normalised .= (':' . $parts['port']);
+		}
+
+		return $normalised;
+
+	}//end normaliseOrigin()
+
+	/**
+	 * The parts of an origin that is an http(s) scheme and host with nothing else.
+	 *
+	 * @param string $origin The trimmed, lower-cased origin.
+	 *
+	 * @return array<string, int|string> The parsed parts.
+	 *
+	 * @throws InvalidArgumentException When it is not such an origin.
+	 */
+	private static function originParts(string $origin): array {
+		$parts = parse_url($origin);
 		if ($parts === false || isset($parts['scheme']) === false || isset($parts['host']) === false) {
 			throw new InvalidArgumentException('An origin reads as https://example.nl, with no path.');
 		}
@@ -214,14 +273,8 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 			throw new InvalidArgumentException('An origin carries no path, query or credentials.');
 		}
 
-		$normalised = ($parts['scheme'] . '://' . $parts['host']);
-		if (isset($parts['port']) === true) {
-			$normalised .= (':' . $parts['port']);
-		}
-
-		return $normalised;
-
-	}//end normaliseOrigin()
+		return $parts;
+	}//end originParts()
 
 	/**
 	 * Write one audit row, whichever way the guard decided.
@@ -237,12 +290,9 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 	 */
 	private function record(HardeningChange $change, ?string $refusal = null): void {
 		try {
-			$this->posture->store->auditTrailMapper->createHardeningChangeEntry(
-				control: $change->control,
-				before: $change->before,
-				after: $change->after,
-				accepted: $refusal === null,
-				refusal: ($refusal ?? ''),
+			$this->posture->store->auditTrailMapper->recordHardeningChange(
+				change: new HardeningAuditChange(control: $change->control, before: $change->before, after: $change->after, refusal: ($refusal ?? '')),
+				accepted: $refusal === null
 			);
 		} catch (Throwable $failure) {
 			$this->posture->store->logger->error(

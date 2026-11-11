@@ -103,24 +103,6 @@ class ObjectFileAccess {
 	}//end __construct()
 
 	/**
-	 * The object behind a route, when the caller may read it.
-	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema   The schema slug or id.
-	 * @param string $id       The object uuid or id.
-	 *
-	 * @return ObjectEntity The readable object.
-	 *
-	 * @throws ObjectFileAccessDeniedException With 404 when the caller may not read it.
-	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
-	 *
-	 */
-	public function readable(string $register, string $schema, string $id): ObjectEntity {
-		return $this->readableByRef(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-	}//end readable()
-
-	/**
 	 * The object an ObjectRef names, when the caller may read it.
 	 *
 	 * @param ObjectRef $ref The register, schema and object references from the route.
@@ -133,7 +115,7 @@ class ObjectFileAccess {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	public function readableByRef(ObjectRef $ref): ObjectEntity {
+	public function readable(ObjectRef $ref): ObjectEntity {
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $ref->id,
@@ -155,26 +137,7 @@ class ObjectFileAccess {
 		}
 
 		return $object;
-	}//end readableByRef()
-
-	/**
-	 * The object behind a route, when the caller may change it.
-	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema   The schema slug or id.
-	 * @param string $id       The object uuid or id.
-	 * @param string $verb     The file verb the change needs when the schema names file verbs: addFiles or deleteFiles.
-	 *
-	 * @return ObjectEntity The changeable object.
-	 *
-	 * @throws ObjectFileAccessDeniedException With 404 when the caller may not read it,
-	 *                                         403 when the caller may read but not update it.
-	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
-	 */
-	public function changeable(string $register, string $schema, string $id, string $verb = self::ADD_FILES): ObjectEntity {
-		return $this->changeableByRef(ref: new ObjectRef(register: $register, schema: $schema, id: $id), verb: $verb);
-	}//end changeable()
+	}//end readable()
 
 	/**
 	 * The object an ObjectRef names, when the caller may change it.
@@ -189,15 +152,15 @@ class ObjectFileAccess {
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
 	 */
-	public function changeableByRef(ObjectRef $ref, string $verb = self::ADD_FILES): ObjectEntity {
-		$object = $this->readableByRef(ref: $ref);
+	public function changeable(ObjectRef $ref, string $verb = self::ADD_FILES): ObjectEntity {
+		$object = $this->readable(ref: $ref);
 
 		if ($this->mayChangeFiles(object: $object, verb: $verb) === false) {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_CHANGEABLE);
 		}
 
 		return $object;
-	}//end changeableByRef()
+	}//end changeable()
 
 	/**
 	 * Whether the caller may read an object already in hand.
@@ -286,13 +249,14 @@ class ObjectFileAccess {
 			return false;
 		}
 
-		$names = $this->namesFileVerbs(schema: $schema, object: $object);
+		$check = new FileVerbCheck(schema: $schema, object: $object, verb: $verb);
+		$names = $this->namesFileVerbs(check: $check);
 		if ($names === null) {
 			return false;
 		}
 
 		if ($names === true) {
-			return $this->allows(schema: $schema, object: $object, action: $verb);
+			return $this->allows(check: $check);
 		}
 
 		return $this->mayUpdate(object: $object);
@@ -314,12 +278,13 @@ class ObjectFileAccess {
 			return false;
 		}
 
-		$names = $this->namesFileVerbs(schema: $schema, object: $object);
+		$check = new FileVerbCheck(schema: $schema, object: $object, verb: $verb);
+		$names = $this->namesFileVerbs(check: $check);
 		if ($names === false) {
 			return true;
 		}
 
-		return $names === true && $this->allows(schema: $schema, object: $object, action: $verb);
+		return $names === true && $this->allows(check: $check);
 	}//end mayUseFiles()
 
 	/**
@@ -338,15 +303,14 @@ class ObjectFileAccess {
 	 * matrix declares `fileVerbs` other than false, or when it names a
 	 * `rowsFrom` provider and does not declare `fileVerbs: false`.
 	 *
-	 * @param Schema       $schema The object's schema.
-	 * @param ObjectEntity $object The object.
+	 * @param FileVerbCheck $check The object and its schema.
 	 *
 	 * @return bool|null
 	 */
-	private function namesFileVerbs(Schema $schema, ObjectEntity $object): ?bool {
+	private function namesFileVerbs(FileVerbCheck $check): ?bool {
 		try {
-			$authorization = $this->permissionHandler->resolveAuthorization(schema: $schema, object: $object);
-			$declared      = $this->permissionHandler->resolveDeclaredAuthorization(schema: $schema, object: $object);
+			$authorization = $this->permissionHandler->resolveAuthorization(schema: $check->schema, object: $check->object);
+			$declared      = $this->permissionHandler->resolveDeclaredAuthorization(schema: $check->schema, object: $check->object);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -472,21 +436,19 @@ class ObjectFileAccess {
 	/**
 	 * Whether the permission handler grants an action on the object.
 	 *
-	 * @param Schema       $schema The schema.
-	 * @param ObjectEntity $object The object.
-	 * @param string       $action The action.
+	 * @param FileVerbCheck $check The object, its schema and the file verb as the action.
 	 *
 	 * @return bool
 	 */
-	private function allows(Schema $schema, ObjectEntity $object, string $action): bool {
+	private function allows(FileVerbCheck $check): bool {
 		try {
 			return $this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: $action,
+				schema: $check->schema,
+				action: $check->verb,
 				userId: null,
-				objectOwner: $object->getOwner(),
+				objectOwner: $check->object->getOwner(),
 				_rbac: true,
-				object: $object
+				object: $check->object
 			);
 		} catch (Throwable $e) {
 			return false;

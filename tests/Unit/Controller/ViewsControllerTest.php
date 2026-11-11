@@ -20,6 +20,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 
 class ViewsControllerTest extends TestCase {
 	private ViewsController $controller;
@@ -230,7 +231,7 @@ class ViewsControllerTest extends TestCase {
 		]);
 
 		$view = $this->createViewEntity();
-		$this->viewService->method('update')->willReturn($view);
+		$this->viewService->method('revise')->willReturn($view);
 
 		$result = $this->controller->update('1');
 
@@ -246,7 +247,7 @@ class ViewsControllerTest extends TestCase {
 			'name' => 'Updated',
 			'query' => ['registers' => [1]],
 		]);
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new DoesNotExistException('not found'));
 
 		$result = $this->controller->update('999');
@@ -261,7 +262,7 @@ class ViewsControllerTest extends TestCase {
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
-		$this->viewService->method('update')->willReturn($view);
+		$this->viewService->method('revise')->willReturn($view);
 
 		$result = $this->controller->patch('1');
 
@@ -378,6 +379,58 @@ class ViewsControllerTest extends TestCase {
 		$this->assertEquals(5, $data['total']);
 	}
 
+	/**
+	 * Five views with ids 1..5, for the pagination cases.
+	 *
+	 * @return array<int, \OCA\OpenRegister\Search\Db\View>
+	 */
+	private function fiveViews(): array {
+		$views = [];
+		for ($i = 0; $i < 5; $i++) {
+			$v = new \OCA\OpenRegister\Search\Db\View();
+			$prop = (new \ReflectionClass($v))->getProperty('id');
+			$prop->setAccessible(true);
+			$prop->setValue($v, $i + 1);
+			$v->setName("View $i");
+			$v->setQuery([]);
+			$views[] = $v;
+		}
+
+		return $views;
+	}
+
+	public function testIndexWithLimitAndOffsetSlicesFromTheOffset(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['_limit' => '2', '_offset' => '3']);
+		$this->viewService->method('findAllFor')->willReturn($this->fiveViews());
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame([4, 5], array_column($data['results'], 'id'));
+		$this->assertSame(5, $data['total']);
+	}
+
+	public function testIndexPageWinsOverOffsetWhenALimitIsGiven(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['_limit' => '2', '_offset' => '0', '_page' => '3']);
+		$this->viewService->method('findAllFor')->willReturn($this->fiveViews());
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame([5], array_column($data['results'], 'id'));
+	}
+
+	public function testIndexWithoutALimitIgnoresOffsetAndPage(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['_offset' => '3', '_page' => '2']);
+		$this->viewService->method('findAllFor')->willReturn($this->fiveViews());
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame([1, 2, 3, 4, 5], array_column($data['results'], 'id'));
+		$this->assertSame(5, $data['total']);
+	}
+
 	public function testIndexException(): void {
 		$this->mockAuthenticatedUser();
 		$this->request->method('getParams')->willReturn([]);
@@ -447,16 +500,17 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				new ViewDefinition('Config View', 'From configuration', [
-					'registers' => [1, 2],
-					'schemas' => [3],
-					'source' => 'manual',
-					'searchTerms' => ['test'],
-					'facetFilters' => ['status' => 'active'],
-					'enabledFacets' => ['status'],
-				], null),
-				new ViewAudience('testuser', true, true, null),
-				null
+				new ViewEdit(
+					definition: new ViewDefinition('Config View', 'From configuration', [
+						'registers' => [1, 2],
+						'schemas' => [3],
+						'source' => 'manual',
+						'searchTerms' => ['test'],
+						'facetFilters' => ['status' => 'active'],
+						'enabledFacets' => ['status'],
+					], null),
+					audience: new ViewAudience('testuser', true, true, null)
+				)
 			)
 			->willReturn($view);
 
@@ -479,16 +533,17 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				new ViewDefinition('Minimal Config View', '', [
-					'registers' => [],
-					'schemas' => [],
-					'source' => 'auto',
-					'searchTerms' => [],
-					'facetFilters' => [],
-					'enabledFacets' => [],
-				], null),
-				new ViewAudience('testuser', false, false, null),
-				null
+				new ViewEdit(
+					definition: new ViewDefinition('Minimal Config View', '', [
+						'registers' => [],
+						'schemas' => [],
+						'source' => 'auto',
+						'searchTerms' => [],
+						'facetFilters' => [],
+						'enabledFacets' => [],
+					], null),
+					audience: new ViewAudience('testuser', false, false, null)
+				)
 			)
 			->willReturn($view);
 
@@ -595,24 +650,30 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Updated Config View',
-				'Updated desc',
-				'testuser',
-				true,
-				false,
-				[
-					'registers' => [10],
-					'schemas' => [20],
-					'source' => 'elasticsearch',
-					'searchTerms' => ['foo'],
-					'facetFilters' => ['type' => 'bar'],
-					'enabledFacets' => ['type'],
-				],
-				null,
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Updated Config View',
+						description: 'Updated desc',
+						query: [
+							'registers' => [10],
+							'schemas' => [20],
+							'source' => 'elasticsearch',
+							'searchTerms' => ['foo'],
+							'facetFilters' => ['type' => 'bar'],
+							'enabledFacets' => ['type'],
+						],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: true,
+						isDefault: false
+					),
+					favoredBy: null
+				)
 			)
 			->willReturn($view);
 
@@ -631,7 +692,7 @@ class ViewsControllerTest extends TestCase {
 			'name' => 'Fail Update',
 			'query' => ['registers' => [1]],
 		]);
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new \Exception('Update failed'));
 
 		$this->logger->expects($this->once())->method('error');
@@ -692,7 +753,7 @@ class ViewsControllerTest extends TestCase {
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new \Exception('Patch failed'));
 
 		$this->logger->expects($this->once())->method('error');
@@ -724,24 +785,30 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				[
-					'registers' => [5],
-					'schemas' => [6],
-					'source' => 'solr',
-					'searchTerms' => ['hello'],
-					'facetFilters' => ['cat' => 'dog'],
-					'enabledFacets' => ['cat'],
-				],
-				[],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: [
+							'registers' => [5],
+							'schemas' => [6],
+							'source' => 'solr',
+							'searchTerms' => ['hello'],
+							'facetFilters' => ['cat' => 'dog'],
+							'enabledFacets' => ['cat'],
+						],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -762,17 +829,23 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				['registers' => [99], 'schemas' => [88]],
-				[],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: ['registers' => [99], 'schemas' => [88]],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -794,17 +867,23 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				true,
-				true,
-				['registers' => []],
-				[],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: ['registers' => []],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: true,
+						isDefault: true
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -825,17 +904,23 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				['registers' => []],
-				['user1', 'user2'],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: ['registers' => []],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: ['user1', 'user2']
+				)
 			)
 			->willReturn($updatedView);
 
@@ -859,17 +944,23 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Original Desc',
-				'testuser',
-				true,
-				true,
-				['registers' => [42]],
-				['userX'],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Original Desc',
+						query: ['registers' => [42]],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: true,
+						isDefault: true
+					),
+					favoredBy: ['userX']
+				)
 			)
 			->willReturn($updatedView);
 
@@ -923,9 +1014,10 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				new ViewDefinition('Kanban View', '', ['registers' => [1], 'schemas' => [2]], $presentation),
-				new ViewAudience('testuser', false, false, null),
-				null
+				new ViewEdit(
+					definition: new ViewDefinition('Kanban View', '', ['registers' => [1], 'schemas' => [2]], $presentation),
+					audience: new ViewAudience('testuser', false, false, null)
+				)
 			)
 			->willReturn($view);
 
@@ -962,7 +1054,7 @@ class ViewsControllerTest extends TestCase {
 			'presentation' => ['viewType' => 'calendar', 'calendar' => ['dateField' => 'missing']],
 		]);
 
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new \InvalidArgumentException('Presentation calendar.dateField "missing" is not a property of the view\'s schema'));
 
 		$result = $this->controller->update('1');
@@ -983,17 +1075,23 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Renamed',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				['registers' => []],
-				[],
-				$existingPresentation
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Renamed',
+						description: 'Desc',
+						query: ['registers' => []],
+						presentation: $existingPresentation
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -1111,6 +1209,61 @@ class ViewsControllerTest extends TestCase {
 		$this->assertEquals($calendarResult, $result->getData());
 	}
 
+	public function testCalendarAcceptsTheRangeStartAndRangeEndAliases(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['rangeStart' => '2026-07-01', 'rangeEnd' => '2026-07-31']);
+		$view = $this->createViewEntity();
+		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewPresentationService->expects($this->once())->method('getCalendarObjects')
+			->with($view, $this->callback(fn ($range) => $range->start === '2026-07-01' && $range->end === '2026-07-31'))
+			->willReturn(['objects' => []]);
+
+		$this->assertSame(200, $this->controller->calendar('1')->getStatus());
+	}
+
+	public function testCalendarWithOnlyAStartIsABadRequest(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['start' => '2026-07-01']);
+		$this->viewService->expects($this->never())->method('find');
+
+		$result = $this->controller->calendar('1');
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'Both start and end (the visible date range) are required'], $result->getData());
+	}
+
+	public function testCalendarAnInvalidRangeIsRefusedWithItsMessage(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['start' => '2026-07-31', 'end' => '2026-07-01']);
+		$view = $this->createViewEntity();
+		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewPresentationService->method('getCalendarObjects')
+			->willThrowException(new \InvalidArgumentException('The range ends before it starts'));
+
+		$result = $this->controller->calendar('1');
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'The range ends before it starts'], $result->getData());
+	}
+
+	public function testCalendarAnUnexpectedFailureIsLoggedAndA500(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['start' => '2026-07-01', 'end' => '2026-07-31']);
+		$view = $this->createViewEntity();
+		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewPresentationService->method('getCalendarObjects')->willThrowException(new \RuntimeException('db down'));
+		$this->logger->expects($this->once())->method('error')
+			->with('[ViewsController] Error querying calendar range', $this->callback(fn ($c) => $c['id'] === '1' && $c['exception'] === 'db down'));
+
+		$result = $this->controller->calendar('1');
+
+		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Failed to query calendar range', 'message' => 'db down'], $result->getData());
+	}
+
 	public function testCalendarNotFound(): void {
 		$this->mockAuthenticatedUser();
 		$this->request->method('getParams')->willReturn([
@@ -1185,7 +1338,7 @@ class ViewsControllerTest extends TestCase {
 		$published->setIsPublic(true);
 		$this->viewService->method('find')->willReturn($published);
 		$this->viewService->method('findById')->willReturn($published);
-		$this->viewService->method('update')->willReturn($published);
+		$this->viewService->method('revise')->willReturn($published);
 
 		$this->request->method('getParams')->willReturn(
 			[
@@ -1221,7 +1374,7 @@ class ViewsControllerTest extends TestCase {
 		$published->setIsPublic(true);
 		$this->viewService->method('find')->willReturn($published);
 		$this->viewService->method('findById')->willReturn($published);
-		$this->viewService->method('update')->willReturn($published);
+		$this->viewService->method('revise')->willReturn($published);
 
 		$this->request->method('getParams')->willReturn(['name' => 'Renamed by a stranger']);
 
@@ -1246,7 +1399,7 @@ class ViewsControllerTest extends TestCase {
 		$own->setIsPublic(true);
 		$this->viewService->method('find')->willReturn($own);
 		$this->viewService->method('findById')->willReturn($own);
-		$this->viewService->method('update')->willReturn($own);
+		$this->viewService->method('revise')->willReturn($own);
 
 		$this->request->method('getParams')->willReturn(
 			[

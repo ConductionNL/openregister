@@ -21,6 +21,8 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -600,7 +602,10 @@ class MergeHandler {
 		$fileContent  = $file->getContent();
 		$fileName    = $file->getName();
 
-		$copy = $this->fileService->addFile(objectEntity: $targetObject, fileName: $fileName, content: $fileContent, share: false, tags: []);
+		$copy = $this->fileService->addFile(
+			target: new FileTarget(object: $targetObject),
+			upload: new FileUpload(fileName: $fileName, content: $fileContent, share: false)
+		);
 		if ($this->fileService->deleteFile(file: $file, object: $sourceObject) === false) {
 			$this->fileService->deleteFile(file: $copy, object: $targetObject);
 			throw new Exception('The file could not be removed from the source object');

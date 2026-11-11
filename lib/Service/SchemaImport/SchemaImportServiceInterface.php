@@ -77,10 +77,8 @@ interface SchemaImportServiceInterface {
 	/**
 	 * Import a GGM objecttype from an uploaded export (normalised intermediate).
 	 *
-	 * @param array<string, mixed> $normalised  The normalised GGM intermediate.
-	 * @param string               $reference   The objecttype id/name to import.
-	 * @param ImportOptions        $options     Import options.
-	 * @param string               $sourceLabel A provenance label for the upload.
+	 * @param GgmUpload     $upload  The normalised GGM intermediate, the objecttype id/name to import and a provenance label.
+	 * @param ImportOptions $options Import options.
 	 *
 	 * @return ImportedSchema The mapped schema.
 	 *
@@ -88,7 +86,7 @@ interface SchemaImportServiceInterface {
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
-	public function importGgmUpload(array $normalised, string $reference, ImportOptions $options, string $sourceLabel = 'upload'): ImportedSchema;
+	public function importGgmUpload(GgmUpload $upload, ImportOptions $options): ImportedSchema;
 
 	/**
 	 * Resolve the effective dialect for an upload: explicit wins, else detect,
@@ -108,9 +106,8 @@ interface SchemaImportServiceInterface {
 	/**
 	 * Compute the classified update-from-source diff for an imported schema.
 	 *
-	 * @param array<string, mixed>                $importSource      The stored configuration.importSource block (with baseline).
-	 * @param array<string, array<string, mixed>> $currentProperties The schema's current properties.
-	 * @param array<int, string>                  $resolvedConflicts Conflict property names confirmed by the caller.
+	 * @param SourceUpdate $update The stored import source (with baseline), the schema's current properties and the
+	 *                             conflict property names confirmed by the caller.
 	 *
 	 * @return array<string, mixed> The merge result (added/removed/changed/keptLocal/conflicts/merged/applied).
 	 *
@@ -118,5 +115,5 @@ interface SchemaImportServiceInterface {
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
-	public function previewUpdateFromSource(array $importSource, array $currentProperties, array $resolvedConflicts = []): array;
+	public function previewUpdateFromSource(SourceUpdate $update): array;
 }//end interface

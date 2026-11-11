@@ -34,6 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
@@ -130,9 +132,7 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IRequest::class),
-					new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class)),
+					new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $this->createMock(IRequest::class)),
 				]
 			)
 			->onlyMethods(['insert'])
@@ -211,10 +211,8 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		$this->objectIsFound($this->object(['legalHold' => ['active' => true]]));
 
 		$service->logRestrictBlock(
-			objectUuid: '11111111-1111-4111-8111-111111111111',
-			schemaId: '2',
-			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']]),
-			userId: 'alice'
+			refused: new RefusedDeletion(objectUuid: '11111111-1111-4111-8111-111111111111', schemaId: '2', userId: 'alice'),
+			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']])
 		);
 
 		$this->assertCount(1, $this->inserted);
@@ -247,8 +245,12 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 					]
 				)
 			),
-			userId: 'alice',
-			cascadeSource: '22222222-2222-4222-8222-222222222222'
+			origin: new CascadeDeleteOrigin(
+				userId: 'alice',
+				cascadeSource: '22222222-2222-4222-8222-222222222222',
+				triggerSchemaSlug: null,
+				organisationId: null
+			)
 		);
 
 		$this->assertCount(1, $this->inserted);
@@ -273,10 +275,8 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		$this->objectMapper->method('findAcrossAllSources')->willThrowException(new \RuntimeException('gone'));
 
 		$service->logRestrictBlock(
-			objectUuid: '11111111-1111-4111-8111-111111111111',
-			schemaId: '2',
-			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']]),
-			userId: 'alice'
+			refused: new RefusedDeletion(objectUuid: '11111111-1111-4111-8111-111111111111', schemaId: '2', userId: 'alice'),
+			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']])
 		);
 
 		$this->assertCount(1, $this->inserted);

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Tests\Unit\Db\Support\RecordsQueries;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -79,7 +80,7 @@ class ImportPreviewMapperTest extends TestCase {
 	}//end testFindByActorListsTheActorsPreviewsNewestFirstWithoutPaging()
 
 	public function testFindByActorNarrowsByStateAndPages(): void {
-		$this->mapper()->findByActor('ann', 'applied', 10, 20);
+		$this->mapper()->findByActor('ann', new ListQuery(limit: 10, offset: 20, filters: ['state' => 'applied']));
 
 		$this->assertSame(
 			["andWhere(eq(state, 'applied'))", 'setMaxResults(10)', 'setFirstResult(20)', 'executeQuery'],

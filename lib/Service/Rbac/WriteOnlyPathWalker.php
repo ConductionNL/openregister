@@ -149,27 +149,14 @@ final class WriteOnlyPathWalker {
 	 * replaced that sub-tree with a scalar, so there is nowhere to put the leaf. Forcing
 	 * it would silently discard the value the client actually sent.
 	 *
-	 * @param string $path     The declared dot-path.
-	 * @param array  $prepared The payload to restore into.
-	 * @param mixed  $value    The stored value to write, verbatim.
+	 * @param array          $prepared The payload to restore into.
+	 * @param WriteOnlyValue $stored   The declared dot-path and the stored value to write, verbatim.
 	 *
 	 * @return array The payload with the value restored.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
 	 */
-	public function restore(string $path, array $prepared, mixed $value): array {
-		return $this->restoreValue(prepared: $prepared, stored: new WriteOnlyValue(path: $path, value: $value));
-	}//end restore()
-
-	/**
-	 * Write one stored write-only value back into the payload, creating absent parents.
-	 *
-	 * @param array          $prepared The payload to restore into.
-	 * @param WriteOnlyValue $stored   The declared path and the stored value.
-	 *
-	 * @return array The payload with the value restored.
-	 */
-	private function restoreValue(array $prepared, WriteOnlyValue $stored): array {
+	public function restore(array $prepared, WriteOnlyValue $stored): array {
 		$segments = explode('.', $stored->path);
 		if ($this->canHold(parents: array_slice($segments, 0, -1), node: $prepared) === false) {
 			// The client sent a scalar where this path expects a sub-tree.
@@ -183,7 +170,7 @@ final class WriteOnlyPathWalker {
 		$slot = $stored->value;
 		unset($slot);
 		return $prepared;
-	}//end restoreValue()
+	}//end restore()
 
 	/**
 	 * Shape 2: the flattened relations mirror. Remove an exact dot-path key and every key beneath it.

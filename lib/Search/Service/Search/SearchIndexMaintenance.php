@@ -235,13 +235,25 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	private function schemaSlugsByTable(?int $registerId): array {
 		$tables = [];
 		foreach ($this->stores->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
-			if (($register instanceof Register) === true && ($registerId === null || (int)$register->getId() === $registerId)) {
+			if ($this->isRegisterInScope(register: $register, registerId: $registerId) === true) {
 				$tables += $this->tablesOfRegister(register: $register);
 			}
 		}
 
 		return $tables;
 	}//end schemaSlugsByTable()
+
+	/**
+	 * Whether a findAll row is a register within the requested scope.
+	 *
+	 * @param mixed    $register   A row of the register listing.
+	 * @param int|null $registerId Limit to one register, or null for all of them.
+	 *
+	 * @return bool True when it is a register and in scope.
+	 */
+	private function isRegisterInScope(mixed $register, ?int $registerId): bool {
+		return ($register instanceof Register) === true && ($registerId === null || (int)$register->getId() === $registerId);
+	}//end isRegisterInScope()
 
 	/**
 	 * The magic tables of one register, with the slug of the schema each holds.
@@ -379,30 +391,21 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 * answering and an invalid leftover beside it. The leftover is dropped
 	 * here so a second run does not trip over it, and the failure is named.
 	 *
-	 * @param int|null      $registerId Limit to one register, or null for all.
-	 * @param bool          $apply      False reports what it would rebuild and touches nothing.
-	 * @param callable|null $progress   Called with (table, index, position, total) per index.
-	 *
-	 * @phpstan-param callable(string, string, int, int): void|null $progress
-	 *
-	 * @psalm-param callable(string, string, int, int): void|null $progress
+	 * @param int|null             $registerId Limit to one register, or null for all.
+	 * @param SearchIndexPass|null $pass       Whether to apply (false, the default, reports what it would rebuild
+	 *                                         and touches nothing) and the per-index progress callback.
 	 *
 	 * @return array<string, mixed> The report: counts, failures and the platform verdict.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  `$apply` is the dry-run switch every
-	 *                                              maintenance command in this app carries, and
-	 *                                              splitting it into two methods would let a
-	 *                                              caller reach the writing one by accident.
 	 */
-	public function rebuild(?int $registerId = null, bool $apply = false, ?callable $progress = null): array {
+	public function rebuild(?int $registerId = null, ?SearchIndexPass $pass = null): array {
+		$pass ??= new SearchIndexPass(apply: false, progress: null);
 		if ($this->supportsConcurrentRebuild() === false) {
-			return $this->finish(report: ['startedAt' => date('c')] + self::REFUSED_REPORT, apply: $apply);
+			return $this->finish(report: ['startedAt' => date('c')] + self::REFUSED_REPORT, apply: $pass->apply);
 		}
 
-		$pass = new SearchIndexPass(apply: $apply, progress: $progress);
-		return $this->finish(report: $this->rebuildPass(registerId: $registerId, pass: $pass), apply: $apply);
+		return $this->finish(report: $this->rebuildPass(registerId: $registerId, pass: $pass), apply: $pass->apply);
 	}//end rebuild()
 
 	/**
