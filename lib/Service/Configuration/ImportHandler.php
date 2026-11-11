@@ -4841,42 +4841,96 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function unshadowedSchemaIds(Register $register, array $details): array {
+		$newSlugToId = $this->importedSchemaIdsBySlug(schemas: $details['schemas']);
+
+		$kept = [];
+		foreach ($register->getSchemas() ?? [] as $currentId) {
+			$currentId = (int)$currentId;
+			$shadowed = $this->shadowedListing(schemaId: $currentId, newSlugToId: $newSlugToId);
+			if ($shadowed === null) {
+				$kept[] = $currentId;
+				continue;
+			}
+
+			$this->logPrunedShadowedSchema(registerSlug: $details['slug'], shadowed: $shadowed);
+		}
+
+		return $kept;
+	}//end unshadowedSchemaIds()
+
+	/**
+	 * The imported schema ids by lower-cased slug, for the schemas that have both.
+	 *
+	 * @param array $schemas The imported schemas.
+	 *
+	 * @return array<string, int> Lower(slug) => id.
+	 */
+	private function importedSchemaIdsBySlug(array $schemas): array {
 		$newSlugToId = [];
-		foreach ($details['schemas'] as $schema) {
+		foreach ($schemas as $schema) {
 			if ($schema instanceof Schema && $schema->getId() !== null && $schema->getSlug() !== null) {
 				$newSlugToId[strtolower($schema->getSlug())] = (int)$schema->getId();
 			}
 		}
 
-		$kept = [];
-		foreach ($register->getSchemas() ?? [] as $currentId) {
-			$currentId = (int)$currentId;
-			try {
-				$existingSlug = $this->schemaMapper->find($currentId, _multitenancy: false)->getSlug();
-			} catch (\Throwable $ignore) {
-				$existingSlug = null;
-			}
+		return $newSlugToId;
+	}//end importedSchemaIdsBySlug()
 
-			$shadowedBy = $newSlugToId[strtolower((string)$existingSlug)] ?? null;
-			if ($existingSlug === null || $shadowedBy === null || $shadowedBy === $currentId) {
-				$kept[] = $currentId;
-				continue;
-			}
+	/**
+	 * A listed schema id a freshly imported schema shadows: same slug (case-insensitively), other id.
+	 *
+	 * An id whose schema cannot be loaded is kept: there is nothing to compare it against.
+	 *
+	 * @param int                $schemaId    The listed schema id.
+	 * @param array<string, int> $newSlugToId The imported schema ids by lower-cased slug.
+	 *
+	 * @return array{id: int, slug: string, by: int}|null The shadowed listing, or null when the id is kept.
+	 */
+	private function shadowedListing(int $schemaId, array $newSlugToId): ?array {
+		$existingSlug = $this->listedSchemaSlug(schemaId: $schemaId);
+		$shadowedBy = $newSlugToId[strtolower((string)$existingSlug)] ?? null;
+		if ($existingSlug === null || $shadowedBy === null || $shadowedBy === $schemaId) {
+			return null;
+		}
 
-			$this->logger->debug(
-				message: sprintf(
-					"[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
-					$details['slug'],
-					$currentId,
-					$existingSlug,
-					$shadowedBy
-				),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}//end foreach
+		return ['id' => $schemaId, 'slug' => $existingSlug, 'by' => $shadowedBy];
+	}//end shadowedListing()
 
-		return $kept;
-	}//end unshadowedSchemaIds()
+	/**
+	 * The slug of a listed schema, or null when it cannot be loaded.
+	 *
+	 * @param int $schemaId The listed schema id.
+	 *
+	 * @return string|null The slug.
+	 */
+	private function listedSchemaSlug(int $schemaId): ?string {
+		try {
+			return $this->schemaMapper->find($schemaId, _multitenancy: false)->getSlug();
+		} catch (\Throwable $ignore) {
+			return null;
+		}
+	}//end listedSchemaSlug()
+
+	/**
+	 * Log a listed schema id pruned in favour of the app-owned schema that shadows it.
+	 *
+	 * @param mixed                                  $registerSlug The application register slug.
+	 * @param array{id: int, slug: string, by: int} $shadowed     The shadowed listing.
+	 *
+	 * @return void
+	 */
+	private function logPrunedShadowedSchema(mixed $registerSlug, array $shadowed): void {
+		$this->logger->debug(
+			message: sprintf(
+				"[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
+				$registerSlug,
+				$shadowed['id'],
+				$shadowed['slug'],
+				$shadowed['by']
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logPrunedShadowedSchema()
 
 	/**
 	 * A result's registers with the given one added, unless a register with its id is already there.
