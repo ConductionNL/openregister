@@ -60,6 +60,9 @@ export default defineConfig({
 		// See tests/e2e/base-url.ts.
 		baseURL: resolveBaseUrl(),
 		extraHTTPHeaders: {
+			// Write routes run Nextcloud's request-token check; API clients
+			// pass it with this header.
+			'OCS-APIRequest': 'true',
 			// Basic auth used by api-smoke.spec.ts; UI specs override
 			// auth via `storageState` below.
 			Authorization: `Basic ${Buffer.from(

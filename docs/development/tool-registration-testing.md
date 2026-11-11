@@ -144,7 +144,7 @@ Expected: Agent uses `cms_add_menu_item` and creates the link.
 
 ```bash
 # Get all available tools
-docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+docker exec -u 33 master-nextcloud-1 curl -H 'OCS-APIRequest: true' -s -u 'admin:admin' \
   -H 'Content-Type: application/json' \
   http://localhost/apps/openregister/api/agents/tools
 
@@ -168,7 +168,7 @@ docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
 
 ```bash
 # Create agent with tools enabled
-docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+docker exec -u 33 master-nextcloud-1 curl -H 'OCS-APIRequest: true' -s -u 'admin:admin' \
   -H 'Content-Type: application/json' \
   -X POST http://localhost/apps/openregister/api/agents \
   -d '{
@@ -270,7 +270,7 @@ docker logs master-nextcloud-1 | grep '\[CMSTool\]'
 ```bash
 # Test registry performance with multiple concurrent requests
 for i in {1..100}; do
-  docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+  docker exec -u 33 master-nextcloud-1 curl -H 'OCS-APIRequest: true' -s -u 'admin:admin' \
     http://localhost/apps/openregister/api/agents/tools &
 done
 wait

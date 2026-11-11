@@ -1107,17 +1107,17 @@ If you **absolutely need** to allow executables (e.g., for a software repository
 
 ```bash
 # Documents
-curl -X POST '/api/registers/docs/schemas/document/objects' \
+curl -H 'OCS-APIRequest: true' -X POST '/api/registers/docs/schemas/document/objects' \
   -F 'title=Report' \
   -F 'attachment=@report.pdf'  # ✅ OK
 
 # Images
-curl -X POST '/api/registers/docs/schemas/document/objects' \
+curl -H 'OCS-APIRequest: true' -X POST '/api/registers/docs/schemas/document/objects' \
   -F 'title=Photo' \
   -F 'image=@photo.jpg'  # ✅ OK
 
 # Archives
-curl -X POST '/api/registers/docs/schemas/document/objects' \
+curl -H 'OCS-APIRequest: true' -X POST '/api/registers/docs/schemas/document/objects' \
   -F 'title=Data' \
   -F 'data=@archive.zip'  # ✅ OK (ZIPs are allowed unless they're JARs)
 ```
@@ -1126,17 +1126,17 @@ curl -X POST '/api/registers/docs/schemas/document/objects' \
 
 ```bash
 # Windows executable
-curl -X POST '/api/registers/docs/schemas/document/objects' \
+curl -H 'OCS-APIRequest: true' -X POST '/api/registers/docs/schemas/document/objects' \
   -F 'title=Software' \
   -F 'file=@program.exe'  # ❌ BLOCKED
 
 # Shell script
-curl -X POST '/api/registers/docs/schemas/document/objects' \
+curl -H 'OCS-APIRequest: true' -X POST '/api/registers/docs/schemas/document/objects' \
   -F 'title=Script' \
   -F 'file=@setup.sh'  # ❌ BLOCKED
 
 # PHP script
-curl -X POST '/api/registers/docs/schemas/document/objects' \
+curl -H 'OCS-APIRequest: true' -X POST '/api/registers/docs/schemas/document/objects' \
   -F 'title=Code' \
   -F 'file=@index.php'  # ❌ BLOCKED
 ```
@@ -1148,11 +1148,11 @@ OpenRegister detects renamed executables:
 ```bash
 # Renamed EXE to TXT - Still blocked by magic bytes!
 mv malware.exe document.txt
-curl -X POST '/api/.../' -F 'file=@document.txt'  # ❌ BLOCKED (magic bytes: MZ)
+curl -H 'OCS-APIRequest: true' -X POST '/api/.../' -F 'file=@document.txt'  # ❌ BLOCKED (magic bytes: MZ)
 
 # PHP file renamed to JPG - Still blocked!
 mv shell.php image.jpg
-curl -X POST '/api/.../' -F 'file=@image.jpg'  # ❌ BLOCKED (detects <?php)
+curl -H 'OCS-APIRequest: true' -X POST '/api/.../' -F 'file=@image.jpg'  # ❌ BLOCKED (detects <?php)
 ```
 
 ### Schema Configuration
