@@ -16,6 +16,7 @@ namespace Unit\Service;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -50,13 +51,7 @@ class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
 		$this->conditionMatcher = $this->createMock(ConditionMatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->handler = new PropertyRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->conditionMatcher,
-			$this->logger,
-			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
-		);
+		$this->handler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->userSession, $this->groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->conditionMatcher, self::stateFieldRuleResolver($this->userSession, $this->groupManager)), logger: $this->logger);
 	}
 
 	/**
@@ -108,8 +103,7 @@ class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
 
 		return $this->handler->restoreWriteOnlyValues(
 			prepared: $incoming,
-			stored: $stored,
-			omittedPaths: $omitted
+			omitted: new OmittedWriteOnly(stored: $stored, paths: $omitted)
 		);
 	}
 
@@ -338,13 +332,7 @@ class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
 
 	public function testPreserveNeverLogsTheSecretValue(): void {
 		$logger = $this->createMock(LoggerInterface::class);
-		$handler = new PropertyRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->conditionMatcher,
-			$logger,
-			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
-		);
+		$handler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->userSession, $this->groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->conditionMatcher, self::stateFieldRuleResolver($this->userSession, $this->groupManager)), logger: $logger);
 
 		$logger->expects($this->any())
 			->method('debug')
@@ -365,8 +353,7 @@ class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
 		);
 		$handler->restoreWriteOnlyValues(
 			prepared: ['name' => 'prod'],
-			stored: ['apiToken' => 's3cr3t'],
-			omittedPaths: $omitted
+			omitted: new OmittedWriteOnly(stored: ['apiToken' => 's3cr3t'], paths: $omitted)
 		);
 	}
 

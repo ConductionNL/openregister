@@ -16,7 +16,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -50,6 +51,7 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -68,6 +70,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * Golden test for ObjectService::saveObject().
@@ -266,10 +270,12 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 							'getAbsoluteURL' => fn (array $a): string => 'https://cloud.test' . $a[0],
 						]),
 						$this->createStub(IL10N::class),
-						$this->createStub(ObjectService::class),
-						$this->createStub(DeepLinkRegistryService::class),
-						$this->createStub(SchemaMapper::class),
-						$this->createStub(RegisterMapper::class),
+						new ObjectPreviewSources(
+							objectService: $this->createStub(ObjectService::class),
+							deepLinkRegistry: $this->createStub(DeepLinkRegistryService::class),
+							schemaMapper: $this->createStub(SchemaMapper::class),
+							registerMapper: $this->createStub(RegisterMapper::class)
+						),
 						$this->createStub(LoggerInterface::class)
 					),
 					DeepLinkRegistryService::class => $this->recorder(DeepLinkRegistryService::class, 'deepLinks', [
@@ -288,7 +294,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			]);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->recorder(DataManipulationHandler::class, 'dataManip', []),
 			deleteHandler: $this->recorder(DeleteObject::class, 'deleteHandler', []),
 			getHandler: $this->recorder(GetObject::class, 'getHandler', []),
@@ -371,7 +377,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			container: $container,
 			objectSourceRegistry: $this->recorder(ObjectSourceRegistry::class, 'objectSources', []),
 			autoTransitions: $autoTransitions
-		);
+		));
 	}//end service()
 
 	/**
@@ -404,8 +410,17 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 	}//end recorder()
 
 	public function record(string $method, array $args): void {
+		if ($method === 'permissions.checkPermission' && ($args[2] ?? null) instanceof PermissionCheckOptions) {
+			$options = $args[2];
+			$args    = [$args[0], $args[1], $options->userId, $options->objectOwner, $args[3], $options->object, $options->register];
+		}
+
 		if (in_array($method, ['logger.debug', 'logger.info', 'logger.warning', 'logger.error'], true) === true && is_array($args[1] ?? null) === true) {
 			unset($args[1]['file'], $args[1]['line']);
+		}
+
+		if (($args[0] ?? null) instanceof WriteConstraintCheck) {
+			$args = [$args[0]->incoming, $args[0]->stored, ...array_slice($args, 1)];
 		}
 
 		$this->calls[] = [$method, $this->describe($args)];

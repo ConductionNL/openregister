@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
 use OCA\OpenRegister\Controller\GdprEntitiesController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
@@ -40,7 +41,13 @@ use RuntimeException;
  * userId, requestedBy, owner or organisation request value cannot widen the
  * scope. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
+ * @uses \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @covers \OCA\OpenRegister\Controller\GdprEntitiesController
+ * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesMappers
+ * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesDomain
+ * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\Organisation
  */
 class GdprEntitiesControllerScopeGoldenTest extends TestCase {
@@ -129,7 +136,7 @@ class GdprEntitiesControllerScopeGoldenTest extends TestCase {
 			$this->calls[] = ['logger.error' => [$message, $context['error'] ?? null]];
 		});
 
-		$controller = new GdprEntitiesController(
+		$controller = GdprEntitiesControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(GdprEntityMapper::class),

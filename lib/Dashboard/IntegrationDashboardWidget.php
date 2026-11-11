@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Dashboard;
 
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Service\ScriptManifestLoader;
+use OCA\OpenRegister\Service\EntryScripts;
 use OCP\Dashboard\IIconWidget;
 use OCP\Dashboard\IWidget;
 use OCP\IL10N;
@@ -132,12 +132,12 @@ class IntegrationDashboardWidget implements IWidget, IIconWidget {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ScriptManifestLoader wraps the
+	 * @SuppressWarnings(PHPMD.StaticAccess) EntryScripts wraps the
 	 *   canonical \OCP\Util::addScript() API for enqueuing scripts from an
 	 *   IWidget::load() implementation; no injectable alternative (IUtil, etc.)
 	 *   exists in the NC AppFramework.
 	 */
 	public function load(): void {
-		ScriptManifestLoader::addEntryScripts(AppIdentity::APP_ID, 'userDashboard', 'openregister-user-dashboard');
+		EntryScripts::add(appId: AppIdentity::APP_ID, entry: 'userDashboard', fallbackScript: 'openregister-user-dashboard');
 	}//end load()
 }//end class

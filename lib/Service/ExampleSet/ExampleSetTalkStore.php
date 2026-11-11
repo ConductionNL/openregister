@@ -98,25 +98,53 @@ class ExampleSetTalkStore {
 	}//end available()
 
 	/**
-	 * The owner's group conversation of this name, or a new one with the participants in it.
+	 * Find the owner's group room by name, or make it with the participants.
 	 *
-	 * @param string             $owner        The account that owns a new conversation.
-	 * @param string             $name         The conversation's name.
-	 * @param array<int, string> $participants Accounts added besides the owner.
+	 * @param ExampleSetTalkRoom $room The owner, name and participants.
 	 *
 	 * @return array{token: string, id: int, created: bool}
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
-	public function room(string $owner, string $name, array $participants): array {
-		$manager = $this->container->get(self::MANAGER);
-		foreach ($manager->getRoomsForUser($owner) as $room) {
+	public function openRoom(ExampleSetTalkRoom $room): array {
+		$found = $this->groupRoom(owner: $room->owner, name: $room->name);
+		if ($found !== null) {
+			return ['token' => (string) $found->getToken(), 'id' => (int) $found->getId(), 'created' => false];
+		}
+
+		$made = $this->container->get(self::ROOMS)->createConversation(self::GROUP_ROOM, $room->name, $this->userManager->get($room->owner));
+		$this->container->get(self::PARTICIPANTS)->addUsers($made, $this->people(owner: $room->owner, participants: $room->participants));
+
+		return ['token' => (string) $made->getToken(), 'id' => (int) $made->getId(), 'created' => true];
+	}//end openRoom()
+
+	/**
+	 * The owner's group conversation with this name, or null.
+	 *
+	 * @param string $owner The owner.
+	 * @param string $name  The conversation name.
+	 *
+	 * @return mixed The Talk room, or null.
+	 */
+	private function groupRoom(string $owner, string $name): mixed {
+		foreach ($this->container->get(self::MANAGER)->getRoomsForUser($owner) as $room) {
 			if ($room->getName() === $name && (int) $room->getType() === self::GROUP_ROOM) {
-				return ['token' => (string) $room->getToken(), 'id' => (int) $room->getId(), 'created' => false];
+				return $room;
 			}
 		}
 
-		$room   = $this->container->get(self::ROOMS)->createConversation(self::GROUP_ROOM, $name, $this->userManager->get($owner));
+		return null;
+	}//end groupRoom()
+
+	/**
+	 * The participants to add to a new conversation: every existing account but the owner, who is in it already.
+	 *
+	 * @param string             $owner        The owner.
+	 * @param array<int, string> $participants The participants' accounts.
+	 *
+	 * @return array<int, array{actorType: string, actorId: string, displayName: string}>
+	 */
+	private function people(string $owner, array $participants): array {
 		$people = [];
 		foreach ($participants as $uid) {
 			if ($uid !== $owner && $this->userManager->get($uid) !== null) {
@@ -124,39 +152,48 @@ class ExampleSetTalkStore {
 			}
 		}
 
-		$this->container->get(self::PARTICIPANTS)->addUsers($room, $people);
-
-		return ['token' => (string) $room->getToken(), 'id' => (int) $room->getId(), 'created' => true];
-	}//end room()
+		return $people;
+	}//end people()
 
 	/**
 	 * Write a call that was held into the conversation's history.
 	 *
-	 * @param string             $token  The conversation token.
-	 * @param string             $owner  The account that started the call.
-	 * @param DateTime           $start  When the call started.
-	 * @param DateTime           $end    When it ended.
-	 * @param array<int, string> $joined The accounts that joined.
+	 * @param HeldTalkCall $held The conversation token, the account that started the call, when it started and
+	 *                           ended, and the accounts that joined.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
-	public function heldCall(string $token, string $owner, DateTime $start, DateTime $end, array $joined): void {
-		$room = $this->container->get(self::MANAGER)->getRoomByToken($token);
-		$chat = $this->container->get(self::CHAT);
-		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode(['message' => 'call_started', 'parameters' => []]), $start, false);
-		$ended = [
+	public function heldCall(HeldTalkCall $held): void {
+		$start = new DateTime((string) $held->call['start']);
+		$end   = new DateTime((string) $held->call['end']);
+		$room  = $this->container->get(self::MANAGER)->getRoomByToken($held->token);
+		$chat  = $this->container->get(self::CHAT);
+		$chat->addSystemMessage($room, null, 'users', $held->owner, (string) json_encode(['message' => 'call_started', 'parameters' => []]), $start, false);
+		$ended = self::callEnded(joined: $held->joined, seconds: max(0, $end->getTimestamp() - $start->getTimestamp()));
+		$chat->addSystemMessage($room, null, 'users', $held->owner, (string) json_encode($ended), $end, false);
+	}//end heldCall()
+
+	/**
+	 * The system message that ends a held call.
+	 *
+	 * @param array<int, string> $joined  Who joined it.
+	 * @param int                $seconds How long it lasted.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function callEnded(array $joined, int $seconds): array {
+		return [
 			'message'    => 'call_ended',
 			'parameters' => [
 				'users'    => array_values($joined),
 				'cloudIds' => [],
 				'guests'   => 0,
-				'duration' => max(0, $end->getTimestamp() - $start->getTimestamp()),
+				'duration' => $seconds,
 			],
 		];
-		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode($ended), $end, false);
-	}//end heldCall()
+	}//end callEnded()
 
 	/**
 	 * Whether the conversation still exists.

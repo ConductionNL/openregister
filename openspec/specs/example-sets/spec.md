@@ -280,6 +280,15 @@ A change MAY name `object: <key>` of an object declared earlier in the same frag
 - **WHEN** the set is installed
 - **THEN** the case SHALL point at the result, and remove SHALL leave neither
 
+### Requirement: A moment placeholder keeps its local time once stored
+
+`{{datetime:<n> HH:MM}}` SHALL fill the moment's UTC instant (`2026-10-12T07:12:00+00:00` for 09:12 in Amsterdam in summer time). A datetime column keeps the wall time without its offset and Nextcloud reads it back as UTC, so a moment filled in any other offset SHALL NOT be written.
+
+#### Scenario: A claim at 09:05 reads 09:05
+- **GIVEN** a fragment's task with `claimedAt` `{{datetime:-1 09:05}}` and a set whose time zone is Europe/Amsterdam
+- **WHEN** the set is installed and the task's audit is read
+- **THEN** the claim SHALL read 09:05 in Amsterdam, in summer and in winter time, not 10:05 or 11:05
+
 ### Requirement: A date may be pinned to a weekday (REQ-EXS-019)
 
 `{{date:<n>@<mon..sun>}}` and `{{datetime:<n>@<mon..sun> HH:MM}}` SHALL fill the first given weekday on or after the day n days from the install day, so a council meeting stays on a Thursday.
@@ -1209,6 +1218,38 @@ A fragment's task MAY declare `requester` and `expiresAt`. The check SHALL refus
 
 #### Scenario: A requester the set does not know
 - **GIVEN** a fragment's task declares `requester` `{{cast:nobody.uid}}` or an account the set does not create or adopt
+- **WHEN** the set is checked
+- **THEN** the check SHALL refuse the task and write nothing
+
+### Requirement: A fragment's flow may quote its own uuid
+
+Inside a fragment's flow, `{{flow:self.uuid}}` and its alias `{{flow:self}}` SHALL fill to the uuid the flow is written with, so a step can stamp it on what it makes later (a case's `handoffSource: planned-series:<uuid>`). A refresh SHALL keep the same uuid, so it counts as no change. Outside a flow the token names no flow and SHALL be refused like any unresolvable placeholder.
+
+#### Scenario: A yearly series stamps its cases
+- **GIVEN** a fragment's flow whose case-opening step sets `handoffSource` to `planned-series:{{flow:self.uuid}}`
+- **WHEN** the set is installed
+- **THEN** that step SHALL carry `planned-series:` followed by the flow's own uuid
+
+### Requirement: A fragment's flow may name its application and be switched on
+
+A fragment's flow MAY declare `applicationSlug` (text) and `enabled` (true or false, default false). Install SHALL write the slug on the flow, publish the flow, and only then switch it on when `enabled` is true. The check SHALL refuse an `enabled` or `publish` that is not true or false, an `applicationSlug` that is not text, and a flow that is switched on but not published. A refresh SHALL leave a held flow on or off as it is.
+
+#### Scenario: A planned quarterly follow-up
+- **GIVEN** a fragment declares a schedule flow with `applicationSlug` `dossiq-planned-follow-up` and `enabled` true
+- **WHEN** the set is installed
+- **THEN** the flow SHALL carry that slug, be published, and be switched on, and it SHALL first run at its next cron date, not at install
+
+### Requirement: A fragment's task may carry the moment it was created
+
+A fragment's task MAY declare `createdAt`. The check SHALL refuse a `createdAt` that is not a date or lies in the future, and a `claimedAt` or `completedAt` before it. Install SHALL write the task with that moment as its creation, and its create audit entry with the same moment, since the audit cannot be changed afterwards. A task created over HTTP SHALL NOT name its creation moment.
+
+#### Scenario: A hearing task made two days before the install day
+- **GIVEN** a fragment declares task "Hoorzitting inplannen" with `createdAt` `{{datetime:-2 16:20}}` and `claimedAt` `{{datetime:-1 09:05}}`
+- **WHEN** the set is installed
+- **THEN** the task SHALL read as created two days before the install day at 16:20, and its history SHALL list the create entry before the claim
+
+#### Scenario: A claim before the task existed
+- **GIVEN** a fragment's task declares a `claimedAt` that lies before its `createdAt`
 - **WHEN** the set is checked
 - **THEN** the check SHALL refuse the task and write nothing
 

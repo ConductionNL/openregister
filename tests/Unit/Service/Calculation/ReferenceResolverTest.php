@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\ReferenceTenantGuard;
+use OCA\OpenRegister\Service\Calculation\ReferringObject;
+use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -219,11 +221,13 @@ class ReferenceResolverTest extends TestCase {
 			->with('ct-1', $this->anything(), $this->anything(), 'reg-22', 'caseType', false, false)
 			->willReturn($this->entity(['processingDeadline' => 'P8W'], 'org-a'));
 
-		$outcome = $this->resolver->resolveAllWithOutcome(
-			['caseType' => 'ct-1', '@self' => []],
-			$this->caseTypeReference(),
-			'reg-22',
-			'org-a'
+		$outcome = $this->resolver->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['caseType' => 'ct-1', '@self' => []],
+				register: 'reg-22',
+				organisation: 'org-a'
+			),
+			references: $this->caseTypeReference()
 		);
 
 		$this->assertSame('P8W', $outcome['refs']['caseType']['processingDeadline']);
@@ -239,11 +243,13 @@ class ReferenceResolverTest extends TestCase {
 		$this->objectService->method('find')->willReturn($this->entity(['processingDeadline' => 'P8W'], 'org-b'));
 		$this->sharedMasterData->method('holdersForResource')->willReturn([]);
 
-		$outcome = $this->resolver->resolveAllWithOutcome(
-			['caseType' => 'ct-1', '@self' => []],
-			$this->caseTypeReference(),
-			'reg-22',
-			'org-a'
+		$outcome = $this->resolver->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['caseType' => 'ct-1', '@self' => []],
+				register: 'reg-22',
+				organisation: 'org-a'
+			),
+			references: $this->caseTypeReference()
 		);
 
 		$this->assertNull($outcome['refs']['caseType']);
@@ -258,11 +264,13 @@ class ReferenceResolverTest extends TestCase {
 	public function testAnOrglessObjectCannotReachAnOrganisationOwnedReference(): void {
 		$this->objectService->method('find')->willReturn($this->entity(['processingDeadline' => 'P8W'], 'org-a'));
 
-		$outcome = $this->resolver->resolveAllWithOutcome(
-			['caseType' => 'ct-1', '@self' => []],
-			$this->caseTypeReference(),
-			'reg-22',
-			null
+		$outcome = $this->resolver->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['caseType' => 'ct-1', '@self' => []],
+				register: 'reg-22',
+				organisation: null
+			),
+			references: $this->caseTypeReference()
 		);
 
 		$this->assertNull($outcome['refs']['caseType']);
@@ -277,11 +285,13 @@ class ReferenceResolverTest extends TestCase {
 	public function testAnOrglessReferenceResolves(): void {
 		$this->objectService->method('find')->willReturn($this->entity(['processingDeadline' => 'P8W'], null));
 
-		$outcome = $this->resolver->resolveAllWithOutcome(
-			['caseType' => 'ct-1', '@self' => []],
-			$this->caseTypeReference(),
-			'reg-22',
-			'org-a'
+		$outcome = $this->resolver->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['caseType' => 'ct-1', '@self' => []],
+				register: 'reg-22',
+				organisation: 'org-a'
+			),
+			references: $this->caseTypeReference()
 		);
 
 		$this->assertSame('P8W', $outcome['refs']['caseType']['processingDeadline']);
@@ -305,11 +315,13 @@ class ReferenceResolverTest extends TestCase {
 		);
 		$this->objectService->method('find')->willReturn($this->entity(['processingDeadline' => 'P8W'], 'org-parent'));
 
-		$outcome = $resolver->resolveAllWithOutcome(
-			['caseType' => 'ct-1', '@self' => []],
-			$this->caseTypeReference(),
-			'reg-22',
-			'org-a'
+		$outcome = $resolver->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['caseType' => 'ct-1', '@self' => []],
+				register: 'reg-22',
+				organisation: 'org-a'
+			),
+			references: $this->caseTypeReference()
 		);
 
 		$this->assertSame('P8W', $outcome['refs']['caseType']['processingDeadline']);
@@ -323,15 +335,17 @@ class ReferenceResolverTest extends TestCase {
 	public function testASharedMasterDataReferenceResolves(): void {
 		$this->sharedMasterData->expects($this->once())
 			->method('holdersForResource')
-			->with(22, 237, ['org-a'])
+			->with(new DeclaredPair(22, 237), ['org-a'])
 			->willReturn(['org-holder']);
 		$this->objectService->method('find')->willReturn($this->entity(['processingDeadline' => 'P8W'], 'org-holder'));
 
-		$outcome = $this->resolver->resolveAllWithOutcome(
-			['caseType' => 'ct-1', '@self' => []],
-			$this->caseTypeReference(),
-			'reg-22',
-			'org-a'
+		$outcome = $this->resolver->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['caseType' => 'ct-1', '@self' => []],
+				register: 'reg-22',
+				organisation: 'org-a'
+			),
+			references: $this->caseTypeReference()
 		);
 
 		$this->assertSame('P8W', $outcome['refs']['caseType']['processingDeadline']);
@@ -345,17 +359,21 @@ class ReferenceResolverTest extends TestCase {
 	public function testAMissingTargetIsUnresolvedButAnEmptyKeyIsNot(): void {
 		$this->objectService->method('find')->willReturn(null);
 
-		$missing = $this->resolver->resolveAllWithOutcome(
-			['caseType' => 'ct-gone', '@self' => []],
-			$this->caseTypeReference(),
-			'reg-22',
-			'org-a'
+		$missing = $this->resolver->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['caseType' => 'ct-gone', '@self' => []],
+				register: 'reg-22',
+				organisation: 'org-a'
+			),
+			references: $this->caseTypeReference()
 		);
-		$empty = $this->resolver->resolveAllWithOutcome(
-			['caseType' => '', '@self' => []],
-			$this->caseTypeReference(),
-			'reg-22',
-			'org-a'
+		$empty = $this->resolver->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['caseType' => '', '@self' => []],
+				register: 'reg-22',
+				organisation: 'org-a'
+			),
+			references: $this->caseTypeReference()
 		);
 
 		$this->assertSame(['caseType'], $missing['unresolved']);
@@ -374,11 +392,13 @@ class ReferenceResolverTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn([$foreign, $own]);
 		$this->sharedMasterData->method('holdersForResource')->willReturn([]);
 
-		$outcome = $this->resolver->resolveAllWithOutcome(
-			['vehicleType' => 'car', '@self' => []],
-			['rate' => ['schema' => 'MileageRate', 'mode' => 'lookup', 'filters' => ['vehicleType' => '@self.vehicleType']]],
-			'reg-1',
-			'org-a'
+		$outcome = $this->resolver->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['vehicleType' => 'car', '@self' => []],
+				register: 'reg-1',
+				organisation: 'org-a'
+			),
+			references: ['rate' => ['schema' => 'MileageRate', 'mode' => 'lookup', 'filters' => ['vehicleType' => '@self.vehicleType']]]
 		);
 
 		$this->assertSame(0.21, $outcome['refs']['rate']['ratePerKm']);

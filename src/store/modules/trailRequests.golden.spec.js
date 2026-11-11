@@ -2,7 +2,8 @@
  * Golden record of the fetch-based actions of the search trail, deleted and
  * audit trail stores: the request each one sends, what it returns or throws,
  * the state it leaves and what it logs, for a good answer, a failure with a
- * server error text and a failure without one.
+ * server error text, a failure without one and a network failure, and the
+ * flags each one raises while it runs.
  */
 import { createPinia, setActivePinia } from 'pinia'
 import { useAuditTrailStore } from './auditTrail.js'
@@ -50,6 +51,7 @@ const ANSWERS = [
 	['ok', { ok: true, body: { total: 5, results: [{ id: 9 }], 2: 'x' } }],
 	['failure with error text', { ok: false, body: { error: 'Server says no' } }],
 	['failure without error text', { ok: false, body: {} }],
+	['network failure', { reject: 'Network down' }],
 ]
 
 let consoleError
@@ -75,18 +77,27 @@ async function record(action, answer) {
 	const [useStore, name, args] = action
 	const store = useStore()
 	store.$patch({ deletedList: [...LIST], auditTrailList: [...LIST] })
-	global.fetch.mockResolvedValue({
-		ok: answer.ok,
-		json: async () => answer.body,
+	global.fetch.mockImplementation(async () => {
+		if (answer.reject) {
+			throw new Error(answer.reject)
+		}
+		return { ok: answer.ok, json: async () => answer.body }
 	})
+	const before = JSON.parse(JSON.stringify(store.$state))
+	const promise = store[name](...args)
+	const during = JSON.parse(JSON.stringify(store.$state))
+	const whileRunning = Object.keys(during).filter(
+		(key) => JSON.stringify(during[key]) !== JSON.stringify(before[key]),
+	)
 	let outcome
 	try {
-		outcome = { returned: await store[name](...args) }
+		outcome = { returned: await promise }
 	} catch (error) {
 		outcome = { thrown: error.message }
 	}
 	return {
 		...outcome,
+		whileRunning,
 		requests: global.fetch.mock.calls,
 		state: JSON.parse(JSON.stringify(store.$state)),
 		logged: consoleError.mock.calls.map(([text, error]) => [

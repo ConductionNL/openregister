@@ -26,9 +26,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\BackgroundJob\ScheduledReportRunNowJob;
-use OCA\OpenRegister\Controller\ScheduledReportsController;
-use OCA\OpenRegister\Db\ScheduledReport;
+use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
+use OCA\OpenRegister\Notifications\Controller\Support\ScheduledReportsControllerServices;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledReportRunNowJob;
+use OCA\OpenRegister\Notifications\Controller\ScheduledReportsController;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Service\ScheduledReportService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
@@ -81,13 +83,16 @@ class ScheduledReportsControllerTest extends TestCase {
 		$this->setupUser('alice', false);
 
 		$this->controller = new ScheduledReportsController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->jobList,
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(LoggerInterface::class)
+			new ScheduledReportsControllerServices(
+				service: $this->service,
+				jobList: $this->jobList,
+				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+					userSession: $this->userSession,
+					groupManager: $this->groupManager,
+					logger: $this->createMock(LoggerInterface::class)
+				)
+			)
 		);
 	}//end setUp()
 
@@ -156,9 +161,9 @@ class ScheduledReportsControllerTest extends TestCase {
 	public function testOwnerCanShowOwnReport(): void {
 		$report = $this->makeReport(1, 'alice');
 		$this->service->method('find')->with(1)->willReturn($report);
-		$this->service->method('assertOwnerOrAdmin')->willReturnCallback(
-			function (ScheduledReport $r, string $callerUid, bool $isAdmin): void {
-				if ($r->getOwner() !== $callerUid && $isAdmin === false) {
+		$this->service->method('assertMayAccess')->willReturnCallback(
+			function (ScheduledReport $r, ReportCaller $caller): void {
+				if ($r->getOwner() !== $caller->uid && $caller->isAdmin === false) {
 					throw new \RuntimeException('forbidden');
 				}
 			}
@@ -172,7 +177,7 @@ class ScheduledReportsControllerTest extends TestCase {
 	public function testNonOwnerCannotShowAnotherUsersReport(): void {
 		$report = $this->makeReport(42, 'bob');
 		$this->service->method('find')->with(42)->willReturn($report);
-		$this->service->method('assertOwnerOrAdmin')->willThrowException(new \RuntimeException('forbidden'));
+		$this->service->method('assertMayAccess')->willThrowException(new \RuntimeException('forbidden'));
 
 		$response = $this->controller->show(42);
 
@@ -189,7 +194,7 @@ class ScheduledReportsControllerTest extends TestCase {
 
 	public function testNonOwnerCannotUpdateAnotherUsersReport(): void {
 		$this->request->method('getParams')->willReturn(['name' => 'Renamed']);
-		$this->service->method('update')->willThrowException(new \RuntimeException('forbidden'));
+		$this->service->method('applyUpdate')->willThrowException(new \RuntimeException('forbidden'));
 
 		$response = $this->controller->update(42);
 
@@ -197,7 +202,7 @@ class ScheduledReportsControllerTest extends TestCase {
 	}//end testNonOwnerCannotUpdateAnotherUsersReport()
 
 	public function testNonOwnerCannotDeleteAnotherUsersReport(): void {
-		$this->service->method('delete')->willThrowException(new \RuntimeException('forbidden'));
+		$this->service->method('deleteAs')->willThrowException(new \RuntimeException('forbidden'));
 
 		$response = $this->controller->destroy(42);
 
@@ -205,7 +210,7 @@ class ScheduledReportsControllerTest extends TestCase {
 	}//end testNonOwnerCannotDeleteAnotherUsersReport()
 
 	public function testOwnerCanDeleteOwnReport(): void {
-		$this->service->expects(self::once())->method('delete')->with(1, 'alice', false);
+		$this->service->expects(self::once())->method('deleteAs')->with(1, new ReportCaller(uid: 'alice', isAdmin: false));
 
 		$response = $this->controller->destroy(1);
 
@@ -215,7 +220,7 @@ class ScheduledReportsControllerTest extends TestCase {
 	public function testRunNowQueuesJobAndReturns202WithoutCallingExportInline(): void {
 		$report = $this->makeReport(1, 'alice');
 		$this->service->method('find')->with(1)->willReturn($report);
-		$this->service->method('assertOwnerOrAdmin');
+		$this->service->method('assertMayAccess');
 
 		$this->jobList->expects(self::once())
 			->method('add')
@@ -234,7 +239,7 @@ class ScheduledReportsControllerTest extends TestCase {
 	public function testRunNowRespectsOwnership(): void {
 		$report = $this->makeReport(42, 'bob');
 		$this->service->method('find')->with(42)->willReturn($report);
-		$this->service->method('assertOwnerOrAdmin')->willThrowException(new \RuntimeException('forbidden'));
+		$this->service->method('assertMayAccess')->willThrowException(new \RuntimeException('forbidden'));
 
 		$this->jobList->expects(self::never())->method('add');
 
@@ -300,7 +305,7 @@ class ScheduledReportsControllerTest extends TestCase {
 	public function testUpdateReturns422WhenRecipientValidationFails(): void {
 		$this->request->method('getParams')->willReturn(['recipients' => ['not-an-email']]);
 
-		$this->service->method('update')
+		$this->service->method('applyUpdate')
 			->willThrowException(new InvalidArgumentException('"not-an-email" is not a valid email address.'));
 
 		$response = $this->controller->update(1);

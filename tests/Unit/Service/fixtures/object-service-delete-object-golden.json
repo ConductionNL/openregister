@@ -1694,8 +1694,11 @@
                 "multitenancy": true
             },
             {
+                "schemaMapper.find": 10
+            },
+            {
                 "checkPermission": "delete",
-                "schema": 20,
+                "schema": 10,
                 "userId": null,
                 "owner": "owner-1",
                 "rbac": true,
@@ -1704,7 +1707,7 @@
             {
                 "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
                 "register": 1,
-                "schema": 20,
+                "schema": 10,
                 "original": null,
                 "rbac": true,
                 "multitenancy": true,

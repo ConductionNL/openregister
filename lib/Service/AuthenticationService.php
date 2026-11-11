@@ -47,7 +47,7 @@ use Twig\Sandbox\SecurityPolicy;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class AuthenticationService {
+class AuthenticationService implements AuthenticationTokenFetcherInterface {
 
 	/**
 	 * Required parameters for OAuth2 client credentials flow.
@@ -157,13 +157,7 @@ class AuthenticationService {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function createClientCredentialConfig(array $configuration): array {
-		$missingParams = array_keys(array: $configuration);
-		$diff = array_diff(self::REQUIRED_PARAMETERS_CLIENT_CREDENTIALS, $missingParams);
-		if ($diff !== []) {
-			throw new BadRequestException(
-				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
-			);
-		}
+		$this->assertParametersSet(required: self::REQUIRED_PARAMETERS_CLIENT_CREDENTIALS, configuration: $configuration);
 
 		$callConfig = [
 			'form_params' => [
@@ -172,6 +166,39 @@ class AuthenticationService {
 			],
 		];
 
+		$callConfig = $this->withClientCredentials(callConfig: $callConfig, configuration: $configuration);
+
+		return $this->withClientAssertion(callConfig: $callConfig, configuration: $configuration);
+	}//end createClientCredentialConfig()
+
+	/**
+	 * Refuse a configuration that lacks any of the required parameters.
+	 *
+	 * @param string[] $required      The parameter names that must be present.
+	 * @param array    $configuration The configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws BadRequestException Listing the missing parameters.
+	 */
+	private function assertParametersSet(array $required, array $configuration): void {
+		$diff = array_diff($required, array_keys(array: $configuration));
+		if ($diff !== []) {
+			throw new BadRequestException(
+				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
+			);
+		}
+	}//end assertParametersSet()
+
+	/**
+	 * Put the client id and secret in the body or in basic auth, as configured.
+	 *
+	 * @param array $callConfig    The call options so far.
+	 * @param array $configuration The configuration.
+	 *
+	 * @return array The call options with the client credentials.
+	 */
+	private function withClientCredentials(array $callConfig, array $configuration): array {
 		if ($configuration['authentication'] === 'body') {
 			$callConfig['form_params']['client_id'] = $configuration['client_id'];
 			$callConfig['form_params']['client_secret'] = $configuration['client_secret'];
@@ -182,22 +209,45 @@ class AuthenticationService {
 			];
 		}
 
+		return $callConfig;
+	}//end withClientCredentials()
+
+	/**
+	 * Add a signed JWT client assertion when the configuration asks for one.
+	 *
+	 * @param array $callConfig    The call options so far.
+	 * @param array $configuration The configuration.
+	 *
+	 * @return array The call options, with the assertion when configured.
+	 */
+	private function withClientAssertion(array $callConfig, array $configuration): array {
 		if (isset($configuration['client_assertion_type']) === true
 			&& $configuration['client_assertion_type'] === 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
 		) {
 			$callConfig['form_params']['client_assertion_type'] = $configuration['client_assertion_type'];
-			$callConfig['form_params']['client_assertion'] = $this->fetchJWTToken(
-				configuration: [
-					'algorithm' => 'PS256',
-					'secret' => $configuration['private_key'],
-					'x5t' => $configuration['x5t'],
-					'payload' => $configuration['payload'],
-				]
-			);
+			$callConfig['form_params']['client_assertion'] = $this->clientAssertionJwt(configuration: $configuration);
 		}
 
 		return $callConfig;
-	}//end createClientCredentialConfig()
+	}//end withClientAssertion()
+
+	/**
+	 * The signed JWT a client presents as its assertion (PS256 over the configured private key).
+	 *
+	 * @param array $configuration The authentication configuration.
+	 *
+	 * @return string
+	 */
+	private function clientAssertionJwt(array $configuration): string {
+		return $this->fetchJWTToken(
+			configuration: [
+				'algorithm' => 'PS256',
+				'secret' => $configuration['private_key'],
+				'x5t' => $configuration['x5t'],
+				'payload' => $configuration['payload'],
+			]
+		);
+	}//end clientAssertionJwt()
 
 	/**
 	 * Create call options for OAuth with Password Credentials.
@@ -211,13 +261,7 @@ class AuthenticationService {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function createPasswordConfig(array $configuration): array {
-		$configKeys = array_keys(array: $configuration);
-		$diff = array_diff(self::REQUIRED_PARAMETERS_PASSWORD, $configKeys);
-		if ($diff !== []) {
-			throw new BadRequestException(
-				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
-			);
-		}
+		$this->assertParametersSet(required: self::REQUIRED_PARAMETERS_PASSWORD, configuration: $configuration);
 
 		$callConfig = [
 			'form_params' => [
@@ -226,6 +270,18 @@ class AuthenticationService {
 			],
 		];
 
+		return self::withPasswordCredentials(callConfig: $callConfig, configuration: $configuration);
+	}//end createPasswordConfig()
+
+	/**
+	 * Add the username and password where the configuration says they go: the body, or basic auth.
+	 *
+	 * @param array $callConfig    The token request so far.
+	 * @param array $configuration The authentication configuration.
+	 *
+	 * @return array
+	 */
+	private static function withPasswordCredentials(array $callConfig, array $configuration): array {
 		if ($configuration['authentication'] === 'body') {
 			$callConfig['form_params']['username'] = $configuration['username'];
 			$callConfig['form_params']['password'] = $configuration['password'];
@@ -237,7 +293,7 @@ class AuthenticationService {
 		}
 
 		return $callConfig;
-	}//end createPasswordConfig()
+	}//end withPasswordCredentials()
 
 	/**
 	 * Request an OAuth Access Token with the given configuration.
@@ -252,24 +308,9 @@ class AuthenticationService {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function fetchOAuthTokens(array $configuration): string {
-		if (isset($configuration['grant_type']) === false) {
-			throw new BadRequestException('Grant type not set, cannot request token');
-		}
+		self::assertTokenRequest(configuration: $configuration);
 
-		if (isset($configuration['tokenUrl']) === false) {
-			throw new BadRequestException('Token URL not set, cannot request token');
-		}
-
-		switch ($configuration['grant_type']) {
-			case 'client_credentials':
-				$callConfig = $this->createClientCredentialConfig(configuration: $configuration);
-				break;
-			case 'password':
-				$callConfig = $this->createPasswordConfig(configuration: $configuration);
-				break;
-			default:
-				throw new BadRequestException('Grant type not supported');
-		}
+		$callConfig = $this->grantCallConfig(configuration: $configuration);
 
 		$client = new Client();
 		$response = $client->post($configuration['tokenUrl'], $callConfig);
@@ -281,6 +322,45 @@ class AuthenticationService {
 
 		return $result['access_token'];
 	}//end fetchOAuthTokens()
+
+	/**
+	 * Refuse a token request without a grant type or a token URL.
+	 *
+	 * @param array $configuration The authentication configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws BadRequestException When either is not set.
+	 */
+	private static function assertTokenRequest(array $configuration): void {
+		if (isset($configuration['grant_type']) === false) {
+			throw new BadRequestException('Grant type not set, cannot request token');
+		}
+
+		if (isset($configuration['tokenUrl']) === false) {
+			throw new BadRequestException('Token URL not set, cannot request token');
+		}
+	}//end assertTokenRequest()
+
+	/**
+	 * The token call options for the configured grant type.
+	 *
+	 * @param array $configuration The OAuth configuration.
+	 *
+	 * @return array The call options.
+	 *
+	 * @throws BadRequestException If the grant type is not supported or parameters are missing.
+	 */
+	private function grantCallConfig(array $configuration): array {
+		switch ($configuration['grant_type']) {
+			case 'client_credentials':
+				return $this->createClientCredentialConfig(configuration: $configuration);
+			case 'password':
+				return $this->createPasswordConfig(configuration: $configuration);
+			default:
+				throw new BadRequestException('Grant type not supported');
+		}
+	}//end grantCallConfig()
 
 	/**
 	 * Fetch an access token from DeCOS (non-standard OAuth implementation).
@@ -322,17 +402,12 @@ class AuthenticationService {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function getRSJWK(array $configuration): JWK {
-		$stamp = microtime() . getmypid();
-		$filename = "/var/tmp/privatekey-$stamp";
-		file_put_contents(filename: $filename, data: base64_decode(string: $configuration['secret']));
-
-		try {
-			$jwk = JWKFactory::createFromKeyFile($filename, null, ['use' => 'sig']);
-		} finally {
-			unlink(filename: $filename);
-		}
-
-		return $jwk;
+		// The key is read from memory: written to a file, it would sit on disk for the length of the call.
+		return JWKFactory::createFromKey(
+			key: (string)base64_decode(string: $configuration['secret']),
+			password: null,
+			additional_values: ['use' => 'sig']
+		);
 	}//end getRSJWK()
 
 	/**
@@ -355,6 +430,28 @@ class AuthenticationService {
 	}//end getHSJWK()
 
 	/**
+	 * The configuration keys that carry secret material and never reach a payload template.
+	 *
+	 * @var list<string>
+	 */
+	private const PAYLOAD_SECRET_KEYS = [
+		'secret',
+		'clientSecret',
+		'client_secret',
+		'password',
+		'privateKey',
+		'private_key',
+		'apiKey',
+		'api_key',
+		'token',
+		'accessToken',
+		'access_token',
+		'refreshToken',
+		'refresh_token',
+		'authorization',
+	];
+
+	/**
 	 * Generate the JWT Payload by rendering the Twig template.
 	 *
 	 * @param array $configuration The source auth configuration.
@@ -371,25 +468,8 @@ class AuthenticationService {
 		// SEC-SVC-4: never expose secret material to the payload template
 		// context. Strip credential-bearing keys so a crafted payload template
 		// cannot echo adjacent secrets into the rendered claim set.
-		$secretKeys = [
-			'secret',
-			'clientSecret',
-			'client_secret',
-			'password',
-			'privateKey',
-			'private_key',
-			'apiKey',
-			'api_key',
-			'token',
-			'accessToken',
-			'access_token',
-			'refreshToken',
-			'refresh_token',
-			'authorization',
-		];
-
 		$context = $configuration;
-		foreach ($secretKeys as $secretKey) {
+		foreach (self::PAYLOAD_SECRET_KEYS as $secretKey) {
 			unset($context[$secretKey]);
 		}
 
@@ -422,18 +502,11 @@ class AuthenticationService {
 	}//end getJWK()
 
 	/**
-	 * Generate a signed JWT token.
+	 * The JWS builder over every algorithm a source may sign with.
 	 *
-	 * @param array $payload The JWT payload
-	 * @param JWK $jwk The signing key
-	 * @param string $algorithm The signing algorithm
-	 * @param string|null $x5t Optional certificate thumbprint
-	 *
-	 * @return string The compact-serialized JWT string.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @return JWSBuilder The builder.
 	 */
-	private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t = null): string {
+	private function jwsBuilder(): JWSBuilder {
 		$algorithmManager = new AlgorithmManager(
 			[
 				new HS256(),
@@ -446,9 +519,18 @@ class AuthenticationService {
 			]
 		);
 
-		$jwsBuilder = new JWSBuilder($algorithmManager);
-		$jwsSerializer = new CompactSerializer();
+		return new JWSBuilder($algorithmManager);
+	}//end jwsBuilder()
 
+	/**
+	 * The protected header of a JWT.
+	 *
+	 * @param string      $algorithm The signing algorithm.
+	 * @param string|null $x5t       Optional certificate thumbprint.
+	 *
+	 * @return array The header.
+	 */
+	private function jwtHeader(string $algorithm, ?string $x5t): array {
 		$header = [
 			'alg' => $algorithm,
 			'typ' => 'JWT',
@@ -457,13 +539,30 @@ class AuthenticationService {
 			$header['x5t'] = $x5t;
 		}
 
+		return $header;
+	}//end jwtHeader()
+
+	/**
+	 * Generate a signed JWT token.
+	 *
+	 * @param array       $payload   The JWT payload
+	 * @param JWK         $jwk       The signing key
+	 * @param string      $algorithm The signing algorithm
+	 * @param string|null $x5t       Optional certificate thumbprint
+	 *
+	 * @return string The compact-serialized JWT string.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t = null): string {
+		$jwsBuilder = $this->jwsBuilder();
 		$jws = $jwsBuilder
 			->create()
 			->withPayload(json_encode(value: $payload))
-			->addSignature($jwk, $header)
+			->addSignature($jwk, $this->jwtHeader(algorithm: $algorithm, x5t: $x5t))
 			->build();
 
-		return $jwsSerializer->serialize($jws, 0);
+		return (new CompactSerializer())->serialize($jws, 0);
 	}//end generateJWT()
 
 	/**
@@ -478,26 +577,16 @@ class AuthenticationService {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function fetchJWTToken(array $configuration): string {
-		$configKeys = array_keys(array: $configuration);
-		$diff = array_diff(self::REQUIRED_PARAMETERS_JWT, $configKeys);
-		if ($diff !== []) {
-			throw new BadRequestException(
-				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
-			);
-		}
+		$this->assertParametersSet(required: self::REQUIRED_PARAMETERS_JWT, configuration: $configuration);
 
 		$payload = $this->getJWTPayload(configuration: $configuration);
 		$jwk = $this->getJWK(configuration: $configuration);
 
-		if (isset($configuration['x5t']) === true) {
-			return $this->generateJWT(
-				payload: $payload,
-				jwk: $jwk,
-				algorithm: $configuration['algorithm'],
-				x5t: $configuration['x5t']
-			);
-		}
-
-		return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm']);
+		return $this->generateJWT(
+			payload: $payload,
+			jwk: $jwk,
+			algorithm: $configuration['algorithm'],
+			x5t: ($configuration['x5t'] ?? null)
+		);
 	}//end fetchJWTToken()
 }//end class

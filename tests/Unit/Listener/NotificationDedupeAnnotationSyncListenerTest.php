@@ -17,11 +17,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
-use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDedupeAnnotationSyncListener;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;

@@ -16,11 +16,55 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	/**
@@ -73,7 +117,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$incident = $this->store->get(register: 'pub', schema: 'incident', id: $this->store->ids(register: 'pub', schema: 'incident')[0]);
+		$incident = $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'incident', id: $this->store->ids(register: 'pub', schema: 'incident')[0]));
 		$this->assertSame('2026-10-14', $incident['history'][0]['at']);
 		$set = $this->record->read(set: 'demo')['changes']['alpha/incident-1#references']['set'];
 		$this->assertSame('2026-10-14', array_column($set, 'new', 'path')['history'][0]['at']);

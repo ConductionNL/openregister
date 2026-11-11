@@ -26,12 +26,10 @@ namespace OCA\OpenRegister\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
-use OCP\IGroupManager;
-use OCP\Notification\IManager as INotificationManager;
-use Psr\Log\LoggerInterface;
+use OCP\Notification\INotification;
 use Throwable;
 
 /**
@@ -51,7 +49,7 @@ use Throwable;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
  */
-class JobAlertService {
+class JobAlertService implements JobAlertServiceInterface {
 
 	/**
 	 * The app the administered settings belong to.
@@ -105,20 +103,16 @@ class JobAlertService {
 	/**
 	 * Constructor.
 	 *
-	 * @param JobRunMapper          $runs          The run log the count comes from.
-	 * @param IConfig               $config        Where the threshold and the marker live.
-	 * @param INotificationManager  $notifications Where the alert is delivered.
-	 * @param IGroupManager         $groups        Resolves who the administrators are.
-	 * @param ITimeFactory          $time          The clock, so a test can hold it still.
-	 * @param LoggerInterface       $logger        Where a failed delivery is reported.
+	 * @param JobRunMapperInterface $runs     The run log the count comes from.
+	 * @param IConfig               $config   Where the threshold and the marker live.
+	 * @param ITimeFactory          $time     The clock, so a test can hold it still.
+	 * @param JobAlertDelivery      $delivery The notifications, the administrators and the log.
 	 */
 	public function __construct(
-		private readonly JobRunMapper $runs,
+		private readonly JobRunMapperInterface $runs,
 		private readonly IConfig $config,
-		private readonly INotificationManager $notifications,
-		private readonly IGroupManager $groups,
 		private readonly ITimeFactory $time,
-		private readonly LoggerInterface $logger,
+		private readonly JobAlertDelivery $delivery,
 	) {
 	}//end __construct()
 
@@ -197,6 +191,7 @@ class JobAlertService {
 
 		$this->config->setAppValue(
 			self::APP_ID,
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 			(self::MARKER_PREFIX.md5($jobClass)),
 			(string)$breach['firstFailure']
 		);
@@ -285,6 +280,7 @@ class JobAlertService {
 	 * @return bool True when this breach has already been announced.
 	 */
 	private function alreadyRaised(string $jobClass, int $firstFailure): bool {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		$raised = $this->config->getAppValue(self::APP_ID, (self::MARKER_PREFIX.md5($jobClass)), '');
 
 		if ($raised === '') {
@@ -305,33 +301,12 @@ class JobAlertService {
 	private function deliver(array $breach): void {
 		try {
 			foreach ($this->administrators() as $uid) {
-				$notification = $this->notifications->createNotification();
-				$notification->setApp(self::APP_ID)
-					->setUser($uid)
-					->setDateTime(new DateTime())
-					->setObject(self::NOTIFICATION_OBJECT, (string)$breach['job'])
-					->setSubject(
-						'operations_job_failure',
-						[
-							'job' => $breach['name'],
-							'failures' => $breach['failures'],
-							'periodMinutes' => $breach['periodMinutes'],
-						]
-					)
-					->setMessage(
-						'operations_job_failure',
-						[
-							'firstFailureAt' => $breach['firstFailureAt'],
-							'firstFailureMessage' => $breach['firstFailureMessage'],
-						]
-					);
-
-				$this->notifications->notify($notification);
+				$this->delivery->notifications->notify($this->alertFor(uid: $uid, breach: $breach));
 			}
 		} catch (Throwable $exception) {
 			// An alert that cannot be delivered must not take the failing job
 			// down with it; the breach is still readable on the console.
-			$this->logger->warning(
+			$this->delivery->logger->warning(
 				message: '[JobAlertService] Could not deliver the alert',
 				context: ['job' => $breach['job'], 'exception' => $exception]
 			);
@@ -340,12 +315,64 @@ class JobAlertService {
 	}//end deliver()
 
 	/**
+	 * The alert notification for one administrator.
+	 *
+	 * @param string               $uid    The administrator.
+	 * @param array<string, mixed> $breach The breach.
+	 *
+	 * @return INotification The notification, not yet sent.
+	 */
+	private function alertFor(string $uid, array $breach): INotification {
+		$notification = $this->delivery->notifications->createNotification();
+		$notification->setApp(self::APP_ID)
+			->setUser($uid)
+			->setDateTime(new DateTime())
+			->setObject(self::NOTIFICATION_OBJECT, (string)$breach['job'])
+			->setSubject('operations_job_failure', self::subjectParameters(breach: $breach))
+			->setMessage('operations_job_failure', self::messageParameters(breach: $breach));
+
+		return $notification;
+
+	}//end alertFor()
+
+	/**
+	 * The subject parameters of the alert: which job, how often, over what period.
+	 *
+	 * @param array<string, mixed> $breach The breach.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 */
+	private static function subjectParameters(array $breach): array {
+		return [
+			'job' => $breach['name'],
+			'failures' => $breach['failures'],
+			'periodMinutes' => $breach['periodMinutes'],
+		];
+
+	}//end subjectParameters()
+
+	/**
+	 * The message parameters of the alert: when and how it first failed.
+	 *
+	 * @param array<string, mixed> $breach The breach.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 */
+	private static function messageParameters(array $breach): array {
+		return [
+			'firstFailureAt' => $breach['firstFailureAt'],
+			'firstFailureMessage' => $breach['firstFailureMessage'],
+		];
+
+	}//end messageParameters()
+
+	/**
 	 * The uids the alert goes to.
 	 *
 	 * @return array<int, string> The administrators.
 	 */
 	private function administrators(): array {
-		$group = $this->groups->get('admin');
+		$group = $this->delivery->groups->get('admin');
 
 		if ($group === null) {
 			return [];

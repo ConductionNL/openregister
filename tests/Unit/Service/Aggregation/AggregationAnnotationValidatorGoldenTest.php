@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
-use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -19,11 +19,13 @@ use PHPUnit\Framework\TestCase;
  * fixtures/aggregation-annotation-golden.json. Set UPDATE_GOLDEN=1 to rewrite
  * the fixture.
  *
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator
- * @uses   \OCA\OpenRegister\Service\Aggregation\AggregationJoinAnnotationValidator
- * @uses   \OCA\OpenRegister\Service\Aggregation\AggregationMetricsAnnotationValidator
- * @uses   \OCA\OpenRegister\Service\Aggregation\AggregationQuery
- * @uses   \OCA\OpenRegister\Service\Aggregation\AggregationSpecEntry
+ * @covers \OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationMetricsAnnotationValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\MetricEntrySite
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\MetricsDeclaration
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationSpecEntry
  */
 class AggregationAnnotationValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/aggregation-annotation-golden.json';

@@ -1,0 +1,10 @@
+{
+    "appConfig": "appConfig",
+    "config": "config",
+    "encryptionManager": "encryptionManager",
+    "logger": "logger",
+    "ownership": "ownership",
+    "rootFolder": "rootFolder",
+    "shareReowner": "shareReowner",
+    "userManager": "userManager"
+}

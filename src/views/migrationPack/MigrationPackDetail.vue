@@ -474,16 +474,10 @@
 					<NcButton :disabled="saving || !dirty" @click="reset">
 						{{ t('openregister', 'Undo changes') }}
 					</NcButton>
-					<NcButton
-						variant="primary"
+					<SaveButton
+						:saving="saving"
 						:disabled="saving || !dirty || packDeleted"
-						@click="save">
-						<template #icon>
-							<NcLoadingIcon v-if="saving" :size="20" />
-							<ContentSave v-else :size="20" />
-						</template>
-						{{ t('openregister', 'Save') }}
-					</NcButton>
+						@click="save" />
 				</div>
 
 				<PackPreviewPanel
@@ -535,11 +529,11 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import KeyValueRows from '../../components/migrationPack/KeyValueRows.vue'
 import PackPreviewPanel from '../../components/migrationPack/PackPreviewPanel.vue'
+import SaveButton from '../../components/shared/SaveButton.vue'
 import TransformDialog from '../../dialogs/migrationPack/TransformDialog.vue'
 import UnsavedChangesDialog from '../../dialogs/migrationPack/UnsavedChangesDialog.vue'
 import { getTheme } from '../../services/getTheme.js'
@@ -565,6 +559,28 @@ import {
 	validateDraft,
 } from './packDraft.js'
 
+/**
+ * Whether a parsed JSON value is an object (not null, not an array).
+ *
+ * @param {*} parsed The parsed JSON
+ * @return {boolean} Whether it is an object
+ */
+function isJsonObject(parsed) {
+	return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+}
+
+/**
+ * Why the JSON view could not be parsed, as the browser wrote it.
+ *
+ * @param {Error} error The parse error
+ * @return {string} The message
+ */
+function invalidJsonText(error) {
+	return t('openregister', 'This is not valid JSON: {reason}', {
+		reason: error.message,
+	})
+}
+
 export default {
 	name: 'MigrationPackDetail',
 	components: {
@@ -572,7 +588,6 @@ export default {
 		ArrowLeft,
 		ArrowUp,
 		CodeMirror,
-		ContentSave,
 		KeyValueRows,
 		NcAppContent,
 		NcButton,
@@ -582,6 +597,7 @@ export default {
 		NcTextField,
 		PackPreviewPanel,
 		Plus,
+		SaveButton,
 		TransformDialog,
 		TrashCanOutline,
 		UnsavedChangesDialog,
@@ -1152,39 +1168,38 @@ export default {
 			try {
 				parsed = JSON.parse(this.jsonText)
 			} catch (error) {
-				this.jsonError = t(
-					'openregister',
-					'This is not valid JSON: {reason}',
-					{
-						reason: error.message,
-					},
-				)
+				this.jsonError = invalidJsonText(error)
 				return false
 			}
-			if (
-				parsed === null
-				|| typeof parsed !== 'object'
-				|| Array.isArray(parsed)
-			) {
-				this.jsonError = t(
-					'openregister',
-					'A pack definition is a JSON object.',
-				)
+			this.jsonError = this.definitionRefusal(parsed)
+			if (this.jsonError !== '') {
 				return false
+			}
+			this.draft = draftFromStored(parsed)
+			return true
+		},
+
+		/**
+		 * Why a parsed JSON view cannot become the pack definition: it is not
+		 * an object, or it renames a built-in pack. Empty when it can.
+		 *
+		 * @param {*} parsed The parsed JSON
+		 * @return {string} The refusal, or ''
+		 */
+		definitionRefusal(parsed) {
+			if (!isJsonObject(parsed)) {
+				return t('openregister', 'A pack definition is a JSON object.')
 			}
 			if (this.slugLocked && parsed.id !== this.pack.definition?.id) {
-				this.jsonError = t(
+				return t(
 					'openregister',
 					'The slug of a built-in pack cannot change. Keep "id" as {slug}.',
 					{
 						slug: this.pack.definition?.id ?? '',
 					},
 				)
-				return false
 			}
-			this.jsonError = ''
-			this.draft = draftFromStored(parsed)
-			return true
+			return ''
 		},
 
 		/**
@@ -1241,37 +1256,58 @@ export default {
 		async save() {
 			this.saveProblem = null
 			this.saved = false
+			await this.writeDefinition(
+				async (definition) => {
+					const current = await getPack(this.packId)
+					if (this.changedElsewhere(current)) {
+						this.saveProblem = this.conflictProblem()
+						return
+					}
+					this.pack = await updatePack(
+						this.packId,
+						definition,
+						this.pack.updatedAt,
+					)
+					this.reset()
+					this.saved = true
+				},
+				(error) => {
+					const status = error?.response?.status
+					if (status === 404) {
+						// Shown with its own actions; the edits stay in the editor.
+						this.packDeleted = true
+					} else if (error?.response?.data?.error === 'pack-changed') {
+						this.saveProblem = this.conflictProblem()
+					} else {
+						this.saveProblem = explainError(
+							error,
+							t('openregister', 'Could not save the migration pack.'),
+						)
+					}
+				},
+			)
+		},
+
+		/**
+		 * Write the edited definition, unless it does not parse, while showing
+		 * the save as busy.
+		 *
+		 * @param {function(object): Promise<void>} write Sends the definition; receives it.
+		 * @param {function(Error): void} fail Handles an error the write threw.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id
+		 */
+		async writeDefinition(write, fail) {
 			const definition = this.definitionToSave()
 			if (definition === null) {
 				return
 			}
 			this.saving = true
 			try {
-				const current = await getPack(this.packId)
-				if (this.changedElsewhere(current)) {
-					this.saveProblem = this.conflictProblem()
-					return
-				}
-				this.pack = await updatePack(
-					this.packId,
-					definition,
-					this.pack.updatedAt,
-				)
-				this.reset()
-				this.saved = true
+				await write(definition)
 			} catch (error) {
-				const status = error?.response?.status
-				if (status === 404) {
-					// Shown with its own actions; the edits stay in the editor.
-					this.packDeleted = true
-				} else if (error?.response?.data?.error === 'pack-changed') {
-					this.saveProblem = this.conflictProblem()
-				} else {
-					this.saveProblem = explainError(
-						error,
-						t('openregister', 'Could not save the migration pack.'),
-					)
-				}
+				fail(error)
 			} finally {
 				this.saving = false
 			}
@@ -1320,28 +1356,24 @@ export default {
 		 */
 		async saveAsNew() {
 			this.saveProblem = null
-			const definition = this.definitionToSave()
-			if (definition === null) {
-				return
-			}
-			this.saving = true
-			try {
-				this.pack = await createPack(definition)
-				this.packDeleted = false
-				this.reset()
-				this.saved = true
-				await this.$router.push({
-					name: 'migration-pack-detail',
-					params: { id: String(this.pack.id) },
-				})
-			} catch (error) {
-				this.saveProblem = explainError(
-					error,
-					t('openregister', 'Could not save the migration pack.'),
-				)
-			} finally {
-				this.saving = false
-			}
+			await this.writeDefinition(
+				async (definition) => {
+					this.pack = await createPack(definition)
+					this.packDeleted = false
+					this.reset()
+					this.saved = true
+					await this.$router.push({
+						name: 'migration-pack-detail',
+						params: { id: String(this.pack.id) },
+					})
+				},
+				(error) => {
+					this.saveProblem = explainError(
+						error,
+						t('openregister', 'Could not save the migration pack.'),
+					)
+				},
+			)
 		},
 	},
 }

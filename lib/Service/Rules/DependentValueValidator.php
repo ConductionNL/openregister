@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\Rules;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class DependentValueValidator {
+final class DependentValueValidator implements DependentValueValidatorInterface {
 
 	/**
 	 * The table is not an object, or `allowed` is not a map of lists.
@@ -81,246 +81,148 @@ final class DependentValueValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> The errors, empty when every table is sound.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per way a table can be
-	 *   wrong, each with the message that tells the author which one it is. Splitting
-	 *   them would move the branch, not remove it.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function validate(array $schema): array {
-		$properties = ($schema['properties'] ?? []);
-		if (is_array($properties) === false) {
-			return [];
-		}
-
 		$errors = [];
-		foreach ($properties as $name => $property) {
-			if (is_array($property) === false
-				|| array_key_exists(DependentValueTable::ANNOTATION, $property) === false
-			) {
-				continue;
-			}
-
-			$this->validateTable(
-				name: (string)$name,
-				table: $property[DependentValueTable::ANNOTATION],
-				property: $property,
-				properties: $properties,
-				errors: $errors
-			);
+		foreach ($this->declarations(schema: $schema) as $declaration) {
+			$errors = array_merge($errors, $this->tableErrors(declaration: $declaration));
 		}
 
 		return $errors;
 	}//end validate()
 
 	/**
-	 * Validate one property's table.
+	 * Every property of the schema that declares a table, in declaration order.
 	 *
-	 * @param string $name The property the table is declared on.
-	 * @param mixed $table The raw annotation value.
-	 * @param array<string, mixed> $property The property's own declaration.
-	 * @param array<string, mixed> $properties Every declared property.
-	 * @param array<int, array{code: string, message: string}> $errors Mutable error accumulator.
+	 * @param array<string, mixed> $schema The schema shape, with its `properties` block.
 	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) See validate().
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @return array<int, DependentValueDeclaration> The declared tables.
 	 */
-	private function validateTable(
-		string $name,
-		mixed $table,
-		array $property,
-		array $properties,
-		array &$errors,
-	): void {
-		if (is_array($table) === false || $table === []) {
-			$errors[] = [
-				'code' => self::CODE_MALFORMED,
-				'message' => sprintf(
-					'Property "%s": %s must be an object with "controlledBy" and "allowed".',
-					$name,
-					DependentValueTable::ANNOTATION
-				),
-			];
-			return;
+	private function declarations(array $schema): array {
+		$declared = ($schema['properties'] ?? []);
+		if (is_array($declared) === false) {
+			return [];
 		}
 
-		$controlledBy = ($table['controlledBy'] ?? null);
-		if (is_string($controlledBy) === false || $controlledBy === '') {
-			$errors[] = [
-				'code' => self::CODE_MALFORMED,
-				'message' => sprintf('Property "%s": "controlledBy" must name a property.', $name),
-			];
-			return;
+		$tables = [];
+		foreach ($declared as $name => $property) {
+			if (is_array($property) === true && array_key_exists(DependentValueTable::ANNOTATION, $property) === true) {
+				$tables[] = new DependentValueDeclaration(name: (string)$name, properties: $declared);
+			}
 		}
 
-		if ($controlledBy === $name) {
-			$errors[] = [
-				'code' => self::CODE_SELF_CONTROLLED,
-				'message' => sprintf(
-					'Property "%s" cannot control its own allowed values.',
-					$name
-				),
-			];
-			return;
-		}
-
-		if (array_key_exists($controlledBy, $properties) === false) {
-			$errors[] = [
-				'code' => self::CODE_UNKNOWN_PROPERTY,
-				'message' => sprintf(
-					'Property "%s": "controlledBy" names "%s", which this schema does not declare.',
-					$name,
-					$controlledBy
-				),
-			];
-			return;
-		}
-
-		$allowed = ($table['allowed'] ?? null);
-		if (is_array($allowed) === false || $allowed === []) {
-			$errors[] = [
-				'code' => self::CODE_MALFORMED,
-				'message' => sprintf(
-					'Property "%s": "allowed" must pair at least one value of "%s" with the values it permits.',
-					$name,
-					$controlledBy
-				),
-			];
-			return;
-		}
-
-		$this->validatePairs(
-			name: $name,
-			controlledBy: $controlledBy,
-			allowed: $allowed,
-			controllingEnum: $this->enumOf(property: ($properties[$controlledBy] ?? [])),
-			ownEnum: $this->enumOf(property: $property),
-			errors: $errors
-		);
-	}//end validateTable()
+		return $tables;
+	}//end declarations()
 
 	/**
-	 * Validate the pairs of one table against the two enums.
+	 * Validate one property's table: its shape first, then every pair.
 	 *
-	 * @param string $name The dependent property.
-	 * @param string $controlledBy The controlling property.
-	 * @param array<mixed, mixed> $allowed The raw pairs.
-	 * @param array<int, string>|null $controllingEnum The controlling property's enum, or null when it declares none.
-	 * @param array<int, string>|null $ownEnum The dependent property's enum, or null when it declares none.
-	 * @param array<int, array{code: string, message: string}> $errors Mutable error accumulator.
+	 * The first way the shape is wrong is the only one reported, because each
+	 * check below it reads what the one above it proved.
 	 *
-	 * @return void
+	 * @param DependentValueDeclaration $declaration The table as declared.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Five facts about one table, all read.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) See validate().
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @return array<int, array{code: string, message: string}> The errors.
 	 */
-	private function validatePairs(
-		string $name,
-		string $controlledBy,
-		array $allowed,
-		?array $controllingEnum,
-		?array $ownEnum,
-		array &$errors,
-	): void {
-		foreach ($allowed as $controllingValue => $values) {
-			$controllingValue = (string)$controllingValue;
-
-			if (is_array($values) === false || $values === []) {
-				$errors[] = [
-					'code' => self::CODE_MALFORMED,
-					'message' => sprintf(
-						'Property "%s": "%s" must be paired with a non-empty list of allowed values.',
-						$name,
-						$controllingValue
-					),
-				];
-				continue;
-			}
-
-			if ($controllingEnum !== null && in_array($controllingValue, $controllingEnum, true) === false) {
-				$errors[] = [
-					'code' => self::CODE_UNKNOWN_CONTROLLING_VALUE,
-					'message' => sprintf(
-						'Property "%s": "%s" is not a value "%s" can take.',
-						$name,
-						$controllingValue,
-						$controlledBy
-					),
-				];
-			}
-
-			if ($ownEnum === null) {
-				continue;
-			}
-
-			foreach ($values as $value) {
-				if (is_scalar($value) === true && in_array((string)$value, $ownEnum, true) === true) {
-					continue;
-				}
-
-				$errors[] = [
-					'code' => self::CODE_UNKNOWN_VALUE,
-					'message' => sprintf(
-						'Property "%s": "%s" is not a value "%s" can take, so pairing it with "%s" '
-						. 'allows a value the property already refuses.',
-						$name,
-						$this->render(value: $value),
-						$name,
-						$controllingValue
-					),
-				];
-			}
-		}//end foreach
-	}//end validatePairs()
-
-	/**
-	 * One listed value, rendered for the message that refuses it.
-	 *
-	 * A non-scalar is named by its type rather than serialised: the author
-	 * needs to know an array turned up where a value belongs, not to read it.
-	 *
-	 * @param mixed $value The listed value.
-	 *
-	 * @return string The rendering.
-	 */
-	private function render(mixed $value): string {
-		if (is_scalar($value) === true) {
-			return (string)$value;
+	private function tableErrors(DependentValueDeclaration $declaration): array {
+		$refusal = ($this->objectRefusal(declaration: $declaration)
+			?? $this->controlledByRefusal(declaration: $declaration)
+			?? $this->controllerRefusal(declaration: $declaration)
+			?? $this->allowedRefusal(declaration: $declaration));
+		if ($refusal !== null) {
+			return [$refusal];
 		}
 
-		return gettype($value);
-	}//end render()
+		return (new DependentValuePairCheck())->errors(declaration: $declaration);
+	}//end tableErrors()
 
 	/**
-	 * A property's enum as a list of strings, or null when it declares none.
+	 * Refuse a table that is not a non-empty object.
 	 *
-	 * @param mixed $property The property declaration.
+	 * @param DependentValueDeclaration $declaration The table as declared.
 	 *
-	 * @return array<int, string>|null The enum, or null.
+	 * @return array{code: string, message: string}|null The error, or null when the table is an object.
 	 */
-	private function enumOf(mixed $property): ?array {
-		if (is_array($property) === false || is_array(($property['enum'] ?? null)) === false) {
+	private function objectRefusal(DependentValueDeclaration $declaration): ?array {
+		$table = $declaration->table();
+		if (is_array($table) === true && $table !== []) {
 			return null;
 		}
 
-		$enum = [];
-		foreach ($property['enum'] as $value) {
-			if (is_scalar($value) === true) {
-				$enum[] = (string)$value;
-			}
-		}
+		$message = 'Property "%s": %s must be an object with "controlledBy" and "allowed".';
 
-		if ($enum === []) {
+		return $this->error(code: self::CODE_MALFORMED, message: sprintf($message, $declaration->name, DependentValueTable::ANNOTATION));
+	}//end objectRefusal()
+
+	/**
+	 * Refuse a table that names no controlling property.
+	 *
+	 * @param DependentValueDeclaration $declaration The table as declared.
+	 *
+	 * @return array{code: string, message: string}|null The error, or null when `controlledBy` names something.
+	 */
+	private function controlledByRefusal(DependentValueDeclaration $declaration): ?array {
+		$controlledBy = $declaration->entry(key: 'controlledBy');
+		if (is_string($controlledBy) === true && $controlledBy !== '') {
 			return null;
 		}
 
-		return $enum;
-	}//end enumOf()
+		$message = 'Property "%s": "controlledBy" must name a property.';
+
+		return $this->error(code: self::CODE_MALFORMED, message: sprintf($message, $declaration->name));
+	}//end controlledByRefusal()
+
+	/**
+	 * Refuse a table controlled by itself or by a property the schema does not declare.
+	 *
+	 * @param DependentValueDeclaration $declaration The table as declared, with a controlling property named.
+	 *
+	 * @return array{code: string, message: string}|null The error, or null when the controller holds.
+	 */
+	private function controllerRefusal(DependentValueDeclaration $declaration): ?array {
+		$controlledBy = (string)$declaration->entry(key: 'controlledBy');
+		if ($controlledBy === $declaration->name) {
+			$message = 'Property "%s" cannot control its own allowed values.';
+			return $this->error(code: self::CODE_SELF_CONTROLLED, message: sprintf($message, $declaration->name));
+		}
+
+		if (array_key_exists($controlledBy, $declaration->properties) === false) {
+			$message = 'Property "%s": "controlledBy" names "%s", which this schema does not declare.';
+			return $this->error(code: self::CODE_UNKNOWN_PROPERTY, message: sprintf($message, $declaration->name, $controlledBy));
+		}
+
+		return null;
+	}//end controllerRefusal()
+
+	/**
+	 * Refuse a table whose `allowed` pairs nothing.
+	 *
+	 * @param DependentValueDeclaration $declaration The table as declared.
+	 *
+	 * @return array{code: string, message: string}|null The error, or null when `allowed` is a non-empty map.
+	 */
+	private function allowedRefusal(DependentValueDeclaration $declaration): ?array {
+		$allowed = $declaration->entry(key: 'allowed');
+		if (is_array($allowed) === true && $allowed !== []) {
+			return null;
+		}
+
+		$message = 'Property "%s": "allowed" must pair at least one value of "%s" with the values it permits.';
+		$controlledBy = (string)$declaration->entry(key: 'controlledBy');
+
+		return $this->error(code: self::CODE_MALFORMED, message: sprintf($message, $declaration->name, $controlledBy));
+	}//end allowedRefusal()
+
+	/**
+	 * Shape one error.
+	 *
+	 * @param string $code    One of the CODE_ constants.
+	 * @param string $message The sentence that tells the author which way the table is wrong.
+	 *
+	 * @return array{code: string, message: string} The error.
+	 */
+	private function error(string $code, string $message): array {
+		return ['code' => $code, 'message' => $message];
+	}//end error()
 }//end class

@@ -63,23 +63,60 @@ final class ExampleSetExternalTask {
 	 */
 	public static function refusal(array $data): string {
 		if (self::isExternal(data: $data) === false) {
-			if (isset($data['uploadRules']) === true) {
-				return 'uploadRules apply to an external task only (performerType: external)';
-			}
-
-			return '';
+			return self::internalRefusal(data: $data);
 		}
 
-		$assignee = (string) ($data['assignee'] ?? '');
-		if (str_starts_with($assignee, Task::EXTERNAL_PARTY_PREFIX) === false || trim(substr($assignee, strlen(Task::EXTERNAL_PARTY_PREFIX))) === '') {
-			return 'an external task is assigned to a party ("'.Task::EXTERNAL_PARTY_PREFIX.'<reference>"), not "'.$assignee.'"';
+		$refusal = self::assigneeRefusal(assignee: (string) ($data['assignee'] ?? ''));
+		if ($refusal !== '') {
+			return $refusal;
 		}
 
 		if (isset($data['completedBy']) === true) {
 			return 'an external task is completed by its party in the portal, not by completedBy';
 		}
 
-		$rules = $data['uploadRules'] ?? [];
+		return self::rulesRefusal(rules: ($data['uploadRules'] ?? []));
+	}//end refusal()
+
+	/**
+	 * Upload rules on a task that is not external, or ''.
+	 *
+	 * @param array<string, mixed> $data The filled task fields.
+	 *
+	 * @return string
+	 */
+	private static function internalRefusal(array $data): string {
+		if (isset($data['uploadRules']) === true) {
+			return 'uploadRules apply to an external task only (performerType: external)';
+		}
+
+		return '';
+	}//end internalRefusal()
+
+	/**
+	 * An assignee that is not a party (`party:<reference>`), or ''.
+	 *
+	 * @param string $assignee The filled assignee.
+	 *
+	 * @return string
+	 */
+	private static function assigneeRefusal(string $assignee): string {
+		$prefix = Task::EXTERNAL_PARTY_PREFIX;
+		if (str_starts_with($assignee, $prefix) === false || trim(substr($assignee, strlen($prefix))) === '') {
+			return 'an external task is assigned to a party ("'.$prefix.'<reference>"), not "'.$assignee.'"';
+		}
+
+		return '';
+	}//end assigneeRefusal()
+
+	/**
+	 * Upload rules that are not an object, or name a rule the portal does not read, or ''.
+	 *
+	 * @param mixed $rules The filled upload rules.
+	 *
+	 * @return string
+	 */
+	private static function rulesRefusal(mixed $rules): string {
 		if (is_array($rules) === false) {
 			return 'uploadRules is an object';
 		}
@@ -90,7 +127,7 @@ final class ExampleSetExternalTask {
 		}
 
 		return '';
-	}//end refusal()
+	}//end rulesRefusal()
 
 	/**
 	 * The task's upload rules as the engine's `metadata`, or nothing.

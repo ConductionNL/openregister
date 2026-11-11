@@ -60,6 +60,8 @@ class ValidateObjectErrorMessageTest extends TestCase {
 			'type object for array'       => ['keyword' => 'type', 'path' => ['p'], 'value' => (object)['a' => 1], 'args' => ['expected' => 'array']],
 			'type filled list for object' => ['keyword' => 'type', 'path' => ['p'], 'value' => [1], 'args' => ['expected' => 'object']],
 			'type null'                   => ['keyword' => 'type', 'path' => [0, 'p'], 'value' => null, 'args' => ['expected' => 'integer']],
+			'type null for string'        => ['keyword' => 'type', 'path' => ['p'], 'value' => null, 'args' => ['expected' => 'string']],
+			'type false for array'        => ['keyword' => 'type', 'path' => ['p'], 'value' => false, 'args' => ['expected' => 'array']],
 			'minItems'                    => ['keyword' => 'minItems', 'path' => ['tags'], 'value' => [1], 'args' => ['min' => 2]],
 			'minItems not a list'         => ['keyword' => 'minItems', 'path' => ['tags'], 'value' => 'x'],
 			'maxItems'                    => ['keyword' => 'maxItems', 'path' => ['tags'], 'value' => [1, 2, 3], 'args' => ['max' => 2]],

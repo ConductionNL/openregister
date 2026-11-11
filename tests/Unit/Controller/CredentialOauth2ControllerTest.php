@@ -30,11 +30,13 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialOauth2ControllerFactory;
 use OCA\OpenRegister\Controller\CredentialOauth2Controller;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
+use OCA\OpenRegister\Service\Credential\OAuth2AuthorizationRequest;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
 use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
@@ -51,9 +53,15 @@ use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration;
+use OCA\OpenRegister\Service\Credential\OAuth2Revocation;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialOauth2Controller
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2Mappers
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2Domain
+ * @uses \OCA\OpenRegister\Controller\Support\AccessLinkPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2Endpoints
  */
@@ -69,6 +77,9 @@ class CredentialOauth2ControllerTest extends TestCase {
 
 	/** @var array<int, array<string, mixed>> Every local disable performed. */
 	private array $disables = [];
+
+	/** @var array<int, string|null> The credential each upstream revoke was asked for. */
+	private array $revokedFor = [];
 
 	/** @var array<int, array{0: string, 1: string}> Every minted client credential a failed start removed, with its scope. */
 	private array $discards = [];
@@ -86,6 +97,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$this->attempts = 0;
 		$this->completions = 0;
 		$this->disables = [];
+		$this->revokedFor = [];
 		$this->discards = [];
 		$this->issuedClaims = [];
 		$this->withdrawals = [];
@@ -405,6 +417,31 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$this->assertSame('', $this->disables[0]['lastError']);
 	}
 
+	public function testDisconnectWritesTheGuardedRowByItsUuid(): void {
+		$controller = $this->makeController(
+			params: [],
+			manageable: ['provider' => 'mastodon', 'scope' => 'personal', 'owner' => 'alice'],
+			storedUuid: 'cred-uuid'
+		);
+
+		$controller->disconnect(id: 'cred-slug');
+
+		$this->assertSame('cred-uuid', $this->disables[0]['credentialId']);
+		$this->assertSame(['cred-uuid'], $this->revokedFor);
+	}
+
+	public function testDisconnectRefusesARowWithoutUuid(): void {
+		$controller = $this->makeController(
+			params: [],
+			manageable: ['provider' => 'mastodon', 'scope' => 'personal', 'owner' => 'alice'],
+			storedUuid: ''
+		);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->disconnect(id: 'cred-1')->getStatus());
+		$this->assertSame([], $this->disables);
+		$this->assertSame([], $this->revokedFor);
+	}
+
 	public function testAnUnreachableProviderStillDisconnectsLocally(): void {
 		// The branch that matters. A provider that cannot be reached must never keep a
 		// tenant connected: the alternative is a credential nobody can switch off
@@ -483,6 +520,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		?string $mintsClient = null,
 		bool $discardFails = false,
 		bool $withdrawFails = false,
+		string $storedUuid = 'cred-1',
 	): CredentialOauth2Controller {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
@@ -567,18 +605,18 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$connections->method('findManageable')->willReturn(null);
 		} else {
 			$entity = new ObjectEntity();
-			$entity->setUuid('cred-1');
+			$entity->setUuid($storedUuid);
 			$entity->setObject($manageable);
 			$connections->method('findManageable')->willReturn($entity);
 		}
 
 		$connections->method('disable')->willReturnCallback(
-			function (string $credentialId, array $data, string $lastError) use ($disableFails): void {
+			function (\OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord $connection, string $lastError) use ($disableFails): void {
 				if ($disableFails === true) {
 					throw new RuntimeException('the object store is down');
 				}
 
-				$this->disables[] = ['credentialId' => $credentialId, 'lastError' => $lastError];
+				$this->disables[] = ['credentialId' => $connection->credentialId, 'lastError' => $lastError];
 			}
 		);
 
@@ -592,7 +630,8 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$connect->method('ensureInstanceClient')->willThrowException($startThrows['ensureInstanceClient']);
 		} else {
 			$connect->method('ensureInstanceClient')->willReturnCallback(
-				static function (array $provider, array $claims) use ($mintsClient): array {
+				static function (OAuth2ClientRegistration $registration) use ($mintsClient): array {
+					$claims = $registration->claims;
 					if ($mintsClient === null) {
 						return $claims;
 					}
@@ -612,6 +651,9 @@ class CredentialOauth2ControllerTest extends TestCase {
 			}
 		);
 
+		$connect->method('authorizationRequest')->willReturnCallback(
+			static fn (string $redirectUri, array $issued): OAuth2AuthorizationRequest => new OAuth2AuthorizationRequest($redirectUri, $issued['state'], $issued['challenge'])
+		);
 		if (isset($startThrows['authorizationUrl']) === true) {
 			$connect->method('authorizationUrl')->willThrowException($startThrows['authorizationUrl']);
 		} else {
@@ -622,7 +664,8 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$connections->method('gatedOrganisation')->willThrowException($startThrows['gatedOrganisation']);
 		}
 		$connect->method('revokeUpstream')->willReturnCallback(
-			function () use ($revokeResult): string {
+			function (OAuth2Revocation $revocation) use ($revokeResult): string {
+				$this->revokedFor[] = $revocation->address->credentialId;
 				if ($revokeResult === null) {
 					throw new RuntimeException('the provider is unreachable');
 				}
@@ -647,7 +690,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$session->method('getUser')->willReturn(null);
 		}
 
-		return new CredentialOauth2Controller(
+		return CredentialOauth2ControllerFactory::create(
 			'openregister',
 			$request,
 			$connect,

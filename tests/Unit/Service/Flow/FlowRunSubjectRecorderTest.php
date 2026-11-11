@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjects;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
+use OCA\OpenRegister\Service\Flow\FlowSubjectClaim;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -126,7 +128,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoRoleMeansNoRecording(): void {
-		$this->recorder($this->aRun())->record(context: $this->context(), role: '', uuid: 'obj-1');
+		$this->recorder($this->aRun())->record(context: $this->context(), claim: new FlowSubjectClaim(role: '', uuid: 'obj-1'));
 
 		$this->assertFalse($this->written, 'a step that declares no role must write nothing');
 	}//end testNoRoleMeansNoRecording()
@@ -139,10 +141,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	public function testADeclaredRoleRecordsAndStores(): void {
 		$this->recorder($this->aRun())->record(
 			context: $this->context(),
-			role: 'case',
-			uuid: 'obj-1',
-			register: '3',
-			schema: '7'
+			claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1', register: '3', schema: '7')
 		);
 
 		$this->assertTrue($this->written);
@@ -160,7 +159,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	public function testAnUnreadableRunDoesNotFailTheStep(): void {
 		$this->expectNotToPerformAssertions();
 
-		$this->recorder(null)->record(context: $this->context(), role: 'case', uuid: 'obj-1');
+		$this->recorder(null)->record(context: $this->context(), claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1'));
 	}//end testAnUnreadableRunDoesNotFailTheStep()
 
 	/**
@@ -169,7 +168,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	 * @return void
 	 */
 	public function testAContextWithNoRunRecordsNothing(): void {
-		$this->recorder($this->aRun())->record(context: [], role: 'case', uuid: 'obj-1');
+		$this->recorder($this->aRun())->record(context: [], claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1'));
 
 		$this->assertFalse($this->written);
 	}//end testAContextWithNoRunRecordsNothing()
@@ -185,7 +184,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	 */
 	public function testAttachingFillsTheTasksOwnObjectFields(): void {
 		$run = $this->aRun();
-		(new FlowRunSubjects())->record(run: $run, role: 'case', uuid: 'obj-1', register: '3', schema: '7');
+		(new FlowRunSubjects())->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1', register: '3', schema: '7'));
 
 		$anchor = $this->recorder($run)->anchorFor(context: $this->context(), role: 'case');
 
@@ -204,7 +203,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	 */
 	public function testAnUnheldRoleRefusesNamingWhatIsHeld(): void {
 		$run = $this->aRun();
-		(new FlowRunSubjects())->record(run: $run, role: 'case', uuid: 'obj-1');
+		(new FlowRunSubjects())->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1'));
 
 		try {
 			$this->recorder($run)->anchorFor(context: $this->context(), role: 'besluit');
@@ -249,7 +248,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	 */
 	public function testASubjectWithoutNumericIdsStillAttaches(): void {
 		$run = $this->aRun();
-		(new FlowRunSubjects())->record(run: $run, role: 'case', uuid: 'obj-1', register: 'cases', schema: 'case');
+		(new FlowRunSubjects())->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1', register: 'cases', schema: 'case'));
 
 		$anchor = $this->recorder($run)->anchorFor(context: $this->context(), role: 'case');
 
@@ -266,10 +265,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	public function testRecordOneRecordsASingleObject(): void {
 		$this->recorder($this->aRun())->recordOne(
 			context: $this->context(),
-			role: 'case',
-			uuids: ['obj-1'],
-			register: '3',
-			schema: '7'
+			candidates: new FlowSubjectCandidates(role: 'case', uuids: ['obj-1'], register: '3', schema: '7')
 		);
 
 		$this->assertSame('obj-1', $this->stored->getSubjects()['case']['uuid']);
@@ -288,8 +284,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	public function testSeveralObjectsRecordNothing(): void {
 		$this->recorder($this->aRun())->recordOne(
 			context: $this->context(),
-			role: 'case',
-			uuids: ['obj-1', 'obj-2']
+			candidates: new FlowSubjectCandidates(role: 'case', uuids: ['obj-1', 'obj-2'])
 		);
 
 		$this->assertFalse($this->written, 'a role names one object, so an ambiguous step records none');
@@ -301,7 +296,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoObjectsRecordNothing(): void {
-		$this->recorder($this->aRun())->recordOne(context: $this->context(), role: 'case', uuids: []);
+		$this->recorder($this->aRun())->recordOne(context: $this->context(), candidates: new FlowSubjectCandidates(role: 'case', uuids: []));
 
 		$this->assertFalse($this->written);
 	}//end testNoObjectsRecordNothing()
@@ -312,7 +307,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	 * @return void
 	 */
 	public function testRecordOneWithNoRoleRecordsNothing(): void {
-		$this->recorder($this->aRun())->recordOne(context: $this->context(), role: '  ', uuids: ['obj-1']);
+		$this->recorder($this->aRun())->recordOne(context: $this->context(), candidates: new FlowSubjectCandidates(role: '  ', uuids: ['obj-1']));
 
 		$this->assertFalse($this->written);
 	}//end testRecordOneWithNoRoleRecordsNothing()
@@ -329,7 +324,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 		$recorder = $this->recorder($run);
 
 		for ($i = 0; $i < 12; $i++) {
-			$recorder->recordOne(context: $this->context(), role: 'case', uuids: ['obj-1']);
+			$recorder->recordOne(context: $this->context(), candidates: new FlowSubjectCandidates(role: 'case', uuids: ['obj-1']));
 		}
 
 		$this->assertSame(['case'], array_keys($run->getSubjects()));

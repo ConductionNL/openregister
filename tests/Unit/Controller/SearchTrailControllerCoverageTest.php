@@ -13,6 +13,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
 
 /**
  * Coverage tests for SearchTrailController — targets clearAll and destroy branches.
@@ -39,7 +40,7 @@ class SearchTrailControllerCoverageTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
-		$this->controller = new SearchTrailController(
+		$this->controller = SearchTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->searchTrailService,
@@ -148,7 +149,7 @@ class SearchTrailControllerCoverageTest extends TestCase {
 		$searchTrailService->expects($this->never())->method($this->anything());
 		$this->nonAdminService = $searchTrailService;
 
-		return new SearchTrailController(
+		return SearchTrailControllerFactory::create(
 			'openregister',
 			$request,
 			$searchTrailService,

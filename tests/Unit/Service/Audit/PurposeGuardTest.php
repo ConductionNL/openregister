@@ -29,6 +29,8 @@ namespace Unit\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\ProcessingPurpose;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -124,7 +126,7 @@ final class PurposeGuardTest extends TestCase {
 	public function testAReadOfAnUnannotatedSchemaIsLeftExactlyAsItWas(): void {
 		$context = $this->context(null);
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->expects(self::never())->method('createPurposeRefusalEntry');
+		$audit->expects(self::never())->method('recordPurposeRefusal');
 
 		$guard = new PurposeGuard($this->registry(true, true), $context, $audit, new NullLogger());
 
@@ -186,12 +188,9 @@ final class PurposeGuardTest extends TestCase {
 	public function testARefusedReadReachesTheTrailBeforeItIsThrown(): void {
 		$audit = $this->createMock(AuditTrailMapper::class);
 		$audit->expects(self::once())
-			->method('createPurposeRefusalEntry')
+			->method('recordPurposeRefusal')
 			->with(
-				self::equalTo(PurposeRefusedException::RULE_MISSING),
-				self::isNull(),
-				self::equalTo(19),
-				self::equalTo(9476)
+				self::equalTo(new PurposeRefusal(PurposeRefusedException::RULE_MISSING, null, new AuditedObject(19, 9476)))
 			)
 			->willReturn(new AuditTrail());
 
@@ -208,7 +207,7 @@ final class PurposeGuardTest extends TestCase {
 
 	public function testARefusalThatCannotBeRecordedIsStillARefusal(): void {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createPurposeRefusalEntry')->willThrowException(new \RuntimeException('trail down'));
+		$audit->method('recordPurposeRefusal')->willThrowException(new \RuntimeException('trail down'));
 
 		$guard = new PurposeGuard(
 			$this->registry(true, false),
@@ -220,6 +219,30 @@ final class PurposeGuardTest extends TestCase {
 		$this->expectException(PurposeRefusedException::class);
 		$guard->enforce($this->register(null), $this->schema(true));
 	}//end testARefusalThatCannotBeRecordedIsStillARefusal()
+
+	public function testAllowsLetsAnUnannotatedTableThrough(): void {
+		$guard = new PurposeGuard($this->registry(true, false), $this->context(null), $this->createMock(AuditTrailMapper::class), new NullLogger());
+
+		self::assertTrue($guard->allows($this->register(null), $this->schema(null)));
+	}//end testAllowsLetsAnUnannotatedTableThrough()
+
+	public function testAllowsRefusesABoundTableWithoutRecordingARefusal(): void {
+		$audit = $this->createMock(AuditTrailMapper::class);
+		$audit->expects(self::never())->method('recordPurposeRefusal');
+		$context = $this->context(null);
+		$guard = new PurposeGuard($this->registry(true, false), $context, $audit, new NullLogger());
+
+		self::assertFalse($guard->allows($this->register(null), $this->schema(true)));
+		self::assertNull($context->accepted());
+	}//end testAllowsRefusesABoundTableWithoutRecordingARefusal()
+
+	public function testAllowsABoundTableUnderADeclaredPurposeAndRemembersIt(): void {
+		$context = $this->context('brp-adresonderzoek');
+		$guard = new PurposeGuard($this->registry(true, true), $context, $this->createMock(AuditTrailMapper::class), new NullLogger());
+
+		self::assertTrue($guard->allows($this->register(true), $this->schema(null)));
+		self::assertSame('activity-uuid', $context->acceptedActivity()?->getUuid());
+	}//end testAllowsABoundTableUnderADeclaredPurposeAndRemembersIt()
 
 	public function testAnAnnotationWithNoAdministeredPurposesDoesNotBrickTheSchema(): void {
 		// Refusing here would refuse every read of this schema with no value

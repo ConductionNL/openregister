@@ -20,7 +20,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use Exception;
-use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -31,8 +30,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
-use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -344,16 +342,19 @@ class ImportHandlerImportFromAppCharacterizationTest extends TestCase {
 		);
 
 		$handler = new class (
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $registerMapper,
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $configMapper,
-			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $registerMapper,
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $configMapper,
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->createMock(ObjectService::class)
 		) extends ImportHandler {
 

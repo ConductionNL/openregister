@@ -88,6 +88,26 @@ const BCP_47_RE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/
  * Validates new entries with a relaxed BCP 47 regex (subtag length
  * limits per RFC 5646) and rejects duplicates case-insensitively.
  */
+/**
+ * The message for each reason a draft tag is refused.
+ */
+const ERROR_MESSAGES = {
+	empty: 'Enter a BCP 47 language tag.',
+	invalid: 'Not a valid BCP 47 tag (e.g. nl, en, ar-SA).',
+	duplicate: 'That language is already in the list.',
+}
+
+/**
+ * Whether an index falls outside a list.
+ *
+ * @param {Array} list The list
+ * @param {number} index The index
+ * @return {boolean} Whether it is out of bounds
+ */
+function isOutside(list, index) {
+	return index < 0 || index >= list.length
+}
+
 export default {
 	name: 'RegisterLanguagesEditor',
 	props: {
@@ -176,7 +196,7 @@ export default {
 
 	methods: {
 		/**
-		 * @param candidate
+		 * @param {string} candidate
 		 * @spec exclude client-side BCP-47/duplicate validation helper, UI plumbing
 		 */
 		validateDraft(candidate) {
@@ -204,24 +224,17 @@ export default {
 		},
 
 		/**
-		 * @param reason
+		 * @param {string} reason
 		 * @spec exclude computed validation-error message display helper, UI plumbing
 		 */
 		errorMessageFor(reason) {
-			switch (reason) {
-				case 'empty':
-					return 'Enter a BCP 47 language tag.'
-				case 'invalid':
-					return 'Not a valid BCP 47 tag (e.g. nl, en, ar-SA).'
-				case 'duplicate':
-					return 'That language is already in the list.'
-				default:
-					return 'Invalid input.'
-			}
+			return Object.hasOwn(ERROR_MESSAGES, reason)
+				? ERROR_MESSAGES[reason]
+				: 'Invalid input.'
 		},
 
 		/**
-		 * @param idx
+		 * @param {number} idx
 		 * @spec exclude list-editor remove emitting v-model input; languages contract owned by register-i18n capability
 		 */
 		remove(idx) {
@@ -232,15 +245,14 @@ export default {
 		},
 
 		/**
-		 * @param from
-		 * @param to
+		 * @param {number} from
+		 * @param {number} to
 		 * @spec exclude list-editor reorder emitting v-model input; languages contract owned by register-i18n capability
 		 */
 		move(from, to) {
 			if (this.disabled) return
 			const list = [...(this.value || [])]
-			if (to < 0 || to >= list.length || from < 0 || from >= list.length)
-				return
+			if (isOutside(list, to) || isOutside(list, from)) return
 			const [item] = list.splice(from, 1)
 			list.splice(to, 0, item)
 			this.$emit('input', list)

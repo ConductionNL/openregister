@@ -4146,13 +4146,13 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "POST .../move appinfo/routes.php:1242 -> lib/Controller/ObjectsController.php:5176 keeps uuid and history. UI src/modals/object/MigrationObject.vue is mounted in src/modals/Modals.vue:27 but git grep migrationObject finds no setModal opener.",
+    "evidence": "POST .../move appinfo/routes.php:1242 -> lib/Controller/ObjectsController.php:5176 keeps uuid and history. UI src/modals/object/MigrationObject.vue opens from the actions menu of the object list (src/views/search/SearchIndex.vue handleMassMigrate) and posts to /api/migrate.",
     "change": "identity-survives-a-move"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}/{id}/move",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "MigrationObject modal is unreachable: nothing opens it.",
+   "note": "The migration dialog moves selected objects with a property mapping; the /move endpoint has no dialog.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",

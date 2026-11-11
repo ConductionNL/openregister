@@ -200,15 +200,14 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .ruleReplay {
 	margin-bottom: 24px;
 }
 
-.lead {
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 12px;
-}
+@include lead;
 
 .replayField {
 	margin-bottom: 12px;

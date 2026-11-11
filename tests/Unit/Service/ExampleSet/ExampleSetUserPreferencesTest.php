@@ -40,7 +40,31 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  */
 class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	private const KEY = 'pref_walkthrough_completed_version';

@@ -1,15 +1,64 @@
 import { defineStore } from 'pinia'
 import { ConfigurationEntity } from '../../entities/index.js'
+import {
+	answerOrError,
+	getJson,
+	importAnswer,
+	itemTarget,
+	loggedRequest,
+	objectAnswer,
+	okJson,
+	sendJson,
+	withoutReadOnly,
+} from '../../services/listPage.js'
+import { listStateActions, listStateFields } from './listState.js'
+
+/**
+ * The URL of one configuration.
+ *
+ * @param {object} configurationItem The configuration.
+ * @return {string} The URL.
+ * @spec exclude Client-side URL of the configurations API passthrough.
+ */
+function configurationUrl(configurationItem) {
+	return `/index.php/apps/openregister/api/configurations/${configurationItem.id}`
+}
+
+/**
+ * The form an import sends: the file, and whether to import its objects.
+ *
+ * @param {File} file The file.
+ * @param {boolean} includeObjects Whether to import the objects too.
+ * @return {FormData} The form.
+ * @spec exclude Client-side form of POST /api/configurations/import.
+ */
+function importForm(file, includeObjects) {
+	const formData = new FormData()
+	formData.append('file', file)
+	formData.append('includeObjects', includeObjects ? '1' : '0')
+	return formData
+}
+
+/**
+ * The discover URL of a source, with the search term when there is one.
+ *
+ * @param {string} source The source.
+ * @param {string} search The search term.
+ * @return {string} The URL.
+ * @spec exclude Client-side URL of GET /api/configurations/discover.
+ */
+function discoverUrl(source, search) {
+	const params = new URLSearchParams()
+	params.append('source', source)
+	if (search) params.append('_search', search)
+	return `/index.php/apps/openregister/api/configurations/discover?${params}`
+}
 
 export const useConfigurationStore = defineStore('configuration', {
 	state: () => ({
 		configurationItem: false,
 		configurationList: [],
-		filters: [], // List of query
-		pagination: {
-			page: 1,
-			limit: 20,
-		},
+		...listStateFields(),
 	}),
 	actions: {
 		/**
@@ -30,38 +79,17 @@ export const useConfigurationStore = defineStore('configuration', {
 				(configurationItem) => new ConfigurationEntity(configurationItem),
 			)
 		},
-		/**
-		 * Set pagination details
-		 *
-		 * @param {number} page - The current page number for pagination
-		 * @param {number} limit - The number of items to display per page
-		 *
-		 * @spec exclude Pure client UI-state setter — list pagination cursor. No backend contract.
-		 */
-		setPagination(page, limit = 14) {
-			this.pagination = { page, limit }
-		},
-		/**
-		 * Set query filters for configuration list
-		 *
-		 * @param {object} filters - The filter criteria to apply to the configuration list
-		 *
-		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
-		 */
-		setFilters(filters) {
-			this.filters = { ...this.filters, ...filters }
-		},
+		...listStateActions(14),
 		/**
 		 * Refresh the configuration list from the API
 		 *
 		 * @param {string|null} search - Optional search term
-		 * @param {boolean} _soft - If true, don't show loading state (default: false)
 		 * @return {Promise} Promise with response and data
 		 *
 		 * @spec exclude Thin API passthrough — GET /api/configurations list; observable contract owned by data-import-export.
 		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
-		async refreshConfigurationList(search = null, _soft = false) {
+		async refreshConfigurationList(search = null) {
 			let endpoint = '/index.php/apps/openregister/api/configurations'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '?_search=' + search
@@ -83,10 +111,7 @@ export const useConfigurationStore = defineStore('configuration', {
 		async getConfiguration(id) {
 			const endpoint = `/index.php/apps/openregister/api/configurations/${id}`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
+				const data = await getJson(endpoint)
 				this.setConfigurationItem(data)
 				return data
 			} catch (err) {
@@ -102,29 +127,27 @@ export const useConfigurationStore = defineStore('configuration', {
 			if (!configurationItem.id) {
 				throw new Error('No configuration item to delete')
 			}
-
-			const endpoint = `/index.php/apps/openregister/api/configurations/${configurationItem.id}`
-
-			try {
-				const response = await fetch(endpoint, {
-					method: 'DELETE',
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				this.refreshConfigurationList()
-				this.setConfigurationItem(null)
-
-				return { response }
-			} catch (error) {
-				console.error('Error deleting configuration:', error)
-				throw new Error(`Failed to delete configuration: ${error.message}`, {
-					cause: error,
-				})
-			}
+			return loggedRequest({
+				failure: 'Failed to delete configuration',
+				log: (error) =>
+					console.error('Error deleting configuration:', error),
+				run: async () => {
+					const response = await fetch(
+						configurationUrl(configurationItem),
+						{
+							method: 'DELETE',
+						},
+					)
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`)
+					}
+					this.refreshConfigurationList()
+					this.setConfigurationItem(null)
+					return { response }
+				},
+			})
 		},
+
 		/**
 		 * @param configurationItem
 		 * @spec exclude Thin API passthrough — POST/PUT /api/configurations; observable contract owned by data-import-export.
@@ -133,39 +156,25 @@ export const useConfigurationStore = defineStore('configuration', {
 			if (!configurationItem) {
 				throw new Error('No configuration item to save')
 			}
-
-			const isNewConfiguration = !configurationItem.id
-			const endpoint = isNewConfiguration
-				? '/index.php/apps/openregister/api/configurations'
-				: `/index.php/apps/openregister/api/configurations/${configurationItem.id}`
-			const method = isNewConfiguration ? 'POST' : 'PUT'
-
-			// Clean the data before sending - remove read-only fields
-			const cleanedData = this.cleanConfigurationForSave(configurationItem)
-
 			return this._sendConfiguration({
-				endpoint,
-				method,
-				payload: cleanedData,
+				...itemTarget(
+					'/index.php/apps/openregister/api/configurations',
+					configurationItem.id ? configurationItem : null,
+				),
+				// Clean the data before sending - remove read-only fields
+				payload: this.cleanConfigurationForSave(configurationItem),
 				action: 'save',
 				logText: 'Error saving configuration:',
 			})
 		},
+
 		// Clean configuration data for saving - remove read-only fields
 		/**
 		 * @param configurationItem
 		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
 		 */
 		cleanConfigurationForSave(configurationItem) {
-			const cleaned = { ...configurationItem }
-
-			// Remove read-only/calculated fields that should not be sent to the server
-			delete cleaned.id
-			delete cleaned.uuid
-			delete cleaned.created
-			delete cleaned.updated
-
-			return cleaned
+			return withoutReadOnly(configurationItem)
 		},
 		/**
 		 * @param configuration
@@ -175,21 +184,17 @@ export const useConfigurationStore = defineStore('configuration', {
 			if (!configuration) {
 				throw new Error('No configuration item to upload')
 			}
-
-			const isNewConfiguration = !this.configurationItem
-			const endpoint = isNewConfiguration
-				? '/index.php/apps/openregister/api/configurations/upload'
-				: `/index.php/apps/openregister/api/configurations/upload/${this.configurationItem.id}`
-			const method = isNewConfiguration ? 'POST' : 'PUT'
-
 			return this._sendConfiguration({
-				endpoint,
-				method,
+				...itemTarget(
+					'/index.php/apps/openregister/api/configurations/upload',
+					this.configurationItem,
+				),
 				payload: configuration,
 				action: 'upload',
 				logText: 'Error uploading configuration:',
 			})
 		},
+
 		/**
 		 * @param file
 		 * @param includeObjects
@@ -199,74 +204,41 @@ export const useConfigurationStore = defineStore('configuration', {
 			if (!file) {
 				throw new Error('No file to import')
 			}
-
-			const endpoint = '/index.php/apps/openregister/api/configurations/import'
-			const formData = new FormData()
-			formData.append('file', file)
-			formData.append('includeObjects', includeObjects ? '1' : '0')
-
-			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					body: formData,
-				})
-
-				const responseData = await response.json()
-
-				if (!response.ok) {
-					// If we have an error message in the response, use that
-					if (responseData && responseData.error) {
-						throw new Error(responseData.error)
-					}
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
-
-				await this.refreshConfigurationList()
-
-				return { response, responseData }
-			} catch (error) {
-				console.error('Error importing configuration:', error)
-				throw error // Pass through the original error message
-			}
+			const body = importForm(file, includeObjects)
+			return loggedRequest({
+				log: (error) =>
+					console.error('Error importing configuration:', error),
+				run: async () => {
+					const response = await fetch(
+						'/index.php/apps/openregister/api/configurations/import',
+						{ method: 'POST', body },
+					)
+					const responseData = await importAnswer(response)
+					await this.refreshConfigurationList()
+					return { response, responseData }
+				},
+			})
 		},
+
 		/**
 		 * @param source
 		 * @param search
 		 * @spec exclude Thin API passthrough — GET /api/configurations/discover; observable contract owned by data-import-export.
 		 */
 		async discoverConfigurations(source, search = '') {
-			const endpoint =
-				'/index.php/apps/openregister/api/configurations/discover'
-			const params = new URLSearchParams()
-			params.append('source', source)
-			if (search) params.append('_search', search)
-
-			try {
-				const response = await fetch(`${endpoint}?${params}`, {
-					method: 'GET',
-				})
-
-				// Parse the JSON response first to extract error messages
-				const data = await response.json()
-
-				if (!response.ok) {
-					// If backend returns an error message, use it
-					const errorMessage =
-						data.error || `HTTP error! status: ${response.status}`
-					throw new Error(errorMessage)
-				}
-
-				return data.results || []
-			} catch (error) {
-				console.error('Error discovering configurations:', error)
-				// Re-throw with the error message (which now contains backend's user-friendly message)
-				throw error
-			}
+			const url = discoverUrl(source, search)
+			return loggedRequest({
+				log: (error) =>
+					console.error('Error discovering configurations:', error),
+				run: async () => {
+					const data = await answerOrError(
+						await fetch(url, { method: 'GET' }),
+					)
+					return data.results || []
+				},
+			})
 		},
+
 		/**
 		 * @param source
 		 * @param params
@@ -336,39 +308,24 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * @spec exclude private step shared by saveConfiguration and uploadConfiguration
 		 */
 		async _sendConfiguration(request) {
-			try {
-				const response = await fetch(request.endpoint, {
-					method: request.method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(request.payload),
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
-
-				const data = new ConfigurationEntity(responseData)
-
-				this.setConfigurationItem(data)
-				this.refreshConfigurationList()
-
-				return { response, data }
-			} catch (error) {
-				console.error(request.logText, error)
-				throw new Error(
-					`Failed to ${request.action} configuration: ${error.message}`,
-					{ cause: error },
-				)
-			}
+			return loggedRequest({
+				failure: `Failed to ${request.action} configuration`,
+				log: (error) => console.error(request.logText, error),
+				run: async () => {
+					const response = await sendJson(request.endpoint, {
+						method: request.method,
+						body: request.payload,
+					})
+					const data = new ConfigurationEntity(
+						await objectAnswer(response),
+					)
+					this.setConfigurationItem(data)
+					this.refreshConfigurationList()
+					return { response, data }
+				},
+			})
 		},
+
 		/**
 		 * List what a configuration source offers (branches or files).
 		 *
@@ -387,11 +344,7 @@ export const useConfigurationStore = defineStore('configuration', {
 					method: 'GET',
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
+				const data = await okJson(response)
 				return data[request.path] || []
 			} catch (error) {
 				console.error(request.logText, error)
@@ -407,31 +360,18 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * @spec exclude private step shared by importFromGitHub, importFromGitLab and importFromUrl
 		 */
 		async _importFromSource(request) {
-			const endpoint = `/index.php/apps/openregister/api/configurations/import/${request.kind}`
-
-			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(request.params),
-				})
-
-				if (!response.ok) {
-					const errorData = await response.json()
-					throw new Error(
-						errorData.error || `HTTP error! status: ${response.status}`,
+			return loggedRequest({
+				log: (error) => console.error(request.logText, error),
+				run: async () => {
+					const response = await sendJson(
+						`/index.php/apps/openregister/api/configurations/import/${request.kind}`,
+						{ method: 'POST', body: request.params },
 					)
-				}
-
-				const data = await response.json()
-				await this.refreshConfigurationList()
-				return data
-			} catch (error) {
-				console.error(request.logText, error)
-				throw error
-			}
+					const data = await answerOrError(response)
+					await this.refreshConfigurationList()
+					return data
+				},
+			})
 		},
 	},
 })

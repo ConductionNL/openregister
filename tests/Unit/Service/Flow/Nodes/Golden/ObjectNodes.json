@@ -1,0 +1,556 @@
+[
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TransitionNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TransitionNodeInterface"
+        ],
+        "id": "openregister.transition",
+        "name": "Lifecycle transition",
+        "description": "Move the object to its next status through a declared lifecycle transition.",
+        "icon": "core:actions/confirm.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "serviceTask"
+        },
+        "getCategory": {
+            "returned": "objects"
+        },
+        "configKeys": {
+            "returned": [
+                "action",
+                "data",
+                "object"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "action": {
+                "returned": null
+            },
+            "bad-data": {
+                "threw": "UnexpectedValueException",
+                "message": "\"data\" must be an object of transition inputs."
+            },
+            "blank-action": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "handoff": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "handoff-and-target": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "target": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "target-bad-data": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "filters": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "bad-limit": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "write-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "batch": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            },
+            "bad-batch": {
+                "threw": "UnexpectedValueException",
+                "message": "Name the lifecycle transition to take in \"action\"."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\LinkObjectNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\LinkObjectNodeInterface"
+        ],
+        "id": "openregister.link-object",
+        "name": "Create or link an object",
+        "description": "Create a related object and link it, or hand the object over to another app.",
+        "icon": "core:actions/public.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "serviceTask"
+        },
+        "getCategory": {
+            "returned": "objects"
+        },
+        "configKeys": {
+            "returned": [
+                "register",
+                "schema",
+                "data",
+                "relation",
+                "handoff"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "Name a \"handoff\", or the \"register\" and \"schema\" to create the object in."
+            },
+            "action": {
+                "threw": "UnexpectedValueException",
+                "message": "Name a \"handoff\", or the \"register\" and \"schema\" to create the object in."
+            },
+            "bad-data": {
+                "threw": "UnexpectedValueException",
+                "message": "Name a \"handoff\", or the \"register\" and \"schema\" to create the object in."
+            },
+            "blank-action": {
+                "threw": "UnexpectedValueException",
+                "message": "Name a \"handoff\", or the \"register\" and \"schema\" to create the object in."
+            },
+            "handoff": {
+                "returned": null
+            },
+            "handoff-and-target": {
+                "threw": "UnexpectedValueException",
+                "message": "Name either a \"handoff\" or a \"register\" and \"schema\", not both."
+            },
+            "target": {
+                "returned": null
+            },
+            "target-bad-data": {
+                "threw": "UnexpectedValueException",
+                "message": "\"data\" must be an object."
+            },
+            "filters": {
+                "returned": null
+            },
+            "bad-limit": {
+                "returned": null
+            },
+            "write-mode": {
+                "returned": null
+            },
+            "bad-mode": {
+                "returned": null
+            },
+            "batch": {
+                "threw": "UnexpectedValueException",
+                "message": "Name a \"handoff\", or the \"register\" and \"schema\" to create the object in."
+            },
+            "bad-batch": {
+                "threw": "UnexpectedValueException",
+                "message": "Name a \"handoff\", or the \"register\" and \"schema\" to create the object in."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ObjectReadNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ObjectReadNodeInterface"
+        ],
+        "id": "openregister.object-read",
+        "name": "Read objects",
+        "description": "Find objects in a register and put them on the item.",
+        "icon": "core:actions/search.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "serviceTask"
+        },
+        "getCategory": {
+            "returned": "objects"
+        },
+        "configKeys": {
+            "returned": [
+                "register",
+                "schema",
+                "filters",
+                "fanOut",
+                "limit",
+                "output"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-read step needs a register."
+            },
+            "action": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-read step needs a register."
+            },
+            "bad-data": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-read step needs a register."
+            },
+            "blank-action": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-read step needs a register."
+            },
+            "handoff": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-read step needs a register."
+            },
+            "handoff-and-target": {
+                "returned": null
+            },
+            "target": {
+                "returned": null
+            },
+            "target-bad-data": {
+                "returned": null
+            },
+            "filters": {
+                "returned": null
+            },
+            "bad-limit": {
+                "returned": null
+            },
+            "write-mode": {
+                "returned": null
+            },
+            "bad-mode": {
+                "returned": null
+            },
+            "batch": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-read step needs a register."
+            },
+            "bad-batch": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-read step needs a register."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ObjectWriteNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodePreview",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ObjectWriteNodeInterface"
+        ],
+        "id": "openregister.object-write",
+        "name": "Write an object",
+        "description": "Create, update, upsert or delete an OpenRegister object for every item — as the person who started the run, with their permissions.",
+        "icon": "core:actions/edit.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "serviceTask"
+        },
+        "getCategory": {
+            "returned": "objects"
+        },
+        "configKeys": {
+            "returned": [
+                "register",
+                "schema",
+                "operation",
+                "fields",
+                "payloadFrom",
+                "match",
+                "replace",
+                "bulk",
+                "skipWhen",
+                "output",
+                "confirmDelete",
+                "permanent",
+                "maxWrites",
+                "onConflict",
+                "onMissing",
+                "onNoMatch",
+                "subjectRole"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "register",
+                    "label": "Register",
+                    "type": "select",
+                    "help": "The register the objects are written into.",
+                    "required": true,
+                    "optionsFrom": "/apps/openregister/api/registers"
+                },
+                {
+                    "key": "schema",
+                    "label": "Schema",
+                    "type": "select",
+                    "help": "The schema the objects are validated against. A slug is resolved within the chosen register only.",
+                    "required": true,
+                    "optionsFrom": "/apps/openregister/api/schemas"
+                },
+                {
+                    "key": "operation",
+                    "label": "Operation",
+                    "type": "text",
+                    "help": "One of: create, update, upsert, delete. Update, upsert and delete need at least one match pair.",
+                    "required": true
+                },
+                {
+                    "key": "payloadFrom",
+                    "label": "Write object at path",
+                    "type": "text",
+                    "help": "Write the object found at this path WHOLE, instead of listing properties in \"fields\". Use it when the properties are not known up front — a synchronization with no mapping, for example. Configure this or \"fields\", never both.",
+                    "required": false
+                },
+                {
+                    "key": "bulk",
+                    "label": "Write the whole page in one call",
+                    "type": "boolean",
+                    "help": "Create and upsert only. One bulk save covers every item — much faster for large pages, but per-object lifecycle events are not dispatched, and a bulk upsert must match on \"uuid\" alone with \"replace\" on."
+                },
+                {
+                    "key": "skipWhen",
+                    "label": "Skip an item when this field says so",
+                    "type": "text",
+                    "help": "A field on the item. When it holds true, or the word \"skip\", that item passes through UNWRITTEN and still travels on to later steps. Use it to leave unchanged objects alone. Filtering those items out instead would remove them from what a synchronization sweep counts as reached, and the sweep would then delete them."
+                },
+                {
+                    "key": "replace",
+                    "label": "Replace instead of patch",
+                    "type": "boolean",
+                    "help": "An update normally patches only the fields named. Replacing writes the payload as the whole object — fields it does not name are gone."
+                },
+                {
+                    "key": "output",
+                    "label": "Field to store the written object in",
+                    "type": "text",
+                    "help": "With a field name, the incoming item is preserved and the written object is added under it. Empty means the written object replaces the item."
+                },
+                {
+                    "key": "subjectRole",
+                    "label": "Record the written object as",
+                    "type": "text",
+                    "help": "Your own word for what this object is to this flow, such as \"case\" or \"besluit\". A later step can then attach its task to it by that name. Leave it empty and the step records nothing."
+                },
+                {
+                    "key": "maxWrites",
+                    "label": "Write cap",
+                    "type": "number",
+                    "help": "The most writes one step execution may perform. The instance default applies when empty."
+                },
+                {
+                    "key": "onMissing",
+                    "label": "When a field value is missing",
+                    "type": "text",
+                    "help": "\"omit\" (default) drops the field from the payload; \"fail\" fails the item."
+                },
+                {
+                    "key": "onConflict",
+                    "label": "When a created identifier is taken",
+                    "type": "text",
+                    "help": "\"overwrite\" (default) keeps the historical upsert behaviour; \"fail\" refuses, for writes that are claims — locks, slots, leases. Not available in bulk."
+                },
+                {
+                    "key": "onNoMatch",
+                    "label": "When a delete matches nothing",
+                    "type": "text",
+                    "help": "\"error\" (default) fails the item; \"skip\" passes it through with \"deleted\": false."
+                },
+                {
+                    "key": "confirmDelete",
+                    "label": "Confirm deletion",
+                    "type": "boolean",
+                    "help": "A delete step will not save without this deliberate second acknowledgement."
+                },
+                {
+                    "key": "permanent",
+                    "label": "Destroy instead of tombstone",
+                    "type": "boolean",
+                    "help": "Deletes are soft by default, which is what makes a mistaken flow recoverable. Turn this on only for rows that are claims whose identifier must become claimable again."
+                }
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs a register."
+            },
+            "action": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs a register."
+            },
+            "bad-data": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs a register."
+            },
+            "blank-action": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs a register."
+            },
+            "handoff": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs a register."
+            },
+            "handoff-and-target": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs an operation: create, update, upsert or delete."
+            },
+            "target": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs an operation: create, update, upsert or delete."
+            },
+            "target-bad-data": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs an operation: create, update, upsert or delete."
+            },
+            "filters": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs an operation: create, update, upsert or delete."
+            },
+            "bad-limit": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs an operation: create, update, upsert or delete."
+            },
+            "write-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs an operation: create, update, upsert or delete."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs an operation: create, update, upsert or delete."
+            },
+            "batch": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs a register."
+            },
+            "bad-batch": {
+                "threw": "UnexpectedValueException",
+                "message": "An object-write step needs a register."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\LoopNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\LoopNodeInterface"
+        ],
+        "id": "openregister.batch",
+        "name": "Batch items",
+        "description": "Split the items into fixed-size batches for a step that needs them a slice at a time.",
+        "icon": "core:actions/play-next.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "serviceTask"
+        },
+        "getCategory": {
+            "returned": "objects"
+        },
+        "configKeys": {
+            "returned": [
+                "batchSize"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "action": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "bad-data": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "blank-action": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "handoff": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "handoff-and-target": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "target": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "target-bad-data": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "filters": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "bad-limit": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "write-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            },
+            "batch": {
+                "returned": null
+            },
+            "bad-batch": {
+                "threw": "UnexpectedValueException",
+                "message": "A loop needs a batch size of one or more."
+            }
+        }
+    }
+]

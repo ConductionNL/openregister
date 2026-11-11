@@ -25,6 +25,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportMapping;
 
 /**
  * Golden test for ImportService::importFromCsv() and the CSV sheet processing behind it.
@@ -65,7 +69,7 @@ class ImportServiceCsvSheetGoldenTest extends TestCase {
 			'only created' => [['csv' => $csv, 'save' => ['saved' => [['id' => 'a']]]]],
 			'unchanged without others' => [['csv' => $csv, 'save' => ['unchanged' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']]]]],
 			'validation errors' => [['csv' => $csv, 'validation' => true, 'save' => ['invalid' => [['object' => ['title' => 'Two'], 'error' => 'bad', 'type' => 'X'], ['title' => 'raw']]] + $saved]],
-			'invalid ignored without validation' => [['csv' => $csv, 'save' => ['invalid' => [['object' => [], 'error' => 'bad']]]]],
+			'invalid reported without validation' => [['csv' => $csv, 'save' => ['invalid' => [['object' => [], 'error' => 'bad']]]]],
 			'save throws' => [['csv' => $csv, 'saveThrows' => true]],
 			'publish flag' => [['csv' => $csv, 'publish' => true, 'save' => $saved]],
 			'flags off' => [['csv' => $csv, 'rbac' => false, 'multi' => false, 'events' => true, 'enrich' => false, 'user' => true, 'save' => $saved]],
@@ -122,18 +126,19 @@ class ImportServiceCsvSheetGoldenTest extends TestCase {
 
 		try {
 			$result = @$service->importFromCsv(
-				$path,
-				$register,
-				$schema,
-				$case['validation'] ?? false,
-				$case['events'] ?? false,
-				$case['rbac'] ?? true,
-				$case['multi'] ?? true,
-				$case['publish'] ?? false,
-				$user,
-				$case['enrich'] ?? true,
-				$pack,
-				$case['dryRun'] ?? false
+				request: new ImportRequest(
+					filePath: $path,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user),
+					options: new ImportOptions(
+						validation: $case['validation'] ?? false,
+						events: $case['events'] ?? false,
+						enrich: $case['enrich'] ?? true,
+						publish: $case['publish'] ?? false,
+					),
+					mapping: new ImportMapping(pack: $pack, dryRun: $case['dryRun'] ?? false),
+				),
+				_rbac: $case['rbac'] ?? true,
+				_multitenancy: $case['multi'] ?? true,
 			);
 			$outcome = ['result' => $this->describe(value: $result)];
 		} catch (\Throwable $e) {
@@ -231,15 +236,10 @@ class ImportServiceCsvSheetGoldenTest extends TestCase {
 		});
 
 		return new ImportService(
-			$this->createMock(SchemaMapper::class),
-			$objectService,
-			$logger,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(TranslationCsvCodec::class),
-			$audit,
-			$mapping,
-			$validator,
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->createMock(SchemaMapper::class), $objectService, $audit, $validator),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($this->createMock(TranslationCsvCodec::class), $mapping),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $logger),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end buildService()
 

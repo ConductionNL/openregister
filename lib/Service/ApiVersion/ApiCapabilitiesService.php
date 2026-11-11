@@ -65,7 +65,18 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiVersion
  */
-class ApiCapabilitiesService {
+class ApiCapabilitiesService implements ApiCapabilitiesServiceInterface {
+
+	/**
+	 * The bytes a PHP shorthand size suffix stands for (no suffix: bytes).
+	 *
+	 * @var array<string, int>
+	 */
+	private const BYTE_MULTIPLIERS = [
+		'k' => 1024,
+		'm' => (1024 * 1024),
+		'g' => (1024 * 1024 * 1024),
+	];
 
 	/**
 	 * The app the operational switches live under.
@@ -96,7 +107,6 @@ class ApiCapabilitiesService {
 		'enforceDefaultClosed' => ['enforce_default_closed', false],
 		'rbacInheritFromPublic' => ['rbac.inherit_from_public_default', true],
 		'allowExternalSchemas' => ['allowExternalSchemas', false],
-		'flowOversight' => ['flow_oversight_enabled', true],
 		'flowAudit' => ['flow_audit_enabled', false],
 		'flowKillSwitch' => ['flow_kill_switch', false],
 	];
@@ -126,26 +136,48 @@ class ApiCapabilitiesService {
 	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function publicCapabilities(): array {
-		$served = $this->catalogue->served();
-
-		$contracts = [];
-		foreach ($served as $version) {
-			$identifier = $version->id;
-			$contracts[$identifier] = (self::CONTRACT_PATH . $identifier . '/oas');
-		}
+		$contracts = $this->contractPaths();
 
 		return [
 			'currentVersion' => $this->catalogue->current()->id,
 			'versionHeader' => ApiVersionNegotiator::REQUEST_HEADER,
-			'apiVersions' => array_values(array_map(
-				static fn (ApiVersion $version): array => $version->jsonSerialize(),
-				$this->catalogue->all()
-			)),
+			'apiVersions' => $this->publishedVersions(),
 			'contracts' => $contracts,
 			'limits' => $this->limits(),
 		];
 
 	}//end publicCapabilities()
+
+	/**
+	 * The OpenAPI contract path of every served version, by identifier.
+	 *
+	 * @return array<string, string> The contract paths.
+	 */
+	private function contractPaths(): array {
+		$contracts = [];
+		foreach ($this->catalogue->served() as $version) {
+			$identifier = $version->id;
+			$contracts[$identifier] = (self::CONTRACT_PATH . $identifier . '/oas');
+		}
+
+		return $contracts;
+
+	}//end contractPaths()
+
+	/**
+	 * Every version, as published.
+	 *
+	 * @return array<int, array<string, mixed>> The versions.
+	 */
+	private function publishedVersions(): array {
+		return array_values(
+			array_map(
+				static fn (ApiVersion $version): array => $version->jsonSerialize(),
+				$this->catalogue->all()
+			)
+		);
+
+	}//end publishedVersions()
 
 	/**
 	 * The public half plus the operational switches.
@@ -235,19 +267,7 @@ class ApiCapabilitiesService {
 			return null;
 		}
 
-		$size = (int)$matched[1];
-		$multipliers = [
-			'k' => 1024,
-			'm' => (1024 * 1024),
-			'g' => (1024 * 1024 * 1024),
-		];
-
-		$suffix = strtolower($matched[2]);
-		if ($suffix !== '' && isset($multipliers[$suffix]) === true) {
-			$size = ($size * $multipliers[$suffix]);
-		}
-
-		return $size;
+		return ((int)$matched[1] * (self::BYTE_MULTIPLIERS[strtolower($matched[2])] ?? 1));
 
 	}//end toBytes()
 

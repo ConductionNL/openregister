@@ -1,0 +1,405 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectDetails live subscription golden drops a subscription released while it was awaited 1`] = `
+{
+  "liveEpoch": 1,
+  "liveHandle": null,
+  "liveKey": "1-2::self-uuid",
+  "livePendingKey": "1-2::self-uuid",
+  "watching": false,
+}
+`;
+
+exports[`ObjectDetails live subscription golden drops a subscription released while it was awaited 2`] = `
+{
+  "after": {
+    "liveEpoch": 2,
+    "liveHandle": null,
+    "liveKey": "",
+    "livePendingKey": "",
+    "watching": false,
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+      "self-uuid",
+    ],
+    [
+      "unsubscribe",
+      "late",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectDetails live subscription golden keeps the pending key of a newer subscribe 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": "late",
+    "liveKey": "1-2::self-uuid",
+    "livePendingKey": "newer",
+    "watching": true,
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+      "self-uuid",
+    ],
+    [
+      "watch",
+      [
+        "cached",
+        "1-2",
+        "self-uuid",
+      ],
+    ],
+  ],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: alreadyLive 1`] = `
+{
+  "after": {
+    "liveEpoch": 0,
+    "liveHandle": "h0",
+    "liveKey": "1-2::self-uuid",
+    "livePendingKey": "",
+    "watching": false,
+  },
+  "log": [],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: contextId 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": "h1",
+    "liveKey": "1-2::ctx-id",
+    "livePendingKey": "",
+    "watching": true,
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+      "ctx-id",
+    ],
+    [
+      "watch",
+      [
+        "cached",
+        "1-2",
+        "ctx-id",
+      ],
+    ],
+    [
+      "setObjectItem",
+      {
+        "fresh": 1,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: fails 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "liveKey": "",
+    "livePendingKey": "",
+    "watching": false,
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+      "self-uuid",
+    ],
+    [
+      "warn",
+      "[ObjectDetails] live subscription failed:",
+      "offline",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: failsWithoutMessage 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": [Function],
+    "liveKey": "1-2::self-uuid",
+    "livePendingKey": "",
+    "watching": true,
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+      "self-uuid",
+    ],
+    [
+      "watch",
+      [
+        "cached",
+        "1-2",
+        "self-uuid",
+      ],
+    ],
+    [
+      "setObjectItem",
+      {
+        "fresh": 1,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: knownType 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": "h1",
+    "liveKey": "1-2::self-uuid",
+    "livePendingKey": "",
+    "watching": true,
+  },
+  "log": [
+    [
+      "subscribe",
+      "1-2",
+      "self-uuid",
+    ],
+    [
+      "watch",
+      [
+        "cached",
+        "1-2",
+        "self-uuid",
+      ],
+    ],
+    [
+      "setObjectItem",
+      {
+        "fresh": 1,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: noContext 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "liveKey": "",
+    "livePendingKey": "",
+    "watching": false,
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h0",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: noSubscribe 1`] = `
+{
+  "after": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "liveKey": "",
+    "livePendingKey": "",
+    "watching": false,
+  },
+  "log": [],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: noUuid 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "liveKey": "",
+    "livePendingKey": "",
+    "watching": false,
+  },
+  "log": [],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: otherLive 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": "h1",
+    "liveKey": "1-2::self-uuid",
+    "livePendingKey": "",
+    "watching": true,
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h0",
+    ],
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+      "self-uuid",
+    ],
+    [
+      "watch",
+      [
+        "cached",
+        "1-2",
+        "self-uuid",
+      ],
+    ],
+    [
+      "setObjectItem",
+      {
+        "fresh": 1,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: pending 1`] = `
+{
+  "after": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "liveKey": "",
+    "livePendingKey": "1-2::self-uuid",
+    "watching": false,
+  },
+  "log": [],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: rootUuid 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": "h1",
+    "liveKey": "1-2::root-uuid",
+    "livePendingKey": "",
+    "watching": true,
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+      "root-uuid",
+    ],
+    [
+      "watch",
+      [
+        "cached",
+        "1-2",
+        "root-uuid",
+      ],
+    ],
+    [
+      "setObjectItem",
+      {
+        "fresh": 1,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ObjectDetails live subscription golden subscribes: selfUuid 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": "h1",
+    "liveKey": "1-2::self-uuid",
+    "livePendingKey": "",
+    "watching": true,
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+      "self-uuid",
+    ],
+    [
+      "watch",
+      [
+        "cached",
+        "1-2",
+        "self-uuid",
+      ],
+    ],
+    [
+      "setObjectItem",
+      {
+        "fresh": 1,
+      },
+    ],
+  ],
+}
+`;

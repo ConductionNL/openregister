@@ -24,16 +24,19 @@ use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
 use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
 use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
+use OCA\OpenRegister\Service\Edepot\MdtoInputReaders;
 use OCA\OpenRegister\Service\Edepot\MdtoPreconditions;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoValueSources;
 use OCA\OpenRegister\Service\Edepot\SipPackageBuilder;
 use OCP\IAppConfig;
 use OCP\ITempManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ZipArchive;
+use OCA\OpenRegister\Service\Edepot\TransferPackageRequest;
 
 /**
  * A fact a SCHEMA declares must reach the document inside the SIP.
@@ -168,7 +171,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 			new NullLogger()
 		);
 
-		$result = $builder->build('transfer-facts', [['object' => $this->object(), 'files' => []]], 0, 'zip');
+		$result = $builder->package(new TransferPackageRequest('transfer-facts', [['object' => $this->object(), 'files' => []]], 0, 'zip'));
 
 		$zip = new ZipArchive();
 		$this->assertTrue(condition: $zip->open($result[0]) === true, message: 'The SIP could not be opened');
@@ -216,11 +219,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
-		$annotations = new ObjectArchivalAnnotation(
-			schemaMapper: $schemaMapper,
-			evaluator: new RetentionEvaluator(logger: new NullLogger()),
-			logger: new NullLogger()
-		);
+		$annotations = new ObjectArchivalAnnotation(lookup: new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup(schemaMapper: $schemaMapper, logger: new NullLogger()), evaluator: new RetentionEvaluator(logger: new NullLogger()));
 
 		$eventMapper = $this->createMock(originalClassName: MdtoEventMapper::class);
 		$eventMapper->method('forObject')->willReturn([]);
@@ -230,12 +229,10 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 		$bestandGenerator = new MdtoBestandGenerator($writer);
 
 		return new MdtoXmlGenerator(
-			$appConfig,
-			$eventMapper,
-			$sourceReader,
+			new MdtoValueSources($appConfig, $eventMapper, $sourceReader),
 			$writer,
 			$bestandGenerator,
-			new MdtoPreconditions($appConfig, new NullLogger(), $sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class))
+			new MdtoPreconditions(new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($appConfig, $this->createMock(\OCP\App\IAppManager::class), new NullLogger()))
 		);
 	}//end generator()
 

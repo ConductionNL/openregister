@@ -51,13 +51,13 @@ class OutboundClientFactory implements IClientService {
 	 * Constructor.
 	 *
 	 * @param IClientService $clientService Nextcloud's own client factory.
-	 * @param ProxySettings $proxy The one administered proxy setting.
+	 * @param ProxySettingsInterface $proxy The one administered proxy setting.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IClientService $clientService,
-		private readonly ProxySettings $proxy,
+		private readonly ProxySettingsInterface $proxy,
 	) {
 
 	}//end __construct()

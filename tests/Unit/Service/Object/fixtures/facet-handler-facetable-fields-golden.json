@@ -1,0 +1,976 @@
+{
+    "no schemas": {
+        "logs": [],
+        "result": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": [],
+            "non_aggregated_fields": [],
+            "searchable_fields": []
+        }
+    },
+    "not schemas": {
+        "logs": [],
+        "result": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": [],
+            "non_aggregated_fields": [],
+            "searchable_fields": []
+        }
+    },
+    "mixed properties": {
+        "logs": [],
+        "result": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "colour": {
+                    "type": "terms",
+                    "title": "Kleur",
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                "born": {
+                    "type": "date_histogram",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": "Born",
+                        "description": null,
+                        "order": 2
+                    },
+                    "matchType": "range",
+                    "inputControl": "date-range"
+                },
+                "stamp": {
+                    "type": "date_histogram",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "range",
+                    "inputControl": "date-range"
+                },
+                "kind": {
+                    "type": "date_histogram",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "exact",
+                    "inputControl": "text"
+                },
+                "notEnc": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                "match": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "prefix",
+                    "inputControl": "select"
+                },
+                "number": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "range",
+                    "inputControl": "range"
+                }
+            },
+            "non_aggregated_fields": [
+                {
+                    "field": "tag",
+                    "schemaId": 3,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": "Tag name",
+                        "description": "d",
+                        "order": 1
+                    },
+                    "title": "Tag",
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                {
+                    "field": "loose",
+                    "schemaId": 3,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "title": null,
+                    "matchType": "range",
+                    "inputControl": "range"
+                }
+            ],
+            "searchable_fields": {
+                "colour": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": "Kleur"
+                },
+                "born": {
+                    "matchType": "range",
+                    "inputControl": "date-range",
+                    "declared": false,
+                    "title": null
+                },
+                "stamp": {
+                    "matchType": "range",
+                    "inputControl": "date-range",
+                    "declared": false,
+                    "title": null
+                },
+                "kind": {
+                    "matchType": "exact",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "tag": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": "Tag"
+                },
+                "loose": {
+                    "matchType": "range",
+                    "inputControl": "range",
+                    "declared": false,
+                    "title": null
+                },
+                "plain": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": "Plain"
+                },
+                "off": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "emptyCf": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "notEnc": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "match": {
+                    "matchType": "prefix",
+                    "inputControl": "select",
+                    "declared": true,
+                    "title": null
+                },
+                "badMt": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": true,
+                    "title": null
+                },
+                "number": {
+                    "matchType": "range",
+                    "inputControl": "range",
+                    "declared": false,
+                    "title": null
+                }
+            }
+        }
+    },
+    "governed": {
+        "logs": [],
+        "result": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "open": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                }
+            },
+            "non_aggregated_fields": [
+                {
+                    "field": "allowed",
+                    "schemaId": 4,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "title": null,
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                }
+            ],
+            "searchable_fields": {
+                "open": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "allowed": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                }
+            }
+        }
+    },
+    "merged across": {
+        "logs": [],
+        "result": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "colour": {
+                    "type": "terms",
+                    "title": "Colour",
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": "C",
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                "born": {
+                    "type": "date_histogram",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": "Born",
+                        "description": null,
+                        "order": 2
+                    },
+                    "matchType": "range",
+                    "inputControl": "date-range"
+                },
+                "stamp": {
+                    "type": "date_histogram",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "range",
+                    "inputControl": "date-range"
+                },
+                "kind": {
+                    "type": "date_histogram",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "exact",
+                    "inputControl": "text"
+                },
+                "notEnc": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                "match": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "prefix",
+                    "inputControl": "select"
+                },
+                "number": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "range",
+                    "inputControl": "range"
+                }
+            },
+            "non_aggregated_fields": [
+                {
+                    "field": "tag",
+                    "schemaId": 3,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": "Tag name",
+                        "description": "d",
+                        "order": 1
+                    },
+                    "title": "Tag",
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                {
+                    "field": "loose",
+                    "schemaId": 3,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "title": null,
+                    "matchType": "range",
+                    "inputControl": "range"
+                },
+                {
+                    "field": "tag",
+                    "schemaId": 5,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "title": null,
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                }
+            ],
+            "searchable_fields": {
+                "colour": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": "Colour"
+                },
+                "born": {
+                    "matchType": "range",
+                    "inputControl": "date-range",
+                    "declared": false,
+                    "title": null
+                },
+                "stamp": {
+                    "matchType": "range",
+                    "inputControl": "date-range",
+                    "declared": false,
+                    "title": null
+                },
+                "kind": {
+                    "matchType": "exact",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "tag": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "loose": {
+                    "matchType": "range",
+                    "inputControl": "range",
+                    "declared": false,
+                    "title": null
+                },
+                "plain": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": "Plain"
+                },
+                "off": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "emptyCf": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "notEnc": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "match": {
+                    "matchType": "prefix",
+                    "inputControl": "select",
+                    "declared": true,
+                    "title": null
+                },
+                "badMt": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": true,
+                    "title": null
+                },
+                "number": {
+                    "matchType": "range",
+                    "inputControl": "range",
+                    "declared": false,
+                    "title": null
+                }
+            }
+        }
+    },
+    "merged reversed": {
+        "logs": [],
+        "result": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "colour": {
+                    "type": "terms",
+                    "title": "Kleur",
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                "born": {
+                    "type": "date_histogram",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": "Born",
+                        "description": null,
+                        "order": 2
+                    },
+                    "matchType": "range",
+                    "inputControl": "date-range"
+                },
+                "stamp": {
+                    "type": "date_histogram",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "range",
+                    "inputControl": "date-range"
+                },
+                "kind": {
+                    "type": "date_histogram",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "exact",
+                    "inputControl": "text"
+                },
+                "notEnc": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                "match": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "prefix",
+                    "inputControl": "select"
+                },
+                "number": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "range",
+                    "inputControl": "range"
+                }
+            },
+            "non_aggregated_fields": [
+                {
+                    "field": "tag",
+                    "schemaId": 5,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "title": null,
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                {
+                    "field": "tag",
+                    "schemaId": 3,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": "Tag name",
+                        "description": "d",
+                        "order": 1
+                    },
+                    "title": "Tag",
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                {
+                    "field": "loose",
+                    "schemaId": 3,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "title": null,
+                    "matchType": "range",
+                    "inputControl": "range"
+                }
+            ],
+            "searchable_fields": {
+                "colour": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": "Kleur"
+                },
+                "tag": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": "Tag"
+                },
+                "born": {
+                    "matchType": "range",
+                    "inputControl": "date-range",
+                    "declared": false,
+                    "title": null
+                },
+                "stamp": {
+                    "matchType": "range",
+                    "inputControl": "date-range",
+                    "declared": false,
+                    "title": null
+                },
+                "kind": {
+                    "matchType": "exact",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "loose": {
+                    "matchType": "range",
+                    "inputControl": "range",
+                    "declared": false,
+                    "title": null
+                },
+                "plain": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": "Plain"
+                },
+                "off": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "emptyCf": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "notEnc": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "match": {
+                    "matchType": "prefix",
+                    "inputControl": "select",
+                    "declared": true,
+                    "title": null
+                },
+                "badMt": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": true,
+                    "title": null
+                },
+                "number": {
+                    "matchType": "range",
+                    "inputControl": "range",
+                    "declared": false,
+                    "title": null
+                }
+            }
+        }
+    },
+    "failing schema": {
+        "logs": [
+            [
+                "error",
+                "[FacetHandler] Failed to get facetable fields from schema properties",
+                {
+                    "error": "properties unreadable",
+                    "schemaId": "unknown"
+                }
+            ]
+        ],
+        "result": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "colour": {
+                    "type": "terms",
+                    "title": "Colour",
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": "C",
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                "open": {
+                    "type": "terms",
+                    "title": null,
+                    "facetConfig": {
+                        "aggregated": true,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                }
+            },
+            "non_aggregated_fields": [
+                {
+                    "field": "tag",
+                    "schemaId": 5,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "title": null,
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                },
+                {
+                    "field": "allowed",
+                    "schemaId": 4,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "title": null,
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                }
+            ],
+            "searchable_fields": {
+                "colour": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": "Colour"
+                },
+                "tag": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "open": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                },
+                "allowed": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                }
+            }
+        }
+    },
+    "schema without id": {
+        "logs": [],
+        "result": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": [],
+            "non_aggregated_fields": [
+                {
+                    "field": "x",
+                    "schemaId": null,
+                    "facetType": "terms",
+                    "facetConfig": {
+                        "aggregated": false,
+                        "title": null,
+                        "description": null,
+                        "order": null
+                    },
+                    "title": null,
+                    "matchType": "fulltext",
+                    "inputControl": "text"
+                }
+            ],
+            "searchable_fields": {
+                "x": {
+                    "matchType": "fulltext",
+                    "inputControl": "text",
+                    "declared": false,
+                    "title": null
+                }
+            }
+        }
+    }
+}

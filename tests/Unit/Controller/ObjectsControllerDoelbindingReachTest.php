@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -117,7 +118,7 @@ class ObjectsControllerDoelbindingReachTest extends TestCase {
 			fn ($id) => $this->schema(is_numeric($id) ? (int)$id : 4, (string)$id)
 		);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),

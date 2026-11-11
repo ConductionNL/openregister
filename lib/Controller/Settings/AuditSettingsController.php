@@ -25,7 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\Service\Audit\AuditAggregationService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -47,16 +48,14 @@ class AuditSettingsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param AuditAggregationService $aggregation The window.
+	 * @param AuditAggregationServiceInterface $aggregation The window.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
-		private readonly AuditAggregationService $aggregation,
+		private readonly AuditAggregationServiceInterface $aggregation,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -77,13 +76,7 @@ class AuditSettingsController extends Controller {
 		try {
 			$window = $this->aggregation->windowSeconds();
 
-			return new JSONResponse(
-				data: [
-					'windowSeconds' => $window,
-					'maximumSeconds' => AuditAggregationService::MAXIMUM_WINDOW_SECONDS,
-					'merging' => ($window > 0),
-				]
-			);
+			return new JSONResponse(data: $this->aggregationWindow(stored: $window));
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
@@ -115,15 +108,24 @@ class AuditSettingsController extends Controller {
 		try {
 			$stored = $this->aggregation->setWindowSeconds((int)$seconds);
 
-			return new JSONResponse(
-				data: [
-					'windowSeconds' => $stored,
-					'maximumSeconds' => AuditAggregationService::MAXIMUM_WINDOW_SECONDS,
-					'merging' => ($stored > 0),
-				]
-			);
+			return new JSONResponse(data: $this->aggregationWindow(stored: $stored));
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
 	}//end updateAggregationSettings()
+
+	/**
+	 * The answer describing an aggregation window.
+	 *
+	 * @param int $stored The window in force, in seconds.
+	 *
+	 * @return array{windowSeconds: int, maximumSeconds: int, merging: bool} The window, its ceiling and whether it merges
+	 */
+	private function aggregationWindow(int $stored): array {
+		return [
+			'windowSeconds' => $stored,
+			'maximumSeconds' => AuditAggregationServiceInterface::MAXIMUM_WINDOW_SECONDS,
+			'merging' => ($stored > 0),
+		];
+	}//end aggregationWindow()
 }//end class

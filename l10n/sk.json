@@ -2925,7 +2925,7 @@
         "Complete: {outcome}": "Dokončiť: {outcome}",
         "Could not load the task": "Úlohu sa nepodarilo načítať",
         "The task refused that action": "Úloha túto akciu odmietla",
-        "Store": "Obchod",
+        "Marketplace": "Obchod",
         "Install registers, schemas and flows that other organisations have published.": "Nainštalujte registre, schémy a toky zverejnené inými organizáciami.",
         "No such run": "Žiadny taký beh",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Beh neexistuje, alebo ho nesmiete vidieť. Vymazaním toku sa vymažú aj jeho behy.",

@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\WebhooksController;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -45,7 +49,7 @@ class WebhooksControllerTest extends TestCase {
 		// Anonymous / non-admin behaviour is verified in dedicated tests below.
 		$this->setupAdminUser();
 
-		$this->controller = new WebhooksController(
+		$this->controller = WebhooksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->webhookMapper,
@@ -236,6 +240,25 @@ class WebhooksControllerTest extends TestCase {
 		$this->assertArrayHasKey('total', $data);
 	}
 
+	public function testIndexPassesThePageAndFiltersAsListQueries(): void {
+		$this->request->method('getParams')->willReturn([
+			'_limit' => '10',
+			'_page' => '3',
+			'filters' => ['enabled' => true],
+		]);
+		$queries = [];
+		$this->webhookMapper->method('findAll')->willReturnCallback(
+			function (ListQuery $query) use (&$queries): array {
+				$queries[] = [$query->limitOrNull(), $query->offset, $query->filters];
+				return [];
+			}
+		);
+
+		$this->controller->index();
+
+		$this->assertSame([[10, 20, ['enabled' => true]], [null, null, ['enabled' => true]]], $queries);
+	}
+
 	public function testIndexWithStringExtend(): void {
 		$this->request->method('getParams')->willReturn([
 			'_extend' => 'logs',
@@ -343,6 +366,27 @@ class WebhooksControllerTest extends TestCase {
 		$result = $this->controller->create();
 
 		$this->assertEquals(201, $result->getStatus());
+	}
+
+	public function testFailedCreateAndUpdateLogFieldNamesNotValues(): void {
+		$logged = [];
+		$this->logger->method('error')->willReturnCallback(
+			static function (string $message, array $context) use (&$logged): void {
+				$logged[] = $context['fields'] ?? $context;
+			}
+		);
+		$this->request->method('getParams')->willReturn([
+			'name' => 'New Hook',
+			'url' => 'https://example.com/hook',
+			'secret' => 'the-signing-secret',
+		]);
+		$this->webhookMapper->method('createFromArray')->willThrowException(new \RuntimeException('refused'));
+		$this->webhookMapper->method('updateFromArray')->willThrowException(new \RuntimeException('refused'));
+
+		$this->controller->create();
+		$this->controller->update(1);
+
+		$this->assertSame([['name', 'url', 'secret'], ['name', 'url', 'secret']], $logged);
 	}
 
 	public function testCreateMissingRequired(): void {
@@ -827,8 +871,7 @@ class WebhooksControllerTest extends TestCase {
 			->method('findByWebhook')
 			->with(
 				$this->equalTo(1),
-				$this->equalTo(25),
-				$this->equalTo(10)
+				$this->equalTo(new ListQuery(25, 10))
 			)
 			->willReturn([$logEntity]);
 
@@ -1378,10 +1421,13 @@ class WebhooksControllerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('deliverWebhook')
 			->with(
-				$this->equalTo($webhook),
-				$this->equalTo('OCA\\OpenRegister\\Event\\ObjectCreatedEvent'),
-				$this->equalTo(['id' => 42, 'name' => 'test']),
-				$this->equalTo(4)
+				$this->equalTo(
+					new WebhookDelivery(
+						webhook: $webhook,
+						event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['id' => 42, 'name' => 'test']),
+						attempt: 4
+					)
+				)
 			)
 			->willReturn(true);
 
@@ -1407,10 +1453,13 @@ class WebhooksControllerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('deliverWebhook')
 			->with(
-				$this->equalTo($webhook),
-				$this->equalTo('OCA\\OpenRegister\\Event\\ObjectCreatedEvent'),
-				$this->equalTo(['id' => 42, 'name' => 'test']),
-				$this->equalTo(2)
+				$this->equalTo(
+					new WebhookDelivery(
+						webhook: $webhook,
+						event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['id' => 42, 'name' => 'test']),
+						attempt: 2
+					)
+				)
 			)
 			->willReturn(true);
 
@@ -1487,7 +1536,7 @@ class WebhooksControllerTest extends TestCase {
 		$this->nonAdminLogMapper = $webhookLogMapper;
 		$this->nonAdminWebhookService = $webhookService;
 
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$request,
 			$webhookMapper,
@@ -1517,7 +1566,7 @@ class WebhooksControllerTest extends TestCase {
 		$this->nonAdminLogMapper = $webhookLogMapper;
 		$this->nonAdminWebhookService = $webhookService;
 
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$request,
 			$webhookMapper,

@@ -1,0 +1,772 @@
+{
+    "accounts no user": {
+        "result": [],
+        "queries": [],
+        "logs": []
+    },
+    "accounts mail off": {
+        "result": [],
+        "queries": [],
+        "logs": []
+    },
+    "accounts rows": {
+        "result": [
+            {
+                "id": 3,
+                "label": "Work",
+                "email": "w@x.nl"
+            },
+            {
+                "id": 4,
+                "label": "p@x.nl",
+                "email": "p@x.nl"
+            }
+        ],
+        "queries": [
+            "#1 select(id, name, email)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 orderBy(name, ASC)",
+            "#1 executeQuery()"
+        ],
+        "logs": []
+    },
+    "accounts query fails": {
+        "result": [],
+        "queries": [],
+        "logs": [
+            "[EmailLinkService] getAvailableAccounts failed: db down"
+        ]
+    },
+    "mailboxes bad id": {
+        "result": [],
+        "queries": [],
+        "logs": []
+    },
+    "mailboxes mail off": {
+        "result": [],
+        "queries": [],
+        "logs": []
+    },
+    "mailboxes no user": {
+        "thrown": "Exception: No user logged in (401)",
+        "queries": [],
+        "logs": []
+    },
+    "mailboxes not owner": {
+        "thrown": "Exception: Mail account not accessible to this user (403)",
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ],
+        "logs": []
+    },
+    "mailboxes no account": {
+        "thrown": "Exception: Mail account not accessible to this user (403)",
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ],
+        "logs": []
+    },
+    "mailboxes owner query fails": {
+        "thrown": "Exception: Mail account not found (404)",
+        "queries": [],
+        "logs": [
+            "[EmailLinkService] assertAccountOwnership lookup failed: db down"
+        ]
+    },
+    "mailboxes rows": {
+        "result": [
+            {
+                "id": 1,
+                "name": "INBOX",
+                "displayName": "INBOX"
+            },
+            {
+                "id": 2,
+                "name": "INBOX.Sent",
+                "displayName": "Sent"
+            },
+            {
+                "id": 6,
+                "name": "Trash.",
+                "displayName": "Trash."
+            }
+        ],
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id, name)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 orderBy(name, ASC)",
+            "#2 executeQuery()"
+        ],
+        "logs": []
+    },
+    "mailboxes query fails": {
+        "result": [],
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            "[EmailLinkService] getMailboxesForAccount failed: db down"
+        ]
+    },
+    "messages mail off": {
+        "result": {
+            "items": [],
+            "nextCursor": null
+        },
+        "queries": [],
+        "logs": []
+    },
+    "messages bad account": {
+        "result": {
+            "items": [],
+            "nextCursor": null
+        },
+        "queries": [],
+        "logs": []
+    },
+    "messages no mailbox name": {
+        "result": {
+            "items": [],
+            "nextCursor": null
+        },
+        "queries": [],
+        "logs": []
+    },
+    "messages not owner": {
+        "thrown": "Exception: Mail account not accessible to this user (403)",
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ],
+        "logs": []
+    },
+    "messages unknown mailbox": {
+        "result": {
+            "items": [],
+            "nextCursor": null
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 param :p3 = INBOX, 2",
+            "#2 expr.eq(name, :p3, NULL)",
+            "#2 andWhere(eq(name, :p3, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ],
+        "logs": []
+    },
+    "messages mailbox id zero": {
+        "result": {
+            "items": [],
+            "nextCursor": null
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 param :p3 = INBOX, 2",
+            "#2 expr.eq(name, :p3, NULL)",
+            "#2 andWhere(eq(name, :p3, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ],
+        "logs": []
+    },
+    "messages first page more": {
+        "result": {
+            "items": [
+                {
+                    "id": 9,
+                    "uid": "u9",
+                    "subject": "Nine",
+                    "sender": "a@x.nl",
+                    "date": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": 8,
+                    "uid": "u8",
+                    "subject": null,
+                    "sender": null,
+                    "date": null
+                }
+            ],
+            "nextCursor": 8
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 param :p3 = INBOX, 2",
+            "#2 expr.eq(name, :p3, NULL)",
+            "#2 andWhere(eq(name, :p3, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(m.id, m.uid, m.subject, m.sent_at)",
+            "#3 addSelect(r.email AS sender_email)",
+            "#3 from(mail_messages, m)",
+            "#3 expr.eq(r.message_id, m.id, NULL)",
+            "#3 param :p4 = 0, 2",
+            "#3 expr.eq(r.type, :p4, NULL)",
+            "#3 expr.andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL))",
+            "#3 leftJoin(m, mail_recipients, r, andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL)))",
+            "#3 param :p5 = 11, 1",
+            "#3 expr.eq(m.mailbox_id, :p5, NULL)",
+            "#3 where(eq(m.mailbox_id, :p5, NULL))",
+            "#3 orderBy(m.sent_at, DESC)",
+            "#3 addOrderBy(m.id, DESC)",
+            "#3 setMaxResults(3)",
+            "#3 executeQuery()"
+        ],
+        "logs": []
+    },
+    "messages cursor last page": {
+        "result": {
+            "items": [
+                {
+                    "id": 9,
+                    "uid": "u9",
+                    "subject": "Nine",
+                    "sender": "a@x.nl",
+                    "date": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": 8,
+                    "uid": "u8",
+                    "subject": null,
+                    "sender": null,
+                    "date": null
+                },
+                {
+                    "id": 7,
+                    "uid": "u7",
+                    "subject": "Seven",
+                    "sender": null,
+                    "date": "2023-11-14T22:15:00+00:00"
+                }
+            ],
+            "nextCursor": null
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 param :p3 = INBOX, 2",
+            "#2 expr.eq(name, :p3, NULL)",
+            "#2 andWhere(eq(name, :p3, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(m.id, m.uid, m.subject, m.sent_at)",
+            "#3 addSelect(r.email AS sender_email)",
+            "#3 from(mail_messages, m)",
+            "#3 expr.eq(r.message_id, m.id, NULL)",
+            "#3 param :p4 = 0, 2",
+            "#3 expr.eq(r.type, :p4, NULL)",
+            "#3 expr.andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL))",
+            "#3 leftJoin(m, mail_recipients, r, andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL)))",
+            "#3 param :p5 = 11, 1",
+            "#3 expr.eq(m.mailbox_id, :p5, NULL)",
+            "#3 where(eq(m.mailbox_id, :p5, NULL))",
+            "#3 orderBy(m.sent_at, DESC)",
+            "#3 addOrderBy(m.id, DESC)",
+            "#3 setMaxResults(6)",
+            "#3 param :p6 = 10, 1",
+            "#3 expr.lt(m.id, :p6, NULL)",
+            "#3 andWhere(lt(m.id, :p6, NULL))",
+            "#3 executeQuery()"
+        ],
+        "logs": []
+    },
+    "messages empty cursor": {
+        "result": {
+            "items": [
+                {
+                    "id": 9,
+                    "uid": "u9",
+                    "subject": "Nine",
+                    "sender": "a@x.nl",
+                    "date": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": 8,
+                    "uid": "u8",
+                    "subject": null,
+                    "sender": null,
+                    "date": null
+                },
+                {
+                    "id": 7,
+                    "uid": "u7",
+                    "subject": "Seven",
+                    "sender": null,
+                    "date": "2023-11-14T22:15:00+00:00"
+                }
+            ],
+            "nextCursor": null
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 param :p3 = INBOX, 2",
+            "#2 expr.eq(name, :p3, NULL)",
+            "#2 andWhere(eq(name, :p3, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(m.id, m.uid, m.subject, m.sent_at)",
+            "#3 addSelect(r.email AS sender_email)",
+            "#3 from(mail_messages, m)",
+            "#3 expr.eq(r.message_id, m.id, NULL)",
+            "#3 param :p4 = 0, 2",
+            "#3 expr.eq(r.type, :p4, NULL)",
+            "#3 expr.andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL))",
+            "#3 leftJoin(m, mail_recipients, r, andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL)))",
+            "#3 param :p5 = 11, 1",
+            "#3 expr.eq(m.mailbox_id, :p5, NULL)",
+            "#3 where(eq(m.mailbox_id, :p5, NULL))",
+            "#3 orderBy(m.sent_at, DESC)",
+            "#3 addOrderBy(m.id, DESC)",
+            "#3 setMaxResults(4)",
+            "#3 executeQuery()"
+        ],
+        "logs": []
+    },
+    "messages text cursor": {
+        "result": {
+            "items": [],
+            "nextCursor": null
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 param :p3 = INBOX, 2",
+            "#2 expr.eq(name, :p3, NULL)",
+            "#2 andWhere(eq(name, :p3, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(m.id, m.uid, m.subject, m.sent_at)",
+            "#3 addSelect(r.email AS sender_email)",
+            "#3 from(mail_messages, m)",
+            "#3 expr.eq(r.message_id, m.id, NULL)",
+            "#3 param :p4 = 0, 2",
+            "#3 expr.eq(r.type, :p4, NULL)",
+            "#3 expr.andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL))",
+            "#3 leftJoin(m, mail_recipients, r, andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL)))",
+            "#3 param :p5 = 11, 1",
+            "#3 expr.eq(m.mailbox_id, :p5, NULL)",
+            "#3 where(eq(m.mailbox_id, :p5, NULL))",
+            "#3 orderBy(m.sent_at, DESC)",
+            "#3 addOrderBy(m.id, DESC)",
+            "#3 setMaxResults(4)",
+            "#3 executeQuery()"
+        ],
+        "logs": []
+    },
+    "messages zero limit": {
+        "result": {
+            "items": [
+                {
+                    "id": 9,
+                    "uid": "u9",
+                    "subject": "Nine",
+                    "sender": "a@x.nl",
+                    "date": "2023-11-14T22:13:20+00:00"
+                }
+            ],
+            "nextCursor": 9
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 param :p3 = INBOX, 2",
+            "#2 expr.eq(name, :p3, NULL)",
+            "#2 andWhere(eq(name, :p3, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(m.id, m.uid, m.subject, m.sent_at)",
+            "#3 addSelect(r.email AS sender_email)",
+            "#3 from(mail_messages, m)",
+            "#3 expr.eq(r.message_id, m.id, NULL)",
+            "#3 param :p4 = 0, 2",
+            "#3 expr.eq(r.type, :p4, NULL)",
+            "#3 expr.andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL))",
+            "#3 leftJoin(m, mail_recipients, r, andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL)))",
+            "#3 param :p5 = 11, 1",
+            "#3 expr.eq(m.mailbox_id, :p5, NULL)",
+            "#3 where(eq(m.mailbox_id, :p5, NULL))",
+            "#3 orderBy(m.sent_at, DESC)",
+            "#3 addOrderBy(m.id, DESC)",
+            "#3 setMaxResults(2)",
+            "#3 executeQuery()"
+        ],
+        "logs": []
+    },
+    "messages huge limit": {
+        "result": {
+            "items": [
+                {
+                    "id": 9,
+                    "uid": "u9",
+                    "subject": "Nine",
+                    "sender": "a@x.nl",
+                    "date": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": 8,
+                    "uid": "u8",
+                    "subject": null,
+                    "sender": null,
+                    "date": null
+                },
+                {
+                    "id": 7,
+                    "uid": "u7",
+                    "subject": "Seven",
+                    "sender": null,
+                    "date": "2023-11-14T22:15:00+00:00"
+                }
+            ],
+            "nextCursor": null
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 param :p3 = INBOX, 2",
+            "#2 expr.eq(name, :p3, NULL)",
+            "#2 andWhere(eq(name, :p3, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(m.id, m.uid, m.subject, m.sent_at)",
+            "#3 addSelect(r.email AS sender_email)",
+            "#3 from(mail_messages, m)",
+            "#3 expr.eq(r.message_id, m.id, NULL)",
+            "#3 param :p4 = 0, 2",
+            "#3 expr.eq(r.type, :p4, NULL)",
+            "#3 expr.andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL))",
+            "#3 leftJoin(m, mail_recipients, r, andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL)))",
+            "#3 param :p5 = 11, 1",
+            "#3 expr.eq(m.mailbox_id, :p5, NULL)",
+            "#3 where(eq(m.mailbox_id, :p5, NULL))",
+            "#3 orderBy(m.sent_at, DESC)",
+            "#3 addOrderBy(m.id, DESC)",
+            "#3 setMaxResults(201)",
+            "#3 executeQuery()"
+        ],
+        "logs": []
+    },
+    "messages exact page": {
+        "result": {
+            "items": [
+                {
+                    "id": 9,
+                    "uid": "u9",
+                    "subject": "Nine",
+                    "sender": "a@x.nl",
+                    "date": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": 8,
+                    "uid": "u8",
+                    "subject": null,
+                    "sender": null,
+                    "date": null
+                },
+                {
+                    "id": 7,
+                    "uid": "u7",
+                    "subject": "Seven",
+                    "sender": null,
+                    "date": "2023-11-14T22:15:00+00:00"
+                }
+            ],
+            "nextCursor": null
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 param :p3 = INBOX, 2",
+            "#2 expr.eq(name, :p3, NULL)",
+            "#2 andWhere(eq(name, :p3, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(m.id, m.uid, m.subject, m.sent_at)",
+            "#3 addSelect(r.email AS sender_email)",
+            "#3 from(mail_messages, m)",
+            "#3 expr.eq(r.message_id, m.id, NULL)",
+            "#3 param :p4 = 0, 2",
+            "#3 expr.eq(r.type, :p4, NULL)",
+            "#3 expr.andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL))",
+            "#3 leftJoin(m, mail_recipients, r, andX(eq(r.message_id, m.id, NULL), eq(r.type, :p4, NULL)))",
+            "#3 param :p5 = 11, 1",
+            "#3 expr.eq(m.mailbox_id, :p5, NULL)",
+            "#3 where(eq(m.mailbox_id, :p5, NULL))",
+            "#3 orderBy(m.sent_at, DESC)",
+            "#3 addOrderBy(m.id, DESC)",
+            "#3 setMaxResults(4)",
+            "#3 executeQuery()"
+        ],
+        "logs": []
+    },
+    "messages resolve fails": {
+        "result": {
+            "items": [],
+            "nextCursor": null
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ],
+        "logs": [
+            "[EmailLinkService] resolveMailboxId failed: db down"
+        ]
+    },
+    "messages query fails": {
+        "result": {
+            "items": [],
+            "nextCursor": null
+        },
+        "queries": [
+            "#1 select(user_id)",
+            "#1 from(mail_accounts, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(id)",
+            "#2 from(mail_mailboxes, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(account_id, :p2, NULL)",
+            "#2 where(eq(account_id, :p2, NULL))",
+            "#2 param :p3 = INBOX, 2",
+            "#2 expr.eq(name, :p3, NULL)",
+            "#2 andWhere(eq(name, :p3, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ],
+        "logs": [
+            "[EmailLinkService] getMessagesForMailbox failed: db down"
+        ]
+    },
+    "message row found": {
+        "result": {
+            "uid": "u9",
+            "subject": "Nine",
+            "sender": "a@x.nl",
+            "date": "2023-11-14T22:13:20+00:00",
+            "rfcMessageId": null
+        },
+        "queries": [
+            "#1 select(m.id, m.uid, m.subject, m.sent_at)",
+            "#1 addSelect(r.email AS sender_email)",
+            "#1 from(mail_messages, m)",
+            "#1 addSelect(m.message_id)",
+            "#1 expr.eq(mb.id, m.mailbox_id, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(mb.account_id, :p1, NULL)",
+            "#1 expr.andX(eq(mb.id, m.mailbox_id, NULL), eq(mb.account_id, :p1, NULL))",
+            "#1 innerJoin(m, mail_mailboxes, mb, andX(eq(mb.id, m.mailbox_id, NULL), eq(mb.account_id, :p1, NULL)))",
+            "#1 expr.eq(r.message_id, m.id, NULL)",
+            "#1 param :p2 = 0, 2",
+            "#1 expr.eq(r.type, :p2, NULL)",
+            "#1 expr.andX(eq(r.message_id, m.id, NULL), eq(r.type, :p2, NULL))",
+            "#1 leftJoin(m, mail_recipients, r, andX(eq(r.message_id, m.id, NULL), eq(r.type, :p2, NULL)))",
+            "#1 param :p3 = 9, 1",
+            "#1 expr.eq(m.id, :p3, NULL)",
+            "#1 where(eq(m.id, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ],
+        "logs": []
+    },
+    "message row bare": {
+        "result": {
+            "uid": "",
+            "subject": null,
+            "sender": null,
+            "date": null,
+            "rfcMessageId": null
+        },
+        "queries": [
+            "#1 select(m.id, m.uid, m.subject, m.sent_at)",
+            "#1 addSelect(r.email AS sender_email)",
+            "#1 from(mail_messages, m)",
+            "#1 addSelect(m.message_id)",
+            "#1 expr.eq(mb.id, m.mailbox_id, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(mb.account_id, :p1, NULL)",
+            "#1 expr.andX(eq(mb.id, m.mailbox_id, NULL), eq(mb.account_id, :p1, NULL))",
+            "#1 innerJoin(m, mail_mailboxes, mb, andX(eq(mb.id, m.mailbox_id, NULL), eq(mb.account_id, :p1, NULL)))",
+            "#1 expr.eq(r.message_id, m.id, NULL)",
+            "#1 param :p2 = 0, 2",
+            "#1 expr.eq(r.type, :p2, NULL)",
+            "#1 expr.andX(eq(r.message_id, m.id, NULL), eq(r.type, :p2, NULL))",
+            "#1 leftJoin(m, mail_recipients, r, andX(eq(r.message_id, m.id, NULL), eq(r.type, :p2, NULL)))",
+            "#1 param :p3 = 8, 1",
+            "#1 expr.eq(m.id, :p3, NULL)",
+            "#1 where(eq(m.id, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ],
+        "logs": []
+    },
+    "message row missing": {
+        "result": null,
+        "queries": [
+            "#1 select(m.id, m.uid, m.subject, m.sent_at)",
+            "#1 addSelect(r.email AS sender_email)",
+            "#1 from(mail_messages, m)",
+            "#1 addSelect(m.message_id)",
+            "#1 expr.eq(mb.id, m.mailbox_id, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(mb.account_id, :p1, NULL)",
+            "#1 expr.andX(eq(mb.id, m.mailbox_id, NULL), eq(mb.account_id, :p1, NULL))",
+            "#1 innerJoin(m, mail_mailboxes, mb, andX(eq(mb.id, m.mailbox_id, NULL), eq(mb.account_id, :p1, NULL)))",
+            "#1 expr.eq(r.message_id, m.id, NULL)",
+            "#1 param :p2 = 0, 2",
+            "#1 expr.eq(r.type, :p2, NULL)",
+            "#1 expr.andX(eq(r.message_id, m.id, NULL), eq(r.type, :p2, NULL))",
+            "#1 leftJoin(m, mail_recipients, r, andX(eq(r.message_id, m.id, NULL), eq(r.type, :p2, NULL)))",
+            "#1 param :p3 = 8, 1",
+            "#1 expr.eq(m.id, :p3, NULL)",
+            "#1 where(eq(m.id, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ],
+        "logs": []
+    },
+    "message row fails": {
+        "result": null,
+        "queries": [],
+        "logs": [
+            "[EmailLinkService] fetchMessageRow failed: db down"
+        ]
+    }
+}

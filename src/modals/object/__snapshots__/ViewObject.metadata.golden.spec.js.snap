@@ -1,0 +1,2217 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ViewObject.metadataProperties lists withId with @self empty, titles Reg, from formData 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self empty, titles Reg, from store 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self empty, titles none, from formData 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self empty, titles none, from store 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self full, titles Reg, from formData 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "1.2.0",
+    false,
+  ],
+  [
+    "Created",
+    "local:1767323045000",
+    false,
+  ],
+  [
+    "Updated",
+    "local:1770091506000",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "alice",
+    false,
+  ],
+  [
+    "Application",
+    "app-1",
+    false,
+  ],
+  [
+    "Organisation",
+    "org-1",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self full, titles Reg, from store 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "1.2.0",
+    false,
+  ],
+  [
+    "Created",
+    "local:1767323045000",
+    false,
+  ],
+  [
+    "Updated",
+    "local:1770091506000",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "alice",
+    false,
+  ],
+  [
+    "Application",
+    "app-1",
+    false,
+  ],
+  [
+    "Organisation",
+    "org-1",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self full, titles none, from formData 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "1.2.0",
+    false,
+  ],
+  [
+    "Created",
+    "local:1767323045000",
+    false,
+  ],
+  [
+    "Updated",
+    "local:1770091506000",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "alice",
+    false,
+  ],
+  [
+    "Application",
+    "app-1",
+    false,
+  ],
+  [
+    "Organisation",
+    "org-1",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self full, titles none, from store 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "1.2.0",
+    false,
+  ],
+  [
+    "Created",
+    "local:1767323045000",
+    false,
+  ],
+  [
+    "Updated",
+    "local:1770091506000",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "alice",
+    false,
+  ],
+  [
+    "Application",
+    "app-1",
+    false,
+  ],
+  [
+    "Organisation",
+    "org-1",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self invalid, titles Reg, from formData 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "local:NaN",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self invalid, titles Reg, from store 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "local:NaN",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self invalid, titles none, from formData 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "local:NaN",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self invalid, titles none, from store 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "local:NaN",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self missing, titles Reg, from formData 1`] = `"throws TypeError: Cannot read properties of undefined (reading 'validation')"`;
+
+exports[`ViewObject.metadataProperties lists withId with @self missing, titles Reg, from store 1`] = `"throws TypeError: Cannot read properties of undefined (reading 'validation')"`;
+
+exports[`ViewObject.metadataProperties lists withId with @self missing, titles none, from formData 1`] = `"throws TypeError: Cannot read properties of undefined (reading 'validation')"`;
+
+exports[`ViewObject.metadataProperties lists withId with @self missing, titles none, from store 1`] = `"throws TypeError: Cannot read properties of undefined (reading 'validation')"`;
+
+exports[`ViewObject.metadataProperties lists withId with @self notValidated, titles Reg, from formData 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Not validated",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self notValidated, titles Reg, from store 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Not validated",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self notValidated, titles none, from formData 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Not validated",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self notValidated, titles none, from store 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Not validated",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self validationObject, titles Reg, from formData 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self validationObject, titles Reg, from store 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self validationObject, titles none, from formData 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withId with @self validationObject, titles none, from store 1`] = `
+[
+  [
+    "ID",
+    "obj-1",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self empty, titles Reg, from formData 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self empty, titles Reg, from store 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self empty, titles none, from formData 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self empty, titles none, from store 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self full, titles Reg, from formData 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "1.2.0",
+    false,
+  ],
+  [
+    "Created",
+    "local:1767323045000",
+    false,
+  ],
+  [
+    "Updated",
+    "local:1770091506000",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "alice",
+    false,
+  ],
+  [
+    "Application",
+    "app-1",
+    false,
+  ],
+  [
+    "Organisation",
+    "org-1",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self full, titles Reg, from store 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "1.2.0",
+    false,
+  ],
+  [
+    "Created",
+    "local:1767323045000",
+    false,
+  ],
+  [
+    "Updated",
+    "local:1770091506000",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "alice",
+    false,
+  ],
+  [
+    "Application",
+    "app-1",
+    false,
+  ],
+  [
+    "Organisation",
+    "org-1",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self full, titles none, from formData 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "1.2.0",
+    false,
+  ],
+  [
+    "Created",
+    "local:1767323045000",
+    false,
+  ],
+  [
+    "Updated",
+    "local:1770091506000",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "alice",
+    false,
+  ],
+  [
+    "Application",
+    "app-1",
+    false,
+  ],
+  [
+    "Organisation",
+    "org-1",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self full, titles none, from store 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "1.2.0",
+    false,
+  ],
+  [
+    "Created",
+    "local:1767323045000",
+    false,
+  ],
+  [
+    "Updated",
+    "local:1770091506000",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "alice",
+    false,
+  ],
+  [
+    "Application",
+    "app-1",
+    false,
+  ],
+  [
+    "Organisation",
+    "org-1",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self invalid, titles Reg, from formData 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "local:NaN",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self invalid, titles Reg, from store 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "local:NaN",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self invalid, titles none, from formData 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "local:NaN",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self invalid, titles none, from store 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "local:NaN",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Invalid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self missing, titles Reg, from formData 1`] = `"throws TypeError: Cannot read properties of undefined (reading 'validation')"`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self missing, titles Reg, from store 1`] = `"throws TypeError: Cannot read properties of undefined (reading 'validation')"`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self missing, titles none, from formData 1`] = `"throws TypeError: Cannot read properties of undefined (reading 'validation')"`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self missing, titles none, from store 1`] = `"throws TypeError: Cannot read properties of undefined (reading 'validation')"`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self notValidated, titles Reg, from formData 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Not validated",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self notValidated, titles Reg, from store 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Not validated",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self notValidated, titles none, from formData 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Not validated",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self notValidated, titles none, from store 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Not validated",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self validationObject, titles Reg, from formData 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self validationObject, titles Reg, from store 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Reg",
+    false,
+  ],
+  [
+    "Schema",
+    "Sch",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self validationObject, titles none, from formData 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;
+
+exports[`ViewObject.metadataProperties lists withoutId with @self validationObject, titles none, from store 1`] = `
+[
+  [
+    "ID",
+    "Not set",
+    true,
+  ],
+  [
+    "Register",
+    "Not set",
+    false,
+  ],
+  [
+    "Schema",
+    "Not set",
+    false,
+  ],
+  [
+    "Version",
+    "Not set",
+    false,
+  ],
+  [
+    "Created",
+    "Not set",
+    false,
+  ],
+  [
+    "Updated",
+    "Not set",
+    false,
+  ],
+  [
+    "Validation",
+    "Valid",
+    false,
+  ],
+  [
+    "Owner",
+    "Not set",
+    false,
+  ],
+  [
+    "Application",
+    "Not set",
+    false,
+  ],
+  [
+    "Organisation",
+    "Not set",
+    false,
+  ],
+]
+`;

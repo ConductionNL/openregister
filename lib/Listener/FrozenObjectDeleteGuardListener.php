@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Listener;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Listener\Support\ConflictVeto;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserManager;
@@ -42,6 +43,7 @@ use OCP\IUserManager;
  * @template-implements IEventListener<ObjectDeletingEvent>
  */
 class FrozenObjectDeleteGuardListener implements IEventListener {
+	use ConflictVeto;
 
 	/**
 	 * The error code a refused delete of a frozen object carries.
@@ -74,37 +76,46 @@ class FrozenObjectDeleteGuardListener implements IEventListener {
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-frozen-record-cannot-be-deleted
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectDeletingEvent === false) {
-			return;
+		if ($event instanceof ObjectDeletingEvent && $event->getObject()->isFrozen() === true) {
+			$this->refuseFrozen(event: $event);
 		}
+	}//end handle()
 
+	/**
+	 * Refuse the delete of a frozen object, naming who froze it and when.
+	 *
+	 * @param ObjectDeletingEvent $event The delete event of a frozen object.
+	 *
+	 * @return void
+	 */
+	private function refuseFrozen(ObjectDeletingEvent $event): void {
 		$object = $event->getObject();
-		if ($object->isFrozen() === false) {
-			return;
-		}
-
 		$marker = ($object->getFrozen() ?? []);
 		$userId = $this->text(value: ($marker['by'] ?? null));
 		$frozenAt = $this->text(value: ($marker['at'] ?? null));
 
-		$event->setErrors(
-			[
-				'code' => self::ERROR_CODE,
-				'message' => sprintf(
-					'This record is locked by %s since %s. Unlock it before deleting it.',
-					$this->displayName(userId: $userId),
-					$this->dateOf(timestamp: $frozenAt)
-				),
-				// A locked record is a conflict with its state, not a bad
-				// request; the delete handler answers 409.
-				'status' => 409,
-				'frozenBy' => $userId,
-				'frozenAt' => $frozenAt,
-				'uuid' => $object->getUuid(),
-			]
+		$this->vetoAsConflict(
+			event: $event,
+			refusal: ['code' => self::ERROR_CODE, 'message' => $this->lockedMessage(userId: $userId, frozenAt: $frozenAt)],
+			detail: ['frozenBy' => $userId, 'frozenAt' => $frozenAt, 'uuid' => $object->getUuid()]
 		);
-		$event->stopPropagation();
-	}//end handle()
+	}//end refuseFrozen()
+
+	/**
+	 * The refusal in words: who froze the record and since when.
+	 *
+	 * @param string|null $userId   The user id from the marker.
+	 * @param string|null $frozenAt The ISO 8601 timestamp from the marker.
+	 *
+	 * @return string The message.
+	 */
+	private function lockedMessage(?string $userId, ?string $frozenAt): string {
+		return sprintf(
+			'This record is locked by %s since %s. Unlock it before deleting it.',
+			$this->displayName(userId: $userId),
+			$this->dateOf(timestamp: $frozenAt)
+		);
+	}//end lockedMessage()
 
 	/**
 	 * The display name of the user who froze the object.
@@ -153,13 +164,9 @@ class FrozenObjectDeleteGuardListener implements IEventListener {
 	 * @return string|null The string, or null when it says nothing.
 	 */
 	private function text(mixed $value): ?string {
-		if (is_string($value) === false) {
-			return null;
-		}
-
-		$text = trim($value);
-		if ($text === '') {
-			return null;
+		$text = null;
+		if (is_string($value) === true && trim($value) !== '') {
+			$text = trim($value);
 		}
 
 		return $text;

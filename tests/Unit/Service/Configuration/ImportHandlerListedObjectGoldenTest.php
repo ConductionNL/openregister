@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use GuzzleHttp\Client;
+use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -29,6 +30,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportRun;
 use OCA\OpenRegister\Service\Configuration\ShippedSeedContent;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -51,6 +53,14 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
+ * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
+ * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
+ * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
  */
 class ImportHandlerListedObjectGoldenTest extends TestCase {
 
@@ -274,23 +284,29 @@ class ImportHandlerListedObjectGoldenTest extends TestCase {
 		}
 
 		$handler = new ImportHandler(
-			schemaMapper: $schemaMapper,
-			registerMapper: $registerMapper,
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
-			appConfig: $appConfig,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $registerMapper,
+				schemas: $schemaMapper,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $objectService
 		);
 
-		$user = $this->createMock(IUser::class);
-		$result = ['objects' => [], 'skipped' => ['objects' => 0], 'unchanged' => ['objects' => 0]];
+		$run = new ImportRun(data: [], configuration: new Configuration());
+		$run->appId = $appId;
+		$run->actingUser = $this->createMock(IUser::class);
+		$run->result = ['objects' => [], 'skipped' => ['objects' => 0], 'unchanged' => ['objects' => 0]];
 		$closure = (new \ReflectionMethod(ImportHandler::class, 'importListedObject'))->getClosure($handler);
-		$closure($objectData, $appId, $user, $result);
+		$closure($run, $objectData);
+		$result = $run->result;
 
 		foreach (['seedVersions', 'seedHashes'] as $ledger) {
 			(new \ReflectionMethod(ImportHandler::class, $ledger))->invoke($handler)->flush();

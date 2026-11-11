@@ -36,6 +36,10 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicIdentifierFind;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -44,6 +48,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -114,6 +119,13 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 
 	/** Number of narrow access-control verification queries issued. */
 	private int $accessControlQueries = 0;
+
+	/**
+	 * The extra conditions each query was given, as [select, condition].
+	 *
+	 * @var array<int, array{0: mixed, 1: mixed}>
+	 */
+	private array $andWheres = [];
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -280,7 +292,12 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 		$queryBuilder = $this->createMock(IQueryBuilder::class);
 		$queryBuilder->method('expr')->willReturn($expr);
 		$queryBuilder->method('where')->willReturnSelf();
-		$queryBuilder->method('andWhere')->willReturnSelf();
+		$queryBuilder->method('andWhere')->willReturnCallback(
+			function ($condition) use (&$state, $queryBuilder): IQueryBuilder {
+				$this->andWheres[] = [$state['select'], $condition];
+				return $queryBuilder;
+			}
+		);
 		$queryBuilder->method('setMaxResults')->willReturnSelf();
 
 		$queryBuilder->method('select')->willReturnCallback(
@@ -412,11 +429,11 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) {
 				return match ($id) {
-					DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+					DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 					\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(
 						\OCA\OpenRegister\Service\ConditionMatcher::class
 					),
-					\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class => $this->createMock(
+					\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => $this->createMock(
 						\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class
 					),
 					default => null,
@@ -426,22 +443,31 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 
 		$mapper = new MagicMapper(
 			$this->db,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$config,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Service\SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->schemaMapper,
+				$this->registerMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$config,
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$statisticsHandler = $this->createMock(MagicStatisticsHandler::class);
-		$statisticsHandler->method('convertRowToObjectEntity')->willReturnCallback(
-			function (array $row): ObjectEntity {
+		$statisticsHandler->method('toObjectEntity')->willReturnCallback(
+			function (array $row): ?ObjectEntity {
+				if ($row['_uuid'] === 'uuid-unhydratable') {
+					return null;
+				}
+
 				$object = new ObjectEntity();
 				$object->setId($row['_id']);
 				$object->setUuid($row['_uuid']);
@@ -514,7 +540,7 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 			rows: [$this->row(id: 42, uuid: 'uuid-authorized')]
 		);
 
-		$result = $this->makeMapper()->findAcrossAllMagicTables(identifier: 'uuid-authorized');
+		$result = $this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-authorized'));
 
 		$this->assertSame('uuid-authorized', $result['object']->getUuid());
 		$this->assertSame(1, $this->accessControlQueries, 'the access-control seam must be consulted once');
@@ -545,7 +571,7 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 		// distinguishable error.
 		$this->expectExceptionMessage("Object with identifier 'uuid-cross-org' not found in any magic table");
 
-		$this->makeMapper()->findAcrossAllMagicTables(identifier: 'uuid-cross-org');
+		$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-cross-org'));
 	}//end testCrossOrgHitIsDeniedNotFoundNoLeak()
 
 	/**
@@ -565,7 +591,7 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 		$this->deniedTables = [$table];
 
 		try {
-			$this->makeMapper()->findAcrossAllMagicTables(identifier: 'uuid-denied');
+			$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-denied'));
 			$this->fail('Expected DoesNotExistException for a denied cross-table hit');
 		} catch (DoesNotExistException $e) {
 			$this->assertStringContainsString('not found in any magic table', $e->getMessage());
@@ -592,8 +618,8 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 		// skip, not an accidental "always allow".
 		$this->deniedTables = [$table];
 
-		$result = $this->makeMapper()->findAcrossAllMagicTables(
-			identifier: 'uuid-bypass',
+		$result = $this->makeMapper()->findAcross(
+			find: new MagicIdentifierFind(identifier: 'uuid-bypass'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -602,6 +628,32 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 		$this->assertSame(0, $this->accessControlQueries, 'bypass must skip the access-control query entirely');
 		$this->assertCount(0, $this->accessControlCalls);
 	}//end testExplicitBypassSkipsAccessControlEntirely()
+
+	/**
+	 * Inside an organisation context the bypass does not skip access control:
+	 * the organisation filter cannot be switched off.
+	 *
+	 * @return void
+	 */
+	public function testExplicitBypassInsideAnOrganisationContextIsStillChecked(): void {
+		$table = $this->givenLiveTable(
+			registerId: 9,
+			schemaId: 10,
+			rows: [$this->row(id: 3, uuid: 'uuid-bypass')]
+		);
+		$this->deniedTables = [$table];
+
+		$this->expectException(DoesNotExistException::class);
+
+		\OCA\OpenRegister\Service\OrganisationContext::run(
+			'org-a',
+			fn () => $this->makeMapper()->findAcross(
+				find: new MagicIdentifierFind(identifier: 'uuid-bypass'),
+				_rbac: false,
+				_multitenancy: false
+			)
+		);
+	}//end testExplicitBypassInsideAnOrganisationContextIsStillChecked()
 
 	/**
 	 * Fail CLOSED: if the row's register/schema cannot be resolved (the
@@ -622,6 +674,71 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 		$this->expectException(DoesNotExistException::class);
 		$this->expectExceptionMessage("Object with identifier 'uuid-unresolvable' not found in any magic table");
 
-		$this->makeMapper()->findAcrossAllMagicTables(identifier: 'uuid-unresolvable');
+		$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-unresolvable'));
 	}//end testFailsClosedWhenSchemaCannotBeResolved()
+	/**
+	 * RBAC on with multitenancy off still re-reads the row under access control.
+	 *
+	 * @return void
+	 */
+	public function testRbacAloneStillChecksTheHit(): void {
+		$table = $this->givenLiveTable(registerId: 21, schemaId: 22, rows: [$this->row(id: 5, uuid: 'uuid-rbac-only')]);
+		$this->deniedTables = [$table];
+
+		$this->expectException(DoesNotExistException::class);
+
+		$this->makeMapper()->findAcross(
+			find: new MagicIdentifierFind(identifier: 'uuid-rbac-only'),
+			_rbac: true,
+			_multitenancy: false
+		);
+	}//end testRbacAloneStillChecksTheHit()
+
+	/**
+	 * A register scope leaves other registers' tables out of the scan.
+	 *
+	 * @return void
+	 */
+	public function testARegisterScopeLeavesOtherRegistersOut(): void {
+		$this->givenLiveTable(registerId: 23, schemaId: 24, rows: [$this->row(id: 6, uuid: 'uuid-scoped')]);
+
+		$found = $this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-scoped', registerIdScope: 23));
+		$this->assertSame('uuid-scoped', $found['object']->getUuid());
+
+		$this->expectException(DoesNotExistException::class);
+		$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-scoped', registerIdScope: 25));
+	}//end testARegisterScopeLeavesOtherRegistersOut()
+
+	/**
+	 * The access check excludes deleted rows unless deleted rows were asked for.
+	 *
+	 * @return void
+	 */
+	public function testTheAccessCheckFollowsTheDeletedFlag(): void {
+		$this->givenLiveTable(registerId: 26, schemaId: 27, rows: [$this->row(id: 7, uuid: 'uuid-deleted-flag')]);
+		$accessConditions = function (): array {
+			return array_values(array_filter($this->andWheres, static fn (array $w): bool => in_array('*', (array) $w[0], true) === false));
+		};
+
+		$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-deleted-flag', includeDeleted: false));
+		$this->assertSame([[['t._id'], 'isNull']], $accessConditions());
+
+		$this->andWheres = [];
+		$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-deleted-flag', includeDeleted: true));
+		$this->assertSame([], $accessConditions());
+	}//end testTheAccessCheckFollowsTheDeletedFlag()
+
+	/**
+	 * A row that cannot be hydrated is skipped, and the lookup reports not found.
+	 *
+	 * @return void
+	 */
+	public function testAnUnhydratableRowIsSkipped(): void {
+		$this->givenLiveTable(registerId: 28, schemaId: 29, rows: [$this->row(id: 8, uuid: 'uuid-unhydratable')]);
+
+		$this->expectException(DoesNotExistException::class);
+		$this->expectExceptionMessage("Object with identifier 'uuid-unhydratable' not found in any magic table");
+
+		$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-unhydratable'));
+	}//end testAnUnhydratableRowIsSkipped()
 }//end class

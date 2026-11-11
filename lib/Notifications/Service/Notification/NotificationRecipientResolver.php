@@ -1,0 +1,768 @@
+<?php
+
+/**
+ * The notification subsystem's recipient resolver, as a call-shared unit.
+ *
+ * Extracted from AnnotationNotificationDispatcher so both callers — the
+ * declarative dispatcher resolving a schema rule's recipients, and the flow
+ * messaging service resolving a send node's — expand groups, verify uids and
+ * walk relations through ONE implementation. A second resolver is exactly the
+ * place where "who gets told" would start answering differently per caller.
+ *
+ * Behaviour is the dispatcher's, verbatim: every candidate uid is verified
+ * against IUserManager before it may receive anything (recipient lists pull
+ * strings from object data, which is writeable by anyone with `update` on the
+ * object), groups are expanded to their members, and unknown ids are dropped.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Notification
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Notifications\Service\Notification;
+
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCP\IGroup;
+use OCP\IGroupManager;
+use OCP\IServerContainer;
+use OCP\IUserManager;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Resolves a recipients spec to verified Nextcloud uids.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Six recipient kinds, each with its own
+ * verification posture, plus the uid/group existence checks both callers share; PHPMD sums
+ * every helper's branches into the class total.
+ */
+class NotificationRecipientResolver implements NotificationRecipientResolverInterface {
+
+	/**
+	 * Per-request cache for userExists() lookups.
+	 *
+	 * @var array<string, bool>
+	 */
+	private array $userExistsCache = [];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IUserManager $userManager User resolver for uid verification.
+	 * @param IGroupManager $groupManager Group resolver for `groups` recipient kinds.
+	 * @param LoggerInterface $logger Logger for resolution diagnostics.
+	 * @param IServerContainer|null $serverContainer Container for `expression` resolvers; null disables that kind.
+	 */
+	public function __construct(
+		private readonly IUserManager $userManager,
+		private readonly IGroupManager $groupManager,
+		private readonly LoggerInterface $logger,
+		private readonly ?IServerContainer $serverContainer = null,
+	) {
+
+	}//end __construct()
+
+	/**
+	 * Resolve a recipients spec to a deduplicated list of verified uids.
+	 *
+	 * Supported kinds: `users`, `field`, `relation`, `object-acl`,
+	 * `expression`, `groups` — the dispatcher's set — plus `watchers`, spelled
+	 * `{"watchers": true}`, which resolves to whoever follows the triggering
+	 * object at dispatch time.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param RecipientSource $source The object, its data, the trigger context and the role assignment.
+	 *
+	 * @return array<int, string> Verified, deduplicated uids.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function resolve(array $recipientsSpec, RecipientSource $source): array {
+		return $this->resolveFrom(recipientsSpec: $recipientsSpec, source: $source)['uids'];
+	}//end resolve()
+
+	/**
+	 * Resolve a recipients spec against one source, and say which entries resolved to nobody.
+	 *
+	 * The plain {@see resolve()} answers only "who gets told", which cannot
+	 * distinguish a group that is deliberately empty from one that no longer
+	 * exists. Both end a dispatch, and only the second is a fault. This method
+	 * keeps the second: every entry that named something the server does not
+	 * have — a deleted group, a role the schema does not assign — comes back in
+	 * `unresolved` so the caller can record a failed dispatch naming it rather
+	 * than delivering to nobody in silence (ADR-005, fail closed and say so).
+	 *
+	 * An entry that resolves to a real but EMPTY group is not unresolved: the
+	 * group exists, it simply has no members, and reporting that as a fault
+	 * would make every quiet team look broken.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param RecipientSource   $source         The object, its data, the trigger context and the role assignment.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	public function resolveFromSource(array $recipientsSpec, RecipientSource $source): array {
+		return $this->resolveFrom(recipientsSpec: $recipientsSpec, source: $source);
+	}//end resolveFromSource()
+
+	/**
+	 * Resolve a recipients spec against one source, with the entries that resolved to nobody.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param RecipientSource $source The object, its data, the trigger context and the role assignment.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	private function resolveFrom(array $recipientsSpec, RecipientSource $source): array {
+		$uids = [];
+		$unresolved = [];
+		foreach ($recipientsSpec as $entry) {
+			if (is_array($entry) === false) {
+				continue;
+			}
+
+			$resolved = $this->resolveEntry(entry: $entry, source: $source);
+			array_push($uids, ...$resolved['uids']);
+			array_push($unresolved, ...$resolved['unresolved']);
+		}
+
+		return [
+			'uids' => array_values(array_unique($uids)),
+			'unresolved' => $unresolved,
+		];
+	}//end resolveFrom()
+
+	/**
+	 * Resolve one recipients entry by its kind.
+	 *
+	 * `{"watchers": true}` carries no `kind`: it names a subscription list,
+	 * not a value to look up, and is read as kind `watchers`.
+	 *
+	 * @param array<string, mixed> $entry  The recipients entry.
+	 * @param RecipientSource      $source What the entry is resolved against.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	private function resolveEntry(array $entry, RecipientSource $source): array {
+		$kind = (string)($entry['kind'] ?? '');
+		if (($entry['watchers'] ?? null) === true) {
+			$kind = 'watchers';
+		}
+
+		if ($kind === 'groups') {
+			return $this->expandGroups(gids: (array)($entry['groups'] ?? []), kind: 'groups');
+		}
+
+		if ($kind === 'role') {
+			return $this->resolveRoleEntry(roleName: (string)($entry['role'] ?? ''), roleGroups: $source->roleGroups);
+		}
+
+		$uids = match ($kind) {
+			'watchers' => $this->resolveWatcherEntry(object: $source->object),
+			'users' => $this->existingUids(candidates: (array)($entry['users'] ?? [])),
+			'field' => $this->existingUids(candidates: [($source->data[(string)($entry['field'] ?? '')] ?? null)]),
+			'relation' => $this->resolveRelationEntry(relation: (string)($entry['relation'] ?? ''), data: $source->data),
+			'object-acl' => $this->resolveObjectAclEntry(entry: $entry, object: $source->object),
+			'expression' => $this->resolveExpressionEntry(entry: $entry, source: $source),
+			default => [],
+		};
+
+		return ['uids' => $uids, 'unresolved' => []];
+	}//end resolveEntry()
+
+	/**
+	 * The candidates that name an existing Nextcloud user.
+	 *
+	 * A `field` value comes from object data anyone with `update` permission
+	 * may write, so an unchecked value could aim a notification at any uid,
+	 * admins included. Only real users pass.
+	 *
+	 * @param array<int|string, mixed> $candidates The candidate uids.
+	 *
+	 * @return array<int, string>
+	 */
+	private function existingUids(array $candidates): array {
+		$uids = [];
+		foreach ($candidates as $candidate) {
+			if (is_string($candidate) === true && $candidate !== '' && $this->userExists(uid: $candidate) === true) {
+				$uids[] = $candidate;
+			}
+		}
+
+		return $uids;
+	}//end existingUids()
+
+	/**
+	 * The watchers of the object, none without an object.
+	 *
+	 * @param ObjectEntity|null $object The object.
+	 *
+	 * @return array<int, string>
+	 */
+	private function resolveWatcherEntry(?ObjectEntity $object): array {
+		if ($object === null) {
+			return [];
+		}
+
+		return array_values($this->resolveWatcherRecipients(object: $object));
+	}//end resolveWatcherEntry()
+
+	/**
+	 * The existing users a typed relation (x-openregister-relations) points at.
+	 *
+	 * @param string               $relation The relation name.
+	 * @param array<string, mixed> $data     The object's stored data.
+	 *
+	 * @return array<int, string>
+	 */
+	private function resolveRelationEntry(string $relation, array $data): array {
+		if ($relation === '') {
+			return [];
+		}
+
+		$uids = [];
+		foreach ($this->extractUidsFromRelation(value: ($data[$relation] ?? null)) as $uid) {
+			if ($this->userExists(uid: $uid) === true) {
+				$uids[] = $uid;
+			}
+		}
+
+		return $uids;
+	}//end resolveRelationEntry()
+
+	/**
+	 * The users holding the entry's permission on the object, none without an object.
+	 *
+	 * @param array<string, mixed> $entry  The recipients entry.
+	 * @param ObjectEntity|null    $object The object.
+	 *
+	 * @return array<int, string>
+	 */
+	private function resolveObjectAclEntry(array $entry, ?ObjectEntity $object): array {
+		if ($object === null) {
+			return [];
+		}
+
+		$permission = (string)($entry['permission'] ?? 'read');
+		return array_values($this->resolveObjectAclRecipients(object: $object, permission: $permission));
+	}//end resolveObjectAclEntry()
+
+	/**
+	 * The users an expression resolver returns, none without an object.
+	 *
+	 * @param array<string, mixed> $entry  The recipients entry.
+	 * @param RecipientSource      $source What the entry is resolved against.
+	 *
+	 * @return array<int, string>
+	 */
+	private function resolveExpressionEntry(array $entry, RecipientSource $source): array {
+		return array_values(
+			$this->resolveExpressionRecipients(resolverTag: (string)($entry['resolver'] ?? ''), source: $source)
+		);
+	}//end resolveExpressionEntry()
+
+	/**
+	 * Resolve a `role` entry through the groups the schema assigns that role.
+	 *
+	 * A role is the schema's own vocabulary: `authorization.roles` assigns
+	 * each role a set of groups, so the assignment can change without every
+	 * rule being rewritten. A role the schema does not assign addresses
+	 * nobody, and is reported as unresolved.
+	 *
+	 * @param string                            $roleName   The role named by the entry.
+	 * @param array<string, array<int, string>> $roleGroups Role name to assigned group ids.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 */
+	private function resolveRoleEntry(string $roleName, array $roleGroups): array {
+		if ($roleName === '') {
+			return ['uids' => [], 'unresolved' => []];
+		}
+
+		$assigned = ($roleGroups[$roleName] ?? null);
+		if (is_array($assigned) === false) {
+			return ['uids' => [], 'unresolved' => [['kind' => 'role', 'id' => $roleName, 'reason' => 'role-not-assigned']]];
+		}
+
+		return $this->expandGroups(gids: $assigned, kind: 'role');
+	}//end resolveRoleEntry()
+
+	/**
+	 * Expand a list of group ids, skipping entries that are not non-empty strings.
+	 *
+	 * @param array<int|string, mixed> $gids The group ids.
+	 * @param string                   $kind `groups` or `role`, for the unresolved entries.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 */
+	private function expandGroups(array $gids, string $kind): array {
+		$uids = [];
+		$unresolved = [];
+		foreach ($gids as $gid) {
+			if (is_string($gid) === false || $gid === '') {
+				continue;
+			}
+
+			$expanded = $this->expandGroup(gid: $gid, kind: $kind);
+			array_push($uids, ...array_values($expanded['uids']));
+			array_push($unresolved, ...array_values($expanded['unresolved']));
+		}
+
+		return ['uids' => $uids, 'unresolved' => $unresolved];
+	}//end expandGroups()
+
+	/**
+	 * Expand one group id to its members, saying so when the group is absent.
+	 *
+	 * Shared by the `groups` and `role` kinds so both report a vanished group
+	 * the same way — a second expansion is where "the team was warned" and "the
+	 * team was silently skipped" would start differing per kind.
+	 *
+	 * @param string $gid The Nextcloud group id.
+	 * @param string $kind The recipient kind asking, carried into the report.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	private function expandGroup(string $gid, string $kind): array {
+		$members = $this->groupMemberUids(gid: $gid);
+		if (is_string($members) === true) {
+			return [
+				'uids' => [],
+				'unresolved' => [['kind' => $kind, 'id' => $gid, 'reason' => $members]],
+			];
+		}
+
+		// A real group with no members is not a fault: the members are resolved
+		// at dispatch, and an empty team is a quiet team, not a broken rule.
+		return ['uids' => $members, 'unresolved' => []];
+	}//end expandGroup()
+
+	/**
+	 * The uids of a group's members, or why they could not be read.
+	 *
+	 * @param string $gid The Nextcloud group id.
+	 *
+	 * @return array<int, string>|string The member uids, or the reason: `group-not-found` or `group-lookup-failed` (logged).
+	 */
+	private function groupMemberUids(string $gid): array|string {
+		$group = $this->findGroup(gid: $gid);
+		if (is_string($group) === true) {
+			return $group;
+		}
+
+		try {
+			return $this->memberUidsOf(group: $group);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[NotificationRecipientResolver] group "%s" member read failed: %s', $gid, $e->getMessage())
+			);
+			return 'group-lookup-failed';
+		}
+	}//end groupMemberUids()
+
+	/**
+	 * Look a group up, or say why it could not be had.
+	 *
+	 * @param string $gid The Nextcloud group id.
+	 *
+	 * @return IGroup|string The group, or the reason: `group-not-found` or `group-lookup-failed` (logged).
+	 */
+	private function findGroup(string $gid): IGroup|string {
+		try {
+			$group = $this->groupManager->get($gid);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[NotificationRecipientResolver] group "%s" lookup failed: %s', $gid, $e->getMessage())
+			);
+			return 'group-lookup-failed';
+		}
+
+		if ($group === null) {
+			return 'group-not-found';
+		}
+
+		return $group;
+	}//end findGroup()
+
+	/**
+	 * The uids of a group's members, in the order the group lists them.
+	 *
+	 * @param IGroup $group The group.
+	 *
+	 * @return array<int, string> The member uids.
+	 */
+	private function memberUidsOf(IGroup $group): array {
+		$uids = [];
+		foreach ($group->getUsers() as $user) {
+			$uids[] = $user->getUID();
+		}
+
+		return $uids;
+	}//end memberUidsOf()
+
+	/**
+	 * Resolve the object's watchers, checking read at DISPATCH time.
+	 *
+	 * Two things happen here and both matter.
+	 *
+	 * The read check runs now, not when the person subscribed. Group membership
+	 * changes; a case becomes sensitive. Checking only at subscribe time would
+	 * leave a standing subscription that keeps delivering after the access that
+	 * justified it is gone, which is the exact leak this recipient kind would
+	 * otherwise introduce.
+	 *
+	 * And the list HEALS: a watcher who has lost read is not merely skipped, the
+	 * subscription is removed, so the object's audience stops carrying people
+	 * who are not in it. The removal is best-effort and never blocks a dispatch.
+	 *
+	 * An EMPTY readable-user list means "no targeted audience" — the schema's
+	 * read rule is open, or the authorization could not be resolved and the
+	 * evaluator failed closed by returning nothing. Neither is evidence that a
+	 * particular watcher lost access, so nothing is dropped in that case and
+	 * every watcher is kept.
+	 *
+	 * @param ObjectEntity $object The triggering object.
+	 *
+	 * @return array<int, string> The watching uids that may still read the object.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 */
+	private function resolveWatcherRecipients(ObjectEntity $object): array {
+		if ($this->serverContainer === null) {
+			return [];
+		}
+
+		try {
+			return $this->readableWatchers(object: $object);
+		} catch (\Throwable $e) {
+			// Fail CLOSED: an unresolvable watcher list tells nobody rather than
+			// telling everybody.
+			$this->logger->warning(
+				sprintf('[NotificationRecipientResolver] watcher resolution failed: %s', $e->getMessage())
+			);
+			return [];
+		}//end try
+	}//end resolveWatcherRecipients()
+
+	/**
+	 * The object's watchers who may still read it, dropping the subscriptions of those who lost read.
+	 *
+	 * @param ObjectEntity $object The triggering object.
+	 *
+	 * @return array<int, string> The watching uids that may still read the object; all of them when
+	 *                            the readable-user list is empty (no targeted audience).
+	 *
+	 * @throws \Throwable When the watchers or the read rule cannot be resolved.
+	 */
+	private function readableWatchers(ObjectEntity $object): array {
+		$watchers = $this->serverContainer->get(WatcherServiceInterface::class);
+		$uids = $watchers->watcherUids(objectUuid: (string)$object->getUuid());
+		if ($uids === []) {
+			return [];
+		}
+
+		$readable = $this->serverContainer->get(PermissionHandlerInterface::class)
+			->getReadableByUsers(object: $object);
+		if ($readable === []) {
+			return $uids;
+		}
+
+		$split = $this->splitByReadable(uids: $uids, readable: $readable);
+		if ($split['lost'] !== []) {
+			$watchers->dropWatchers(objectUuid: (string)$object->getUuid(), userIds: $split['lost']);
+		}
+
+		return $split['kept'];
+	}//end readableWatchers()
+
+	/**
+	 * Split watcher uids into those that may read the object and those that may not, keeping their order.
+	 *
+	 * @param array<int, string> $uids     The watching uids.
+	 * @param array<int, string> $readable The uids the object's read rule names.
+	 *
+	 * @return array{kept: array<int, string>, lost: array<int, string>}
+	 */
+	private function splitByReadable(array $uids, array $readable): array {
+		$kept = [];
+		$lost = [];
+		foreach ($uids as $uid) {
+			if (in_array($uid, $readable, true) === true) {
+				$kept[] = $uid;
+				continue;
+			}
+
+			$lost[] = $uid;
+		}
+
+		return ['kept' => $kept, 'lost' => $lost];
+	}//end splitByReadable()
+
+	/**
+	 * Verify that a uid corresponds to an actual Nextcloud user.
+	 *
+	 * Backed by a per-request cache; only definitive verdicts are cached. A
+	 * `\Throwable` from IUserManager (transient DB/LDAP failure) is NOT a
+	 * definitive "user doesn't exist" — caching it would silently drop every
+	 * notification for this uid for the rest of the request, even after the
+	 * underlying problem clears.
+	 *
+	 * @param string $uid Candidate Nextcloud user identifier.
+	 *
+	 * @return bool True when the uid corresponds to a real Nextcloud user.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function userExists(string $uid): bool {
+		if ($uid === '') {
+			return false;
+		}
+
+		if (isset($this->userExistsCache[$uid]) === true) {
+			return $this->userExistsCache[$uid];
+		}
+
+		try {
+			$exists = $this->userManager->userExists($uid);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[NotificationRecipientResolver] userExists check failed for "%s" (not cached, will retry): %s', $uid, $e->getMessage())
+			);
+			return false;
+		}
+
+		$this->userExistsCache[$uid] = (bool)$exists;
+		return $this->userExistsCache[$uid];
+	}//end userExists()
+
+	/**
+	 * Whether a group id names a real group.
+	 *
+	 * Used by the flow messaging service to classify a literal recipient
+	 * entry as a group before asking for a `groups` expansion.
+	 *
+	 * @param string $gid Candidate group id.
+	 *
+	 * @return bool True when the group exists.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function groupExists(string $gid): bool {
+		if ($gid === '') {
+			return false;
+		}
+
+		try {
+			return $this->groupManager->groupExists($gid);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[NotificationRecipientResolver] groupExists check failed for "%s": %s', $gid, $e->getMessage())
+			);
+			return false;
+		}
+	}//end groupExists()
+
+	/**
+	 * Extract candidate UIDs from a relation value. The relation value
+	 * can be:
+	 *   - a string (treat as UID directly)
+	 *   - an array of strings (each treated as a UID)
+	 *   - an array of objects with a `userId` or `uid` field
+	 *   - any nested combination of the above
+	 *
+	 * @param mixed $value The raw relation value.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles six distinct relation shapes
+	 * (null, array-of-strings, array-of-objects with uid/id/userId, plain string); each
+	 * shape requires a separate extraction branch that cannot be unified.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function extractUidsFromRelation(mixed $value): array {
+		if ($value === null) {
+			return [];
+		}
+
+		if (is_string($value) === true && $value !== '') {
+			return [$value];
+		}
+
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		$out = [];
+		foreach ($value as $entry) {
+			if (is_string($entry) === true && $entry !== '') {
+				$out[] = $entry;
+				continue;
+			}
+
+			if (is_array($entry) === true) {
+				$candidate = ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null);
+				if (is_string($candidate) === true && $candidate !== '') {
+					$out[] = $candidate;
+				}
+			}
+		}
+
+		return $out;
+	}//end extractUidsFromRelation()
+
+	/**
+	 * Resolve recipients from the object's per-object ACL.
+	 *
+	 * V1 implementation: best-effort. Reads the object's `groups` and
+	 * `owner` fields directly. Per-object ACL granularity (read vs
+	 * manage) is treated as: `read` matches any user/group in the ACL;
+	 * `manage` matches only the object owner.
+	 *
+	 * @param ObjectEntity $object The object whose ACL should be read.
+	 * @param string $permission The required permission (`read` or `manage`).
+	 *
+	 * @return array<int, string>
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Walks owner, per-user, per-role and per-group
+	 * ACL entries; each needs its own null-guard and uid extraction.
+	 */
+	private function resolveObjectAclRecipients(ObjectEntity $object, string $permission): array {
+		$uids = $this->aclOwner(object: $object);
+
+		if ($permission === 'manage') {
+			return $uids;
+		}
+
+		return $this->withAclGroupMembers(uids: $uids, object: $object);
+	}//end resolveObjectAclRecipients()
+
+	/**
+	 * The object's owner as a one-uid list, or none when it has no owner.
+	 *
+	 * @param ObjectEntity $object The object whose ACL should be read.
+	 *
+	 * @return array<int, string>
+	 */
+	private function aclOwner(ObjectEntity $object): array {
+		$owner = $object->getOwner();
+		if (is_string($owner) === true && $owner !== '') {
+			return [$owner];
+		}
+
+		return [];
+	}//end aclOwner()
+
+	/**
+	 * Append the members of the object's ACL groups; on a failure keep what was gathered and log it.
+	 *
+	 * @param array<int, string> $uids   The uids gathered so far.
+	 * @param ObjectEntity       $object The object whose ACL should be read.
+	 *
+	 * @return array<int, string>
+	 */
+	private function withAclGroupMembers(array $uids, ObjectEntity $object): array {
+		// Read permission: also include groups via getGroups(). The
+		// Entity base uses __call magic for accessors, so method_exists()
+		// is unreliable — fall through and let the magic call surface
+		// the value (or throw, which is caught below).
+		try {
+			foreach ($this->aclGroupIds(object: $object) as $gid) {
+				$group = $this->groupManager->get($gid);
+				if ($group === null) {
+					continue;
+				}
+
+				foreach ($group->getUsers() as $user) {
+					$uids[] = $user->getUID();
+				}
+			}
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[NotificationRecipientResolver] object-acl read resolution failed: %s', $e->getMessage())
+			);
+		}//end try
+
+		return $uids;
+	}//end withAclGroupMembers()
+
+	/**
+	 * The non-empty string group ids on the object's ACL, in order.
+	 *
+	 * @param ObjectEntity $object The object whose ACL should be read.
+	 *
+	 * @return array<int, string>
+	 */
+	private function aclGroupIds(ObjectEntity $object): array {
+		$groupsRaw = $object->getGroups();
+		if (is_array($groupsRaw) === false) {
+			return [];
+		}
+
+		return array_values(
+			array_filter(
+				$groupsRaw,
+				static fn ($gid): bool => is_string($gid) === true && $gid !== ''
+			)
+		);
+	}//end aclGroupIds()
+
+	/**
+	 * Resolve recipients via a DI-tagged RecipientResolverInterface.
+	 *
+	 * Looks up the resolver via the injected IServerContainer so apps
+	 * can register their resolver class by FQCN and have NC autowire
+	 * its dependencies. Skips silently when the resolver doesn't exist
+	 * or doesn't implement the interface.
+	 *
+	 * @param string          $resolverTag DI tag (or FQCN) of the resolver service.
+	 * @param RecipientSource $source      The object whose recipients are being resolved (none: nobody)
+	 *                                     and the per-event context passed through to the resolver.
+	 *
+	 * @return array<int, string>
+	 */
+	private function resolveExpressionRecipients(string $resolverTag, RecipientSource $source): array {
+		$object = $source->object;
+		if ($object === null || $resolverTag === '' || $this->serverContainer === null) {
+			return [];
+		}
+
+		try {
+			$resolver = $this->serverContainer->get($resolverTag);
+			if (($resolver instanceof RecipientResolverInterface) === false) {
+				$this->logger->warning(
+					sprintf('[NotificationRecipientResolver] expression resolver "%s" does not implement RecipientResolverInterface', $resolverTag)
+				);
+				return [];
+			}
+
+			return array_values($resolver->resolve($object, $source->context));
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[NotificationRecipientResolver] expression resolver "%s" failed: %s', $resolverTag, $e->getMessage())
+			);
+			return [];
+		}
+	}//end resolveExpressionRecipients()
+}//end class

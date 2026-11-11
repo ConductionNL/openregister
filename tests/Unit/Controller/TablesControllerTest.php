@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TablesControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\TablesController;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -11,7 +12,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -28,7 +28,6 @@ use Psr\Log\LoggerInterface;
 class TablesControllerTest extends TestCase {
 	private TablesController $controller;
 	private IRequest&MockObject $request;
-	private IAppConfig&MockObject $config;
 	private MagicMapper&MockObject $magicMapper;
 	private RegisterMapper&MockObject $registerMapper;
 	private SchemaMapper&MockObject $schemaMapper;
@@ -38,16 +37,14 @@ class TablesControllerTest extends TestCase {
 		parent::setUp();
 
 		$this->request = $this->createMock(IRequest::class);
-		$this->config = $this->createMock(IAppConfig::class);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new TablesController(
+		$this->controller = TablesControllerFactory::create(
 			'openregister',
 			$this->request,
-			$this->config,
 			$this->magicMapper,
 			$this->registerMapper,
 			$this->schemaMapper,
@@ -72,10 +69,9 @@ class TablesControllerTest extends TestCase {
 	}
 
 	public function testSyncAndSyncAllRefuseANonAdmin(): void {
-		$controller = new TablesController(
+		$controller = TablesControllerFactory::create(
 			'openregister',
 			$this->request,
-			$this->config,
 			$this->magicMapper,
 			$this->registerMapper,
 			$this->schemaMapper,
@@ -101,10 +97,9 @@ class TablesControllerTest extends TestCase {
 		$session->method('getUser')->willReturn(null);
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->expects($this->never())->method('isAdmin');
-		$controller = new TablesController(
+		$controller = TablesControllerFactory::create(
 			'openregister',
 			$this->request,
-			$this->config,
 			$this->magicMapper,
 			$this->registerMapper,
 			$this->schemaMapper,

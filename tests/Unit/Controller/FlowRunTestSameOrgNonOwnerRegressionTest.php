@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowTestRunControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -84,21 +85,20 @@ class FlowRunTestSameOrgNonOwnerRegressionTest extends TestCase {
 		$runner = $this->createMock(FlowRunService::class);
 		$queued = new FlowRun();
 		$queued->setStatus(FlowRun::STATUS_QUEUED);
-		$runner->method('queue')->willReturn($queued);
+		$runner->method('queueRun')->willReturn($queued);
 
 		$done = new FlowRun();
 		$done->setStatus(FlowRun::STATUS_COMPLETED);
-		$runner->method('execute')->willReturn($done);
+		$runner->method('executePass')->willReturn($done);
 
 		// The load-bearing assertion: the engine must NEVER be reached by a
 		// caller who may not edit this flow. Pre-fix, this fires once --
 		// mallory's flow actually ran. Post-fix, it never fires.
-		$runner->expects($this->never())->method('queue');
+		$runner->expects($this->never())->method('queueRun');
 
 		$mapper = $this->createMock(FlowRunMapper::class);
 
-		$controller = new FlowTestRunController(
-			appName: 'openregister',
+		$controller = FlowTestRunControllerFactory::create(
 			request: $request,
 			runner: $runner,
 			resolvers: $resolvers,

@@ -1,0 +1,396 @@
+{
+    "ambiguous": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": null,
+            "log": [
+                {
+                    "level": "warning",
+                    "message": "[AutoTransitionSelector] More than one automatic transition holds from this state; firing none. Declaration order is not a tie-breaker, because it is not preserved by every database Nextcloud supports.",
+                    "context": {
+                        "schema": "bezwaar",
+                        "field": "status",
+                        "from": "open",
+                        "candidates": [
+                            "a",
+                            "b"
+                        ]
+                    }
+                }
+            ]
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "async mode": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": [
+                "sluiten",
+                "open",
+                "dicht",
+                "async",
+                false
+            ],
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "bad mode": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": null,
+            "log": [
+                {
+                    "level": "warning",
+                    "message": "[AutoTransitionSelector] Automatic transition declares an unrecognised executionMode; not firing it. Use exactly \"sync\" or \"async\".",
+                    "context": {
+                        "schema": "bezwaar",
+                        "action": "sluiten",
+                        "executionMode": "SYNC"
+                    }
+                }
+            ]
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "earlier other pair does not shadow": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": [
+                "auto",
+                "open",
+                "dicht",
+                "sync",
+                true
+            ],
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "from scalar number": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": null,
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "later twin does not shadow": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": [
+                "auto",
+                "open",
+                "dicht",
+                "sync",
+                true
+            ],
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "no autoWhen": {
+        "declaresAutoWhen": false,
+        "from open": {
+            "candidate": null,
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "no field": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": null,
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "null mode": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": [
+                "sluiten",
+                "open",
+                "dicht",
+                "sync",
+                true
+            ],
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "numeric actions": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": [
+                "0",
+                "open",
+                "dicht",
+                "sync",
+                true
+            ],
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "one holds": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": [
+                "sluiten",
+                "open",
+                "dicht",
+                "sync",
+                true
+            ],
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "property alias": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": [
+                "a",
+                "open",
+                "dicht",
+                "sync",
+                true
+            ],
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "rule fails": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": null,
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "scalar rule": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": null,
+            "log": [
+                {
+                    "level": "warning",
+                    "message": "[LifecycleConditionEvaluator] Transition condition is not a rule object; refusing.",
+                    "context": {
+                        "schema": "bezwaar",
+                        "action": "sluiten",
+                        "field": "status"
+                    }
+                }
+            ]
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "shadowed": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": null,
+            "log": [
+                {
+                    "level": "warning",
+                    "message": "[AutoTransitionSelector] An earlier-declared transition shares this move's from and to pair, so the save path could enforce its gates and run its actions instead; not firing automatically.",
+                    "context": {
+                        "schema": "bezwaar",
+                        "action": "auto",
+                        "shadowedBy": "hand",
+                        "from": "open",
+                        "to": "dicht"
+                    }
+                }
+            ]
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "string from": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": [
+                "sluiten",
+                "open",
+                "dicht",
+                "sync",
+                true
+            ],
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "to equals current": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": null,
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "to missing": {
+        "declaresAutoWhen": true,
+        "from open": {
+            "candidate": null,
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "transitions empty": {
+        "declaresAutoWhen": false,
+        "from open": {
+            "candidate": null,
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    },
+    "transitions scalar": {
+        "declaresAutoWhen": false,
+        "from open": {
+            "candidate": null,
+            "log": []
+        },
+        "from wacht": {
+            "candidate": null,
+            "log": []
+        },
+        "from ": {
+            "candidate": null,
+            "log": []
+        }
+    }
+}

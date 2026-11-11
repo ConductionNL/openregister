@@ -29,6 +29,8 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -52,12 +54,9 @@ class ValidateObjectPlannedUsersTest extends TestCase {
 		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => $uid === 'admin');
 
 		$this->handler = new ValidateObject(
-			$this->createMock(IAppConfig::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$urlGenerator,
-			$this->createMock(LoggerInterface::class),
-			$users
+			schemas: new ValidationSchemaSource(config: $this->createMock(IAppConfig::class), schemaMapper: $this->createMock(SchemaMapper::class), urlGenerator: $urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->createMock(MagicMapper::class), userManager: $users),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}
 
@@ -80,7 +79,7 @@ class ValidateObjectPlannedUsersTest extends TestCase {
 	public function testAPlannedAccountPassesOnlyForThatCall(): void {
 		[$schema, $object] = $this->ticket();
 
-		$planned = $this->handler->validateObjectWithPlannedUsers(['assignee' => 'daan.verbeek'], $schema, $object, ['daan.verbeek']);
+		$planned = $this->handler->validateWithPlannedAccounts(['assignee' => 'daan.verbeek'], new \OCA\OpenRegister\Service\Object\PlannedAccountsCheck($schema, $object, ['daan.verbeek']));
 		$this->assertTrue($planned->isValid(), 'a declared account passes');
 
 		$after = $this->handler->validateObject(['assignee' => 'daan.verbeek'], $schema, $object);
@@ -93,11 +92,11 @@ class ValidateObjectPlannedUsersTest extends TestCase {
 	public function testAnUndeclaredAccountIsStillRefusedAndAnExistingOneStillPasses(): void {
 		[$schema, $object] = $this->ticket();
 
-		$undeclared = $this->handler->validateObjectWithPlannedUsers(['assignee' => 'nobody.here'], $schema, $object, ['daan.verbeek']);
+		$undeclared = $this->handler->validateWithPlannedAccounts(['assignee' => 'nobody.here'], new \OCA\OpenRegister\Service\Object\PlannedAccountsCheck($schema, $object, ['daan.verbeek']));
 		$this->assertFalse($undeclared->isValid());
 		$this->assertStringContainsString("format 'user'", $this->handler->generateErrorMessage(result: $undeclared));
 
-		$existing = $this->handler->validateObjectWithPlannedUsers(['assignee' => 'admin'], $schema, $object, ['daan.verbeek']);
+		$existing = $this->handler->validateWithPlannedAccounts(['assignee' => 'admin'], new \OCA\OpenRegister\Service\Object\PlannedAccountsCheck($schema, $object, ['daan.verbeek']));
 		$this->assertTrue($existing->isValid());
 	}
 }

@@ -343,6 +343,13 @@ The system MUST support sorting by one or more fields via the `_order` parameter
 - **THEN** results MUST be ordered by `aanmaakdatum` descending
 
 The `?ordering=-aanmaakdatum` form this scenario used to describe is NOT supported.
+
+#### Scenario: Every form of `_order` orders the same
+- **GIVEN** a search on one schema or across several
+- **WHEN** `_order` is a map, that map as JSON, a list of objects with `field` and `direction`, a list of names, or one name, where a name is `field` or `field:direction`
+- **THEN** the search MUST order on those fields, ascending unless the direction is `desc` in any case
+- **AND** an entry that names no field MUST be left out, not end in an error
+- **AND** a field that may not be sorted on MUST be refused in every form
 It was only ever implemented in `SearchQueryHandler::cleanQuery()`, which no
 production code called; over HTTP `ordering` is read as a filter on a property no
 schema declares, which adds `1 = 0` and returns **zero rows**. Measured on a live
@@ -362,11 +369,11 @@ The system MUST support pagination through `_limit`, `_offset`, and `_page` para
 - **GIVEN** 150 matching objects
 - **WHEN** the user requests `?_offset=60&_limit=30`
 - **THEN** the system MUST return objects 61-90
-- **AND** `SearchQueryHandler.addPaginationUrls()` MUST add `next` and `prev` URL links
+- **AND** `PaginationLinks.around()` (applied by the objects controller) MUST add `next` and `prev` URL links
 
 #### Scenario: Pagination URLs generated only when needed
 - **GIVEN** a query returning 20 results with `_limit=30`
-- **WHEN** `addPaginationUrls()` is called with `page=1, pages=1`
+- **WHEN** `PaginationLinks.around()` is called with `page=1, pages=1`
 - **THEN** no `next` or `prev` URLs MUST be added (single page of results)
 
 #### Scenario: First page has no prev URL
@@ -1152,6 +1159,18 @@ The search index status SHALL read the index names of all tables in scope in one
 #### Scenario: Three tables
 - WHEN the status is read for three tables
 - THEN one pg_indexes query runs and each table lists its index names
+
+### Requirement: The search index status names how many rows it covers
+
+The search index status SHALL answer `rowsInTables`, the rows of all tables in scope, and `indexed`, the rows per schema slug, summed over the registers that hold that slug. It SHALL count the rows of up to 200 tables in one query. A slug with a table that cannot be counted SHALL be left out of `indexed`, and `rowsInTables` SHALL then be left out too, so a reader never sees a count that is too low.
+
+#### Scenario: Cases and documents
+- WHEN the status is read and the tables in scope hold 12418 cases and 31902 documents
+- THEN it answers `rowsInTables` 44320 and `indexed` with `cases` 12418 and `documents` 31902
+
+#### Scenario: A table that cannot be counted
+- WHEN one table of the `documents` schema cannot be counted
+- THEN `indexed` leaves `documents` out, keeps `cases`, and the answer has no `rowsInTables`
 
 ## Current Implementation Status
 

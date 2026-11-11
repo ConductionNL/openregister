@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\ApiVersion;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiVersion
  */
-class ApiVersionNegotiation {
+class ApiVersionNegotiation implements ApiVersionNegotiationInterface {
 
 	/**
 	 * The caller named no version and takes the current one.
@@ -101,6 +101,30 @@ class ApiVersionNegotiation {
 		$this->source = $source;
 
 	}//end __construct()
+
+	/**
+	 * The identifier the caller named, or null when it named none.
+	 *
+	 * @return string|null The requested identifier.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	public function requestedIdentifier(): ?string {
+		return $this->requestedId;
+
+	}//end requestedIdentifier()
+
+	/**
+	 * The version that will answer, or null when nothing declares the request.
+	 *
+	 * @return ApiVersion|null The answering version.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	public function answeringVersion(): ?ApiVersion {
+		return $this->version;
+
+	}//end answeringVersion()
 
 	/**
 	 * Whether the caller named a version rather than taking the default.

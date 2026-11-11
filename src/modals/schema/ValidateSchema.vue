@@ -9,7 +9,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'validateSchema'"
 		name="Validate Schema Objects"
 		size="large"
-		:canClose="false">
+		noClose>
 		<!-- Loading State -->
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
@@ -39,7 +39,8 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<SchemaStatsBlock
 					:objectCount="objectCount"
 					:objectStats="objectStats"
-					:loading="objectCount === 0"
+					:loading="countLoading"
+					:failed="countFailed"
 					:title="t('openregister', 'Objects to be validated')" />
 			</div>
 
@@ -221,12 +222,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ validationResults ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="validationResults ? 'Close' : 'Cancel'" @click="closeDialog" />
 			<NcButton
 				v-if="!validationResults && !loading && !error"
 				:disabled="loading"
@@ -252,10 +248,12 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import { bulkResultOf, postJson } from './schemaBulkRequest.js'
+import { schemaObjectCount } from './schemaObjectCount.js'
 
 export default {
 	name: 'ValidateSchema',
@@ -268,11 +266,13 @@ export default {
 		NcCheckboxRadioSwitch,
 		CheckCircle,
 		AlertCircle,
-		Cancel,
+		CloseCancelButton,
 		Eye,
 		DatabaseOutline,
 		SchemaStatsBlock,
 	},
+
+	mixins: [schemaObjectCount],
 
 	data() {
 		return {
@@ -280,8 +280,6 @@ export default {
 			error: false,
 			validationResults: null,
 			showOnlyInvalid: false,
-			objectCount: 0,
-			objectStats: null,
 		}
 	},
 
@@ -310,38 +308,6 @@ export default {
 		},
 	},
 
-	watch: {
-		// Watch for changes in schemaItem and reload count if needed
-		'schemaStore.schemaItem': {
-			/**
-			 * @param newSchemaItem
-			 * @spec exclude UI watcher — reloads the object count when the schema item changes.
-			 */
-			handler(newSchemaItem) {
-				if (newSchemaItem?.id && this.objectCount === 0) {
-					this.loadObjectCount()
-				}
-			},
-
-			immediate: true,
-		},
-
-		// Watch for dialog state changes to load count when dialog becomes visible
-		'navigationStore.dialog': {
-			/**
-			 * @param newDialog
-			 * @spec exclude UI watcher — loads the object count when the dialog opens.
-			 */
-			handler(newDialog) {
-				if (newDialog === 'validateSchema' && schemaStore.schemaItem?.id) {
-					this.loadObjectCount()
-				}
-			},
-
-			immediate: true,
-		},
-	},
-
 	/**
 	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
 	 */
@@ -351,23 +317,13 @@ export default {
 
 	methods: {
 		/**
-		 * @spec exclude Modal data-load plumbing — fetches schema object-count stats.
+		 * Report a failed object count.
+		 *
+		 * @param {Error} err The failure
+		 * @spec exclude Modal data-load plumbing — logs a failed object count.
 		 */
-		async loadObjectCount() {
-			try {
-				if (schemaStore.schemaItem?.id) {
-					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(
-						schemaStore.schemaItem.id,
-					)
-					this.objectStats = stats.objects
-					this.objectCount = stats.objects?.total || 0
-				}
-			} catch (err) {
-				console.error('Error in loadObjectCount:', err)
-				this.objectCount = 0
-				this.objectStats = null
-			}
+		logCountFailure(err) {
+			console.error('Error in loadObjectCount:', err)
 		},
 
 		/**
@@ -379,27 +335,10 @@ export default {
 
 			try {
 				// Call the new direct validation API
-				const response = await fetch(
+				const response = await postJson(
 					`/index.php/apps/openregister/api/bulk/schema/${schemaStore.schemaItem.id}/validate`,
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					},
 				)
-
-				if (!response.ok) {
-					throw new Error(`Validation failed: ${response.statusText}`)
-				}
-
-				const data = await response.json()
-
-				if (data.error) {
-					throw new Error(data.error)
-				}
-
-				this.validationResults = data
+				this.validationResults = await bulkResultOf(response, 'Validation')
 			} catch (err) {
 				this.error = err.message || 'An error occurred during validation'
 				console.error('Validation error:', err)
@@ -409,8 +348,8 @@ export default {
 		},
 
 		/**
-		 * @param object
-		 * @param _object
+		 * @param {object} object
+		 * @param {object} _object
 		 * @spec exclude UI navigation stub — placeholder for viewing an object's details.
 		 */
 		viewObjectDetails(_object) {
@@ -434,121 +373,19 @@ export default {
 }
 </script>
 
-<style scoped>
-.loading-container {
-	text-align: center;
-	padding: 2rem;
-}
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+@use './schemaCountSummary.scss' as *;
 
-.loading-subtitle {
-	color: var(--color-text-lighter);
-	font-size: 0.9rem;
-	margin-top: 0.5rem;
-}
+@include loading-container-2-rules;
 
 .confirmation-container {
 	padding: 1rem 0;
 }
 
-.object-count-section {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 1rem;
-	margin-bottom: 2rem;
-}
+@include object-count-section-rules;
 
-.object-count-section h4 {
-	margin-top: 0;
-	margin-bottom: 1rem;
-	color: var(--color-text);
-}
-
-.object-count-centered {
-	display: flex;
-	align-items: baseline;
-	justify-content: center;
-	gap: 0.5rem;
-	font-size: 1.2rem;
-}
-
-.count-value {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary-element);
-}
-
-.count-label {
-	color: var(--color-text-lighter);
-}
-
-.loading-count {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.5rem;
-	color: var(--color-text-lighter);
-}
-
-.object-breakdown {
-	margin-top: 1rem;
-	padding: 1rem;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
-
-.breakdown-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 0.5rem;
-}
-
-.breakdown-item:last-child {
-	margin-bottom: 0;
-}
-
-.breakdown-label {
-	font-weight: 500;
-	color: var(--color-text);
-}
-
-.breakdown-value {
-	font-weight: 600;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius);
-	background: var(--color-background-hover);
-}
-
-.breakdown-value.invalid {
-	color: var(--color-warning);
-	background: var(--color-warning-light);
-}
-
-.breakdown-value.deleted {
-	color: var(--color-error);
-	background: var(--color-error-light);
-}
-
-.steps-section {
-	margin-bottom: 2rem;
-}
-
-.steps-section h4 {
-	margin-bottom: 1rem;
-	color: var(--color-text);
-}
-
-.steps-list {
-	margin: 0;
-	padding-left: 1.5rem;
-	color: var(--color-text);
-}
-
-.steps-list li {
-	margin-bottom: 0.5rem;
-	line-height: 1.5;
-}
+@include schema-count-summary-rules;
 
 .results-container {
 	padding: 1rem 0;

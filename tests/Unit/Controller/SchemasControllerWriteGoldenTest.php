@@ -9,6 +9,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -21,21 +22,26 @@ use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\AuthorizationChange;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
@@ -80,6 +86,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			'calculation' => new CalculationDeclarationException($errors),
 			'consent' => new ConsentDeclarationException($errors),
 			'dependent value' => new DependentValueDeclarationException($errors),
+			'notification' => new NotificationDeclarationException($errors),
 			'invalid authorization rule' => new InvalidAuthorizationRuleException('Rule read.x has no operator'),
 			'db exception' => new DBException('Duplicate entry for key unique_slug'),
 			'database constraint' => new DatabaseConstraintException('Slug taken', 0, 418),
@@ -266,8 +273,8 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 		}
 
 		$audit = $this->createMock(AuthorizationAuditService::class);
-		$audit->method('logSchemaAuthorizationChange')->willReturnCallback(function () use ($case) {
-			$this->record(method: 'audit.logSchemaAuthorizationChange', args: func_get_args());
+		$audit->method('recordSchemaChange')->willReturnCallback(function (AuthorizationChange $change) use ($case) {
+			$this->record(method: 'audit.logSchemaAuthorizationChange', args: [$change->entityId, $change->entityTitle, $change->before, $change->after]);
 			if (($case['auditThrows'] ?? false) === true) {
 				throw new Exception('Audit store down');
 			}
@@ -288,7 +295,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 				return $audit;
 			}
 
-			if ($id === FormDependentsCheck::class) {
+			if ($id === FormDependentsCheckInterface::class) {
 				$this->record(method: 'container.get', args: ['FormDependentsCheck']);
 				if (($case['forms'] ?? null) === 'throws') {
 					throw new Exception('No form check');
@@ -316,9 +323,9 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			});
 		}
 
-		$facetCache = $this->createMock(FacetCacheHandler::class);
-		$facetCache->method('invalidateForSchemaChange')->willReturnCallback(function () {
-			$this->record(method: 'facetCache.invalidateForSchemaChange', args: func_get_args());
+		$facetCache = $this->createMock(FacetResultCacheClearer::class);
+		$facetCache->method('clearAll')->willReturnCallback(function () {
+			$this->record(method: 'facetResults.cleared', args: []);
 		});
 
 		$uploadService = $this->createMock(UploadService::class);
@@ -332,7 +339,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			return $uploaded;
 		});
 
-		return new SchemasController(
+		return SchemasControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),
@@ -454,12 +461,12 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 		$changeSet = new SchemaChangeSet($changes, 'minor', 'minor');
 
 		$versioning = $this->createMock(SchemaVersioningService::class);
-		$versioning->method('classify')->willReturnCallback(function () use ($changeSet) {
-			$this->record(method: 'versioning.classify', args: func_get_args());
+		$versioning->method('classify')->willReturnCallback(function (Schema $existing, IncomingDefinition $incoming) use ($changeSet) {
+			$this->record(method: 'versioning.classify', args: [$existing, $incoming->definition, $incoming->renames]);
 			return $changeSet;
 		});
-		$versioning->method('enforceGate')->willReturnCallback(function () use ($case) {
-			$this->record(method: 'versioning.enforceGate', args: func_get_args());
+		$versioning->method('gateChange')->willReturnCallback(function ($schemaId, SchemaChangeRecord $change) use ($case) {
+			$this->record(method: 'versioning.enforceGate', args: [$change->changeSet, $change->acknowledged, $schemaId]);
 			if (($case['gate'] ?? null) === 'breaking') {
 				throw new BreakingSchemaChangeException([['property' => 'name', 'kind' => 'removed']], 4);
 			}
@@ -468,8 +475,8 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			$this->record(method: 'versioning.nextVersion', args: func_get_args());
 			return '2.0.0';
 		});
-		$versioning->method('recordChangelog')->willReturnCallback(function () {
-			$this->record(method: 'versioning.recordChangelog', args: func_get_args());
+		$versioning->method('recordChange')->willReturnCallback(function ($schemaId, SchemaChangeRecord $change) {
+			$this->record(method: 'versioning.recordChangelog', args: [$schemaId, $change->version, $change->changeSet, $change->acknowledged, $change->origin]);
 		});
 
 		return $versioning;

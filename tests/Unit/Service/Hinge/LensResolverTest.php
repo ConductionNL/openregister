@@ -83,8 +83,7 @@ final class LensResolverTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		return new LensResolver(
-			magicMapper: $magicMapper,
-			schemaMapper: $schemaMapper,
+			lookups: new \OCA\OpenRegister\Service\Hinge\LensLookups(magicMapper: $magicMapper, schemaMapper: $schemaMapper),
 			permissionHandler: $permissionHandler,
 			userSession: $userSession,
 			logger: new NullLogger()

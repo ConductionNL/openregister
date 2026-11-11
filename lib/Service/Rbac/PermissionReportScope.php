@@ -29,23 +29,23 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
  * Resolves the entities a permission report runs over.
  */
-class PermissionReportScope {
+class PermissionReportScope implements PermissionReportScopeInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register lookup.
-	 * @param SchemaMapper   $schemaMapper   Schema lookup.
+	 * @param RegisterMapperInterface $registerMapper Register lookup.
+	 * @param SchemaMapperInterface   $schemaMapper   Schema lookup.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

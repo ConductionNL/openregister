@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 
@@ -74,4 +75,25 @@ final class StoredEntity {
 
 		throw new InvalidArgumentException('Only a stored Register row is accepted here.');
 	}//end register()
+
+	/**
+	 * The stored object row behind a contract type.
+	 *
+	 * @param ObjectEntityInterface|null $object The object, or null.
+	 *
+	 * @return ObjectEntity|null The stored row, or null.
+	 *
+	 * @throws InvalidArgumentException When the object is not a stored row.
+	 *
+	 * @psalm-return ($object is null ? null : ObjectEntity)
+	 *
+	 * @spec exclude Type narrowing at a contract boundary, no behaviour of its own.
+	 */
+	public static function object(?ObjectEntityInterface $object): ?ObjectEntity {
+		if ($object === null || $object instanceof ObjectEntity) {
+			return $object;
+		}
+
+		throw new InvalidArgumentException('Only a stored object row is accepted here.');
+	}//end object()
 }//end class

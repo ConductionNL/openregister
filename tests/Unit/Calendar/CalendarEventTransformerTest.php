@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace Unit\Calendar;
 
+use OCA\OpenRegister\Calendar\CalendarDefinition;
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -59,7 +60,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => true,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertNotNull($result);
 		$this->assertSame('DATE', $result['objects'][0]['DTSTART'][1]['VALUE']);
@@ -79,7 +80,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => false,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('DATE-TIME', $result['objects'][0]['DTSTART'][1]['VALUE']);
 		$this->assertSame('20260325T140000Z', $result['objects'][0]['DTSTART'][0]);
@@ -98,7 +99,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'titleTemplate' => '{{naam}} - {{locatie}}',
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('Vergunning - Tilburg', $result['objects'][0]['SUMMARY'][0]);
 	}
@@ -114,7 +115,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'titleTemplate' => '{{naam}} - {{missing}}',
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame(' - ', $result['objects'][0]['SUMMARY'][0]);
 	}
@@ -133,7 +134,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'descriptionTemplate' => 'Locatie: {{locatie}}',
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('Locatie: Amsterdam', $result['objects'][0]['DESCRIPTION'][0]);
 	}
@@ -152,7 +153,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'locationField' => 'locatie',
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('Kerkstraat 42', $result['objects'][0]['LOCATION'][0]);
 	}
@@ -175,7 +176,7 @@ class CalendarEventTransformerTest extends TestCase {
 			],
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('CANCELLED', $result['objects'][0]['STATUS'][0]);
 	}
@@ -192,7 +193,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'titleTemplate' => '{naam}',
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('CONFIRMED', $result['objects'][0]['STATUS'][0]);
 	}
@@ -209,7 +210,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'titleTemplate' => '{naam}',
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('TRANSPARENT', $result['objects'][0]['TRANSP'][0]);
 	}
@@ -226,7 +227,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'titleTemplate' => '{naam}',
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('/apps/openregister/objects/5/12/abc-123', $result['objects'][0]['URL'][0]);
 	}
@@ -243,7 +244,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'titleTemplate' => '{naam}',
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$categories = $result['objects'][0]['CATEGORIES'][0];
 		$this->assertSame(['OpenRegister', 'Zaken'], $categories);
@@ -261,8 +262,8 @@ class CalendarEventTransformerTest extends TestCase {
 			'titleTemplate' => '{naam}',
 		];
 
-		$result1 = $this->transformer->transform($object, $this->schema, $config);
-		$result2 = $this->transformer->transform($object, $this->schema, $config);
+		$result1 = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
+		$result2 = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame($result1['id'], $result2['id']);
 		$this->assertSame('openregister-12-stable-uuid-123', $result1['id']);
@@ -277,7 +278,7 @@ class CalendarEventTransformerTest extends TestCase {
 			// No explicit allDay setting.
 		];
 
-		$isAllDay = $this->transformer->determineAllDay($config, $this->schema, 'startdatum');
+		$isAllDay = (new CalendarDefinition($this->schema, $config))->allDay();
 
 		$this->assertTrue($isAllDay);
 	}
@@ -291,7 +292,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => false,
 		];
 
-		$isAllDay = $this->transformer->determineAllDay($config, $this->schema, 'startdatum');
+		$isAllDay = (new CalendarDefinition($this->schema, $config))->allDay();
 
 		$this->assertFalse($isAllDay);
 	}
@@ -308,7 +309,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'titleTemplate' => '{naam}',
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertNull($result);
 	}
@@ -326,7 +327,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => true,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		// Default DTEND should be start + 1 day.
 		$this->assertSame('20260326', $result['objects'][0]['DTEND'][0]);
@@ -348,7 +349,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => true,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('20260410', $result['objects'][0]['DTEND'][0]);
 	}
@@ -368,7 +369,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => false,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('20260325T140000Z', $result['objects'][0]['DTSTART'][0]);
 		$this->assertSame('DATE-TIME', $result['objects'][0]['DTSTART'][1]['VALUE']);
@@ -388,7 +389,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => false,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('20260325T140000Z', $result['objects'][0]['DTSTART'][0]);
 		$this->assertArrayNotHasKey('TZID', $result['objects'][0]['DTSTART'][1]);
@@ -407,7 +408,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => false,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('20260325T140000Z', $result['objects'][0]['DTSTART'][0]);
 		$this->assertArrayNotHasKey('TZID', $result['objects'][0]['DTSTART'][1]);
@@ -429,7 +430,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => false,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('20260325T120000Z', $result['objects'][0]['DTSTART'][0]);
 		$this->assertSame('DATE-TIME', $result['objects'][0]['DTSTART'][1]['VALUE']);
@@ -450,7 +451,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => false,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('20260325T140000Z', $result['objects'][0]['DTSTART'][0]);
 		$this->assertArrayNotHasKey('TZID', $result['objects'][0]['DTSTART'][1]);
@@ -471,7 +472,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => false,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		// 14:00 +02:00 + 1h == 13:00 UTC.
 		$this->assertSame('20260325T130000Z', $result['objects'][0]['DTEND'][0]);
@@ -492,7 +493,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => false,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		$this->assertSame('20260325T120000Z', $result['objects'][0]['DTSTART'][0]);
 		$this->assertSame('20260325T143000Z', $result['objects'][0]['DTEND'][0]);
@@ -511,7 +512,7 @@ class CalendarEventTransformerTest extends TestCase {
 			'allDay' => false,
 		];
 
-		$result = $this->transformer->transform($object, $this->schema, $config);
+		$result = $this->transformer->transform($object, new CalendarDefinition($this->schema, $config));
 
 		// Falls back to the epoch as a UTC instant rather than throwing.
 		$this->assertNotNull($result);

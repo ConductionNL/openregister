@@ -50,14 +50,7 @@ namespace OCA\OpenRegister\Service\ExternalLink;
  * @category Service
  * @package  OCA\OpenRegister\Service\ExternalLink
  */
-class ExternalLinkResolver {
-
-	/**
-	 * The schema configuration key carrying the declarations.
-	 *
-	 * @var string
-	 */
-	public const ANNOTATION = 'x-openregister-external-links';
+class ExternalLinkResolver implements ExternalLinkResolverInterface {
 
 	/**
 	 * How deep a placeholder may reach into the object.
@@ -148,24 +141,29 @@ class ExternalLinkResolver {
 			return null;
 		}
 
-		$link = [
-			'title' => $title,
-			'url' => $url,
-		];
+		return $this->withOptionalFields(link: ['title' => $title, 'url' => $url], declaration: $declaration);
 
-		$description = trim((string)($declaration['description'] ?? ''));
-		if ($description !== '') {
-			$link['description'] = $description;
-		}
+	}//end resolveOne()
 
-		$target = trim((string)($declaration['target'] ?? ''));
-		if ($target !== '') {
-			$link['target'] = $target;
+	/**
+	 * Add the non-blank `description` and `target` of a declaration to a link.
+	 *
+	 * @param array<string, string> $link        The link (title, url).
+	 * @param array<string, mixed>  $declaration The declaration.
+	 *
+	 * @return array<string, string>
+	 */
+	private function withOptionalFields(array $link, array $declaration): array {
+		foreach (['description', 'target'] as $field) {
+			$value = trim((string)($declaration[$field] ?? ''));
+			if ($value !== '') {
+				$link[$field] = $value;
+			}
 		}
 
 		return $link;
 
-	}//end resolveOne()
+	}//end withOptionalFields()
 
 	/**
 	 * Fill a template's placeholders, or refuse when one cannot be filled.
@@ -208,6 +206,22 @@ class ExternalLinkResolver {
 			return null;
 		}
 
+		return self::scalarOrNull(value: $this->descend(segments: $segments, object: $object));
+
+	}//end valueAt()
+
+	/**
+	 * Walk the path segments into the object; null when a segment is missing.
+	 *
+	 * A missing segment and a present null both end as null, which
+	 * scalarOrNull() reads as "no value" either way.
+	 *
+	 * @param string[]             $segments The path segments.
+	 * @param array<string, mixed> $object   The object.
+	 *
+	 * @return mixed
+	 */
+	private function descend(array $segments, array $object): mixed {
 		$cursor = $object;
 		foreach ($segments as $segment) {
 			if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
@@ -217,9 +231,9 @@ class ExternalLinkResolver {
 			$cursor = $cursor[$segment];
 		}
 
-		return self::scalarOrNull(value: $cursor);
+		return $cursor;
 
-	}//end valueAt()
+	}//end descend()
 
 	/**
 	 * A scalar as a string, or null for anything that is not one.
@@ -229,30 +243,31 @@ class ExternalLinkResolver {
 	 * @return string|null The string, or null.
 	 */
 	private static function scalarOrNull(mixed $value): ?string {
-		if (is_string($value) === true) {
-			$trimmed = trim($value);
-			if ($trimmed === '') {
-				return null;
-			}
-
-			return $trimmed;
-		}
-
-		if (is_int($value) === true || is_float($value) === true) {
-			return (string)$value;
-		}
-
-		if ($value === true) {
-			return 'true';
-		}
-
-		if ($value === false) {
-			return 'false';
-		}
-
-		return null;
+		return match (true) {
+			is_string($value) => self::trimmedOrNull(value: $value),
+			is_int($value), is_float($value) => (string)$value,
+			is_bool($value) => var_export($value, true),
+			default => null,
+		};
 
 	}//end scalarOrNull()
+
+	/**
+	 * A trimmed string, or null when nothing is left.
+	 *
+	 * @param string $value The string.
+	 *
+	 * @return string|null
+	 */
+	private static function trimmedOrNull(string $value): ?string {
+		$trimmed = trim($value);
+		if ($trimmed === '') {
+			return null;
+		}
+
+		return $trimmed;
+
+	}//end trimmedOrNull()
 
 	/**
 	 * Whether a declaration's condition holds for this object.
@@ -276,20 +291,29 @@ class ExternalLinkResolver {
 			return false;
 		}
 
+		return $this->allClausesHold(condition: $condition, object: $object);
+
+	}//end conditionHolds()
+
+	/**
+	 * Whether every clause of a (non-empty) condition map holds.
+	 *
+	 * @param array<mixed>         $condition The condition map: path => expected.
+	 * @param array<string, mixed> $object    The object.
+	 *
+	 * @return bool
+	 */
+	private function allClausesHold(array $condition, array $object): bool {
 		foreach ($condition as $path => $expected) {
 			$actual = $this->valueAt(path: (string)$path, object: $object);
-			if ($actual === null) {
-				return false;
-			}
-
-			if ($this->matches(actual: $actual, expected: $expected) === false) {
+			if ($actual === null || $this->matches(actual: $actual, expected: $expected) === false) {
 				return false;
 			}
 		}
 
 		return true;
 
-	}//end conditionHolds()
+	}//end allClausesHold()
 
 	/**
 	 * Whether one resolved value satisfies one expectation.
@@ -300,20 +324,19 @@ class ExternalLinkResolver {
 	 * @return bool True when it holds.
 	 */
 	private function matches(string $actual, mixed $expected): bool {
+		$candidates = [$expected];
 		if (is_array($expected) === true) {
-			foreach ($expected as $candidate) {
-				$wanted = self::scalarOrNull(value: $candidate);
-				if ($wanted !== null && $wanted === $actual) {
-					return true;
-				}
-			}
-
-			return false;
+			$candidates = $expected;
 		}
 
-		$wanted = self::scalarOrNull(value: $expected);
+		foreach ($candidates as $candidate) {
+			$wanted = self::scalarOrNull(value: $candidate);
+			if ($wanted !== null && $wanted === $actual) {
+				return true;
+			}
+		}
 
-		return ($wanted !== null && $wanted === $actual);
+		return false;
 
 	}//end matches()
 }//end class

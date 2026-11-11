@@ -38,13 +38,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
-use OCA\OpenRegister\Service\Hardening\ElevationService;
-use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
-use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
-use OCA\OpenRegister\Service\Hardening\HardeningReportService;
-use OCA\OpenRegister\Service\Hardening\HardeningSettingsService;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\HardeningControllerServices;
+use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
+use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningFloorExceptionInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningFloorsInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
@@ -68,26 +70,50 @@ use OCP\IRequest;
 class HardeningController extends Controller {
 
 	/**
+	 * Builds the report.
+	 *
+	 * @var HardeningReportServiceInterface
+	 */
+	private readonly HardeningReportServiceInterface $reportService;
+
+	/**
+	 * Applies a change, or refuses it.
+	 *
+	 * @var HardeningSettingsServiceInterface
+	 */
+	private readonly HardeningSettingsServiceInterface $settingsService;
+
+	/**
+	 * Reads the floors in force.
+	 *
+	 * @var HardeningFloorsInterface
+	 */
+	private readonly HardeningFloorsInterface $policy;
+
+	/**
+	 * Guards the administration writes with a fresh sign-in.
+	 *
+	 * @var ElevationServiceInterface
+	 */
+	private readonly ElevationServiceInterface $elevation;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The incoming request.
-	 * @param HardeningReportService $reportService Builds the report.
-	 * @param HardeningSettingsService $settingsService Applies a change, or refuses it.
-	 * @param HardeningPolicy $policy Reads the floors in force.
-	 * @param ElevationService $elevation Guards the administration writes with a fresh sign-in.
+	 * @param HardeningControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly HardeningReportService $reportService,
-		private readonly HardeningSettingsService $settingsService,
-		private readonly HardeningPolicy $policy,
-		private readonly ElevationService $elevation,
+		HardeningControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->reportService = $services->reportService;
+		$this->settingsService = $services->settingsService;
+		$this->policy = $services->policy;
+		$this->elevation = $services->elevation;
 
 	}//end __construct()
 
@@ -136,8 +162,8 @@ class HardeningController extends Controller {
 		$baselines = [];
 		$comparators = [];
 		foreach (array_keys($floors) as $control) {
-			$baselines[$control] = HardeningPolicy::baseline(control: $control);
-			$comparators[$control] = HardeningPolicy::comparator(control: $control);
+			$baselines[$control] = $this->policy::baseline(control: $control);
+			$comparators[$control] = $this->policy::comparator(control: $control);
 		}
 
 		return new JSONResponse(
@@ -170,37 +196,61 @@ class HardeningController extends Controller {
 			// A stolen session is not a confirmed password, and this write
 			// weakens the instance. REQ-IHC-002.
 			$this->elevation->requireElevated();
-			$controls = [];
-			$requested = ($body['controls'] ?? []);
-			if (is_array($requested) === true) {
-				foreach ($requested as $control => $value) {
-					$controls[$control] = $this->settingsService->setControl(
-						control: (string)$control,
-						value: (int)$value
-					);
-				}
-			}
 
-			$origins = null;
-			if (array_key_exists('allowedOrigins', $body) === true && is_array($body['allowedOrigins']) === true) {
-				$origins = $this->settingsService->setAllowedOrigins(origins: $body['allowedOrigins']);
-			}
-
-			$answer = ['controls' => $controls];
-			if ($origins !== null) {
-				$answer['allowedOrigins'] = $origins;
-			}
-
-			return new JSONResponse(data: $answer);
-		} catch (ElevationRequiredException $stale) {
+			return new JSONResponse(data: $this->appliedHardening(body: $body));
+		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
-		} catch (HardeningFloorException $refusal) {
+		} catch (HardeningFloorExceptionInterface $refusal) {
 			return new JSONResponse(data: $refusal->toArray(), statusCode: Http::STATUS_CONFLICT);
 		} catch (InvalidArgumentException $invalid) {
 			return new JSONResponse(data: ['error' => $invalid->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
 		}//end try
 
 	}//end updateControls()
+
+	/**
+	 * Apply the requested controls, then the allowed origins when the body names them.
+	 *
+	 * @param array<string, mixed> $body The request body
+	 *
+	 * @return array<string, mixed> The controls as stored, and the origins when they were set
+	 *
+	 * @throws HardeningFloorExceptionInterface When a value would breach a floor
+	 * @throws InvalidArgumentException When a control or origin is not valid
+	 */
+	private function appliedHardening(array $body): array {
+		$answer = ['controls' => $this->appliedControls(requested: ($body['controls'] ?? []))];
+
+		if (array_key_exists('allowedOrigins', $body) === true && is_array($body['allowedOrigins']) === true) {
+			$answer['allowedOrigins'] = $this->settingsService->setAllowedOrigins(origins: $body['allowedOrigins']);
+		}
+
+		return $answer;
+	}//end appliedHardening()
+
+	/**
+	 * Store each requested control value; a body without a controls map sets none.
+	 *
+	 * @param mixed $requested The `controls` of the body
+	 *
+	 * @return array<string, int> Each control with the value as stored
+	 *
+	 * @throws HardeningFloorExceptionInterface When a value would breach a floor
+	 * @throws InvalidArgumentException When a control is not valid
+	 */
+	private function appliedControls(mixed $requested): array {
+		$controls = [];
+		if (is_array($requested) === true) {
+			foreach ($requested as $control => $value) {
+				$controls[$control] = $this->settingsService->setControl(
+					control: (string)$control,
+					value: (int)$value
+				);
+			}
+		}
+
+		return $controls;
+	}//end appliedControls()
 
 	/**
 	 * Declare a floor for one or more controls.
@@ -230,24 +280,38 @@ class HardeningController extends Controller {
 			// down is what lets the next control be weakened. REQ-IHC-002.
 			$this->elevation->requireElevated();
 
-			$applied = [];
-			foreach ($requested as $control => $floor) {
-				$applied[$control] = $this->settingsService->setFloor(
-					control: (string)$control,
-					floor: (int)$floor
-				);
-			}
-
-			return new JSONResponse(data: ['floors' => $applied]);
-		} catch (ElevationRequiredException $stale) {
+			return new JSONResponse(data: ['floors' => $this->appliedFloors(requested: $requested)]);
+		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
-		} catch (HardeningFloorException $refusal) {
+		} catch (HardeningFloorExceptionInterface $refusal) {
 			return new JSONResponse(data: $refusal->toArray(), statusCode: Http::STATUS_CONFLICT);
 		} catch (InvalidArgumentException $invalid) {
 			return new JSONResponse(data: ['error' => $invalid->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
 		}//end try
 
 	}//end updateFloors()
+
+	/**
+	 * Store each requested floor.
+	 *
+	 * @param array<string, mixed> $requested The floors of the body, by control
+	 *
+	 * @return array<string, int> Each control with the floor as stored
+	 *
+	 * @throws HardeningFloorExceptionInterface When a floor would breach the declared minimum
+	 * @throws InvalidArgumentException When a control is not valid
+	 */
+	private function appliedFloors(array $requested): array {
+		$applied = [];
+		foreach ($requested as $control => $floor) {
+			$applied[$control] = $this->settingsService->setFloor(
+				control: (string)$control,
+				floor: (int)$floor
+			);
+		}
+
+		return $applied;
+	}//end appliedFloors()
 	/**
 	 * Start an elevated administration period by confirming the password.
 	 *
@@ -264,7 +328,7 @@ class HardeningController extends Controller {
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
 	#[NoCSRFRequired]
-	#[BruteForceProtection(action: ThrottledSurfaces::ELEVATION)]
+	#[BruteForceProtection(action: ThrottledSurfacesInterface::ELEVATION)]
 	public function elevate(): JSONResponse {
 		$password = (string)($this->request->getParam('password') ?? '');
 
@@ -273,7 +337,7 @@ class HardeningController extends Controller {
 				data: ['error' => 'That password was not confirmed.', 'elevationRequired' => true],
 				statusCode: Http::STATUS_UNAUTHORIZED
 			);
-			$refused->throttle(['action' => ThrottledSurfaces::ELEVATION]);
+			$refused->throttle(['action' => ThrottledSurfacesInterface::ELEVATION]);
 
 			return $refused;
 		}

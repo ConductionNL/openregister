@@ -29,7 +29,6 @@ use DateTime;
 use InvalidArgumentException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
@@ -73,13 +72,7 @@ class PortalTaskDeliveryMapper extends QBMapper {
 			throw new InvalidArgumentException('PortalTaskDeliveryMapper stores PortalTaskDelivery rows only.');
 		}
 
-		if ($entity->getUuid() === null) {
-			$entity->setUuid(Uuid::v4()->toRfc4122());
-		}
-
-		if ($entity->getState() === null) {
-			$entity->setState(PortalTaskDelivery::STATE_REQUESTED);
-		}
+		$this->fillIdentityAndState(delivery: $entity);
 
 		$now = new DateTime();
 		if ($entity->getRequestedAt() === null) {
@@ -90,6 +83,24 @@ class PortalTaskDeliveryMapper extends QBMapper {
 
 		return parent::insert(entity: $entity);
 	}//end insert()
+
+	/**
+	 * Give a new delivery a uuid and the requested state when it has none.
+	 *
+	 * @param PortalTaskDelivery $delivery The delivery to insert.
+	 *
+	 * @return void
+	 *
+	 */
+	private function fillIdentityAndState(PortalTaskDelivery $delivery): void {
+		if ($delivery->getUuid() === null) {
+			$delivery->setUuid(Uuid::v4()->toRfc4122());
+		}
+
+		if ($delivery->getState() === null) {
+			$delivery->setState(PortalTaskDelivery::STATE_REQUESTED);
+		}
+	}//end fillIdentityAndState()
 
 	/**
 	 * One delivery by uuid.
@@ -186,34 +197,4 @@ class PortalTaskDeliveryMapper extends QBMapper {
 
 		return parent::update(entity: $delivery);
 	}//end markFailed()
-
-	/**
-	 * The delivery rows of several tasks in ONE query, grouped by task uuid.
-	 *
-	 * @param array<int, string> $taskUuids The tasks.
-	 *
-	 * @return array<string, array<int, PortalTaskDelivery>> Rows by task uuid.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
-	 */
-	public function findForTasks(array $taskUuids): array {
-		$taskUuids = array_values(array_unique(array_filter(array_map('strval', $taskUuids), static fn (string $uuid): bool => $uuid !== '')));
-		if ($taskUuids === []) {
-			return [];
-		}
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->in('task_uuid', $qb->createNamedParameter($taskUuids, IQueryBuilder::PARAM_STR_ARRAY)))
-			->orderBy('requested_at', 'ASC')
-			->addOrderBy('id', 'ASC');
-
-		$grouped = [];
-		foreach ($this->findEntities(query: $qb) as $row) {
-			$grouped[(string)$row->getTaskUuid()][] = $row;
-		}
-
-		return $grouped;
-	}//end findForTasks()
 }//end class

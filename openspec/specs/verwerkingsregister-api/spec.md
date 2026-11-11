@@ -50,6 +50,27 @@ An API endpoint MUST allow querying all audit trail entries related to a specifi
 - **WHEN** a GET request is made to `/api/audit-trails/subject-lookup` without an `identifier` parameter
 - **THEN** the system MUST return HTTP 400 with `{"error": "identifier parameter is required"}`
 
+### Requirement: The instance-wide audit reads are admin-only
+The audit reads that answer about the whole trail, whichever register, schema or organisation an entry belongs to, SHALL be answered to members of the Nextcloud `admin` group only: the subject lookup (`GET /api/audit-trails/subject-lookup`), the processing activity overview (`GET /api/audit-trails/processing-activities`) and the purpose report (`GET /api/avg/purposes/report`). A signed-in non-admin SHALL receive HTTP 403 and an anonymous caller HTTP 401, before the trail is read. The `logs` statistics of a schema or register (`@self.stats` on the schema and register reads, and `GET /api/schemas/{id}/stats`) count the trail the same way, so a non-admin or anonymous caller SHALL be given `{"total": 0, "size": 0}` there and the trail SHALL NOT be counted. A non-admin reads the entries of the objects they may read through the scoped audit list.
+
+#### Scenario: a non-admin cannot search the whole trail for a subject
+- **GIVEN** a signed-in user who is not in the `admin` group
+- **WHEN** they request `/api/audit-trails/subject-lookup?identifier=123456789`
+- **THEN** the response is HTTP 403 and the trail is not searched
+- @e2e exclude {access gate, asserted in tests/Unit/Controller/InstanceWideAuditReadsTest.php}
+
+#### Scenario: a non-admin cannot count the trail
+- **GIVEN** a signed-in user who is not in the `admin` group
+- **WHEN** they request the processing activity overview or the purpose report
+- **THEN** the response is HTTP 403 and the trail is not counted
+- @e2e exclude {access gate, asserted in tests/Unit/Controller/InstanceWideAuditReadsTest.php}
+
+#### Scenario: a non-admin is not given the trail count of a schema or register
+- **GIVEN** a signed-in non-admin or anonymous caller
+- **WHEN** they read a schema or register with `_extend=@self.stats`, or a schema's stats
+- **THEN** `logs` is `{"total": 0, "size": 0}` and the trail is not counted, while an administrator is given the counts
+- @e2e exclude {asserted in tests/Unit/Controller/SchemasControllerTest.php and RegistersControllerTest.php}
+
 ### Requirement: The system MUST support audit trail export
 An API endpoint MUST allow exporting audit trail entries in JSON or CSV format for external compliance auditing.
 
@@ -74,7 +95,7 @@ An API endpoint MUST allow exporting audit trail entries in JSON or CSV format f
 
 ### Requirement: The system MUST provide a CRUD REST surface over the dedicated verwerkingsactiviteiten catalog
 
-Beyond the audit-trail-derived read views, the system MUST expose `VerwerkingsactiviteitenController` as a REST CRUD surface over the dedicated `oc_openregister_verwerkingsactiviteiten` table (distinct from the audit-trail aggregation), reachable under `/api/avg/processing-activities`. `index` MUST list activities with optional `status` and `organisation` query filters, returning `{count, results}`. `show` MUST resolve a path identifier that may be a numeric id, a uuid, or a short readable code, returning HTTP 404 when nothing matches. `create` and `update` MUST hydrate the string fields (`code`, `name`, `description`, `purpose`, `legalBasis`, `retentionPeriod`, `technicalMeasures`, `organisationalMeasures`, `organisationId`, `status`) and array fields (`dataSubjectCategories`, `personalDataCategories`, `recipients`, `internationalTransfers`, `controller`, `dpoContactDetails`) from the payload, returning HTTP 201 on create and HTTP 422 on `InvalidArgumentException`. `destroy` MUST NOT hard-delete — it MUST set `status = 'archived'` and persist, returning HTTP 204, because audit-trail rows reference activities by uuid as a soft foreign key. Create, update, and destroy MUST be restricted to members of the Nextcloud `admin` group (HTTP 403 otherwise); list, show, and the accountability report MUST be available to any authenticated user.
+Beyond the audit-trail-derived read views, the system MUST expose `VerwerkingsactiviteitenController` as a REST CRUD surface over the dedicated `oc_openregister_verwerkingsactiviteiten` table (distinct from the audit-trail aggregation), reachable under `/api/avg/processing-activities`. `index` MUST list activities with optional `status` and `organisation` query filters, returning `{count, results}`. `show` MUST resolve a path identifier that may be a numeric id, a uuid, or a short readable code, returning HTTP 404 when nothing matches. `create` and `update` MUST hydrate the string fields (`code`, `name`, `description`, `purpose`, `legalBasis`, `retentionPeriod`, `technicalMeasures`, `organisationalMeasures`, `organisationId`, `status`) and array fields (`dataSubjectCategories`, `personalDataCategories`, `recipients`, `internationalTransfers`, `controller`, `dpoContactDetails`) from the payload, returning HTTP 201 on create and HTTP 422 on `InvalidArgumentException`. `destroy` MUST NOT hard-delete — it MUST set `status = 'archived'` and persist, returning HTTP 204, because audit-trail rows reference activities by uuid as a soft foreign key. Create, update, and destroy MUST be restricted to members of the Nextcloud `admin` group (HTTP 403 otherwise); list and show MUST be available to any authenticated user, within their active organisation: a non-admin MUST be given only the activities whose `organisationId` is their active organisation, an `organisation` query parameter MUST NOT widen that, an activity without an `organisationId` MUST NOT be given to a non-admin, and a non-admin without an active organisation MUST be given an empty list and HTTP 404 on show; a member of the `admin` group MUST be given every activity. The accountability report is scoped as its own requirement states.
 
 #### Scenario: List with status filter
 - **WHEN** `GET /api/avg/processing-activities?status=published` is requested
@@ -86,6 +107,18 @@ Beyond the audit-trail-derived read views, the system MUST expose `Verwerkingsac
 - **WHEN** `show` is called with the numeric id, the uuid, or the code
 - **THEN** each form MUST resolve to the same activity
 - **AND** an unmatched identifier MUST return HTTP 404 with `{error, identifier}`
+
+#### Scenario: A non-admin sees their active organisation's activities only
+- **GIVEN** activities of organisations `A` and `B`, and a non-admin member of both whose active organisation is `A`
+- **WHEN** they list the activities, or read one of `B` by id, uuid or code
+- **THEN** the list holds only the activities of `A`, and the read of `B`'s activity is HTTP 404
+- @e2e exclude {asserted in tests/Unit/Controller/ProcessingActivitiesScopeTest.php}
+
+#### Scenario: A non-admin without an active organisation sees no activity
+- **GIVEN** a non-admin with no active organisation
+- **WHEN** they list the activities or read one
+- **THEN** the list is `{count: 0, results: []}` and the read is HTTP 404
+- @e2e exclude {asserted in tests/Unit/Controller/ProcessingActivitiesScopeTest.php}
 
 #### Scenario: Writes are admin-gated
 - **GIVEN** a non-admin authenticated user
@@ -103,6 +136,26 @@ Beyond the audit-trail-derived read views, the system MUST expose `Verwerkingsac
 ### Requirement: The system MUST provide an Art 30 §4 accountability report aggregating audit events per processing activity
 
 `VerwerkingsactiviteitenController::verantwoording` MUST return an accountability report suitable for AP supervisory review, reachable under `/api/avg/accountability`: every verwerkingsactiviteit joined with the count of audit-trail rows attributed to it via `processing_activity_id`, broken down per `action`. The aggregation MUST query `openregister_audit_trails` grouped by `processing_activity_id` and `action`, scoped to the activities' uuids. The response MUST be `{count, activities}` where each activity entry is its serialized form plus an `activity` block `{totalEvents, byAction}`. Activities with no audit rows MUST report `{totalEvents: 0, byAction: []}`. A query failure during aggregation MUST degrade to empty counts rather than failing the whole report.
+
+The report MUST answer within the caller's organisation. Audit rows carry no reliable organisation, so the scope MUST be taken from the activities: a non-admin caller MUST be given only the activities whose `organisationId` is their active organisation, and audit rows MUST be counted only for those activities. An activity without an `organisationId` MUST NOT be given to a non-admin. A non-admin without an active organisation MUST be given `{count: 0, activities: []}` and no audit row MUST be counted. A member of the `admin` group MUST be given every activity and its counts. An anonymous caller MUST receive HTTP 401.
+
+#### Scenario: A non-admin gets their active organisation's activities
+- **GIVEN** activities of organisations `A` and `B`, and a non-admin member of both whose active organisation is `A`
+- **WHEN** they request the accountability report
+- **THEN** the report lists only the activities of `A`, and the audit rows are counted for those activities only
+- @e2e exclude {asserted in tests/Unit/Controller/AccountabilityReportScopeTest.php}
+
+#### Scenario: A non-admin without an active organisation gets nothing
+- **GIVEN** a non-admin with no active organisation
+- **WHEN** they request the accountability report
+- **THEN** the response is `{count: 0, activities: []}` and no audit row is counted
+- @e2e exclude {asserted in tests/Unit/Controller/AccountabilityReportScopeTest.php}
+
+#### Scenario: An administrator gets every activity
+- **GIVEN** a member of the `admin` group
+- **WHEN** they request the accountability report
+- **THEN** every activity is listed with its counts, as before
+- @e2e exclude {golden recorded on the previous code in tests/Unit/Controller/AccountabilityReportScopeTest.php}
 
 #### Scenario: Report aggregates audit counts per action
 - **GIVEN** activity `A` (uuid `u1`) has 3 `create`, 2 `update`, and 5 `read` audit rows
@@ -139,6 +192,31 @@ audit entry for that query.
 - **GIVEN** a purpose that names no processing activity
 - **WHEN** a query is made under it
 - **THEN** the query is refused, naming the purpose
+
+#### Scenario: a search by ids that names no table is refused like the table read
+
+- **GIVEN** a schema that asks for a purpose, and a request on `/api/objects` with `_ids`, alone or beside only `register` or only `schema`
+- **WHEN** one of the ids is a row of that schema that the caller may read, and the request declares no usable purpose
+- **THEN** the read is refused with 403 `PURPOSE_REFUSED`, as `GET /api/objects/{register}/{schema}` refuses it
+- **AND** an id of a row there that the caller may not read answers as an id that matches no row
+- **AND** ids that only hit tables without the annotation answer as before
+- @e2e exclude {needs an administered purpose and processing activity; proven on a live NC 34 + PostgreSQL bench, unit tests pin the refusal and the leave-out}
+
+#### Scenario: a text search that names no table leaves out the tables it may not read
+
+- **GIVEN** a schema that asks for a purpose
+- **WHEN** `/api/objects?_search=` runs without a usable declared purpose
+- **THEN** the search answers 200 with the matches of the other tables, and none of that schema
+- **AND** with a usable declared purpose the rows of that schema are in the answer
+- @e2e exclude {needs an administered purpose and processing activity; proven on a live NC 34 + PostgreSQL bench, unit tests pin the refusal and the leave-out}
+
+#### Scenario: a relation search that names no table leaves out the tables it may not read
+
+- **GIVEN** a schema that asks for a purpose
+- **WHEN** `/api/objects?_relations_contains=` runs without a usable declared purpose
+- **THEN** the search answers 200 with the referring rows of the other tables, and none of that schema
+- **AND** with a usable declared purpose the referring rows of that schema are in the answer
+- @e2e exclude {needs an administered purpose and processing activity; unit tests pin the leave-out}
 
 #### Scenario: queries are countable per purpose
 

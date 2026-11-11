@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -26,9 +27,7 @@ class ObjectTextExtractionJobTest extends TestCase {
 		$this->textExtractor = $this->createMock(TextExtractionService::class);
 
 		$this->job = new ObjectTextExtractionJob(
-			$timeFactory,
-			$this->config,
-			$this->logger,
+			new ConfiguredJobRuntime($timeFactory, $this->config, $this->logger),
 			$this->textExtractor,
 		);
 	}

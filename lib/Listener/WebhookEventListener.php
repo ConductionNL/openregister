@@ -173,17 +173,42 @@ class WebhookEventListener implements IEventListener {
 		$payload = $this->extractPayload(event: $event);
 
 		if ($payload === null) {
-			$this->logger->warning(
-				message: '[WebhookEventListener] Could not extract payload from event',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'event' => $eventClass,
-				]
-			);
+			$this->logUnextractable(eventClass: $eventClass);
 			return;
 		}
 
+		$this->logProcessing(eventClass: $eventClass);
+
+		// Dispatch to webhook service.
+		$this->webhookService->dispatchEvent(eventName: $eventClass, payload: $payload);
+	}//end handle()
+
+	/**
+	 * Log an event no payload could be extracted from.
+	 *
+	 * @param string $eventClass The event class.
+	 *
+	 * @return void
+	 */
+	private function logUnextractable(string $eventClass): void {
+		$this->logger->warning(
+			message: '[WebhookEventListener] Could not extract payload from event',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'event' => $eventClass,
+			]
+		);
+	}//end logUnextractable()
+
+	/**
+	 * Log an event about to be dispatched to the webhooks.
+	 *
+	 * @param string $eventClass The event class.
+	 *
+	 * @return void
+	 */
+	private function logProcessing(string $eventClass): void {
 		$this->logger->debug(
 			message: '[WebhookEventListener] Processing event for webhooks',
 			context: [
@@ -192,10 +217,7 @@ class WebhookEventListener implements IEventListener {
 				'event' => $eventClass,
 			]
 		);
-
-		// Dispatch to webhook service.
-		$this->webhookService->dispatchEvent(_event: $event, eventName: $eventClass, payload: $payload);
-	}//end handle()
+	}//end logProcessing()
 
 	/**
 	 * Extract payload from event
@@ -232,38 +254,40 @@ class WebhookEventListener implements IEventListener {
 	 * @return array<string, mixed>|null The payload, or null for any other event
 	 */
 	private function objectPayload(Event $event): ?array {
+		return ($this->lifecyclePayload(event: $event) ?? $this->statePayload(event: $event));
+	}//end objectPayload()
+
+	/**
+	 * Build the payload of an object create, update or revert in progress.
+	 *
+	 * @param Event $event The event
+	 *
+	 * @return array<string, mixed>|null The payload, or null for any other event
+	 */
+	private function lifecyclePayload(Event $event): ?array {
 		if ($event instanceof ObjectCreatingEvent) {
-			$object = $event->getObject();
-			return [
-				'objectType' => 'object',
-				'action' => 'creating',
-				'object' => $object->jsonSerialize(),
-				'register' => $object->getRegister(),
-				'schema' => $object->getSchema(),
-			];
+			return $this->creatingPayload(event: $event);
 		}
 
 		if ($event instanceof ObjectUpdatingEvent) {
-			$newObject = $event->getNewObject();
-			return [
-				'objectType' => 'object',
-				'action' => 'updating',
-				'newObject' => $newObject->jsonSerialize(),
-				'oldObject' => $event->getOldObject()?->jsonSerialize(),
-				'register' => $newObject->getRegister(),
-				'schema' => $newObject->getSchema(),
-			];
+			return $this->updatingPayload(event: $event);
 		}
 
 		if ($event instanceof ObjectRevertedEvent) {
-			return [
-				'objectType' => 'object',
-				'action' => 'reverted',
-				'object' => $event->getObject()->jsonSerialize(),
-				'revertPoint' => $event->getRevertPoint(),
-			];
+			return $this->revertedPayload(event: $event);
 		}
 
+		return null;
+	}//end lifecyclePayload()
+
+	/**
+	 * Build the payload of a created, updated or deleted object.
+	 *
+	 * @param Event $event The event
+	 *
+	 * @return array<string, mixed>|null The payload, or null for any other event
+	 */
+	private function statePayload(Event $event): ?array {
 		foreach (self::OBJECT_STATE_EVENTS as $class => [$action, $getter]) {
 			if ($event instanceof $class) {
 				return $this->objectStatePayload(object: $event->{$getter}(), action: $action);
@@ -271,7 +295,60 @@ class WebhookEventListener implements IEventListener {
 		}
 
 		return null;
-	}//end objectPayload()
+	}//end statePayload()
+
+	/**
+	 * Build the payload of an object about to be created.
+	 *
+	 * @param ObjectCreatingEvent $event The event
+	 *
+	 * @return array<string, mixed> The payload
+	 */
+	private function creatingPayload(ObjectCreatingEvent $event): array {
+		$object = $event->getObject();
+		return [
+			'objectType' => 'object',
+			'action' => 'creating',
+			'object' => $object->jsonSerialize(),
+			'register' => $object->getRegister(),
+			'schema' => $object->getSchema(),
+		];
+	}//end creatingPayload()
+
+	/**
+	 * Build the payload of an object about to be updated, with its old version.
+	 *
+	 * @param ObjectUpdatingEvent $event The event
+	 *
+	 * @return array<string, mixed> The payload
+	 */
+	private function updatingPayload(ObjectUpdatingEvent $event): array {
+		$newObject = $event->getNewObject();
+		return [
+			'objectType' => 'object',
+			'action' => 'updating',
+			'newObject' => $newObject->jsonSerialize(),
+			'oldObject' => $event->getOldObject()?->jsonSerialize(),
+			'register' => $newObject->getRegister(),
+			'schema' => $newObject->getSchema(),
+		];
+	}//end updatingPayload()
+
+	/**
+	 * Build the payload of an object reverted to an earlier point.
+	 *
+	 * @param ObjectRevertedEvent $event The event
+	 *
+	 * @return array<string, mixed> The payload
+	 */
+	private function revertedPayload(ObjectRevertedEvent $event): array {
+		return [
+			'objectType' => 'object',
+			'action' => 'reverted',
+			'object' => $event->getObject()->jsonSerialize(),
+			'revertPoint' => $event->getRevertPoint(),
+		];
+	}//end revertedPayload()
 
 	/**
 	 * Build the payload of a saved or deleted object.
