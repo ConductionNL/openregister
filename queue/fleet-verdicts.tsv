@@ -2632,3 +2632,4 @@ integriq	3312	f23a1ff2fbc5531f44e59a1818b0e8be27bdf8ec	GREEN	FV9-03:1	phpunit gr
 integriq	3313	d71e60f482596787dcc608841261c4fd5fe264ff	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
 integriq	3314	8688f24e5e2d8362be729fd08d5b46fd26b9c754	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
 integriq	3315	e4f9415514d63122d4bd3828da3abb7ef77bf111	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+pipelinq	3471	c07ef2f9c951f6b3325e1aa63330edd39c7dfc38	CONFLICT	FV9-08:1	conflicts with #3453 in lib/Service/CtiService.php
