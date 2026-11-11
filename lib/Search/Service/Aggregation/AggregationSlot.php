@@ -73,6 +73,7 @@ final class AggregationSlot {
 		return new self(
 			registerSlug: (string) $table->register,
 			schemaSlug: (string) $table->schema,
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 			name: 'adhoc:' . sha1($encodedStr),
 			filter: $query->filter
 		);

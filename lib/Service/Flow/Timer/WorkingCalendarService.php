@@ -113,13 +113,7 @@ class WorkingCalendarService {
 
 		$definitions = $this->definitions->calendars();
 		if (array_key_exists($slug, $definitions) === false) {
-			throw new FlowTimerValidationException(
-				message: sprintf(
-					"Working calendar '%s' does not exist; known calendars: %s. No weekday-only substitute is made.",
-					$slug,
-					implode(', ', array_keys($definitions))
-				)
-			);
+			throw self::unknownCalendar(slug: $slug, definitions: $definitions);
 		}
 
 		$calendar = WorkingCalendar::fromArray(definition: $definitions[$slug]);
@@ -127,6 +121,24 @@ class WorkingCalendarService {
 
 		return $calendar;
 	}//end bySlug()
+
+	/**
+	 * The refusal of a calendar slug that names no defined calendar.
+	 *
+	 * @param string               $slug        The slug asked for.
+	 * @param array<string, mixed> $definitions The defined calendars, by slug.
+	 *
+	 * @return FlowTimerValidationException The refusal.
+	 */
+	private static function unknownCalendar(string $slug, array $definitions): FlowTimerValidationException {
+		return new FlowTimerValidationException(
+			message: sprintf(
+				"Working calendar '%s' does not exist; known calendars: %s. No weekday-only substitute is made.",
+				$slug,
+				implode(', ', array_keys($definitions))
+			)
+		);
+	}//end unknownCalendar()
 
 	/**
 	 * The slug of the calendar configured for an organisation, when one is.

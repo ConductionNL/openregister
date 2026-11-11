@@ -20,14 +20,14 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Notification\TemplateCatalogue;
-use OCA\OpenRegister\Service\Notification\TemplateRendering;
+use OCA\OpenRegister\Kernel\Contracts\TemplateRendering;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 
 /**
  * A rendering request renders the same text as the three-argument render().
  *
- * @covers \OCA\OpenRegister\Service\Notification\TemplateRendering
+ * @covers \OCA\OpenRegister\Kernel\Contracts\TemplateRendering
  * @covers \OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry
  */
 class TemplateRenderingTest extends TestCase {
@@ -64,11 +64,11 @@ class TemplateRenderingTest extends TestCase {
 		$this->assertSame([], (new TemplateRendering('e', null))->variables);
 	}
 
-	public function testRenderForAnswersLikeRender(): void {
+	public function testRenderForRendersTheRequest(): void {
 		$registry = $this->registry();
 
 		$this->assertSame(['subject' => 'Hallo Ada', 'body' => 'Tekst'], $registry->renderFor(new TemplateRendering('e', 'nl', ['who' => 'Ada'])));
-		$this->assertSame($registry->render('e', 'fr', ['who' => 'Ada']), $registry->renderFor(new TemplateRendering('e', 'fr', ['who' => 'Ada'])));
+		$this->assertSame(['subject' => 'Hello Ada', 'body' => 'Text'], $registry->renderFor(new TemplateRendering('e', 'fr', ['who' => 'Ada'])));
 		$this->assertSame(['subject' => 'Hello {{who}}', 'body' => 'Text'], $registry->renderFor(new TemplateRendering('e', null)));
 		$this->assertNull($registry->renderFor(new TemplateRendering('silent', 'en')));
 	}

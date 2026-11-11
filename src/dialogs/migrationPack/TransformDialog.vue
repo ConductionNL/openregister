@@ -119,15 +119,7 @@
 							:value="defaultChoice"
 							:disabled="readOnly"
 							@change="setDefaultChoice($event.target.value)">
-							<option v-if="defaultChoice === ''" value="" disabled>
-								{{ t('openregister', 'Choose yes or no') }}
-							</option>
-							<option value="true">
-								{{ t('openregister', 'Yes') }}
-							</option>
-							<option value="false">
-								{{ t('openregister', 'No') }}
-							</option>
+							<YesNoOptions :choice="defaultChoice" />
 						</select>
 					</div>
 					<div
@@ -291,6 +283,7 @@ import {
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import KeyValueRows from '../../components/migrationPack/KeyValueRows.vue'
+import YesNoOptions from '../../components/migrationPack/YesNoOptions.vue'
 import { t } from '../../views/migrationPack/l10n.js'
 import {
 	isBooleanCell,
@@ -332,6 +325,7 @@ export default {
 		NcTextField,
 		Plus,
 		TrashCanOutline,
+		YesNoOptions,
 	},
 
 	props: {

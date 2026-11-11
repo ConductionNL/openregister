@@ -90,8 +90,8 @@ class CasePlanItemTimersTest extends TestCase {
 
 		$armed = [];
 		$this->timers->expects($this->exactly(2))->method('arm')->willReturnCallback(
-			static function (array $config, ?string $actor) use (&$armed): FlowTimer {
-				$armed[] = [$config, $actor];
+			static function (array $config, FlowTimerAct $act) use (&$armed): FlowTimer {
+				$armed[] = [$config, $act->actor];
 
 				return new FlowTimer();
 			}

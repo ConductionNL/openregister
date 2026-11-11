@@ -137,3 +137,47 @@ describe('JoinOrganisation option loading (golden)', () => {
 		expect(trace).toMatchSnapshot()
 	})
 })
+
+describe('JoinOrganisation joining (golden)', () => {
+	beforeEach(() => {
+		jest.useFakeTimers()
+		jest.spyOn(console, 'error').mockImplementation(() => {})
+		organisationStore.joinOrganisation.mockReset()
+	})
+
+	afterEach(() => {
+		jest.useRealTimers()
+		jest.restoreAllMocks()
+	})
+
+	it.each([
+		['refuses without an organisation', null, { id: 'ann' }, null],
+		['refuses without a user', { uuid: 'o-1', name: 'One' }, null, null],
+		['adds the user', { uuid: 'o-1', name: 'One' }, { id: 'ann' }, () => Promise.resolve({})],
+		['adds a user without an id as nobody', { uuid: 'o-1', name: 'One' }, { label: 'x' }, () => Promise.resolve({})],
+		['reports a refusal', { uuid: 'o-1', name: 'One' }, { id: 'ann' }, () => Promise.reject(new Error('Already a member'))],
+		['reports a failure without a message', { uuid: 'o-1', name: 'One' }, { id: 'ann' }, () => Promise.reject({})],
+	])('%s', async (name, organisation, user, answer) => {
+		if (answer) organisationStore.joinOrganisation.mockImplementation(answer)
+		const ctx = context()
+		ctx.selectedOrganisation = organisation
+		ctx.selectedUser = user
+		ctx.error = 'stale'
+		ctx.closeModal = jest.fn()
+		const pending = ctx.joinSelectedOrganisation()
+		const during = { joining: ctx.joining, error: ctx.error }
+		await pending
+		const before = { closes: ctx.closeModal.mock.calls.length }
+		jest.advanceTimersByTime(3000)
+		expect({
+			joined: organisationStore.joinOrganisation.mock.calls,
+			during,
+			joining: ctx.joining,
+			success: ctx.success,
+			error: ctx.error,
+			joinedOrganisationName: ctx.joinedOrganisationName,
+			before,
+			closes: ctx.closeModal.mock.calls.length,
+		}).toMatchSnapshot()
+	})
+})

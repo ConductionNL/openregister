@@ -303,21 +303,32 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 			return false;
 		}
 
-		$uid = (string)$act->actor;
+		$uid  = (string)$act->actor;
 		$rule = trim($rule);
 		if (str_starts_with($rule, 'user:') === true) {
 			return substr($rule, 5) === $uid;
 		}
 
 		if (str_starts_with($rule, 'role:') === true) {
-			$role = substr($rule, 5);
-			$this->assertRoleResolvable(verb: $act->verb, role: $role);
-
-			return $this->groups->isInGroup(uid: $uid, groupId: $role);
+			return $this->roleAdmits(act: $act, role: substr($rule, 5));
 		}
 
 		return $this->groups->isInGroup(uid: $uid, groupId: $rule);
 	}//end ruleAdmits()
+
+	/**
+	 * Whether a `role:` rule admits the actor: the role must resolve, and the actor must hold it.
+	 *
+	 * @param CasePlanAct $act  The act and its actor.
+	 * @param string      $role The role (group id) the rule names.
+	 *
+	 * @return bool True when the actor holds the role.
+	 */
+	private function roleAdmits(CasePlanAct $act, string $role): bool {
+		$this->assertRoleResolvable(verb: $act->verb, role: $role);
+
+		return $this->groups->isInGroup(uid: (string)$act->actor, groupId: $role);
+	}//end roleAdmits()
 
 	/**
 	 * A role must resolve to the group of the same name.

@@ -226,29 +226,43 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
 	 */
 	public function deliveryState(TaskInterface $task): array {
-		$unknown = [
-			'state' => PortalTaskDelivery::STATE_NOT_RECORDED,
-			'channels' => [],
-			'requestedAt' => null,
-			'deliveredAt' => null,
-		];
-		if ($this->deliveries === null) {
-			return $unknown;
+		$rows = null;
+		if ($this->deliveries !== null) {
+			$rows = $this->deliveryRows(deliveries: $this->deliveries, task: $task);
 		}
 
+		if ($rows === null) {
+			return [
+				'state' => PortalTaskDelivery::STATE_NOT_RECORDED,
+				'channels' => [],
+				'requestedAt' => null,
+				'deliveredAt' => null,
+			];
+		}
+
+		return PortalTaskDelivery::summarise(rows: $rows);
+	}//end deliveryState()
+
+	/**
+	 * The task's recorded delivery rows, or null when they cannot be read.
+	 *
+	 * @param PortalTaskDeliveryMapper $deliveries The delivery store.
+	 * @param TaskInterface            $task       The task.
+	 *
+	 * @return array|null The rows, or null after logging why they could not be read.
+	 */
+	private function deliveryRows(PortalTaskDeliveryMapper $deliveries, TaskInterface $task): ?array {
 		try {
-			$rows = $this->deliveries->findForTask(taskUuid: (string)$task->getUuid());
+			return $deliveries->findForTask(taskUuid: (string)$task->getUuid());
 		} catch (Throwable $failure) {
 			$this->logger->debug(
 				'[TaskInboxService] Could not read delivery state: ' . $failure->getMessage(),
 				['task' => $task->getUuid()]
 			);
 
-			return $unknown;
+			return null;
 		}
-
-		return PortalTaskDelivery::summarise(rows: $rows);
-	}//end deliveryState()
+	}//end deliveryRows()
 
 	/**
 	 * Subject context for a set of tasks, for readers outside this service
@@ -301,14 +315,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	private function openBlockers(array $tasks): array {
-		$uuids = [];
-		foreach ($tasks as $task) {
-			$blockedBy = (string)$task->getBlockedBy();
-			if ($blockedBy !== '') {
-				$uuids[] = $blockedBy;
-			}
-		}
-
+		$uuids = self::blockerUuids(tasks: $tasks);
 		if ($uuids === [] || $this->blockers === null) {
 			return [];
 		}
@@ -321,6 +328,25 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			return [];
 		}
 	}//end openBlockers()
+
+	/**
+	 * The uuids the tasks are blocked by, in task order, blanks left out.
+	 *
+	 * @param array<int, TaskInterface> $tasks The tasks.
+	 *
+	 * @return array<int, string> The blocker uuids.
+	 */
+	private static function blockerUuids(array $tasks): array {
+		$uuids = [];
+		foreach ($tasks as $task) {
+			$blockedBy = (string)$task->getBlockedBy();
+			if ($blockedBy !== '') {
+				$uuids[] = $blockedBy;
+			}
+		}
+
+		return $uuids;
+	}//end blockerUuids()
 
 	/**
 	 * Synthesize a display title for a titleless task — on read, never persisted.
@@ -346,17 +372,30 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			$action = 'task';
 		}
 
-		$subjectName = trim((string)($subject['title'] ?? ''));
-		if ($subjectName === '') {
-			$subjectName = trim((string)$task->getObjectUuid());
-		}
-
+		$subjectName = self::subjectNameOf(task: $task, subject: $subject);
 		if ($subjectName === '') {
 			return ucfirst($action);
 		}
 
 		return sprintf('%s: %s', ucfirst($action), $subjectName);
 	}//end displayTitle()
+
+	/**
+	 * The name a derived title gives the subject: its title, else the task's object uuid.
+	 *
+	 * @param TaskInterface             $task    The task.
+	 * @param array<string, mixed>|null $subject The subject context, when one was read.
+	 *
+	 * @return string The name, or '' when neither is known.
+	 */
+	private static function subjectNameOf(TaskInterface $task, ?array $subject): string {
+		$subjectName = trim((string)($subject['title'] ?? ''));
+		if ($subjectName === '') {
+			return trim((string)$task->getObjectUuid());
+		}
+
+		return $subjectName;
+	}//end subjectNameOf()
 
 	/**
 	 * Resolve subject context for a page of tasks, in ONE batch.
@@ -372,6 +411,22 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function subjectContexts(array $tasks): array {
+		$uuids = self::subjectUuids(tasks: $tasks);
+		if ($uuids === [] || $this->objects === null) {
+			return [];
+		}
+
+		return $this->contextsOf(objects: $this->subjectObjects(tasks: $tasks, uuids: $uuids));
+	}//end subjectContexts()
+
+	/**
+	 * The distinct subject uuids of a page, in first-seen order.
+	 *
+	 * @param array<int, TaskInterface> $tasks The page.
+	 *
+	 * @return array<int, int|string> The uuids.
+	 */
+	private static function subjectUuids(array $tasks): array {
 		$uuids = [];
 		foreach ($tasks as $task) {
 			$objectUuid = trim((string)$task->getObjectUuid());
@@ -380,12 +435,19 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			}
 		}
 
-		if ($uuids === [] || $this->objects === null) {
-			return [];
-		}
+		return array_keys($uuids);
+	}//end subjectUuids()
 
+	/**
+	 * The context of every subject object that yields one, by uuid.
+	 *
+	 * @param array<array-key, mixed> $objects The subject objects.
+	 *
+	 * @return array<string, array<string, mixed>> Context by object uuid.
+	 */
+	private function contextsOf(array $objects): array {
 		$contexts = [];
-		foreach ($this->subjectObjects(tasks: $tasks, uuids: array_keys($uuids)) as $object) {
+		foreach ($objects as $object) {
 			$serialised = [];
 			if (method_exists($object, 'jsonSerialize') === true) {
 				$serialised = $object->jsonSerialize();
@@ -398,7 +460,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		}
 
 		return $contexts;
-	}//end subjectContexts()
+	}//end contextsOf()
 
 	/**
 	 * The subject objects of a page: located ones from their own tables, the

@@ -514,4 +514,20 @@ abstract class AbstractTool implements ToolInterface {
 		// Return non-array results as-is.
 		return $result;
 	}//end __call()
+
+	/**
+	 * Apply the non-null fields of a patch to an entity through its setters.
+	 *
+	 * @param object               $entity The entity being patched.
+	 * @param array<string, mixed> $fields Setter name → value; null values are left alone.
+	 *
+	 * @return void
+	 */
+	protected static function applySetters(object $entity, array $fields): void {
+		foreach ($fields as $setter => $value) {
+			if ($value !== null) {
+				$entity->$setter($value);
+			}
+		}
+	}//end applySetters()
 }//end class

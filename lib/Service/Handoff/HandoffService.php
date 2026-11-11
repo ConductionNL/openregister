@@ -48,8 +48,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\HandoffExecutedEvent;
+use OCA\OpenRegister\Event\HandoffExecutedSource;
+use OCA\OpenRegister\Event\HandoffExecutedTarget;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -440,18 +443,24 @@ class HandoffService implements HandoffServiceInterface {
 		$source = $plan->source;
 		$this->requesters->eventDispatcher->dispatchTyped(
 			new HandoffExecutedEvent(
-				sourceApp: (string)($plan->sourceSchema->getApplication() ?? ''),
-				sourceRegister: (int)$source->getRegister(),
-				sourceSchema: (int)$source->getSchema(),
-				sourceObjectUuid: (string)$source->getUuid(),
-				subjectLabel: $source->getName(),
-				targetSemanticType: $plan->kindUri(),
-				targetRegister: (int)$target->getRegister(),
-				targetSchema: (int)$target->getSchema(),
-				targetObjectUuid: (string)$target->getUuid(),
-				handoffId: $plan->request->handoffId,
-				correlationId: $plan->request->correlationId,
-				deferred: $plan->request->deferred
+				source: new HandoffExecutedSource(
+					app: (string)($plan->sourceSchema->getApplication() ?? ''),
+					object: new ObjectRef(
+						register: (int)$source->getRegister(),
+						schema: (int)$source->getSchema(),
+						id: (string)$source->getUuid()
+					),
+					label: $source->getName()
+				),
+				target: new HandoffExecutedTarget(
+					semanticType: $plan->kindUri(),
+					object: new ObjectRef(
+						register: (int)$target->getRegister(),
+						schema: (int)$target->getSchema(),
+						id: (string)$target->getUuid()
+					)
+				),
+				request: $plan->request
 			)
 		);
 	}//end dispatchExecuted()

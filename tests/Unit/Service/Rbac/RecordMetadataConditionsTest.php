@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\AuthorizationEdit;
 use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
 use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
 use PHPUnit\Framework\TestCase;
@@ -102,7 +103,7 @@ class RecordMetadataConditionsTest extends TestCase {
 			'matrix' => ['field' => 'afdeling', 'rows' => [['where' => ['_published' => true]]]],
 		];
 
-		$findings = (new MetadataConditionFindings())->findings(authorization: $authorization, context: 'schema "zaak"');
+		$findings = (new MetadataConditionFindings())->findings(edit: new AuthorizationEdit(authorization: $authorization), context: 'schema "zaak"');
 
 		$this->assertCount(2, $findings);
 		$this->assertStringContainsString('read rule for group "public" in schema "zaak"', $findings[0]);
@@ -156,7 +157,7 @@ class RecordMetadataConditionsTest extends TestCase {
 	public function testOnlyAnAddedOrChangedConditionIsAFinding(): void {
 		$bad = ['group' => 'g', 'match' => ['_published' => true, 'status' => 'open']];
 		$stored = ['read' => [$bad]];
-		$find = fn (array $new): array => (new MetadataConditionFindings())->findings(authorization: $new, context: 'x', stored: $stored);
+		$find = fn (array $new): array => (new MetadataConditionFindings())->findings(edit: new AuthorizationEdit(authorization: $new, stored: $stored), context: 'x');
 
 		$this->assertSame([], $find(['read' => [$bad]]));
 		$this->assertSame([], $find(['read' => [['group' => 'g', 'match' => ['_published' => true, 'status' => 'closed']]]]));
@@ -192,13 +193,10 @@ class RecordMetadataConditionsTest extends TestCase {
 	 * @return void
 	 */
 	public function testABlockWithKnownMetadataHasNoFindings(): void {
-		$this->assertSame([], (new MetadataConditionFindings())->findings(authorization: null, context: 'schema "x"'));
+		$this->assertSame([], (new MetadataConditionFindings())->findings(edit: new AuthorizationEdit(authorization: null), context: 'schema "x"'));
 		$this->assertSame(
 			[],
-			(new MetadataConditionFindings())->findings(
-				authorization: ['read' => [['group' => 'g', 'match' => ['_owner' => '$userId']]], 'inheritFromPublic' => true],
-				context: 'schema "x"'
-			)
+			(new MetadataConditionFindings())->findings(edit: new AuthorizationEdit(authorization: ['read' => [['group' => 'g', 'match' => ['_owner' => '$userId']]], 'inheritFromPublic' => true]), context: 'schema "x"')
 		);
 	}//end testABlockWithKnownMetadataHasNoFindings()
 

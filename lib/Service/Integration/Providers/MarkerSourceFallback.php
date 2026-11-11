@@ -41,14 +41,13 @@ trait MarkerSourceFallback {
 	 */
 	protected function unlinkedRows(string $objectId): array {
 		$source = self::MARKER_SOURCE;
-		$rows = $this->findByMarker(
-			db: $this->db,
+		$scan = new MarkerScan(
 			table: $source['table'],
 			markerColumn: $source['column'],
 			marker: self::MARKER_PREFIX . $objectId . ']',
-			extraColumns: $source['extra'],
-			idColumn: $source['id'],
+			columns: array_merge([$source['id']], $source['extra'])
 		);
+		$rows = $this->scanMarker(db: $this->db, scan: $scan);
 
 		return array_map(fn (array $row): array => $this->rowFromMarker(row: $row), $rows);
 	}//end unlinkedRows()

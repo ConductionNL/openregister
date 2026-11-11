@@ -410,11 +410,9 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.vectorization-config-content {
-	padding: 20px;
-	max-height: 70vh;
-	overflow-y: auto;
-}
+@use '../../styles/modals.scss' as *;
+
+@include config-content('vectorization-config');
 
 .description {
 	color: var(--color-text-maxcontrast);

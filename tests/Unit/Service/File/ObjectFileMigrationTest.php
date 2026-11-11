@@ -181,6 +181,11 @@ class ObjectFileMigrationTest extends TestCase {
 		$reowner->method('reown')->willReturn(0);
 
 		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('deleteKey')->willReturnCallback(
+			function (string $app, string $key): void {
+				unset($this->appConfigValues[$key]);
+			}
+		);
 		$appConfig->method('setValueString')->willReturnCallback(
 			function (string $app, string $key, string $value): bool {
 				$this->appConfigValues[$key] = $value;
@@ -285,4 +290,34 @@ class ObjectFileMigrationTest extends TestCase {
 		$this->assertSame(0, $second['filesMoved']);
 		$this->assertSame(0, $second['foldersMoved']);
 	}//end testASecondRunMovesOnlyWhatIsLeft()
+
+	public function testAFileWhereAFolderShouldMergeIsLeftAndTheRestMoves(): void {
+		$this->add('/openregister/files/Open Registers', true);
+		$this->add('/openregister/files/Open Registers/zaken', false);
+		$this->add('/alice/files/Open Registers', true);
+		$zaken = $this->add('/alice/files/Open Registers/zaken', true);
+		$this->add('/alice/files/Open Registers/zaken/o1', true);
+		$this->add('/alice/files/Open Registers/besluiten', true);
+		$this->add('/alice/files/Open Registers/besluiten/b1.pdf', false);
+		$this->add('/bob/files/Open Registers', false);
+
+		$tally = $this->migration()->run();
+
+		$this->assertSame(['foldersMoved' => 1, 'filesMoved' => 1, 'sharesReowned' => 0, 'foldersLeft' => 1, 'refused' => false], $tally);
+		$this->assertSame($zaken, $this->tree['/alice/files/Open Registers/zaken']['id']);
+		$this->assertArrayHasKey('/openregister/files/Open Registers/besluiten/b1.pdf', $this->tree);
+		$this->assertArrayHasKey('/bob/files/Open Registers', $this->tree);
+	}//end testAFileWhereAFolderShouldMergeIsLeftAndTheRestMoves()
+
+	public function testAClearRunForgetsAnEarlierRefusal(): void {
+		$this->encrypted = true;
+		$this->migration()->run();
+		$this->assertSame(ObjectFileMigration::REFUSAL_MESSAGE, $this->appConfigValues[ObjectFileMigration::REFUSAL_KEY]);
+
+		$this->encrypted = false;
+		$tally = $this->migration()->run();
+
+		$this->assertFalse($tally['refused']);
+		$this->assertArrayNotHasKey(ObjectFileMigration::REFUSAL_KEY, $this->appConfigValues);
+	}//end testAClearRunForgetsAnEarlierRefusal()
 }//end class

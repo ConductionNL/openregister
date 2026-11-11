@@ -301,6 +301,18 @@ class ExportProfilesController extends Controller {
 		// register handing the copy over, which is what the count counts.
 		$this->recordRun(profile: $profile, written: $written);
 
+		return $this->servedExport(profile: $profile, written: $written);
+	}//end run()
+
+	/**
+	 * The export as a download, its value mode, row count and profile on the headers.
+	 *
+	 * @param mixed                $profile The profile that was run
+	 * @param array<string, mixed> $written The written export: bytes, filename, rowCount, metadata
+	 *
+	 * @return DataDownloadResponse The download
+	 */
+	private function servedExport($profile, array $written): DataDownloadResponse {
 		$contentType = 'text/csv';
 		if (($profile->getFormat() ?? 'csv') === 'json') {
 			$contentType = 'application/json';
@@ -320,7 +332,7 @@ class ExportProfilesController extends Controller {
 		$response->addHeader('X-OpenRegister-Export-Profile', (string)$written['metadata']['profileUuid']);
 
 		return $response;
-	}//end run()
+	}//end servedExport()
 
 	/**
 	 * Record what this profile run served.
@@ -345,12 +357,7 @@ class ExportProfilesController extends Controller {
 	private function recordRun($profile, array $written): void {
 		try {
 			$this->exportRuns->record(
-				origin: new ExportRunOrigin(
-					source: 'export-profile',
-					actor: (string)$this->resolveUserId(),
-					profile: (string)($written['metadata']['profileUuid'] ?? ''),
-					status: \OCA\OpenRegister\Db\ExportRun::STATUS_SERVED
-				),
+				origin: $this->servedRunOrigin(written: $written),
 				content: new ExportRunContent(
 					format: (string)($profile->getFormat() ?? 'csv'),
 					rowCount: (int)($written['rowCount'] ?? 0)
@@ -366,6 +373,22 @@ class ExportProfilesController extends Controller {
 			unset($e);
 		}
 	}//end recordRun()
+
+	/**
+	 * Where a served profile run came from: this source, the caller and the profile.
+	 *
+	 * @param array<string, mixed> $written The rendered export
+	 *
+	 * @return ExportRunOrigin The origin, with the served status
+	 */
+	private function servedRunOrigin(array $written): ExportRunOrigin {
+		return new ExportRunOrigin(
+			source: 'export-profile',
+			actor: (string)$this->resolveUserId(),
+			profile: (string)($written['metadata']['profileUuid'] ?? ''),
+			status: \OCA\OpenRegister\Db\ExportRun::STATUS_SERVED
+		);
+	}//end servedRunOrigin()
 
 	/**
 	 * The metadata line prefix a CSV export opens with, published so a consumer

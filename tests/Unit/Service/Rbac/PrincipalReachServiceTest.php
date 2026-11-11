@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
 use OCA\OpenRegister\Service\Rbac\PrincipalReach;
@@ -109,9 +110,9 @@ final class PrincipalReachServiceTest extends TestCase {
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('permittedActionsFor')->willReturn($actions);
 		$permissions->method('provenanceFor')->willReturnCallback(
-			static function (Schema $schema, array $verbs): array {
+			static function (ProvenanceRequest $request): array {
 				$out = [];
-				foreach ($verbs as $verb) {
+				foreach ($request->actions as $verb) {
 					$out[$verb] = ['level' => 'schema', 'matched' => 'redacteuren'];
 				}
 

@@ -110,3 +110,43 @@ describe('selectedPropertyConfig', () => {
 		expect(selectedPropertyConfig('a')).not.toBe(selectedPropertyConfig('a'))
 	})
 })
+
+describe('schema exploration field order', () => {
+	it('lays the fields of a selected and a suggested property out in a fixed order', () => {
+		const suggestion = {
+			property_name: 'size',
+			recommended_type: 'integer',
+			description: 'Size',
+			detected_format: 'int32',
+			max_length: 9,
+			min_length: 1,
+		}
+		expect(Object.keys(selectedPropertyConfig('size', suggestion))).toEqual([
+			...Object.keys(SETTINGS),
+			'selected',
+			'type',
+			'title',
+			'description',
+			'format',
+			'displayTitle',
+			'userDescription',
+			'example',
+			'order',
+			'technicalDescription',
+			'maxLength',
+			'minLength',
+		])
+		expect(Object.keys(suggestedPropertyConfig(suggestion))).toEqual([
+			...Object.keys(SETTINGS),
+			'type',
+			'title',
+			'displayTitle',
+			'format',
+			'maxLength',
+			'minLength',
+			'description',
+			'example',
+			'order',
+		])
+	})
+})

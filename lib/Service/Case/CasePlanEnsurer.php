@@ -313,22 +313,35 @@ class CasePlanEnsurer {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	private function checkAnchor(CaseItem $row, CaseAnchor $anchor): void {
-		$registerId = $anchor->registerId;
-		$schemaId = $anchor->schemaId;
-		$registerDiffers = $registerId !== null && $row->getRegisterId() !== null && $row->getRegisterId() !== $registerId;
-		$schemaDiffers = $schemaId !== null && $row->getSchemaId() !== null && $row->getSchemaId() !== $schemaId;
-		if ($registerDiffers === true || $schemaDiffers === true) {
+		if ($this->anchorDiffers(row: $row, anchor: $anchor) === true) {
 			throw new CaseValidationException(
 				message: sprintf(
 					'The plan on this object is anchored to register %d schema %d, not register %d schema %d.',
 					(int)$row->getRegisterId(),
 					(int)$row->getSchemaId(),
-					(int)$registerId,
-					(int)$schemaId
+					(int)$anchor->registerId,
+					(int)$anchor->schemaId
 				)
 			);
 		}
 	}//end checkAnchor()
+
+	/**
+	 * Whether a plan row is anchored to another register or schema than the one asked for.
+	 *
+	 * @param CaseItem   $row    The plan row.
+	 * @param CaseAnchor $anchor The register and schema asked for (either may be unknown).
+	 *
+	 * @return bool True when a known side differs.
+	 */
+	private function anchorDiffers(CaseItem $row, CaseAnchor $anchor): bool {
+		$registerId      = $anchor->registerId;
+		$schemaId        = $anchor->schemaId;
+		$registerDiffers = $registerId !== null && $row->getRegisterId() !== null && $row->getRegisterId() !== $registerId;
+		$schemaDiffers   = $schemaId !== null && $row->getSchemaId() !== null && $row->getSchemaId() !== $schemaId;
+
+		return ($registerDiffers === true || $schemaDiffers === true);
+	}//end anchorDiffers()
 
 	/**
 	 * Ensure one placed node and recurse into a stage's children.

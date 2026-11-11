@@ -214,6 +214,44 @@ import {
 	timestampColumns,
 } from '../indexPageOptions.js'
 
+/**
+ * The message for a switch of the active organisation that failed.
+ *
+ * @param {Error} error The failure
+ * @return {string} The message
+ */
+function switchFailure(error) {
+	return t(
+		'openregister',
+		'Failed to change active organisation: {error}',
+		{ error: error.message },
+	)
+}
+
+/**
+ * The question asked before leaving an organisation.
+ *
+ * @param {object} organisation The organisation
+ * @return {string} The question
+ */
+function leaveQuestion(organisation) {
+	return t('openregister', "Are you sure you want to leave '{name}'?", {
+		name: organisation.name,
+	})
+}
+
+/**
+ * The message for leaving an organisation that failed.
+ *
+ * @param {Error} error The failure
+ * @return {string} The message
+ */
+function leaveFailure(error) {
+	return t('openregister', 'Failed to leave organisation: {error}', {
+		error: error.message,
+	})
+}
+
 export default {
 	name: 'OrganisationsIndex',
 	components: {
@@ -504,13 +542,7 @@ export default {
 				// Reload all hot-loaded data for the new organisation context
 				await reloadAppData()
 			} catch (error) {
-				showError(
-					t(
-						'openregister',
-						'Failed to change active organisation: {error}',
-						{ error: error.message },
-					),
-				)
+				showError(switchFailure(error))
 			}
 		},
 
@@ -542,13 +574,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async leaveOrganisation(organisation) {
-			if (
-				!confirm(
-					t('openregister', "Are you sure you want to leave '{name}'?", {
-						name: organisation.name,
-					}),
-				)
-			) {
+			if (!confirm(leaveQuestion(organisation))) {
 				return
 			}
 
@@ -556,11 +582,7 @@ export default {
 				await organisationStore.leaveOrganisation(organisation.uuid)
 				showSuccess(t('openregister', 'Left organisation successfully'))
 			} catch (error) {
-				showError(
-					t('openregister', 'Failed to leave organisation: {error}', {
-						error: error.message,
-					}),
-				)
+				showError(leaveFailure(error))
 			}
 		},
 
