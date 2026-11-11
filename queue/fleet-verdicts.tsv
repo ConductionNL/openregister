@@ -3336,6 +3336,8 @@ learniq	2371	cb2fce4c8216a5436d7e67421c6368e29dcd7c4b	GREEN	FV9-10:2	tree of 24:
 learniq	2372	259b4cf843262eee661a2b73aea4caed79674806	GREEN	FV9-10:2	tree of 24: phpunit 5759 (baseline 21 errors/7 failures, none new), node --test 951 pass, floor held, diff review clean
 learniq	2373	0f270d248dff72a6b5757dec010243e5452cfb68	GREEN	FV9-10:2	tree of 24: phpunit 5759 (baseline 21 errors/7 failures, none new), node --test 951 pass, floor held, diff review clean
 learniq	2374	e086da2dcf340b382c879d8a6d7f454b50085fe3	GREEN	FV9-10:2	tree of 24: phpunit 5759 (baseline 21 errors/7 failures, none new), node --test 951 pass, floor held, diff review clean
+integriq	3316	3bcf90c1b7e933c3d23d16d5efa4fd41e72a8ffb	GREEN	FV9-03:4	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3343	ebd21951a0b504432e6a4687571acdd083d6ed36	GREEN	FV9-03:4	phpunit green beyond 3 baseline failures; floor not measured
 launchpad	1068	0afb5b1b05241a0ed317ac02215efdd5a9c649bf	GREEN	FV9-09:1	phpunit 3239 ok, baseline 0 failures, no frontend change; floor not measured (floor_check run not permitted in this session)
 launchpad	1069	4b8d52c4b4b305fa011e9d90f7222fce063d405a	GREEN	FV9-09:1	phpunit 3239 ok, baseline 0 failures, no frontend change; floor not measured (floor_check run not permitted in this session)
 launchpad	1070	38d7377f00969a8f88b8f8457c143837cad57691	GREEN	FV9-09:1	phpunit 3239 ok, baseline 0 failures, no frontend change; floor not measured (floor_check run not permitted in this session)
