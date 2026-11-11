@@ -388,3 +388,28 @@ portaliq	2111	6c4e9e5debef9ca1f4f2e2b17ae0f0db906ecb9d	GREEN	FV06:2	unit suites 
 portaliq	2113	2e1a98ca96deebf57c6f09ca19e9ba16ef186106	GREEN	FV06:2	unit suites green on the tree
 portaliq	2115	e8f7c0489fc4ea70c5f2383c81932668eadfefc7	GREEN	FV06:2	unit suites green on the tree
 shillinq	2357	912eaf495129f8d9c8ff5e5129a1fb950a86dba1	RED	FV04:2	vitest tests/vitest/bankingPaymentRun.spec.js > Propose payment run > posts to a route the controller serves, with the parameters it reads
+pipelinq	3205	28e1815ec8bf727d1d51aa848e97fe591b57c12b	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3206	21dbf2d4fc81954c39e8995d950c51ca7a4d5776	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3207	235a733c0a896ff9e59780b4a4d6efd5bbb60d87	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3208	ee420442dba2d2a60b0ab4bf35d517ab1ee0278c	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3209	c7392f74244502b08636ce66613ee4eccd050478	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3210	ec54eb5d86755c329ee05bea658acd3657ccbc54	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3211	1909285ec6bc4dcffd5018579463eeae37b5539c	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3212	b125f149c36de36920285916965b5e19e698be04	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3213	5fa2266066a6d538f8fa58cfd1c3793f95f1d9d3	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3214	69fe164c0e1a27b891841e9f7703c625db798d80	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3215	e28be152499767b15c299aa2e656a985b932a5ed	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3216	ddf4b23ef0c9eb8341f30d821bd3adf2bec6565c	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3217	d9b3987ff3a8a20748a9dd1a2952246e43b526dd	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3218	ba37aa87bb8225739e7a6cbc1a901ccda0165640	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3219	a3b9ac133f29b8d271872187108c77adc30aad85	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3220	a34d566fdf182a45f800b24857979ac514245bb9	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3221	0bc151e14352abd20c53a6c1b1bd99b9bdeafe2f	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3222	0a2cc597a3e46976cf60626cf3af6b5d43d05aa2	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3223	524040c0b99dba3f9f740771e6e31788773465aa	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3225	4640dfc3b9331b7195f2140c23bb94357342df9f	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3226	d1ec024c44d9b68965da1b675b13c4407bc06eef	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3228	ff48f1b505cda978afb9e9137678eea9d5532893	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3229	ab558b17832535acbe71aad5a1a769e4ca6f147b	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3230	4d41cd32e56d1515e1807e3c4f399aae2aee4714	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+pipelinq	3231	7f2f4505d8d1bf76a487b50adc9ce2ad00d92733	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
