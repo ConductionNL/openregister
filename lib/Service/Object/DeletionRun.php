@@ -41,8 +41,9 @@ final class DeletionRun {
 	/**
 	 * Constructor.
 	 *
-	 * @param array  $context The deletion context from DeleteObject::resolveDeletionContext().
-	 * @param string $uuid    The identifier the caller asked to delete.
+	 * @param array        $context The deletion context from DeleteObject::resolveDeletionContext().
+	 * @param string       $uuid    The identifier the caller asked to delete.
+	 * @param DeleteCaller $caller  The acting user and the access flags the delete runs under.
 	 *
 	 * @psalm-param array{object: ObjectEntity, register?: mixed, schema?: mixed} $context
 	 *
@@ -51,6 +52,7 @@ final class DeletionRun {
 	public function __construct(
 		public readonly array $context,
 		public readonly string $uuid,
+		public readonly DeleteCaller $caller = new DeleteCaller(),
 	) {
 	}//end __construct()
 
