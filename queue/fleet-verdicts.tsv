@@ -2449,3 +2449,4 @@ portaliq	2077	3e2cefa1d6d7075efdd5887b50615a6a3b61b451	GREEN	FXL	inherited env: 
 pipelinq	3411	7f5b874def029ea7e1c6394aaec181fe659679d1	GREEN	FXL	development merged in, both tests kept; merged
 learniq	2172	cb8f69aa72d25c10e24e8e19de6dc9614c7c020a	GREEN	FXL	extractPrompt restored, self-call coverage test added; merged
 opencatalogi	2469	4893322c2d34322e8469857d0ff5c2baf2997e27	GREEN	FXL	development merged in cleanly, jest spec 34/34; merged
+opencatalogi	2427	b3b72c3653e21db28c34c79424208133134605b0	GREEN	FXL	development merged in, both import sets kept, jest 280/280; merged
