@@ -416,8 +416,6 @@ class ViewsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with created view or error
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
@@ -504,8 +502,6 @@ class ViewsController extends Controller {
 	 * @param string $id The view ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated view or error
 	 *
@@ -605,8 +601,6 @@ class ViewsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with patched view or error
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -702,8 +696,6 @@ class ViewsController extends Controller {
 	 * @param string $id The view ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with delete confirmation or error
 	 *

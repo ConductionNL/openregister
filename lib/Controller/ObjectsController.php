@@ -1944,8 +1944,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
@@ -2224,7 +2222,6 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @PublicPage
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -3326,8 +3323,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @PublicPage
 	 *
 	 * @psalm-return JSONResponse
@@ -3716,8 +3711,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @PublicPage
 	 *
 	 * @psalm-suppress TypeDoesNotContainType
@@ -3965,8 +3958,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @PublicPage
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -4148,8 +4139,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @PublicPage
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -4217,7 +4206,6 @@ class ObjectsController extends Controller {
 	 * @throws \Exception
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @PublicPage
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -4936,8 +4924,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function lock(string $register, string $schema, string $id): JSONResponse {
@@ -5013,8 +4999,6 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse A JSON response containing the unlocked object
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
@@ -5133,7 +5117,6 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse The per-probe answers, or a 4xx.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt the probe names no object id; the guard is in
 	 *       CrossRegisterExistenceService::probe(), which sends every probe
@@ -6133,8 +6116,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with merge result or error
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -6256,8 +6237,6 @@ class ObjectsController extends Controller {
 	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with migration result or error
 	 *
@@ -6481,8 +6460,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-suppress NoValue
 	 *
 	 * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: mixed}, array<never, never>>
@@ -6543,7 +6520,6 @@ class ObjectsController extends Controller {
 	 * to the schema definition and updating metadata like name, description, etc.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with validation results
 	 *

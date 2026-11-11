@@ -1028,8 +1028,6 @@ class SchemasController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with created schema or error
 	 *
 	 * @psalm-return JSONResponse<201, Schema,
@@ -1410,8 +1408,6 @@ class SchemasController extends Controller {
 	 * @param int $id The ID of the schema to update
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
@@ -1889,8 +1885,6 @@ class SchemasController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
 	 *
 	 * @return JSONResponse The updated schema, 409 when there is no draft, or the update's error
@@ -1936,8 +1930,6 @@ class SchemasController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
 	 *
 	 * @return JSONResponse The schema without a draft, or an error
@@ -1961,8 +1953,6 @@ class SchemasController extends Controller {
 	 * @param int $id The ID of the schema to patch
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with patched schema or error
 	 *
@@ -2004,8 +1994,6 @@ class SchemasController extends Controller {
 	 * @return JSONResponse An empty JSON response, or the cascade result
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable)        $id matches the {id} URL route parameter; renaming breaks route binding.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Force/cascade dispositions and the orphan-count branch are inherent to a safe delete endpoint.
@@ -2255,8 +2243,6 @@ class SchemasController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @no-admin-idor-exempt Pure delegation to upload(), which performs the checkSchemaManagePermission()
 	 * guard for update paths; this method has no body of its own.
 	 *
@@ -2282,8 +2268,6 @@ class SchemasController extends Controller {
 	 * @return JSONResponse The JSON response with the created or updated schema
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
@@ -2861,8 +2845,6 @@ class SchemasController extends Controller {
 	 * @param int $id The ID of the schema to update
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated schema
 	 *

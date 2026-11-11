@@ -385,8 +385,6 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-suppress InvalidReturnStatement
 	 * @psalm-suppress InvalidReturnType
 	 *
@@ -591,8 +589,6 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse A JSON response confirming conversation clearing or error
 	 * @psalm-return JSONResponse<200|400|403|500,
 	 *     array{error?: 'Access denied'|'Failed to clear conversation'|
@@ -648,8 +644,6 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	 * @param int $messageId Message ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with feedback confirmation or error
 	 *
