@@ -226,29 +226,43 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
 	 */
 	public function deliveryState(TaskInterface $task): array {
-		$unknown = [
-			'state' => PortalTaskDelivery::STATE_NOT_RECORDED,
-			'channels' => [],
-			'requestedAt' => null,
-			'deliveredAt' => null,
-		];
-		if ($this->deliveries === null) {
-			return $unknown;
+		$rows = null;
+		if ($this->deliveries !== null) {
+			$rows = $this->deliveryRows(deliveries: $this->deliveries, task: $task);
 		}
 
+		if ($rows === null) {
+			return [
+				'state' => PortalTaskDelivery::STATE_NOT_RECORDED,
+				'channels' => [],
+				'requestedAt' => null,
+				'deliveredAt' => null,
+			];
+		}
+
+		return PortalTaskDelivery::summarise(rows: $rows);
+	}//end deliveryState()
+
+	/**
+	 * The task's recorded delivery rows, or null when they cannot be read.
+	 *
+	 * @param PortalTaskDeliveryMapper $deliveries The delivery store.
+	 * @param TaskInterface            $task       The task.
+	 *
+	 * @return array|null The rows, or null after logging why they could not be read.
+	 */
+	private function deliveryRows(PortalTaskDeliveryMapper $deliveries, TaskInterface $task): ?array {
 		try {
-			$rows = $this->deliveries->findForTask(taskUuid: (string)$task->getUuid());
+			return $deliveries->findForTask(taskUuid: (string)$task->getUuid());
 		} catch (Throwable $failure) {
 			$this->logger->debug(
 				'[TaskInboxService] Could not read delivery state: ' . $failure->getMessage(),
 				['task' => $task->getUuid()]
 			);
 
-			return $unknown;
+			return null;
 		}
-
-		return PortalTaskDelivery::summarise(rows: $rows);
-	}//end deliveryState()
+	}//end deliveryRows()
 
 	/**
 	 * Subject context for a set of tasks, for readers outside this service
