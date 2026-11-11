@@ -1465,6 +1465,35 @@ const RELATION_TABS = [
 	{ title: 'Relations', component: 'RelationsTab' },
 ]
 
+/**
+ * How a property change toast looks.
+ */
+const CHANGE_TOAST_STYLE = `
+				position: fixed;
+				top: 20px;
+				right: 20px;
+				background: var(--color-success);
+				color: white;
+				padding: 12px 16px;
+				border-radius: 6px;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+				z-index: 10000;
+				font-size: 14px;
+				max-width: 300px;
+			`
+
+/**
+ * Take an element out of the page, if it is still in it.
+ *
+ * @param {HTMLElement} element The element
+ * @return {void}
+ */
+function removeElement(element) {
+	if (element.parentNode) {
+		element.parentNode.removeChild(element)
+	}
+}
+
 export default {
 	name: 'ViewObject',
 	components: {
@@ -2657,13 +2686,11 @@ export default {
 			if (!property) {
 				return `Property '${key}' is not defined in the current schema. This property exists in the object but is not part of the schema definition.`
 			}
-			const required =
-				this.currentSchema?.required?.includes(key) || property.required
 			const check = {
 				key,
 				value,
 				property,
-				required,
+				required: this.isRequiredProperty(key, property),
 				isValidDate: (v) => this.isValidDate(v),
 			}
 			for (const problem of PROPERTY_PROBLEMS) {
@@ -2671,6 +2698,18 @@ export default {
 				if (message) return message
 			}
 			return `Property '${key}' has an invalid value`
+		},
+
+		/**
+		 * Whether a property must have a value: the schema lists it as
+		 * required, or the property says so itself.
+		 *
+		 * @param {string} key The property
+		 * @param {object} property Its schema definition
+		 * @return {boolean} True when required
+		 */
+		isRequiredProperty(key, property) {
+			return this.currentSchema?.required?.includes(key) || property.required
 		},
 
 		getPropertyWarningMessage(key, _value) {
@@ -2778,10 +2817,7 @@ export default {
 		 */
 		updatePropertyValue(key, newValue) {
 			// Get the old value for comparison
-			const oldValue =
-				this.formData[key] !== undefined
-					? this.formData[key]
-					: this.objectProperties.find(([k]) => k === key)?.[1]
+			const oldValue = this.shownValueOf(key)
 
 			// Convert value based on schema property type
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2797,26 +2833,59 @@ export default {
 					oldValue,
 					newValue: convertedValue,
 				}
-
-				// Clear existing debounce timer for this property
-				if (this.propertyChangeDebounceTimers[key]) {
-					clearTimeout(this.propertyChangeDebounceTimers[key])
-				}
-
-				// Set new debounce timer (500ms delay)
-				this.propertyChangeDebounceTimers[key] = setTimeout(() => {
-					const notification = this.pendingNotifications[key]
-					if (notification) {
-						this.showPropertyChangeNotification(
-							key,
-							notification.oldValue,
-							notification.newValue,
-						)
-						delete this.pendingNotifications[key]
-					}
-					delete this.propertyChangeDebounceTimers[key]
-				}, 500)
+				this.debounceChangeNotice(key)
 			}
+		},
+
+		/**
+		 * A property's value as the form shows it: the edited value, else the
+		 * value of its row.
+		 *
+		 * @param {string} key The property
+		 * @return {unknown} The value
+		 */
+		shownValueOf(key) {
+			return this.formData[key] !== undefined
+				? this.formData[key]
+				: this.objectProperties.find(([k]) => k === key)?.[1]
+		},
+
+		/**
+		 * Show a property's pending change notice 500 ms after its last change.
+		 *
+		 * @param {string} key The property
+		 * @return {void}
+		 */
+		debounceChangeNotice(key) {
+			// Clear existing debounce timer for this property
+			if (this.propertyChangeDebounceTimers[key]) {
+				clearTimeout(this.propertyChangeDebounceTimers[key])
+			}
+
+			// Set new debounce timer (500ms delay)
+			this.propertyChangeDebounceTimers[key] = setTimeout(
+				() => this.showPendingChange(key),
+				500,
+			)
+		},
+
+		/**
+		 * Show a property's pending change notice, and forget it and its timer.
+		 *
+		 * @param {string} key The property
+		 * @return {void}
+		 */
+		showPendingChange(key) {
+			const notification = this.pendingNotifications[key]
+			if (notification) {
+				this.showPropertyChangeNotification(
+					key,
+					notification.oldValue,
+					notification.newValue,
+				)
+				delete this.pendingNotifications[key]
+			}
+			delete this.propertyChangeDebounceTimers[key]
 		},
 
 		/**
@@ -2848,29 +2917,13 @@ export default {
 			// Create a simple notification - you could replace this with a proper toast library
 			const notification = document.createElement('div')
 			notification.className = 'property-change-toast'
-			notification.style.cssText = `
-				position: fixed;
-				top: 20px;
-				right: 20px;
-				background: var(--color-success);
-				color: white;
-				padding: 12px 16px;
-				border-radius: 6px;
-				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-				z-index: 10000;
-				font-size: 14px;
-				max-width: 300px;
-			`
+			notification.style.cssText = CHANGE_TOAST_STYLE
 			notification.textContent = `Property '${key}' changed from '${oldValue}' to '${newValue}'`
 
 			document.body.appendChild(notification)
 
 			// Remove notification after 3 seconds
-			setTimeout(() => {
-				if (notification.parentNode) {
-					notification.parentNode.removeChild(notification)
-				}
-			}, 3000)
+			setTimeout(() => removeElement(notification), 3000)
 		},
 
 		/**
