@@ -258,10 +258,12 @@ class FlowVersionService implements FlowVersionServiceInterface {
 		// `$previous` has already been marked deprecated above; its graph
 		// is still what was live a moment ago, which is exactly the
 		// comparison an author means by "what does this change".
-		$run->semver = $this->semver->forPublish(
-			publishedGraph: $this->publishedGraphOf(version: $previous),
-			candidateGraph: $run->graph,
-			previousSemver: $previous?->getSemver(),
+		$run->semver = $this->semver->versionFor(
+			revision: new FlowGraphRevision(
+				published: $this->publishedGraphOf(version: $previous),
+				candidate: $run->graph,
+				previousSemver: $previous?->getSemver()
+			),
 			requested: $run->options->bump
 		);
 
