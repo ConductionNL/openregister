@@ -413,3 +413,4 @@ pipelinq	3228	ff48f1b505cda978afb9e9137678eea9d5532893	GREEN	FV07:3	tree green: 
 pipelinq	3229	ab558b17832535acbe71aad5a1a769e4ca6f147b	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
 pipelinq	3230	4d41cd32e56d1515e1807e3c4f399aae2aee4714	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
 pipelinq	3231	7f2f4505d8d1bf76a487b50adc9ce2ad00d92733	GREEN	FV07:3	tree green: phpunit 0 new failures, vitest 0 new failures
+integriq	3076	08d995daf1d2214cf995ef501b165565958b9ccb	RED	FV09:1	phpunit AppOwnedInterfaceBindingTest::testEveryBareAppOwnedInterfaceIsBound (ServiceBindings.php aliases moved into constant maps, the source-text binding check no longer finds them)
