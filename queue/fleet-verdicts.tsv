@@ -3213,3 +3213,4 @@ portaliq	2311	8599dde4b75e35df5414582cea5dbb3c40cedc40	GREEN	FV9-07:1	tree green
 portaliq	2313	67dcfdbb9a169a7b0f94a1aaacbdd40716be5179	GREEN	FV9-07:1	tree green (phpunit 4488 tests, only the 88 baseline failures/errors), floor held 4.12->4.18, diff review clean
 portaliq	2314	5b15661b81dd0fdc6dc975bbab1f20dcf2b2a7b6	GREEN	FV9-07:1	tree green (phpunit 4488 tests, only the 88 baseline failures/errors), floor held 4.12->4.18, diff review clean
 portaliq	2315	b4bb8cf517e026ff8c398aef9b88b4e68c6bd62a	GREEN	FV9-07:1	tree green (phpunit 4488 tests, only the 88 baseline failures/errors), floor held 4.12->4.18, diff review clean
+learniq	2338	7e7242772219cd834bcd00e263e22f1978939f7c	RED	FV9-10:2	phpunit FindAllConfigScopeTest::testNoFindAllInLibFiltersOnAnObjectId: lib/Listener/SubjectChoiceValidator.php:139 findAll filters on id/uuid (via $choice), which no learniq schema declares
