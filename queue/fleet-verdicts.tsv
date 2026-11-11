@@ -335,3 +335,29 @@ shillinq	2474	8ae21f926e300437775a166ac2da6eea57b20314	GREEN	FV03:5	tree green (
 shillinq	2476	96f60706f0244a1c19265e777c0e23fd4ac792ae	GREEN	FV03:5	tree green (phpunit 7293 ok, vitest 1062 ok), diff review clean
 shillinq	2478	44e026bf1ea5f9da87747f743a3c997c871266e7	GREEN	FV03:5	tree green (phpunit 7293 ok, vitest 1062 ok), diff review clean
 opencatalogi\t2427\t952fe17e17388205ed50ac47ec95d032e30b0fe1\tCONFLICT\tFV08:1\tconflicts with tree of earlier PRs on development
+portaliq	1999	a7146cc5c33985b45cd65b28bcfc15824d496561	GREEN	FV06:1	unit suites green on the tree
+portaliq	2001	782f6969d104e18dd2e9cc902c406319f84a450b	GREEN	FV06:1	unit suites green on the tree
+portaliq	2003	3e26be6eb9252766a0023fd9244b7561027504f6	GREEN	FV06:1	unit suites green on the tree
+portaliq	2005	b2c59b188f17ee9375b005391b53b5e29e1e5ba7	GREEN	FV06:1	unit suites green on the tree
+portaliq	2007	c9fceb80845c5be042238b8cb7bfc88c113d06a8	GREEN	FV06:1	unit suites green on the tree
+portaliq	2009	0dc776d6a62f5dd9d328980d02546c794915e80d	GREEN	FV06:1	unit suites green on the tree
+portaliq	2011	cf3f59bb95ccf97113a67127461e20c3eb596014	GREEN	FV06:1	unit suites green on the tree
+portaliq	2013	ef5838cdc9ff46db310baa79f85c82bfb934dded	GREEN	FV06:1	unit suites green on the tree
+portaliq	2015	7f2c2322090842d0823e6fd033e8b64b73f09d49	GREEN	FV06:1	unit suites green on the tree
+portaliq	2017	c99f64c6f61a062585de29c630dee427b33c7929	GREEN	FV06:1	unit suites green on the tree
+portaliq	2019	65f1bdeeb4aa272ce12e7b37a637038c60218339	GREEN	FV06:1	unit suites green on the tree
+portaliq	2021	90772a382f21f74075140e8f5cce828c835c0d14	GREEN	FV06:1	unit suites green on the tree
+portaliq	2023	2242604618fc8df9f14ac5c7221a6599668a300b	GREEN	FV06:1	unit suites green on the tree
+portaliq	2025	f1fc61a6a8a2f4b571a63b8e0d7e8134f5a75a81	GREEN	FV06:1	unit suites green on the tree
+portaliq	2027	a3fa00fe73bb36f3c99b417ecd3ec696da1d22ec	GREEN	FV06:1	unit suites green on the tree
+portaliq	2029	e170a2b46923b54187e21e2e8a003af2da1c947d	GREEN	FV06:1	unit suites green on the tree
+portaliq	2033	e464b38022edff819f33f0c8358e18aa72c82c56	GREEN	FV06:1	unit suites green on the tree
+portaliq	2037	1af1a733d3dc2eaf4e20b7ac0097222f94d7b40a	GREEN	FV06:1	unit suites green on the tree
+portaliq	2039	9d17f16c59ab40f99a194f37016af726a9f94594	GREEN	FV06:1	unit suites green on the tree
+portaliq	2041	c2aa165aa32fae5692dfafb476a0d40d8bc1185b	GREEN	FV06:1	unit suites green on the tree
+portaliq	2045	c8d07579fc2d6377ea96f5e4130f3922edd96ee6	GREEN	FV06:1	unit suites green on the tree
+portaliq	2047	2ce9891c8b77d40edf6a81e16f5bb3a262d3dc0c	GREEN	FV06:1	unit suites green on the tree
+portaliq	2049	d27e9b5c5dff0d58d59d0e324d3b8b332ec09d3d	GREEN	FV06:1	unit suites green on the tree
+portaliq	2051	709744304119ac2bbdc8387946d73f431151b3f5	GREEN	FV06:1	unit suites green on the tree
+portaliq	2053	ba706d37f3e378ccd45b234fe5e07ab858db5986	GREEN	FV06:1	unit suites green on the tree
+opencatalogi\t2441\t511fcd2e4fdc67996b6ba24e610c0d70390d3001\tCONFLICT\tFV08:1\tconflicts with tree of earlier PRs on development
