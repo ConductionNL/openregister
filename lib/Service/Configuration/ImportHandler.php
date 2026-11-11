@@ -3315,6 +3315,18 @@ class ImportHandler {
 			return;
 		}
 
+		$this->recordStoredListedObject(run: $run, stored: $this->storeListedObject(seed: $seed, objectData: $objectData));
+	}//end importListedObject()
+
+	/**
+	 * Create a listed object, or update the stored one; null when the stored one is left unchanged.
+	 *
+	 * @param ListedSeed $seed       The resolved seed.
+	 * @param array      $objectData The listed object.
+	 *
+	 * @return ObjectEntity|null The created or updated object, or null when unchanged.
+	 */
+	private function storeListedObject(ListedSeed $seed, array $objectData): ?ObjectEntity {
 		$existingObject = $this->existingListedObject(seed: $seed);
 
 		// Integer ids, not slugs, in @self, so no internal lookup uses a slug.
@@ -3330,29 +3342,52 @@ class ImportHandler {
 		$objectData = $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $seed->schema);
 
 		if ($existingObject === null) {
-			$run->result['objects'][] = $this->createListedObject(seed: $seed, listed: ['data' => $objectData, 'uuid' => $listedUuid]);
-			return;
+			return $this->createListedObject(seed: $seed, listed: ['data' => $objectData, 'uuid' => $listedUuid]);
 		}
 
-		// A search returns arrays or ObjectEntity instances. The array check
-		// comes first: calling jsonSerialize() on an array result threw, and
-		// the per-object catch reported it as a failed seed.
-		if (is_array($existingObject) === false) {
-			$existingObject = $existingObject->jsonSerialize();
+		$existing = $this->serialisedListedObject(existing: $existingObject);
+		return $this->updateListedObject(seed: $seed, listed: ['data' => $objectData, 'existing' => $existing]);
+	}//end storeListedObject()
+
+	/**
+	 * A stored listed object as an array.
+	 *
+	 * A search returns arrays or ObjectEntity instances. The array check
+	 * comes first: calling jsonSerialize() on an array result threw, and
+	 * the per-object catch reported it as a failed seed.
+	 *
+	 * @param mixed $existing The search result.
+	 *
+	 * @return array The stored object.
+	 */
+	private function serialisedListedObject(mixed $existing): array {
+		if (is_array($existing) === false) {
+			return $existing->jsonSerialize();
 		}
 
-		$updated = $this->updateListedObject(seed: $seed, listed: ['data' => $objectData, 'existing' => $existingObject]);
-		if ($updated === null) {
-			// COUNTED, not just logged. Skipping an unchanged object is the
-			// DESIGNED behaviour of a re-import, but a debug line is invisible
-			// to the caller, and the caller is the one that has to tell an
-			// operator whether the import worked.
+		return $existing;
+	}//end serialisedListedObject()
+
+	/**
+	 * Count a listed object as imported, or as unchanged when it was left as stored.
+	 *
+	 * Skipping an unchanged object is the DESIGNED behaviour of a re-import, but
+	 * a debug line is invisible to the caller, and the caller is the one that has
+	 * to tell an operator whether the import worked: so it is COUNTED, not just logged.
+	 *
+	 * @param ImportRun         $run    The import.
+	 * @param ObjectEntity|null $stored The created or updated object, or null when unchanged.
+	 *
+	 * @return void
+	 */
+	private function recordStoredListedObject(ImportRun $run, ?ObjectEntity $stored): void {
+		if ($stored === null) {
 			$run->result['unchanged']['objects']++;
 			return;
 		}
 
-		$run->result['objects'][] = $updated;
-	}//end importListedObject()
+		$run->result['objects'][] = $stored;
+	}//end recordStoredListedObject()
 
 	/**
 	 * The register, schema and context a listed object is imported into, or null when either is missing.
