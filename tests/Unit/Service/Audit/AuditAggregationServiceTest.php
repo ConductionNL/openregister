@@ -111,6 +111,54 @@ final class AuditAggregationServiceTest extends TestCase {
 	}//end testAMergedEntryNamesHowManyEditsItCovers()
 
 	/**
+	 * Every shape a fold meets keeps its place: a malformed edit count restarts at one, a property
+	 * without an old value or not yet seen joins as it arrived, a change without a new value leaves the
+	 * span alone, and the incoming aggregation marker never overrides the count.
+	 *
+	 * @return void
+	 */
+	public function testAFoldOfEveryShapeIsPinned(): void {
+		$service = $this->service(stored: 300);
+
+		$this->assertSame(
+			[
+				'kept' => ['old' => 'a', 'new' => 'b'],
+				'span' => ['old' => 'first', 'new' => 'last'],
+				'scalar' => ['old' => 'x', 'new' => 'y'],
+				'noOld' => ['new' => 'z'],
+				'fresh' => ['old' => null, 'new' => 'n'],
+				'aggregation' => ['edits' => 5],
+			],
+			$service->fold(
+				previous: [
+					'kept' => ['old' => 'a', 'new' => 'b'],
+					'span' => ['old' => 'first', 'new' => 'middle'],
+					'scalar' => 'not-a-change',
+					'noOld' => ['new' => 'q'],
+					'aggregation' => ['edits' => '4'],
+				],
+				incoming: [
+					'kept' => 'not-a-change',
+					'span' => ['old' => 'middle', 'new' => 'last'],
+					'scalar' => ['old' => 'x', 'new' => 'y'],
+					'noOld' => ['new' => 'z'],
+					'fresh' => ['old' => null, 'new' => 'n'],
+					'aggregation' => ['edits' => 99],
+				]
+			)
+		);
+
+		$this->assertSame(
+			['a' => ['old' => 1, 'new' => 2], 'aggregation' => ['edits' => 2]],
+			$service->fold(previous: ['aggregation' => ['edits' => 'many']], incoming: ['a' => ['old' => 1, 'new' => 2]])
+		);
+		$this->assertSame(
+			['a' => ['old' => 1, 'new' => 3], 'aggregation' => ['edits' => 2]],
+			$service->fold(previous: ['a' => ['old' => 1, 'new' => 2], 'aggregation' => 'broken'], incoming: ['a' => ['old' => 2, 'new' => 3]])
+		);
+	}//end testAFoldOfEveryShapeIsPinned()
+
+	/**
 	 * A window above the seal interval is clamped, not stored as asked.
 	 *
 	 * Beyond the seal interval the entry is in the hash chain and cannot be

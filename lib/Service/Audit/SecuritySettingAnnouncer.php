@@ -113,8 +113,22 @@ class SecuritySettingAnnouncer {
 			return 0;
 		}
 
+		$recipients = $this->administratorsToTell();
+		if ($recipients === null) {
+			return 0;
+		}
+
+		return $this->announceTo(changes: $changes, recipients: $recipients);
+	}//end announce()
+
+	/**
+	 * The administrators to tell, or null (logged) when they cannot be found.
+	 *
+	 * @return array<int, string>|null The administrator uids.
+	 */
+	private function administratorsToTell(): ?array {
 		try {
-			$recipients = $this->administrators();
+			return $this->administrators();
 		} catch (Throwable $lookupFailed) {
 			$this->logger->warning(
 				message: '[SecuritySettingAnnouncer] Could not find the administrators to tell: '
@@ -122,13 +136,23 @@ class SecuritySettingAnnouncer {
 				context: ['app' => 'openregister']
 			);
 
-			return 0;
+			return null;
 		}
+	}//end administratorsToTell()
 
+	/**
+	 * Tell every administrator about every changed setting.
+	 *
+	 * @param array<string, array{old: mixed, new: mixed}> $changes    The changed settings, by path.
+	 * @param array<int, string>                           $recipients The administrator uids.
+	 *
+	 * @return int The notifications delivered.
+	 */
+	private function announceTo(array $changes, array $recipients): int {
 		$actor = $this->actor();
-		$sent = 0;
+		$sent  = 0;
 		foreach ($changes as $path => $change) {
-			$setting = new SettingChange(path: (string)$path, old: $change['old'], new: $change['new']);
+			$setting    = new SettingChange(path: (string)$path, old: $change['old'], new: $change['new']);
 			$parameters = $this->parameters(change: $setting, actor: $actor);
 			foreach ($recipients as $uid) {
 				$sent += $this->deliver(uid: $uid, parameters: $parameters);
@@ -136,7 +160,7 @@ class SecuritySettingAnnouncer {
 		}
 
 		return $sent;
-	}//end announce()
+	}//end announceTo()
 
 	/**
 	 * The marked settings whose value moved.
