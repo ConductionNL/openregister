@@ -19,6 +19,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -26,7 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
-use OCA\OpenRegister\Service\Object\ValidationMappers;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -57,12 +60,7 @@ class ValidationHandlerChunkLogTest extends TestCase {
 		);
 		$handler = new ValidationHandler(
 			validateHandler: $this->createMock(ValidateObject::class),
-			mappers: new ValidationMappers(
-				objectEntityMapper: $this->createMock(MagicMapper::class),
-				registerMapper: $registerMapper,
-				schemaMapper: $schemaMapper,
-				magicMapper: $magicMapper
-			),
+			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
 			logger: $logger
 		);
 
@@ -80,7 +78,7 @@ class ValidationHandlerChunkLogTest extends TestCase {
 			}//end saveObjects()
 		};
 
-		$handler->validateAndSaveObjectsBySchema(registerId: 3, schemaId: 4, saveCallback: [$saver, 'saveObjects']);
+		$handler->validateAndSaveObjectsBySchema(revalidation: new SchemaRevalidation(table: new RegisterSchemaRef(register: 3, schema: 4), query: ListQuery::unbounded(), saveCallback: [$saver, 'saveObjects']));
 
 		$chunks = array_values(array_filter($logged, static fn (array $entry): bool => $entry[0] === '[ValidationHandler] Processing validation chunk'));
 		$this->assertCount(1, $chunks);

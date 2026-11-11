@@ -22,11 +22,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Sharing;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteAuthor;
 use OCA\OpenRegister\Db\AccessLink;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\LinkAct;
+use OCA\OpenRegister\Service\Sharing\LinkFile;
 use OCP\Files\File;
 use PHPUnit\Framework\TestCase;
 
@@ -49,15 +55,18 @@ class AccessLinkActsTest extends TestCase {
 		$object->setUuid('o-1');
 
 		$notes = $this->createMock(NoteServiceInterface::class);
-		$notes->expects($this->once())->method('createNoteAs')
-			->with('o-1', 'hello', 'openregister_links', 'link:l-1', 'public')
+		$notes->expects($this->once())->method('postNote')
+			->with(
+				new NoteDraft(objectUuid: 'o-1', message: 'hello', visibility: 'public'),
+				new NoteAuthor(type: 'openregister_links', id: 'link:l-1')
+			)
 			->willReturn(['id' => 9]);
 		$files = $this->createMock(ObjectFilesInterface::class);
 		$files->expects($this->never())->method('addFile');
 
 		$acts = new AccessLinkActs(notes: $notes, files: $files);
 
-		$this->assertSame(['id' => 9], $acts->comment(link: $link, object: $object, message: 'hello'));
+		$this->assertSame(['id' => 9], $acts->comment(act: new LinkAct(link: $link, object: $object), message: 'hello'));
 	}//end testCommentIsWrittenAsTheLink()
 
 	/**
@@ -71,17 +80,20 @@ class AccessLinkActsTest extends TestCase {
 
 		$files = $this->createMock(ObjectFilesInterface::class);
 		$files->expects($this->once())->method('addFile')
-			->with($object, 'a.pdf', 'bytes', false)
+			->with(
+				$this->callback(fn (FileTarget $target): bool => $target->object === $object),
+				$this->callback(fn (FileUpload $upload): bool => $upload->fileName === 'a.pdf' && $upload->content === 'bytes' && $upload->share === false)
+			)
 			->willReturn($stored);
 		$files->expects($this->once())->method('formatFile')->with($stored)->willReturn(['name' => 'a.pdf', 'shared' => false]);
 		$notes = $this->createMock(NoteServiceInterface::class);
-		$notes->expects($this->never())->method('createNoteAs');
+		$notes->expects($this->never())->method('postNote');
 
 		$acts = new AccessLinkActs(notes: $notes, files: $files);
 
 		$this->assertSame(
 			['name' => 'a.pdf', 'shared' => false],
-			$acts->upload(link: new AccessLink(), object: $object, fileName: 'a.pdf', content: 'bytes')
+			$acts->upload(act: new LinkAct(link: new AccessLink(), object: $object), file: new LinkFile(fileName: 'a.pdf', content: 'bytes'))
 		);
 	}//end testUploadIsStoredWithoutSharing()
 }//end class

@@ -56,6 +56,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Delegation\DelegationRequest;
@@ -111,22 +112,6 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 	 * both parties and the reason, so the row answers "waiting for X to allow Y
 	 * to act as them" without anybody joining it to the grant store.
 	 *
-	 * @param FlowRun $run        The run to park.
-	 * @param string  $declaredBy The principal whose grant is missing.
-	 * @param string  $runAs      The identity it would act as.
-	 * @param string  $reason     The verdict reason that caused the park.
-	 *
-	 * @return FlowRun The parked run.
-	 *
-	 * @spec openspec/specs/delegation-grants/spec.md
-	 */
-	public function park(FlowRun $run, string $declaredBy, string $runAs, string $reason): FlowRun {
-		return $this->parkFor(run: $run, ask: new ConsentAsk(declaredBy: $declaredBy, runAs: $runAs, reason: $reason));
-	}//end park()
-
-	/**
-	 * Write the run as awaiting consent, its context recording both parties and the reason.
-	 *
 	 * @param FlowRun    $run The run to park.
 	 * @param ConsentAsk $ask Who must allow whom, and why.
 	 *
@@ -134,7 +119,7 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	private function parkFor(FlowRun $run, ConsentAsk $ask): FlowRun {
+	public function parkFor(FlowRun $run, ConsentAsk $ask): FlowRun {
 		$context = ($run->getContext() ?? []);
 		$context[self::CONTEXT_KEY] = [
 			'principal' => $ask->declaredBy,
@@ -192,43 +177,26 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 	 * @return string `released`, `failed` or `waiting`.
 	 */
 	private function settle(FlowRun $run, ConsentWait $wait): string {
-		$parked = (($run->getContext() ?? [])[self::CONTEXT_KEY] ?? null);
-		if (is_array($parked) === false) {
-			// A run in this state with no record of what it waits for cannot be
-			// resolved by anyone, and leaving it would make the state itself
-			// untrustworthy. Fail it and say exactly that.
-			return $this->fail(
-				run: $run,
-				message: 'This run was parked awaiting consent but records no delegation, so nothing can release it.'
-			);
+		$unreleasable = $this->unreleasableReason(run: $run);
+		if ($unreleasable !== null) {
+			return $this->fail(run: $run, message: $unreleasable);
 		}
 
-		$principal = trim((string)($parked['principal'] ?? ''));
-		$actingAs = trim((string)($parked['actingAs'] ?? ''));
+		return $this->settleByVerdict(run: $run, wait: $wait);
+	}//end settle()
 
-		if ($principal === '' || $actingAs === '') {
-			return $this->fail(
-				run: $run,
-				message: 'This run was parked awaiting consent but names no parties, so nothing can release it.'
-			);
-		}
-
-		try {
-			$verdict = $this->delegation->verdictFor(
-				request: new DelegationRequest(principal: $principal, actingAs: $actingAs, scope: [], now: $wait->now)
-			);
-		} catch (Throwable $e) {
-			// Leave it PARKED. An unreadable store is not an answer, and failing
-			// on it would destroy work over an infrastructure blip — the opposite
-			// trade-off from the fire-time check, where refusing costs one run
-			// and permitting costs an unauthorized execution. Here nothing runs
-			// either way, so waiting is free and failing is not.
-			$this->logger->warning(
-				message: '[FlowConsentParking] Could not resolve a parked run\'s delegation; leaving it parked: '
-					. $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid()]
-			);
-
+	/**
+	 * Release, keep or fail a parked run whose record names both parties, by its delegation's answer.
+	 *
+	 * @param FlowRun     $run  The parked run.
+	 * @param ConsentWait $wait The moment and how long it may wait.
+	 *
+	 * @return string `released`, `failed` or `waiting`.
+	 */
+	private function settleByVerdict(FlowRun $run, ConsentWait $wait): string {
+		$request = $this->parkedRequest(run: $run, wait: $wait);
+		$verdict = $this->readVerdict(run: $run, request: $request);
+		if ($verdict === null) {
 			return 'waiting';
 		}
 
@@ -242,17 +210,100 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 
 		// Denied, revoked, expired, out-of-scope, or the request vanished. All of
 		// these are answers, and none of them is yes.
-		return $this->fail(
-			run: $run,
-			message: sprintf(
-				'Refused: "%s" may not act as "%s" (%s). %s',
-				$principal,
-				$actingAs,
-				$verdict->reason,
-				$verdict->detail
-			)
+		return $this->fail(run: $run, message: $this->refusal(request: $request, verdict: $verdict));
+	}//end settleByVerdict()
+
+	/**
+	 * Why nothing can ever release this parked run, or null when its record names both parties.
+	 *
+	 * @param FlowRun $run The parked run.
+	 *
+	 * @return string|null The failure message, or null.
+	 */
+	private function unreleasableReason(FlowRun $run): ?string {
+		$parked = (($run->getContext() ?? [])[self::CONTEXT_KEY] ?? null);
+		if (is_array($parked) === false) {
+			// A run in this state with no record of what it waits for cannot be
+			// resolved by anyone, and leaving it would make the state itself
+			// untrustworthy. Fail it and say exactly that.
+			return 'This run was parked awaiting consent but records no delegation, so nothing can release it.';
+		}
+
+		$principal = trim((string)($parked['principal'] ?? ''));
+		$actingAs = trim((string)($parked['actingAs'] ?? ''));
+		if ($principal === '' || $actingAs === '') {
+			return 'This run was parked awaiting consent but names no parties, so nothing can release it.';
+		}
+
+		return null;
+	}//end unreleasableReason()
+
+	/**
+	 * The delegation question a parked run waits on.
+	 *
+	 * Only reached from settle(), which has already checked the run's
+	 * parked-context record names both parties.
+	 *
+	 * @param FlowRun     $run  The parked run.
+	 * @param ConsentWait $wait The moment and how long it may wait.
+	 *
+	 * @return DelegationRequest Who must be allowed to act as whom, now.
+	 */
+	private function parkedRequest(FlowRun $run, ConsentWait $wait): DelegationRequest {
+		$parked = ($run->getContext() ?? [])[self::CONTEXT_KEY];
+
+		return new DelegationRequest(
+			principal: trim((string)($parked['principal'] ?? '')),
+			actingAs: trim((string)($parked['actingAs'] ?? '')),
+			scope: [],
+			now: $wait->now
 		);
-	}//end settle()
+	}//end parkedRequest()
+
+	/**
+	 * The delegation store's answer, or null when it cannot be read.
+	 *
+	 * @param FlowRun           $run     The parked run.
+	 * @param DelegationRequest $request The question.
+	 *
+	 * @return DelegationVerdict|null The answer, or null to leave the run parked.
+	 */
+	private function readVerdict(FlowRun $run, DelegationRequest $request): ?DelegationVerdict {
+		try {
+			return $this->delegation->verdictFor(request: $request);
+		} catch (Throwable $e) {
+			// Leave it PARKED. An unreadable store is not an answer, and failing
+			// on it would destroy work over an infrastructure blip — the opposite
+			// trade-off from the fire-time check, where refusing costs one run
+			// and permitting costs an unauthorized execution. Here nothing runs
+			// either way, so waiting is free and failing is not.
+			$this->logger->warning(
+				message: '[FlowConsentParking] Could not resolve a parked run\'s delegation; leaving it parked: '
+					. $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid()]
+			);
+
+			return null;
+		}
+	}//end readVerdict()
+
+	/**
+	 * The failure message for a delegation that answered no.
+	 *
+	 * @param DelegationRequest $request The question asked.
+	 * @param DelegationVerdict $verdict The refusal.
+	 *
+	 * @return string The message.
+	 */
+	private function refusal(DelegationRequest $request, DelegationVerdict $verdict): string {
+		return sprintf(
+			'Refused: "%s" may not act as "%s" (%s). %s',
+			$request->principal,
+			$request->actingAs,
+			$verdict->reason,
+			$verdict->detail
+		);
+	}//end refusal()
 
 	/**
 	 * Fail a run that has waited past the limit.
@@ -266,13 +317,8 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 	 * @return string `failed` or `waiting`.
 	 */
 	private function expireIfOverdue(FlowRun $run, ConsentWait $wait): string {
-		$since = ((($run->getContext() ?? [])[self::CONTEXT_KEY] ?? [])['since'] ?? null);
-		if (is_string($since) === false || $since === '') {
-			return 'waiting';
-		}
-
-		$parkedAt = date_create_immutable($since);
-		if ($parkedAt === false) {
+		$parkedAt = $this->parkedAt(run: $run);
+		if ($parkedAt === null) {
 			return 'waiting';
 		}
 
@@ -285,15 +331,44 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 		// anyway after a timeout — turns an unanswered consent prompt into an
 		// approval, which is the exact substitution the whole subsystem exists to
 		// prevent, and it would happen at whatever hour the timer elapsed.
-		return $this->fail(
-			run: $run,
-			message: sprintf(
-				'Nobody answered within %d hours, so this run was not performed. '
-				. 'An unanswered request is not consent.',
-				$wait->hours
-			)
-		);
+		return $this->fail(run: $run, message: $this->unansweredMessage(hours: $wait->hours));
 	}//end expireIfOverdue()
+
+	/**
+	 * The failure message for a request nobody answered in time.
+	 *
+	 * @param integer $hours How long it was allowed to wait.
+	 *
+	 * @return string The message.
+	 */
+	private function unansweredMessage(int $hours): string {
+		return sprintf(
+			'Nobody answered within %d hours, so this run was not performed. '
+			. 'An unanswered request is not consent.',
+			$hours
+		);
+	}//end unansweredMessage()
+
+	/**
+	 * When the run was parked, or null when its record carries no readable moment.
+	 *
+	 * @param FlowRun $run The parked run.
+	 *
+	 * @return DateTimeImmutable|null The moment it was parked.
+	 */
+	private function parkedAt(FlowRun $run): ?DateTimeImmutable {
+		$since = ((($run->getContext() ?? [])[self::CONTEXT_KEY] ?? [])['since'] ?? null);
+		if (is_string($since) === false || $since === '') {
+			return null;
+		}
+
+		$parkedAt = date_create_immutable($since);
+		if ($parkedAt === false) {
+			return null;
+		}
+
+		return $parkedAt;
+	}//end parkedAt()
 
 	/**
 	 * Put a released run back in the queue.
@@ -320,7 +395,20 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 		$run->setStatus(FlowRun::STATUS_QUEUED);
 		$run->setError(null);
 		$this->runs->update($run);
+		$this->logRelease(run: $run, parked: $parked);
 
+		return 'released';
+	}//end release()
+
+	/**
+	 * Record that a parked run was released, naming both parties.
+	 *
+	 * @param FlowRun $run    The released run.
+	 * @param array   $parked The parked-context record it carried.
+	 *
+	 * @return void
+	 */
+	private function logRelease(FlowRun $run, array $parked): void {
 		$this->logger->info(
 			message: '[FlowConsentParking] Released a parked run — the delegation was allowed',
 			context: [
@@ -331,9 +419,7 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 				'actingAs' => trim((string)($parked['actingAs'] ?? '')),
 			]
 		);
-
-		return 'released';
-	}//end release()
+	}//end logRelease()
 
 	/**
 	 * Fail a parked run with a stated reason.

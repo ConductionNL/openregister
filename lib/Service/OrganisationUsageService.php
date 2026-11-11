@@ -28,9 +28,8 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -45,16 +44,15 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface     $magicMapper  Reads the folders of the organisation's objects.
-	 * @param FileMapperInterface      $fileMapper   Sums file cache sizes.
-	 * @param LoggerInterface $logger       Logger.
-	 * @param SchemaMapperInterface    $schemaMapper Resolves the schema slug an object quota counts.
+	 * @param SchemaCatalogInterface $catalog    Reads the folders and counts the objects of the organisation
+	 *                                           (tables), and resolves the schema slug an object quota counts (schemas).
+	 * @param FileMapperInterface    $fileMapper Sums file cache sizes.
+	 * @param LoggerInterface        $logger     Logger.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly FileMapperInterface $fileMapper,
 		private readonly LoggerInterface $logger,
-		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 
@@ -108,7 +106,7 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 		}
 
 		try {
-			$folderIds = $this->magicMapper->findFolderIdsByOrganisation(organisationUuid: $uuid);
+			$folderIds = $this->catalog->tables()->findFolderIdsByOrganisation(organisationUuid: $uuid);
 			return $this->fileMapper->sumSizesByFileIds(fileIds: $folderIds);
 		} catch (Exception $e) {
 			$this->logger->warning(message: '[OrganisationUsageService] Could not measure storage', context: self::failure(uuid: $uuid, error: $e));
@@ -157,7 +155,7 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 			return 0;
 		}
 
-		return $this->magicMapper->countObjectsByOrganisation(organisationUuid: $uuid, schemaIds: $schemaIds);
+		return $this->catalog->tables()->countObjectsByOrganisation(organisationUuid: $uuid, schemaIds: $schemaIds);
 	}//end countQuotaObjects()
 
 	/**
@@ -189,7 +187,7 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 			return [];
 		}
 
-		$ids = ($this->schemaMapper->findIdsBySlugs(slugs: [$slug])[strtolower($slug)] ?? []);
+		$ids = ($this->catalog->schemas()->findIdsBySlugs(slugs: [$slug])[strtolower($slug)] ?? []);
 		if ($ids === []) {
 			return null;
 		}

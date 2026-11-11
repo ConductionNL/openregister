@@ -36,8 +36,8 @@ final class OperationsMaintenanceControllerFactory {
 			new \OCA\OpenRegister\Controller\Support\OperationsMaintenanceControllerServices(
 				maintenance: $maintenance,
 				bundle: $bundle,
+				userSession: $userSession,
 			),
-			$userSession,
 		];
 	}
 

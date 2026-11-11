@@ -286,4 +286,26 @@ class FacetResponseCacheBehaviourTest extends TestCase {
 		$this->assertNotSame($cache->keyFor(['_schemas' => [7]], []), $cache->keyFor(['_schemas' => [7]], []));
 
 	}//end testABumpedFreshnessTokenChangesTheKey()
+
+	/**
+	 * The key is the md5 digest of the RBAC scope, so it stays a cryptographic hash of user, org and filters.
+	 *
+	 * @return void
+	 */
+	public function testTheKeyIsTheMd5DigestOfTheRbacScope(): void {
+		$scope = [
+			'facets'    => ['status' => []],
+			'filters'   => ['status' => 'open'],
+			'user'      => 'anonymous',
+			'org'       => null,
+			'version'   => '2.0',
+			'freshness' => 't0',
+		];
+
+		$this->assertSame(
+			'facet_rbac_' . md5(json_encode($scope)),
+			$this->cache()->keyFor(['status' => 'open', '_facets' => 'extend'], ['status' => []])
+		);
+
+	}//end testTheKeyIsTheMd5DigestOfTheRbacScope()
 }//end class

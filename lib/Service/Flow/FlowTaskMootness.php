@@ -45,6 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -76,36 +77,76 @@ class FlowTaskMootness {
 	 * of whose join places, was just cleared.
 	 *
 	 * @param array<string, mixed> $context The run context, carrying the resume state.
-	 * @param array<int, string> $places The place names the pruning cleared.
-	 * @param string $byTransition The transition whose exit decision did it.
+	 * @param PlacesPruning $pruning The place names the pruning cleared and the transition whose exit decision did it.
 	 *
 	 * @return int How many tasks were terminated.
 	 *
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
 	 */
-	public function placesPruned(array $context, array $places, string $byTransition): int {
+	public function placesPruned(array $context, PlacesPruning $pruning): int {
 		$state = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
-		if ($state instanceof FlowResumeState === false || $places === []) {
+		if ($state instanceof FlowResumeState === false || $pruning->places === []) {
 			return 0;
 		}
 
-		$runUuid = trim((string)($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? '')));
-		$terminated = 0;
+		$run = new FlowPruningRun(state: $state, runUuid: $this->runUuidOf(context: $context), byTransition: $pruning->byTransition);
 
-		foreach ($state->all() as $nodeId => $slot) {
+		return $this->pruned(run: $run, places: $pruning->places);
+	}//end placesPruned()
+
+	/**
+	 * The run uuid a context carries, empty when it carries none.
+	 *
+	 * @param array<string, mixed> $context The run context.
+	 *
+	 * @return string The run uuid, or ''.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+	 */
+	private function runUuidOf(array $context): string {
+		return trim((string)($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? '')));
+	}//end runUuidOf()
+
+	/**
+	 * Terminate the task of every slotted node that stands on a cleared place, forgetting its slot.
+	 *
+	 * @param FlowPruningRun     $run    The pruning pass.
+	 * @param array<int, string> $places The cleared places.
+	 *
+	 * @return integer How many tasks were terminated.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+	 */
+	private function pruned(FlowPruningRun $run, array $places): int {
+		$terminated = 0;
+		foreach ($run->state->all() as $nodeId => $slot) {
 			$taskUuid = trim((string)($slot[FlowTaskBridge::SLOT_TASK_UUID] ?? ''));
 			if ($taskUuid === '' || $this->standsOn(nodeId: $nodeId, places: $places) === false) {
 				continue;
 			}
 
-			if ($this->terminate(taskUuid: $taskUuid, nodeId: $nodeId, runUuid: $runUuid, byTransition: $byTransition) === true) {
-				$state->forget(nodeId: $nodeId);
+			if ($this->terminate(run: $run, nodeId: $nodeId) === true) {
+				$run->state->forget(nodeId: $nodeId);
 				$terminated++;
 			}
 		}
 
 		return $terminated;
-	}//end placesPruned()
+	}//end pruned()
+
+	/**
+	 * The task uuid a node's slot points at, empty when none.
+	 *
+	 * @param FlowPruningRun $run    The pruning pass.
+	 * @param string         $nodeId The node.
+	 *
+	 * @return string The task uuid, or ''.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+	 */
+	private function taskUuidAt(FlowPruningRun $run, string $nodeId): string {
+		return trim((string)($run->state->read(nodeId: $nodeId)[FlowTaskBridge::SLOT_TASK_UUID] ?? ''));
+	}//end taskUuidAt()
 
 	/**
 	 * Whether a node reads from any of the cleared places.
@@ -140,45 +181,58 @@ class FlowTaskMootness {
 	 * written by this run, so either mismatch means the slot is stale and the
 	 * task is somebody else's.
 	 *
-	 * @param string $taskUuid The task the slot points at.
-	 * @param string $nodeId The node that raised it.
-	 * @param string $runUuid The run walking, when known.
-	 * @param string $byTransition The transition whose decision made it moot.
+	 * @param FlowPruningRun $run    The pruning pass.
+	 * @param string         $nodeId The node that raised the task.
 	 *
 	 * @return boolean True when the task is now terminal (or already was).
 	 *
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
 	 */
-	private function terminate(string $taskUuid, string $nodeId, string $runUuid, string $byTransition): bool {
+	private function terminate(FlowPruningRun $run, string $nodeId): bool {
 		try {
-			$tasks = $this->container->get(TaskServiceInterface::class);
-			$task = $tasks->get(uuid: $taskUuid);
-
-			$taskRun = trim((string)$task->getRunUuid());
-			if ($taskRun === '' || ($runUuid !== '' && $taskRun !== $runUuid)) {
-				return false;
-			}
-
-			$tasks->terminateAsMoot(
-				uuid: $taskUuid,
-				reason: sprintf(
-					"Branch decision at '%s' in run '%s' made node '%s' unreachable; its task can no longer be used.",
-					$byTransition,
-					$taskRun,
-					$nodeId
-				),
-				source: FlowTaskBridge::ACTOR_PREFIX . $taskRun
-			);
-
-			return true;
+			return $this->terminateOwned(run: $run, nodeId: $nodeId);
 		} catch (Throwable $failure) {
 			$this->logger->error(
-				message: '[FlowTaskMootness] Could not terminate task ' . $taskUuid . ' of node ' . $nodeId
+				message: '[FlowTaskMootness] Could not terminate task ' . $this->taskUuidAt(run: $run, nodeId: $nodeId) . ' of node ' . $nodeId
 					. ' after branch pruning; run-terminality propagation remains the backstop: ' . $failure->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $runUuid]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->runUuid]
 			);
 
 			return false;
-		}//end try
+		}
 	}//end terminate()
+
+	/**
+	 * Terminate the node's task as moot when it belongs to the run walking.
+	 *
+	 * @param FlowPruningRun $run    The pruning pass.
+	 * @param string         $nodeId The node that raised the task.
+	 *
+	 * @return boolean True when terminated, false when the task is not this run's.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+	 */
+	private function terminateOwned(FlowPruningRun $run, string $nodeId): bool {
+		$tasks = $this->container->get(TaskServiceInterface::class);
+		$taskUuid = $this->taskUuidAt(run: $run, nodeId: $nodeId);
+		$taskRun = trim((string)$tasks->get(uuid: $taskUuid)->getRunUuid());
+		if ($taskRun === '' || ($run->runUuid !== '' && $taskRun !== $run->runUuid)) {
+			return false;
+		}
+
+		$tasks->terminateAsMoot(
+			uuid: $taskUuid,
+			trigger: new TaskTrigger(
+				source: FlowTaskBridge::ACTOR_PREFIX . $taskRun,
+				reason: sprintf(
+					"Branch decision at '%s' in run '%s' made node '%s' unreachable; its task can no longer be used.",
+					$run->byTransition,
+					$taskRun,
+					$nodeId
+				)
+			)
+		);
+
+		return true;
+	}//end terminateOwned()
 }//end class

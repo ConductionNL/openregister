@@ -19,11 +19,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use DateTime;
 use DateTimeZone;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailStatistics;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pins withDerivedMetrics, popularTerms, registerSchemaUsage and userAgentUsage.
+ * Pins withPeriodMetrics, termsReport, combinationsReport and userAgentReport.
  */
 class SearchTrailStatisticsGoldenTest extends TestCase {
 	/**
@@ -43,11 +44,7 @@ class SearchTrailStatisticsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testDerivedMetricsWithPeriod(): void {
-		$stats = (new SearchTrailStatistics())->withDerivedMetrics(
-			['total_searches' => 20, 'total_results' => 45],
-			$this->at('2026-01-01 08:00:00'),
-			$this->at('2026-01-04 09:30:00')
-		);
+		$stats = (new SearchTrailStatistics())->withPeriodMetrics(['total_searches' => 20, 'total_results' => 45], new SearchPeriod($this->at('2026-01-01 08:00:00'), $this->at('2026-01-04 09:30:00')));
 
 		$this->assertSame(
 			[
@@ -68,7 +65,7 @@ class SearchTrailStatisticsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testDerivedMetricsWithoutPeriod(): void {
-		$stats = (new SearchTrailStatistics())->withDerivedMetrics(['total_searches' => 0, 'total_results' => 0], null, null);
+		$stats = (new SearchTrailStatistics())->withPeriodMetrics(['total_searches' => 0, 'total_results' => 0], new SearchPeriod());
 
 		$this->assertSame(
 			[
@@ -88,11 +85,7 @@ class SearchTrailStatisticsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testPopularTerms(): void {
-		$report = (new SearchTrailStatistics())->popularTerms(
-			[['term' => 'a', 'count' => 3, 'avg_results' => 2], ['term' => 'b', 'count' => 1, 'avg_results' => 0]],
-			$this->at('2026-02-01 00:00:00'),
-			null
-		);
+		$report = (new SearchTrailStatistics())->termsReport([['term' => 'a', 'count' => 3, 'avg_results' => 2], ['term' => 'b', 'count' => 1, 'avg_results' => 0]], new SearchPeriod($this->at('2026-02-01 00:00:00'), null));
 
 		$this->assertSame(
 			[
@@ -114,13 +107,12 @@ class SearchTrailStatisticsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegisterSchemaUsage(): void {
-		$report = (new SearchTrailStatistics())->registerSchemaUsage(
+		$report = (new SearchTrailStatistics())->combinationsReport(
 			[
 				['count' => 1, 'avg_results' => 0, 'avg_response_time' => 900],
 				['count' => 3, 'avg_results' => 12, 'avg_response_time' => 50],
 			],
-			null,
-			$this->at('2026-03-01 12:00:00')
+			new SearchPeriod(null, $this->at('2026-03-01 12:00:00'))
 		);
 
 		$this->assertSame(
@@ -147,7 +139,7 @@ class SearchTrailStatisticsGoldenTest extends TestCase {
 			['count' => 2, 'browser_info' => ['browser' => 'Firefox']],
 			['count' => 6, 'browser_info' => ['browser' => 'Chrome']],
 		];
-		$report = (new SearchTrailStatistics())->userAgentUsage($agents, null, null);
+		$report = (new SearchTrailStatistics())->userAgentReport($agents, new SearchPeriod());
 
 		$this->assertSame(
 			[

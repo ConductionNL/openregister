@@ -127,14 +127,13 @@ trait TenancyIdentityTrait {
 	}//end tenantLogRedactor()
 
 	/**
-	 * Write one tenancy audit line through the redactor (REQ-SLE-003).
+	 * Write one tenancy audit line at warning level through the redactor (REQ-SLE-003).
 	 *
 	 * The context's `actor` holds the raw uid and is replaced, in place, by its
 	 * pseudonym; the rest goes through the redactor, and a context the redactor
 	 * cannot vouch for drops the line. Callers check for a logger first too,
 	 * so that a host without one never builds the context.
 	 *
-	 * @param string $level   The log level method, `info` or `warning`.
 	 * @param string $message The message.
 	 * @param array  $context The context, with the raw uid under `actor`.
 	 *
@@ -142,18 +141,48 @@ trait TenancyIdentityTrait {
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
-	private function logRedacted(string $level, string $message, array $context): void {
+	private function warnRedacted(string $message, array $context): void {
+		$line = $this->redactedLine(context: $context);
+		if ($line !== null) {
+			$this->logger->warning($message, $line);
+		}
+	}//end warnRedacted()
+
+	/**
+	 * Write one tenancy audit line at info level through the redactor, as warnRedacted() does (REQ-SLE-003).
+	 *
+	 * @param string $message The message.
+	 * @param array  $context The context, with the raw uid under `actor`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function infoRedacted(string $message, array $context): void {
+		$line = $this->redactedLine(context: $context);
+		if ($line !== null) {
+			$this->logger->info($message, $line);
+		}
+	}//end infoRedacted()
+
+	/**
+	 * The redacted context of a tenancy audit line, or null when there is no logger or the redactor drops it.
+	 *
+	 * @param array $context The context, with the raw uid under `actor`.
+	 *
+	 * @return array|null The line's context, or null to write nothing.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	private function redactedLine(array $context): ?array {
 		if (isset($this->logger) === false) {
-			return;
+			return null;
 		}
 
 		$redactor = $this->tenantLogRedactor();
 		$context['actor'] = $redactor->pseudonym(userId: $context['actor']);
-		$line = $redactor->line(context: $context);
-		if ($line !== null) {
-			$this->logger->{$level}($message, $line);
-		}
-	}//end logRedacted()
+		return $redactor->line(context: $context);
+	}//end redactedLine()
 
 	/**
 	 * The host's app config, or null when this host does not carry one.

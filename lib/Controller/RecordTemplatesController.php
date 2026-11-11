@@ -32,6 +32,8 @@ use OCA\OpenRegister\Controller\Support\RecordTemplatesControllerServices;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
+use OCA\OpenRegister\Service\RecordTemplate\TemplateListOptions;
+use OCA\OpenRegister\Service\RecordTemplate\TemplateChange;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStoreInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -105,8 +107,7 @@ class RecordTemplatesController extends Controller {
 			action: fn (ViewerReach $reach): array => $this->listed(
 				templates: $this->templates->listFor(
 					reach: $reach,
-					register: $this->filter(name: 'register'),
-					schema: $this->filter(name: 'schema')
+					options: new TemplateListOptions(register: $this->filter(name: 'register'), schema: $this->filter(name: 'schema'))
 				)
 			)
 		);
@@ -155,10 +156,8 @@ class RecordTemplatesController extends Controller {
 	public function update(string $id): JSONResponse {
 		return $this->answer(
 			action: fn (ViewerReach $reach): array => $this->templates->change(
-				uuid: $id,
-				data: $this->request->getParams(),
-				reach: $reach,
-				partial: false
+				change: new TemplateChange(uuid: $id, data: $this->request->getParams(), partial: false),
+				reach: $reach
 			)->jsonSerialize()
 		);
 	}//end update()
@@ -176,10 +175,8 @@ class RecordTemplatesController extends Controller {
 	public function patch(string $id): JSONResponse {
 		return $this->answer(
 			action: fn (ViewerReach $reach): array => $this->templates->change(
-				uuid: $id,
-				data: $this->request->getParams(),
-				reach: $reach,
-				partial: true
+				change: new TemplateChange(uuid: $id, data: $this->request->getParams(), partial: true),
+				reach: $reach
 			)->jsonSerialize()
 		);
 	}//end patch()

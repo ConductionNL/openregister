@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Command;
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -51,6 +52,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * learniq session (O8) and enrolment (O9), each one row.
@@ -109,7 +112,7 @@ class RematerialiseFallbackCalculationTest extends TestCase {
 		);
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, ?array $extend = [], $reg = null, $sch = null, ?string $uuid = null) use ($rules, $schema, $stored, $listener): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($rules, $schema, $stored, $listener): ObjectEntity {
 				$this->saved[] = $object;
 				// The type rule validation applies: a `type: string` property refuses an array.
 				foreach ($schema->getProperties() as $name => $property) {
@@ -118,7 +121,7 @@ class RematerialiseFallbackCalculationTest extends TestCase {
 					}
 				}
 
-				$violations = $rules->validateReadOnlyConstraints(incomingObject: $object, existingObject: $stored, schema: $schema);
+				$violations = $rules->validateReadOnlyConstraints(check: new WriteConstraintCheck(incoming: $object, stored: $stored), schema: $schema);
 				if ($violations !== []) {
 					throw new RuntimeException('Cannot modify readOnly properties: ' . implode(', ', array_column($violations, 'property')));
 				}
@@ -131,7 +134,7 @@ class RematerialiseFallbackCalculationTest extends TestCase {
 		);
 
 		$command = new RematerialiseCalculationsCommand(
-			new RematerialiseStorage($registers, $schemas, $magic, $objects),
+			new RematerialiseStorage(new SchemaCatalog($registers, $schemas, $magic), $objects),
 			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), ($aggregates ?? $this->createMock(AggregateReferenceResolver::class))),
 			new \OCA\OpenRegister\Service\Object\SchemaTypeConverter()
 		);

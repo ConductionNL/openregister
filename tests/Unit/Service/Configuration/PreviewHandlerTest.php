@@ -355,7 +355,7 @@ class PreviewHandlerTest extends TestCase {
 
 		$result = $this->handler->previewConfigurationChanges($configuration);
 
-		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame($errorResponse, $result);
 	}
 
 	// ──────────────────────────────────────────────────────────────

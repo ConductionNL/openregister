@@ -59,7 +59,7 @@ class ScheduledReportServiceDueTest extends TestCase {
 		$this->mapper = $this->createMock(ScheduledReportMapper::class);
 
 		$this->service = new ScheduledReportService(
-			new ScheduledReportStores($this->mapper, $this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class)),
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new ScheduledReportExporters($this->createMock(ExportService::class), null, null),
 			new ScheduledReportDelivery(
 				new ScheduledReportOwnerServices($this->createMock(IUserManager::class), $this->createMock(IUserSession::class), $this->createMock(IRootFolder::class), $this->createMock(IManager::class)),

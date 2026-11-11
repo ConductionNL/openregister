@@ -34,8 +34,7 @@ final class AnonymisationBackendControllerFactory {
 		return [
 			$request,
 			new \OCA\OpenRegister\Controller\Support\AnonymisationBackendControllerServices(
-				userSession: $userSession,
-				groupManager: $groupManager,
+				principal: new \OCA\OpenRegister\Controller\Support\SessionPrincipal(userSession: $userSession, groupManager: $groupManager),
 				service: $service,
 			),
 		];

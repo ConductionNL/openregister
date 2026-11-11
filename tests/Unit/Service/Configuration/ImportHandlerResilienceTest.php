@@ -46,6 +46,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Resilience + no-user-context fallback regression tests for ImportHandler.
@@ -89,15 +90,20 @@ class ImportHandlerResilienceTest extends TestCase {
 		$this->mappingMapper->method('getSlugToIdMap')->willReturn([]);
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $this->objectEntityMapper,
-			configurationMapper: $this->configurationMapper,
-			mappingMapper:       $this->mappingMapper,
-			appConfig:           $this->appConfig,
-			logger:              $this->logger,
-			appDataPath:         '/tmp',
-			objectService:       $this->objectService
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->configurationMapper,
+				mappings: $this->mappingMapper,
+				appConfig: $this->appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->logger,
+			appDataPath: '/tmp',
+			objectService: $this->objectService
 		);
 	}//end setUp()
 
@@ -192,7 +198,7 @@ class ImportHandlerResilienceTest extends TestCase {
 
 		// 'bad' object throws a validation failure; 'good' saves fine.
 		$this->objectService->method('saveObject')
-			->willReturnCallback(function (array $object) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
 				$slug = $object['@self']['slug'] ?? null;
 				if ($slug === 'bad') {
 					throw new RuntimeException('The required property (name) is missing');
@@ -279,19 +285,9 @@ class ImportHandlerResilienceTest extends TestCase {
 		// MIDDLE reads the wrong argument under the right name.
 		$capturedUser = null;
 		$this->objectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				$extend = [],
-				$register = null,
-				$schema = null,
-				$uuid = null,
-				$rbac = true,
-				$multitenancy = true,
-				$silent = false,
-				$validation = true,
-				$uploadedFiles = null,
-				$currentUser = null,
-			) use (&$capturedUser) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedUser) {
+				$uuid = $options->uuid;
+				$currentUser = $options->actor->currentUser;
 				$capturedUser = $currentUser;
 				$entity = new \OCA\OpenRegister\Db\ObjectEntity();
 				$entity->setUuid('uuid');

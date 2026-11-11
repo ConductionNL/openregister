@@ -73,18 +73,24 @@ class CasePlanCascade {
 	private array $evaluating = [];
 
 	/**
+	 * The plan-item table, the transaction and the failure log the machine writes through.
+	 *
+	 * @var CasePlanStore
+	 */
+	private readonly CasePlanStore $store;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CasePlanStore $store The plan-item table, the evaluation's transaction and the failure log.
-	 * @param CasePlanStateMachine $machine The one transition path.
+	 * @param CasePlanStateMachine $machine The one transition path, and through its store the plan-item
+	 *                                      table, the evaluation's transaction and the failure log.
 	 * @param CaseCascadeReaders $readers The entry and exit criteria, how realisations ended, and the anchoring object.
 	 */
 	public function __construct(
-		private readonly CasePlanStore $store,
 		private readonly CasePlanStateMachine $machine,
 		private readonly CaseCascadeReaders $readers,
 	) {
-
+		$this->store = $machine->store();
 	}//end __construct()
 
 	/**

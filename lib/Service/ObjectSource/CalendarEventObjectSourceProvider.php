@@ -34,8 +34,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -71,19 +69,33 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	];
 
 	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CalendarEventService $calendarEventService The CalDAV VEVENT read/list service.
-	 * @param IAppManager $appManager App availability checks.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param OptionalAppBridge    $app                  Whether the app is installed, its services, and the log of failed reads.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly CalendarEventService $calendarEventService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		OptionalAppBridge $app,
 	) {
+		$this->appManager = $app->appManager;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**
@@ -100,10 +112,8 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The event UID (or calendar-object uri).
-	 * @param array<string, mixed> $config The object-source config block (unused).
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
 	 *
@@ -111,8 +121,8 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return $this->findEvent(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findEvent(binding: $source->binding(), id: $id);
 	}//end find()
 
 	/**
@@ -139,10 +149,8 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	 * Honours `limit` and `offset`; the event set is scoped by CalendarEventService
 	 * to the acting user's own calendars.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (limit/offset).
-	 * @param array<string, mixed> $config The object-source config block (unused).
 	 *
 	 * @return ObjectEntity[] The matching virtual objects.
 	 *
@@ -150,8 +158,8 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->listEvents(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->listEvents(binding: $source->binding(), query: $query);
 	}//end findAll()
 
 	/**

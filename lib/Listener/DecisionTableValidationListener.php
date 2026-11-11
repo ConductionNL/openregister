@@ -33,6 +33,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Dmn\DecisionTableLocation;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -87,7 +88,8 @@ class DecisionTableValidationListener implements IEventListener, DecisionTableVa
 	 */
 	protected function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
 		$data = $this->writtenData(object: $object);
-		$problems = $this->problemsFor(schema: $object->getSchema(), register: $object->getRegister(), data: $data, uuid: (string)$object->getUuid());
+		$row = new ObjectRef(register: (string)$object->getRegister(), schema: (string)$object->getSchema(), id: (string)$object->getUuid());
+		$problems = $this->problemsOf(row: $row, data: $data);
 		if ($problems === null || $problems === []) {
 			return;
 		}
@@ -100,24 +102,22 @@ class DecisionTableValidationListener implements IEventListener, DecisionTableVa
 	 *
 	 * The bulk writer dispatches no ObjectCreatingEvent, so it asks this directly: one rule, two entry points.
 	 *
-	 * @param string|null          $schema   The row's schema reference (id or slug).
-	 * @param string|null          $register The row's register reference (id or slug).
-	 * @param array<string, mixed> $data     The row's own properties.
-	 * @param string               $uuid     The row's uuid, '' for a new row.
+	 * @param ObjectRef            $row  The row's register and schema reference (id or slug, '' for none) and uuid ('' for a new row).
+	 * @param array<string, mixed> $data The row's own properties.
 	 *
 	 * @return array<int, string>|null Null when the row is no decision table, else the problems (empty when it is valid).
 	 *
 	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
 	 */
-	public function problemsFor(?string $schema, ?string $register, array $data, string $uuid): ?array {
-		$isTable = $this->isDecisionTableRef(schema: $schema, register: $register);
+	public function problemsOf(ObjectRef $row, array $data): ?array {
+		$isTable = $this->isDecisionTableRef(schema: (string)$row->schema, register: (string)$row->register);
 		if ($isTable !== true) {
 			return $this->uncheckedProblems(isTable: $isTable);
 		}
 
 		$problems = $this->validator->validate(table: $data);
-		return array_merge($problems, $this->keyProblems(data: $data, uuid: $uuid));
-	}//end problemsFor()
+		return array_merge($problems, $this->keyProblems(data: $data, uuid: $row->id));
+	}//end problemsOf()
 
 	/**
 	 * The answer for a row that is no decision table, or that could not be told apart from one.

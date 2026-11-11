@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup;
 use OCA\OpenRegister\Service\AvgRetentionService;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -103,7 +104,7 @@ class AvgRetentionPassGoldenTest extends TestCase {
 				return $schema;
 			}
 		);
-		$guard = new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+		$guard = new ArchivalRetentionGuard(new ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)));
 
 		return new AvgRetentionService(
 			$db,

@@ -63,9 +63,9 @@ class SelectielijstImportServiceTest extends TestCase {
 
 		$this->objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findAll'])
+			->onlyMethods(['findAllListed'])
 			->getMock();
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 
 		$this->saveObject = $this->getMockBuilder(SaveObject::class)
 			->disableOriginalConstructor()
@@ -119,9 +119,9 @@ class SelectielijstImportServiceTest extends TestCase {
 
 		$mapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findAll'])
+			->onlyMethods(['findAllListed'])
 			->getMock();
-		$mapper->method('findAll')->willReturn($objects);
+		$mapper->method('findAllListed')->willReturn($objects);
 
 		$registerMapper = $this->getMockBuilder(RegisterMapper::class)
 			->disableOriginalConstructor()

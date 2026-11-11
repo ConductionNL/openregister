@@ -315,6 +315,9 @@ class ObjectReferenceProviderTest extends TestCase {
 
 		$this->assertNotNull($reference);
 		$this->assertInstanceOf(Reference::class, $reference);
+		$rich = $reference->jsonSerialize()['richObject'];
+		$this->assertSame('Test Object', $rich['title']);
+		$this->assertSame(['id' => 12, 'title' => 'Producten'], $rich['schema']);
 	}//end testResolveReferenceSuccess()
 
 	/**

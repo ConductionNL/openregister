@@ -150,16 +150,15 @@ final class WriteCause {
 	/**
 	 * Run something with a cause on the stack.
 	 *
-	 * @param string      $cause     One of {@see ALL}.
-	 * @param string|null $run       The run this write belongs to, when there is one.
-	 * @param callable    $operation The work.
+	 * @param CauseFrame $frame     The cause (one of {@see ALL}) and the run this write belongs to, when there is one.
+	 * @param callable   $operation The work.
 	 *
 	 * @return mixed Whatever the work returned.
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	public static function runAs(string $cause, ?string $run, callable $operation): mixed {
-		self::$frames[] = ['cause' => self::normalise(cause: $cause), 'run' => $run];
+	public static function runAs(CauseFrame $frame, callable $operation): mixed {
+		self::$frames[] = ['cause' => self::normalise(cause: $frame->cause), 'run' => $frame->run];
 
 		try {
 			return $operation();
@@ -193,7 +192,7 @@ final class WriteCause {
 			return $operation();
 		}
 
-		return self::runAs(cause: self::LOOKUP, run: null, operation: $operation);
+		return self::runAs(frame: new CauseFrame(cause: self::LOOKUP), operation: $operation);
 	}
 
 	/**

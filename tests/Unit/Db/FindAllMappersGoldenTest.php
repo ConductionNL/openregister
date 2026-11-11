@@ -49,6 +49,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * @coversNothing
@@ -214,7 +215,8 @@ final class FindAllMappersGoldenTest extends TestCase {
 	 * @return array<int, mixed>
 	 */
 	private function applicationArgs(array $args): array {
-		foreach ([2, 3, 4] as $index) {
+		$args = array_slice($args, 0, 3);
+		foreach ([2] as $index) {
 			if (array_key_exists($index, $args) === true && $args[$index] === null) {
 				$args[$index] = [];
 			}
@@ -329,15 +331,15 @@ final class FindAllMappersGoldenTest extends TestCase {
 	private function registerMapper(array $persona): RegisterMapper {
 		[$session, $groups, $organisations] = $this->caller(persona: $persona);
 		return new RegisterMapper(
-			$this->connection(),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$organisations,
-			$session,
-			$groups,
-			$this->createMock(IAppConfig::class),
-			new NullLogger()
+			db: $this->connection(),
+			tenancy: new TenancyServices($organisations, $session, $groups),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				container: $this->createMock(ContainerInterface::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: new NullLogger()
+			)
 		);
 	}//end registerMapper()
 

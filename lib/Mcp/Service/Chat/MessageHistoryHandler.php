@@ -26,7 +26,6 @@ namespace OCA\OpenRegister\Mcp\Service\Chat;
 
 use DateTime;
 use LLPhant\Chat\Message as LLPhantMessage;
-use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use Psr\Log\LoggerInterface;
@@ -57,8 +56,7 @@ class MessageHistoryHandler {
 	 * Constructor
 	 *
 	 * @param MessageMapperInterface $messageMapper Message mapper.
-	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LoggerInterface        $logger        Logger.
 	 *
 	 * @return void
 	 *
@@ -66,7 +64,6 @@ class MessageHistoryHandler {
 	 */
 	public function __construct(
 		private readonly MessageMapperInterface $messageMapper,
-		private readonly ConversationMapper $conversationMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -91,23 +88,9 @@ class MessageHistoryHandler {
 			self::RECENT_MESSAGES_COUNT
 		);
 
-		$this->logger->debug(
-			message: '[MessageHistoryHandler] Building message history',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'conversationId' => $conversationId,
-				'messageCount' => count($messages),
-			]
-		);
+		$this->logBuildingHistory(conversationId: $conversationId, messages: $messages);
 
-		$history = [];
-		foreach ($messages as $message) {
-			$llmMessage = $this->toLlmMessage(message: $message);
-			if ($llmMessage !== null) {
-				$history[] = $llmMessage;
-			}
-		}
+		$history = $this->llmMessages(messages: $messages);
 
 		$this->logger->info(
 			message: '[MessageHistoryHandler] Message history built',
@@ -120,6 +103,45 @@ class MessageHistoryHandler {
 
 		return $history;
 	}//end buildMessageHistory()
+
+	/**
+	 * Log the start of building a conversation's history.
+	 *
+	 * @param int   $conversationId The conversation.
+	 * @param array $messages       The recent messages found.
+	 *
+	 * @return void
+	 */
+	private function logBuildingHistory(int $conversationId, array $messages): void {
+		$this->logger->debug(
+			message: '[MessageHistoryHandler] Building message history',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'conversationId' => $conversationId,
+				'messageCount' => count($messages),
+			]
+		);
+	}//end logBuildingHistory()
+
+	/**
+	 * The stored messages as LLPhant messages, without the skipped ones.
+	 *
+	 * @param array $messages The stored messages.
+	 *
+	 * @return list<LLPhantMessage>
+	 */
+	private function llmMessages(array $messages): array {
+		$history = [];
+		foreach ($messages as $message) {
+			$llmMessage = $this->toLlmMessage(message: $message);
+			if ($llmMessage !== null) {
+				$history[] = $llmMessage;
+			}
+		}
+
+		return $history;
+	}//end llmMessages()
 
 	/**
 	 * Convert one stored message to an LLPhant message, logging skipped ones.

@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -153,10 +154,7 @@ class UpdateFileHandlerTest extends TestCase {
 		// Valid base64 ("testcontent") so the handler's base64 round-trip check
 		// does not trip on invalid input before reaching the write-permission gate.
 		$this->handler->updateFile(
-			filePath: 42,
-			content: 'dGVzdGNvbnRlbnQ=',
-			tags: [],
-			object: $this->createMock(ObjectEntity::class)
+			overwrite: new FileOverwrite(filePath: 42, content: 'dGVzdGNvbnRlbnQ=', tags: [], object: $this->createMock(ObjectEntity::class))
 		);
 	}//end testUpdateRefusedWithoutWritePermission()
 
@@ -167,10 +165,7 @@ class UpdateFileHandlerTest extends TestCase {
 		$file->expects($this->once())->method('putContent')->with(data: 'testcontent');
 
 		$result = $this->handler->updateFile(
-			filePath: 42,
-			content: 'dGVzdGNvbnRlbnQ=',
-			tags: [],
-			object: $this->createMock(ObjectEntity::class)
+			overwrite: new FileOverwrite(filePath: 42, content: 'dGVzdGNvbnRlbnQ=', tags: [], object: $this->createMock(ObjectEntity::class))
 		);
 
 		$this->assertSame($file, $result);
@@ -192,10 +187,7 @@ class UpdateFileHandlerTest extends TestCase {
 		rewind($stream);
 
 		$result = $this->handler->updateFile(
-			filePath: 42,
-			content: $stream,
-			tags: [],
-			object: $this->createMock(ObjectEntity::class)
+			overwrite: new FileOverwrite(filePath: 42, content: $stream, tags: [], object: $this->createMock(ObjectEntity::class))
 		);
 
 		$this->assertSame($file, $result);
@@ -220,10 +212,7 @@ class UpdateFileHandlerTest extends TestCase {
 		rewind($stream);
 
 		$result = $this->handler->updateFile(
-			filePath: 42,
-			content: $stream,
-			tags: [],
-			object: $this->createMock(ObjectEntity::class)
+			overwrite: new FileOverwrite(filePath: 42, content: $stream, tags: [], object: $this->createMock(ObjectEntity::class))
 		);
 
 		$this->assertSame($file, $result);
@@ -248,10 +237,7 @@ class UpdateFileHandlerTest extends TestCase {
 
 		try {
 			$this->handler->updateFile(
-				filePath: 42,
-				content: $stream,
-				tags: [],
-				object: $this->createMock(ObjectEntity::class)
+				overwrite: new FileOverwrite(filePath: 42, content: $stream, tags: [], object: $this->createMock(ObjectEntity::class))
 			);
 		} finally {
 			fclose($stream);

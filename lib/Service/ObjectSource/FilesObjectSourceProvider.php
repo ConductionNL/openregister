@@ -33,9 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -58,19 +57,33 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 	private const SCAN_CAP = 10000;
 
 	/**
+	 * The acting-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRootFolder $rootFolder Nextcloud root folder (per-user home resolution).
-	 * @param IUserSession $userSession Acting-user session for read-scoping.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param IRootFolder        $rootFolder Nextcloud root folder (per-user home resolution).
+	 * @param LinkSessionRuntime $session    The acting-user session and the logger for read failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		LinkSessionRuntime $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**
@@ -103,10 +116,8 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 	 * MUST return null when the file is absent OR outside the acting user's home,
 	 * so the two cases are indistinguishable (no enumeration oracle).
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The file id (fileid).
-	 * @param array<string, mixed> $config The object-source config block (unused).
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
 	 *
@@ -114,8 +125,8 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return $this->findFile(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findFile(binding: $source->binding(), id: $id);
 	}//end find()
 
 	/**
@@ -146,10 +157,8 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 	 * Honours `limit` and `offset`. Walks the acting user's home folder depth-first
 	 * (bounded by {@see self::SCAN_CAP}) and projects each file it encounters.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (limit/offset).
-	 * @param array<string, mixed> $config The object-source config block (unused).
 	 *
 	 * @return ObjectEntity[] The matching virtual objects.
 	 *
@@ -157,8 +166,8 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->listFiles(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->listFiles(binding: $source->binding(), query: $query);
 	}//end findAll()
 
 	/**

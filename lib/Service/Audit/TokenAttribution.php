@@ -100,23 +100,8 @@ class TokenAttribution implements TokenAttributionInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
-		try {
-			$context = $this->container->get(TokenContext::class);
-		} catch (Throwable $contextUnavailable) {
-			return;
-		}
-
-		if (($context instanceof TokenContext) === false) {
-			return;
-		}
-
-		try {
-			$identity = $context->identity();
-		} catch (Throwable $resolutionFailed) {
-			return;
-		}
-
-		if ($identity === null || $identity->isAttributable() === false) {
+		$identity = $this->attributableIdentity();
+		if ($identity === null) {
 			return;
 		}
 
@@ -124,10 +109,36 @@ class TokenAttribution implements TokenAttributionInterface {
 
 		// Merge rather than replace: the purpose attribution and an MCP tool
 		// invocation both already write here, and neither may be erased.
-		$summary = ($auditTrail->getResultSummary() ?? []);
-		$summary['token'] = $identity->toArray();
-		$auditTrail->setResultSummary($summary);
+		(new AuditRowAttribution())->mergeIntoSummary(auditTrail: $auditTrail, entries: ['token' => $identity->toArray()]);
 	}//end apply()
+
+	/**
+	 * The calling token, when the request-scoped context resolves it and it can be attributed.
+	 *
+	 * Fail-soft: a context that cannot be resolved, or a resolution that throws, attributes nothing.
+	 *
+	 * @return TokenIdentity|null The identity, or null.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function attributableIdentity(): ?TokenIdentity {
+		$context = (new AuditRowAttribution())->requestContext(container: $this->container, class: TokenContext::class);
+		if ($context === null) {
+			return null;
+		}
+
+		try {
+			$identity = $context->identity();
+		} catch (Throwable $resolutionFailed) {
+			return null;
+		}
+
+		if ($identity === null || $identity->isAttributable() === false) {
+			return null;
+		}
+
+		return $identity;
+	}//end attributableIdentity()
 
 	/**
 	 * Whether a row carries a stored request or response payload.

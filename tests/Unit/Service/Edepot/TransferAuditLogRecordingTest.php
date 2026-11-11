@@ -74,12 +74,7 @@ final class TransferAuditLogRecordingTest extends TestCase {
 			static fn (string $app, string $key, string $default = ''): string => $key === 'edepot_target_archive' ? 'nationaal-archief' : $default
 		);
 
-		return new TransferAuditLog(
-			auditTrailMapper: $this->audit,
-			settings: new TransferSettings($config, new NullLogger()),
-			notificationManager: $this->notifications,
-			logger: $this->logger
-		);
+		return new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->audit, $this->logger), new TransferSettings($config, new NullLogger()), $this->notifications);
 	}//end log()
 
 	/**

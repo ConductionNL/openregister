@@ -43,7 +43,6 @@ use DOMDocument;
 use Exception;
 use OCP\Files\File;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Throwable;
 use ZipArchive;
 
@@ -79,13 +78,6 @@ class DocumentExtractor {
 	];
 
 	/**
-	 * MIME types too generic to decide on; the file extension decides instead.
-	 *
-	 * @var list<string>
-	 */
-	private const GENERIC_MIME_TYPES = ['', 'application/octet-stream', 'application/zip', 'application/x-zip-compressed'];
-
-	/**
 	 * Extensions read when the MIME type is generic.
 	 *
 	 * @var list<string>
@@ -100,6 +92,13 @@ class DocumentExtractor {
 	private readonly DocumentBodyParser $bodyParser;
 
 	/**
+	 * The MIME types and extensions this extractor reads.
+	 *
+	 * @var OoxmlFormatFilter
+	 */
+	private readonly OoxmlFormatFilter $formats;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger.
@@ -110,6 +109,7 @@ class DocumentExtractor {
 		private readonly WordExtractor $wordExtractor,
 	) {
 		$this->bodyParser = new DocumentBodyParser();
+		$this->formats = new OoxmlFormatFilter(mimeTypes: self::SUPPORTED_MIME_TYPES, extensions: self::SUPPORTED_EXTENSIONS);
 	}//end __construct()
 
 	/**
@@ -123,16 +123,7 @@ class DocumentExtractor {
 	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-the-supported-formats-can-be-asked-for-req-docx-010
 	 */
 	public function supports(string $mimeType, string $fileName): bool {
-		$mimeType = strtolower($mimeType);
-		if (in_array($mimeType, self::SUPPORTED_MIME_TYPES, true) === true) {
-			return true;
-		}
-
-		if (in_array($mimeType, self::GENERIC_MIME_TYPES, true) === false) {
-			return false;
-		}
-
-		return in_array(strtolower(pathinfo($fileName, PATHINFO_EXTENSION)), self::SUPPORTED_EXTENSIONS, true);
+		return $this->formats->accepts(mimeType: $mimeType, fileName: $fileName);
 	}//end supports()
 
 	/**
@@ -147,24 +138,49 @@ class DocumentExtractor {
 	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-a-document-that-cannot-be-read-degrades-to-no-result-req-docx-008
 	 */
 	public function extract(File $file): ?array {
-		if (class_exists(ZipArchive::class) === false) {
-			$this->logger->warning(
-				message: '[DocumentExtractor] PHP zip extension not available',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId()]
-			);
-			throw new Exception('The PHP zip extension is not installed. Install php-zip to read documents.');
-		}
-
-		$mimeType = (string)$file->getMimeType();
-		if ($this->supports(mimeType: $mimeType, fileName: (string)$file->getName()) === false) {
+		$this->assertZipAvailable(file: $file);
+		$read = new DocumentRead(file: $file, mimeType: (string)$file->getMimeType());
+		if ($this->supports(mimeType: $read->mimeType, fileName: (string)$file->getName()) === false) {
 			$this->logger->debug(
 				message: '[DocumentExtractor] Not a document format this extractor reads',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'mimeType' => $mimeType]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'mimeType' => $read->mimeType]
 			);
 			return null;
 		}
 
-		$structure = $this->readStructure(file: $file, mimeType: $mimeType);
+		return $this->extractSupported(read: $read);
+	}//end extract()
+
+	/**
+	 * Refuse when the server has no zip extension (a deployment error).
+	 *
+	 * @param File $file The document, for the log.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the zip extension is missing.
+	 */
+	private function assertZipAvailable(File $file): void {
+		if (class_exists(ZipArchive::class) === true) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: '[DocumentExtractor] PHP zip extension not available',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId()]
+		);
+		throw new Exception('The PHP zip extension is not installed. Install php-zip to read documents.');
+	}//end assertZipAvailable()
+
+	/**
+	 * Read a document of a supported format into its structure and flat text.
+	 *
+	 * @param DocumentRead $read The read in progress.
+	 *
+	 * @return DocumentResult|null Null when the file is not a readable document.
+	 */
+	private function extractSupported(DocumentRead $read): ?array {
+		$structure = $this->readStructure(read: $read);
 		if ($structure === null) {
 			return null;
 		}
@@ -172,72 +188,90 @@ class DocumentExtractor {
 		$this->logger->debug(
 			message: '[DocumentExtractor] Document extracted',
 			context: [
-				'file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'sections' => count($structure['sections']),
+				'file' => __FILE__, 'line' => __LINE__, 'fileId' => $read->file->getId(), 'sections' => count($structure['sections']),
 				'truncated' => $structure['truncated'],
 			]
 		);
 
+		return $this->result(file: $read->file, structure: $structure);
+	}//end extractSupported()
+
+	/**
+	 * The structure with the flat text added.
+	 *
+	 * @param File              $file      The document.
+	 * @param DocumentStructure $structure The structure already read.
+	 *
+	 * @return DocumentResult
+	 */
+	private function result(File $file, array $structure): array {
 		return [
 			'title' => $structure['title'],
 			'sections' => $structure['sections'],
 			'text' => $this->flatText(file: $file, structure: $structure),
 			'truncated' => $structure['truncated'],
 		];
-	}//end extract()
+	}//end result()
 
 	/**
 	 * Open the package and read the structure; null when there is nothing readable.
 	 *
-	 * @param File $file The document.
-	 * @param string $mimeType The file MIME type, for the log.
+	 * @param DocumentRead $read The read in progress.
 	 *
 	 * @return DocumentStructure|null
 	 */
-	private function readStructure(File $file, string $mimeType): ?array {
-		$tempFile = null;
-		$zip = null;
+	private function readStructure(DocumentRead $read): ?array {
+		$packageFile = new OoxmlPackageFile(maxPartBytes: self::MAX_PART_BYTES);
 		try {
-			// Write the content to a temp file for ZipArchive to open, as PresentationExtractor does.
-			$tempFile = tmpfile();
-			fwrite($tempFile, $file->getContent());
-
-			$zip = new ZipArchive();
-			$opened = $zip->open(stream_get_meta_data($tempFile)['uri'], ZipArchive::RDONLY);
-			if ($opened !== true) {
-				$zip = null;
-				throw new RuntimeException('Not a zip package (ZipArchive code ' . (int)$opened . ')');
-			}
-
-			$package = new OoxmlPackage(zip: $zip, maxPartBytes: self::MAX_PART_BYTES);
+			$package = $packageFile->open(file: $read->file);
 			$structure = $this->readDocument(package: $package);
-			$this->logRefusedParts(package: $package, file: $file);
-
-			if ($structure === null || ($structure['title'] === '' && $structure['sections'] === [])) {
-				$this->logger->warning(
-					message: '[DocumentExtractor] Document holds no readable content',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'mimeType' => $mimeType]
-				);
-				return null;
-			}
-
-			return $structure;
+			$this->logRefusedParts(package: $package, file: $read->file);
+			return $this->withContent(read: $read, structure: $structure);
 		} catch (Throwable $e) {
-			// Per-document failure: log structure only, never document content (ADR-005).
-			$this->logger->error(
-				message: '[DocumentExtractor] Document extraction failed; returning null',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'mimeType' => $mimeType, 'exception' => get_class($e)]
-			);
+			$this->logFailure(read: $read, error: $e);
 			return null;
 		} finally {
-			if ($zip !== null) {
-				$zip->close();
-			}
-
-			if (is_resource($tempFile) === true) {
-				fclose($tempFile);
-			}
-		}//end try
+			$packageFile->close();
+		}
 	}//end readStructure()
+
+	/**
+	 * The structure when it holds a title or a section, else null (logged as a warning).
+	 *
+	 * @param DocumentRead           $read      The read in progress.
+	 * @param DocumentStructure|null $structure The structure read, or null.
+	 *
+	 * @return DocumentStructure|null
+	 */
+	private function withContent(DocumentRead $read, ?array $structure): ?array {
+		if ($structure === null || ($structure['title'] === '' && $structure['sections'] === [])) {
+			$this->logger->warning(
+				message: '[DocumentExtractor] Document holds no readable content',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $read->file->getId(), 'mimeType' => $read->mimeType]
+			);
+			return null;
+		}
+
+		return $structure;
+	}//end withContent()
+
+	/**
+	 * Log a per-document failure: structure only, never document content (ADR-005).
+	 *
+	 * @param DocumentRead $read  The read in progress.
+	 * @param Throwable    $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logFailure(DocumentRead $read, Throwable $error): void {
+		$this->logger->error(
+			message: '[DocumentExtractor] Document extraction failed; returning null',
+			context: [
+				'file' => __FILE__, 'line' => __LINE__, 'fileId' => $read->file->getId(), 'mimeType' => $read->mimeType,
+				'exception' => get_class($error),
+			]
+		);
+	}//end logFailure()
 
 	/**
 	 * Read the document part with its styles, numbering and title.
@@ -257,12 +291,18 @@ class DocumentExtractor {
 		}
 
 		$relationships = $package->relationships(partPath: $mainPath);
-		$structure = $this->bodyParser->parse(
+		$structure = $this->bodyParser->parsePart(part: new DocumentPart(
 			document: $document,
-			styles: $this->relatedPart(package: $package, relationships: $relationships, typeSuffix: '/styles', fallback: 'word/styles.xml'),
-			numbering: $this->relatedPart(package: $package, relationships: $relationships, typeSuffix: '/numbering', fallback: 'word/numbering.xml'),
+			styles: $this->relatedPart(
+				package: $package,
+				lookup: new RelatedPartLookup(relationships: $relationships, typeSuffix: '/styles', fallback: 'word/styles.xml')
+			),
+			numbering: $this->relatedPart(
+				package: $package,
+				lookup: new RelatedPartLookup(relationships: $relationships, typeSuffix: '/numbering', fallback: 'word/numbering.xml')
+			),
 			relationships: $relationships
-		);
+		));
 		if ($structure !== null && $structure['title'] === '') {
 			$structure['title'] = $this->coreTitle(package: $package);
 		}
@@ -273,21 +313,19 @@ class DocumentExtractor {
 	/**
 	 * The part a relationship of the given type points at, else the conventional path.
 	 *
-	 * @param OoxmlPackage $package The opened package.
-	 * @param array<string, array{type: string, target: string, external: bool}> $relationships The owner's relationships.
-	 * @param string $typeSuffix The end of the relationship type, e.g. `/styles`.
-	 * @param string $fallback The conventional part path.
+	 * @param OoxmlPackage      $package The opened package.
+	 * @param RelatedPartLookup $lookup  The owner's relationships, the type sought and the fallback path.
 	 *
 	 * @return DOMDocument|null
 	 */
-	private function relatedPart(OoxmlPackage $package, array $relationships, string $typeSuffix, string $fallback): ?DOMDocument {
-		foreach ($relationships as $relationship) {
-			if ($relationship['external'] === false && str_ends_with($relationship['type'], $typeSuffix) === true) {
+	private function relatedPart(OoxmlPackage $package, RelatedPartLookup $lookup): ?DOMDocument {
+		foreach ($lookup->relationships as $relationship) {
+			if ($relationship['external'] === false && str_ends_with($relationship['type'], $lookup->typeSuffix) === true) {
 				return $package->readXml(path: $relationship['target']);
 			}
 		}
 
-		return $package->readXml(path: $fallback);
+		return $package->readXml(path: $lookup->fallback);
 	}//end relatedPart()
 
 	/**
@@ -302,9 +340,11 @@ class DocumentExtractor {
 	private function coreTitle(OoxmlPackage $package): string {
 		$core = $this->relatedPart(
 			package: $package,
-			relationships: $package->relationships(partPath: ''),
-			typeSuffix: '/core-properties',
-			fallback: 'docProps/core.xml'
+			lookup: new RelatedPartLookup(
+				relationships: $package->relationships(partPath: ''),
+				typeSuffix: '/core-properties',
+				fallback: 'docProps/core.xml'
+			)
 		);
 
 		return trim((string)$core?->getElementsByTagNameNS('*', 'title')->item(0)?->textContent);

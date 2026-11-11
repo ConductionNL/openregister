@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -228,7 +228,7 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 		$organisations->method('getOrganisationForNewEntity')->willReturn('org-a');
 
 		return new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $mapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $session, organisationService: $organisations, groupManager: $groups),
 			reporting: new BulkSaveReporting(logger: $logger),
 			checks: new BulkRowChecks(permissionHandler: $permissions, validateHandler: $this->createMock(ValidateObject::class))

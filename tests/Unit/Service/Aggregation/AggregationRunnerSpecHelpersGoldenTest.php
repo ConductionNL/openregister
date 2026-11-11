@@ -214,9 +214,7 @@ class AggregationRunnerSpecHelpersGoldenTest extends TestCase {
 	private function runner(): AggregationRunner {
 		$session = $this->createMock(IUserSession::class);
 		return new AggregationRunner(
-			magicMapper: $this->createMock(MagicMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
 			placeholders: new PlaceholderResolver($session),
 			db: $this->createMock(IDBConnection::class),
 			cache: $this->createMock(AggregationCache::class),

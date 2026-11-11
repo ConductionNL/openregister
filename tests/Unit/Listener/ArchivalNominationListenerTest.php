@@ -22,11 +22,17 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\ArchivalNominationListener;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -62,9 +68,10 @@ class ArchivalNominationListenerTest extends TestCase {
 
 		$this->listener = new ArchivalNominationListener(
 			$this->nominations,
-			$schemaMapper,
-			$this->objectMapper,
-			$this->logger
+			new EventSchemaLookup(
+				new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemaMapper, $this->objectMapper),
+				$this->logger
+			)
 		);
 	}
 
@@ -80,13 +87,10 @@ class ArchivalNominationListenerTest extends TestCase {
 		$object->setUuid('obj-1');
 
 		return new ObjectTransitionedEvent(
-			$object,
-			'afhandelen',
-			'in_behandeling',
-			$to,
-			'els',
-			'zaken',
-			'zaak'
+			object: $object,
+			move: new TransitionMove(action: 'afhandelen', from: 'in_behandeling', to: $to),
+			scope: new RegisterSchemaRef(register: 'zaken', schema: 'zaak'),
+			actor: new TransitionActor(userId: 'els'),
 		);
 	}
 

@@ -86,11 +86,11 @@ class EdepotTransferServiceBehaviourTest extends TestCase {
 			static fn (string $app, string $key, string $default=''): string => ($key === 'edepot_endpoint_url' ? 'https://edepot.test/in' : $default)
 		);
 		$settings = new TransferSettings($appConfig, $this->logger);
-		$auditLog = new TransferAuditLog($this->createMock(AuditTrailMapperInterface::class), $settings, $this->notifications, $this->logger);
-		$recorder = new TransferOutcomeRecorder($mapper, $this->createMock(TransferRecordService::class), $auditLog, $this->logger);
+		$auditLog = new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->createMock(AuditTrailMapperInterface::class), $this->logger), $settings, $this->notifications);
+		$recorder = new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $this->createMock(TransferRecordService::class), settings: $this->createMock(\OCP\IAppConfig::class), logger: $this->logger), $auditLog);
 
 		$this->pipeline   = new TransferPipeline(
-			new TransferObjectGatherer($mapper, new PackagedFileChecksum(), $this->logger),
+			new TransferObjectGatherer(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $this->createMock(TransferRecordService::class), settings: $this->createMock(\OCP\IAppConfig::class), logger: $this->logger), new PackagedFileChecksum()),
 			new TransferResultProcessor($recorder, $auditLog),
 			$auditLog,
 			$settings
@@ -121,7 +121,7 @@ class EdepotTransferServiceBehaviourTest extends TestCase {
 
 	public function testNothingOutstandingTakesTheTerminalStatusWithoutPackaging(): void {
 		$this->addObject('a', 'transferred');
-		$this->sipBuilder->expects($this->never())->method('build');
+		$this->sipBuilder->expects($this->never())->method('package');
 		$this->transport->expects($this->never())->method('send');
 
 		$out = $this->service()->executeTransfer(self::list(['a']), $this->transport);
@@ -160,7 +160,7 @@ class EdepotTransferServiceBehaviourTest extends TestCase {
 
 	public function testABuildFailureFailsTheAttemptWithoutSending(): void {
 		$this->addObject('a', 'active');
-		$this->sipBuilder->method('build')->willThrowException(new \RuntimeException('disk full'));
+		$this->sipBuilder->method('package')->willThrowException(new \RuntimeException('disk full'));
 		$this->transport->expects($this->never())->method('send');
 		$errors = [];
 		$this->logger->method('error')->willReturnCallback(
@@ -182,11 +182,12 @@ class EdepotTransferServiceBehaviourTest extends TestCase {
 		$this->addObject('done', 'transferred');
 		$this->addObject('a', 'active');
 		$sip = (string)tempnam(sys_get_temp_dir(), 't12sip');
-		$this->sipBuilder->expects($this->once())->method('build')->with(
-			'tl-1',
-			$this->callback(static fn (array $items): bool => count($items) === 1 && $items[0]['object']->getUuid() === 'a'),
-			0,
-			'bagit'
+		$this->sipBuilder->expects($this->once())->method('package')->with(
+			$this->callback(
+				static fn (\OCA\OpenRegister\Service\Edepot\TransferPackageRequest $request): bool => $request->transferId === 'tl-1'
+					&& count($request->objectsWithFiles) === 1 && $request->objectsWithFiles[0]['object']->getUuid() === 'a'
+					&& $request->maxPackageSize === 0 && $request->format === 'bagit'
+			)
 		)->willReturn([$sip, '/nonexistent/t12/second.zip']);
 		$this->transport->expects($this->exactly(2))->method('send')
 			->with($this->isType('string'), $this->callback(static fn (array $config): bool => $config['endpointUrl'] === 'https://edepot.test/in'))
@@ -204,7 +205,7 @@ class EdepotTransferServiceBehaviourTest extends TestCase {
 
 	public function testAFailedDeliveryRecordsTheFirstErrorOnTheAttempt(): void {
 		$this->addObject('a', 'active');
-		$this->sipBuilder->method('build')->willReturn(['/nonexistent/t12/p.zip']);
+		$this->sipBuilder->method('package')->willReturn(['/nonexistent/t12/p.zip']);
 		$this->transport->method('send')->willReturn((new TransportResult())->failed('endpoint 503'));
 
 		$out = $this->service()->executeTransfer(self::list(['a']), $this->transport);

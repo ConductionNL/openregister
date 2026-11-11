@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -73,7 +74,7 @@ class EndNodeBehaviourTest extends TestCase {
 	 */
 	private function stopFor(array $config): FlowStop {
 		try {
-			$this->node()->execute([['json' => []]], $config, []);
+			$this->node()->execute(new FlowNodeCall(items: [['json' => []]], config: $config, context: []));
 		} catch (FlowStop $stop) {
 			return $stop;
 		}
@@ -106,7 +107,7 @@ class EndNodeBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoItemsPassThrough(): void {
-		$this->assertSame([], $this->node()->execute([], ['error' => true], []));
+		$this->assertSame([], $this->node()->execute(new FlowNodeCall(items: [], config: ['error' => true], context: [])));
 	}
 
 	/**

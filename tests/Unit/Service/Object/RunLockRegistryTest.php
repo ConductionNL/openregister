@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -74,12 +74,7 @@ final class RunLockRegistryTest extends TestCase {
 	 * @return RunLockRegistry The service.
 	 */
 	private function registry(): RunLockRegistry {
-		return new RunLockRegistry(
-			$this->rows,
-			$this->magic,
-			$this->audit,
-			$this->createMock(LoggerInterface::class)
-		);
+		return new RunLockRegistry($this->rows, new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->magic, $this->audit, $this->createMock(LoggerInterface::class), $this->createStub(\OCP\EventDispatcher\IEventDispatcher::class)));
 	}//end registry()
 
 	/**

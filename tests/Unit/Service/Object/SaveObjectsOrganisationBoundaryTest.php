@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -34,7 +35,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -221,7 +222,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$orgs->method('getOrganisationForNewEntity')->willReturn('org-a');
 
 		return new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $mapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $userSession, organisationService: $orgs, groupManager: $groupManager),
 			reporting: new BulkSaveReporting(logger: $logger),
 			checks: new BulkRowChecks(permissionHandler: $permissionHandler, validateHandler: $this->createMock(ValidateObject::class))
@@ -472,9 +473,8 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 
 	public function testTheBulkSaveRefusesTheRowBeforeAnyWrite(): void {
 		$result = $this->handler()->saveObjects(
-			objects: [['@self' => ['uuid' => self::FOREIGN], 'title' => 'overwritten']],
-			register: $this->register(),
-			schema: $this->schema()
+			[['@self' => ['uuid' => self::FOREIGN], 'title' => 'overwritten']],
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema()), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame([], $result['saved']);
@@ -486,17 +486,15 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$this->admin = true;
 
 		$kept = $this->handler()->saveObjects(
-			objects: [['@self' => ['uuid' => self::FOREIGN], 'title' => 'overwritten']],
-			register: $this->register(),
-			schema: $this->schema(),
+			[['@self' => ['uuid' => self::FOREIGN], 'title' => 'overwritten']],
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema()), validation: false, events: false, audit: true),
 			_multitenancy: true
 		);
 		$this->calls = [];
 		try {
 			$this->handler()->saveObjects(
-				objects: [['@self' => ['uuid' => self::FOREIGN], 'title' => 'changed']],
-				register: $this->register(),
-				schema: $this->schema(),
+				[['@self' => ['uuid' => self::FOREIGN], 'title' => 'changed']],
+				new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema()), validation: false, events: false, audit: true),
 				_multitenancy: false
 			);
 		} catch (\Throwable) {
