@@ -346,16 +346,9 @@ class RelatedRowFilterParser {
 		$conditions = [];
 
 		foreach ($raw as $field => $value) {
-			$name = trim((string)$field);
-			if ($name === '') {
-				throw new InvalidArgumentException(
-					sprintf('A condition in %s names no field.', $path)
-				);
-			}
-
 			$conditions = array_merge(
 				$conditions,
-				$this->conditionsFor(field: new RelatedRowBlockField(name: $name, path: $path), value: $value)
+				$this->conditionsFor(field: new RelatedRowBlockField(name: self::fieldName(field: $field, path: $path), path: $path), value: $value)
 			);
 		}
 
@@ -365,6 +358,27 @@ class RelatedRowFilterParser {
 
 		return $conditions;
 	}//end conditions()
+
+	/**
+	 * The trimmed name of one condition's field, refusing a blank one.
+	 *
+	 * @param int|string $field The field as written.
+	 * @param string     $path  The block's path, for the message.
+	 *
+	 * @return string The name.
+	 *
+	 * @throws InvalidArgumentException When the field is blank.
+	 */
+	private static function fieldName(int|string $field, string $path): string {
+		$name = trim((string)$field);
+		if ($name === '') {
+			throw new InvalidArgumentException(
+				sprintf('A condition in %s names no field.', $path)
+			);
+		}
+
+		return $name;
+	}//end fieldName()
 
 	/**
 	 * The conditions ONE field declares.
