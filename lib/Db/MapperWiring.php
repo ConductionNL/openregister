@@ -135,24 +135,57 @@ final class MapperWiring {
 	private static function magicMapper(ContainerInterface $container): MagicMapper {
 		return new MagicMapper(
 			db: $container->get('OCP\IDBConnection'),
-			lookups: new MagicMapperLookups(
-				schemaMapper: $container->get(SchemaMapperInterface::class),
-				registerMapper: $container->get(RegisterMapperInterface::class),
-				container: $container
-			),
-			identity: new MagicMapperIdentity(
-				userSession: $container->get('OCP\IUserSession'),
-				groupManager: $container->get('OCP\IGroupManager'),
-				userManager: $container->get('OCP\IUserManager')
-			),
-			runtime: new MagicMapperRuntime(
-				config: $container->get('OCP\IConfig'),
-				appConfig: $container->get('OCP\IAppConfig'),
-				eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-				logger: $container->get('Psr\Log\LoggerInterface')
-			)
+			lookups: self::magicLookups(container: $container),
+			identity: self::magicIdentity(container: $container),
+			runtime: self::magicRuntime(container: $container)
 		);
 	}//end magicMapper()
+
+	/**
+	 * The MagicMapper's schema and register lookups.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return MagicMapperLookups The lookups.
+	 */
+	private static function magicLookups(ContainerInterface $container): MagicMapperLookups {
+		return new MagicMapperLookups(
+			schemaMapper: $container->get(SchemaMapperInterface::class),
+			registerMapper: $container->get(RegisterMapperInterface::class),
+			container: $container
+		);
+	}//end magicLookups()
+
+	/**
+	 * The MagicMapper's user and group services.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return MagicMapperIdentity The identity services.
+	 */
+	private static function magicIdentity(ContainerInterface $container): MagicMapperIdentity {
+		return new MagicMapperIdentity(
+			userSession: $container->get('OCP\IUserSession'),
+			groupManager: $container->get('OCP\IGroupManager'),
+			userManager: $container->get('OCP\IUserManager')
+		);
+	}//end magicIdentity()
+
+	/**
+	 * The MagicMapper's configuration, events and logging.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return MagicMapperRuntime The runtime services.
+	 */
+	private static function magicRuntime(ContainerInterface $container): MagicMapperRuntime {
+		return new MagicMapperRuntime(
+			config: $container->get('OCP\IConfig'),
+			appConfig: $container->get('OCP\IAppConfig'),
+			eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+	}//end magicRuntime()
 
 	/**
 	 * Build the EntityRelationMapper.
