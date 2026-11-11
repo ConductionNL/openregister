@@ -15,9 +15,7 @@
  *    broker injects the token it custodies (in Doriath's vault where installed,
  *    the Nextcloud vault otherwise). The token never enters this service.
  *  - **Trust is an org allowlist.** Installing from a source outside the org's
- *    allowlist is refused. An empty allowlist means "not yet enforced" (an
- *    instance opts in by populating it), so this is safe to ship before every
- *    org has curated its sources.
+ *    allowlist is refused, and an empty allowlist allows no source.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -755,8 +753,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	/**
 	 * Whether a source may be installed from.
 	 *
-	 * An empty allowlist is "not yet enforced" — an org opts into enforcement by
-	 * populating it — so this is safe to ship before every org curates sources.
+	 * An empty allowlist allows nothing: an organisation installs only from the
+	 * sources it has listed. An empty source is never allowed.
 	 *
 	 * @param string $source The source id (a repo, an org).
 	 *
@@ -766,8 +764,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 */
 	public function isSourceAllowed(string $source): bool {
 		$raw = trim($this->appConfig->getValueString(self::APP_ID, self::ALLOWLIST_KEY, ''));
-		if ($raw === '') {
-			return true;
+		if ($raw === '' || $source === '') {
+			return false;
 		}
 
 		$allow = array_filter(array_map('trim', explode(',', $raw)));

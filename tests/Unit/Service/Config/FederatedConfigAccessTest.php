@@ -49,11 +49,19 @@ class FederatedConfigAccessTest extends TestCase {
 		$this->assertTrue($this->access->canPublish($this->user('root')));
 	}
 
-	public function testEmptyGroupListAllowsAnySignedInUser(): void {
+	public function testEmptyGroupListRefusesANonAdmin(): void {
 		$this->publishGroups = '';
 		$this->groups->method('isAdmin')->willReturn(false);
 
-		$this->assertTrue($this->access->canPublish($this->user('alice')));
+		$this->assertFalse($this->access->canPublish($this->user('alice')));
+		$this->assertFalse($this->access->canInstall($this->user('alice')));
+	}
+
+	public function testEmptyGroupListStillAllowsAnAdmin(): void {
+		$this->publishGroups = '';
+		$this->groups->method('isAdmin')->willReturn(true);
+
+		$this->assertTrue($this->access->canInstall($this->user('root')));
 	}
 
 	public function testSetGroupListGatesByMembership(): void {
