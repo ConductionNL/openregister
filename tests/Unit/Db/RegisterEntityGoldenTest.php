@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\Register\MagicMappingOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions;
 use DateTime;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Register;

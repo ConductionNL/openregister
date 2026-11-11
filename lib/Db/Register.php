@@ -27,7 +27,7 @@ use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\Register\ExactKeyHydration;
 use OCA\OpenRegister\Db\Register\MagicMappingConfig;
-use OCA\OpenRegister\Db\Register\MagicMappingOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions;
 use OCA\OpenRegister\Db\Register\RegisterFieldTypes;
 use OCA\OpenRegister\Db\Register\RegisterJson;
 use OCA\OpenRegister\Db\Register\RegisterLanguages;

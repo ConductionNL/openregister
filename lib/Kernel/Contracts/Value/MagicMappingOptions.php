@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Database
- * @package  OCA\OpenRegister\Db\Register
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Db\Register;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
  * How magic mapping is enabled for one schema: whether its table is created on demand, and why.
