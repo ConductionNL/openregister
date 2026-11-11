@@ -35,16 +35,17 @@ use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -66,6 +67,9 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Class ImportHandler
@@ -163,9 +167,9 @@ class ImportHandler {
 	/**
 	 * Configuration mapper instance for handling configuration operations.
 	 *
-	 * @var ConfigurationMapper The configuration mapper instance.
+	 * @var ConfigurationMapperInterface The configuration mapper instance.
 	 */
-	private readonly ConfigurationMapper $configurationMapper;
+	private readonly ConfigurationMapperInterface $configurationMapper;
 
 	/**
 	 * App config for storing version information.
@@ -226,9 +230,9 @@ class ImportHandler {
 	/**
 	 * Mapping mapper instance for handling mapping operations.
 	 *
-	 * @var MappingMapper The mapping mapper instance.
+	 * @var MappingMapperInterface The mapping mapper instance.
 	 */
-	private readonly MappingMapper $mappingMapper;
+	private readonly MappingMapperInterface $mappingMapper;
 
 	/**
 	 * OpenConnector configuration service for optional integration.
@@ -360,55 +364,54 @@ class ImportHandler {
 	private ?RbacGroupCollector $rbacGroupCollector = null;
 
 	/**
+	 * Stamps each app import with an import job id; null imports untagged.
+	 *
+	 * @var AppImportJobRecorder|null
+	 */
+	private readonly ?AppImportJobRecorder $importJobRecorder;
+
+	/**
+	 * Installs a schema's flows and webhooks when an import fired no SchemaUpdatedEvent.
+	 *
+	 * @var SchemaImportInstaller|null
+	 */
+	private readonly ?SchemaImportInstaller $schemaInstaller;
+
+	/**
 	 * Constructor for ImportHandler.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper.
-	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
-	 * @param MappingMapper $mappingMapper The mapping mapper.
-	 * @param IAppConfig $appConfig The app config.
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
+	 * @param ConfigurationImportRecords $records The configuration rows, mappings, version keys and import jobs.
+	 * @param SchemaImportSteps $schemaSteps The optional shape check, shipped guard and install of a schema.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param string $appDataPath The app data path.
 	 * @param ObjectOperationsInterface $objectService The object service.
-	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
-	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional
-	 *        guard that keeps local changes to an app-shipped schema.
-	 * @param ?AppImportJobRecorder $importJobRecorder Stamps each app import with an import job id and
-	 *        records the jobs that created objects; null imports untagged, as before.
-	 * @param ?SchemaImportInstaller $schemaInstaller Installs a schema's flows and webhooks when an
-	 *        import fired no SchemaUpdatedEvent; null leaves an unchanged re-import installing nothing.
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		RegisterMapperInterface $registerMapper,
-		MagicMapperInterface $objectEntityMapper,
-		ConfigurationMapper $configurationMapper,
-		MappingMapper $mappingMapper,
-		IAppConfig $appConfig,
+		SchemaCatalogInterface $catalog,
+		ConfigurationImportRecords $records,
+		SchemaImportSteps $schemaSteps,
 		LoggerInterface $logger,
 		string $appDataPath,
 		ObjectOperationsInterface $objectService,
-		?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
-		?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
-		private readonly ?AppImportJobRecorder $importJobRecorder = null,
-		private readonly ?SchemaImportInstaller $schemaInstaller = null,
 	) {
-		$this->schemaMapper = $schemaMapper;
-		$this->registerMapper = $registerMapper;
-		$this->objectEntityMapper = $objectEntityMapper;
-		$this->configurationMapper = $configurationMapper;
-		$this->mappingMapper = $mappingMapper;
-		$this->appConfig = $appConfig;
+		$this->schemaMapper = $catalog->schemas();
+		$this->registerMapper = $catalog->registers();
+		$this->objectEntityMapper = $catalog->tables();
+		$this->configurationMapper = $records->configurations;
+		$this->mappingMapper = $records->mappings;
+		$this->appConfig = $records->appConfig;
+		$this->importJobRecorder = $records->importJobs;
+		$this->schemaInstaller = $schemaSteps->installer;
 		$this->logger = $logger;
 		$this->appDataPath = $appDataPath;
 		$this->objectService = $objectService;
 		$this->shippedContent = new ShippedSeedContent();
 		$this->relatedItems = new SeedRelatedItems(logger: $logger);
-		$this->duplicates = new ImportDuplicates(registerMapper: $registerMapper, schemaMapper: $schemaMapper, logger: $logger);
-		$this->shippedBaseline = new ShippedSchemaBaseline(guard: $shippedGuard, logger: $logger);
-		$this->appConfigurations = new AppConfigurationRecord(configurationMapper: $configurationMapper, logger: $logger);
-		$this->schemaShape = new ImportedSchemaShape(validator: $schemaShapeValidator, logger: $logger);
+		$this->duplicates = new ImportDuplicates(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, logger: $logger);
+		$this->shippedBaseline = new ShippedSchemaBaseline(guard: $schemaSteps->shippedGuard, logger: $logger);
+		$this->appConfigurations = new AppConfigurationRecord(configurationMapper: $this->configurationMapper, logger: $logger);
+		$this->schemaShape = new ImportedSchemaShape(validator: $schemaSteps->shapeValidator, logger: $logger);
 		$this->rejectedSchemas = new RejectedSchemaReport(logger: $logger);
 	}//end __construct()
 
@@ -1310,35 +1313,58 @@ class ImportHandler {
 			return $orphan;
 		}
 
-		// Visibility only: a same-slug row exists but is not (yet) in the
-		// target register's own set. The caller still (correctly) creates its
-		// own schema rather than binding to this one.
+		$this->noteSlugOutsideRegisterScope(slug: $data['slug']);
+		return null;
+	}//end resolveSchemaWithinRegisterScope()
+
+	/**
+	 * Visibility only: log a same-slug row that is not (yet) in the target register's own set.
+	 *
+	 * The caller still (correctly) creates its own schema rather than binding to this one.
+	 *
+	 * @param mixed $slug The schema slug.
+	 *
+	 * @return void
+	 */
+	private function noteSlugOutsideRegisterScope(mixed $slug): void {
 		try {
-			$foreign = $this->schemaMapper->find($data['slug'], _multitenancy: false);
-			if ($foreign->getId() !== null) {
-				$this->logger->debug(
-					message: sprintf(
-						"[ImportHandler] Schema slug '%s' already exists elsewhere (schema id %d) but "
-						. "not in the target register's schema set; creating this register's OWN schema.",
-						$data['slug'],
-						$foreign->getId()
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $data['slug']]
-				);
-			}
+			$foreign = $this->schemaMapper->find($slug, _multitenancy: false);
+			$this->noteForeignSchemaId(slug: $slug, foreignId: $foreign->getId());
 		} catch (\Throwable $ignore) {
 			// No pre-existing schema anywhere (or ambiguous) — nothing to note.
 			$this->logger->debug(
 				message: '[ImportHandler] No unambiguous pre-existing schema outside the register scope',
 				context: [
-					'slug' => $data['slug'],
+					'slug' => $slug,
 					'exception' => $ignore->getMessage(),
 				]
 			);
 		}
+	}//end noteSlugOutsideRegisterScope()
 
-		return null;
-	}//end resolveSchemaWithinRegisterScope()
+	/**
+	 * Log the id of a same-slug schema outside the target register's set, when it has one.
+	 *
+	 * @param mixed    $slug      The schema slug.
+	 * @param int|null $foreignId The id of the row found elsewhere.
+	 *
+	 * @return void
+	 */
+	private function noteForeignSchemaId(mixed $slug, ?int $foreignId): void {
+		if ($foreignId === null) {
+			return;
+		}
+
+		$this->logger->debug(
+			message: sprintf(
+				"[ImportHandler] Schema slug '%s' already exists elsewhere (schema id %d) but "
+				. "not in the target register's schema set; creating this register's OWN schema.",
+				$slug,
+				$foreignId
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug]
+		);
+	}//end noteForeignSchemaId()
 
 	/**
 	 * The importing app's own schema row with this slug that no register
@@ -1398,37 +1424,57 @@ class ImportHandler {
 			return $existingSchema;
 		}
 
-		// Visibility: if we own none but a DIFFERENT app already owns the
-		// slug, surface the collision instead of silently forking. The
-		// caller still (correctly) creates its own schema.
+		$this->warnIfSlugOwnedByAnotherApp(data: $data, appId: $appId);
+		return null;
+	}//end resolveSchemaByApplication()
+
+	/**
+	 * Visibility: if the importing app owns none but a DIFFERENT app already owns the slug,
+	 * surface the collision instead of silently forking. The caller still (correctly) creates its own schema.
+	 *
+	 * @param array  $data  The schema data (MUST carry a non-empty `slug`).
+	 * @param string $appId The importing application id.
+	 *
+	 * @return void
+	 */
+	private function warnIfSlugOwnedByAnotherApp(array $data, string $appId): void {
+		$foreignApp = $this->owningAppOfSlug(slug: $data['slug']);
+		if ($foreignApp !== null && $foreignApp !== '' && $foreignApp !== $appId) {
+			$this->logger->warning(
+				message: sprintf(
+					"[ImportHandler] Schema slug '%s' is already owned by app '%s'; "
+					. "app '%s' will create its OWN schema to avoid a cross-app collision.",
+					$data['slug'],
+					$foreignApp,
+					$appId
+				),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $data['slug']]
+			);
+		}
+	}//end warnIfSlugOwnedByAnotherApp()
+
+	/**
+	 * The app owning the pre-existing schema with a slug; null when it has none or there is no unambiguous row.
+	 *
+	 * @param mixed $slug The schema slug.
+	 *
+	 * @return string|null The owning app.
+	 */
+	private function owningAppOfSlug(mixed $slug): ?string {
 		try {
-			$foreign = $this->schemaMapper->find($data['slug'], _multitenancy: false);
-			$foreignApp = $foreign->getApplication();
-			if ($foreignApp !== null && $foreignApp !== '' && $foreignApp !== $appId) {
-				$this->logger->warning(
-					message: sprintf(
-						"[ImportHandler] Schema slug '%s' is already owned by app '%s'; "
-						. "app '%s' will create its OWN schema to avoid a cross-app collision.",
-						$data['slug'],
-						$foreignApp,
-						$appId
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $data['slug']]
-				);
-			}
+			return $this->schemaMapper->find($slug, _multitenancy: false)->getApplication();
 		} catch (\Throwable $ignore) {
 			// No pre-existing schema (or ambiguous) — nothing to warn about.
 			$this->logger->debug(
 				message: '[ImportHandler] No unambiguous pre-existing schema to check the owning app of',
 				context: [
-					'slug' => $data['slug'],
+					'slug' => $slug,
 					'exception' => $ignore->getMessage(),
 				]
 			);
+			return null;
 		}
-
-		return null;
-	}//end resolveSchemaByApplication()
+	}//end owningAppOfSlug()
 
 	/**
 	 * Historical global (organisation-scoped) fallback: resolve via
@@ -3575,12 +3621,13 @@ class ImportHandler {
 	private function saveListedObject(ListedSeed $seed, array $save): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $save['data'],
-			register: $seed->register,
-			schema: $seed->schema,
-			uuid: $save['uuid'],
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $seed->register, schema: $seed->schema),
+				uuid: $save['uuid'],
+				actor: new SaveActor(currentUser: $seed->actingUser)
+			),
 			_rbac: false,
-			_multitenancy: false,
-			currentUser: $seed->actingUser
+			_multitenancy: false
 		);
 	}//end saveListedObject()
 

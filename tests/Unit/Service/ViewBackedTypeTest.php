@@ -73,6 +73,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -268,7 +269,7 @@ class ViewBackedTypeTest extends TestCase {
 		$save->expects($this->never())->method('saveObject');
 
 		try {
-			$this->objectService($save, $this->createMock(DeleteObject::class))->saveObject(object: ['name' => 'x'], uuid: null);
+			$this->objectService($save, $this->createMock(DeleteObject::class))->saveObject(object: ['name' => 'x']);
 			$this->fail('a view-backed type must refuse a create');
 		} catch (ReadOnlyTypeException $e) {
 			// The controllers map the append-only family to 405; this is one of it.
@@ -285,6 +286,6 @@ class ViewBackedTypeTest extends TestCase {
 
 		$this->expectException(ReadOnlyTypeException::class);
 
-		$this->objectService($this->createMock(SaveObject::class), $delete)->deleteObject(uuid: 'p-1');
+		$this->objectService($this->createMock(SaveObject::class), $delete)->deleteObject(deletion: new ObjectDeletion(uuid: 'p-1'));
 	}//end testDeletingAnObjectOfTheTypeIsRefused()
 }//end class

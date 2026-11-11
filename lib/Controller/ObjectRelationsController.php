@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
 use OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface;
+use OCA\OpenRegister\Service\Relation\ParentInheritance;
 use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
@@ -67,6 +68,8 @@ use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * ObjectRelationsController.
@@ -568,7 +571,9 @@ class ObjectRelationsController extends Controller {
 	private function deriveFrom(ObjectDerivation $derivation, array $data): JSONResponse {
 		$source = $derivation->source;
 		$link = $this->declaredLink(source: $source);
-		$applied = $this->relations->applyInheritance(parent: $source, childData: $data, inherits: $link['inherits']);
+		$applied = $this->relations->inherit(
+			inheritance: new ParentInheritance(parent: $source, childData: $data, inherits: $link['inherits'])
+		);
 		$created = $this->saveDerived(data: $applied['data'], derivation: $derivation);
 		if ($created instanceof JSONResponse) {
 			return $created;
@@ -658,8 +663,9 @@ class ObjectRelationsController extends Controller {
 		try {
 			return $this->objectService->saveObject(
 				object: $data,
-				register: $derivation->register,
-				schema: $derivation->schema
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $derivation->register, schema: $derivation->schema)
+				)
 			);
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);

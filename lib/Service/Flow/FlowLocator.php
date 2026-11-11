@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -145,8 +146,7 @@ class FlowLocator implements FlowLocatorInterface {
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $ref->id,
-				register: $ref->register,
-				schema: $ref->schema,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema),
 				_rbac: false,
 				_multitenancy: false
 			));
@@ -218,7 +218,10 @@ class FlowLocator implements FlowLocatorInterface {
 	private function triggerIndex(string $event, RegisterSchemaRef $table): array {
 		$indexed = [];
 		try {
-			$indexed = $this->stores->triggerMapper->flowUuidsFor(event: $event, register: (string)$table->register, schema: (string)$table->schema);
+			$indexed = $this->stores->triggerMapper->flowUuidsSubscribedTo(
+				event: $event,
+				table: new RegisterSchemaRef(register: (string)$table->register, schema: (string)$table->schema)
+			);
 			$converted = array_flip($this->stores->triggerMapper->representedFlowUuids());
 		} catch (Throwable $e) {
 			$this->logger->warning(

@@ -29,6 +29,7 @@ use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventPlatform;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -110,7 +111,13 @@ class DeferredObjectEventJobSessionTest extends TestCase {
 
 		$job = new DeferredObjectEventJob(
 			$this->createMock(ITimeFactory::class),
-			new DeferredObjectEventLookup($objects, $this->createMock(RegisterMapperInterface::class), $this->createMock(SchemaMapperInterface::class)),
+			new DeferredObjectEventLookup(
+				catalog: new SchemaCatalog(
+					registers: $this->createMock(RegisterMapperInterface::class),
+					schemas: $this->createMock(SchemaMapperInterface::class),
+					tables: $objects
+				)
+			),
 			new DeferredObjectEventActor($session, $users),
 			new DeferredObjectEventPlatform($this->createMock(IEventDispatcher::class), new NullLogger())
 		);

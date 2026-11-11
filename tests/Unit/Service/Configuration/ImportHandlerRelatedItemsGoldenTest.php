@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
@@ -178,12 +179,17 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 		}
 
 		$handler = new ImportHandler(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $logger,
 			appDataPath: '/tmp',
 			objectService: $this->createMock(ObjectService::class)
@@ -204,8 +210,9 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 			);
 			$noteService = $this->createMock(NoteService::class);
 			$noteService->method('createNote')->willReturnCallback(
-				function (string $uuid, string $message): array {
-					$this->calls[] = ['createNote', $uuid, $message];
+				function (NoteDraft $draft): array {
+					$message = $draft->message;
+					$this->calls[] = ['createNote', $draft->objectUuid, $message];
 					if ($message === 'fail') {
 						throw new \RuntimeException('note failed');
 					}

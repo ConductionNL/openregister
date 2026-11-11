@@ -105,8 +105,8 @@ final class A07InterfaceBindingsTest extends TestCase {
 			'resolveSchema',
 			'validateImmutableConstraints',
 			'validateObject',
-			'validateObjectWithPlannedUsers',
 			'validateReadOnlyConstraints',
+			'validateWithPlannedAccounts',
 		],
 	];
 

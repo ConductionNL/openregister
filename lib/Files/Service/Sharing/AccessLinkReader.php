@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
@@ -149,10 +150,9 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		try {
 			$object = $this->sources->objects->find(
 				id: $uuid,
+				options: new ObjectFindOptions(render: false, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (Throwable $missing) {
 			$this->logger->info(

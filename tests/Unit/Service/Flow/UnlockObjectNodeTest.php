@@ -31,6 +31,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode
@@ -103,9 +104,8 @@ final class UnlockObjectNodeTest extends TestCase {
 	public function testTheReleaseIsScopedToTheRun(): void {
 		$seen = [];
 		$this->objects->method('unlockObject')->willReturnCallback(
-			function (...$args) use (&$seen): bool {
-				// Positional order: identifier, advisory, runUuid.
-				$seen = $args;
+			function (UnlockRequest $request) use (&$seen): bool {
+				$seen = $request;
 				return true;
 			}
 		);
@@ -116,8 +116,8 @@ final class UnlockObjectNodeTest extends TestCase {
 			context: $this->context()
 		));
 
-		$this->assertSame(self::OBJ, $seen[0]);
-		$this->assertSame(self::RUN, $seen[2], 'the release was not scoped to the run');
+		$this->assertSame(self::OBJ, $seen->identifier);
+		$this->assertSame(self::RUN, $seen->runUuid, 'the release was not scoped to the run');
 		$this->assertSame(self::OBJ, $out[0][FlowItems::JSON]['uuid']);
 	}//end testTheReleaseIsScopedToTheRun()
 

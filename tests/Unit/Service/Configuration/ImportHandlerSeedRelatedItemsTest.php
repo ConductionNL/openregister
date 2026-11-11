@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Configuration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
@@ -101,8 +102,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$captured = [];
 		$noteService->expects($this->exactly(2))
 			->method('createNote')
-			->willReturnCallback(function (string $uuid, string $message) use (&$captured) {
-				$captured[] = compact('uuid', 'message');
+			->willReturnCallback(function (NoteDraft $draft) use (&$captured) {
+				$captured[] = ['uuid' => $draft->objectUuid, 'message' => $draft->message];
 				return ['id' => count($captured)];
 			});
 
@@ -296,12 +297,17 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 	 */
 	private function makeHandler(): ImportHandler {
 		return new ImportHandler(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			objectEntityMapper: $this->objectEntityMapper,
-			configurationMapper: $this->configurationMapper,
-			mappingMapper: $this->mappingMapper,
-			appConfig: $this->appConfig,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->configurationMapper,
+				mappings: $this->mappingMapper,
+				appConfig: $this->appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $this->logger,
 			appDataPath: '/tmp',
 			objectService: $this->objectService

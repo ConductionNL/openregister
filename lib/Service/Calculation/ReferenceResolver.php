@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\Service\Calculation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Calculation\Reference\ReferenceQuery;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
@@ -112,25 +113,6 @@ class ReferenceResolver implements ReferenceResolverInterface {
 	 * empty: the target is missing, outside the saving object's tenant, or the
 	 * read failed. An empty foreign key, or a lookup that matched nothing, is a
 	 * real answer (null) and is not listed.
-	 *
-	 * @param array<string, mixed> $payload Object data WITH `@self` already injected.
-	 * @param array<string, mixed> $references The `x-openregister-references` map.
-	 * @param Register|string|int|null $register Saving object's register context.
-	 * @param string|null $organisation Saving object's organisation UUID (the tenant boundary).
-	 *
-	 * @return array{refs: array<string, mixed>, unresolved: list<string>} The map and the unresolved names.
-	 *
-	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
-	 */
-	public function resolveAllWithOutcome(array $payload, array $references, mixed $register, ?string $organisation): array {
-		$referrer = new ReferringObject(payload: $payload, register: $register, organisation: $organisation);
-		return $this->resolveReferences(referrer: $referrer, references: $references);
-	}//end resolveAllWithOutcome()
-
-	/**
-	 * Build the `@ref` map of a referring object and name the references that could not be resolved.
-	 *
-	 * See resolveAllWithOutcome() for what `unresolved` lists.
 	 *
 	 * @param ReferringObject      $referrer   The saving object: payload, register and organisation.
 	 * @param array<string, mixed> $references The `x-openregister-references` map.
@@ -261,8 +243,7 @@ class ReferenceResolver implements ReferenceResolverInterface {
 		// boundary is enforced by the guard below instead of by the session.
 		$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $id,
-			register: $query->register,
-			schema: $query->schema,
+			options: new ObjectFindOptions(register: $query->register, schema: $query->schema),
 			_rbac: false,
 			_multitenancy: false
 		));

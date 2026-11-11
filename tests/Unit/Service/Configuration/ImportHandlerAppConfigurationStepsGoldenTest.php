@@ -115,12 +115,17 @@ class ImportHandlerAppConfigurationStepsGoldenTest extends TestCase {
 		);
 
 		return new ImportHandler(
-			schemaMapper:        $this->createMock(SchemaMapper::class),
-			registerMapper:      $this->createMock(RegisterMapper::class),
-			objectEntityMapper:  $this->createMock(MagicMapper::class),
-			configurationMapper: $configurationMapper,
-			mappingMapper:       $mappingMapper,
-			appConfig:           $appConfig,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $configurationMapper,
+				mappings: $mappingMapper,
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger:              $logger,
 			appDataPath:         '/tmp',
 			objectService:       $this->createMock(ObjectService::class)

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
@@ -172,7 +173,7 @@ class TmloController extends Controller {
 			// catch block as a 500. IDs, not entities: `find()` types these
 			// `string|int|null`, so passing the Register/Schema objects is a
 			// TypeError even once the name is right.
-			$object = $this->objectService->find(id: $id, register: $scope[0]->getId(), schema: $scope[1]->getId());
+			$object = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: $scope[0]->getId(), schema: $scope[1]->getId()));
 
 			return $this->xml(xml: $this->tmloService->generateMdtoXml($object));
 		} catch (InvalidArgumentException $e) {

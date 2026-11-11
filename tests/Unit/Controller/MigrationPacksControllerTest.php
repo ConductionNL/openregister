@@ -233,6 +233,33 @@ class MigrationPacksControllerTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 	}
 
+	public function testExportRequiresAuthentication(): void {
+		$this->setupUser(null);
+		$this->service->expects($this->never())->method('find');
+
+		$response = $this->controller->export(1);
+		$this->assertSame(401, $response->getStatus());
+	}
+
+	public function testExportReturns404WhenMissing(): void {
+		$this->setupUser('alice', false);
+		$this->service->method('find')->willThrowException(new DoesNotExistException('not found'));
+
+		$response = $this->controller->export(999);
+		$this->assertSame(404, $response->getStatus());
+	}
+
+	public function testExportDownloadsThePackDefinitionUnderItsSlug(): void {
+		$this->setupUser('alice', false);
+		$pack = new MigrationPack();
+		$pack->setPackSlug('a-pack');
+		$this->service->method('find')->willReturn($pack);
+
+		$response = $this->controller->export(1);
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $response);
+		$this->assertStringContainsString('a-pack.json', (string)$response->getHeaders()['Content-Disposition']);
+	}
+
 	public function testCreateRequiresAuthentication(): void {
 		$this->setupUser(null);
 		$response = $this->controller->create();

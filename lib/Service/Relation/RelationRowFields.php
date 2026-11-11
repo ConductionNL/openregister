@@ -114,7 +114,7 @@ final class RelationRowFields {
 	/**
 	 * What a derivation row records as inherited: null when nothing was.
 	 *
-	 * @param array<string, mixed> $inherited Role => property and value, as applyInheritance() returned it.
+	 * @param array<string, mixed> $inherited Role => property and value, as inherit() returned it.
 	 *
 	 * @return array<string, mixed>|null The record.
 	 *
