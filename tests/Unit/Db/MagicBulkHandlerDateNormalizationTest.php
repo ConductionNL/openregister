@@ -37,6 +37,7 @@ namespace Unit\Db;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -64,11 +65,9 @@ class MagicBulkHandlerDateNormalizationTest extends TestCase {
 
 		// A REAL normaliser: the point of this test is the stored format.
 		$this->handler = new MagicBulkHandler(
-			$this->db,
-			$logger,
-			$this->createMock(IEventDispatcher::class),
-			new DateTimeNormalizer($logger),
-			$this->createMock(IConfig::class)
+			sql: new MagicTableSql(db: $this->db, config: $this->createMock(IConfig::class), logger: $logger),
+			eventDispatcher: $this->createMock(IEventDispatcher::class),
+			dateTimeNormalizer: new DateTimeNormalizer($logger)
 		);
 
 		$this->register = new Register();

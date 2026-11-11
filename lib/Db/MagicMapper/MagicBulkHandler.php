@@ -196,6 +196,7 @@ class MagicBulkHandler {
 				value: $createdValue,
 				default: $now->format('Y-m-d H:i:s')
 			);
+
 			$preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
 			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object);
 
