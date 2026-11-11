@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RetentionService;
@@ -81,7 +82,7 @@ class ArchivalRetentionTaskTest extends TestCase {
 
 		$this->task = new ArchivalRetentionTask(
 			$timeFactory,
-			new ArchivalRetentionSources($this->db, $this->registerMapper, $this->schemaMapper, $this->magicMapper),
+			new ArchivalRetentionSources($this->db, new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->magicMapper)),
 			new ArchivalRetentionPlatform($this->objectService, $this->retentionService, $this->container, $this->logger)
 		);
 	}
