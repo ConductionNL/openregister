@@ -24,6 +24,7 @@ use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -98,12 +99,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where(
-				$qb->expr()->andX(
-					$qb->expr()->eq('source_type', $qb->createNamedParameter($sourceType, IQueryBuilder::PARAM_STR)),
-					$qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT))
-				)
-			)
+			->where($this->isFromSource(qb: $qb, sourceType: $sourceType, sourceId: $sourceId))
 			->orderBy('chunk_index', 'ASC');
 
 		return $this->findEntities(query: $qb);
@@ -123,12 +119,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 	public function deleteBySource(string $sourceType, int $sourceId): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->delete($this->getTableName())
-			->where(
-				$qb->expr()->andX(
-					$qb->expr()->eq('source_type', $qb->createNamedParameter($sourceType, IQueryBuilder::PARAM_STR)),
-					$qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT))
-				)
-			)
+			->where($this->isFromSource(qb: $qb, sourceType: $sourceType, sourceId: $sourceId))
 			->executeStatement();
 	}//end deleteBySource()
 
@@ -147,12 +138,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectAlias($qb->createFunction('MAX(updated_at)'), 'max_updated_at')
 			->from($this->getTableName())
-			->where(
-				$qb->expr()->andX(
-					$qb->expr()->eq('source_type', $qb->createNamedParameter($sourceType, IQueryBuilder::PARAM_STR)),
-					$qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT))
-				)
-			);
+			->where($this->isFromSource(qb: $qb, sourceType: $sourceType, sourceId: $sourceId));
 
 		$result = $qb->executeQuery();
 		$value = $result->fetchOne();
@@ -627,4 +613,20 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 
 		return array_map(static fn (array $row): array => self::keywordHit(row: $row, score: 0.0), $rows);
 	}//end searchByKeywordUnranked()
+
+	/**
+	 * The condition that a chunk belongs to the given source.
+	 *
+	 * @param IQueryBuilder $qb         The query the condition is for.
+	 * @param string        $sourceType Source type identifier.
+	 * @param int           $sourceId   Source identifier.
+	 *
+	 * @return ICompositeExpression
+	 */
+	private function isFromSource(IQueryBuilder $qb, string $sourceType, int $sourceId): ICompositeExpression {
+		return $qb->expr()->andX(
+			$qb->expr()->eq('source_type', $qb->createNamedParameter($sourceType, IQueryBuilder::PARAM_STR)),
+			$qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT))
+		);
+	}//end isFromSource()
 }//end class
