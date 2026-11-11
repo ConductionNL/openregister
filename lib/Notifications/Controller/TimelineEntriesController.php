@@ -45,6 +45,8 @@ use OCA\OpenRegister\Notifications\Service\Timeline\TimelinePermissionException;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Controller\Support\QueryText;
+use OCA\OpenRegister\Notifications\Controller\Support\ReadableObject;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -52,7 +54,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Timeline entries on an object, and the search across them.
@@ -546,7 +548,7 @@ class TimelineEntriesController extends Controller {
 	#[NoAdminRequired]
 	public function searchEntries(): JSONResponse {
 		$params = $this->request->getParams();
-		$term = $this->text(params: $params, key: 'q');
+		$term = (new QueryText(params: $params))->value(key: 'q');
 		if ($term === null) {
 			return new JSONResponse(['message' => 'A search needs a term'], Http::STATUS_BAD_REQUEST);
 		}
@@ -556,7 +558,7 @@ class TimelineEntriesController extends Controller {
 				search: new EntrySearch(
 					term: $term,
 					visibility: $this->askedVisibility(params: $params),
-					kind: $this->text(params: $params, key: 'kind'),
+					kind: (new QueryText(params: $params))->value(key: 'kind'),
 					limit: (int)($params['limit'] ?? 25)
 				)
 			);
@@ -580,7 +582,7 @@ class TimelineEntriesController extends Controller {
 	 * @return string|null The flag, or null for no narrowing.
 	 */
 	private function askedVisibility(array $params): ?string {
-		$visibility = $this->text(params: $params, key: 'visibility');
+		$visibility = (new QueryText(params: $params))->value(key: 'visibility');
 		if ($visibility === null) {
 			return null;
 		}
@@ -592,26 +594,6 @@ class TimelineEntriesController extends Controller {
 		return $visibility;
 	}//end askedVisibility()
 
-	/**
-	 * Read one optional, non-empty string off the query.
-	 *
-	 * @param array<string,mixed> $params The request parameters.
-	 * @param string              $key    The key.
-	 *
-	 * @return string|null The value, or null when absent, empty or not a string.
-	 */
-	private function text(array $params, string $key): ?string {
-		if (isset($params[$key]) === false || is_string($params[$key]) === false) {
-			return null;
-		}
-
-		$value = trim($params[$key]);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end text()
 
 	/**
 	 * Whether a caller may read an entry carrying this visibility.
@@ -712,21 +694,7 @@ class TimelineEntriesController extends Controller {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
 		}
 
-		try {
-			// setObject() throws for an unknown object, or one the caller may not read.
-			$this->objects->setRegister($path['register']);
-			$this->objects->setSchema($path['schema']);
-			$this->objects->setObject($path['id']);
-			$object = $this->objects->getObject();
-		} catch (Throwable $e) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		if (($object instanceof ObjectEntity) === false) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		return $object;
+		return (new ReadableObject(objects: $this->objects))->resolve(path: $path);
 	}//end resolveObject()
 
 	/**

@@ -41,7 +41,7 @@ final class ExampleSetRowInstall {
 	 *
 	 * @param ExampleSetEngineRows $rows    The kind of row: its part, noun, write, update and revert.
 	 * @param Closure              $refusal Why a filled row cannot be written in this run, or '': the kind's refusalIn(),
-	 *                                      called with the filled fields, the set's accounts and the context.
+	 *                                      called with the filled row (fields and the set's accounts) and the context.
 	 * @param Closure              $fill    The context the kind's rows are filled in: the kind's fillContext().
 	 * @param ExampleSetValues     $values  Fills placeholders.
 	 *
@@ -49,7 +49,7 @@ final class ExampleSetRowInstall {
 	 */
 	public function __construct(
 		private readonly ExampleSetEngineRows $rows,
-		/** @var Closure(array<string, mixed>, array<int, string>, array<string, mixed>): string */
+		/** @var Closure(FilledRow, array<string, mixed>): string */
 		private readonly Closure $refusal,
 		/** @var Closure(array<string, mixed>): array<string, mixed> */
 		private readonly Closure $fill,
@@ -60,18 +60,18 @@ final class ExampleSetRowInstall {
 	/**
 	 * Write the rows of one fragment that the record does not hold, refresh or keep the held ones.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on; `refresh` asks for a refresh.
-	 * @param array<string, mixed> $report   The report; gains the outcomes under the part and `dropped`.
-	 * @param array<string, mixed> $record   The record; gains the rows written under the part.
+	 * @param ExampleSetFragmentWrite $write  The fragment and the context placeholders draw on; `refresh` asks for a refresh.
+	 * @param RecordLedger            $ledger The report (gains the outcomes under the part and `dropped`) and the record
+	 *                                        (gains the rows written under the part).
 	 *
 	 * @return bool Whether the record changed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function fragment(array $fragment, array $context, array &$report, array &$record): bool {
+	public function fragment(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
+		$context = $write->context;
 		$refresh = (($context['refresh'] ?? false) === true && in_array($this->rows->part(), ExampleSetEngineRows::REFRESHED, true) === true);
-		$run     = new RowInstallRun(fragment: $fragment, context: $context, refresh: $refresh, ledger: new RecordLedger(report: $report, record: $record));
+		$run     = new RowInstallRun(fragment: $write->fragment, context: $context, refresh: $refresh, ledger: $ledger);
 		return $this->entries(run: $run);
 	}//end fragment()
 
@@ -198,7 +198,7 @@ final class ExampleSetRowInstall {
 			value: $step->row['entry']['data'],
 			scope: new ExampleSetFillScope(context: ($this->fill)($run->context), gaps: $gaps)
 		);
-		$error = ($this->refusal)($data, array_keys($run->ledger->record['users']), $run->context);
+		$error = ($this->refusal)(new FilledRow(data: $data, users: array_keys($run->ledger->record['users'])), $run->context);
 		if ($gaps !== []) {
 			$error = 'cannot resolve '.implode(', ', array_unique($gaps));
 		}

@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\ExportProfile;
@@ -119,7 +120,7 @@ final class ExportWholeSetActionOutcomeTest extends TestCase {
 		$this->profiles->method('find')->willThrowException(new RuntimeException('gone'));
 		$this->rights->expects(self::never())->method('refusalForUid');
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_FAILED, $result->getOutcome());
 		self::assertSame('The export profile could not be read: gone', $result->getReason());
@@ -138,7 +139,7 @@ final class ExportWholeSetActionOutcomeTest extends TestCase {
 		$this->rights->expects(self::once())->method('refusalForUid')->with($schema, 'eigenaar-1')->willReturn(null);
 		$this->writer->method('csvLineFor')->willReturn("\"Z-001\"\n");
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], false, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: false, actor: $this->actor()));
 
 		self::assertSame([19, false, false], $seen);
 		self::assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
@@ -151,7 +152,7 @@ final class ExportWholeSetActionOutcomeTest extends TestCase {
 		$this->rights->expects(self::once())->method('refusalForUid')->with(null, 'eigenaar-1')
 			->willReturn(new ExportRefusedException('schema-unresolvable', 'An unreadable rule refuses.', 403));
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_REFUSED, $result->getOutcome());
 		self::assertSame('schema-unresolvable', $result->getReason());
@@ -163,7 +164,7 @@ final class ExportWholeSetActionOutcomeTest extends TestCase {
 		$this->rights->method('refusalForUid')->willReturn(null);
 		$this->writer->method('csvLineFor')->willReturn("\"Z-001\"\n");
 
-		$result = $this->action()->apply($this->object('zaken'), ['profileId' => 42], false, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object('zaken'), parameters: ['profileId' => 42], commit: false, actor: $this->actor()));
 
 		self::assertSame('Would be written to datawarehouse_schema-unknown.csv', $result->getReason());
 	}//end testANonNumericSchemaIsNeverLookedUpAndNamesAnUnknownFile()
@@ -177,7 +178,7 @@ final class ExportWholeSetActionOutcomeTest extends TestCase {
 		$this->writer->expects(self::never())->method('csvLineFor');
 		$this->rootFolder->expects(self::never())->method('getUserFolder');
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_REFUSED, $result->getOutcome());
 		self::assertSame('export-right-missing', $result->getReason());
@@ -193,7 +194,7 @@ final class ExportWholeSetActionOutcomeTest extends TestCase {
 		$this->recorder->expects(self::once())->method('recordCompleted')
 			->with('Datawarehouse', 1, 'csv', ExportProfile::MODE_STORED, 7, 19, 'eigenaar-1');
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
 		self::assertSame('Written to datawarehouse_schema-19.csv', $result->getReason());
@@ -208,7 +209,7 @@ final class ExportWholeSetActionOutcomeTest extends TestCase {
 		$this->rootFolder->method('getUserFolder')->willThrowException(new RuntimeException('quota'));
 		$this->recorder->expects(self::never())->method('recordCompleted');
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_FAILED, $result->getOutcome());
 		self::assertSame('The row could not be written: quota', $result->getReason());

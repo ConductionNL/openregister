@@ -351,7 +351,25 @@ class ViewShareResolver implements ViewShareResolverInterface {
 	 * @return array<int, array{group?: string, user?: string, mode: string}> The shares.
 	 */
 	private function sharesOf(array $view): array {
-		$raw = ($view['sharedWith'] ?? null);
+		$shares = [];
+		foreach (self::storedShares(raw: ($view['sharedWith'] ?? null)) as $share) {
+			$normalised = self::readableShare(share: $share);
+			if ($normalised !== null) {
+				$shares[] = $normalised;
+			}
+		}
+
+		return $shares;
+	}//end sharesOf()
+
+	/**
+	 * The stored share list as a list, decoded when it is raw JSON; empty when it is neither.
+	 *
+	 * @param mixed $raw The stored `sharedWith` value.
+	 *
+	 * @return array<int|string, mixed> The entries, unchecked.
+	 */
+	private static function storedShares(mixed $raw): array {
 		if (is_string($raw) === true) {
 			// The column is TEXT and some read paths hand back the raw JSON.
 			// Decoding here rather than at every call site is what keeps the
@@ -367,31 +385,36 @@ class ViewShareResolver implements ViewShareResolverInterface {
 			return [];
 		}
 
-		$shares = [];
-		foreach ($raw as $share) {
-			if (is_array($share) === false) {
-				continue;
-			}
+		return $raw;
+	}//end storedShares()
 
-			$group = trim((string)($share['group'] ?? ''));
-			$user = trim((string)($share['user'] ?? ''));
-			$mode = trim((string)($share['mode'] ?? ''));
-			if (($group === '') === ($user === '') || in_array($mode, self::MODES, true) === false) {
-				// An unreadable share grants NOTHING: one naming both a user and
-				// a group, or neither, or a mode this resolver does not know. An
-				// unknown mode is not "probably read": that is the direction that
-				// admits somebody on a typo.
-				continue;
-			}
-
-			if ($user !== '') {
-				$shares[] = ['user' => $user, 'mode' => $mode];
-				continue;
-			}
-
-			$shares[] = ['group' => $group, 'mode' => $mode];
+	/**
+	 * One share entry, trimmed, or null when it grants nothing.
+	 *
+	 * @param mixed $share One entry of the share list.
+	 *
+	 * @return array{group?: string, user?: string, mode: string}|null The share.
+	 */
+	private static function readableShare(mixed $share): ?array {
+		if (is_array($share) === false) {
+			return null;
 		}
 
-		return $shares;
-	}//end sharesOf()
+		$group = trim((string)($share['group'] ?? ''));
+		$user = trim((string)($share['user'] ?? ''));
+		$mode = trim((string)($share['mode'] ?? ''));
+		if (($group === '') === ($user === '') || in_array($mode, self::MODES, true) === false) {
+			// An unreadable share grants NOTHING: one naming both a user and
+			// a group, or neither, or a mode this resolver does not know. An
+			// unknown mode is not "probably read": that is the direction that
+			// admits somebody on a typo.
+			return null;
+		}
+
+		if ($user !== '') {
+			return ['user' => $user, 'mode' => $mode];
+		}
+
+		return ['group' => $group, 'mode' => $mode];
+	}//end readableShare()
 }//end class

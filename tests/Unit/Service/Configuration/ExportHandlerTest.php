@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
@@ -263,7 +264,7 @@ class ExportHandlerTest extends TestCase {
 			return $entity;
 		};
 		$this->objectEntityMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			static fn (Register $r, Schema $s): array => match ($s->getId()) {
+			static fn (RegisterSchema $t): array => match ($t->schemaId()) {
 				11 => [$object(11, 'item-1'), $object(11, 'item-2')],
 				default => [$object(12, 'person-1')],
 			}

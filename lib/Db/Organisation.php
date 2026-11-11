@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Organisation\OrganisationFieldTypes;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
 
@@ -147,6 +148,37 @@ use Symfony\Component\Uid\Uuid;
 class Organisation extends Entity implements JsonSerializable {
 	use IsoTimestampsTrait;
 	use AuthorizationRulesTrait;
+
+	/**
+	 * Resources whose default authorization is a create/read/update/delete block.
+	 *
+	 * @var list<string>
+	 */
+	private const CRUD_RESOURCES = [
+		'register',
+		'schema',
+		'object',
+		'view',
+		'agent',
+		'configuration',
+		'application',
+	];
+
+	/**
+	 * Rights whose default authorization is a single grant list.
+	 *
+	 * Only grant_manage is enforced, unlike the four before it: see
+	 * Service\Rbac\OrganisationSpecialRights.
+	 *
+	 * @var list<string>
+	 */
+	private const SPECIAL_RIGHTS = [
+		'object_publish',
+		'agent_use',
+		'dashboard_view',
+		'llm_use',
+		'grant_manage',
+	];
 
 	/**
 	 * Unique identifier for the organisation
@@ -624,58 +656,9 @@ class Organisation extends Entity implements JsonSerializable {
 	 * Sets up the entity type mappings for proper database handling.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'users', type: 'json');
-		$this->addType(fieldName: 'groups', type: 'json');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'active', type: 'boolean');
-		$this->addType(fieldName: 'storageQuota', type: 'integer');
-		$this->addType(fieldName: 'bandwidthQuota', type: 'integer');
-		$this->addType(fieldName: 'requestQuota', type: 'integer');
-		$this->addType(fieldName: 'userQuota', type: 'integer');
-		$this->addType(fieldName: 'objectQuota', type: 'integer');
-		$this->addType(fieldName: 'objectQuotaSchema', type: 'string');
-		$this->addType(fieldName: 'authorization', type: 'json');
-		$this->addType(fieldName: 'parent', type: 'string');
-		$this->addType(fieldName: 'mail', type: 'json');
-		$this->addType(fieldName: 'contacts', type: 'json');
-		$this->addType(fieldName: 'notes', type: 'json');
-		$this->addType(fieldName: 'todos', type: 'json');
-		$this->addType(fieldName: 'calendar', type: 'json');
-		$this->addType(fieldName: 'talk', type: 'json');
-		$this->addType(fieldName: 'deck', type: 'json');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'environment', type: 'string');
-		$this->addType(fieldName: 'provisionedAt', type: 'datetime');
-		$this->addType(fieldName: 'suspendedAt', type: 'datetime');
-		$this->addType(fieldName: 'deprovisionedAt', type: 'datetime');
-		$this->addType(fieldName: 'retainedAt', type: 'datetime');
-		// Identity facet (ADR-022 §3): the statutory identifiers a leaf app
-		// used to keep in its own publisher/vendor record.
-		$this->addType(fieldName: 'type', type: 'string');
-		$this->addType(fieldName: 'isLocalTenant', type: 'boolean');
-		$this->addType(fieldName: 'remoteInstanceUrl', type: 'string');
-		$this->addType(fieldName: 'contactEmail', type: 'string');
-		$this->addType(fieldName: 'defaultPermissionLevel', type: 'string');
-		$this->addType(fieldName: 'qualityScore', type: 'integer');
-		$this->addType(fieldName: 'qualityStatus', type: 'string');
-		$this->addType(fieldName: 'summary', type: 'string');
-		$this->addType(fieldName: 'oin', type: 'string');
-		$this->addType(fieldName: 'tooi', type: 'string');
-		$this->addType(fieldName: 'rsin', type: 'string');
-		$this->addType(fieldName: 'kvk', type: 'string');
-		$this->addType(fieldName: 'legalName', type: 'string');
-		$this->addType(fieldName: 'pki', type: 'string');
-		$this->addType(fieldName: 'image', type: 'string');
-		// Relationship facet.
-		$this->addType(fieldName: 'registrationStatus', type: 'string');
-		$this->addType(fieldName: 'mergedInto', type: 'string');
-		$this->addType(fieldName: 'mergedAt', type: 'datetime');
+		foreach (OrganisationFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -899,56 +882,21 @@ class Organisation extends Entity implements JsonSerializable {
 	 * }
 	 */
 	private function getDefaultAuthorization(): array {
-		return [
-			'register' => [
+		$authorization = [];
+		foreach (self::CRUD_RESOURCES as $resource) {
+			$authorization[$resource] = [
 				'create' => [],
 				'read' => [],
 				'update' => [],
 				'delete' => [],
-			],
-			'schema' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'object' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'view' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'agent' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'configuration' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'application' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'object_publish' => [],
-			'agent_use' => [],
-			'dashboard_view' => [],
-			'llm_use' => [],
-			// Enforced, unlike the four above: see Service\Rbac\OrganisationSpecialRights.
-			'grant_manage' => [],
-		];
+			];
+		}
+
+		foreach (self::SPECIAL_RIGHTS as $right) {
+			$authorization[$right] = [];
+		}
+
+		return $authorization;
 	}//end getDefaultAuthorization()
 
 	/**
@@ -1044,17 +992,7 @@ class Organisation extends Entity implements JsonSerializable {
 			$this->identityJson(users: $users, groups: $groups),
 			[
 				'quota' => $this->quotaJson(),
-				// Storage, bandwidth and requests are measured by
-				// OrganisationUsageService; the entity cannot measure them, so they
-				// are null here rather than a 0 that reads as "nothing used".
-				'usage' => [
-					'storage' => null,
-					'bandwidth' => null,
-					'requests' => null,
-					'objects' => null,
-					'users' => count($users),
-					'groups' => count($groups),
-				],
+				'usage' => $this->usageJson(users: $users, groups: $groups),
 			],
 			$this->tenancyJson(),
 			$this->registryJson(),
@@ -1062,6 +1000,29 @@ class Organisation extends Entity implements JsonSerializable {
 			$this->workspaceJson()
 		);
 	}//end jsonSerialize()
+
+	/**
+	 * The usage block of the serialised organisation.
+	 *
+	 * Storage, bandwidth and requests are measured by OrganisationUsageService;
+	 * the entity cannot measure them, so they are null here rather than a 0 that
+	 * reads as "nothing used".
+	 *
+	 * @param array $users  The member user ids.
+	 * @param array $groups The member groups.
+	 *
+	 * @return array<string, int|null> The usage block.
+	 */
+	private function usageJson(array $users, array $groups): array {
+		return [
+			'storage' => null,
+			'bandwidth' => null,
+			'requests' => null,
+			'objects' => null,
+			'users' => count($users),
+			'groups' => count($groups),
+		];
+	}//end usageJson()
 
 	/**
 	 * The identity and membership part of the serialised organisation.

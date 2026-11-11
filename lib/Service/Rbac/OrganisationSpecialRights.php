@@ -120,26 +120,53 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 			return false;
 		}
 
+		$mine = array_filter(
+			$this->rightEntries(right: $right, object: $object),
+			fn (mixed $entry): bool => $this->namesAGroupOf(entry: $entry, userGroups: $userGroups)
+		);
+
+		return $this->anyCovers(entries: $mine, object: $object);
+	}//end holdsOn()
+
+	/**
+	 * The entries of a special right in the organisation the record belongs to.
+	 *
+	 * @param string       $right  The special right's key.
+	 * @param ObjectEntity $object The record.
+	 *
+	 * @return array<int|string, mixed> The entries; empty when the organisation or the right is missing.
+	 */
+	private function rightEntries(string $right, ObjectEntity $object): array {
 		$organisation = $this->organisationOf(object: $object);
 		if ($organisation === null) {
-			return false;
+			return [];
 		}
 
 		$entries = ($organisation->getAuthorization()[$right] ?? null);
 		if (is_array($entries) === false) {
-			return false;
+			return [];
 		}
 
+		return $entries;
+	}//end rightEntries()
+
+	/**
+	 * Whether one of the entries covers the record's register and schema, asked in order.
+	 *
+	 * @param array<int|string, mixed> $entries The caller's entries of the right.
+	 * @param ObjectEntity             $object  The record.
+	 *
+	 * @return bool True at the first entry that covers it.
+	 */
+	private function anyCovers(array $entries, ObjectEntity $object): bool {
 		foreach ($entries as $entry) {
-			if ($this->namesAGroupOf(entry: $entry, userGroups: $userGroups) === true
-				&& $this->entryCovers(entry: $entry, object: $object) === true
-			) {
+			if ($this->entryCovers(entry: $entry, object: $object) === true) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end holdsOn()
+	}//end anyCovers()
 
 	/**
 	 * Give a group a special right in one organisation, or narrow or widen what it has.

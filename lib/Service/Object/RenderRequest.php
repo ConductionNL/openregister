@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
+
 /**
  * What one RenderObject::render() call is asked to render an object with.
  *

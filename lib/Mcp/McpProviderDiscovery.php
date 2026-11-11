@@ -64,51 +64,71 @@ class McpProviderDiscovery {
 	public function register(IRegistrationContext $context): void {
 		$context->registerService(
 			McpToolsService::class,
-			function (ContainerInterface $container) {
-				$logger = $container->get('Psr\Log\LoggerInterface');
-				$run = new McpDiscoveryRun(container: $container, logger: $logger);
-				$run->addAll(providers: [
-					$container->get(RegistersToolProvider::class),
-					$container->get(SchemasToolProvider::class),
-					$container->get(ObjectsToolProvider::class),
-					$container->get(IntegrationsToolProvider::class),
-					$container->get(FlowMcpToolProvider::class),
-				]);
-
-				// Preferred path: apps announce themselves with a listener,
-				// the same way they contribute a flow node and the same way
-				// core's workflow engine collects operations.
-				$this->collectAnnouncedMcpProviders(run: $run);
-
-				// Legacy path, kept for one release so the fleet is never
-				// broken mid-migration. Five apps outside OpenRegister still
-				// register by container alias; each is skipped here once it
-				// announces itself, so a migrated app is never collected twice.
-				(new PerAppMcpProviderProbe())->collectPerAppMcpProviders(run: $run);
-
-				// Schema-derived providers (ADR-063 chain 2/3) MUST be
-				// appended LAST — McpToolsService is first-wins on tool
-				// name, so ordering after every hand-written per-app
-				// provider makes hand-written tools win automatically on a
-				// collision (REQ-DERIVED-003).
-				$this->collectSchemaDerivedMcpProviders(run: $run);
-
-				// Attributed providers (ADR-063 chain 3/3) MUST be collected
-				// LAST, after both hand-written and schema-derived providers,
-				// so their collision checks see the FULL existing id set:
-				// an attributed id colliding with a hand-written id is
-				// self-suppressed (hand-written wins, same as derived); an
-				// attributed id colliding with a DERIVED id is a discovery-time
-				// error (REQ-ATTR-002) — see collectAttributeMcpProviders().
-				$this->collectAttributeMcpProviders(run: $run);
-
-				return new McpToolsService(
-					providers: $run->providers(),
-					logger: $logger
-				);
-			}
+			fn (ContainerInterface $container): McpToolsService => $this->buildToolsService(container: $container)
 		);
 	}//end register()
+
+	/**
+	 * Build the tools service with every provider, in the order that decides collisions.
+	 *
+	 * @param ContainerInterface $container The shared container.
+	 *
+	 * @return McpToolsService
+	 */
+	private function buildToolsService(ContainerInterface $container): McpToolsService {
+		$logger = $container->get('Psr\Log\LoggerInterface');
+		$run = new McpDiscoveryRun(container: $container, logger: $logger);
+		$run->addAll(providers: $this->builtInProviders(container: $container));
+
+		// Preferred path: apps announce themselves with a listener,
+		// the same way they contribute a flow node and the same way
+		// core's workflow engine collects operations.
+		$this->collectAnnouncedMcpProviders(run: $run);
+
+		// Legacy path, kept for one release so the fleet is never
+		// broken mid-migration. Five apps outside OpenRegister still
+		// register by container alias; each is skipped here once it
+		// announces itself, so a migrated app is never collected twice.
+		(new PerAppMcpProviderProbe())->collectPerAppMcpProviders(run: $run);
+
+		// Schema-derived providers (ADR-063 chain 2/3) MUST be
+		// appended LAST — McpToolsService is first-wins on tool
+		// name, so ordering after every hand-written per-app
+		// provider makes hand-written tools win automatically on a
+		// collision (REQ-DERIVED-003).
+		$this->collectSchemaDerivedMcpProviders(run: $run);
+
+		// Attributed providers (ADR-063 chain 3/3) MUST be collected
+		// LAST, after both hand-written and schema-derived providers,
+		// so their collision checks see the FULL existing id set:
+		// an attributed id colliding with a hand-written id is
+		// self-suppressed (hand-written wins, same as derived); an
+		// attributed id colliding with a DERIVED id is a discovery-time
+		// error (REQ-ATTR-002) — see collectAttributeMcpProviders().
+		$this->collectAttributeMcpProviders(run: $run);
+
+		return new McpToolsService(
+			providers: $run->providers(),
+			logger: $logger
+		);
+	}//end buildToolsService()
+
+	/**
+	 * The built-in providers, in their fixed order.
+	 *
+	 * @param ContainerInterface $container The shared container.
+	 *
+	 * @return list<IMcpToolProvider>
+	 */
+	private function builtInProviders(ContainerInterface $container): array {
+		return [
+			$container->get(RegistersToolProvider::class),
+			$container->get(SchemasToolProvider::class),
+			$container->get(ObjectsToolProvider::class),
+			$container->get(IntegrationsToolProvider::class),
+			$container->get(FlowMcpToolProvider::class),
+		];
+	}//end builtInProviders()
 
 	/**
 	 * Derive one SchemaDerivedToolProvider per owning app that has at least
@@ -128,42 +148,71 @@ class McpProviderDiscovery {
 	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
 	 */
 	private function collectSchemaDerivedMcpProviders(McpDiscoveryRun $run): void {
-		$container = $run->container;
-		$logger    = $run->logger;
-
 		try {
-			$schemaMapper = $container->get(SchemaMapperInterface::class);
-			$ownership = new McpSchemaOwnership(run: $run);
-
-			// Catalog enumeration, not data access: every enabled schema
-			// MUST be considered regardless of the resolving request's org
-			// context, or the derived tool catalog would silently vary by
-			// caller — unlike SchemasToolProvider's user-facing `list`
-			// action, RBAC/multitenancy is deliberately bypassed here.
-			$schemas = $schemaMapper->findAll(_rbac: false, _multitenancy: false);
-
-			$schemasByApp = $ownership->groupOptedInSchemasByApp(schemas: $schemas);
-
-			foreach ($schemasByApp as $appId => $schemaEntries) {
-				$suppressedIds = $this->collectExistingToolIds(providers: $run->providers(), appId: $appId);
-
-				$run->add(provider: new SchemaDerivedToolProvider(
-					appId: $appId,
-					schemaEntries: $schemaEntries,
-					suppressedIds: $suppressedIds,
-					services: new SchemaDerivedToolServices(
-						objectService: $container->get(ObjectOperationsInterface::class),
-						auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
-						logger: $logger,
-					),
-				));
-			}
+			$this->addDerivedProviders(run: $run, schemasByApp: $this->optedInSchemasByApp(run: $run));
 		} catch (\Throwable $e) {
-			$logger->warning(
+			$run->logger->warning(
 				'[Application] Schema-derived provider enumeration failed: ' . $e->getMessage()
 			);
-		}//end try
+		}
 	}//end collectSchemaDerivedMcpProviders()
+
+	/**
+	 * Every schema that opts in to derived MCP tools, grouped by owning app.
+	 *
+	 * @param McpDiscoveryRun $run The discovery: container, logger and the providers collected so far.
+	 *
+	 * @return array<string, array> The opted-in schema entries per app id.
+	 */
+	private function optedInSchemasByApp(McpDiscoveryRun $run): array {
+		$schemaMapper = $run->container->get(SchemaMapperInterface::class);
+		$ownership = new McpSchemaOwnership(run: $run);
+
+		// Catalog enumeration, not data access: every enabled schema
+		// MUST be considered regardless of the resolving request's org
+		// context, or the derived tool catalog would silently vary by
+		// caller — unlike SchemasToolProvider's user-facing `list`
+		// action, RBAC/multitenancy is deliberately bypassed here.
+		$schemas = $schemaMapper->findAll(_rbac: false, _multitenancy: false);
+
+		return $ownership->groupOptedInSchemasByApp(schemas: $schemas);
+	}//end optedInSchemasByApp()
+
+	/**
+	 * Append one SchemaDerivedToolProvider per app, suppressing the tool ids its app already exposes.
+	 *
+	 * @param McpDiscoveryRun $run          The discovery; receives the providers.
+	 * @param array           $schemasByApp The opted-in schema entries per app id.
+	 *
+	 * @return void
+	 */
+	private function addDerivedProviders(McpDiscoveryRun $run, array $schemasByApp): void {
+		foreach ($schemasByApp as $appId => $schemaEntries) {
+			$suppressedIds = $this->collectExistingToolIds(providers: $run->providers(), appId: $appId);
+
+			$run->add(provider: new SchemaDerivedToolProvider(
+				appId: $appId,
+				schemaEntries: $schemaEntries,
+				suppressedIds: $suppressedIds,
+				services: $this->derivedServices(run: $run),
+			));
+		}
+	}//end addDerivedProviders()
+
+	/**
+	 * The services a schema-derived provider runs its tools with.
+	 *
+	 * @param McpDiscoveryRun $run The discovery: container and logger.
+	 *
+	 * @return SchemaDerivedToolServices
+	 */
+	private function derivedServices(McpDiscoveryRun $run): SchemaDerivedToolServices {
+		return new SchemaDerivedToolServices(
+			objectService: $run->container->get(ObjectOperationsInterface::class),
+			auditTrailMapper: $run->container->get(AuditTrailMapperInterface::class),
+			logger: $run->logger,
+		);
+	}//end derivedServices()
 
 	/**
 	 * Collect every tool id already exposed, on the providers list built so
@@ -254,6 +303,33 @@ class McpProviderDiscovery {
 	 * @return AttributeToolProvider|null
 	 */
 	private function attributeProviderFor(McpDiscoveryRun $run, string $appId): ?AttributeToolProvider {
+		$app = $this->leafApp(run: $run, appId: $appId);
+		if ($app === null) {
+			return null;
+		}
+
+		$entries = $this->attributeEntries(run: $run, app: $app);
+		if ($entries === []) {
+			return null;
+		}
+
+		return (new AttributeToolProvider(
+			appId: $appId,
+			entries: $entries,
+			auditTrailMapper: $run->container->get(AuditTrailMapperInterface::class),
+			logger: $run->logger
+		))->translatedBy(appContainer: $app->container);
+	}//end attributeProviderFor()
+
+	/**
+	 * The installed app with its own DI container; null when it has none.
+	 *
+	 * @param McpDiscoveryRun $run   The discovery: shared container and logger.
+	 * @param string          $appId The installed app.
+	 *
+	 * @return McpLeafApp|null
+	 */
+	private function leafApp(McpDiscoveryRun $run, string $appId): ?McpLeafApp {
 		// The `IMcpScannableServices::<appId>` opt-in alias — and the
 		// scanned service class itself (ADR-041) — live in the opting-in
 		// app's OWN DI container, NOT OR's shared container: a leaf app
@@ -269,28 +345,28 @@ class McpProviderDiscovery {
 			return null;
 		}
 
-		$app         = new McpLeafApp(appId: $appId, container: $appContainer, logger: $run->logger);
+		return new McpLeafApp(appId: $appId, container: $appContainer, logger: $run->logger);
+	}//end leafApp()
+
+	/**
+	 * The invocable attributed-tool entries of one app that survive the collision policy.
+	 *
+	 * @param McpDiscoveryRun $run The discovery: the providers collected so far.
+	 * @param McpLeafApp      $app The app and its own container.
+	 *
+	 * @return list<array<string, mixed>> The entries; none when the app declares nothing usable.
+	 */
+	private function attributeEntries(McpDiscoveryRun $run, McpLeafApp $app): array {
 		$descriptors = $this->scanAttributedTools(app: $app);
 		if ($descriptors === []) {
-			return null;
+			return [];
 		}
 
-		$entries = $this->resolveAttributeEntries(
+		return $this->resolveAttributeEntries(
 			app: $app,
-			descriptors: $run->withoutCollidingDescriptors(appId: $appId, descriptors: $descriptors)
+			descriptors: $run->withoutCollidingDescriptors(appId: $app->appId, descriptors: $descriptors)
 		);
-
-		if ($entries === []) {
-			return null;
-		}
-
-		return (new AttributeToolProvider(
-			appId: $appId,
-			entries: $entries,
-			auditTrailMapper: $run->container->get(AuditTrailMapperInterface::class),
-			logger: $run->logger
-		))->translatedBy(appContainer: $appContainer);
-	}//end attributeProviderFor()
+	}//end attributeEntries()
 
 	/**
 	 * The attributed-tool descriptors of an app's declared scannable services.
@@ -394,25 +470,40 @@ class McpProviderDiscovery {
 		$entries = [];
 
 		foreach ($descriptors as $descriptor) {
-			try {
-				$descriptor['instance'] = $app->container->get($descriptor['class']);
-			} catch (\Throwable $e) {
-				$app->logger->warning(
-					'[Application] Could not resolve attributed tool service instance',
-					[
-						'appId' => $app->appId,
-						'class' => $descriptor['class'],
-						'error' => $e->getMessage(),
-					]
-				);
-				continue;
+			$entry = $this->withInstance(app: $app, descriptor: $descriptor);
+			if ($entry !== null) {
+				$entries[] = $entry;
 			}
-
-			$entries[] = $descriptor;
-		}//end foreach
+		}
 
 		return $entries;
 	}//end resolveAttributeEntries()
+
+	/**
+	 * The descriptor with its service instance from the app's own container; null (logged) when it cannot be resolved.
+	 *
+	 * @param McpLeafApp           $app        The owning app and its own DI container.
+	 * @param array<string, mixed> $descriptor The kept descriptor.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function withInstance(McpLeafApp $app, array $descriptor): ?array {
+		try {
+			$descriptor['instance'] = $app->container->get($descriptor['class']);
+		} catch (\Throwable $e) {
+			$app->logger->warning(
+				'[Application] Could not resolve attributed tool service instance',
+				[
+					'appId' => $app->appId,
+					'class' => $descriptor['class'],
+					'error' => $e->getMessage(),
+				]
+			);
+			return null;
+		}
+
+		return $descriptor;
+	}//end withInstance()
 
 	/**
 	 * Collect providers from apps that announce themselves with a listener.
@@ -437,20 +528,7 @@ class McpProviderDiscovery {
 			$event = new RegisterMcpToolProvidersEvent();
 			$dispatcher->dispatchTyped($event);
 
-			$seen = [];
-			foreach ($run->providers() as $existing) {
-				$seen[$existing->getAppId()] = true;
-			}
-
-			foreach ($event->getProviders() as $provider) {
-				$appId = $provider->getAppId();
-				if (isset($seen[$appId]) === true) {
-					continue;
-				}
-
-				$seen[$appId] = true;
-				$run->add(provider: $provider);
-			}
+			$this->addUnseenProviders(run: $run, providers: $event->getProviders());
 		} catch (\Throwable $e) {
 			// Discovery must never take the container down: an app with a
 			// broken listener costs its own tools, not everyone else's.
@@ -461,4 +539,27 @@ class McpProviderDiscovery {
 		}//end try
 
 	}//end collectAnnouncedMcpProviders()
+
+	/**
+	 * Append each announced provider whose app id is not collected yet, first one wins.
+	 *
+	 * @param McpDiscoveryRun        $run       The discovery; receives the providers.
+	 * @param list<IMcpToolProvider> $providers The announced providers, in announcement order.
+	 *
+	 * @return void
+	 */
+	private function addUnseenProviders(McpDiscoveryRun $run, array $providers): void {
+		$seen = [];
+		foreach ($run->providers() as $existing) {
+			$seen[$existing->getAppId()] = true;
+		}
+
+		foreach ($providers as $provider) {
+			$appId = $provider->getAppId();
+			if (isset($seen[$appId]) === false) {
+				$seen[$appId] = true;
+				$run->add(provider: $provider);
+			}
+		}
+	}//end addUnseenProviders()
 }//end class

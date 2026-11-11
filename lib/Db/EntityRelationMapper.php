@@ -26,6 +26,7 @@ use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RelationDecisionUpdate;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
@@ -788,9 +789,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	private function notifyDecisionUpdated(EntityRelation $relation, DecisionMetadataChange $change): void {
 		try {
 			$this->entityEvents->entityRelationDecisionUpdated(
-				relation: $relation,
-				changedFields: $change->changedFields,
-				actingUser: $change->actingUser
+				update: new RelationDecisionUpdate(relation: $relation, changedFields: $change->changedFields, actingUser: $change->actingUser)
 			);
 		} catch (\Throwable $dispatchError) {
 			$message = '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent';

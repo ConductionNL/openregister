@@ -65,7 +65,7 @@ use OCA\OpenRegister\Controller\Support\WriteCaller;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -101,8 +101,8 @@ use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
-use OCA\OpenRegister\Service\Object\RenderSelection;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyRequest;
@@ -149,6 +149,7 @@ use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
 use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
@@ -998,30 +999,6 @@ class ObjectsController extends Controller {
 	}//end purposeRefusal()
 
 	/**
-	 * Resolve a register/schema path pair to numeric ids.
-	 *
-	 * Delegates to ResolvesRegisterAndSchemaTrait so this controller and
-	 * BulkController share ONE implementation. They previously each held a
-	 * private copy; #2858 and #2860 fixed this one and the bulk copy kept the
-	 * bug, so `GET /api/objects/19/9476` worked while
-	 * `POST /api/bulk/19/9475/save` still 404'd on the same register.
-	 *
-	 * @param string $register Register slug, uuid or numeric id.
-	 * @param string $schema Schema slug, uuid or numeric id.
-	 * @param ObjectOperationsInterface $objectService The request's object service.
-	 *
-	 * @return array The resolved ids and entities.
-	 *
-	 * @throws RegisterNotFoundException When the register does not resolve.
-	 * @throws SchemaNotFoundException When the schema does not resolve.
-	 *
-	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
-	 */
-	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectOperationsInterface $objectService): array {
-		return $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
-	}//end resolveRegisterSchemaIds()
-
-	/**
 	 * Log one warning for the filter keys that name no property of the schema.
 	 *
 	 * Such a filter answers `1 = 0`, so the caller gets an empty list that is
@@ -1246,7 +1223,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -2104,9 +2081,8 @@ class ObjectsController extends Controller {
 	private function countPairScoped(array $entry, ObjectCountScope $scope): ?int {
 		try {
 			// Resolve slugs/ids to numeric ids + entities (same as index()).
-			$resolved = $this->resolveRegisterSchemaIds(
-				register: (string)$entry['register'],
-				schema: (string)$entry['schema'],
+			$resolved = $this->resolveRegisterSchemaRef(
+				ref: new RegisterSchemaRef(register: (string)$entry['register'], schema: (string)$entry['schema']),
 				objectService: $scope->objectService
 			);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -2732,7 +2708,10 @@ class ObjectsController extends Controller {
 	 */
 	private function oneTableListing(ObjectsRouteScope $scope, ObjectOperationsInterface $objectService): array|JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $scope->register, schema: $scope->schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(
+				ref: new RegisterSchemaRef(register: $scope->register, schema: $scope->schema),
+				objectService: $objectService
+			);
 
 			$answer = $this->refuseUnboundPurpose(resolved: $resolved);
 			if ($answer === null && (new MagicMappedTable(resolved: $resolved))->isMapped() === true) {
@@ -2967,7 +2946,10 @@ class ObjectsController extends Controller {
 	 */
 	private function optionsSchema(ReferenceOptionsAsk $ask, ObjectOperationsInterface $objectService): Schema|JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $ask->register, schema: $ask->schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(
+				ref: new RegisterSchemaRef(register: $ask->register, schema: $ask->schema),
+				objectService: $objectService
+			);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -3011,7 +2993,7 @@ class ObjectsController extends Controller {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.show.in');
 
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -3327,7 +3309,8 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$renderedData['@self']['actions'] = $shown->show->services->permissions->permittedActionsFor(schema: $schema, object: $shown->entity);
+			$listing = new VerbListing(schema: $schema, object: $shown->entity);
+			$renderedData['@self']['actions'] = $shown->show->services->permissions->permittedActionsFor(listing: $listing);
 		} catch (\Throwable $e) {
 			$context = ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'error' => $e->getMessage()];
 			$this->logger->warning(message: '[ObjectsController] Could not resolve the actions for a record; returning it without them', context: $context);
@@ -3381,7 +3364,7 @@ class ObjectsController extends Controller {
 	public function create(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.create.in');
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -3759,7 +3742,7 @@ class ObjectsController extends Controller {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.in');
 
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -4005,7 +3988,7 @@ class ObjectsController extends Controller {
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function patch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
 		}
@@ -4185,7 +4168,7 @@ class ObjectsController extends Controller {
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function postPatch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
 		}
@@ -5230,14 +5213,9 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		try {
-			$object = $this->presenceObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		}
-
-		if ($object === null) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		$object = $this->presenceObjectOrRefusal(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
 		return $this->moveToRequestedTarget(object: $object, source: [$register, $schema]);
@@ -5453,14 +5431,9 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		try {
-			$object = $this->presenceObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		}
-
-		if ($object === null) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		$object = $this->presenceObjectOrRefusal(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
 		$service = $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class);
@@ -5581,14 +5554,9 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		try {
-			$object = $this->presenceObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		}
-
-		if ($object === null) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		$object = $this->presenceObjectOrRefusal(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
 		return new JSONResponse(
@@ -5648,6 +5616,25 @@ class ObjectsController extends Controller {
 
 		return null;
 	}//end presenceObject()
+
+	/**
+	 * The object on a route as {@see presenceObject()} reads it, or the answer when it cannot be read.
+	 *
+	 * @param ObjectRef $ref The register, schema and object.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or 409 for an ambiguous id and 404 when it cannot be read.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 */
+	private function presenceObjectOrRefusal(ObjectRef $ref): ObjectEntity|JSONResponse {
+		try {
+			$object = $this->presenceObject(ref: $ref);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $ref->id);
+		}
+
+		return $object ?? new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+	}//end presenceObjectOrRefusal()
 
 	/**
 	 * Export objects to specified format
@@ -6451,6 +6438,7 @@ class ObjectsController extends Controller {
 	private static function takeZipContent(string $path): string {
 		$zipContent = file_get_contents($path);
 		if (file_exists($path) === true) {
+			// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is the temporary zip this endpoint built itself.
 			unlink($path);
 		}
 
@@ -7072,30 +7060,14 @@ class ObjectsController extends Controller {
 		ObjectOperationsInterface $objectService,
 		ReferencedByServiceInterface $referencedByService,
 	): JSONResponse {
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = ($isAdmin === false);
-
-		try {
-			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
-				id: $id,
-				files: false,
-				register: $register,
-				schema: $schema,
-				_rbac: $rbac,
-				_multitenancy: $rbac,
-				_render: false
-			));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
-		}
-
-		if ($objectEntity === null) {
-			return new JSONResponse(
-				data: ['error' => "Object with id {$id} not found"],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		$rbac = ($this->isCurrentUserAdmin() === false);
+		$objectEntity = $this->readableObject(
+			ref: new ObjectRef(register: $register, schema: $schema, id: $id),
+			objectService: $objectService,
+			rbac: $rbac
+		);
+		if ($objectEntity instanceof JSONResponse) {
+			return $objectEntity;
 		}
 
 		$query = $this->request->getParams();
@@ -7139,30 +7111,14 @@ class ObjectsController extends Controller {
 		ObjectOperationsInterface $objectService,
 		InheritedGeoCollectorInterface $collector,
 	): JSONResponse {
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = ($isAdmin === false);
-
-		try {
-			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
-				id: $id,
-				files: false,
-				register: $register,
-				schema: $schema,
-				_rbac: $rbac,
-				_multitenancy: $rbac,
-				_render: false
-			));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
-		}
-
-		if ($objectEntity === null) {
-			return new JSONResponse(
-				data: ['error' => "Object with id {$id} not found"],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		$rbac = ($this->isCurrentUserAdmin() === false);
+		$objectEntity = $this->readableObject(
+			ref: new ObjectRef(register: $register, schema: $schema, id: $id),
+			objectService: $objectService,
+			rbac: $rbac
+		);
+		if ($objectEntity instanceof JSONResponse) {
+			return $objectEntity;
 		}
 
 		$schemaEntity = null;
@@ -7182,6 +7138,40 @@ class ObjectsController extends Controller {
 			data: $collector->collect(object: $objectEntity, schema: $schemaEntity, _rbac: $rbac)
 		);
 	}//end geoFeatures()
+
+	/**
+	 * The object on a route as this caller may read it, without files or rendering.
+	 *
+	 * @param ObjectRef                 $ref           The register, schema and object.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 * @param bool                      $rbac          Whether RBAC and multitenancy apply.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or 409 for an ambiguous id and 404 when it cannot be read.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function readableObject(ObjectRef $ref, ObjectOperationsInterface $objectService, bool $rbac): ObjectEntity|JSONResponse {
+		try {
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
+				id: $ref->id,
+				files: false,
+				register: $ref->register,
+				schema: $ref->schema,
+				_rbac: $rbac,
+				_multitenancy: $rbac,
+				_render: false
+			));
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $ref->id);
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		return $objectEntity ?? new JSONResponse(
+			data: ['error' => "Object with id {$ref->id} not found"],
+			statusCode: Http::STATUS_NOT_FOUND
+		);
+	}//end readableObject()
 
 	/**
 	 * Put any soft-uniqueness warnings this write produced onto the response.

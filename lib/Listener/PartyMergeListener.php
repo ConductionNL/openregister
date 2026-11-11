@@ -43,6 +43,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Listener\Support\PartyCarryOver;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -190,9 +191,11 @@ class PartyMergeListener implements IEventListener {
 	 */
 	private function carryLink(ContactLink $link, PartyCarryOver $step): void {
 		$held = $this->links->findByObjectContactAndRole(
-			objectUuid: (string)($link->getObjectUuid() ?? ''),
-			contactUid: ContactLink::partyUid(partyUuid: $step->survivorUuid),
-			role: $link->getRole()
+			ref: new PersonLinkRef(
+				objectUuid: (string)($link->getObjectUuid() ?? ''),
+				contactUid: ContactLink::partyUid(partyUuid: $step->survivorUuid),
+				role: $link->getRole()
+			)
 		);
 
 		if ($held !== null) {

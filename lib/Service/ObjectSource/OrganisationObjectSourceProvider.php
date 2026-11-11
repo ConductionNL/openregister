@@ -432,8 +432,29 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-only-the-identity-facet-is-writable-req-orp-107
 	 */
 	private function applyProjectedFields(Organisation $organisation, array $data): Organisation {
-		$changed = false;
+		$values = $this->projectedValues(data: $data);
+		foreach ($values as $property => $value) {
+			$organisation->{'set'.ucfirst($property)}($value);
+		}
 
+		if ($values === []) {
+			return $organisation;
+		}
+
+		return $this->organisationMapper->save($organisation);
+	}//end applyProjectedFields()
+
+	/**
+	 * The projected properties the data carries, as strings or null, in PROJECTED order.
+	 *
+	 * A non-scalar value is skipped rather than rejected.
+	 *
+	 * @param array<string, mixed> $data The object data.
+	 *
+	 * @return array<string, string|null> Property name to the value to write.
+	 */
+	private function projectedValues(array $data): array {
+		$values = [];
 		foreach (self::PROJECTED as $property) {
 			if (array_key_exists($property, $data) === false) {
 				continue;
@@ -444,20 +465,26 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 				continue;
 			}
 
-			if ($value !== null) {
-				$value = (string)$value;
-			}
-
-			$organisation->{'set'.ucfirst($property)}($value);
-			$changed = true;
+			$values[$property] = $this->nullableString(value: $value);
 		}
 
-		if ($changed === false) {
-			return $organisation;
+		return $values;
+	}//end projectedValues()
+
+	/**
+	 * A scalar as a string, null as null.
+	 *
+	 * @param mixed $value A scalar or null.
+	 *
+	 * @return string|null
+	 */
+	private function nullableString(mixed $value): ?string {
+		if ($value === null) {
+			return null;
 		}
 
-		return $this->organisationMapper->save($organisation);
-	}//end applyProjectedFields()
+		return (string)$value;
+	}//end nullableString()
 
 	/**
 	 * Whether the acting user may write this organisation.
@@ -600,12 +627,7 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-the-projection-carries-the-identity-facet-only-req-orp-102
 	 */
 	public static function matching(array $organisations, string $search): array {
-		$live = array_filter(
-			$organisations,
-			static function ($organisation) {
-				return ($organisation instanceof Organisation && $organisation->isMerged() === false);
-			}
-		);
+		$live = array_filter($organisations, self::isLive(...));
 
 		if ($search === '') {
 			return $live;
@@ -615,17 +637,38 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 
 		return array_filter(
 			$live,
-			static function (Organisation $organisation) use ($needle) {
-				foreach ([$organisation->getName(), $organisation->getOin(), $organisation->getRsin(), $organisation->getKvk()] as $field) {
-					if ($field !== null && str_contains(strtolower((string)$field), $needle) === true) {
-						return true;
-					}
-				}
-
-				return false;
-			}
+			static fn (Organisation $organisation): bool => self::mentions(organisation: $organisation, needle: $needle)
 		);
 	}//end matching()
+
+	/**
+	 * Whether a candidate is an organisation that has not been merged away.
+	 *
+	 * @param mixed $organisation The candidate.
+	 *
+	 * @return bool
+	 */
+	private static function isLive(mixed $organisation): bool {
+		return ($organisation instanceof Organisation && $organisation->isMerged() === false);
+	}//end isLive()
+
+	/**
+	 * Whether the organisation's name, OIN, RSIN or KvK number contains the lower-cased needle.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 * @param string       $needle       The lower-cased search term.
+	 *
+	 * @return bool
+	 */
+	private static function mentions(Organisation $organisation, string $needle): bool {
+		foreach ([$organisation->getName(), $organisation->getOin(), $organisation->getRsin(), $organisation->getKvk()] as $field) {
+			if ($field !== null && str_contains(strtolower((string)$field), $needle) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end mentions()
 
 	/**
 	 * Map an organisation onto a non-persisted virtual ObjectEntity.

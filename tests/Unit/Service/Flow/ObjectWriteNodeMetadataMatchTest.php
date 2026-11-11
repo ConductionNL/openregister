@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
@@ -222,7 +223,7 @@ class ObjectWriteNodeMetadataMatchTest extends TestCase {
 	 * @return void
 	 */
 	private function runNode(array $config, array $record): void {
-		$this->node->execute([FlowItems::item(json: $record)], $config, $this->runContext);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: $record)], config: $config, context: $this->runContext));
 	}//end runNode()
 
 	/**

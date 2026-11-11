@@ -1,0 +1,183 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ReportView.downloadAs saves the render under an unquoted server file name 1`] = `
+{
+  "events": [
+    [
+      "createObjectURL",
+      "BLOB",
+    ],
+    [
+      "click",
+      "blob:report",
+      "sales.pdf",
+    ],
+    [
+      "revokeObjectURL",
+      "blob:report",
+    ],
+  ],
+  "request": [
+    [
+      "/gen/apps/openregister/api/reports/r%201/render",
+      null,
+      {
+        "params": {
+          "format": "pdf",
+        },
+        "responseType": "blob",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ReportView.downloadAs saves the render under the dashboard title 1`] = `
+{
+  "events": [
+    [
+      "createObjectURL",
+      "BLOB",
+    ],
+    [
+      "click",
+      "blob:report",
+      "Sales.pdf",
+    ],
+    [
+      "revokeObjectURL",
+      "blob:report",
+    ],
+  ],
+  "request": [
+    [
+      "/gen/apps/openregister/api/reports/r%201/render",
+      null,
+      {
+        "params": {
+          "format": "pdf",
+        },
+        "responseType": "blob",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ReportView.downloadAs saves the render under the default name 1`] = `
+{
+  "events": [
+    [
+      "createObjectURL",
+      "BLOB",
+    ],
+    [
+      "click",
+      "blob:report",
+      "dashboard.pdf",
+    ],
+    [
+      "revokeObjectURL",
+      "blob:report",
+    ],
+  ],
+  "request": [
+    [
+      "/gen/apps/openregister/api/reports/r%201/render",
+      null,
+      {
+        "params": {
+          "format": "pdf",
+        },
+        "responseType": "blob",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ReportView.downloadAs saves the render under the server file name 1`] = `
+{
+  "events": [
+    [
+      "createObjectURL",
+      "BLOB",
+    ],
+    [
+      "click",
+      "blob:report",
+      "sales-2026.pdf",
+    ],
+    [
+      "revokeObjectURL",
+      "blob:report",
+    ],
+  ],
+  "request": [
+    [
+      "/gen/apps/openregister/api/reports/r%201/render",
+      null,
+      {
+        "params": {
+          "format": "pdf",
+        },
+        "responseType": "blob",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ReportView.downloadAs shows the failure for a body that is not JSON 1`] = `
+[
+  [
+    "showError",
+    "t:The report could not be downloaded.",
+  ],
+]
+`;
+
+exports[`ReportView.downloadAs shows the failure for a message 1`] = `
+[
+  [
+    "showError",
+    "Too large",
+  ],
+]
+`;
+
+exports[`ReportView.downloadAs shows the failure for a missing office server 1`] = `
+[
+  [
+    "showError",
+    "t:A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.",
+  ],
+]
+`;
+
+exports[`ReportView.downloadAs shows the failure for an empty JSON body 1`] = `
+[
+  [
+    "showError",
+    "t:The report could not be downloaded.",
+  ],
+]
+`;
+
+exports[`ReportView.downloadAs shows the failure for an error code 1`] = `
+[
+  [
+    "showError",
+    "render_failed",
+  ],
+]
+`;
+
+exports[`ReportView.downloadAs shows the failure for no response 1`] = `
+[
+  [
+    "showError",
+    "t:The report could not be downloaded.",
+  ],
+]
+`;

@@ -132,25 +132,6 @@ class ExampleSetStore {
 	}//end refusalsFor()
 
 	/**
-	 * What the schema's validator says about an object, as {@see self::refusalsFor()} documents.
-	 *
-	 * @param string               $register     The register slug.
-	 * @param string               $schema       The schema slug.
-	 * @param array<string, mixed> $data         The object.
-	 * @param array<int, string>   $plannedUsers Account ids the set creates before it writes objects.
-	 *
-	 * @return array<int, string> The refusals; empty when the schema accepts the object.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
-	 */
-	public function validate(string $register, string $schema, array $data, array $plannedUsers=[]): array {
-		return $this->refusalsFor(
-			table: new RegisterSchemaRef(register: $register, schema: $schema),
-			check: new ObjectCheck(object: $data, plannedUsers: $plannedUsers)
-		);
-	}//end validate()
-
-	/**
 	 * The rows of one schema that match the filters, as plain arrays.
 	 *
 	 * @param RegisterSchemaRef    $table   The register slug and the schema slug.
@@ -236,21 +217,6 @@ class ExampleSetStore {
 	}//end rowsMatching()
 
 	/**
-	 * Every row of one schema that holds all the asked values, as {@see self::rowsMatching()} documents.
-	 *
-	 * @param string               $register The register slug.
-	 * @param string               $schema   The schema slug.
-	 * @param array<string, mixed> $where    The asked values, by field.
-	 *
-	 * @return array<int, array<string, mixed>> The matching rows; empty when none matches.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
-	 */
-	public function matching(string $register, string $schema, array $where): array {
-		return $this->rowsMatching(table: new RegisterSchemaRef(register: $register, schema: $schema), where: $where);
-	}//end matching()
-
-	/**
 	 * Whether a row holds every asked value.
 	 *
 	 * @param array<string, mixed> $row   The row.
@@ -292,21 +258,6 @@ class ExampleSetStore {
 	}//end row()
 
 	/**
-	 * One row by its id, or null, as {@see self::row()} documents.
-	 *
-	 * @param string $register The register slug.
-	 * @param string $schema   The schema slug.
-	 * @param string $id       The row's id.
-	 *
-	 * @return array<string, mixed>|null The row, with `id` set.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
-	 */
-	public function get(string $register, string $schema, string $id): ?array {
-		return $this->row(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-	}//end get()
-
-	/**
 	 * One row by its id, and why it could not be read when that is not simply "it is not there".
 	 *
 	 * Only a row OpenRegister says does not exist (a miss, or null) is
@@ -346,21 +297,6 @@ class ExampleSetStore {
 
 		return ['row' => (['id' => $ref->id] + $row), 'error' => ''];
 	}//end readRow()
-
-	/**
-	 * One row by its id, and why it could not be read, as {@see self::readRow()} documents.
-	 *
-	 * @param string $register The register slug.
-	 * @param string $schema   The schema slug.
-	 * @param string $id       The row's id.
-	 *
-	 * @return array{row: array<string, mixed>|null, error: string} The row, or null with '' or with why the read failed.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
-	 */
-	public function read(string $register, string $schema, string $id): array {
-		return $this->readRow(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-	}//end read()
 
 	/**
 	 * Write one row.

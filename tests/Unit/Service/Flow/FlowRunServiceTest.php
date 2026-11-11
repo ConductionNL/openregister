@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
@@ -76,7 +77,9 @@ class WaitingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$context = $call->context;
 		$this->calls++;
 		if (($context['resuming'] ?? false) !== true) {
 			throw new FlowSuspension(new DateTime('@1900000000'), 'waiting for the clock');
@@ -130,7 +133,8 @@ class BranchRecordingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
 		$this->calls++;
 
 		return $items;
@@ -171,7 +175,9 @@ class AskingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$context = $call->context;
 		$slot = $context[FlowNodeResumeState::CONTEXT_KEY];
 		$signal = ($context[FlowRunService::SIGNAL_CONTEXT_KEY] ?? null);
 		$this->sawSignal[$slot->nodeId()][] = $signal;
@@ -220,7 +226,9 @@ class ContextCapturingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$context = $call->context;
 		$this->seenContext = $context;
 
 		return $items;
@@ -251,7 +259,8 @@ class CopyPinNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
 		foreach ($items as $index => $item) {
 			$items[$index]['json']['code'] = ($item['json']['inputs']['pin'] ?? null);
 		}

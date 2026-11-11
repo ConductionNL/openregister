@@ -54,6 +54,11 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use Throwable;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskDelegation;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskResolution;
 
 /**
  * Creates, routes, claims, completes, cancels and terminates tasks.
@@ -389,20 +394,17 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * implicitly assigned. A strategy that finds nobody, with no fallback,
 	 * is a pooled task, full stop.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param array<string, mixed> $pool candidateUsers / candidateGroups /
-	 *                                   candidateRole / routingStrategy /
-	 *                                   routingFallback, each optional.
-	 * @param string|null $actor The offering identity.
+	 * @param TaskActorRef         $ref  The task and the offering identity.
+	 * @param array<string, mixed> $pool candidateUsers / candidateGroups / candidateRole / routingStrategy / routingFallback, each optional.
 	 *
 	 * @return Task The offered task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
-	public function offer(string $uuid, array $pool, ?string $actor): Task {
-		$task = $this->openUnassigned(act: new TaskAct(verb: 'offer', actor: $actor), uuid: $uuid);
+	public function offer(TaskActorRef $ref, array $pool): Task {
+		$task = $this->openUnassigned(act: new TaskAct(verb: 'offer', actor: $ref->actor), uuid: $ref->uuid);
 
-		return $this->transactional(mutation: fn (): Task => $this->reroute(task: $this->pooled(task: $task, pool: $pool), actor: $actor));
+		return $this->transactional(mutation: fn (): Task => $this->reroute(task: $this->pooled(task: $task, pool: $pool), actor: $ref->actor));
 	}//end offer()
 
 	/**
@@ -508,9 +510,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * values are validated, then the change and its audit entry are written
 	 * in one transaction. An edit that changes nothing writes nothing.
 	 *
-	 * @param string $uuid The task uuid.
+	 * @param TaskActorRef         $ref     The task and the editing identity.
 	 * @param array<string, mixed> $changes The new values by field.
-	 * @param string|null $actor The editing identity.
 	 *
 	 * @return Task The task as it now stands.
 	 *
@@ -518,11 +519,11 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
 	 */
-	public function edit(string $uuid, array $changes, ?string $actor): Task {
-		$task = $this->openTaskFor(act: new TaskAct(verb: 'edit', actor: $actor), uuid: $uuid);
+	public function edit(TaskActorRef $ref, array $changes): Task {
+		$task = $this->openTaskFor(act: new TaskAct(verb: 'edit', actor: $ref->actor), uuid: $ref->uuid);
 		$changed = ($this->services->intake->editor ?? new TaskEdit())->apply(task: $task, changes: $changes);
 
-		return $this->saveEdit(task: $task, act: new TaskAct(verb: 'edit', actor: $actor, reason: $this->editReason(changed: $changed)));
+		return $this->saveEdit(task: $task, act: new TaskAct(verb: 'edit', actor: $ref->actor, reason: $this->editReason(changed: $changed)));
 	}//end edit()
 
 	/**
@@ -622,35 +623,33 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	/**
 	 * Assign a task to a performer directly.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $assignee The performer reference.
-	 * @param string|null $actor The assigning identity — requester or admin.
+	 * @param TaskActorRef $ref      The task and the assigning identity (requester or admin).
+	 * @param string       $assignee The new assignee.
 	 *
 	 * @return Task The assigned task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function assign(string $uuid, string $assignee, ?string $actor): Task {
-		$act = new TaskAct(verb: 'assign', actor: $actor, state: Task::STATE_ACTIVE);
+	public function assign(TaskActorRef $ref, string $assignee): Task {
+		$act = new TaskAct(verb: 'assign', actor: $ref->actor, state: Task::STATE_ACTIVE);
 
-		return $this->assignInternal(act: $act, assignment: new TaskAssignment(uuid: $uuid, assignee: $assignee));
+		return $this->assignInternal(act: $act, assignment: new TaskAssignment(uuid: $ref->uuid, assignee: $assignee));
 	}//end assign()
 
 	/**
 	 * Reassign a task to a different performer.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $assignee The new performer reference.
-	 * @param string|null $actor The reassigning identity — requester or admin.
+	 * @param TaskActorRef $ref      The task and the reassigning identity (requester or admin).
+	 * @param string       $assignee The new assignee.
 	 *
 	 * @return Task The reassigned task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function reassign(string $uuid, string $assignee, ?string $actor): Task {
-		$act = new TaskAct(verb: 'reassign', actor: $actor, state: Task::STATE_ACTIVE);
+	public function reassign(TaskActorRef $ref, string $assignee): Task {
+		$act = new TaskAct(verb: 'reassign', actor: $ref->actor, state: Task::STATE_ACTIVE);
 
-		return $this->assignInternal(act: $act, assignment: new TaskAssignment(uuid: $uuid, assignee: $assignee));
+		return $this->assignInternal(act: $act, assignment: new TaskAssignment(uuid: $ref->uuid, assignee: $assignee));
 	}//end reassign()
 
 	/**
@@ -661,39 +660,34 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * the delegate carries both identities into the audit — a delegated
 	 * completion is NEVER recorded as the original performer acting.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $delegate The acting identity taking over.
-	 * @param string $mandate The authority relied on.
-	 * @param string|null $actor The delegating identity — must be the assignee.
+	 * @param TaskActorRef   $ref        The task and the delegating identity, which must be the assignee.
+	 * @param TaskDelegation $delegation The identity taking over and the mandate (the authority relied on).
 	 *
 	 * @return Task The delegated task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
-	public function delegate(string $uuid, string $delegate, string $mandate, ?string $actor): Task {
-		$act = new TaskAct(verb: 'delegate', actor: $actor, reason: $mandate, state: Task::STATE_ACTIVE);
-		$task = $this->openTaskFor(act: $act, uuid: $uuid);
-		$delegation = $this->delegation(delegate: $delegate, mandate: $mandate);
+	public function delegate(TaskActorRef $ref, TaskDelegation $delegation): Task {
+		$act = new TaskAct(verb: 'delegate', actor: $ref->actor, reason: $delegation->mandate, state: Task::STATE_ACTIVE);
+		$task = $this->openTaskFor(act: $act, uuid: $ref->uuid);
+		$this->refuseBlankDelegation(delegation: $delegation);
 
 		return $this->transactional(mutation: fn (): Task => $this->settle(task: $this->handedOver(task: $task, delegation: $delegation), act: $act));
 	}//end delegate()
 
 	/**
-	 * A delegation, refused when its delegate or mandate is blank.
+	 * Refuse a delegation whose delegate or mandate is blank.
 	 *
-	 * @param string $delegate The delegate.
-	 * @param string $mandate The authority relied on.
+	 * @param TaskDelegation $delegation The delegation.
 	 *
-	 * @return TaskDelegation The delegation.
+	 * @return void
 	 *
 	 * @throws TaskValidationException On a blank delegate or mandate.
 	 */
-	private function delegation(string $delegate, string $mandate): TaskDelegation {
-		$this->refuseBlank(value: $delegate, message: 'A delegation requires a non-empty delegate.');
-		$this->refuseBlank(value: $mandate, message: 'A delegation requires a mandate naming the authority relied on.');
-
-		return new TaskDelegation(delegate: $delegate, mandate: $mandate);
-	}//end delegation()
+	private function refuseBlankDelegation(TaskDelegation $delegation): void {
+		$this->refuseBlank(value: $delegation->delegate, message: 'A delegation requires a non-empty delegate.');
+		$this->refuseBlank(value: $delegation->mandate, message: 'A delegation requires a mandate naming the authority relied on.');
+	}//end refuseBlankDelegation()
 
 	/**
 	 * Hand a task over to a delegate.
@@ -734,19 +728,17 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	/**
 	 * Resolve: the assignee finishes the work with a `resolved` outcome.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string|null $resultText Free-text result.
-	 * @param string|null $comment Completion comment.
-	 * @param string|null $actor The resolving identity — must be the assignee.
+	 * @param TaskActorRef   $ref        The task and the resolving identity, which must be the assignee.
+	 * @param TaskResolution $resolution The result text and comment.
 	 *
 	 * @return Task The resolved task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function resolve(string $uuid, ?string $resultText, ?string $comment, ?string $actor): Task {
-		$answer = new TaskAnswer(outcome: 'resolved', resultText: $resultText, comment: $comment);
+	public function resolve(TaskActorRef $ref, TaskResolution $resolution): Task {
+		$answer = new TaskAnswer(outcome: 'resolved', resultText: $resolution->resultText, comment: $resolution->comment);
 
-		return $this->finish(completion: new TaskCompletion(verb: 'resolve', uuid: $uuid, answer: $answer, actor: $actor));
+		return $this->finish(completion: new TaskCompletion(verb: 'resolve', uuid: $ref->uuid, answer: $answer, actor: $ref->actor));
 	}//end resolve()
 
 	/**
@@ -772,17 +764,16 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	/**
 	 * Cancel: the requester (or an administrator) terminates the task.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string|null $reason Why, recorded on task and audit.
-	 * @param string|null $actor The cancelling identity.
+	 * @param TaskActorRef $ref    The task and the cancelling identity.
+	 * @param string|null  $reason Why the task is cancelled.
 	 *
 	 * @return Task The terminated task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function cancel(string $uuid, ?string $reason, ?string $actor): Task {
-		$act = new TaskAct(verb: 'cancel', actor: $actor, reason: $reason, state: Task::STATE_TERMINATED);
-		$task = $this->openTaskFor(act: $act, uuid: $uuid);
+	public function cancel(TaskActorRef $ref, ?string $reason): Task {
+		$act = new TaskAct(verb: 'cancel', actor: $ref->actor, reason: $reason, state: Task::STATE_TERMINATED);
+		$task = $this->openTaskFor(act: $act, uuid: $ref->uuid);
 
 		return $this->transactional(mutation: fn (): Task => $this->settle(task: $this->withOutcome(task: $task, outcome: 'cancelled'), act: $act));
 	}//end cancel()
@@ -804,10 +795,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	/**
 	 * Check or uncheck ONE checklist item, addressed by its id.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $itemId The checklist item id.
-	 * @param bool $checked The new checked value.
-	 * @param string|null $actor The acting identity — must be the assignee.
+	 * @param TaskActorRef  $ref  The task and the acting identity, which must be the assignee.
+	 * @param ChecklistTick $tick The checklist item id and the flag it is set to.
 	 *
 	 * @return Task The task with the one item changed.
 	 *
@@ -815,10 +804,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
 	 */
-	public function checkChecklistItem(string $uuid, string $itemId, bool $checked, ?string $actor): Task {
-		$task = $this->openTaskFor(act: new TaskAct(verb: 'checklist', actor: $actor), uuid: $uuid);
-		$tick = new ChecklistTick(itemId: $itemId, checked: $checked);
-		$act = new TaskAct(verb: 'checklist', actor: $actor, reason: $tick->reason());
+	public function checkChecklistItem(TaskActorRef $ref, ChecklistTick $tick): Task {
+		$task = $this->openTaskFor(act: new TaskAct(verb: 'checklist', actor: $ref->actor), uuid: $ref->uuid);
+		$act = new TaskAct(verb: 'checklist', actor: $ref->actor, reason: $tick->reason());
 
 		return $this->transactional(mutation: fn (): Task => $this->persistAudited(task: $this->ticked(task: $task, tick: $tick), act: $act));
 	}//end checkChecklistItem()
@@ -1373,10 +1361,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * moving it: the party a portal task was matched to, and the role it was
 	 * matched from. The state is unchanged; only the trail grows.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $action The audited action name.
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason What is being recorded.
+	 * @param TaskAuditEntry $entry The task uuid, the audit action, the identity recorded as acting and the reason.
 	 *
 	 * @return Task The task, unchanged.
 	 *
@@ -1384,9 +1369,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
-	public function record(string $uuid, string $action, ?string $actor, string $reason): Task {
-		$task = $this->services->tables->tasks->findByUuid(uuid: $uuid);
-		$act = new TaskAct(verb: $action, actor: $actor, reason: $reason);
+	public function record(TaskAuditEntry $entry): Task {
+		$task = $this->services->tables->tasks->findByUuid(uuid: $entry->uuid);
+		$act = new TaskAct(verb: $entry->action, actor: $entry->actor, reason: $entry->reason);
 
 		return $this->transactional(mutation: fn (): Task => $this->audited(task: $task, act: $act));
 	}//end record()

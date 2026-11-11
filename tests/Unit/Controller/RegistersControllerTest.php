@@ -38,6 +38,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 
 /**
  * Unit tests for RegistersController
@@ -1539,8 +1542,7 @@ class RegistersControllerTest extends TestCase {
 		$this->importService->expects($this->once())
 			->method('importFromJson')
 			->with(
-				$this->anything(),
-				$this->callback(fn ($register) => $register === null)
+				$this->callback(fn (ImportRequest $request): bool => $request->scope->register === null)
 			)
 			->willReturn(['created' => [], 'updated' => [], 'errors' => []]);
 
@@ -1627,12 +1629,7 @@ class RegistersControllerTest extends TestCase {
 		$this->githubService->expects($this->once())
 			->method('publishConfiguration')
 			->with(
-				$this->equalTo('org'),
-				$this->equalTo('repo'),
-				$this->equalTo('my-register_openregister.json'),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(fn (GitHubFileLocation $file): bool => $file->owner === 'org' && $file->repo === 'repo' && $file->path === 'my-register_openregister.json'),
 				$this->anything()
 			)
 			->willReturn([
@@ -1722,12 +1719,7 @@ class RegistersControllerTest extends TestCase {
 			->method('publishConfiguration')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->isNull()  // fileSha should be null
+				$this->callback(fn (GitHubFileWrite $write): bool => $write->fileSha === null)
 			)
 			->willReturn([
 				'commit_sha' => 'abc',
@@ -1755,12 +1747,7 @@ class RegistersControllerTest extends TestCase {
 		$this->githubService->expects($this->once())
 			->method('publishConfiguration')
 			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->equalTo('api/spec.json'),  // Leading slash stripped
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(fn (GitHubFileLocation $file): bool => $file->path === 'api/spec.json'),  // Leading slash stripped
 				$this->anything()
 			)
 			->willReturn([
@@ -1966,12 +1953,7 @@ class RegistersControllerTest extends TestCase {
 			->method('publishConfiguration')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->equalTo('Custom commit message'),
-				$this->anything()
+				$this->callback(fn (GitHubFileWrite $write): bool => $write->commitMessage === 'Custom commit message')
 			)
 			->willReturn([
 				'commit_sha' => 'abc',

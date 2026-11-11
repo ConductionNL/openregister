@@ -145,15 +145,7 @@ final class TranslatableGroupKeyProjection {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function projectKey(mixed $rawKey, string $field): mixed {
-		$map = $rawKey;
-
-		// Native SQL returns the JSON column value as a string; decode it.
-		if (is_string($rawKey) === true) {
-			$decoded = json_decode($rawKey, true);
-			if (is_array($decoded) === true) {
-				$map = $decoded;
-			}
-		}
+		$map = $this->decodedMap(rawKey: $rawKey);
 
 		// Not a language-keyed map (scalar / legacy untranslated) — leave it.
 		if (is_array($map) === false) {
@@ -167,4 +159,24 @@ final class TranslatableGroupKeyProjection {
 
 		return $resolved[$field] ?? $rawKey;
 	}//end projectKey()
+
+	/**
+	 * The raw key as a map: native SQL returns the JSON column value as a string, so decode it.
+	 *
+	 * @param mixed $rawKey The group key as the database returned it.
+	 *
+	 * @return mixed The decoded array, or the raw key when it is no JSON object.
+	 */
+	private function decodedMap(mixed $rawKey): mixed {
+		if (is_string($rawKey) === false) {
+			return $rawKey;
+		}
+
+		$decoded = json_decode($rawKey, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return $rawKey;
+	}//end decodedMap()
 }//end class

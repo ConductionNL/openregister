@@ -152,22 +152,35 @@ final class HealthCheckDescriptor {
 			throw new ObservabilityValidationException('Health check id must be a non-empty string.');
 		}
 
-		$target = new HealthCheckTarget();
-		if ($type === 'appEnabled') {
-			$target = new HealthCheckTarget(app: self::appId(raw: $raw));
-		}
-
-		if ($type === 'appConfig') {
-			$target = self::appConfigTarget(raw: $raw);
-		}
-
 		return new self(
 			id: $id,
 			type: $type,
 			severity: $severity,
-			target: $target
+			target: self::targetOf(type: $type, raw: $raw)
 		);
 	}//end fromArray()
+
+	/**
+	 * What a check of this type looks at: an app, an app config key, or nothing.
+	 *
+	 * @param string               $type The check type.
+	 * @param array<string, mixed> $raw  The raw check entry.
+	 *
+	 * @return HealthCheckTarget
+	 *
+	 * @throws ObservabilityValidationException When the target is malformed.
+	 */
+	private static function targetOf(string $type, array $raw): HealthCheckTarget {
+		if ($type === 'appEnabled') {
+			return new HealthCheckTarget(app: self::appId(raw: $raw));
+		}
+
+		if ($type === 'appConfig') {
+			return self::appConfigTarget(raw: $raw);
+		}
+
+		return new HealthCheckTarget();
+	}//end targetOf()
 
 	/**
 	 * A value that must be one of a closed set of strings.
@@ -184,7 +197,7 @@ final class HealthCheckDescriptor {
 	private static function oneOf(mixed $value, array $rule): string {
 		if (is_string($value) === false || in_array($value, $rule['allowed'], true) === false) {
 			throw new ObservabilityValidationException(
-				sprintf($rule['message'], self::describe(value: $value), implode(', ', $rule['allowed']))
+				sprintf($rule['message'], DescriptorValue::describe(value: $value), implode(', ', $rule['allowed']))
 			);
 		}
 
@@ -235,20 +248,4 @@ final class HealthCheckDescriptor {
 
 		return new HealthCheckTarget(key: $key, assert: $assert);
 	}//end appConfigTarget()
-
-	/**
-	 * Render a raw (possibly non-scalar) value as a short string for an
-	 * error message, without leaking object internals.
-	 *
-	 * @param mixed $value Raw value.
-	 *
-	 * @return string
-	 */
-	private static function describe(mixed $value): string {
-		if (is_scalar($value) === true) {
-			return (string)$value;
-		}
-
-		return gettype($value);
-	}//end describe()
 }//end class

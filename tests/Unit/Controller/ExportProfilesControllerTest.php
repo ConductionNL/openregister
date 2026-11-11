@@ -218,6 +218,23 @@ final class ExportProfilesControllerTest extends TestCase {
 		self::assertSame('profile-uuid-1', $response->getHeaders()['X-OpenRegister-Export-Profile']);
 	}//end testAGrantedRunHandsBackTheFileWithItsModeOnTheHeaders()
 
+	public function testAJsonProfileIsServedAsJsonAndACsvOneAsCsv(): void {
+		$written = [
+			'bytes' => '[]',
+			'rowCount' => 0,
+			'metadata' => ['valueMode' => 'raw', 'profileUuid' => 'profile-uuid-1'],
+			'filename' => 'export.json',
+		];
+		$this->service->method('find')->willReturnOnConsecutiveCalls($this->profile('json'), $this->profile('csv'));
+		$this->service->method('run')->willReturn($written);
+
+		$json = $this->controller()->run(1);
+		$csv = $this->controller()->run(1);
+
+		self::assertSame('application/json', $json->getHeaders()['Content-Type']);
+		self::assertSame('text/csv', $csv->getHeaders()['Content-Type']);
+	}//end testAJsonProfileIsServedAsJsonAndACsvOneAsCsv()
+
 	public function testTheContractPublishesWhatAConsumerNeedsToReadTheFile(): void {
 		$data = $this->controller()->contract()->getData();
 

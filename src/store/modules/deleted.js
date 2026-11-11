@@ -6,6 +6,7 @@ import {
 	storeRequest,
 	withoutIds,
 } from '../../services/listPage.js'
+import { mergedStatisticsActions } from './trailStatistics.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
 
@@ -54,6 +55,7 @@ export const useDeletedStore = defineStore('deleted', {
 	}),
 
 	actions: {
+		...mergedStatisticsActions('deleted'),
 		/**
 		 * Set items for bulk action
 		 *
@@ -100,19 +102,6 @@ export const useDeletedStore = defineStore('deleted', {
 			this.deletedPagination = {
 				...this.deletedPagination,
 				...pagination,
-			}
-		},
-
-		/**
-		 * Set statistics
-		 *
-		 * @param {object} stats - The statistics object
-		 * @spec exclude store setter (local statistics state)
-		 */
-		setStatistics(stats) {
-			this.statistics = {
-				...this.statistics,
-				...stats,
 			}
 		},
 
@@ -165,22 +154,6 @@ export const useDeletedStore = defineStore('deleted', {
 					this.setDeletedList(data.results || [])
 					this.setDeletedPagination(listPagination(data, 20))
 				},
-			})
-		},
-
-		/**
-		 * Fetch deleted object statistics
-		 *
-		 * @return {Promise<object>} The statistics data
-		 * @spec exclude API passthrough to GET /api/deleted/statistics
-		 */
-		async fetchStatistics() {
-			return storeRequest(this, {
-				flag: 'statisticsLoading',
-				url: `${apiUrl}/deleted/statistics`,
-				request: { method: 'GET', failure: 'Failed to fetch statistics' },
-				log: (error) => console.error('Error fetching statistics:', error),
-				keep: (data) => this.setStatistics(data),
 			})
 		},
 

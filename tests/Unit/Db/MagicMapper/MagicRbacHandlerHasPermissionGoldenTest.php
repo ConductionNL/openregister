@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -182,14 +183,14 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$decide = fn () => $handler->hasPermission($schema, $action);
+			$decide = fn () => $handler->hasPermission(new RbacPermissionAsk($schema, $action));
 			if ($uuid !== null) {
 				$row = new ObjectEntity();
 				$row->setOwner($owner);
 				$row->setObject($data);
 				$row->setAuthorization($objectAuthorization);
 				$row->setUuid($uuid);
-				$decide = fn () => $handler->hasRowPermission($schema, $action, $row);
+				$decide = fn () => $handler->hasRowPermission(new RbacPermissionAsk($schema, $action), $row);
 			}
 
 			if ($uid === '@anonymous') {

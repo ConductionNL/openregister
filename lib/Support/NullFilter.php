@@ -88,7 +88,7 @@ final class NullFilter {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	public static function nullCheck(mixed $criterion): ?bool {
+	public static function nullCheck(mixed $criterion): bool|null {
 		if ($criterion === self::IS_NULL) {
 			return true;
 		}
