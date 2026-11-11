@@ -197,21 +197,14 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 	 */
 	private function conditions(?array $authorization): array {
 		$conditions = [];
-		foreach ($this->blocks->ruleLists(authorization: $authorization) as $label => $rules) {
-			foreach ($rules as $rule) {
-				if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false) {
-					continue;
-				}
-
-				$principal = $this->blocks->principalOf(rule: $rule);
-				foreach ($rule['match'] as $key => $value) {
-					$conditions[] = [
-						'label'       => (string)$label,
-						'principal'   => $principal,
-						'key'         => (string)$key,
-						'fingerprint' => $label.'|'.$principal.'|'.$key.'|'.json_encode($value),
-					];
-				}
+		foreach ($this->blocks->matchRules(authorization: $authorization) as $rule) {
+			foreach ($rule['match'] as $key => $value) {
+				$conditions[] = [
+					'label'       => (string)$rule['label'],
+					'principal'   => $rule['principal'],
+					'key'         => (string)$key,
+					'fingerprint' => $rule['label'].'|'.$rule['principal'].'|'.$key.'|'.json_encode($value),
+				];
 			}
 		}
 
