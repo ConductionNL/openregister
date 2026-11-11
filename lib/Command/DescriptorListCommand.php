@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Service\AppRegisterImportRunnerInterface;
 use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
 use Symfony\Component\Console\Command\Command;
@@ -244,7 +245,7 @@ class DescriptorListCommand extends Command {
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
 	private function runRealImport(OutputInterface $output, DescriptorImportTarget $target): int {
-		$result = $this->descriptors->reimport(appId: $target->appId, slug: $target->slug);
+		$result = $this->descriptors->reimportShipped(register: new ShippedRegister(appId: $target->appId, slug: $target->slug));
 		if (isset($result['counts']) === true) {
 			$output->writeln(self::realCountLines(appId: $target->appId, result: $result));
 		}

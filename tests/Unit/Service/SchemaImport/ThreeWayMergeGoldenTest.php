@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\SchemaImport;
 
+use OCA\OpenRegister\Service\SchemaImport\MergeInstruction;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -162,14 +163,14 @@ class ThreeWayMergeGoldenTest extends TestCase {
 	 */
 	#[DataProvider('cases')]
 	public function testCompute(array $baseline, array $current, array $incoming, array $resolved, array $expected): void {
-		$this->assertSame($expected, (new ThreeWayMerge())->compute($baseline, $current, $incoming, $resolved));
+		$this->assertSame($expected, (new ThreeWayMerge())->compute(new MergeInstruction($baseline, $current, $incoming, $resolved)));
 	}//end testCompute()
 
 	/**
 	 * @return void
 	 */
 	public function testResolvedDefaultsToNone(): void {
-		$result = (new ThreeWayMerge())->compute(['p' => self::A], ['p' => self::L], ['p' => self::S]);
+		$result = (new ThreeWayMerge())->compute(new MergeInstruction(['p' => self::A], ['p' => self::L], ['p' => self::S]));
 		$this->assertSame(['p'], $result['conflicts']);
 		$this->assertSame(['p' => self::L], $result['merged']);
 	}//end testResolvedDefaultsToNone()

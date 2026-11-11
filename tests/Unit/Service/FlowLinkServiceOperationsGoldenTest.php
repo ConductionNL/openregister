@@ -25,7 +25,9 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\FlowLink;
 use OCA\OpenRegister\Db\FlowLinkMapper;
+use OCA\OpenRegister\Service\FlowLinkPlatform;
 use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -100,9 +102,7 @@ class FlowLinkServiceOperationsGoldenTest extends TestCase {
 		}
 
 		$this->service = new FlowLinkService(
-			$this->mapper,
-			$this->db,
-			$this->appManager,
+			new FlowLinkPlatform($this->mapper, $this->db, $this->appManager),
 			$this->userSession,
 			$this->groupManager,
 			$this->logger
@@ -271,7 +271,7 @@ class FlowLinkServiceOperationsGoldenTest extends TestCase {
 		$this->mapper->expects($this->never())->method('insert');
 
 		try {
-			$this->service->linkOperation('obj', 1, 2, 77);
+			$this->service->linkOperation((new LinkTarget(objectUuid: 'obj', registerId: 1))->inSchema(schemaId: 2), 77);
 			$this->fail('expected a refusal');
 		} catch (Exception $e) {
 			$this->assertSame(Exception::class, get_class($e));
@@ -294,7 +294,7 @@ class FlowLinkServiceOperationsGoldenTest extends TestCase {
 
 		$this->expectExceptionCode(404);
 		try {
-			$this->service->linkOperation('obj', 1, 2, 77);
+			$this->service->linkOperation((new LinkTarget(objectUuid: 'obj', registerId: 1))->inSchema(schemaId: 2), 77);
 		} finally {
 			$this->assertSame(['debug: fetchOperationRow failed: db down'], $this->logs);
 		}
@@ -313,7 +313,7 @@ class FlowLinkServiceOperationsGoldenTest extends TestCase {
 		);
 		$this->mapper->expects($this->once())->method('insert')->willReturnArgument(0);
 
-		$link = $this->service->linkOperation('obj', 1, 2, 77);
+		$link = $this->service->linkOperation((new LinkTarget(objectUuid: 'obj', registerId: 1))->inSchema(schemaId: 2), 77);
 
 		$row = $link->jsonSerialize();
 		$this->assertSame('obj', $row['objectUuid']);
@@ -343,6 +343,6 @@ class FlowLinkServiceOperationsGoldenTest extends TestCase {
 		$this->db->expects($this->never())->method('getQueryBuilder');
 
 		$this->expectExceptionCode(403);
-		$this->service->linkOperation('obj', 1, 2, 77);
+		$this->service->linkOperation((new LinkTarget(objectUuid: 'obj', registerId: 1))->inSchema(schemaId: 2), 77);
 	}//end testANonAdminIsRefusedBeforeAnyLookup()
 }//end class

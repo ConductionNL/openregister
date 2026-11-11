@@ -33,11 +33,16 @@ use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Golden outcomes for the run lifecycle around the engine.
@@ -97,12 +102,13 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 		$this->engine  = $this->createMock(FlowEngine::class);
 		$this->logger  = $this->createMock(LoggerInterface::class);
 		$this->service = new FlowRunService(
-			$mapper,
-			$this->createMock(FlowStateMapper::class),
-			$this->engine,
-			$this->createMock(FlowNodeRegistryInterface::class),
-			$this->logger,
-			$container
+			stores: new FlowRunStores(
+				mapper: $mapper,
+				stateMapper: $this->createMock(FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $this->engine, registry: $this->createMock(FlowNodeRegistryInterface::class)),
+			logger: $this->logger,
+			container: $container
 		);
 
 	}//end setUp()
@@ -130,8 +136,8 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 		);
 		$this->logger->expects($this->never())->method('error');
 
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, $this->flow(), new \stdClass());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new \stdClass()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_FAILED, $run->getStatus());
 		$this->assertTrue($run->isTerminal());
@@ -150,8 +156,8 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 			$this->callback(static fn (array $context): bool => $context['error'] === 'boom')
 		);
 
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, $this->flow(), new \stdClass());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new \stdClass()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_FAILED, $run->getStatus());
 
@@ -166,14 +172,14 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 		$seen = [];
 		$this->engine->method('run')->willReturnCallback(
 			static function (...$args) use (&$seen): array {
-				$seen = ['items' => $args[1], 'startAt' => $args[2], 'streams' => $args[0]->streams];
+				$seen = ['items' => $args[1]->items, 'startAt' => $args[1]->startAt, 'streams' => $args[0]->streams];
 				return ['status' => FlowRun::STATUS_COMPLETED, 'log' => [], 'context' => [], 'items' => [], 'marking' => []];
 			}
 		);
 
 		$seed = [['json' => ['a' => 1], 'binary' => [], 'pairedItem' => null]];
-		$run  = $this->service->queue('f1', user: 'alice');
-		$run  = $this->service->execute($run, $this->flow(), new \stdClass(), $seed, 'hop');
+		$run  = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run  = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new \stdClass()), origin: new FlowRunOrigin(items: $seed, startAt: 'hop'));
 
 		$this->assertSame(['items' => $seed, 'startAt' => 'hop', 'streams' => null], $seen);
 		$this->assertSame(FlowRun::STATUS_COMPLETED, $run->getStatus());
@@ -204,8 +210,8 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 			]
 		);
 
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute($run, $this->flow(), new \stdClass());
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new \stdClass()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertSame('vote:42', $run->getCorrelationKey());
@@ -227,8 +233,8 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 		$this->engine->method('run')->willReturnOnConsecutiveCalls(...$results);
 
 		foreach ($results as $index => $result) {
-			$run = $this->service->queue('f1', user: 'alice');
-			$run = $this->service->execute($run, $this->flow(), new \stdClass());
+			$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+			$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new \stdClass()), origin: new FlowRunOrigin());
 			$this->assertSame($result['status'], $run->getStatus(), 'result '.$index);
 			$this->assertNull($run->getCorrelationKey(), 'result '.$index);
 		}
@@ -241,7 +247,7 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testASignalOnARunThatIsNotSuspendedIsRefused(): void {
-		$run = $this->service->queue('f1', user: 'alice');
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
 
 		$this->assertNull($this->service->signal($run, ['decision' => 'x']));
 		$this->assertSame(FlowRun::STATUS_QUEUED, $run->getStatus());

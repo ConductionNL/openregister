@@ -25,6 +25,7 @@ use DateTime;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Rules\RuleRunStores;
@@ -72,18 +73,12 @@ class RuleRunRecorderTest extends TestCase {
 
 		$summaryMapper = $this->createMock(originalClassName: RuleRunSummaryMapper::class);
 		$summaryMapper->method('record')->willReturnCallback(
-			static function (
-				string $ruleId,
-				string $schemaSlug,
-				string $verdict,
-				DateTime $moment,
-				?string $error = null,
-			) use (&$summaries, $summaryThrows): RuleRunSummary {
+			static function (RuleRun $run, RuleEvaluation $evaluation) use (&$summaries, $summaryThrows): RuleRunSummary {
 				if ($summaryThrows === true) {
 					throw new RuntimeException('the summary table is gone');
 				}
 
-				$summaries[] = ['ruleId' => $ruleId, 'verdict' => $verdict, 'error' => $error];
+				$summaries[] = ['ruleId' => $run->getRuleId(), 'verdict' => $evaluation->verdict, 'error' => $evaluation->error];
 				return new RuleRunSummary();
 			}
 		);

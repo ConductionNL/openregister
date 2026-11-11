@@ -138,13 +138,7 @@ class MagicFacetHandlerUnionFacetsGoldenTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 		$groupManager = $this->createMock(IGroupManager::class);
 
-		$rbac = new PropertyRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			new \Psr\Log\NullLogger(),
-			self::stateFieldRuleResolver($userSession, $groupManager)
-		);
+		$rbac = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($userSession, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($userSession, $groupManager)), logger: new \Psr\Log\NullLogger());
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($rbac);
 
@@ -185,6 +179,6 @@ class MagicFacetHandlerUnionFacetsGoldenTest extends TestCase {
 			);
 		}
 
-		return new MagicFacetHandler($db, $logger, null, null, null, $container, null);
+		return new MagicFacetHandler($db, $logger, null, $container);
 	}//end handler()
 }//end class

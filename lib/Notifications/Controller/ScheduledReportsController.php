@@ -27,7 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportUpdate;
 use OCA\OpenRegister\Notifications\Controller\Support\ScheduledReportsControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledReportRunNowJob;
@@ -70,16 +73,14 @@ class ScheduledReportsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param ScheduledReportsControllerServices $services The controller's services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ScheduledReportsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->service = $services->service;
 		$this->jobList = $services->jobList;
@@ -185,7 +186,7 @@ class ScheduledReportsController extends Controller {
 
 		try {
 			$report = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(report: $report, callerUid: $userId, callerIsAdmin: $this->isCurrentUserAdmin());
+			$this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin()));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
 		} catch (\RuntimeException $e) {
@@ -263,12 +264,8 @@ class ScheduledReportsController extends Controller {
 		}
 
 		try {
-			$report = $this->service->update(
-				id: $id,
-				data: $data,
-				callerUid: $userId,
-				callerIsAdmin: $this->isCurrentUserAdmin()
-			);
+			$caller = new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin());
+			$report = $this->service->applyUpdate(update: new ScheduledReportUpdate(id: $id, data: $data, caller: $caller));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
 		} catch (\RuntimeException $e) {
@@ -307,7 +304,7 @@ class ScheduledReportsController extends Controller {
 		}
 
 		try {
-			$this->service->delete(id: $id, callerUid: $userId, callerIsAdmin: $this->isCurrentUserAdmin());
+			$this->service->deleteAs(id: $id, caller: new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin()));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
 		} catch (\RuntimeException $e) {
@@ -348,7 +345,7 @@ class ScheduledReportsController extends Controller {
 
 		try {
 			$report = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(report: $report, callerUid: $userId, callerIsAdmin: $this->isCurrentUserAdmin());
+			$this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin()));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
 		} catch (\RuntimeException $e) {

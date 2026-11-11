@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -98,12 +99,7 @@ class AutoTransitionRecordListenerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('getLanguageCode')->willReturn('en');
 		$selector = new AutoTransitionSelector(
-			new LifecycleConditionEvaluator(
-				$this->createMock(IUserSession::class),
-				$groupManager,
-				new LifecycleConditionReporting($l10n, $logger),
-				$this->realConditionDialect()
-			),
+			new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(IUserSession::class), $groupManager))),
 			$logger
 		);
 
@@ -199,10 +195,8 @@ class AutoTransitionRecordListenerTest extends TestCase {
 		$this->runner->expects($this->once())
 			->method('decide')
 			->with(
-				uuid: 'uuid-1',
-				register: '1',
-				schema: '2',
-				previous: ['status' => 'ontvangen', 'id' => 'uuid-1']
+				new ObjectRef(register: '1', schema: '2', id: 'uuid-1'),
+				['status' => 'ontvangen', 'id' => 'uuid-1']
 			)
 			->willReturn(null);
 
@@ -230,7 +224,7 @@ class AutoTransitionRecordListenerTest extends TestCase {
 
 		$this->runner->expects($this->once())
 			->method('decide')
-			->with(uuid: 'uuid-1', register: '1', schema: '2', previous: [])
+			->with(new ObjectRef(register: '1', schema: '2', id: 'uuid-1'), [])
 			->willReturn(null);
 
 		$this->pass->enter();

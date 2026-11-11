@@ -36,6 +36,8 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 /**
  * Tests for SelectielijstImportService.
@@ -61,9 +63,9 @@ class SelectielijstImportServiceTest extends TestCase {
 
 		$this->objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findAll'])
+			->onlyMethods(['findAllListed'])
 			->getMock();
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 
 		$this->saveObject = $this->getMockBuilder(SaveObject::class)
 			->disableOriginalConstructor()
@@ -97,12 +99,7 @@ class SelectielijstImportServiceTest extends TestCase {
 			$this->getMockBuilder(Schema::class)->disableOriginalConstructor()->getMock()
 		);
 
-		$this->service = new SelectielijstImportService(
-			$this->settingsHandler,
-			new ArchivalRegisterMappers($registerMapper, $schemaMapper, $this->objectMapper),
-			$this->saveObject,
-			$this->createMock(LoggerInterface::class)
-		);
+		$this->service = new SelectielijstImportService(storage: new SelectielijstStorage(settings: $this->settingsHandler, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->objectMapper), writer: $this->saveObject), logger: $this->createMock(LoggerInterface::class));
 	}
 
 	/**
@@ -122,9 +119,9 @@ class SelectielijstImportServiceTest extends TestCase {
 
 		$mapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findAll'])
+			->onlyMethods(['findAllListed'])
 			->getMock();
-		$mapper->method('findAll')->willReturn($objects);
+		$mapper->method('findAllListed')->willReturn($objects);
 
 		$registerMapper = $this->getMockBuilder(RegisterMapper::class)
 			->disableOriginalConstructor()
@@ -142,12 +139,7 @@ class SelectielijstImportServiceTest extends TestCase {
 			$this->getMockBuilder(Schema::class)->disableOriginalConstructor()->getMock()
 		);
 
-		$this->service = new SelectielijstImportService(
-			$this->settingsHandler,
-			new ArchivalRegisterMappers($registerMapper, $schemaMapper, $mapper),
-			$this->saveObject,
-			$this->createMock(LoggerInterface::class)
-		);
+		$this->service = new SelectielijstImportService(storage: new SelectielijstStorage(settings: $this->settingsHandler, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $mapper), writer: $this->saveObject), logger: $this->createMock(LoggerInterface::class));
 	}
 
 	public function testACsvWithAHeaderBecomesRows(): void {

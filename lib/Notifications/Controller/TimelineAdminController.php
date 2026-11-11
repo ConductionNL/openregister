@@ -32,12 +32,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Controller\Support\TimelineAdminControllerServices;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TextBlockService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+use OCA\OpenRegister\Notifications\Controller\Support\QueryText;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -106,18 +108,16 @@ class TimelineAdminController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                          $appName  App name.
 	 * @param IRequest                        $request  Request.
 	 * @param TimelineAdminControllerServices $services The kinds, references, text blocks and session.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TimelineAdminControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->kinds = $services->kinds;
 		$this->references = $services->references;
@@ -152,8 +152,8 @@ class TimelineAdminController extends Controller {
 				'results' => array_map(
 					static fn ($kind) => $kind->jsonSerialize(),
 					$this->kinds->listKinds(
-						register: $this->optional(params: $params, key: 'register'),
-						schema: $this->optional(params: $params, key: 'schema')
+						register: (new QueryText(params: $params))->value(key: 'register'),
+						schema: (new QueryText(params: $params))->value(key: 'schema')
 					)
 				),
 			]
@@ -328,8 +328,8 @@ class TimelineAdminController extends Controller {
 				'results' => array_map(
 					static fn ($block) => $block->jsonSerialize(),
 					$this->blocks->listBlocks(
-						register: $this->optional(params: $params, key: 'register'),
-						schema: $this->optional(params: $params, key: 'schema')
+						register: (new QueryText(params: $params))->value(key: 'register'),
+						schema: (new QueryText(params: $params))->value(key: 'schema')
 					)
 				),
 			]
@@ -414,26 +414,6 @@ class TimelineAdminController extends Controller {
 		return null;
 	}//end requireAdmin()
 
-	/**
-	 * Read one optional string off the query.
-	 *
-	 * @param array<string,mixed> $params The request parameters.
-	 * @param string              $key    The key.
-	 *
-	 * @return string|null The value, or null when absent or empty.
-	 */
-	private function optional(array $params, string $key): ?string {
-		if (isset($params[$key]) === false || is_string($params[$key]) === false) {
-			return null;
-		}
-
-		$value = trim($params[$key]);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end optional()
 
 	/**
 	 * The one answer for something nobody expected.

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Oas;
 
+use OCA\OpenRegister\Service\Oas\OasIssue;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use PHPUnit\Framework\TestCase;
 
@@ -57,10 +58,12 @@ class OasValidationReportTest extends TestCase
     public function testAddErrorRecordsIssueWithErrorSeverity(): void
     {
         $this->report->addError(
-            path: 'paths./foo.get',
-            message: 'operationId collision',
-            code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID,
-        );
+            issue: new OasIssue(
+            	path: 'paths./foo.get',
+            	message: 'operationId collision',
+            	code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID
+            )
+           );
 
         $this->assertFalse($this->report->isEmpty());
         $this->assertTrue($this->report->hasErrors());
@@ -78,10 +81,12 @@ class OasValidationReportTest extends TestCase
     public function testAddWarningRecordsIssueWithWarningSeverity(): void
     {
         $this->report->addWarning(
-            path: 'tags[0]',
-            message: 'unused tag',
-            code: OasValidationReport::CODE_UNUSED_TAG,
-        );
+            issue: new OasIssue(
+            	path: 'tags[0]',
+            	message: 'unused tag',
+            	code: OasValidationReport::CODE_UNUSED_TAG
+            )
+           );
 
         $this->assertFalse($this->report->isEmpty());
         $this->assertFalse($this->report->hasErrors());
@@ -97,10 +102,12 @@ class OasValidationReportTest extends TestCase
     public function testAddAutoCorrectionRecordsIssueWithAutoCorrectedSeverity(): void
     {
         $this->report->addAutoCorrection(
-            path: 'servers[0].url',
-            message: 'relative URL corrected to absolute',
-            code: OasValidationReport::CODE_RELATIVE_SERVER_URL,
-        );
+            issue: new OasIssue(
+            	path: 'servers[0].url',
+            	message: 'relative URL corrected to absolute',
+            	code: OasValidationReport::CODE_RELATIVE_SERVER_URL
+            )
+           );
 
         $this->assertFalse($this->report->isEmpty());
         $this->assertFalse($this->report->hasErrors());
@@ -113,9 +120,9 @@ class OasValidationReportTest extends TestCase
 
     public function testGetIssuesReturnsAllSeverities(): void
     {
-        $this->report->addError(path: 'p1', message: 'e1', code: OasValidationReport::CODE_DANGLING_REF);
-        $this->report->addWarning(path: 'p2', message: 'w1', code: OasValidationReport::CODE_UNUSED_TAG);
-        $this->report->addAutoCorrection(path: 'p3', message: 'a1', code: OasValidationReport::CODE_ORPHAN_TAG);
+        $this->report->addError(issue: new OasIssue(path: 'p1', message: 'e1', code: OasValidationReport::CODE_DANGLING_REF));
+        $this->report->addWarning(issue: new OasIssue(path: 'p2', message: 'w1', code: OasValidationReport::CODE_UNUSED_TAG));
+        $this->report->addAutoCorrection(issue: new OasIssue(path: 'p3', message: 'a1', code: OasValidationReport::CODE_ORPHAN_TAG));
 
         $all = $this->report->getIssues();
         $this->assertCount(3, $all);
@@ -128,9 +135,9 @@ class OasValidationReportTest extends TestCase
 
     public function testToSummaryContractsShape(): void
     {
-        $this->report->addError(path: 'p', message: 'm', code: OasValidationReport::CODE_DANGLING_REF);
-        $this->report->addWarning(path: 'p', message: 'm', code: OasValidationReport::CODE_UNUSED_TAG);
-        $this->report->addAutoCorrection(path: 'p', message: 'm', code: OasValidationReport::CODE_ORPHAN_TAG);
+        $this->report->addError(issue: new OasIssue(path: 'p', message: 'm', code: OasValidationReport::CODE_DANGLING_REF));
+        $this->report->addWarning(issue: new OasIssue(path: 'p', message: 'm', code: OasValidationReport::CODE_UNUSED_TAG));
+        $this->report->addAutoCorrection(issue: new OasIssue(path: 'p', message: 'm', code: OasValidationReport::CODE_ORPHAN_TAG));
 
         $summary = $this->report->toSummary();
 
@@ -150,7 +157,7 @@ class OasValidationReportTest extends TestCase
 
     public function testToSummaryPassedTrueWhenNoErrors(): void
     {
-        $this->report->addWarning(path: 'p', message: 'm', code: OasValidationReport::CODE_UNUSED_TAG);
+        $this->report->addWarning(issue: new OasIssue(path: 'p', message: 'm', code: OasValidationReport::CODE_UNUSED_TAG));
 
         $summary = $this->report->toSummary();
         $this->assertTrue($summary['passed']);
@@ -172,8 +179,8 @@ class OasValidationReportTest extends TestCase
 
 	public function testStrictFailureCarriesTheReportAndCountsItsErrors(): void {
 		$report = new OasValidationReport();
-		$report->addError(path: 'a', message: 'one', code: 'c');
-		$report->addError(path: 'b', message: 'two', code: 'c');
+		$report->addError(issue: new OasIssue(path: 'a', message: 'one', code: 'c'));
+		$report->addError(issue: new OasIssue(path: 'b', message: 'two', code: 'c'));
 
 		$failure = $report->strictFailure();
 

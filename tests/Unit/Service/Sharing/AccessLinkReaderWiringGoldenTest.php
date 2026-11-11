@@ -39,12 +39,13 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
-use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderFilters;
+use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -151,7 +152,7 @@ class AccessLinkReaderWiringGoldenTest extends TestCase {
 	public function testAnObjectLinkIsServedFilteredWithoutRbacOrTenancy(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, false, false, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, false, false, false, false))
 			->willReturn($this->object());
 
 		$body = $this->reader->read(link: $this->link(AccessLink::SUBJECT_OBJECT, 'object-uuid'));

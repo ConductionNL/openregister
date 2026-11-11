@@ -63,8 +63,7 @@ final class DeletionWindow implements DeletionWindowInterface {
 	 *
 	 * @param DateTimeImmutable $destroyableFrom The date the object may be destroyed.
 	 * @param int               $daysRemaining   Whole days left, never below zero.
-	 * @param int               $retentionDays   The stated retention in days.
-	 * @param string            $source          Which rule produced the retention.
+	 * @param DeletionRetention $retention       The stated retention and the rule that produced it.
 	 * @param DateTimeImmutable $deletedAt       When the object was soft-deleted.
 	 *
 	 * @return void
@@ -72,8 +71,7 @@ final class DeletionWindow implements DeletionWindowInterface {
 	public function __construct(
 		private readonly DateTimeImmutable $destroyableFrom,
 		private readonly int $daysRemaining,
-		private readonly int $retentionDays,
-		private readonly string $source,
+		private readonly DeletionRetention $retention,
 		private readonly DateTimeImmutable $deletedAt,
 	) {
 	}//end __construct()
@@ -108,7 +106,7 @@ final class DeletionWindow implements DeletionWindowInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function retentionDays(): int {
-		return $this->retentionDays;
+		return $this->retention->days;
 	}//end retentionDays()
 
 	/**
@@ -120,7 +118,7 @@ final class DeletionWindow implements DeletionWindowInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function source(): string {
-		return $this->source;
+		return $this->retention->source;
 	}//end source()
 
 	/**
@@ -146,8 +144,8 @@ final class DeletionWindow implements DeletionWindowInterface {
 			'deletedAt' => $this->deletedAt->format(DATE_ATOM),
 			'destroyableFrom' => $this->destroyableFrom->format(DATE_ATOM),
 			'daysRemaining' => $this->daysRemaining,
-			'retentionDays' => $this->retentionDays,
-			'retentionSource' => $this->source,
+			'retentionDays' => $this->retention->days,
+			'retentionSource' => $this->retention->source,
 			'lapsed' => $this->hasLapsed(),
 		];
 	}//end toArray()

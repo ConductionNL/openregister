@@ -27,9 +27,16 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\UserControllerServices;
 use OCA\OpenRegister\Controller\Support\UserResponses;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\LoginSecurityInterface;
+use OCA\OpenRegister\Service\User\ActivityPeriod;
+use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenRequest;
+use OCA\OpenRegister\Service\User\AvatarUpload;
+use OCA\OpenRegister\Service\User\PasswordChange;
 use OCA\OpenRegister\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -124,18 +131,16 @@ class UserController extends Controller {
 	 *
 	 * Initializes controller with required dependencies.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param UserControllerServices $services The user controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		UserControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->userService = $services->domain->userService;
 		$this->securityService = $services->domain->securityService;
 		$this->userManager = $services->domain->userManager;
@@ -380,7 +385,9 @@ class UserController extends Controller {
 			return null;
 		}
 
-		$this->securityService->recordFailedLoginAttempt(username: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason);
+		$this->securityService->recordFailedLoginAttempt(
+			attempt: new FailedAttempt(subject: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason)
+		);
 		return $this->responses->error(message: $message, statusCode: 401);
 	}//end refusedLogin()
 
@@ -485,7 +492,8 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'Both currentPassword and newPassword are required', statusCode: 400);
 		}
 
-		return $this->responses->secured(data: $this->userService->changePassword($user, $currentPassword, $newPassword));
+		$change = new PasswordChange(currentPassword: $currentPassword, newPassword: $newPassword);
+		return $this->responses->secured(data: $this->userService->applyPasswordChange(user: $user, change: $change));
 	}//end changePasswordFor()
 
 	/**
@@ -504,9 +512,7 @@ class UserController extends Controller {
 		if ($this->responses->runtimeStatus(exception: $exception) === 403) {
 			$clientIp = $this->securityService->getClientIpAddress(request: $this->request);
 			$this->securityService->recordFailedLoginAttempt(
-				username: $user->getUID(),
-				ipAddress: $clientIp,
-				reason: 'password_change_incorrect'
+				attempt: new FailedAttempt(subject: $user->getUID(), ipAddress: $clientIp, reason: 'password_change_incorrect')
 			);
 		}
 
@@ -547,7 +553,8 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'No image data provided', statusCode: 400);
 		}
 
-		return $this->responses->secured(data: $this->userService->uploadAvatar($user, $data, $mimeType, $size));
+		$upload = new AvatarUpload(data: $data, mimeType: $mimeType, size: $size);
+		return $this->responses->secured(data: $this->userService->setAvatar(user: $user, upload: $upload));
 	}//end uploadAvatarFor()
 
 	/**
@@ -582,11 +589,7 @@ class UserController extends Controller {
 	public function exportData(): JSONResponse|DataDownloadResponse {
 		return $this->forCurrentUser(
 			action: fn (IUser $user): DataDownloadResponse => $this->exportFor(user: $user),
-			onFailure: fn (Exception $e): JSONResponse => $this->runtimeFailure(
-				exception: $e,
-				message: 'Failed to export data',
-				payloadStatus: 429
-			)
+			onFailure: fn (Exception $e): JSONResponse => $this->exportFailure(exception: $e)
 		);
 	}//end exportData()
 
@@ -681,11 +684,7 @@ class UserController extends Controller {
 	public function getActivity(): JSONResponse {
 		return $this->forCurrentUser(
 			action: fn (IUser $user): JSONResponse => $this->activityFor(user: $user),
-			onFailure: fn (Exception $e): JSONResponse => $this->unexpected(
-				exception: $e,
-				message: 'Failed to get activity history',
-				logged: 'Failed to get activity'
-			)
+			onFailure: fn (Exception $e): JSONResponse => $this->activityFailure(exception: $e)
 		);
 	}//end getActivity()
 
@@ -704,7 +703,10 @@ class UserController extends Controller {
 		$to     = $this->request->getParam('_to');
 
 		return $this->responses->secured(
-			data: $this->userService->getUserActivity($user, $limit, $offset, $type, $from, $to)
+			data: $this->userService->activity(
+				user: $user,
+				query: new ActivityQuery(limit: $limit, offset: $offset, type: $type, period: new ActivityPeriod(from: $from, to: $to))
+			)
 		);
 	}//end activityFor()
 
@@ -759,7 +761,7 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'Token name is required', statusCode: 400);
 		}
 
-		$token = $this->userService->createApiToken($user, $name, $expiresIn);
+		$token = $this->userService->issueApiToken(user: $user, request: new ApiTokenRequest(name: $name, expiresIn: $expiresIn));
 		return $this->responses->secured(data: $token, statusCode: 201);
 	}//end createTokenFor()
 
@@ -801,11 +803,7 @@ class UserController extends Controller {
 					$this->securityService->sanitizeInput(input: $this->request->getParams()['reason'] ?? '')
 				)
 			),
-			onFailure: fn (Exception $e): JSONResponse => $this->runtimeFailure(
-				exception: $e,
-				message: 'Failed to request deactivation',
-				payloadStatus: 409
-			)
+			onFailure: fn (Exception $e): JSONResponse => $this->deactivationRequestFailure(exception: $e)
 		);
 	}//end requestDeactivation()
 
@@ -902,31 +900,71 @@ class UserController extends Controller {
 	/**
 	 * The response for a failure: a RuntimeException under its code's status, anything else a logged 500.
 	 *
-	 * @param Exception $exception     The failure.
-	 * @param string    $message       The 500 response and log message.
-	 * @param int|null  $payloadStatus The status whose exception message is a JSON payload.
+	 * @param Exception $exception The failure.
+	 * @param string    $message   The 500 response and log message.
 	 *
 	 * @return JSONResponse The response.
 	 */
-	private function runtimeFailure(Exception $exception, string $message, ?int $payloadStatus=null): JSONResponse {
+	private function runtimeFailure(Exception $exception, string $message): JSONResponse {
 		if ($exception instanceof RuntimeException) {
-			return $this->responses->runtimeError(exception: $exception, payloadStatus: $payloadStatus);
+			return $this->responses->runtimeError(exception: $exception);
 		}
 
 		return $this->unexpected(exception: $exception, message: $message);
 	}//end runtimeFailure()
 
 	/**
-	 * Log an unexpected failure and hide it behind a 500.
+	 * The response for a failed export: a throttle (429) carries a JSON payload in its message.
 	 *
-	 * @param Exception   $exception The failure.
-	 * @param string      $message   The response message.
-	 * @param string|null $logged    The logged message, when it differs from the response message.
+	 * @param Exception $exception The failure.
 	 *
 	 * @return JSONResponse The response.
 	 */
-	private function unexpected(Exception $exception, string $message, ?string $logged=null): JSONResponse {
-		$this->logError(message: $logged ?? $message, exception: $exception);
+	private function exportFailure(Exception $exception): JSONResponse {
+		if ($exception instanceof RuntimeException) {
+			return $this->responses->runtimeError(exception: $exception, payloadStatus: 429);
+		}
+
+		return $this->unexpected(exception: $exception, message: 'Failed to export data');
+	}//end exportFailure()
+
+	/**
+	 * The response for a failed deactivation request: a duplicate (409) carries a JSON payload in its message.
+	 *
+	 * @param Exception $exception The failure.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function deactivationRequestFailure(Exception $exception): JSONResponse {
+		if ($exception instanceof RuntimeException) {
+			return $this->responses->runtimeError(exception: $exception, payloadStatus: 409);
+		}
+
+		return $this->unexpected(exception: $exception, message: 'Failed to request deactivation');
+	}//end deactivationRequestFailure()
+
+	/**
+	 * The response for a failed activity read; the log names the read, the response the history.
+	 *
+	 * @param Exception $exception The failure.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function activityFailure(Exception $exception): JSONResponse {
+		$this->logError(message: 'Failed to get activity', exception: $exception);
+		return $this->responses->error(message: 'Failed to get activity history', statusCode: 500);
+	}//end activityFailure()
+
+	/**
+	 * Log an unexpected failure and hide it behind a 500.
+	 *
+	 * @param Exception $exception The failure.
+	 * @param string    $message   The response and log message.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function unexpected(Exception $exception, string $message): JSONResponse {
+		$this->logError(message: $message, exception: $exception);
 		return $this->responses->error(message: $message, statusCode: 500);
 	}//end unexpected()
 

@@ -25,8 +25,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\RecordUpdate;
+use OCA\OpenRegister\Service\DisposalSweep;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -148,9 +151,7 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 		);
 		$this->service = new RetentionService(
 			new RetentionStores(
-				$this->objectMapper,
-				$this->schemaMapper,
-				$this->registerMapper,
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
 				$this->createMock(AuditTrailMapperInterface::class)
 			),
 			new RetentionRules($this->settings, $this->rowScanner, $calculator, $resolver),
@@ -299,13 +300,13 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 		];
 		foreach ($untouched as [$schemaArchive, $data, $previous]) {
 			$object = $this->object($stored, $data);
-			$this->assertSame($object, $this->service->applyClassificationOnUpdate($object, $this->schema($schemaArchive), $previous));
+			$this->assertSame($object, $this->service->applyClassification(new RecordUpdate($object, $this->schema($schemaArchive), $previous)));
 			$this->assertSame($stored, $object->getRetention());
 		}
 
 		// A live record is re-derived from its new category.
 		$object = $this->object($stored, ['cat' => '2.2']);
-		$this->service->applyClassificationOnUpdate($object, $this->schema($archive), ['cat' => '1.1']);
+		$this->service->applyClassification(new RecordUpdate($object, $this->schema($archive), ['cat' => '1.1']));
 		$this->assertSame(
 			[
 				'archiefstatus'     => 'active',
@@ -322,7 +323,7 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 
 		// No stored status counts as live.
 		$object = $this->object(['classification' => '1.1'], ['cat' => '2.2']);
-		$this->service->applyClassificationOnUpdate($object, $this->schema($archive), []);
+		$this->service->applyClassification(new RecordUpdate($object, $this->schema($archive), []));
 		$this->assertSame('2.2', $object->getRetention()['classification']);
 	}//end testApplyClassificationOnUpdateAllowedOutcomes()
 
@@ -381,11 +382,7 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 	public function testApplyClassificationOnUpdateRefusals(array $retention, array $data, string $exception, string $message): void {
 		$object = $this->object($retention, $data);
 		try {
-			$this->service->applyClassificationOnUpdate(
-				$object,
-				$this->schema(['enabled' => true, 'classification' => '1.1', 'classificationProperty' => 'cat']),
-				['cat' => '1.1']
-			);
+			$this->service->applyClassification(new RecordUpdate($object, $this->schema(['enabled' => true, 'classification' => '1.1', 'classificationProperty' => 'cat']), ['cat' => '1.1']));
 			$this->fail('Expected a refusal');
 		} catch (ValidationException | ObjectStateWriteException $e) {
 			$this->assertSame($exception, get_class($e));
@@ -465,7 +462,7 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testDestructionRefusal(?array $retention, string $uuid, array $excluded, ?string $expected): void {
-		$this->assertSame($expected, $this->service->destructionRefusal($this->object($retention, [], $uuid), '2030-06-01', $excluded));
+		$this->assertSame($expected, $this->service->destructionRefusalIn($this->object($retention, [], $uuid), new DisposalSweep('2030-06-01', $excluded)));
 	}//end testDestructionRefusal()
 
 	/**
@@ -521,11 +518,11 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 		$listB->setObject(['objects' => [['uuid' => 'b'], ['uuid' => 'c']]]);
 		$listC = new ObjectEntity();
 		$listC->setObject([]);
-		$this->objectMapper->expects($this->exactly(2))->method('findAll')->willReturnCallback(
-			function (...$args) use ($register, $schema, $listA, $listB, $listC) {
-				$this->assertSame(['status' => ['in_review', 'approved', 'awaiting_second_approval']], $args[2]);
-				$this->assertSame($register, $args[10]);
-				$this->assertSame($schema, $args[11]);
+		$this->objectMapper->expects($this->exactly(2))->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request) use ($register, $schema, $listA, $listB, $listC) {
+				$this->assertSame(['status' => ['in_review', 'approved', 'awaiting_second_approval']], $request->query->filters);
+				$this->assertSame($register, $request->table->register);
+				$this->assertSame($schema, $request->table->schema);
 				static $call = 0;
 				$call++;
 				if ($call === 2) {

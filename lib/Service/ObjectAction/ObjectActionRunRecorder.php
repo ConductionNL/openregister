@@ -35,13 +35,11 @@ class ObjectActionRunRecorder {
 	 * Constructor.
 	 *
 	 * @param ObjectActionInputs $inputs The writeOnly split and the digest.
-	 * @param ObjectActionAudit  $audit  Writes the entry.
-	 * @param ObjectActionGate   $gate   The acting user.
+	 * @param ObjectActionAudit  $audit  Writes the entry, as the acting user.
 	 */
 	public function __construct(
 		private readonly ObjectActionInputs $inputs,
 		private readonly ObjectActionAudit $audit,
-		private readonly ObjectActionGate $gate,
 	) {
 	}//end __construct()
 
@@ -64,8 +62,7 @@ class ObjectActionRunRecorder {
 			object: $object,
 			definition: $definition,
 			outcome: $outcome,
-			inputsDigest: $this->inputs->digest(storable: $storable),
-			userId: $this->gate->userId()
+			inputsDigest: $this->inputs->digest(storable: $storable)
 		);
 	}//end record()
 }//end class

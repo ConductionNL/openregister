@@ -4,6 +4,7 @@ namespace Unit\Service;
 
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Service\MappingKeyRewrite;
 use OCA\OpenRegister\Service\MappingService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -52,7 +53,7 @@ class MappingServiceTest extends TestCase {
 
 	public function testEncodeArrayKeysSimple(): void {
 		$input = ['key.with.dots' => 'value'];
-		$result = $this->service->encodeArrayKeys($input, '.', '&#46;');
+		$result = $this->service->encodeArrayKeys($input, new MappingKeyRewrite('.', '&#46;'));
 
 		$this->assertArrayHasKey('key&#46;with&#46;dots', $result);
 		$this->assertSame('value', $result['key&#46;with&#46;dots']);
@@ -60,21 +61,21 @@ class MappingServiceTest extends TestCase {
 
 	public function testEncodeArrayKeysNested(): void {
 		$input = ['parent.key' => ['child.key' => 'value']];
-		$result = $this->service->encodeArrayKeys($input, '.', '&#46;');
+		$result = $this->service->encodeArrayKeys($input, new MappingKeyRewrite('.', '&#46;'));
 
 		$this->assertArrayHasKey('parent&#46;key', $result);
 		$this->assertArrayHasKey('child&#46;key', $result['parent&#46;key']);
 	}
 
 	public function testEncodeArrayKeysEmptyArray(): void {
-		$result = $this->service->encodeArrayKeys([], '.', '&#46;');
+		$result = $this->service->encodeArrayKeys([], new MappingKeyRewrite('.', '&#46;'));
 
 		$this->assertSame([], $result);
 	}
 
 	public function testEncodeArrayKeysNoMatchingCharacters(): void {
 		$input = ['simple_key' => 'value'];
-		$result = $this->service->encodeArrayKeys($input, '.', '&#46;');
+		$result = $this->service->encodeArrayKeys($input, new MappingKeyRewrite('.', '&#46;'));
 
 		$this->assertArrayHasKey('simple_key', $result);
 	}
@@ -292,9 +293,13 @@ class MappingServiceTest extends TestCase {
 
 		$this->cache->method('get')->willReturn($cachedData);
 
+		$this->mappingMapper->expects($this->never())->method('find');
+
 		$result = $this->service->getMapping('5');
 
 		$this->assertInstanceOf(Mapping::class, $result);
+		$this->assertSame('CachedMapping', $result->getName());
+		$this->assertSame(5, $result->getId());
 	}
 
 	public function testGetMappingFromDatabase(): void {
@@ -472,7 +477,7 @@ class MappingServiceTest extends TestCase {
 
 		$result = $this->service->executeMapping($entity, $input);
 
-		$this->assertIsArray($result['items']);
+		$this->assertSame(['single-value'], $result['items']);
 	}
 
 	public function testExecuteMappingWithUrlDecodeCast(): void {
@@ -662,7 +667,7 @@ class MappingServiceTest extends TestCase {
 				],
 			],
 		];
-		$result = $this->service->encodeArrayKeys($input, '.', '&#46;');
+		$result = $this->service->encodeArrayKeys($input, new MappingKeyRewrite('.', '&#46;'));
 
 		$this->assertArrayHasKey('level&#46;1', $result);
 		$this->assertArrayHasKey('level&#46;2', $result['level&#46;1']);
@@ -750,11 +755,11 @@ class MappingServiceTest extends TestCase {
 		$prop->setAccessible(true);
 		$prop->setValue($mapping, 5);
 
-		$this->mappingMapper->method('find')->willReturn($mapping);
+		$this->mappingMapper->expects($this->once())->method('find')->willReturn($mapping);
 
 		$result = $service->getMapping('5');
 
-		$this->assertInstanceOf(Mapping::class, $result);
+		$this->assertSame($mapping, $result);
 	}
 
 	// ── Additional edge-case tests ─────────────────────────────────────
@@ -774,7 +779,7 @@ class MappingServiceTest extends TestCase {
 		$result = $this->service->executeMapping($entity, $input);
 
 		// datetime cast should produce a formatted date string
-		$this->assertIsString($result['date']);
+		$this->assertSame('2025-01-15 10:30:00', $result['date']);
 	}
 
 	public function testExecuteMappingWithEmptyInput(): void {

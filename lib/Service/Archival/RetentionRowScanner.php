@@ -41,7 +41,9 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -145,9 +147,9 @@ class RetentionRowScanner {
 		private readonly LoggerInterface $logger,
 	) {
 		$this->db = $stores->db;
-		$this->registerMapper = $stores->registerMapper;
-		$this->schemaMapper = $stores->schemaMapper;
-		$this->objectMapper = $stores->objectMapper;
+		$this->registerMapper = $stores->catalog->registers();
+		$this->schemaMapper = $stores->catalog->schemas();
+		$this->objectMapper = $stores->catalog->tables();
 	}//end __construct()
 
 	/**
@@ -191,13 +193,10 @@ class RetentionRowScanner {
 		$run = ['objects' => [], 'scanned' => 0, 'truncated' => false];
 
 		foreach ($this->retentionSources() as $source) {
-			$outcome = $this->scanRetentionSource(source: $source, accept: $accept, remaining: ($cap - count($run['objects'])));
+			$criteria = new RetentionScanCriteria(accept: Closure::fromCallable($accept), remaining: ($cap - count($run['objects'])));
+			$outcome = $this->scanRetentionSource(scan: new SourceScan(source: $source, criteria: $criteria));
 
-			$run['scanned'] += $outcome['scanned'];
-			array_push($run['objects'], ...$outcome['objects']);
-
-			if ($outcome['truncated'] === true) {
-				$run['truncated'] = true;
+			if ($this->absorb(run: $run, outcome: $outcome) === true) {
 				$this->warnTruncated(run: $run, cap: $cap);
 				break;
 			}
@@ -205,6 +204,25 @@ class RetentionRowScanner {
 
 		return $run;
 	}//end scan()
+
+	/**
+	 * Add one source's outcome to the run.
+	 *
+	 * @param array{objects: ObjectEntity[], scanned: int, truncated: bool} $run     The run so far.
+	 * @param array{objects: ObjectEntity[], scanned: int, truncated: bool} $outcome The source's outcome.
+	 *
+	 * @return bool True when the source was truncated, so the run is too and stops.
+	 */
+	private function absorb(array &$run, array $outcome): bool {
+		$run['scanned'] += $outcome['scanned'];
+		array_push($run['objects'], ...$outcome['objects']);
+		if ($outcome['truncated'] === false) {
+			return false;
+		}
+
+		$run['truncated'] = true;
+		return true;
+	}//end absorb()
 
 	/**
 	 * Say, at warning level, that a run stopped at its cap.
@@ -325,28 +343,27 @@ class RetentionRowScanner {
 
 			$table = $this->objectMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
 		} catch (Exception $e) {
-			$this->skipPair(register: $register, schemaId: $schemaId, error: $e);
+			$this->skipPair(pair: new RegisterSchemaRef(register: (string)$register->getId(), schema: $schemaId), error: $e);
 			return null;
 		}
 
-		return $this->magicDescriptor(table: $table, register: $register, schema: $schema);
+		return $this->magicDescriptor(table: $table, pair: new RegisterSchema(register: $register, schema: $schema));
 	}//end magicTableSource()
 
 	/**
 	 * Say that one (register, schema) pair is left out of the scan.
 	 *
-	 * @param Register   $register The register the pair belongs to.
-	 * @param string|int $schemaId The schema id as the register lists it.
-	 * @param Exception  $error    Why the pair could not be resolved.
+	 * @param RegisterSchemaRef $pair  The register id and the schema id that were skipped.
+	 * @param Exception         $error Why.
 	 *
 	 * @return void
 	 */
-	private function skipPair(Register $register, string|int $schemaId, Exception $error): void {
+	private function skipPair(RegisterSchemaRef $pair, Exception $error): void {
 		$this->logger->warning(
 			sprintf(
 				'[RetentionRowScanner] Skipping register #%s schema #%s in the retention scan: %s',
-				(string)$register->getId(),
-				(string)$schemaId,
+				(string)$pair->register,
+				(string)$pair->schema,
 				$error->getMessage()
 			),
 			['app' => 'openregister']
@@ -356,13 +373,12 @@ class RetentionRowScanner {
 	/**
 	 * A magic table as a source descriptor.
 	 *
-	 * @param string   $table    The table name.
-	 * @param Register $register The register the pair belongs to.
-	 * @param \OCA\OpenRegister\Db\Schema $schema The schema the pair belongs to.
+	 * @param string         $table The magic table.
+	 * @param RegisterSchema $pair  The register and schema it holds.
 	 *
 	 * @return array<string, mixed> The descriptor.
 	 */
-	private function magicDescriptor(string $table, Register $register, \OCA\OpenRegister\Db\Schema $schema): array {
+	private function magicDescriptor(string $table, RegisterSchema $pair): array {
 		return [
 			'table' => $table,
 			'label' => $table,
@@ -370,60 +386,52 @@ class RetentionRowScanner {
 			'idColumn' => self::MAGIC_ID_COLUMN,
 			'retentionColumn' => self::MAGIC_RETENTION_COLUMN,
 			'legacy' => false,
-			'register' => $register,
-			'schema' => $schema,
+			'register' => $pair->register,
+			'schema' => $pair->schema,
 		];
 	}//end magicDescriptor()
 
 	/**
 	 * Page one source, hydrate its retention rows and keep the matches.
 	 *
-	 * @param array<string, mixed> $source    The source descriptor.
-	 * @param callable             $accept    Predicate answering whether one object is a match.
-	 * @param int                  $remaining How many more matches this run may still collect.
+	 * @param SourceScan $scan The source, which rows count and how many may still be taken; collects the outcome.
 	 *
 	 * @return array{objects: ObjectEntity[], scanned: int, truncated: bool} What this source contributed.
-	 *
-	 * @psalm-param callable(ObjectEntity): bool $accept
 	 */
-	private function scanRetentionSource(array $source, callable $accept, int $remaining): array {
-		$outcome = ['objects' => [], 'scanned' => 0, 'truncated' => ($remaining <= 0)];
-		if ($outcome['truncated'] === true) {
-			return $outcome;
+	private function scanRetentionSource(SourceScan $scan): array {
+		$scan->outcome['truncated'] = ($scan->criteria->remaining <= 0);
+		if ($scan->outcome['truncated'] === true) {
+			return $scan->outcome;
 		}
 
 		try {
-			$criteria = new RetentionScanCriteria(accept: Closure::fromCallable($accept), remaining: $remaining);
-			$truncated = $this->pageThrough(source: $source, criteria: $criteria, outcome: $outcome);
-			$outcome['truncated'] = $truncated;
+			$scan->outcome['truncated'] = $this->pageThrough(scan: $scan);
 		} catch (Exception $e) {
 			// One unreadable table must not silence every other one. The blob
 			// table is absent on installs created after it was retired, and a
 			// magic table can be dropped between the existence check and the
 			// read. What was collected before the failure is kept.
-			$message = sprintf('[RetentionRowScanner] Retention scan skipped source "%s": %s', (string)$source['label'], $e->getMessage());
+			$message = sprintf('[RetentionRowScanner] Retention scan skipped source "%s": %s', (string)$scan->source['label'], $e->getMessage());
 			$this->logger->warning($message, ['app' => 'openregister']);
 		}
 
-		return $outcome;
+		return $scan->outcome;
 	}//end scanRetentionSource()
 
 	/**
 	 * Read one source a page at a time into the outcome, until it runs out or the cap is reached.
 	 *
-	 * @param array<string, mixed>  $source   The source descriptor.
-	 * @param RetentionScanCriteria $criteria Which objects match, and how many more this run may still collect.
-	 * @param array<string, mixed>  $outcome  The outcome so far, added to in place.
+	 * @param SourceScan $scan The source and the criteria; collects the outcome.
 	 *
 	 * @return bool True when the cap was reached.
 	 *
 	 * @throws Exception When the source cannot be read.
 	 */
-	private function pageThrough(array $source, RetentionScanCriteria $criteria, array &$outcome): bool {
+	private function pageThrough(SourceScan $scan): bool {
 		$offset = 0;
 		do {
-			$rows = $this->page(source: $source, offset: $offset);
-			if ($this->collect(source: $source, rows: $rows, criteria: $criteria, outcome: $outcome) === true) {
+			$rows = $this->page(source: $scan->source, offset: $offset);
+			if ($this->collect(scan: $scan, rows: $rows) === true) {
 				return true;
 			}
 
@@ -461,24 +469,22 @@ class RetentionRowScanner {
 	/**
 	 * Count every row of a page as inspected and keep its matches, stopping at the cap.
 	 *
-	 * @param array<string, mixed>             $source   The source descriptor.
-	 * @param array<int, array<string, mixed>> $rows     The page.
-	 * @param RetentionScanCriteria            $criteria Which objects match, and how many more this run may still collect.
-	 * @param array<string, mixed>             $outcome  The outcome so far, added to in place.
+	 * @param SourceScan                       $scan The source and the criteria; collects the outcome.
+	 * @param array<int, array<string, mixed>> $rows One page of rows.
 	 *
 	 * @return bool True when the cap was reached.
 	 */
-	private function collect(array $source, array $rows, RetentionScanCriteria $criteria, array &$outcome): bool {
+	private function collect(SourceScan $scan, array $rows): bool {
 		foreach ($rows as $row) {
-			$outcome['scanned']++;
+			$scan->outcome['scanned']++;
 
-			$object = $this->hydrateRetentionRow(source: $source, row: $row);
-			if ($object === null || $criteria->accepts(object: $object) === false) {
+			$object = $this->hydrateRetentionRow(source: $scan->source, row: $row);
+			if ($object === null || $scan->criteria->accepts(object: $object) === false) {
 				continue;
 			}
 
-			$outcome['objects'][] = $object;
-			if (count($outcome['objects']) >= $criteria->remaining) {
+			$scan->outcome['objects'][] = $object;
+			if (count($scan->outcome['objects']) >= $scan->criteria->remaining) {
 				return true;
 			}
 		}

@@ -19,6 +19,7 @@ namespace Unit\Service\Oas;
 
 use OCA\OpenRegister\Service\Oas\ProblemDescription;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
+use OCA\OpenRegister\Service\Oas\ProblemStatement;
 use PHPUnit\Framework\TestCase;
 
 class ProblemDetailsBuilderTest extends TestCase {
@@ -32,7 +33,7 @@ class ProblemDetailsBuilderTest extends TestCase {
 	}//end setUp()
 
 	public function testMinimalProblemHasTypeTitleStatus(): void {
-		$problem = $this->builder->build(status: 400, title: 'Bad request');
+		$problem = $this->builder->build(statement: new ProblemStatement(status: 400, title: 'Bad request'));
 
 		$this->assertSame('about:blank', $problem['type']);
 		$this->assertSame('Bad request', $problem['title']);
@@ -44,12 +45,14 @@ class ProblemDetailsBuilderTest extends TestCase {
 
 	public function testProblemIncludesOptionalFields(): void {
 		$problem = $this->builder->build(
-			status: 422,
-			title: 'Validation failed',
-			description: new ProblemDescription(
-				detail: 'The "email" field MUST be a valid e-mail.',
-				type: 'https://or.example.nl/probs/validation',
-				instance: '/api/objects/zaken/abc-123'
+			statement: new ProblemStatement(
+				status: 422,
+				title: 'Validation failed',
+				description: new ProblemDescription(
+					detail: 'The "email" field MUST be a valid e-mail.',
+					type: 'https://or.example.nl/probs/validation',
+					instance: '/api/objects/zaken/abc-123'
+				)
 			)
 		);
 
@@ -61,15 +64,17 @@ class ProblemDetailsBuilderTest extends TestCase {
 
 	public function testExtensionsAreIncludedButCannotOverwriteStandardFields(): void {
 		$problem = $this->builder->build(
-			status: 400,
-			title: 'Bad request',
-			extensions: [
-				'code' => 'OR-INVALID-FILTER',
-				'errors' => [['path' => 'foo', 'message' => 'bar']],
-				// These MUST be ignored because the standard fields take priority.
-				'type' => 'malicious-override',
-				'status' => 200,
-			]
+			statement: new ProblemStatement(
+				status: 400,
+				title: 'Bad request',
+				extensions: [
+					'code' => 'OR-INVALID-FILTER',
+					'errors' => [['path' => 'foo', 'message' => 'bar']],
+					// These MUST be ignored because the standard fields take priority.
+					'type' => 'malicious-override',
+					'status' => 200,
+				]
+			)
 		);
 
 		$this->assertSame('OR-INVALID-FILTER', $problem['code']);
@@ -85,7 +90,7 @@ class ProblemDetailsBuilderTest extends TestCase {
 				['path' => 'email', 'message' => 'must be a valid email'],
 				['path' => 'age', 'message' => 'must be >= 18'],
 			],
-			detail: '2 fields failed validation'
+			description: new ProblemDescription(detail: '2 fields failed validation')
 		);
 
 		$this->assertSame(422, $problem['status']);
@@ -110,6 +115,33 @@ class ProblemDetailsBuilderTest extends TestCase {
 		$this->assertSame('File is locked by another user', $problem['detail']);
 
 	}//end testConflictHelperEmits409()
+
+	public function testEmptyTypeFallsBackToAboutBlankAndReservedExtensionsAreDropped(): void {
+		$problem = $this->builder->build(
+			statement: new ProblemStatement(
+				status: 409,
+				title: 'Conflict',
+				description: new ProblemDescription(detail: '', type: '', instance: ''),
+				extensions: ['title' => 'x', 'detail' => 'y', 'instance' => 'z', 'retryAfter' => 5]
+			)
+		);
+
+		$this->assertSame(
+			['type' => 'about:blank', 'title' => 'Conflict', 'status' => 409, 'retryAfter' => 5],
+			$problem
+		);
+
+	}//end testEmptyTypeFallsBackToAboutBlankAndReservedExtensionsAreDropped()
+
+	public function testValidationFailedCarriesInstanceAndErrorsLast(): void {
+		$problem = $this->builder->validationFailed(errors: [], description: new ProblemDescription(instance: '/api/x'));
+
+		$this->assertSame(
+			['type' => 'about:blank', 'title' => 'Validation failed', 'status' => 422, 'instance' => '/api/x', 'errors' => []],
+			$problem
+		);
+
+	}//end testValidationFailedCarriesInstanceAndErrorsLast()
 
 	public function testContentTypeConstantIsRfc7807(): void {
 		$this->assertSame('application/problem+json', ProblemDetailsBuilder::CONTENT_TYPE);

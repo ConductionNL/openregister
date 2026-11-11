@@ -25,16 +25,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Re-saves objects in batches, serially or in chunks of batches, and collects the counts,
- * errors, timings and memory use of the run in the shape SettingsService::massValidateObjects()
+ * errors, timings and memory use of the run in the shape SettingsService::massValidate()
  * returns.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
@@ -73,6 +77,13 @@ final class MassValidationRun {
 	 * @var ObjectOperationsInterface|null
 	 */
 	private ?ObjectOperationsInterface $objectService = null;
+
+	/**
+	 * Every magic table as its search query and object count, read on first use.
+	 *
+	 * @var list<array{query: array, count: int}>|null
+	 */
+	private ?array $tables = null;
 
 	/**
 	 * Constructor.
@@ -178,12 +189,7 @@ final class MassValidationRun {
 	 * @return int The object count.
 	 */
 	private function countObjects(): int {
-		$totalObjects = $this->objectMapper->countSearchObjects(
-			query: [],
-			_activeOrgUuid: null,
-			_rbac: false,
-			_multitenancy: false
-		);
+		$totalObjects = array_sum(array_column($this->tables(), 'count'));
 
 		$maxObjects = $this->config['max_objects'];
 		if ($maxObjects > 0 && $maxObjects < $totalObjects) {
@@ -284,7 +290,7 @@ final class MassValidationRun {
 		foreach ($batchJobs as $job) {
 			$batch = $this->saveBatch(job: $job);
 			$this->addBatch(batch: $batch);
-			$this->logProgress(job: $job, totalBatches: count($batchJobs), batch: $batch);
+			$this->logProgress(job: $job, batch: $batch);
 			if ($job['batchNumber'] % 10 === 0) {
 				$this->cleanupMemory();
 			}
@@ -294,18 +300,17 @@ final class MassValidationRun {
 	/**
 	 * Log the progress after one serial batch.
 	 *
-	 * @param array $job          The batch job.
-	 * @param int   $totalBatches Number of batch jobs in the run.
-	 * @param array $batch        The batch counts.
+	 * @param array $job   The batch job.
+	 * @param array $batch The batch counts.
 	 *
 	 * @return void
 	 */
-	private function logProgress(array $job, int $totalBatches, array $batch): void {
+	private function logProgress(array $job, array $batch): void {
 		$this->logger->info(
 			message: '[SettingsService] 📈 MASS VALIDATION PROGRESS',
 			context: array_merge(
 				['file' => __FILE__, 'line' => __LINE__],
-				$this->progressContext(job: $job, totalBatches: $totalBatches, batch: $batch)
+				$this->progressContext(job: $job, batch: $batch)
 			)
 		);
 	}//end logProgress()
@@ -313,16 +318,17 @@ final class MassValidationRun {
 	/**
 	 * The progress figures logged after one serial batch.
 	 *
-	 * @param array $job          The batch job.
-	 * @param int   $totalBatches Number of batch jobs in the run.
-	 * @param array $batch        The batch counts.
+	 * The run's batch count was recorded before any batch ran.
+	 *
+	 * @param array $job   The batch job.
+	 * @param array $batch The batch counts.
 	 *
 	 * @return array<string, mixed> The log context, without file and line.
 	 */
-	private function progressContext(array $job, int $totalBatches, array $batch): array {
+	private function progressContext(array $job, array $batch): array {
 		return [
 			'batchNumber' => $job['batchNumber'],
-			'totalBatches' => $totalBatches,
+			'totalBatches' => $this->results['stats']['batches_processed'],
 			'processed' => $batch['processed'],
 			'successful' => $batch['successful'],
 			'failed' => $batch['failed'],
@@ -375,10 +381,10 @@ final class MassValidationRun {
 	private function processJobsParallel(array $batchJobs): void {
 		$batchChunks = array_chunk($batchJobs, self::PARALLEL_BATCHES);
 		foreach ($batchChunks as $chunkIndex => $chunk) {
-			$this->logChunkStart(chunkIndex: $chunkIndex, totalChunks: count($batchChunks), batchesInChunk: count($chunk));
+			$this->logChunkStart(chunkIndex: $chunkIndex, batchChunks: $batchChunks);
 			$chunkStartTime = microtime(true);
 			$chunkResults = $this->saveChunk(chunk: $chunk);
-			$this->logChunkDone(chunkIndex: $chunkIndex, chunkStartTime: $chunkStartTime, chunkResults: $chunkResults);
+			$this->logChunkDone(result: new ValidationChunkResult(index: $chunkIndex, startedAt: $chunkStartTime, batches: $chunkResults));
 			gc_collect_cycles();
 		}
 	}//end processJobsParallel()
@@ -406,21 +412,20 @@ final class MassValidationRun {
 	/**
 	 * Log the start of a parallel chunk.
 	 *
-	 * @param int $chunkIndex     Zero-based chunk index.
-	 * @param int $totalChunks    Number of chunks.
-	 * @param int $batchesInChunk Number of batch jobs in the chunk.
+	 * @param int         $chunkIndex  Zero-based chunk index.
+	 * @param list<array> $batchChunks All chunks of batch jobs.
 	 *
 	 * @return void
 	 */
-	private function logChunkStart(int $chunkIndex, int $totalChunks, int $batchesInChunk): void {
+	private function logChunkStart(int $chunkIndex, array $batchChunks): void {
 		$this->logger->info(
 			message: '[SettingsService] 🔄 PROCESSING PARALLEL CHUNK',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'chunkIndex' => $chunkIndex + 1,
-				'totalChunks' => $totalChunks,
-				'batchesInChunk' => $batchesInChunk,
+				'totalChunks' => count($batchChunks),
+				'batchesInChunk' => count($batchChunks[$chunkIndex]),
 			]
 		);
 	}//end logChunkStart()
@@ -428,21 +433,19 @@ final class MassValidationRun {
 	/**
 	 * Log the end of a parallel chunk.
 	 *
-	 * @param int         $chunkIndex     Zero-based chunk index.
-	 * @param float       $chunkStartTime When the chunk started.
-	 * @param list<array> $chunkResults   The batch counts of the chunk.
+	 * @param ValidationChunkResult $result The chunk: its index, start time and batch counts.
 	 *
 	 * @return void
 	 */
-	private function logChunkDone(int $chunkIndex, float $chunkStartTime, array $chunkResults): void {
+	private function logChunkDone(ValidationChunkResult $result): void {
 		$this->logger->info(
 			message: '[SettingsService] ✅ COMPLETED PARALLEL CHUNK',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'chunkIndex' => $chunkIndex + 1,
-				'chunkTime' => round((microtime(true) - $chunkStartTime) * 1000, 2) . 'ms',
-				'objectsProcessed' => array_sum(array_column($chunkResults, 'processed')),
+				'chunkIndex' => $result->index + 1,
+				'chunkTime' => round((microtime(true) - $result->startedAt) * 1000, 2) . 'ms',
+				'objectsProcessed' => array_sum(array_column($result->batches, 'processed')),
 				'totalProcessed' => $this->results['stats']['processed_objects'],
 			]
 		);
@@ -459,13 +462,77 @@ final class MassValidationRun {
 	 */
 	private function saveBatch(array $job): array {
 		$batchStartTime = microtime(true);
-		$objects = $this->objectMapper->findAll(limit: $job['limit'], offset: $job['offset']);
+		$objects = $this->objectsAt(offset: $job['offset'], limit: $job['limit']);
 
 		$batch = $this->resaveAll(objects: $objects);
 		$batch['failed'] = count($batch['errors']);
 		$batch['duration'] = microtime(true) - $batchStartTime;
 		return $batch;
 	}//end saveBatch()
+
+	/**
+	 * Every magic table, as the query that names its register and schema and its object count.
+	 *
+	 * Objects live in one table per register and schema; a search or count that
+	 * names neither answers nothing, so the run walks the tables.
+	 *
+	 * @return list<array{query: array, count: int}>
+	 */
+	private function tables(): array {
+		if ($this->tables !== null) {
+			return $this->tables;
+		}
+
+		$this->tables = [];
+		foreach ($this->objectMapper->getAllRegisterSchemaPairs() as $pair) {
+			$query = [
+				'@self' => ['register' => (int)$pair['registerId'], 'schema' => (int)$pair['schemaId']],
+				'_rbac' => false,
+				'_multitenancy' => false,
+			];
+			$count = $this->objectMapper->countSearchObjects(query: $query, _activeOrgUuid: null, _rbac: false, _multitenancy: false);
+			$this->tables[] = ['query' => $query, 'count' => $count];
+		}
+
+		return $this->tables;
+	}//end tables()
+
+	/**
+	 * The objects at a run-wide offset, read table by table in the order of tables().
+	 *
+	 * @param int $offset The run-wide offset.
+	 * @param int $limit  The number of objects.
+	 *
+	 * @return list<ObjectEntity>
+	 */
+	private function objectsAt(int $offset, int $limit): array {
+		$objects = [];
+		foreach ($this->tables() as $table) {
+			if ($limit <= 0) {
+				break;
+			}
+
+			if ($offset >= $table['count']) {
+				$offset -= $table['count'];
+				continue;
+			}
+
+			$page = $this->objectMapper->searchObjects(
+				query: $table['query'] + ['_limit' => $limit, '_offset' => $offset],
+				_activeOrgUuid: null,
+				_rbac: false,
+				_multitenancy: false
+			);
+			if (is_array($page) === true) {
+				$objects = array_merge($objects, $page);
+			}
+
+			$limit -= min($limit, $table['count'] - $offset);
+			$offset = 0;
+		}//end foreach
+
+		return $objects;
+	}//end objectsAt()
 
 	/**
 	 * Re-save objects in order, stopping at the first failure unless collect_errors is set.
@@ -504,10 +571,11 @@ final class MassValidationRun {
 			// Re-saving triggers all business logic; saveObject() signals failure by throwing.
 			$this->objectService()->saveObject(
 				object: $object->getObject(),
-				extend: [],
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				uuid: $object->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					uuid: $object->getUuid(),
+					extend: []
+				)
 			);
 			return null;
 		} catch (Exception $e) {

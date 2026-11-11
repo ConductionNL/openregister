@@ -29,8 +29,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -47,6 +50,8 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 #[CoversClass(MagicRbacHandler::class)]
 #[CoversClass(MagicOrganizationHandler::class)]
@@ -93,13 +98,19 @@ class SystemOperationReadScopeTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn(['ambtenaar']);
 
 		return new class(
-			$this->session($withUser),
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$this->createMock(LoggerInterface::class)
+			new MagicMapperIdentity(
+				$this->session($withUser),
+				$groupManager,
+				$this->createMock(IUserManager::class)
+			),
+			new MagicRbacSettings(
+				$this->createMock(IAppConfig::class)
+			),
+			new MagicRbacSupport(
+				$this->createMock(ConditionMatcher::class),
+				$this->createMock(ContainerInterface::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		) extends MagicRbacHandler {
 			/**
 			 * A web request, not the command line.
@@ -144,8 +155,7 @@ class SystemOperationReadScopeTest extends TestCase {
 		$container->method('get')->willReturn($organisationService);
 
 		return new class(
-			$this->session(false),
-			$this->createMock(IGroupManager::class),
+			new MagicMapperIdentity($this->session(false), $this->createMock(IGroupManager::class), $this->createMock(IUserManager::class)),
 			$appConfig,
 			$container,
 			$this->createMock(LoggerInterface::class)
@@ -196,7 +206,7 @@ class SystemOperationReadScopeTest extends TestCase {
 		$handler = $this->webRbacHandler();
 
 		SystemOperationContext::run(
-			fn () => $handler->applyRbacFilters(qb: $qb, schema: $this->staffOnlySchema(), action: 'read')
+			fn () => $handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->staffOnlySchema()))->forAction('read'))
 		);
 	}//end testAUserlessReadInsideTheSystemScopeIsNotFiltered()
 
@@ -207,9 +217,9 @@ class SystemOperationReadScopeTest extends TestCase {
 		$handler = $this->webRbacHandler();
 
 		$inside = SystemOperationContext::run(
-			fn (): array => $handler->buildRbacConditionsSql(schema: $this->staffOnlySchema(), action: 'read')
+			fn (): array => $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->staffOnlySchema()))->forAction('read'))
 		);
-		$outside = $handler->buildRbacConditionsSql(schema: $this->staffOnlySchema(), action: 'read');
+		$outside = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->staffOnlySchema()))->forAction('read'));
 
 		$this->assertTrue($inside['bypass']);
 		$this->assertFalse($outside['bypass'], 'Outside the scope a userless web caller is not bypassed.');
@@ -222,7 +232,7 @@ class SystemOperationReadScopeTest extends TestCase {
 		$qb = $this->queryBuilder();
 		$qb->expects($this->atLeastOnce())->method('andWhere');
 
-		$this->webRbacHandler()->applyRbacFilters(qb: $qb, schema: $this->staffOnlySchema(), action: 'read');
+		$this->webRbacHandler()->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->staffOnlySchema()))->forAction('read'));
 	}//end testAUserlessWebReadOutsideTheScopeIsStillFiltered()
 
 	/**
@@ -235,7 +245,7 @@ class SystemOperationReadScopeTest extends TestCase {
 		$handler = $this->webRbacHandler(withUser: true);
 
 		SystemOperationContext::run(
-			fn () => $handler->applyRbacFilters(qb: $qb, schema: $this->staffOnlySchema(), action: 'read')
+			fn () => $handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->staffOnlySchema()))->forAction('read'))
 		);
 	}//end testALoggedInUserInsideTheScopeIsStillFiltered()
 
@@ -249,7 +259,7 @@ class SystemOperationReadScopeTest extends TestCase {
 
 		SystemOperationContext::run(
 			fn () => AnonymousEvaluationContext::run(
-				fn () => $handler->applyRbacFilters(qb: $qb, schema: $this->staffOnlySchema(), action: 'read')
+				fn () => $handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->staffOnlySchema()))->forAction('read'))
 			)
 		);
 	}//end testAForcedAnonymousEvaluationStaysAnonymous()

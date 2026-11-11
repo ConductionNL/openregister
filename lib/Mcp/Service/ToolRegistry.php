@@ -76,20 +76,6 @@ class ToolRegistry implements ToolRegistryInterface {
 	private array $tools = [];
 
 	/**
-	 * Event dispatcher
-	 *
-	 * @var IEventDispatcher
-	 */
-	private IEventDispatcher $eventDispatcher;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Whether tools have been loaded
 	 *
 	 * @var boolean
@@ -105,11 +91,9 @@ class ToolRegistry implements ToolRegistryInterface {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
 	public function __construct(
-		IEventDispatcher $eventDispatcher,
-		LoggerInterface $logger,
+		private readonly IEventDispatcher $eventDispatcher,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->eventDispatcher = $eventDispatcher;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -160,44 +144,57 @@ class ToolRegistry implements ToolRegistryInterface {
 	 *
 	 * @throws \InvalidArgumentException If tool ID is invalid or already registered
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple validation checks required
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths with exceptions
-	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
 	public function registerTool(string $id, ToolInterface $tool, array $metadata): void {
-		// Validate ID format (should be app_name.tool_name, or
-		// app_name.schema.verb for ADR-063 chain-2 schema-derived tools —
-		// e.g. `pipelinq.lead.search`). MCP tool ids commonly use camelCase
-		// on the right side (e.g. `openbuild.createApp`,
-		// `decidesk.listRecentMeetings`) so every segment after the first
-		// accepts both cases. The left-hand (app id) segment stays
-		// lowercase since it maps to a Nextcloud app id.
+		$this->assertRegistrable(id: $id, metadata: $metadata);
+		$this->tools[$id] = ['tool' => $tool, 'metadata' => $metadata];
+		$this->logRegistered(id: $id, metadata: $metadata);
+	}//end registerTool()
+
+	/**
+	 * Refuse a tool id that is malformed or taken, or metadata missing a required field.
+	 *
+	 * Valid ids are app_name.tool_name, or app_name.schema.verb for ADR-063 chain-2
+	 * schema-derived tools (e.g. `pipelinq.lead.search`). MCP tool ids commonly use camelCase
+	 * on the right side (e.g. `openbuild.createApp`, `decidesk.listRecentMeetings`) so every
+	 * segment after the first accepts both cases. The left-hand (app id) segment stays
+	 * lowercase since it maps to a Nextcloud app id.
+	 *
+	 * @param string $id       Tool identifier.
+	 * @param array  $metadata Tool metadata.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the id is invalid or already registered, or metadata is incomplete.
+	 */
+	private function assertRegistrable(string $id, array $metadata): void {
 		if (preg_match('/^[a-z0-9_]+(\.[a-zA-Z0-9_]+)+$/', $id) === 0) {
 			throw new InvalidArgumentException(
 				"Invalid tool ID format: {$id}. Must be 'app_name.tool_name' (dot-separated segments)"
 			);
 		}
 
-		// Check if already registered.
 		if (($this->tools[$id] ?? null) !== null) {
 			throw new InvalidArgumentException("Tool already registered: {$id}");
 		}
 
-		// Validate required metadata.
-		$required = ['name', 'description', 'icon', 'app'];
-		foreach ($required as $field) {
+		foreach (['name', 'description', 'icon', 'app'] as $field) {
 			if (isset($metadata[$field]) === false) {
 				throw new InvalidArgumentException("Missing required metadata field: {$field}");
 			}
 		}
+	}//end assertRegistrable()
 
-		// Register the tool.
-		$this->tools[$id] = [
-			'tool' => $tool,
-			'metadata' => $metadata,
-		];
-
+	/**
+	 * Log a registered tool.
+	 *
+	 * @param string $id       Tool identifier.
+	 * @param array  $metadata Tool metadata.
+	 *
+	 * @return void
+	 */
+	private function logRegistered(string $id, array $metadata): void {
 		$this->logger->info(
 			message: '[ToolRegistry] Tool registered',
 			context: [
@@ -208,7 +205,7 @@ class ToolRegistry implements ToolRegistryInterface {
 				'app' => $metadata['app'],
 			]
 		);
-	}//end registerTool()
+	}//end logRegistered()
 
 	/**
 	 * Get a tool by ID

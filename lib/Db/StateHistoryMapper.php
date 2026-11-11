@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -78,18 +79,17 @@ class StateHistoryMapper extends QBMapper implements StateHistoryMapperInterface
 	 * Idempotent: with no open interval it updates nothing, which is the
 	 * correct answer for the first transition an object ever makes.
 	 *
-	 * @param string            $objectUuid The object.
-	 * @param string            $property   The declared lifecycle property.
-	 * @param DateTimeInterface $leftAt     The moment it left.
+	 * @param TrackedProperty   $tracked The object and its declared lifecycle property.
+	 * @param DateTimeInterface $leftAt  The moment it left.
 	 *
 	 * @return int Rows closed.
 	 */
-	public function closeOpenInterval(string $objectUuid, string $property, DateTimeInterface $leftAt): int {
+	public function closeOpenInterval(TrackedProperty $tracked, DateTimeInterface $leftAt): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
 			->set('left_at', $qb->createNamedParameter($leftAt, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($property)))
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($tracked->objectUuid)))
+			->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($tracked->property)))
 			->andWhere($qb->expr()->isNull('left_at'));
 
 		return (int)$qb->executeStatement();
@@ -128,24 +128,19 @@ class StateHistoryMapper extends QBMapper implements StateHistoryMapperInterface
 	 * once at each side of the same moment.
 	 *
 	 * @param string            $property The declared lifecycle property.
-	 * @param DateTimeInterface $after    Start of the period, inclusive.
-	 * @param DateTimeInterface $before   End of the period, inclusive.
+	 * @param StateChangePeriod $period   The period, both ends inclusive.
 	 *
 	 * @return string[] Candidate object uuids.
 	 *
 	 * @psalm-return list<string>
 	 */
-	public function findObjectUuidsChangedBetween(
-		string $property,
-		DateTimeInterface $after,
-		DateTimeInterface $before,
-	): array {
+	public function findObjectUuidsChangedBetween(string $property, StateChangePeriod $period): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectDistinct('object_uuid')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('property', $qb->createNamedParameter($property)))
-			->andWhere($qb->expr()->gte('entered_at', $qb->createNamedParameter($after, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
-			->andWhere($qb->expr()->lte('entered_at', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->gte('entered_at', $qb->createNamedParameter($period->after, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->lte('entered_at', $qb->createNamedParameter($period->before, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->setMaxResults(self::CANDIDATE_LIMIT);
 
 		return $this->collectUuids(queryBuilder: $qb);

@@ -15,7 +15,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunOutcome;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunRecorder;
@@ -23,10 +22,8 @@ use PHPUnit\Framework\TestCase;
 
 class ObjectActionRunRecorderTest extends TestCase {
 
-	public function testTheEntryDigestsOnlyStorableInputsAsTheActingUser(): void {
+	public function testTheEntryDigestsOnlyStorableInputs(): void {
 		$inputs = new ObjectActionInputs(new OasRequestValidator());
-		$gate   = $this->createMock(ObjectActionGate::class);
-		$gate->method('userId')->willReturn('anna');
 		$object = new ObjectEntity();
 		$audit  = $this->createMock(ObjectActionAudit::class);
 		$audit->expects($this->once())->method('record')->with(
@@ -37,19 +34,18 @@ class ObjectActionRunRecorderTest extends TestCase {
 					&& $outcome->changes === [['step' => 's', 'kind' => 'write']]
 					&& $outcome->outcome === 'completed'
 			),
-			$inputs->digest(['note' => 'ok']),
-			'anna'
+			$inputs->digest(['note' => 'ok'])
 		);
 		$definition = ObjectActionDefinition::fromDeclaration(
 			'sign',
 			['steps' => [], 'inputs' => ['properties' => ['pin' => ['writeOnly' => true], 'note' => []]]]
 		);
 
-		(new ObjectActionRunRecorder($inputs, $audit, $gate))->record(
+		(new ObjectActionRunRecorder($inputs, $audit))->record(
 			$object,
 			$definition,
 			['note' => 'ok', 'pin' => '1234'],
 			new ObjectActionRunOutcome('run-1', [['step' => 's', 'kind' => 'write']], 'completed')
 		);
-	}//end testTheEntryDigestsOnlyStorableInputsAsTheActingUser()
+	}//end testTheEntryDigestsOnlyStorableInputs()
 }//end class

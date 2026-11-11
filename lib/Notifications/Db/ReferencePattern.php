@@ -28,8 +28,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Db;
 
 use DateTime;
-use JsonSerializable;
-use OCP\AppFramework\Db\Entity;
 
 /**
  * ReferencePattern.
@@ -61,28 +59,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
-class ReferencePattern extends Entity implements JsonSerializable {
-
-	/**
-	 * The stable id of the pattern.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $uuid = null;
-
-	/**
-	 * The name the pattern is administered under.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $slug = null;
-
-	/**
-	 * The label a reader sees.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $title = null;
+class ReferencePattern extends AdministeredDeclaration {
 
 	/**
 	 * The body of the expression, without delimiters or flags. The resolver
@@ -92,20 +69,6 @@ class ReferencePattern extends Entity implements JsonSerializable {
 	 * @var string|null
 	 */
 	protected ?string $pattern = null;
-
-	/**
-	 * The register the code is looked up in.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $register = null;
-
-	/**
-	 * The schema the code is looked up in.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $schema = null;
 
 	/**
 	 * The property the matched code is matched on.
@@ -129,34 +92,16 @@ class ReferencePattern extends Entity implements JsonSerializable {
 	protected ?bool $enabled = true;
 
 	/**
-	 * When the pattern was declared.
-	 *
-	 * @var DateTime|null
-	 */
-	protected ?DateTime $created = null;
-
-	/**
-	 * When the declaration last changed.
-	 *
-	 * @var DateTime|null
-	 */
-	protected ?DateTime $updated = null;
-
-	/**
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'title', type: 'string');
+		$this->addNameTypes();
 		$this->addType(fieldName: 'pattern', type: 'string');
-		$this->addType(fieldName: 'register', type: 'string');
-		$this->addType(fieldName: 'schema', type: 'string');
+		$this->addScopeTypes();
 		$this->addType(fieldName: 'targetProperty', type: 'string');
 		$this->addType(fieldName: 'urlTemplate', type: 'string');
 		$this->addType(fieldName: 'enabled', type: 'boolean');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addTimestampTypes();
 
 	}//end __construct()
 
@@ -168,19 +113,19 @@ class ReferencePattern extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->uuid,
-			'slug' => $this->slug,
-			'title' => $this->title,
-			'pattern' => $this->pattern,
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'targetProperty' => $this->targetProperty,
-			'urlTemplate' => $this->urlTemplate,
-			'enabled' => ($this->enabled !== false),
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
+		return array_merge(
+			$this->nameFields(),
+			[
+				'pattern' => $this->pattern,
+			],
+			$this->scopeFields(),
+			[
+				'targetProperty' => $this->targetProperty,
+				'urlTemplate' => $this->urlTemplate,
+				'enabled' => ($this->enabled !== false),
+			],
+			$this->timestampFields()
+		);
 
 	}//end jsonSerialize()
 }//end class

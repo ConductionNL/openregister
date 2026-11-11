@@ -35,22 +35,36 @@ use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
  */
 final class FlowCatalogue {
 	/**
+	 * The registered flow-step types.
+	 *
+	 * @var FlowNodeRegistryInterface
+	 */
+	public readonly FlowNodeRegistryInterface $nodes;
+
+	/**
+	 * Resolves a document's step types.
+	 *
+	 * @var FlowNodePreflightInterface
+	 */
+	public readonly FlowNodePreflightInterface $preflight;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param FlowStateMapperInterface            $flowState    Reads state a flow keeps between runs.
-	 * @param EventCatalogServiceInterface        $eventCatalog The flow trigger catalog.
-	 * @param FlowNodeRegistryInterface           $nodes        The registered flow-step types.
-	 * @param FlowNodePreflightInterface $preflight    Resolves a document's step types.
-	 * @param FlowBpmnInterchangeInterface $bpmn       BPMN 2.0 export and import.
+	 * @param FlowStateMapperInterface     $flowState    Reads state a flow keeps between runs.
+	 * @param EventCatalogServiceInterface $eventCatalog The flow trigger catalog.
+	 * @param FlowNodeTypes                $nodeTypes    The step-type registry and its preflight.
+	 * @param FlowBpmnInterchangeInterface $bpmn         BPMN 2.0 export and import.
 	 *
 	 * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
 	 */
 	public function __construct(
 		public readonly FlowStateMapperInterface $flowState,
 		public readonly EventCatalogServiceInterface $eventCatalog,
-		public readonly FlowNodeRegistryInterface $nodes,
-		public readonly FlowNodePreflightInterface $preflight,
+		FlowNodeTypes $nodeTypes,
 		public readonly FlowBpmnInterchangeInterface $bpmn,
 	) {
+		$this->nodes     = $nodeTypes->nodes;
+		$this->preflight = $nodeTypes->preflight;
 	}//end __construct()
 }//end class

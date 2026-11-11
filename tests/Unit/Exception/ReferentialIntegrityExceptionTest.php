@@ -136,29 +136,17 @@ class ReferentialIntegrityExceptionTest extends TestCase {
 	}//end testExtendsException()
 
 	/**
-	 * Test custom error code is preserved.
+	 * Test the error code is always 0 and nothing is chained.
 	 *
 	 * @return void
 	 */
-	public function testCustomErrorCode(): void {
+	public function testCodeIsZeroAndNothingIsChained(): void {
 		$analysis = new DeletionAnalysis(deletable: false, blockers: []);
-		$exception = new ReferentialIntegrityException($analysis, code: 409);
+		$exception = new ReferentialIntegrityException($analysis);
 
-		$this->assertSame(409, $exception->getCode());
-	}//end testCustomErrorCode()
-
-	/**
-	 * Test previous exception chaining.
-	 *
-	 * @return void
-	 */
-	public function testPreviousExceptionChaining(): void {
-		$previous = new \RuntimeException('root cause');
-		$analysis = new DeletionAnalysis(deletable: false, blockers: []);
-		$exception = new ReferentialIntegrityException($analysis, previous: $previous);
-
-		$this->assertSame($previous, $exception->getPrevious());
-	}//end testPreviousExceptionChaining()
+		$this->assertSame(0, $exception->getCode());
+		$this->assertNull($exception->getPrevious());
+	}//end testCodeIsZeroAndNothingIsChained()
 
 	/**
 	 * Test response body with chained RESTRICT includes chain field.

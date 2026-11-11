@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Config\Types;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -70,12 +70,12 @@ class FlowShareableConfigType implements IShareableConfigType, FlowShareableConf
 	 * `FlowMapper::findByUuid()` applies no organisation scoping — the engine
 	 * needs that (a queue worker has no session), a request does not.
 	 *
-	 * @param FlowMapper $mapper Writes flow definitions on install.
+	 * @param FlowMapperInterface $mapper Writes flow definitions on install.
 	 * @param FlowService $flows Reads flows the CALLER is allowed to see.
 	 * @param FlowCaller $caller Who is installing, and which organisation they write into.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
+		private readonly FlowMapperInterface $mapper,
 		private readonly FlowService $flows,
 		private readonly FlowCaller $caller,
 	) {

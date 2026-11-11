@@ -14,6 +14,8 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
@@ -30,12 +32,13 @@ class FlowRunRetryTest extends TestCase {
 		$this->mapper->method('update')->willReturnArgument(0);
 
 		$this->service = new FlowRunService(
-			$this->mapper,
-			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-			$this->createMock(FlowEngine::class),
-			$this->createMock(FlowNodeRegistry::class),
-			new NullLogger(),
-			$this->noOrganisationContainer()
+			stores: new FlowRunStores(
+				mapper: $this->mapper,
+				stateMapper: $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $this->createMock(FlowEngine::class), registry: $this->createMock(FlowNodeRegistry::class)),
+			logger: new NullLogger(),
+			container: $this->noOrganisationContainer()
 		);
 	}
 

@@ -51,6 +51,15 @@ interface VerwerkingsactiviteitMapperInterface {
 	public function findAll(?string $organisationId = null, ?string $status = null): array;
 
 	/**
+	 * Find by short readable code.
+	 *
+	 * @param string $code The activity code.
+	 *
+	 * @return Verwerkingsactiviteit|null Null when no row matches.
+	 */
+	public function findByCode(string $code): ?Verwerkingsactiviteit;
+
+	/**
 	 * Insert with vocabulary validation.
 	 *
 	 * Auto-fills `uuid`, `created`, `updated`, and `status` when blank.

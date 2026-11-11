@@ -32,10 +32,13 @@ use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sync\HarvestImportServices;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
+use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SyncConflictResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Each case imports scripted records and records the summary plus every
@@ -171,7 +174,8 @@ class HarvestPipelineImportGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (...$args) use ($scenario, &$calls) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($scenario, &$calls) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$named = $args;
 				$calls[] = ['saveObject', $named];
 				$object = ($named['object'] ?? $named[0]);
@@ -230,7 +234,7 @@ class HarvestPipelineImportGoldenTest extends TestCase {
 			$entities[] = $record;
 		}
 
-		$summary = $pipeline->import($source, $entities, 'exec-1');
+		$summary = $pipeline->import(new HarvestRun($source, $this->createMock(SourceFetcherInterface::class), 'exec-1'), $entities);
 
 		$actual = json_decode((string) json_encode(['summary' => $summary, 'calls' => $calls]), true);
 		$case = (string) $this->dataName();

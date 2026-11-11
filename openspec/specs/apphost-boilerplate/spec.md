@@ -7,7 +7,7 @@ The generic controllers OpenRegister hosts for manifest-driven apps, so an app w
 
 ### Requirement: One-Call Bootstrap
 
-`AppHost\Bootstrap::register(IRegistrationContext, string $appId, array $options)` SHALL register service aliases mapping the leaf app's conventional controller/service class names to the AppHost generics, as lazy service closures whose bodies are executed only on resolution.
+`AppHost\Bootstrap::register(IRegistrationContext, LeafAdoption)` (the `LeafAdoption` carrying the app id and its options) SHALL register service aliases mapping the leaf app's conventional controller/service class names to the AppHost generics, as lazy service closures whose bodies are executed only on resolution.
 
 The laziness applies to the closure BODIES. It does NOT make reaching `Bootstrap::register()` safe: calling it requires resolving the symbol `OCA\OpenRegister\AppHost\Bootstrap`, which is an ordinary autoload. A leaf that has not satisfied the Autoload Prelude requirement below, and does not guard the call with `class_exists()`, WILL fatal out of its own `register()` when that symbol is unavailable.
 
@@ -128,5 +128,5 @@ Every AppHost generic class SHALL be subclassable (no `final`, protected hook me
 
 #### Scenario: Bootstrap full-options resolution
 
-- **WHEN** `Bootstrap::register($context, $appId, $options)` is called with all standard options enabled and every aliased factory is resolved through a container
+- **WHEN** `Bootstrap::register($context, new LeafAdoption($appId, $options))` is called with all standard options enabled and every aliased factory is resolved through a container
 - **THEN** each factory produces a real generic instance — including `Controller\PreferencesController` → `GenericPreferencesController` — with no dangling reference to a non-existent class

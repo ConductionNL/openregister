@@ -270,7 +270,11 @@ class FileChangeListener implements IEventListener {
 		$extractionMode = self::$cachedExtractionMode ?? 'background';
 
 		if (isset(self::QUEUE_MESSAGES[$extractionMode]) === true) {
-			$this->queueExtractionJob(fileId: $fileId, fileName: $fileName, mode: $extractionMode);
+			$this->logger->debug(
+				message: self::QUEUE_MESSAGES[$extractionMode]['start'],
+				context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'file_name' => $fileName])
+			);
+			$this->queueExtractionJob(fileId: $fileId, messages: self::QUEUE_MESSAGES[$extractionMode]);
 			return;
 		}
 
@@ -283,26 +287,20 @@ class FileChangeListener implements IEventListener {
 	}//end dispatchByMode()
 
 	/**
-	 * Queue the extraction job for one file, logging the start and the outcome with the mode's messages.
+	 * Queue the extraction job for one file, logging the outcome with the mode's messages.
 	 *
-	 * @param int|null $fileId   The file id
-	 * @param string   $fileName The file name
-	 * @param string   $mode     A key of QUEUE_MESSAGES
+	 * @param int|null              $fileId   The file id
+	 * @param array<string, string> $messages The mode's entry of QUEUE_MESSAGES
 	 *
 	 * @return void
 	 */
-	private function queueExtractionJob(?int $fileId, string $fileName, string $mode): void {
-		$this->logger->debug(
-			message: self::QUEUE_MESSAGES[$mode]['start'],
-			context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'file_name' => $fileName])
-		);
-
+	private function queueExtractionJob(?int $fileId, array $messages): void {
 		try {
 			$this->jobList->add(job: JobHandles::FILE_TEXT_EXTRACTION, argument: ['file_id' => $fileId]);
-			$this->logger->debug(message: self::QUEUE_MESSAGES[$mode]['queued'], context: self::context(line: __LINE__, fields: ['file_id' => $fileId]));
+			$this->logger->debug(message: $messages['queued'], context: self::context(line: __LINE__, fields: ['file_id' => $fileId]));
 		} catch (\Exception $e) {
 			$this->logger->error(
-				message: self::QUEUE_MESSAGES[$mode]['failed'],
+				message: $messages['failed'],
 				context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'error' => $e->getMessage()])
 			);
 		}

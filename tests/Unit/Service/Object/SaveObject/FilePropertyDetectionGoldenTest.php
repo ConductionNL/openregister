@@ -86,15 +86,15 @@ class FilePropertyDetectionGoldenTest extends TestCase {
 		$handler = new FilePropertyHandler($this->createMock(LoggerInterface::class), $this->createMock(FileService::class));
 		$actual = [];
 		foreach (self::values() as $name => $value) {
-			$actual['value: ' . $name] = $handler->isFileProperty($value);
+			$actual['value: ' . $name] = $handler->isFileValue($value);
 		}
 
 		foreach (self::schemaCases() as $name => [$properties, $property]) {
 			$schema = new Schema();
 			$schema->setProperties($properties);
 			// The value is a data URI so a schema answer cannot fall through to value detection unnoticed.
-			$actual['schema: ' . $name] = $handler->isFileProperty('data:x', $schema, $property);
-			$actual['schema without name: ' . $name] = $handler->isFileProperty('plain', $schema, null);
+			$actual['schema: ' . $name] = $handler->isFileInSchema($schema, $property);
+			$actual['schema without name: ' . $name] = $handler->isFileValue('plain');
 		}
 
 		if (getenv('UPDATE_GOLDEN') === '1') {

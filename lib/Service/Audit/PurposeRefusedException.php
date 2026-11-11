@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use Exception;
-use Throwable;
 
 /**
  * The refusal, carrying the reason and the purpose that was named.
@@ -73,7 +72,6 @@ class PurposeRefusedException extends Exception {
 	 * @param string               $reason   The sentence a person reads.
 	 * @param string|null          $purpose  The purpose the caller named, quoted back. Null when none was.
 	 * @param array<string, mixed> $context  Anything else the caller needs to act.
-	 * @param Throwable|null       $previous Previous exception.
 	 *
 	 * @return void
 	 */
@@ -82,9 +80,8 @@ class PurposeRefusedException extends Exception {
 		private readonly string $reason,
 		private readonly ?string $purpose = null,
 		private readonly array $context = [],
-		?Throwable $previous = null,
 	) {
-		parent::__construct(message: $reason, code: 403, previous: $previous);
+		parent::__construct(message: $reason, code: 403);
 	}//end __construct()
 
 	/**

@@ -27,7 +27,9 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\Oas\OasIssue;
 use OCA\OpenRegister\Controller\OasController;
+use OCA\OpenRegister\Controller\Support\OasControllerServices;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasETagComputer;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
@@ -71,13 +73,13 @@ class OasControllerGoldenTest extends TestCase {
 			$etag = new OasETagComputer();
 		}
 
-		return new OasController('openregister', $this->request, $this->oasService, $etag);
+		return new OasController($this->request, new OasControllerServices($this->oasService, $etag));
 	}
 
 	private function report(): OasValidationReport {
 		$report = new OasValidationReport();
-		$report->addError('#/paths', 'broken', OasValidationReport::CODE_DANGLING_REF);
-		$report->addWarning('#/tags', 'unused', OasValidationReport::CODE_UNUSED_TAG);
+		$report->addError(issue: new OasIssue(path: '#/paths', message: 'broken', code: OasValidationReport::CODE_DANGLING_REF));
+		$report->addWarning(issue: new OasIssue(path: '#/tags', message: 'unused', code: OasValidationReport::CODE_UNUSED_TAG));
 
 		return $report;
 	}

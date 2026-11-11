@@ -68,8 +68,23 @@ class GraphQLService {
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
 	 */
 	public function execute(string $query, ?array $variables = null, ?string $operationName = null): array {
+		return $this->executeRequest(
+			request: new GraphQLRequest(query: $query, variables: $variables, operationName: $operationName)
+		);
+	}//end execute()
+
+	/**
+	 * Execute a GraphQL request.
+	 *
+	 * @param GraphQLRequest $request The query, its variables and the operation name
+	 *
+	 * @return array<string, mixed> The execution result
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
+	 */
+	public function executeRequest(GraphQLRequest $request): array {
 		try {
-			return $this->run(query: $query, variables: $variables, operationName: $operationName);
+			return $this->run(request: $request);
 		} catch (Error $e) {
 			return [
 				'errors' => [$this->schema->errorFormatter->format($e)],
@@ -78,14 +93,12 @@ class GraphQLService {
 			return $this->internalError(exception: $e);
 		}
 
-	}//end execute()
+	}//end executeRequest()
 
 	/**
 	 * Guard, price and execute a query.
 	 *
-	 * @param string $query The GraphQL query string
-	 * @param array<string, mixed>|null $variables Query variables
-	 * @param string|null $operationName Operation name
+	 * @param GraphQLRequest $request The query, its variables and the operation name
 	 *
 	 * @return array<string, mixed> The execution result with its complexity extension
 	 *
@@ -93,19 +106,19 @@ class GraphQLService {
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
 	 */
-	private function run(string $query, ?array $variables, ?string $operationName): array {
+	private function run(GraphQLRequest $request): array {
 		$this->guard->checkRateLimit();
-		$document = Parser::parse($query);
+		$document = Parser::parse($request->query);
 		$this->guard->checkIntrospection(document: $document);
-		$complexity = $this->schema->complexityAnalyzer->analyze($document, $variables);
+		$complexity = $this->schema->complexityAnalyzer->analyze($document, $request->variables);
 
 		$result = GraphQL::executeQuery(
 			$this->getSchema(),
-			$query,
+			$request->query,
 			null,
-			$this->contextFactory->create(schemaGenerator: $this->schema->schemaGenerator, operationName: $operationName),
-			$variables,
-			$operationName,
+			$this->contextFactory->create(schemaGenerator: $this->schema->schemaGenerator, operationName: $request->operationName),
+			$request->variables,
+			$request->operationName,
 		);
 
 		// Errors are already formatted by the GraphQL executor.

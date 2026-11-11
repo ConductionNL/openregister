@@ -484,68 +484,58 @@ import {
 							</template>
 						</FormSelectField>
 
-						<NcNoteCard
+						<template
 							v-if="
 								selectedSourceType
 								&& selectedSourceType.value === 'github'
-							"
-							type="info">
-							<p>GitHub Integration Settings</p>
-						</NcNoteCard>
+							">
+							<NcNoteCard
+								type="info">
+								<p>GitHub Integration Settings</p>
+							</NcNoteCard>
 
-						<NcTextField
-							v-if="
-								selectedSourceType
-								&& selectedSourceType.value === 'github'
-							"
-							label="GitHub Repository"
-							placeholder="owner/repository"
-							:modelValue="
-								configurationStore.configurationItem?.githubRepo
-								|| ''
-							"
-							@update:modelValue="updateGithubRepo">
-							<template #helper-text-message>
-								<p>Repository in format: owner/repo</p>
-							</template>
-						</NcTextField>
+							<NcTextField
+								label="GitHub Repository"
+								placeholder="owner/repository"
+								:modelValue="
+									configurationStore.configurationItem?.githubRepo
+									|| ''
+								"
+								@update:modelValue="updateGithubRepo">
+								<template #helper-text-message>
+									<p>Repository in format: owner/repo</p>
+								</template>
+							</NcTextField>
 
-						<NcTextField
-							v-if="
-								selectedSourceType
-								&& selectedSourceType.value === 'github'
-							"
-							label="GitHub Branch"
-							placeholder="main"
-							:modelValue="
-								configurationStore.configurationItem?.githubBranch
-								|| 'main'
-							"
-							@update:modelValue="updateGithubBranch">
-							<template #helper-text-message>
-								<p>Branch to push/pull configurations</p>
-							</template>
-						</NcTextField>
+							<NcTextField
+								label="GitHub Branch"
+								placeholder="main"
+								:modelValue="
+									configurationStore.configurationItem?.githubBranch
+									|| 'main'
+								"
+								@update:modelValue="updateGithubBranch">
+								<template #helper-text-message>
+									<p>Branch to push/pull configurations</p>
+								</template>
+							</NcTextField>
 
-						<NcTextField
-							v-if="
-								selectedSourceType
-								&& selectedSourceType.value === 'github'
-							"
-							label="GitHub Path"
-							placeholder="configs/configuration.json"
-							:modelValue="
-								configurationStore.configurationItem?.githubPath
-								|| ''
-							"
-							@update:modelValue="updateGithubPath">
-							<template #helper-text-message>
-								<p>
-									Path within the repository for the configuration
-									file
-								</p>
-							</template>
-						</NcTextField>
+							<NcTextField
+								label="GitHub Path"
+								placeholder="configs/configuration.json"
+								:modelValue="
+									configurationStore.configurationItem?.githubPath
+									|| ''
+								"
+								@update:modelValue="updateGithubPath">
+								<template #helper-text-message>
+									<p>
+										Path within the repository for the configuration
+										file
+									</p>
+								</template>
+							</NcTextField>
+						</template>
 					</div>
 				</AppTab>
 			</AppTabs>
@@ -628,6 +618,19 @@ function isEmptyList(list) {
  */
 function newConfiguration() {
 	return {
+		...blankConfigurationContent(),
+		// Management tab defaults
+		...localManagementDefaults(),
+	}
+}
+
+/**
+ * What a blank configuration describes and holds: nothing yet, at 1.0.0.
+ *
+ * @return {object} The content fields
+ */
+function blankConfigurationContent() {
+	return {
 		title: '',
 		description: null,
 		type: 'default',
@@ -642,7 +645,16 @@ function newConfiguration() {
 		sources: [],
 		agents: [],
 		views: [],
-		// Management tab defaults
+	}
+}
+
+/**
+ * How a new configuration is managed: locally, without updates.
+ *
+ * @return {object} The management fields
+ */
+function localManagementDefaults() {
+	return {
 		sourceType: 'local',
 		isLocal: true, // New configurations are local by default
 		sourceUrl: null,
@@ -654,6 +666,20 @@ function newConfiguration() {
 		githubBranch: 'main',
 		githubPath: null,
 	}
+}
+
+/**
+ * Select options from rows of value, label and description.
+ *
+ * @param {Array<Array<string>>} rows The rows
+ * @return {Array<object>} The options
+ */
+function describedOptions(rows) {
+	return rows.map(([value, label, description]) => ({
+		value,
+		label,
+		description,
+	}))
 }
 
 /**
@@ -816,51 +842,23 @@ export default {
 		 * @spec exclude Computed static select-option list; UI presentation data.
 		 */
 		sourceTypeOptions() {
-			return [
-				{
-					value: 'local',
-					label: 'Local',
-					description: 'Manually managed configuration',
-				},
-				{
-					value: 'github',
-					label: 'GitHub',
-					description: 'Configuration from GitHub repository',
-				},
-				{
-					value: 'gitlab',
-					label: 'GitLab',
-					description: 'Configuration from GitLab repository',
-				},
-				{
-					value: 'url',
-					label: 'URL',
-					description: 'Configuration from any URL',
-				},
-			]
+			return describedOptions([
+				['local', 'Local', 'Manually managed configuration'],
+				['github', 'GitHub', 'Configuration from GitHub repository'],
+				['gitlab', 'GitLab', 'Configuration from GitLab repository'],
+				['url', 'URL', 'Configuration from any URL'],
+			])
 		},
 
 		/**
 		 * @spec exclude Computed static select-option list; UI presentation data.
 		 */
 		typeOptions() {
-			return [
-				{
-					value: 'default',
-					label: 'Default',
-					description: 'Standard configuration type',
-				},
-				{
-					value: 'application',
-					label: 'Application',
-					description: 'Application-specific configuration',
-				},
-				{
-					value: 'manual',
-					label: 'Manual',
-					description: 'Manually created configuration',
-				},
-			]
+			return describedOptions([
+				['default', 'Default', 'Standard configuration type'],
+				['application', 'Application', 'Application-specific configuration'],
+				['manual', 'Manual', 'Manually created configuration'],
+			])
 		},
 
 		/**
@@ -880,22 +878,10 @@ export default {
 	 * @spec exclude Vue created() lifecycle hook — hydrates store lists and seeds a blank configurationItem; modal init plumbing.
 	 */
 	async created() {
-		// Organisations and applications are now hot-loaded at app startup
-		// Only refresh if somehow they're empty (shouldn't happen in normal flow)
-		if (isEmptyList(organisationStore.organisationList)) {
-			organisationStore.refreshOrganisationList()
-		}
-		if (isEmptyList(applicationStore.applicationList)) {
-			applicationStore.refreshApplicationList()
-		}
+		refreshEmptyOwnerLists()
 
 		// Perform initial searches for Configuration tab entities (load top 10)
-		this.searchRegisters('')
-		this.searchSchemas('')
-		this.searchSources('')
-		this.searchAgents('')
-		this.searchViews('')
-		this.searchApplications('')
+		this.searchAllEntities()
 
 		// Initialize configurationItem if it doesn't exist
 		if (!configurationStore.configurationItem) {
@@ -908,6 +894,20 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Search every Configuration tab entity with an empty query (the top 10).
+		 *
+		 * @return {void}
+		 */
+		searchAllEntities() {
+			this.searchRegisters('')
+			this.searchSchemas('')
+			this.searchSources('')
+			this.searchAgents('')
+			this.searchViews('')
+			this.searchApplications('')
+		},
+
 		/**
 		 * @param {string} value
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -1188,13 +1188,7 @@ export default {
 		 * @return {void}
 		 */
 		resetSelections() {
-			this.selectedRegisters = []
-			this.selectedSchemas = []
-			this.selectedObjects = []
-			this.selectedSources = []
-			this.selectedAgents = []
-			this.selectedViews = []
-			this.selectedApplication = null
+			this.clearSelections()
 			this.selectedType = this.typeOptions[0] // 'default'
 			// Management tab defaults
 			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
@@ -1238,14 +1232,27 @@ export default {
 					|| null
 			}
 			if (Array.isArray(item.notificationGroups)) {
-				this.selectedNotificationGroups = item.notificationGroups
-					.map((groupValue) =>
-						this.notificationGroupOptions.find(
-							(g) => g.value === groupValue,
-						),
-					)
-					.filter(Boolean)
+				this.selectedNotificationGroups = this.notificationGroupsOf(
+					item.notificationGroups,
+				)
 			}
+		},
+
+		/**
+		 * The notification group options of the stored group values, skipping
+		 * values that are no longer offered.
+		 *
+		 * @param {Array<string>} groupValues The stored group values
+		 * @return {Array<object>} The selected options
+		 */
+		notificationGroupsOf(groupValues) {
+			return groupValues
+				.map((groupValue) =>
+					this.notificationGroupOptions.find(
+						(g) => g.value === groupValue,
+					),
+				)
+				.filter(Boolean)
 		},
 
 		/**
@@ -1262,12 +1269,7 @@ export default {
 			}
 			this[link.loading] = true
 			try {
-				const promises = ids.map((id) =>
-					fetch(`/index.php/apps/openregister/api/${link.key}/${id}`).then(
-						(r) => r.json(),
-					),
-				)
-				this[link.target] = await Promise.all(promises)
+				this[link.target] = await fetchLinkedEntities(link.key, ids)
 			} catch (error) {
 				console.error(`Error loading selected ${link.key}:`, error)
 			} finally {
@@ -1292,6 +1294,16 @@ export default {
 			navigationStore.setModal(false)
 			this.loading = false
 			this.error = null
+			this.clearSelections()
+		},
+
+		/**
+		 * Empty the settings selections both a close and a reset clear.
+		 *
+		 * @spec exclude Resets local select-model refs; modal plumbing.
+		 * @return {void}
+		 */
+		clearSelections() {
 			this.selectedRegisters = []
 			this.selectedSchemas = []
 			this.selectedObjects = []
@@ -1320,6 +1332,38 @@ export default {
 			}
 		},
 	},
+}
+
+/**
+ * Refresh the organisation and application lists when they are empty.
+ * They are hot-loaded at app startup, so this should not happen in the
+ * normal flow.
+ *
+ * @return {void}
+ */
+function refreshEmptyOwnerLists() {
+	if (isEmptyList(organisationStore.organisationList)) {
+		organisationStore.refreshOrganisationList()
+	}
+	if (isEmptyList(applicationStore.applicationList)) {
+		applicationStore.refreshApplicationList()
+	}
+}
+
+/**
+ * Fetch the linked entities of one kind, one request per id.
+ *
+ * @param {string} key The kind, as its API path (e.g. registers)
+ * @param {Array<number|string>} ids The ids
+ * @return {Promise<Array<object>>} The entities, in id order
+ */
+function fetchLinkedEntities(key, ids) {
+	const promises = ids.map((id) =>
+		fetch(`/index.php/apps/openregister/api/${key}/${id}`).then((r) =>
+			r.json(),
+		),
+	)
+	return Promise.all(promises)
 }
 </script>
 

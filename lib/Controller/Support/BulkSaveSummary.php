@@ -29,22 +29,42 @@ namespace OCA\OpenRegister\Controller\Support;
  */
 final class BulkSaveSummary {
 	/**
+	 * Rows created or updated.
+	 *
+	 * @var integer
+	 */
+	public readonly int $savedCount;
+
+	/**
+	 * Rows the caller submitted.
+	 *
+	 * @var integer
+	 */
+	public readonly int $requestedCount;
+
+	/**
+	 * Rows written or left unchanged.
+	 *
+	 * @var integer
+	 */
+	public readonly int $accountedCount;
+
+	/**
 	 * Bundle the figures of one bulk save.
 	 *
-	 * @param string $successMessage Message used when nothing failed.
-	 * @param int    $savedCount     Rows created or updated.
-	 * @param int    $requestedCount Rows the caller submitted.
-	 * @param array  $extra          Path-specific payload merged into the response body.
-	 * @param int    $accountedCount Rows written or left unchanged.
+	 * @param string         $successMessage Message used when nothing failed.
+	 * @param BulkSaveCounts $counts         Rows submitted, written and accounted for.
+	 * @param array          $extra          Path-specific payload merged into the response body.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly string $successMessage,
-		public readonly int $savedCount,
-		public readonly int $requestedCount,
+		BulkSaveCounts $counts,
 		public readonly array $extra,
-		public readonly int $accountedCount,
 	) {
+		$this->savedCount = $counts->saved;
+		$this->requestedCount = $counts->requested;
+		$this->accountedCount = $counts->accounted;
 	}//end __construct()
 }//end class

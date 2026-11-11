@@ -45,9 +45,12 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\CaseTokenIssuance;
 use OCA\OpenRegister\Service\CaseTokenService;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
+use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -133,10 +136,7 @@ class CaseTokenServiceTest extends TestCase {
 
 			public function find(
 				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				$register = null,
-				$schema = null,
+				?ObjectFindOptions $options = null,
 				bool $_rbac = true,
 				bool $_multitenancy = true,
 			): ?object {
@@ -153,11 +153,7 @@ class CaseTokenServiceTest extends TestCase {
 
 			public function renderEntity(
 				object $entity,
-				?array $_extend = [],
-				?int $depth = 0,
-				?array $filter = [],
-				?array $fields = [],
-				?array $unset = [],
+				?object $selection = null,
 				bool $_rbac = true,
 				bool $_multitenancy = true,
 			): array {
@@ -182,15 +178,17 @@ class CaseTokenServiceTest extends TestCase {
 		);
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('TOKEN-ABC'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('TOKEN-ABC'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession('alice'),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([]),
 		);
 
-		$result = $service->mint(objectUuid: 'obj-1', registerId: 3, schemaId: 9, label: 'Track your case', ttlSeconds: 3600);
+		$result = $service->mintFor(target: new CaseTokenTarget(objectUuid: 'obj-1', registerId: 3, schemaId: 9, label: 'Track your case'), ttlSeconds: 3600);
 
 		$this->assertSame('TOKEN-ABC', $result['token']);
 		$this->assertSame('obj-1', $result['objectUuid']);
@@ -206,16 +204,18 @@ class CaseTokenServiceTest extends TestCase {
 	 */
 	public function testMintRejectsAnonymousMinter(): void {
 		$service = new CaseTokenService(
-			mapper: $this->createMock(CaseTokenMapper::class),
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $this->createMock(CaseTokenMapper::class),
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession(null),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([]),
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->mint(objectUuid: 'obj-1');
+		$service->mintFor(target: new CaseTokenTarget(objectUuid: 'obj-1'));
 	}//end testMintRejectsAnonymousMinter()
 
 	/**
@@ -225,16 +225,18 @@ class CaseTokenServiceTest extends TestCase {
 	 */
 	public function testMintRejectsEmptyObjectUuid(): void {
 		$service = new CaseTokenService(
-			mapper: $this->createMock(CaseTokenMapper::class),
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $this->createMock(CaseTokenMapper::class),
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession('alice'),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([]),
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->mint(objectUuid: '  ');
+		$service->mintFor(target: new CaseTokenTarget(objectUuid: '  '));
 	}//end testMintRejectsEmptyObjectUuid()
 
 	/**
@@ -258,10 +260,12 @@ class CaseTokenServiceTest extends TestCase {
 		$container = $this->buildContainer(['OCA\\OpenRegister\\Service\\ObjectService' => $objectService]);
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession(null),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $container,
 		);
@@ -318,10 +322,12 @@ class CaseTokenServiceTest extends TestCase {
 			->willReturn($published);
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession(null),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([
 				'OCA\\OpenRegister\\Service\\ObjectService' => $this->buildObjectService(['title' => 'Public View']),
@@ -361,10 +367,12 @@ class CaseTokenServiceTest extends TestCase {
 		$logger->expects($this->once())->method('warning');
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession(null),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $logger,
 			container: $this->buildContainer([
 				'OCA\\OpenRegister\\Service\\ObjectService' => $this->buildObjectService(['title' => 'Public View']),
@@ -388,10 +396,12 @@ class CaseTokenServiceTest extends TestCase {
 		$mapper->method('findByToken')->willReturn(null);
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession(null),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([]),
 		);
@@ -414,10 +424,12 @@ class CaseTokenServiceTest extends TestCase {
 		$mapper->method('findByToken')->willReturn($token);
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession(null),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([]),
 		);
@@ -440,10 +452,12 @@ class CaseTokenServiceTest extends TestCase {
 		$mapper->method('findByToken')->willReturn($token);
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession(null),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([]),
 		);
@@ -470,10 +484,12 @@ class CaseTokenServiceTest extends TestCase {
 		$container = $this->buildContainer(['OCA\\OpenRegister\\Service\\ObjectService' => $objectService]);
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession(null),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $container,
 		);
@@ -500,10 +516,12 @@ class CaseTokenServiceTest extends TestCase {
 		);
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession('alice'),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([]),
 		);
@@ -527,10 +545,12 @@ class CaseTokenServiceTest extends TestCase {
 		$mapper->expects($this->never())->method('update');
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession('alice'),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([]),
 		);
@@ -556,10 +576,12 @@ class CaseTokenServiceTest extends TestCase {
 		$mapper->expects($this->never())->method('update');
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession('alice'),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([]),
 		);
@@ -586,10 +608,12 @@ class CaseTokenServiceTest extends TestCase {
 		$mapper->expects($this->once())->method('update');
 
 		$service = new CaseTokenService(
-			mapper: $mapper,
-			secureRandom: $this->buildSecureRandom('x'),
+			issuance: new CaseTokenIssuance(
+				mapper: $mapper,
+				secureRandom: $this->buildSecureRandom('x'),
+				urlGenerator: $this->buildUrlGenerator(),
+			),
 			userSession: $this->buildUserSession('alice'),
-			urlGenerator: $this->buildUrlGenerator(),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([]),
 		);

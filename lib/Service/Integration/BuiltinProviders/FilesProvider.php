@@ -36,8 +36,9 @@ namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
-use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCP\IL10N;
 use Psr\Container\ContainerInterface;
 
@@ -45,7 +46,7 @@ use Psr\Container\ContainerInterface;
  * Files integration provider — magic-column read path, mutation
  * deferred to controller refactor.
  */
-class FilesProvider extends AbstractIntegrationProvider {
+class FilesProvider extends CoreIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
@@ -96,24 +97,6 @@ class FilesProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Group identifier for UI grouping (or null).
-	 *
-	 * @return string|null Group identifier for UI grouping.
-	 */
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	/**
-	 * Required NC app id (null = built-in).
-	 *
-	 * @return string|null Required app id (null = built-in).
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Storage strategy hint for the registry.
 	 *
 	 * @return string Storage strategy hint for the registry.
@@ -123,27 +106,27 @@ class FilesProvider extends AbstractIntegrationProvider {
 	}//end getStorageStrategy()
 
 	/**
-	 * True when the provider is available for use.
-	 *
-	 * @return bool True when the provider is available for use.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
-
-	/**
 	 * List files linked to the given OR object.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Reserved for future use.
 	 *
 	 * @return array<int,array<string,mixed>> Files rows.
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-12
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->readableFilesOf(objectId: $ref->id);
+	}//end list()
+
+	/**
+	 * The files of an object the file-restriction guard lets the caller read.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function readableFilesOf(string $objectId): array {
 		try {
 			$object = $this->resolveObject(objectId: $objectId);
 			if ($object === null) {
@@ -157,7 +140,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 		} catch (\Throwable $e) {
 			return [];
 		}//end try
-	}//end list()
+	}//end readableFilesOf()
 
 	/**
 	 * Resolve an ObjectEntity-shaped value by uuid via whichever mapper
@@ -191,9 +174,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 	/**
 	 * Mutation routes via FileController for now; see class docblock.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload New linked-thing fields.
 	 *
 	 * @return array<string,mixed>
@@ -204,7 +185,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 	 * @spec exclude NotImplemented write stub — Files writes still route through FileController;
 	 *              the consolidated write path is owned by pluggable-integration-registry tasks 18-22, not this stub.
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
+	public function create(ObjectRef $ref, array $payload): array {
 		throw new NotImplementedException(
 			message: 'FilesProvider write path delegates to FileController for now (umbrella tasks 18-22).'
 		);

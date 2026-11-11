@@ -326,18 +326,16 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	/**
 	 * The fragment's refusals, and a waiting run that no task of the fragment names: its slot would stay empty.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The fill context.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
-	 * @param ExampleSetValues     $values   Fills the placeholders.
+	 * @param array<string, mixed>    $fragment The fragment.
+	 * @param ExampleSetFragmentCheck $check    The fill context, the account ids the set creates or adopts, and the filler.
 	 *
 	 * @return array<int, string>
 	 *
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
 	 */
-	public function checkFragment(array $fragment, array $context, array $users, ExampleSetValues $values): array {
+	public function checkFragment(array $fragment, ExampleSetFragmentCheck $check): array {
 		return array_merge(
-			parent::checkFragment(fragment: $fragment, context: $context, users: $users, values: $values),
+			parent::checkFragment(fragment: $fragment, check: $check),
 			$this->runs()->unnamedRefusals(fragment: $fragment)
 		);
 	}//end checkFragment()
@@ -372,7 +370,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 			$stored  = $this->container->get(FlowMapper::class)->insert($flow);
 			$version = null;
 			if (($data['publish'] ?? true) === true) {
-				$version = $this->container->get(FlowVersionService::class)->publish(flow: $stored, publishedBy: null)->getVersion();
+				$version = $this->container->get(FlowVersionService::class)->publish(flow: $stored)->getVersion();
 			}
 
 			if (($data['enabled'] ?? false) === true) {
@@ -382,10 +380,12 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 			}
 
 			$entry = ['uuid' => (string) $stored->getUuid()] + $this->runs()->write(
-				flow: $stored,
-				version: $version,
-				runs: array_map(static fn (mixed $run): array => (array) $run, (array) ($data['runs'] ?? [])),
-				newUuid: fn (): string => $this->newUuid()
+				write: new ExampleSetRunsWrite(
+					flow: $stored,
+					version: $version,
+					runs: array_map(static fn (mixed $run): array => (array) $run, (array) ($data['runs'] ?? [])),
+					newUuid: fn (): string => $this->newUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];

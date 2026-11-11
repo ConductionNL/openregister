@@ -54,12 +54,17 @@ class ImportHandlerSchemaVersioningWiringTest extends TestCase {
 	 */
 	public function testTheImportHandlerIsGivenTheSchemaVersioningService(): void {
 		$handler = new ImportHandler(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
 			objectService: $this->createMock(ObjectService::class)
@@ -96,12 +101,17 @@ class ImportHandlerSchemaVersioningWiringTest extends TestCase {
 	 */
 	public function testTheImportHandlerIsGivenTheSelectionListSeeder(): void {
 		$handler = new ImportHandler(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
 			objectService: $this->createMock(ObjectService::class)

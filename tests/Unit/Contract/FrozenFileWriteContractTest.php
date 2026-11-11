@@ -28,10 +28,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Contract;
 
 use OCA\OpenRegister\Controller\ObjectStateController;
+use OCA\OpenRegister\Controller\Support\ObjectStateControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
+use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -68,10 +70,10 @@ class FrozenFileWriteContractTest extends TestCase {
 
 		$handler = $this->createMock(ArchiveHandler::class);
 		$handler->expects($this->once())->method('freeze')
-			->with('obj-1', 'Woo-levering', 'geleverd', 'woo', 'wooDeliveredSet')
+			->with(new ObjectStateRequest('obj-1', 'Woo-levering', 'woo', 'wooDeliveredSet'), 'geleverd')
 			->willReturn(['uuid' => 'obj-1', 'frozen' => ['state' => 'geleverd']]);
 
-		$controller = new ObjectStateController('openregister', $request, $handler, $session);
+		$controller = new ObjectStateController($request, new ObjectStateControllerServices($handler, $session));
 		$response = $controller->freeze(register: 'woo', schema: 'wooDeliveredSet', id: 'obj-1');
 
 		$this->assertSame(200, $response->getStatus());

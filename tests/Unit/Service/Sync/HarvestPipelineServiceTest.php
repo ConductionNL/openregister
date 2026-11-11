@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sync\HarvestImportServices;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SyncConflictResolver;
 use OCA\OpenRegister\Service\Sync\SyncRecordStatus;
@@ -41,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Sync\HarvestPipelineService
@@ -153,7 +155,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		$source = $this->makeSource();
 		$fetcher = $this->fakeFetcher(['a', 'b', 'c'], []);
 
-		$records = $this->pipeline->gather($source, $fetcher, 'exec-1');
+		$records = $this->pipeline->gather(new HarvestRun($source, $fetcher, 'exec-1'));
 
 		$this->assertCount(3, $records);
 		$this->assertSame('a', $records[0]->getExternalId());
@@ -164,8 +166,8 @@ class HarvestPipelineServiceTest extends TestCase {
 		$source = $this->makeSource();
 		$fetcher = $this->fakeFetcher(['a', 'b'], ['a' => ['x' => 1], 'b' => ['x' => 2]], failOn: ['b']);
 
-		$records = $this->pipeline->gather($source, $fetcher, 'exec-1');
-		$fetched = $this->pipeline->fetchAll($source, $fetcher, $records);
+		$records = $this->pipeline->gather(new HarvestRun($source, $fetcher, 'exec-1'));
+		$fetched = $this->pipeline->fetchAll(new HarvestRun($source, $fetcher, 'exec-1'), $records);
 
 		// Only 'a' fetched; 'b' failed but did not abort.
 		$this->assertCount(1, $fetched);
@@ -185,14 +187,14 @@ class HarvestPipelineServiceTest extends TestCase {
 		$this->syncRecordMapper->method('findByExternalId')->willReturn(null);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$obj = new ObjectEntity();
 				$obj->setUuid('new-uuid');
 				return $obj;
 			}
 		);
 
-		$summary = $this->pipeline->run($source, $fetcher, 'exec-1');
+		$summary = $this->pipeline->run(new HarvestRun($source, $fetcher, 'exec-1'));
 
 		$this->assertSame(2, $summary['created']);
 		$this->assertSame(0, $summary['updated']);
@@ -218,7 +220,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		// saveObject must NOT be called for an unchanged record.
 		$this->objectService->expects($this->never())->method('saveObject');
 
-		$summary = $this->pipeline->run($source, $fetcher, 'exec-2');
+		$summary = $this->pipeline->run(new HarvestRun($source, $fetcher, 'exec-2'));
 
 		$this->assertSame(1, $summary['unchanged']);
 		$this->assertSame(0, $summary['created']);
@@ -250,7 +252,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		// Manual + both-changed → defer (conflict), no save.
 		$this->objectService->expects($this->never())->method('saveObject');
 
-		$summary = $this->pipeline->run($source, $fetcher, 'exec-3');
+		$summary = $this->pipeline->run(new HarvestRun($source, $fetcher, 'exec-3'));
 
 		$this->assertSame(1, $summary['conflicts']);
 		$this->assertSame(0, $summary['updated']);
@@ -268,7 +270,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		// First save succeeds, second throws (e.g. schema validation failure).
 		$calls = 0;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function () use (&$calls): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$calls): ObjectEntity {
 				$calls++;
 				if ($calls === 2) {
 					throw new RuntimeException('validation failed');
@@ -279,7 +281,7 @@ class HarvestPipelineServiceTest extends TestCase {
 			}
 		);
 
-		$summary = $this->pipeline->run($source, $fetcher, 'exec-4');
+		$summary = $this->pipeline->run(new HarvestRun($source, $fetcher, 'exec-4'));
 
 		$this->assertSame(1, $summary['created']);
 		$this->assertSame(1, $summary['errors']);

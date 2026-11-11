@@ -11,9 +11,11 @@ namespace Unit\Service\Config;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Config\Types\GenericObjectShareableConfigType;
+use OCA\OpenRegister\Service\Config\Types\ShareableTypeIdentity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class GenericObjectShareableConfigTypeTest extends TestCase {
 
@@ -25,9 +27,7 @@ class GenericObjectShareableConfigTypeTest extends TestCase {
 		$this->objects = $this->createMock(ObjectService::class);
 		$this->type = new GenericObjectShareableConfigType(
 			$this->objects,
-			'procest.casetype',
-			'Case type (Procest)',
-			'procest-casetype',
+			new ShareableTypeIdentity('procest.casetype', 'Case type (Procest)', 'procest-casetype'),
 			'procest',
 			'casetype'
 		);
@@ -78,11 +78,44 @@ class GenericObjectShareableConfigTypeTest extends TestCase {
 		$this->assertSame('B', $bundle['objects'][0]['name']);
 	}//end testSerialiseCanFilterBySelectedIds()
 
+	public function testSerialiseReadsTheSetScopedAndBuildsTheWholeBundle(): void {
+		$this->objects->expects($this->once())->method('findAll')
+			->with(['filters' => ['register' => 'procest', 'schema' => 'casetype']], true, true)
+			->willReturn(
+				[
+					$this->obj('7', ['name' => 'Seven', 'id' => 'x', 'created' => 'now']),
+					['name' => 'not an entity'],
+					$this->obj('a', ['name' => 'A']),
+					$this->obj('b', ['name' => 'B', '@self' => ['id' => 'b']]),
+				]
+			);
+
+		$this->assertSame(
+			[
+				'type' => 'procest.casetype',
+				'version' => '1.0',
+				'register' => 'procest',
+				'schema' => 'casetype',
+				'objects' => [['name' => 'Seven'], ['name' => 'B']],
+			],
+			$this->type->serialise(['ids' => [7, 'b']])
+		);
+	}//end testSerialiseReadsTheSetScopedAndBuildsTheWholeBundle()
+
+	public function testSerialiseOfAnUnreadableSetIsAnEmptyBundle(): void {
+		$this->objects->method('findAll')->willThrowException(new \RuntimeException('denied'));
+
+		$this->assertSame(
+			['type' => 'procest.casetype', 'version' => '1.0', 'register' => 'procest', 'schema' => 'casetype', 'objects' => []],
+			$this->type->serialise([])
+		);
+	}//end testSerialiseOfAnUnreadableSetIsAnEmptyBundle()
+
 	public function testDeserialiseWritesEachObject(): void {
 		$saved = new ObjectEntity();
 		$saved->setUuid('new');
 		$this->objects->expects($this->once())->method('saveObject')
-			->with($this->isType('array'), [], 'procest', 'casetype')
+			->with($this->isType('array'), $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'procest' && $options->target->schema == 'casetype'))
 			->willReturn($saved);
 
 		$result = $this->type->deserialise(['objects' => [['name' => 'Imported']]]);

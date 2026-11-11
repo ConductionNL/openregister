@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Credential;
 
+use OCA\OpenRegister\Service\Configuration\AppSettingsAccess;
 use OCA\OpenRegister\Service\Credential\CredentialStoreLeaves;
 use OCA\OpenRegister\Service\Credential\CredentialStoreResolver;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
@@ -190,10 +191,8 @@ class CredentialStoreResolverTest extends TestCase {
 	 */
 	public function testProbedClassesAllShareOneNamespace(): void {
 		$resolver = new CredentialStoreResolver(
-			$this->createMock(IAppManager::class),
-			$this->createMock(IAppConfig::class),
 			new CredentialStoreLeaves($this->doriathStore, $this->vaultStore),
-			$this->createMock(LoggerInterface::class),
+			new AppSettingsAccess($this->createMock(IAppConfig::class), $this->createMock(IAppManager::class), $this->createMock(LoggerInterface::class)),
 		);
 
 		$classes = $this->readProbedClasses($resolver);
@@ -213,10 +212,8 @@ class CredentialStoreResolverTest extends TestCase {
 	 */
 	public function testSecretServiceShareTheResolvedNamespace(): void {
 		$resolver = new CredentialStoreResolver(
-			$this->createMock(IAppManager::class),
-			$this->createMock(IAppConfig::class),
 			new CredentialStoreLeaves($this->doriathStore, $this->vaultStore),
-			$this->createMock(LoggerInterface::class),
+			new AppSettingsAccess($this->createMock(IAppConfig::class), $this->createMock(IAppManager::class), $this->createMock(LoggerInterface::class)),
 		);
 
 		$classes = $this->readProbedClasses($resolver);
@@ -237,10 +234,8 @@ class CredentialStoreResolverTest extends TestCase {
 	 */
 	public function testTheResolvedNamespaceComesFromTheDeclaredCandidates(): void {
 		$resolver = new CredentialStoreResolver(
-			$this->createMock(IAppManager::class),
-			$this->createMock(IAppConfig::class),
 			new CredentialStoreLeaves($this->doriathStore, $this->vaultStore),
-			$this->createMock(LoggerInterface::class),
+			new AppSettingsAccess($this->createMock(IAppConfig::class), $this->createMock(IAppManager::class), $this->createMock(LoggerInterface::class)),
 		);
 
 		// getReflectionConstant(), not getConstant(): the candidate list is
@@ -371,7 +366,7 @@ class CredentialStoreResolverTest extends TestCase {
 				private readonly array $probedClasses,
 				private readonly string $probedSecretService,
 			) {
-				parent::__construct($appManager, $appConfig, new CredentialStoreLeaves($doriathStore, $vaultStore), $logger);
+				parent::__construct(new CredentialStoreLeaves($doriathStore, $vaultStore), new AppSettingsAccess($appConfig, $appManager, $logger));
 			}
 
 			protected function doriathServiceClasses(): array {

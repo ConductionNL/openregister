@@ -39,7 +39,7 @@ final class DeletedStore {
 	 * @param MagicMapperInterface  $objectEntityMapper The object entity mapper
 	 * @param RegisterMapperInterface        $registerMapper     The register mapper
 	 * @param AuditTrailMapperInterface      $auditTrailMapper   Reads back a destruction record and records a restore
-	 * @param DeletionServiceBundle $deletion           The destruction-pipeline collaborators (window, right, scope, recorder, clock)
+	 * @param DeletionServiceBundle $deletion           The destruction-pipeline collaborators (window, right, clock; scope and recorder)
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */

@@ -25,8 +25,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapper;
+use OCA\OpenRegister\Service\FormLinkScope;
 use OCA\OpenRegister\Service\FormLinkService;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
+use OCA\OpenRegister\Service\NewForm;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -151,7 +153,7 @@ final class FormLinkServiceCreateGoldenTest extends TestCase {
 		[$service, $mapper] = $this->service($log, 'alice');
 		$mapper->expects($this->once())->method('findFormLink')->with('obj', 77)->willReturn(null);
 
-		$link = $service->createAndLinkForm('obj', 3, 'Intake', 'Please fill', 8);
+		$link = $service->createAndLinkForm((new FormLinkScope('obj', 3))->inSchema(8), new NewForm('Intake', 'Please fill'));
 
 		$this->assertSame(
 			[
@@ -201,7 +203,7 @@ final class FormLinkServiceCreateGoldenTest extends TestCase {
 		$mapper->method('findFormLink')->willReturn($existing);
 		$mapper->expects($this->never())->method('insert');
 
-		$this->assertSame($existing, $service->createAndLinkForm('obj', 3, 'T'));
+		$this->assertSame($existing, $service->createAndLinkForm(new FormLinkScope('obj', 3), new NewForm('T')));
 		$this->assertContains(['setDescription', ['']], \OCA\Forms\Db\Form::$calls);
 	}//end testCreateAndLinkReturnsAnExistingLink()
 
@@ -215,7 +217,7 @@ final class FormLinkServiceCreateGoldenTest extends TestCase {
 		$log = [];
 		[$service] = $this->service($log, null);
 		try {
-			$service->createAndLinkForm('obj', 3, 'T');
+			$service->createAndLinkForm(new FormLinkScope('obj', 3), new NewForm('T'));
 			$this->fail('expected a refusal');
 		} catch (Exception $e) {
 			$this->assertSame(['No user logged in', 401], [$e->getMessage(), $e->getCode()]);
@@ -225,7 +227,7 @@ final class FormLinkServiceCreateGoldenTest extends TestCase {
 
 		[$service] = $this->service($log, 'alice', true);
 		try {
-			$service->createAndLinkForm('obj', 3, 'T');
+			$service->createAndLinkForm(new FormLinkScope('obj', 3), new NewForm('T'));
 			$this->fail('expected a refusal');
 		} catch (Exception $e) {
 			$this->assertSame(['Could not bootstrap NC Forms services', 503], [$e->getMessage(), $e->getCode()]);

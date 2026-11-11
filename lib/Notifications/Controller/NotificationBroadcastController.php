@@ -46,9 +46,10 @@ use DateTime;
 use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
 use OCA\OpenRegister\Notifications\Db\BroadcastWindow;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationBroadcastService;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationBroadcastControllerServices;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
@@ -57,20 +58,41 @@ class NotificationBroadcastController extends Controller {
 	use NotificationRequestTrait;
 
 	/**
+	 * Stores, lists and acknowledges broadcasts.
+	 *
+	 * @var NotificationBroadcastService
+	 */
+	private readonly NotificationBroadcastService $broadcastService;
+
+	/**
+	 * The user session and the authority on who is an administrator.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request Request.
-	 * @param NotificationBroadcastService $broadcastService The broadcast store and its receipts.
-	 * @param IGroupManager $groupManager The authority on who is an administrator.
-	 * @param IUserSession $userSession Current-user session.
+	 * @param IRequest                                 $request  Request.
+	 * @param NotificationBroadcastControllerServices $services The broadcast store and the session.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly NotificationBroadcastService $broadcastService,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserSession $userSession,
+		NotificationBroadcastControllerServices $services,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->broadcastService = $services->broadcastService;
+		$this->session = $services->session;
+		$this->userSession = $services->session->userSession;
 	}//end __construct()
 
 	/**
@@ -131,7 +153,10 @@ class NotificationBroadcastController extends Controller {
 			return $window;
 		}
 
-		return $this->sendBroadcast(subject: $subject, body: $this->stringParam(params: $params, key: 'body'), window: $window);
+		return $this->sendBroadcast(
+			message: new BroadcastMessage(subject: $subject, body: $this->stringParam(params: $params, key: 'body')),
+			window: new BroadcastWindow(startsAt: $window[0], endsAt: $window[1])
+		);
 	}//end createFrom()
 
 	/**
@@ -159,21 +184,16 @@ class NotificationBroadcastController extends Controller {
 	}//end requestedWindow()
 
 	/**
-	 * Send the broadcast as the current administrator.
+	 * Send the broadcast as the caller, answering 422 when the service refuses it.
 	 *
-	 * @param string                           $subject The subject.
-	 * @param string|null                      $body    The body, or null.
-	 * @param array{0: DateTime, 1: DateTime} $window  The start and end.
+	 * @param BroadcastMessage $message The subject and body.
+	 * @param BroadcastWindow  $window  The moments it runs between.
 	 *
-	 * @return JSONResponse The created broadcast, or a 422 when the service refuses it.
+	 * @return JSONResponse The created broadcast, or a 422.
 	 */
-	private function sendBroadcast(string $subject, ?string $body, array $window): JSONResponse {
+	private function sendBroadcast(BroadcastMessage $message, BroadcastWindow $window): JSONResponse {
 		try {
-			$broadcast = $this->broadcastService->send(
-				message: new BroadcastMessage(subject: $subject, body: $body),
-				sender: (string)$this->resolveUserId(),
-				window: new BroadcastWindow(startsAt: $window[0], endsAt: $window[1])
-			);
+			$broadcast = $this->broadcastService->send(message: $message, sender: (string)$this->resolveUserId(), window: $window);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
@@ -267,7 +287,7 @@ class NotificationBroadcastController extends Controller {
 			return $this->authenticationRequired();
 		}
 
-		if ($this->groupManager->isAdmin($userId) === false) {
+		if ($this->session->groupManager->isAdmin($userId) === false) {
 			return new JSONResponse(data: ['error' => 'Administrator required'], statusCode: 403);
 		}
 

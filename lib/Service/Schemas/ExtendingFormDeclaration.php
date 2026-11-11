@@ -56,7 +56,7 @@ namespace OCA\OpenRegister\Service\Schemas;
  *
  * @spec openspec/specs/runtime-schema-api/spec.md
  */
-final class ExtendingFormDeclaration implements ExtendingFormDeclarationInterface {
+final class ExtendingFormDeclaration implements ExtendingFormValidatorInterface {
 
 	/**
 	 * The refusals a declaration can earn, by template name.

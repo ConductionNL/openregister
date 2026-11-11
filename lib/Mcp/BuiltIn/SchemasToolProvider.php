@@ -272,22 +272,49 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 			return $data;
 		}
 
-		$change = RbacRuleChecks::crossOrganisationMarkerChange();
-		$stored = $change->asStored(authorization: $data['authorization']);
-		if ($change->widens(old: $old, new: $stored) === true && $this->rights->isAdmin() === false) {
-			throw new RuntimeException('Only an administrator may let a rule read across organisations (crossOrganisation: true)');
-		}
-
+		$stored = $this->storedAuthorization(authorization: $data['authorization'], old: $old);
 		if (is_array($stored) === false) {
 			return $data;
 		}
 
-		if (RbacChecks::externalGrants()->refusalFor($stored) !== null) {
-			throw new RuntimeException('An external grant needs an end date');
-		}
-
+		$this->refuseOpenEndedExternalGrant(stored: $stored);
 		$data['authorization'] = $stored;
 
 		return $data;
 	}//end checkedBody()
+
+	/**
+	 * The authorization in the form it is stored, refused when a non-administrator widens a crossing.
+	 *
+	 * @param mixed      $authorization The authorization block as written.
+	 * @param array|null $old           The stored authorization, null for a new schema.
+	 *
+	 * @return mixed The block as stored.
+	 *
+	 * @throws RuntimeException When the block adds a crossing and the caller is not an administrator
+	 */
+	private function storedAuthorization(mixed $authorization, ?array $old): mixed {
+		$change = RbacRuleChecks::crossOrganisationMarkerChange();
+		$stored = $change->asStored(authorization: $authorization);
+		if ($change->widens(old: $old, new: $stored) === true && $this->rights->isAdmin() === false) {
+			throw new RuntimeException('Only an administrator may let a rule read across organisations (crossOrganisation: true)');
+		}
+
+		return $stored;
+	}//end storedAuthorization()
+
+	/**
+	 * Refuse an external grant that has no end date.
+	 *
+	 * @param array<string, mixed> $stored The authorization block as stored.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When an external grant has no end
+	 */
+	private function refuseOpenEndedExternalGrant(array $stored): void {
+		if (RbacChecks::externalGrants()->refusalFor($stored) !== null) {
+			throw new RuntimeException('An external grant needs an end date');
+		}
+	}//end refuseOpenEndedExternalGrant()
 }//end class

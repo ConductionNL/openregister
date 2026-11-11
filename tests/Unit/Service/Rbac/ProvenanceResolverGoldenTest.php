@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\ProvenanceOptions;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -128,7 +129,7 @@ final class ProvenanceResolverGoldenTest extends TestCase {
 			$principals = $denyReader->principalsFor(userId: $uid, userGroups: $groups);
 			// Every cascade, no denial.
 			foreach ($this->cascades() as $cascadeKey => $blocks) {
-				$out[$callerKey.'|'.$cascadeKey] = $resolver->forActions(self::ACTIONS, $principals, $blocks);
+				$out[$callerKey.'|'.$cascadeKey] = $resolver->forPrincipals($principals)->forActions(self::ACTIONS, new ProvenanceOptions($blocks));
 			}
 
 			// Every denial shape, enforced and staged, over three cascades.
@@ -137,15 +138,15 @@ final class ProvenanceResolverGoldenTest extends TestCase {
 				foreach ($this->denialSets() as $denialKey => $denials) {
 					foreach ([true, false] as $enforced) {
 						$key = $callerKey.'|'.$cascadeKey.'|'.$denialKey.'|'.($enforced ? 'enforced' : 'staged');
-						$out[$key] = $resolver->forActions(self::ACTIONS, $principals, $blocks, $denials, $enforced);
+						$out[$key] = $resolver->forPrincipals($principals)->forActions(self::ACTIONS, new ProvenanceOptions($blocks, $denials, $enforced));
 					}
 				}
 			}
 		}
 
 		// The defaults: no blocks, no denials, enforced.
-		$out['defaults'] = $resolver->forActions(self::ACTIONS, ['user:ana']);
-		$out['no-actions'] = $resolver->forActions([], ['user:ana'], ['schema' => ['read' => ['user:ana']]]);
+		$out['defaults'] = $resolver->forPrincipals(['user:ana'])->forActions(self::ACTIONS);
+		$out['no-actions'] = $resolver->forPrincipals(['user:ana'])->forActions([], new ProvenanceOptions(['schema' => ['read' => ['user:ana']]]));
 
 		return $out;
 	}//end matrix()
@@ -184,7 +185,7 @@ final class ProvenanceResolverGoldenTest extends TestCase {
 		foreach ($cases as $label => [$blocks, $denials]) {
 			$thrown = null;
 			try {
-				$resolver->forActions(['read'], ['user:ana'], $blocks, $denials);
+				$resolver->forPrincipals(['user:ana'])->forActions(['read'], new ProvenanceOptions($blocks, $denials));
 			} catch (\TypeError $e) {
 				$thrown = \TypeError::class;
 			}
@@ -193,9 +194,9 @@ final class ProvenanceResolverGoldenTest extends TestCase {
 		}
 
 		// With no action asked about, nothing is read and nothing is refused.
-		$this->assertSame([], $resolver->forActions([], ['user:ana'], ['object' => 'scalar'], ['read' => 'x']));
+		$this->assertSame([], $resolver->forPrincipals(['user:ana'])->forActions([], new ProvenanceOptions(['object' => 'scalar'], ['read' => 'x'])));
 		// A denial for an action not asked about is never read.
-		$this->assertTrue($resolver->forActions(['update'], ['user:ana'], ['schema' => ['update' => ['user:ana']]], ['read' => 'x'])['update']['granted']);
+		$this->assertTrue($resolver->forPrincipals(['user:ana'])->forActions(['update'], new ProvenanceOptions(['schema' => ['update' => ['user:ana']]], ['read' => 'x']))['update']['granted']);
 	}//end testANonArrayBlockOrDenialIsRefused()
 
 	/**

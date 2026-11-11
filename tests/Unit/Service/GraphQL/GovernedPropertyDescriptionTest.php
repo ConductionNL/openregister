@@ -70,13 +70,7 @@ class GovernedPropertyDescriptionTest extends TestCase {
 			static fn (IUser $user): array => self::GROUPS[$user->getUID()]
 		);
 
-		return new PropertyRbacHandler(
-			$session,
-			$groups,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(StateFieldRuleResolver::class)
-		);
+		return new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), $this->createMock(StateFieldRuleResolver::class)), logger: $this->createMock(LoggerInterface::class));
 	}//end rbac()
 
 	private function generated(?string $uid): GraphQLSchema {

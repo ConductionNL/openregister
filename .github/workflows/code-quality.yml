@@ -316,6 +316,10 @@ jobs:
       # new duplicated fragment of 6+ lines fails. Units the change does not
       # touch, or touches without making worse, are inherited and do not count.
       hydra-gates-sig-blocking: true
+      # Maintainability floor: no rating in .maintainability-floor.json may drop
+      # more than 0.01 against the merge base (pull request) or below the
+      # committed floor (push). The floor is raised after improving merges.
+      enable-maintainability-floor: true
       # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
       # to @main, and this workflow is itself consumed at @main, so the two
       # sides move together and a gate fix reaches this repo without a commit
@@ -449,7 +453,7 @@ jobs:
       #
       # There is no .js/.json parity leg: l10n/*.js is the browser catalogue and
       # l10n/*.json the PHP one, separate sets with separate consumers.
-      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "test:coverage-ratchet"]'
+      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "test:coverage-ratchet", "test:newman-route-ratchet"]'
       # ── Cost controls (see ConductionNL/.github#596, #599) ───────────────
       #
       # The fleet's CI was not slow, it was QUEUED. A Code Quality run does

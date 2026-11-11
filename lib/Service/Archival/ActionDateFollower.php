@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -87,7 +88,7 @@ class ActionDateFollower {
 		}
 
 		if ($newDate === null) {
-			$this->clear(object: $object, retention: $retention, oldDate: (string)$oldDate);
+			$this->clear(object: $object, retention: $retention);
 			return true;
 		}
 
@@ -104,22 +105,24 @@ class ActionDateFollower {
 	 * Remove the archiefactiedatum and say so in the audit trail.
 	 *
 	 * @param ObjectEntity         $object    The record
-	 * @param array<string, mixed> $retention Its retention block
-	 * @param string               $oldDate   The date being removed
+	 * @param array<string, mixed> $retention Its retention block, still carrying the date being removed
 	 *
 	 * @return void
 	 */
-	private function clear(ObjectEntity $object, array $retention, string $oldDate): void {
+	private function clear(ObjectEntity $object, array $retention): void {
+		$oldDate = (string)($retention['archiefactiedatum'] ?? null);
 		unset($retention['archiefactiedatum']);
 		$object->setRetention($retention);
 
-		$this->auditMapper->createAuditTrailEntry(
-			object: $object,
-			action: self::AUDIT_DATE_REMOVED,
-			context: [
-				'archiefactiedatum' => ['old' => $oldDate, 'new' => null],
-				'reason' => 'The source date of the destruction date was cleared.',
-			]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $object,
+				action: self::AUDIT_DATE_REMOVED,
+				context: [
+					'archiefactiedatum' => ['old' => $oldDate, 'new' => null],
+					'reason' => 'The source date of the destruction date was cleared.',
+				]
+			)
 		);
 		$this->logger->info(
 			sprintf('[ActionDateFollower] Cleared archiefactiedatum for object %s (was %s)', $object->getUuid(), $oldDate)

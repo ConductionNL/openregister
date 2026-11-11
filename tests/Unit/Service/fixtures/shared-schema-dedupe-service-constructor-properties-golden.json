@@ -1,10 +1,3 @@
 {
-    "attribution": "attribution",
-    "db": "db",
-    "importHandler": "importHandler",
-    "locator": "locator",
-    "logger": "logger",
-    "migrator": "migrator",
-    "registerMapper": "registerMapper",
-    "schemaMapper": "schemaMapper"
+    "logger": "logger"
 }

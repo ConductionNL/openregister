@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use DateTime;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -32,6 +34,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\AuditQueryService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Pins, over a small fixed store, which register/schema pairs each filter
@@ -115,7 +118,7 @@ class AuditQueryServicePageGoldenTest extends TestCase {
 			}
 		);
 
-		return new AuditQueryService($objects, $registerMapper, $schemaMapper);
+		return new AuditQueryService($objects, new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)));
 	}//end service()
 
 	/**
@@ -178,7 +181,7 @@ class AuditQueryServicePageGoldenTest extends TestCase {
 	 */
 	private function page(array $filters, int $limit = 50, int $offset = 0): array {
 		$this->searches = [];
-		$page = $this->service()->query($filters, $limit, $offset);
+		$page = $this->service()->query(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 		return [
 			'keys' => array_keys($page),
 			'ids' => array_column($page['entries'], 'id'),
@@ -254,7 +257,7 @@ class AuditQueryServicePageGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testEntryShape(): void {
-		$page = $this->service()->query(['registerId' => 'r1', 'schemaId' => 'zaak'], 1, 0);
+		$page = $this->service()->query(query: new ListQuery(limit: 1, offset: 0, filters: ['registerId' => 'r1', 'schemaId' => 'zaak']));
 		$this->assertSame(
 			[
 				'id' => 'r1-zaak-new',

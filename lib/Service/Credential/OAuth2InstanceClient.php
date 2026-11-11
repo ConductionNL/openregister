@@ -68,9 +68,7 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	/**
 	 * Make sure the flow has a client, registering one only when there is none to reuse.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param array<string, mixed> $claims The claims assembled so far.
-	 * @param string $redirectUri The callback to register.
+	 * @param OAuth2ClientRegistration $registration The provider, the claims so far and the callback.
 	 *
 	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef, and
 	 *                              MINTED_KEY when a new client was registered.
@@ -79,9 +77,10 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
-	public function ensure(array $provider, array $claims, string $redirectUri): array {
-		$flow = new OAuth2FlowClaims(claims: $claims);
-		if ($this->needsClient(provider: $provider, flow: $flow) === false) {
+	public function ensure(OAuth2ClientRegistration $registration): array {
+		$claims = $registration->claims;
+		$flow = $registration->flow();
+		if ($this->needsClient(provider: $registration->provider, flow: $flow) === false) {
 			return $claims;
 		}
 
@@ -90,7 +89,7 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 			return array_merge($claims, $stored);
 		}
 
-		return array_merge($claims, $this->registerFor(provider: $provider, flow: $flow, redirectUri: $redirectUri));
+		return array_merge($claims, $this->registerFor(registration: $registration));
 	}//end ensure()
 
 	/**
@@ -99,9 +98,7 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	 * The account's host, the scopes, and the owner, credential scope and
 	 * organisation the client secret is minted for all come from the flow.
 	 *
-	 * @param array<string, mixed> $provider    The catalogue provider entry.
-	 * @param OAuth2FlowClaims     $flow        The claims assembled so far.
-	 * @param string               $redirectUri The callback to register.
+	 * @param OAuth2ClientRegistration $registration The provider, the claims so far and the callback.
 	 *
 	 * @return array{clientId: string, clientCredentialRef: string} The client id and the secret's credentialRef.
 	 *
@@ -109,11 +106,10 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
-	public function register(array $provider, OAuth2FlowClaims $flow, string $redirectUri): array {
+	public function register(OAuth2ClientRegistration $registration): array {
+		$flow = $registration->flow();
 		$instanceBaseUrl = OAuth2InstanceHost::normalise(candidate: $flow->string(key: 'h'));
-		$decoded = $this->registeredClient(
-			provider: $provider, instanceBaseUrl: $instanceBaseUrl, redirectUri: $redirectUri, scopes: $flow->scopes(provider: $provider)
-		);
+		$decoded = $this->registeredClient(registration: $registration, instanceBaseUrl: $instanceBaseUrl);
 		$clientRef = $this->mintClientSecret(instanceBaseUrl: $instanceBaseUrl, decoded: $decoded, flow: $flow);
 
 		return ['clientId' => (string)$decoded['client_id'], 'clientCredentialRef' => $clientRef];
@@ -172,9 +168,7 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	/**
 	 * Register a new client for the flow and name it in the claims.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param OAuth2FlowClaims $flow The claims assembled so far.
-	 * @param string $redirectUri The callback to register.
+	 * @param OAuth2ClientRegistration $registration The provider, the claims so far and the callback.
 	 *
 	 * @return array<string, string> The claims to merge: client id, credentialRef and MINTED_KEY.
 	 *
@@ -182,8 +176,8 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
-	private function registerFor(array $provider, OAuth2FlowClaims $flow, string $redirectUri): array {
-		$registered = $this->register(provider: $provider, flow: $flow, redirectUri: $redirectUri);
+	private function registerFor(OAuth2ClientRegistration $registration): array {
+		$registered = $this->register(registration: $registration);
 		$clientRef = $registered['clientCredentialRef'];
 
 		return ['cl' => $registered['clientId'], 'cr' => $clientRef, self::MINTED_KEY => $clientRef];
@@ -192,20 +186,18 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	/**
 	 * The registration request options.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $redirectUri The callback to register.
-	 * @param array<int, string> $scopes The scopes to register for.
+	 * @param OAuth2ClientRegistration $registration The provider, the scopes and the callback.
 	 *
 	 * @return array<string, mixed> The HTTP client options.
 	 *
 	 * @spec exclude private request builder with no behaviour of its own
 	 */
-	private function registrationRequest(array $provider, string $redirectUri, array $scopes): array {
+	private function registrationRequest(OAuth2ClientRegistration $registration): array {
 		return [
 			'body' => [
 				'client_name' => 'Nextcloud OpenRegister',
-				'redirect_uris' => $redirectUri,
-				'scopes' => implode((string)($provider['oauth2']['scopeSeparator'] ?? ' '), $scopes),
+				'redirect_uris' => $registration->redirectUri,
+				'scopes' => implode((string)($registration->provider['oauth2']['scopeSeparator'] ?? ' '), $registration->scopes()),
 			],
 			'headers' => ['Accept' => 'application/json'],
 			'timeout' => 20,
@@ -215,10 +207,8 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	/**
 	 * Post the registration and insist on a client id in the answer.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $instanceBaseUrl The pinned, already-validated host.
-	 * @param string $redirectUri The callback to register.
-	 * @param array<int, string> $scopes The scopes to register for.
+	 * @param OAuth2ClientRegistration $registration    The provider, the scopes and the callback.
+	 * @param string                   $instanceBaseUrl The pinned, already-validated host.
 	 *
 	 * @return array<string, mixed> The decoded answer, carrying a string `client_id`.
 	 *
@@ -226,9 +216,9 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
-	private function registeredClient(array $provider, string $instanceBaseUrl, string $redirectUri, array $scopes): array {
-		$endpoint = $instanceBaseUrl . '/' . ltrim((string)$provider['oauth2']['registrationEndpoint'], '/');
-		$options = $this->registrationRequest(provider: $provider, redirectUri: $redirectUri, scopes: $scopes);
+	private function registeredClient(OAuth2ClientRegistration $registration, string $instanceBaseUrl): array {
+		$endpoint = $instanceBaseUrl . '/' . ltrim((string)$registration->provider['oauth2']['registrationEndpoint'], '/');
+		$options = $this->registrationRequest(registration: $registration);
 
 		try {
 			$response = $this->clientService->newClient()->post($endpoint, $options);

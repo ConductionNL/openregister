@@ -71,7 +71,7 @@ class RetentionSweepFailedDeleteTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
-		return new RetentionSweepService(new RetentionSweepSources($accessor, $this->createMock(DataSubjectRequestService::class), $time), $retention, $this->createMock(LoggerInterface::class), new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class)));
+		return new RetentionSweepService(new RetentionSweepSources($accessor, $this->createMock(DataSubjectRequestService::class), $time), $retention, $this->createMock(LoggerInterface::class), new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class))));
 	}//end sweepWithDelete()
 
 	/**

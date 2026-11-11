@@ -57,6 +57,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Service;
 
 use OCA\OpenRegister\AppHost\Store\StorePublishRules;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 use OCP\Http\Client\IResponse;
 use Psr\Log\LoggerInterface;
@@ -188,18 +189,28 @@ class GenericStoreService {
 	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 */
 	public function search(StoreDescriptor $descriptor, ?string $query = null, ?string $kind = null): array {
+		return $this->searchStore(descriptor: $descriptor, search: new StoreSearch(query: $query, kind: $kind));
+	}//end search()
+
+	/**
+	 * Search the remote store: the value-object form of search().
+	 *
+	 * Returns `not_configured` with an empty card list and makes NO network
+	 * call when no registry is set.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param StoreSearch     $search     The free-text term and the `kind` filter, both optional.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	public function searchStore(StoreDescriptor $descriptor, StoreSearch $search): array {
 		if ($this->isConfigured(descriptor: $descriptor) === false) {
 			return ['outcome' => self::OUTCOME_NOT_CONFIGURED, 'cards' => []];
 		}
 
-		$params = ['_limit' => self::SEARCH_LIMIT];
-		if ($query !== null && trim($query) !== '') {
-			$params['_search'] = trim($query);
-		}
-
-		if ($kind !== null && trim($kind) !== '') {
-			$params['kind'] = trim($kind);
-		}
+		$params = ['_limit' => self::SEARCH_LIMIT] + $search->filters();
 
 		$result = $this->fetch(descriptor: $descriptor, params: $params);
 		if ($result['outcome'] !== self::OUTCOME_OK) {
@@ -214,7 +225,7 @@ class GenericStoreService {
 		}
 
 		return ['outcome' => self::OUTCOME_OK, 'cards' => $cards];
-	}//end search()
+	}//end searchStore()
 
 	/**
 	 * Resolve a single remote item by slug, returning its FULL payload for the
@@ -270,7 +281,33 @@ class GenericStoreService {
 	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-travel-under-the-planes-transport-rules
 	 */
 	public function publish(StoreDescriptor $descriptor, array $payload): array {
-		$refused = ['outcome' => self::OUTCOME_NOT_PUBLISHABLE, 'slug' => ''];
+		$json = $this->publishableBody(descriptor: $descriptor, payload: $payload);
+		if ($json === null) {
+			return ['outcome' => self::OUTCOME_NOT_PUBLISHABLE, 'slug' => ''];
+		}
+
+		$blocked = $this->deliveryBlock(descriptor: $descriptor, json: $json);
+		if ($blocked !== null) {
+			return ['outcome' => $blocked, 'slug' => ''];
+		}
+
+		if ($this->isLocal(descriptor: $descriptor) === true) {
+			return $this->publishLocally(descriptor: $descriptor, json: $json);
+		}
+
+		// The slug is valid here: encodedBody() refuses a payload without one.
+		return $this->publishRemotely(attempt: new PublishAttempt(descriptor: $descriptor, slug: (string)$payload['slug']), json: $json);
+	}//end publish()
+
+	/**
+	 * The JSON body a publish sends; null, logged, when the descriptor or the payload refuses it.
+	 *
+	 * @param StoreDescriptor      $descriptor The calling app's store descriptor.
+	 * @param array<string, mixed> $payload    The item to publish.
+	 *
+	 * @return string|null
+	 */
+	private function publishableBody(StoreDescriptor $descriptor, array $payload): ?string {
 		if ($descriptor->isPublishable() === false) {
 			// Logged at ERROR: an app called publish() without declaring what
 			// may leave or who may send it, which is a defect to fix rather
@@ -278,7 +315,7 @@ class GenericStoreService {
 			$this->logger->error(
 				'AppHost store (' . $descriptor->appId . '): publish refused, the descriptor names no publish fields or no publish group'
 			);
-			return $refused;
+			return null;
 		}
 
 		$json = $this->publishRules->encodedBody(descriptor: $descriptor, payload: $payload);
@@ -286,53 +323,85 @@ class GenericStoreService {
 			$this->logger->warning(
 				'AppHost store (' . $descriptor->appId . '): publish refused, the payload has no valid slug or does not encode as JSON'
 			);
-			return $refused;
 		}
 
+		return $json;
+	}//end publishableBody()
+
+	/**
+	 * Why a publishable body cannot be delivered: no store configured, or too large.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store descriptor.
+	 * @param string          $json       The encoded body.
+	 *
+	 * @return string|null The outcome, or null when it can be delivered.
+	 */
+	private function deliveryBlock(StoreDescriptor $descriptor, string $json): ?string {
 		if ($this->isConfigured(descriptor: $descriptor) === false) {
-			return ['outcome' => self::OUTCOME_NOT_CONFIGURED, 'slug' => ''];
+			return self::OUTCOME_NOT_CONFIGURED;
 		}
 
 		if (strlen($json) > self::PUBLISH_MAX_BYTES) {
-			return ['outcome' => self::OUTCOME_TOO_LARGE, 'slug' => ''];
+			return self::OUTCOME_TOO_LARGE;
 		}
 
-		if ($this->isLocal(descriptor: $descriptor) === true) {
-			return $this->localRegistry?->write(
-				register: $this->registerSlug(descriptor: $descriptor),
-				schema: $descriptor->schema,
-				body: (array)json_decode($json, true)
-			) ?? ['outcome' => self::OUTCOME_UNREACHABLE, 'slug' => ''];
-		}
+		return null;
+	}//end deliveryBlock()
 
+	/**
+	 * Publish into a store that lives in this instance's own register.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store descriptor.
+	 * @param string          $json       The encoded body.
+	 *
+	 * @return array{outcome: string, slug: string}
+	 */
+	private function publishLocally(StoreDescriptor $descriptor, string $json): array {
+		return $this->localRegistry?->write(
+			store: $this->localStore(descriptor: $descriptor),
+			body: (array)json_decode($json, true)
+		) ?? ['outcome' => self::OUTCOME_UNREACHABLE, 'slug' => ''];
+	}//end publishLocally()
+
+	/**
+	 * POST the body to the remote registry and read back the outcome.
+	 *
+	 * @param PublishAttempt $attempt The descriptor and the slug being published.
+	 * @param string         $json    The encoded body.
+	 *
+	 * @return array{outcome: string, slug: string}
+	 */
+	private function publishRemotely(PublishAttempt $attempt, string $json): array {
 		$response = $this->send(
-			descriptor: $descriptor,
-			method: 'POST',
-			options: [
-				'body' => $json,
-				'headers' => ['Content-Type' => 'application/json', 'Accept' => 'application/json'],
-			]
+			descriptor: $attempt->descriptor,
+			call: new RegistryCall(
+				method: 'POST',
+				options: [
+					'body' => $json,
+					'headers' => ['Content-Type' => 'application/json', 'Accept' => 'application/json'],
+				]
+			)
 		);
 		if ($response === null) {
 			return ['outcome' => self::OUTCOME_UNREACHABLE, 'slug' => ''];
 		}
 
-		// The slug is valid here: encodedBody() refuses a payload without one.
-		return $this->publishOutcome(descriptor: $descriptor, response: $response, slug: (string)$payload['slug']);
-	}//end publish()
+		return $this->publishOutcome(attempt: $attempt, response: $response);
+	}//end publishRemotely()
 
 	/**
 	 * Map the registry's answer to a publish outcome, logging every failure.
 	 *
-	 * @param StoreDescriptor $descriptor The calling app's store parameters.
-	 * @param IResponse       $response   The registry's answer.
-	 * @param string          $slug       The slug that was sent.
+	 * @param PublishAttempt $attempt  The store and the slug that was sent.
+	 * @param IResponse      $response The registry's answer.
 	 *
 	 * @return array{outcome: string, slug: string}
 	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-verify-the-slug-the-registry-stored
 	 */
-	private function publishOutcome(StoreDescriptor $descriptor, IResponse $response, string $slug): array {
+	private function publishOutcome(PublishAttempt $attempt, IResponse $response): array {
+		$descriptor = $attempt->descriptor;
+		$slug = $attempt->slug;
 		$status = $response->getStatusCode();
 		if ($this->publishRules->isSuccess(status: $status) === false) {
 			$this->logger->warning(
@@ -369,14 +438,24 @@ class GenericStoreService {
 	private function fetch(StoreDescriptor $descriptor, array $params): array {
 		if ($this->isLocal(descriptor: $descriptor) === true) {
 			return $this->localRegistry?->read(
-				register: $this->registerSlug(descriptor: $descriptor),
-				schema: $descriptor->schema,
-				params: $params,
-				limit: self::SEARCH_LIMIT
+				store: $this->localStore(descriptor: $descriptor),
+				params: $params
 			) ?? ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
 		}
 
-		$response = $this->send(descriptor: $descriptor, method: 'GET', options: ['query' => $params]);
+		return $this->fetchRemote(descriptor: $descriptor, params: $params);
+	}//end fetch()
+
+	/**
+	 * GET the registry and decode its answer.
+	 *
+	 * @param StoreDescriptor      $descriptor The calling app's store descriptor.
+	 * @param array<string, mixed> $params     The query.
+	 *
+	 * @return array{outcome: string, results: array}
+	 */
+	private function fetchRemote(StoreDescriptor $descriptor, array $params): array {
+		$response = $this->send(descriptor: $descriptor, call: new RegistryCall(method: 'GET', options: ['query' => $params]));
 		if ($response === null) {
 			return ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
 		}
@@ -390,7 +469,7 @@ class GenericStoreService {
 		}
 
 		return $this->decodeBody(descriptor: $descriptor, body: (string)$response->getBody());
-	}//end fetch()
+	}//end fetchRemote()
 
 	/**
 	 * Whether the registry is this instance's own register.
@@ -404,6 +483,17 @@ class GenericStoreService {
 	private function isLocal(StoreDescriptor $descriptor): bool {
 		return trim($this->registryUrl(descriptor: $descriptor)) === self::LOCAL_REGISTRY;
 	}//end isLocal()
+
+	/**
+	 * The register and schema a `local` registry reads and writes.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 *
+	 * @return RegisterSchemaRef The register slug and the descriptor's schema.
+	 */
+	private function localStore(StoreDescriptor $descriptor): RegisterSchemaRef {
+		return new RegisterSchemaRef(register: $this->registerSlug(descriptor: $descriptor), schema: $descriptor->schema);
+	}//end localStore()
 
 	/**
 	 * The register segment: the configured one, else the descriptor's default.
@@ -434,11 +524,56 @@ class GenericStoreService {
 	 * redirect refusal are applied after them, and so is the Authorization
 	 * header.
 	 *
-	 * @param StoreDescriptor      $descriptor The calling app's store parameters.
-	 * @param string               $method     'GET' or 'POST'.
-	 * @param array<string, mixed> $options    Request options (query, body, headers).
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param RegistryCall    $call       The method and the request options (query, body, headers).
 	 *
 	 * @return IResponse|null The answer, or null when the URL was refused or the request failed.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-travel-under-the-planes-transport-rules
+	 */
+	private function send(StoreDescriptor $descriptor, RegistryCall $call): ?IResponse {
+		$url = $this->safeUrl(descriptor: $descriptor);
+		if ($url === null) {
+			return null;
+		}
+
+		$options = $this->transportOptions(descriptor: $descriptor, options: $call->options);
+
+		try {
+			return $this->dispatch(url: $url, call: new RegistryCall(method: $call->method, options: $options));
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'AppHost store (' . $descriptor->appId . '): registry ' . $call->method . ' failed: ' . $e->getMessage()
+			);
+			return null;
+		}
+	}//end send()
+
+	/**
+	 * Make the HTTP request of a registry call.
+	 *
+	 * @param string       $url  The checked registry URL.
+	 * @param RegistryCall $call The method and the transport options.
+	 *
+	 * @return IResponse
+	 *
+	 * @throws Throwable When the request cannot be made.
+	 */
+	private function dispatch(string $url, RegistryCall $call): IResponse {
+		$client = $this->registry->clientService->newClient();
+		if ($call->method === 'POST') {
+			return $client->post($url, $call->options);
+		}
+
+		return $client->get($url, $call->options);
+	}//end dispatch()
+
+	/**
+	 * The registry URL once the SSRF guard has passed it, or null.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 *
+	 * @return string|null The URL, or null when it is unsafe or invalid.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) SafeFetchUrl::assert is
 	 * static upstream, and calling it directly is the point of moving this client
@@ -447,7 +582,7 @@ class GenericStoreService {
 	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-travel-under-the-planes-transport-rules
 	 */
-	private function send(StoreDescriptor $descriptor, string $method, array $options): ?IResponse {
+	private function safeUrl(StoreDescriptor $descriptor): ?string {
 		try {
 			$url = $this->buildUrl(descriptor: $descriptor);
 			SafeFetchUrl::assert(url: $url);
@@ -458,6 +593,20 @@ class GenericStoreService {
 			return null;
 		}
 
+		return $url;
+	}//end safeUrl()
+
+	/**
+	 * The caller's options under the plane's transport rules: the token only
+	 * as a Bearer header, fixed timeouts, no redirects. Applied after the
+	 * caller's options, so they cannot loosen them.
+	 *
+	 * @param StoreDescriptor      $descriptor The calling app's store parameters.
+	 * @param array<string, mixed> $options    The caller's request options.
+	 *
+	 * @return array<string, mixed> The options to send.
+	 */
+	private function transportOptions(StoreDescriptor $descriptor, array $options): array {
 		$headers = (array)($options['headers'] ?? []);
 		$token = trim($this->registry->appConfig->getValueString($descriptor->appId, 'registry_token', ''));
 		if ($token !== '') {
@@ -465,25 +614,12 @@ class GenericStoreService {
 		}
 
 		$options['headers'] = $headers;
-
 		$options['timeout'] = self::TIMEOUT;
 		$options['connect_timeout'] = self::TIMEOUT;
 		$options['allow_redirects'] = false;
 
-		try {
-			$client = $this->registry->clientService->newClient();
-			if ($method === 'POST') {
-				return $client->post($url, $options);
-			}
-
-			return $client->get($url, $options);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'AppHost store (' . $descriptor->appId . '): registry ' . $method . ' failed: ' . $e->getMessage()
-			);
-			return null;
-		}
-	}//end send()
+		return $options;
+	}//end transportOptions()
 
 	/**
 	 * Decode a registry response body into a result list.
@@ -511,21 +647,32 @@ class GenericStoreService {
 			return ['outcome' => self::OUTCOME_OK, 'results' => $results];
 		}
 
-		// Some OpenRegister responses are a bare list; accept that too.
-		// A non-list decode is treated as no results rather than passed through:
-		// callers iterate this, and handing them an associative array would
-		// iterate its VALUES as if they were records.
+		return [
+			'outcome' => self::OUTCOME_OK,
+			'results' => self::bareListResults(decoded: $decoded),
+		];
+	}//end decodeBody()
+
+	/**
+	 * The results of a body that is a bare list; none for any other shape.
+	 *
+	 * Some OpenRegister responses are a bare list; accept that too. A non-list
+	 * decode is treated as no results rather than passed through: callers
+	 * iterate this, and handing them an associative array would iterate its
+	 * VALUES as if they were records.
+	 *
+	 * @param array $decoded The decoded body, without a `results` list.
+	 *
+	 * @return array
+	 */
+	private static function bareListResults(array $decoded): array {
 		$results = [];
 		if (array_is_list($decoded) === true) {
 			$results = $decoded;
 		}
 
-		return [
-			'outcome' => self::OUTCOME_OK,
-			'results' => $results,
-		];
-
-	}//end decodeBody()
+		return $results;
+	}//end bareListResults()
 
 	/**
 	 * Build the remote objects-API URL for this store's schema.
