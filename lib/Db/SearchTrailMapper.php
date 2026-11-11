@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -36,6 +37,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Db\SearchTrail\SearchTrailFilterRun;
 use OCA\OpenRegister\Db\SearchTrail\SearchTrailPage;
+use OCA\OpenRegister\Db\SearchTrail\CreatedRange;
 use OCA\OpenRegister\Db\SearchTrail\SearchTrailStatistics;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -66,6 +68,15 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Search trail tracking requires integration with many components
  */
 class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, SearchTrailCleanupInterface {
+	use TrailRetentionTrait;
+
+	/**
+	 * The trail this mapper holds, as its retention log messages name it.
+	 *
+	 * @var string
+	 */
+	private const TRAIL_NOUN = 'search trail';
+
 	/**
 	 * The search trail columns a filter may name.
 	 *
@@ -144,17 +155,15 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	/**
 	 * Find all search trails with optional filters
 	 *
+	 * @param ListQuery                $query    The page and its sort; unbounded for every row.
 	 * @param SearchTrailCriteria|null $criteria Filters, search term and created window; null for all.
-	 * @param int|null $limit Maximum number of results to return
-	 * @param int|null $offset Number of results to skip
-	 * @param array $sort Sort criteria
 	 *
 	 * @return SearchTrail[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\SearchTrail>
 	 */
-	public function findAll(SearchTrailCriteria|null $criteria = null, int|null $limit = null, int|null $offset = null, array $sort = []): array {
-		$page = new SearchTrailPage(limit: $limit, offset: $offset, sort: $sort);
+	public function findAll(ListQuery $query, SearchTrailCriteria|null $criteria = null): array {
+		$page = new SearchTrailPage(limit: $query->limitOrNull(), offset: $query->offset, sort: $query->sort);
 		return $this->findMatching(criteria: ($criteria ?? new SearchTrailCriteria()), page: $page);
 	}//end findAll()
 
@@ -264,21 +273,32 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	/**
 	 * Create a new search trail entry
 	 *
-	 * @param array       $searchQuery   The search query parameters
-	 * @param SearchTrail $outcome       The unsaved trail carrying what the search
-	 *                                   returned: result count and total results.
-	 * @param float       $responseTime  The response time in milliseconds
-	 * @param string      $executionType The execution type ('sync' or 'async')
+	 * @param array              $searchQuery The search query parameters.
+	 * @param SearchTrailOutcome $outcome     The finished outcome values of the search.
 	 *
 	 * @return SearchTrail The created search trail entity
 	 */
-	public function createSearchTrail(array $searchQuery, SearchTrail $outcome, float $responseTime, string $executionType = 'sync'): SearchTrail {
-		$outcome->setUuid(Uuid::v4()->toRfc4122());
-		$outcome->setCreated(new DateTime());
-		$outcome->setExecutionType($executionType);
-		$outcome->setResponseTime((int)round($responseTime));
-		return $this->recordSearch(searchTrail: $outcome, searchQuery: $searchQuery);
+	public function createSearchTrail(array $searchQuery, SearchTrailOutcome $outcome): SearchTrail {
+		$searchTrail = new SearchTrail();
+		$searchTrail->setResultCount($outcome->resultCount);
+		$searchTrail->setTotalResults($outcome->totalResults);
+		$searchTrail->setExecutionType($outcome->executionType);
+		$searchTrail->setResponseTime($outcome->responseTime);
+		return $this->recordSearch(searchTrail: $this->stamped(searchTrail: $searchTrail), searchQuery: $searchQuery);
 	}//end createSearchTrail()
+
+	/**
+	 * The trail with a fresh uuid and the current moment as its creation time.
+	 *
+	 * @param SearchTrail $searchTrail The unsaved trail.
+	 *
+	 * @return SearchTrail The same trail.
+	 */
+	private function stamped(SearchTrail $searchTrail): SearchTrail {
+		$searchTrail->setUuid(Uuid::v4()->toRfc4122());
+		$searchTrail->setCreated(new DateTime());
+		return $searchTrail;
+	}//end stamped()
 
 	/**
 	 * Complete a stamped trail with the search, the request and the user, size it and insert it.
@@ -318,7 +338,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 *     non_empty_searches: int}
 	 */
 	public function getSearchStatistics(?DateTime $from = null, ?DateTime $to = null): array {
-		return $this->statistics()->summary(from: $from, to: $to);
+		return $this->statistics()->summary(range: new CreatedRange(from: $from, to: $to));
 	}//end getSearchStatistics()
 
 	/**
@@ -334,7 +354,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 *     avg_results: float, avg_response_time: float}>
 	 */
 	public function getPopularSearchTerms(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array {
-		return $this->statistics()->popularTerms(limit: $limit, from: $from, to: $to);
+		return $this->statistics()->popularTerms(limit: $limit, range: new CreatedRange(from: $from, to: $to));
 	}//end getPopularSearchTerms()
 
 	/**
@@ -350,7 +370,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 *     avg_results: float, avg_response_time: float}>
 	 */
 	public function getSearchActivityByTime(string $interval = 'day', ?DateTime $from = null, ?DateTime $to = null): array {
-		return $this->statistics()->activityByTime(interval: $interval, from: $from, to: $to);
+		return $this->statistics()->activityByTime(interval: $interval, range: new CreatedRange(from: $from, to: $to));
 	}//end getSearchActivityByTime()
 
 	/**
@@ -366,7 +386,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 *     avg_results: float, avg_response_time: float}>
 	 */
 	public function getSearchStatisticsByRegisterSchema(?DateTime $from = null, ?DateTime $to = null): array {
-		return $this->statistics()->byRegisterSchema(from: $from, to: $to);
+		return $this->statistics()->byRegisterSchema(range: new CreatedRange(from: $from, to: $to));
 	}//end getSearchStatisticsByRegisterSchema()
 
 	/**
@@ -382,7 +402,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 *     avg_results: float, avg_response_time: float}>
 	 */
 	public function getUserAgentStatistics(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array {
-		return $this->statistics()->userAgents(limit: $limit, from: $from, to: $to);
+		return $this->statistics()->userAgents(limit: $limit, range: new CreatedRange(from: $from, to: $to));
 	}//end getUserAgentStatistics()
 
 	/**
@@ -396,7 +416,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @psalm-return int<0, max>
 	 */
 	public function getUniqueSearchTermsCount(?DateTime $from = null, ?DateTime $to = null): int {
-		return $this->statistics()->distinctCount(column: 'search_term', from: $from, to: $to);
+		return $this->statistics()->distinctCount(column: 'search_term', range: new CreatedRange(from: $from, to: $to));
 	}//end getUniqueSearchTermsCount()
 
 	/**
@@ -410,7 +430,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @psalm-return int<0, max>
 	 */
 	public function getUniqueUsersCount(?DateTime $from = null, ?DateTime $to = null): int {
-		return $this->statistics()->distinctCount(column: 'user', from: $from, to: $to);
+		return $this->statistics()->distinctCount(column: 'user', range: new CreatedRange(from: $from, to: $to));
 	}//end getUniqueUsersCount()
 
 	/**
@@ -422,7 +442,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @return float Average searches per session
 	 */
 	public function getAverageSearchesPerSession(?DateTime $from = null, ?DateTime $to = null): float {
-		return $this->statistics()->searchesPerSession(from: $from, to: $to);
+		return $this->statistics()->searchesPerSession(range: new CreatedRange(from: $from, to: $to));
 	}//end getAverageSearchesPerSession()
 
 	/**
@@ -436,7 +456,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @return float Average object views per session
 	 */
 	public function getAverageObjectViewsPerSession(?DateTime $from = null, ?DateTime $to = null): float {
-		return $this->statistics()->objectViewsPerSession(from: $from, to: $to);
+		return $this->statistics()->objectViewsPerSession(range: new CreatedRange(from: $from, to: $to));
 	}//end getAverageObjectViewsPerSession()
 
 	/**
@@ -466,56 +486,9 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 			// Return true if any rows were affected (i.e., any logs were deleted).
 			return $result > 0;
 		} catch (\Exception $e) {
-			// Log the error for debugging purposes.
-			$this->logger->error(
-				message: '[SearchTrailMapper] Failed to clear expired search trail logs: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'exception' => $e,
-				]
-			);
-
-			// Re-throw the exception so the caller knows something went wrong.
-			throw $e;
+			$this->rethrowLogged(failure: 'clear expired ' . self::TRAIL_NOUN . ' logs', exception: $e);
 		}//end try
 	}//end clearLogs()
-
-	/**
-	 * Clear all search trail logs, expired or not.
-	 *
-	 * The admin clear-all endpoint deletes every row; {@see clearLogs()} only
-	 * removes the expired ones.
-	 *
-	 * @return bool True if any logs were deleted, false otherwise
-	 *
-	 * @throws \Exception Database operation exceptions
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
-	 */
-	public function clearAllLogs(): bool {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->delete($this->getTableName());
-
-			$result = $qb->executeStatement();
-
-			return $result > 0;
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[SearchTrailMapper] Failed to clear all search trail logs: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'exception' => $e,
-				]
-			);
-
-			throw $e;
-		}//end try
-	}//end clearAllLogs()
 
 	/**
 	 * Match a search term against the search term, request uri and user agent.
@@ -796,58 +769,6 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 
 		$searchTrail->setSession($sessionId);
 	}//end setUserInformation()
-
-	/**
-	 * Set expiry dates for search trails based on retention period in milliseconds
-	 *
-	 * Updates the expires column for search trails based on their creation date plus the retention period.
-	 * Only affects search trails that don't already have an expiry date set.
-	 *
-	 * @param int $retentionMs Retention period in milliseconds
-	 *
-	 * @return int Number of search trails updated
-	 *
-	 * @throws \Exception Database operation exceptions
-	 */
-	public function setExpiryDate(int $retentionMs): int {
-		try {
-			// Convert milliseconds to seconds for DateTime calculation.
-			$retentionSeconds = intval($retentionMs / 1000);
-
-			// Get the query builder.
-			$qb = $this->db->getQueryBuilder();
-
-			// DATE_ADD is MySQL/MariaDB only. Now that the hourly LogCleanUpTask
-			// calls this, a MySQL-only expression would fail every hour on a
-			// PostgreSQL install, so the interval is spelled per platform.
-			$expiresExpression = sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds);
-			if ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
-				$expiresExpression = sprintf("created + INTERVAL '%d seconds'", $retentionSeconds);
-			}
-
-			// Update search trails that don't have an expiry date set.
-			$qb->update($this->getTableName())
-				->set('expires', $qb->createFunction($expiresExpression))
-				->where($qb->expr()->isNull('expires'));
-
-			// Execute the update and return number of affected rows.
-			return $qb->executeStatement();
-		} catch (\Exception $e) {
-			// Log the error for debugging purposes.
-			$this->logger->error(
-				message: '[SearchTrailMapper] Failed to set expiry dates for search trails: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'exception' => $e,
-				]
-			);
-
-			// Re-throw the exception so the caller knows something went wrong.
-			throw $e;
-		}//end try
-	}//end setExpiryDate()
 
 	/**
 	 * Normalise a caller-supplied sort direction to 'ASC' or 'DESC'.

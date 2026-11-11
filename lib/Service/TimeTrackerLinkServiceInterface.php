@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\TimeTrackerLink;
+use OCA\OpenRegister\Service\TimeTracker\TimeEntry;
 
 /**
  * The methods of TimeTrackerLinkService that callers outside its component use.
@@ -46,9 +47,8 @@ interface TimeTrackerLinkServiceInterface {
 	 * Idempotent: a duplicate link raises a 409 Exception. Entry metadata
 	 * (name/duration/billable/started_at) is cached at link time.
 	 *
-	 * @param LinkTarget $target    The object to link to.
-	 * @param string     $entryType Entry kind (`client`|`task`|`time`).
-	 * @param string     $id        Upstream entry uuid.
+	 * @param LinkTarget $target The object to link to.
+	 * @param TimeEntry  $entry  The entry kind (`client`|`task`|`time`) and its upstream uuid.
 	 *
 	 * @return TimeTrackerLink The persisted link row.
 	 *
@@ -58,7 +58,7 @@ interface TimeTrackerLinkServiceInterface {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the link-entry contract is owned by the integration-time-tracker capability.
 	 */
-	public function linkEntry(LinkTarget $target, string $entryType, string $id): TimeTrackerLink;
+	public function linkEntry(LinkTarget $target, TimeEntry $entry): TimeTrackerLink;
 
 	/**
 	 * Unlink an entry from an object.

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
+use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
 use OCP\IGroupManager;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
@@ -209,7 +210,7 @@ class StoreActionAuthorizerRefusalGoldenTest extends TestCase {
 	public function testInstallDecisionAndRefusalMessage(mixed $service, bool $expected, array $logged): void {
 		$authorizer = $this->authorizer($service, $this->groupManager());
 
-		$this->assertSame($expected, $authorizer->can('my-app', 'catalog.instantiate', $this->user('alice')));
+		$this->assertSame($expected, $authorizer->permits(new StoreActionCheck('my-app', 'catalog.instantiate', $this->user('alice'))));
 		$this->assertSame($logged, $this->errors);
 	}
 

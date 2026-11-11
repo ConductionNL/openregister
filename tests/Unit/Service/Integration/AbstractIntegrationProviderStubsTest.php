@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -65,7 +66,7 @@ class AbstractIntegrationProviderStubsTest extends TestCase {
 				return true;
 			}
 
-			public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+			public function list(ObjectRef $ref, array $filters = []): array {
 				return [];
 			}
 		};
@@ -99,10 +100,10 @@ class AbstractIntegrationProviderStubsTest extends TestCase {
 				'Provider probe does not support delete()',
 			],
 			[
-				$this->messageOf(call: static fn () => $provider->get('r', 's', 'o', 'e')),
-				$this->messageOf(call: static fn () => $provider->create('r', 's', 'o', [])),
-				$this->messageOf(call: static fn () => $provider->update('r', 's', 'o', 'e', [])),
-				$this->messageOf(call: static fn () => $provider->delete('r', 's', 'o', 'e')),
+				$this->messageOf(call: static fn () => $provider->get(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'e')),
+				$this->messageOf(call: static fn () => $provider->create(new ObjectRef(register: 'r', schema: 's', id: 'o'), [])),
+				$this->messageOf(call: static fn () => $provider->update(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'e', [])),
+				$this->messageOf(call: static fn () => $provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'e')),
 			]
 		);
 	}//end testEveryStubNamesTheProviderAndTheOperation()

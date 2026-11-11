@@ -33,8 +33,10 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -116,8 +118,8 @@ class ExampleSetParties extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a party'),
-				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'a party link'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a party', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a party link', required: self::REQUIRED)),
 				fn (): string => $rules->datesRefusal(data: $data, fields: ['validFrom', 'validUntil']),
 			]
 		);
@@ -137,7 +139,6 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function write(ExampleSetRow $row): array {
-		$app = $row->app;
 		$data = $row->data;
 		$objectUuid = (string) $data['objectUuid'];
 		$object     = $this->parties()->findUnscoped(uuid: $objectUuid);
@@ -146,7 +147,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 		}
 
 		try {
-			$this->import(app: $app, object: $object, data: $data);
+			$this->import(row: $row, object: $object);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
@@ -157,17 +158,16 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	/**
 	 * Link the party through the party role service.
 	 *
-	 * @param string               $app    The app that ships the fragment, recorded as the linker.
-	 * @param ObjectEntity         $object The object.
-	 * @param array<string, mixed> $data   The filled link fields.
+	 * @param ExampleSetRow $row    The link row: the app that ships the fragment, recorded as the linker, and the filled link fields.
+	 * @param ObjectEntity  $object The object.
 	 *
 	 * @return void
 	 */
-	private function import(string $app, ObjectEntity $object, array $data): void {
+	private function import(ExampleSetRow $row, ObjectEntity $object): void {
 		$this->roles()->importParty(
 			object: $object,
-			payload: array_diff_key($data, ['objectUuid' => true]),
-			linkedBy: $app
+			payload: array_diff_key($row->data, ['objectUuid' => true]),
+			linkedBy: $row->app
 		);
 	}//end import()
 
@@ -183,9 +183,11 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	public function lost(array $entry): bool {
 		try {
 			return $this->links()->findByObjectContactAndRole(
-				objectUuid: (string) $entry['objectUuid'],
-				contactUid: ContactLink::partyUid(partyUuid: (string) $entry['partyUuid']),
-				role: (string) $entry['role']
+				ref: new PersonLinkRef(
+					objectUuid: (string) $entry['objectUuid'],
+					contactUid: ContactLink::partyUid(partyUuid: (string) $entry['partyUuid']),
+					role: (string) $entry['role']
+				)
 			) === null;
 		} catch (Throwable) {
 			return true;
@@ -209,8 +211,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 		try {
 			$this->roles()->removeParty(
 				objectUuid: (string) $entry['objectUuid'],
-				partyUuid: (string) $entry['partyUuid'],
-				role: (string) $entry['role']
+				holding: new PartyHolding(partyUuid: (string) $entry['partyUuid'], role: (string) $entry['role'])
 			);
 		} catch (Throwable) {
 			return 'failed';

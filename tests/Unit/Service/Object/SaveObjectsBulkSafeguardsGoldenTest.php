@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -296,7 +297,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 	 */
 	private function built(array $args): SaveObjects {
 		return new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $args['objectEntityMapper'], schemaMapper: $args['schemaMapper'], registerMapper: $args['registerMapper'], saveHandler: $args['saveHandler']),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $args['registerMapper'], schemas: $args['schemaMapper'], tables: $args['objectEntityMapper']), saveHandler: $args['saveHandler']),
 			session: new BulkSaveSession(userSession: $args['userSession'], organisationService: $args['organisationService'], groupManager: ($args['groupManager'] ?? null)),
 			reporting: new BulkSaveReporting(logger: $args['logger']),
 			checks: new BulkRowChecks(permissionHandler: ($args['permissionHandler'] ?? null), validateHandler: ($args['validateHandler'] ?? null), rowRules: ($args['rowRules'] ?? null))
@@ -559,7 +560,8 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 	private function propertyRbac(array|string $mode): PropertyRbacHandler {
 		$rbac = $this->createMock(originalClassName: PropertyRbacHandler::class);
 		$rbac->method('getUnauthorizedProperties')->willReturnCallback(
-			function (...$args) use ($mode): array {
+			function (PropertyWriteCheck $write) use ($mode): array {
+				$args = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$this->calls[] = 'getUnauthorizedProperties '.json_encode([$args[1], $args[2], ($args[3] ?? false)]);
 				if (is_array($mode) === true) {
 					return $mode;
@@ -570,7 +572,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 		);
 		$rbac->method('collectOmittedProtectedProperties')->willReturn(['secret']);
 		$rbac->method('restoreWriteOnlyValues')->willReturnCallback(
-			static fn (...$args): array => ($args[0] + ['secret' => $args[1]['secret']])
+			static fn (...$args): array => ($args[0] + ['secret' => $args[1]->stored['secret']])
 		);
 
 		return $rbac;

@@ -31,8 +31,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
+use OCA\OpenRegister\Service\Flow\FieldAssignment;
 use OCA\OpenRegister\Service\Flow\FlowFieldPath;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -189,13 +193,14 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 * Provenance: each output item carries its own input's index, one in and
 	 * one out, so the chain back to the input that caused it stays intact.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The output items, one per input item.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$plan = new SetFieldsPlan(config: $config, context: $context, itemCount: count($items));
 
 		return $this->reshapeEach(plan: $plan, items: $items);
@@ -214,8 +219,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
 				json: $this->reshape(json: (array)($item[FlowItems::JSON] ?? []), plan: $plan->forItem(itemIndex: (int)$index)),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
@@ -341,8 +345,10 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 		foreach ($set as $field => $value) {
 			FlowFieldPath::assign(
 				json: $json,
-				path: $this->renderPath(path: (string)$field, json: $json),
-				value: FlowValueTemplate::render(value: $value, json: $json)
+				write: new FieldAssignment(
+					path: $this->renderPath(path: (string)$field, json: $json),
+					value: FlowValueTemplate::render(value: $value, json: $json)
+				)
 			);
 		}
 
@@ -377,8 +383,10 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 		foreach ($plan->compute as $field => $logic) {
 			FlowFieldPath::assign(
 				json: $json,
-				path: $this->renderPath(path: (string)$field, json: $json),
-				value: FlowExpression::evaluate(logic: $logic, data: $this->expressionData(json: $json, plan: $plan))
+				write: new FieldAssignment(
+					path: $this->renderPath(path: (string)$field, json: $json),
+					value: FlowExpression::evaluate(logic: $logic, data: $this->expressionData(json: $json, plan: $plan))
+				)
 			);
 		}
 
@@ -395,11 +403,13 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function expressionData(array $json, SetFieldsPlan $plan): array {
-		return FlowExpression::dataFor(
+		return FlowExpression::documentFor(
 			item: [FlowItems::JSON => $json],
-			itemIndex: $plan->itemIndex(),
-			itemCount: $plan->itemCount,
-			context: $plan->context
+			options: new FlowExpressionDataOptions(
+				itemIndex: $plan->itemIndex(),
+				itemCount: $plan->itemCount,
+				context: $plan->context
+			)
 		);
 
 	}//end expressionData()

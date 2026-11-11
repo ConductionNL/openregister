@@ -66,10 +66,12 @@ final class SchemasControllerFactory {
 			$request,
 			new \OCA\OpenRegister\Controller\Support\SchemasControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\RegisterMappers(
-					registerMapper: $registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+						registers: $registerMapper,
+						schemas: $schemaMapper,
+						tables: $objectEntityMapper,
+					),
 					auditTrailMapper: $auditTrailMapper,
-					objectEntityMapper: $objectEntityMapper,
 				),
 				schemas: new \OCA\OpenRegister\Controller\Support\SchemaServices(
 					schemaCacheService: $schemaCacheService,

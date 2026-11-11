@@ -17,6 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -51,8 +52,8 @@ class OutdatedTranslationsTest extends TestCase {
 		$this->projection->method('resolveSourceLanguage')->willReturn('nl');
 		$this->status = $this->createMock(TranslationStatusService::class);
 		$this->status->method('markDerivedTranslationsOutdated')->willReturnCallback(
-			function (string $objectUuid, string $property, string $sourceLanguage): int {
-				$this->marked[] = [$objectUuid, $property, $sourceLanguage];
+			function (TranslationSlot $source): int {
+				$this->marked[] = [$source->objectUuid, $source->property, $source->language];
 				return 1;
 			}
 		);

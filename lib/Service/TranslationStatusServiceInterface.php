@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationSlot;
 
 /**
  * The methods of TranslationStatusService that callers outside its component use.
@@ -39,10 +40,8 @@ interface TranslationStatusServiceInterface {
 	 * translator's UI promotes draft → human_reviewed). The translator
 	 * uid is derived from the active session.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param string $property The property name.
-	 * @param string $language The language code.
-	 * @param string $status The new workflow status.
+	 * @param TranslationSlot $slot   The object, property and language of the slot.
+	 * @param string          $status The new workflow status.
 	 *
 	 * @return Translation The persisted translation row.
 	 *
@@ -50,7 +49,7 @@ interface TranslationStatusServiceInterface {
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
-	public function setStatus(string $objectUuid, string $property, string $language, string $status): Translation;
+	public function setStatus(TranslationSlot $slot, string $status): Translation;
 
 	/**
 	 * Per-object completeness ratio per language.
@@ -72,27 +71,13 @@ interface TranslationStatusServiceInterface {
 	/**
 	 * Search translation rows.
 	 *
-	 * @param string|null $query Optional full-text query.
-	 * @param string|null $language Optional language filter.
-	 * @param string|null $status Optional status filter.
-	 * @param string|null $objectUuid Optional object UUID filter.
-	 * @param int $limit Maximum number of results.
-	 * @param string|null $sourceLanguage Optional source-language filter.
-	 * @param bool $isOutOfDate When true, restrict to status=outdated.
+	 * @param TranslationSearch $search The filter, full-text query, limit and outdated restriction.
 	 *
 	 * @return array<string, mixed>[]
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
-	public function search(
-		?string $query = null,
-		?string $language = null,
-		?string $status = null,
-		?string $objectUuid = null,
-		int $limit = 100,
-		?string $sourceLanguage = null,
-		bool $isOutOfDate = false,
-	): array;
+	public function search(TranslationSearch $search): array;
 
 	/**
 	 * Search translation rows and attach the source-language value side-by-side.
@@ -101,25 +86,11 @@ interface TranslationStatusServiceInterface {
 	 * editorial tooling can render the source vs target value pair without
 	 * a follow-up round trip.
 	 *
-	 * @param string|null $query Optional full-text query.
-	 * @param string|null $language Optional language filter.
-	 * @param string|null $status Optional status filter.
-	 * @param string|null $objectUuid Optional object UUID filter.
-	 * @param int $limit Maximum number of results.
-	 * @param string|null $sourceLanguage Optional source-language filter.
-	 * @param bool $isOutOfDate When true, restrict to status=outdated.
+	 * @param TranslationSearch $search The filter, full-text query, limit and outdated restriction.
 	 *
 	 * @return array<string, mixed>[] Each row carries an extra `sourceValue` field.
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
-	public function searchWithSourceValues(
-		?string $query = null,
-		?string $language = null,
-		?string $status = null,
-		?string $objectUuid = null,
-		int $limit = 100,
-		?string $sourceLanguage = null,
-		bool $isOutOfDate = false,
-	): array;
+	public function searchWithSourceValues(TranslationSearch $search): array;
 }//end interface

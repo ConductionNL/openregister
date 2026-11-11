@@ -183,34 +183,55 @@ class IntegrationRegistry implements IntegrationCatalogueInterface, PageWidgetRe
 	 */
 	public function addProvider(IntegrationProvider $provider): bool {
 		$id = $provider->getId();
-		if (isset($this->providers[$id]) === true) {
-			$this->logger->warning(
-				sprintf(
-					'[IntegrationRegistry] duplicate provider id "%s" — keeping first registration',
-					$id
-				)
-			);
-			return false;
-		}
-
-		// External providers MUST declare an OpenConnector source —
-		// the registry rejects mis-configured externals so the
-		// failure surfaces at boot, not on first call.
-		if ($provider->getStorageStrategy() === 'external'
-			&& $provider->getOpenConnectorSource() === null
-		) {
-			$this->logger->warning(
-				sprintf(
-					'[IntegrationRegistry] provider "%s" declares storage=external but no OpenConnector source — skipping',
-					$id
-				)
-			);
+		$refusal = $this->duplicateProviderRefusal(id: $id) ?? self::sourcelessExternalRefusal(provider: $provider);
+		if ($refusal !== null) {
+			$this->logger->warning($refusal);
 			return false;
 		}
 
 		$this->providers[$id] = $provider;
 		return true;
 	}//end addProvider()
+
+	/**
+	 * Refuse a provider id that is already registered: the first registration is kept.
+	 *
+	 * @param string $id The provider id.
+	 *
+	 * @return string|null The warning, or null when the id is new.
+	 */
+	private function duplicateProviderRefusal(string $id): ?string {
+		if (isset($this->providers[$id]) === false) {
+			return null;
+		}
+
+		return sprintf(
+			'[IntegrationRegistry] duplicate provider id "%s" — keeping first registration',
+			$id
+		);
+	}//end duplicateProviderRefusal()
+
+	/**
+	 * Refuse an external provider without an OpenConnector source.
+	 *
+	 * External providers MUST declare an OpenConnector source — the
+	 * registry rejects mis-configured externals so the failure surfaces
+	 * at boot, not on first call.
+	 *
+	 * @param IntegrationProvider $provider The provider.
+	 *
+	 * @return string|null The warning, or null when the provider is not external or names its source.
+	 */
+	private static function sourcelessExternalRefusal(IntegrationProvider $provider): ?string {
+		if ($provider->getStorageStrategy() !== 'external' || $provider->getOpenConnectorSource() !== null) {
+			return null;
+		}
+
+		return sprintf(
+			'[IntegrationRegistry] provider "%s" declares storage=external but no OpenConnector source — skipping',
+			$provider->getId()
+		);
+	}//end sourcelessExternalRefusal()
 
 	/**
 	 * Replace the entire provider set in one call (test seam).
@@ -319,32 +340,66 @@ class IntegrationRegistry implements IntegrationCatalogueInterface, PageWidgetRe
 	 */
 	public function registerPageWidget(array $descriptor): bool {
 		$id = (string)($descriptor['id'] ?? '');
-		if ($id === '') {
-			$this->logger->warning('[IntegrationRegistry] page widget rejected — missing id');
+		$refusal = self::missingWidgetIdRefusal(id: $id) ?? $this->duplicateWidgetRefusal(id: $id);
+		if ($refusal !== null) {
+			$this->logger->warning($refusal);
 			return false;
 		}
 
-		if (isset($this->pageWidgets[$id]) === true) {
-			$this->logger->warning(
-				sprintf(
-					'[IntegrationRegistry] duplicate page widget id "%s" — keeping first registration',
-					$id
-				)
-			);
-			return false;
+		$this->pageWidgets[$id] = self::normalisedWidget(id: $id, descriptor: $descriptor);
+		return true;
+	}//end registerPageWidget()
+
+	/**
+	 * Refuse a page widget without an id.
+	 *
+	 * @param string $id The widget id.
+	 *
+	 * @return string|null The warning, or null when the id is set.
+	 */
+	private static function missingWidgetIdRefusal(string $id): ?string {
+		if ($id !== '') {
+			return null;
 		}
 
-		// Normalise the descriptor with declared defaults so consumers
-		// always see a complete shape.
-		$this->pageWidgets[$id] = [
+		return '[IntegrationRegistry] page widget rejected — missing id';
+	}//end missingWidgetIdRefusal()
+
+	/**
+	 * Refuse a page widget id that is already registered: the first registration is kept.
+	 *
+	 * @param string $id The widget id.
+	 *
+	 * @return string|null The warning, or null when the id is new.
+	 */
+	private function duplicateWidgetRefusal(string $id): ?string {
+		if (isset($this->pageWidgets[$id]) === false) {
+			return null;
+		}
+
+		return sprintf(
+			'[IntegrationRegistry] duplicate page widget id "%s" — keeping first registration',
+			$id
+		);
+	}//end duplicateWidgetRefusal()
+
+	/**
+	 * A page widget descriptor with its declared defaults, so consumers always see a complete shape.
+	 *
+	 * @param string               $id         The widget id.
+	 * @param array<string, mixed> $descriptor The widget as registered.
+	 *
+	 * @return array{id: string, type: string, title: mixed, providerId: mixed, config: array}
+	 */
+	private static function normalisedWidget(string $id, array $descriptor): array {
+		return [
 			'id' => $id,
 			'type' => (string)($descriptor['type'] ?? 'chart'),
 			'title' => ($descriptor['title'] ?? null),
 			'providerId' => ($descriptor['providerId'] ?? null),
 			'config' => (array)($descriptor['config'] ?? []),
 		];
-		return true;
-	}//end registerPageWidget()
+	}//end normalisedWidget()
 
 	/**
 	 * List every registered page-level widget descriptor.

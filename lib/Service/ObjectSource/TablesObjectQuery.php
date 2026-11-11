@@ -216,8 +216,19 @@ final class TablesObjectQuery {
 			$sort = self::sortFromText(sort: $sort);
 		}
 
+		return self::fieldDirections(sort: (array)$sort);
+	}//end sortFields()
+
+	/**
+	 * The sort entries as field => 1 (ascending) or -1 (descending), without an empty field.
+	 *
+	 * @param array $sort The sort entries.
+	 *
+	 * @return array<string, int>
+	 */
+	private static function fieldDirections(array $sort): array {
 		$fields = [];
-		foreach ((array)$sort as $key => $value) {
+		foreach ($sort as $key => $value) {
 			[$field, $direction] = self::sortEntry(key: $key, value: $value);
 			$fields[$field] = 1;
 			if (strtoupper($direction) === 'DESC') {
@@ -228,7 +239,7 @@ final class TablesObjectQuery {
 		unset($fields['']);
 
 		return $fields;
-	}//end sortFields()
+	}//end fieldDirections()
 
 	/**
 	 * Read a textual sort: JSON, a field, or a field with a leading `-` for descending.

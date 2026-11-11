@@ -166,27 +166,20 @@ trait OrganisationFilterTrait {
 	/**
 	 * Apply filter when no active organisation is set
 	 *
-	 * @param IQueryBuilder $qb                 Query builder
-	 * @param mixed         $user               User object
-	 * @param bool          $allowNullOrg       Allow NULL organisation
-	 * @param string        $organisationColumn Organisation column name
+	 * @param IQueryBuilder $qb    Query builder
+	 * @param array         $scope The scope (see the trait's docblock) with the session user under `user`.
 	 *
 	 * @return void
 	 */
-	private function applyNoActiveOrgFilter(
-		IQueryBuilder $qb,
-		mixed $user,
-		bool $allowNullOrg,
-		string $organisationColumn,
-	): void {
-		if ($this->adminOverrides(user: $user) === true) {
+	private function applyNoActiveOrgFilter(IQueryBuilder $qb, array $scope): void {
+		if ($this->adminOverrides(user: $scope['user']) === true) {
 			return;
 		}
 
 		// Allow null organisation entities when explicitly permitted by the caller.
 		// This is used for system-wide resources like Registers and Schemas.
-		if ($allowNullOrg === true) {
-			$qb->andWhere($qb->expr()->isNull($organisationColumn));
+		if ($scope['allowNullOrg'] === true) {
+			$qb->andWhere($qb->expr()->isNull($scope['organisationColumn']));
 			return;
 		}
 
@@ -207,16 +200,15 @@ trait OrganisationFilterTrait {
 	 * the WHERE clause.
 	 *
 	 * @param IQueryBuilder $qb    Query builder
-	 * @param mixed         $user  User object
-	 * @param array         $scope The scope (see the trait's docblock).
+	 * @param array         $scope The scope (see the trait's docblock) with the session user under `user`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	private function applyActiveOrgFilter(IQueryBuilder $qb, mixed $user, array $scope): void {
-		if ($this->adminOverrides(user: $user) === true) {
-			$this->logAdminOverride(user: $user);
+	private function applyActiveOrgFilter(IQueryBuilder $qb, array $scope): void {
+		if ($this->adminOverrides(user: $scope['user']) === true) {
+			$this->logAdminOverride(user: $scope['user']);
 			return;
 		}
 
@@ -301,8 +293,7 @@ trait OrganisationFilterTrait {
 			$userId = $user->getUID();
 		}
 
-		$this->logRedacted(
-			level: 'info',
+		$this->infoRedacted(
 			message: '[MultiTenancyTrait] Admin override: cross-organisation access granted',
 			context: ['type' => 'cross_tenant_access_admin_override', 'actor' => $userId]
 		);

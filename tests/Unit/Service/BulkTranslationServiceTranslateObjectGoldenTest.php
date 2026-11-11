@@ -17,10 +17,12 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\Translation\LanguagePair;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Service\TranslationStores;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\ObjectTranslationRequest;
 
 /**
  * Records the provider, sidecar and log calls and the result of translateObject(), per scenario,
@@ -50,7 +52,8 @@ class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 	private function service(array $s): BulkTranslationService {
 		$provider = $this->createMock(TranslationProviderInterface::class);
 		$provider->method('getIdentifier')->willReturn('fake');
-		$provider->method('translate')->willReturnCallback(function (string $text, string $from, string $to) {
+		$provider->method('translate')->willReturnCallback(function (string $text, LanguagePair $pair) {
+			[$from, $to]   = [$pair->fromLong, $pair->toLong];
 			$this->calls[] = ['translate', $text, $from, $to];
 			if ($text === 'boom') {
 				throw new Exception('provider down');
@@ -129,7 +132,7 @@ class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 		$object->setSchema('7');
 		$object->setObject($s['data']);
 
-		$result = $this->service($s)->translateObject($object, $s['from'], $s['to'], $s['only']);
+		$result = $this->service($s)->translate(new ObjectTranslationRequest($object, $s['from'], $s['to']), $s['only']);
 		$this->calls[] = ['result', $result];
 
 		$file = __DIR__ . '/fixtures/bulk-translation-object-golden.json';

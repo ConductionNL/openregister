@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -60,7 +61,7 @@ class SetFieldsNodeTemplatedPathTest extends TestCase {
 	 * @return array<string,mixed> The resulting json.
 	 */
 	private function apply(array $config, array $record): array {
-		$out = $this->node->execute([FlowItems::item(json: $record)], $config, []);
+		$out = $this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: $record)], config: $config, context: []));
 
 		return (array)$out[0][FlowItems::JSON];
 	}//end apply()
@@ -105,14 +106,14 @@ class SetFieldsNodeTemplatedPathTest extends TestCase {
 	 * @return void
 	 */
 	public function testTwoItemsWriteToDifferentPositionsFromOneConfiguration(): void {
-		$out = $this->node->execute(
-			[
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [
 				FlowItems::item(json: ['stage' => 'build']),
 				FlowItems::item(json: ['stage' => 'ship']),
 			],
-			['set' => ['stages.{{stage}}.ok' => true]],
-			[]
-		);
+			config: ['set' => ['stages.{{stage}}.ok' => true]],
+			context: []
+		));
 
 		$this->assertTrue($out[0][FlowItems::JSON]['stages']['build']['ok']);
 		$this->assertTrue($out[1][FlowItems::JSON]['stages']['ship']['ok']);

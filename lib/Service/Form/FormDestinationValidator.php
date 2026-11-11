@@ -112,19 +112,19 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	/**
 	 * Every problem with a mapping into a destination schema.
 	 *
-	 * @param array<string, mixed> $mapping The mapping: `fields` and `fixed`.
-	 * @param Schema               $schema  The destination schema.
-	 * @param array<string, mixed> $options `audience`: `public` or `authenticated` when the form is not internal.
+	 * @param array<string, mixed> $mapping     The mapping: `fields` and `fixed`.
+	 * @param FormDestination      $destination The destination schema, and the audience when the form is not internal.
 	 *
 	 * @return array<int, array{field?: string, property: string, code: string, message: string}> The findings; empty when valid.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-openregister-must-judge-a-forms-mapping-against-its-destination-schema
 	 */
-	public function validate(array $mapping, Schema $schema, array $options = []): array {
+	public function validate(array $mapping, FormDestination $destination): array {
+		$schema = $destination->schema;
 		$fields = $this->fieldsOf(mapping: $mapping);
 		$fixed = $this->fixedOf(mapping: $mapping);
 		$findings = array_merge(
-			$this->destinationFindings(schema: $schema, audience: (string)($options['audience'] ?? '')),
+			$this->destinationFindings(schema: $schema, audience: (string)($destination->audience ?? '')),
 			$this->allFieldFindings(fields: $fields, schema: $schema),
 			$this->allFixedFindings(fixed: $fixed, schema: $schema)
 		);

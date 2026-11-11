@@ -29,6 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
+use OCA\OpenRegister\Service\Rbac\OwnershipHandover;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\MapperBackedSchemaCatalog;
 use OCA\OpenRegister\Controller\ObjectOwnershipController;
 use OCA\OpenRegister\Controller\Support\ObjectOwnershipControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -95,15 +98,13 @@ class ObjectOwnershipControllerA24GoldenTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		return new ObjectOwnershipController(
-			appName: 'openregister',
 			request: $request,
 			services: new ObjectOwnershipControllerServices(
 				objectService: $objects,
-				registerMapper: $registers,
-				schemaMapper: $schemas,
-				ownership: $this->ownership
-			),
-			logger: $this->logger
+				catalog: new MapperBackedSchemaCatalog(registers: $registers, schemas: $schemas),
+				ownership: $this->ownership,
+				logger: $this->logger
+			)
 		);
 	}
 
@@ -140,7 +141,7 @@ class ObjectOwnershipControllerA24GoldenTest extends TestCase {
 
 	public function testClaimOutcomes(): void {
 		$this->params = ['cascade' => 'true'];
-		$this->ownership->method('claim')->with($this->anything(), $this->anything(), $this->anything(), true)->willReturnOnConsecutiveCalls(
+		$this->ownership->method('claim')->with($this->anything(), true)->willReturnOnConsecutiveCalls(
 			['owner' => 'me'],
 			$this->throwException(new NotAuthorizedException('Not yours')),
 			$this->throwException(new \InvalidArgumentException('bad'))
@@ -166,7 +167,7 @@ class ObjectOwnershipControllerA24GoldenTest extends TestCase {
 
 	public function testAssignOutcomes(): void {
 		$this->params = ['owner' => 'bob', 'cascade' => 1];
-		$this->ownership->method('assign')->with($this->anything(), $this->anything(), $this->anything(), 'bob', true)->willReturnOnConsecutiveCalls(
+		$this->ownership->method('assign')->with($this->anything(), new OwnershipHandover(newOwner: 'bob', cascade: true))->willReturnOnConsecutiveCalls(
 			['owner' => 'bob'],
 			$this->throwException(new NotAuthorizedException('Admins only')),
 			$this->throwException(new \InvalidArgumentException('No such user')),
@@ -183,7 +184,7 @@ class ObjectOwnershipControllerA24GoldenTest extends TestCase {
 
 	public function testSetOwnerGroupOutcomes(): void {
 		$this->params = ['ownerGroup' => 7];
-		$this->ownership->expects($this->exactly(5))->method('setOwnerGroup')->willReturnOnConsecutiveCalls(
+		$this->ownership->expects($this->exactly(5))->method('setOwnerGroupFor')->willReturnOnConsecutiveCalls(
 			['ownerGroup' => 'staff'],
 			['other' => true],
 			$this->throwException(new NotAuthorizedException('Not yours')),
@@ -217,7 +218,7 @@ class ObjectOwnershipControllerA24GoldenTest extends TestCase {
 
 	public function testReassignOutcomes(): void {
 		$this->params = ['owner' => 'bob', 'objects' => ['k' => 'a', 'l' => 'b'], 'cascade' => 'no'];
-		$this->ownership->method('reassignMany')->with(['a', 'b'], 'bob', false)->willReturnOnConsecutiveCalls(
+		$this->ownership->method('reassign')->with(['a', 'b'], new OwnershipReassignment(newOwner: 'bob', cascade: false))->willReturnOnConsecutiveCalls(
 			['moved' => ['a', 'b']],
 			$this->throwException(new NotAuthorizedException('Admins only')),
 			$this->throwException(new \InvalidArgumentException('No such user')),
@@ -239,9 +240,9 @@ class ObjectOwnershipControllerA24GoldenTest extends TestCase {
 	 */
 	public function testCascadeSpellings(): void {
 		$seen = [];
-		$this->ownership->method('reassignMany')->willReturnCallback(
-			function (array $identifiers, string $newOwner, bool $cascade) use (&$seen): array {
-				$seen[] = $cascade;
+		$this->ownership->method('reassign')->willReturnCallback(
+			function (array $identifiers, OwnershipReassignment $reassignment) use (&$seen): array {
+				$seen[] = $reassignment->cascade;
 				return [];
 			}
 		);

@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -70,6 +71,9 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that a save cannot reach a draft its caller cannot read.
@@ -90,7 +94,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindScope
- * @uses \OCA\OpenRegister\Service\Object\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses   \OCA\OpenRegister\Service\Object\SaveAccessRequest
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
@@ -202,7 +206,7 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willReturn(new ValidationResult(null));
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -241,7 +245,7 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end setUp()
 
 	/**
@@ -340,7 +344,10 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		$this->checks = [];
 		$handler = $this->createMock(PermissionHandler::class);
 		$handler->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): void {
+			function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true): void {
+				$userId = $options->userId;
+				$objectOwner = $options->objectOwner;
+				$object = $options->object;
 				$this->checks[] = [$action, $userId, $objectOwner, $_rbac, $object?->getUuid()];
 				if ($this->updateNeedsOwner === true && $action === 'update' && ($userId ?? 'mallory') !== $objectOwner) {
 					throw new NotAuthorizedException(message: 'no update');
@@ -361,9 +368,7 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		[$register, $schema] = $this->scope();
 		$this->service->saveObject(
 			object: ['subject' => 'changed'],
-			register: $register,
-			schema: $schema,
-			uuid: 'draft-1',
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: 'draft-1'),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -436,7 +441,10 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		);
 		[$register, $schema] = $this->scope();
 
-		$this->service->saveObject(object: ['subject' => 'x'], register: $register, schema: $schema, uuid: '1');
+		$this->service->saveObject(
+			object: ['subject' => 'x'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '1')
+		);
 
 		$this->assertSame('uuid-b', $this->savedArgument(name: 'uuid'));
 		$this->assertFalse($this->savedArgument(name: 'failIfExists'));
@@ -467,7 +475,10 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		);
 		[$register, $schema] = $this->scope();
 
-		$this->service->saveObject(object: ['subject' => 'x'], register: $register, schema: $schema, uuid: '7');
+		$this->service->saveObject(
+			object: ['subject' => 'x'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '7')
+		);
 
 		$this->assertSame('hidden-7', $this->savedArgument(name: 'uuid'));
 	}//end testAHiddenRowsWriteContinuesWithItsUuid()

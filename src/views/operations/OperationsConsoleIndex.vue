@@ -334,6 +334,19 @@ import { pageShellComponents } from '../pageShell.js'
  *
  * @spec openspec/specs/operations-console/spec.md
  */
+/**
+ * Read the console, the bulk jobs and the rule runs at once.
+ *
+ * @return {Promise<Array<object>>} The three responses, in that order
+ */
+function fetchConsole() {
+	return Promise.all([
+		axios.get(generateUrl('/apps/openregister/api/operations/console')),
+		axios.get(generateUrl('/apps/openregister/api/operations/jobs')),
+		axios.get(generateUrl('/apps/openregister/api/operations/rule-runs')),
+	])
+}
+
 export default {
 	name: 'OperationsConsoleIndex',
 
@@ -584,27 +597,8 @@ export default {
 			this.error = ''
 
 			try {
-				const [console_, jobs, ruleRuns] = await Promise.all([
-					axios.get(
-						generateUrl('/apps/openregister/api/operations/console'),
-					),
-					axios.get(generateUrl('/apps/openregister/api/operations/jobs')),
-					axios.get(
-						generateUrl('/apps/openregister/api/operations/rule-runs'),
-					),
-				])
-
-				this.panes = console_.data.panes || []
-				this.windowHours = (console_.data.window || {}).hours || 24
-				this.bulkJobs = jobs.data.results || []
-				this.unobserved = jobs.data.unobserved || []
-				this.rulesHoldingAnError = ruleRuns.data.holdingAnError || []
-
-				await Promise.all([
-					this.loadRuns(),
-					this.loadMaintenance(),
-					this.loadFacts(),
-				])
+				this.showConsole(await fetchConsole())
+				await this.loadPanes()
 			} catch {
 				this.error = t(
 					'openregister',
@@ -613,6 +607,36 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Fill the panes, the job rows and the rules holding an error from
+		 * the console, jobs and rule-runs answers.
+		 *
+		 * @param {Array<object>} answers The console, jobs and rule-runs responses.
+		 * @return {void}
+		 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+		 */
+		showConsole([console_, jobs, ruleRuns]) {
+			this.panes = console_.data.panes || []
+			this.windowHours = (console_.data.window || {}).hours || 24
+			this.bulkJobs = jobs.data.results || []
+			this.unobserved = jobs.data.unobserved || []
+			this.rulesHoldingAnError = ruleRuns.data.holdingAnError || []
+		},
+
+		/**
+		 * Load the runs, maintenance and facts panes at once.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+		 */
+		async loadPanes() {
+			await Promise.all([
+				this.loadRuns(),
+				this.loadMaintenance(),
+				this.loadFacts(),
+			])
 		},
 
 		/**

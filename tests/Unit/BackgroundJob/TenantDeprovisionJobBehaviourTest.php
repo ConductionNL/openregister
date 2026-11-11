@@ -67,7 +67,7 @@ class TenantDeprovisionJobBehaviourTest extends TestCase {
 			);
 		}
 
-		$this->job = new TenantDeprovisionJob($this->createMock(ITimeFactory::class), $this->mapper, $this->lifecycle, $logger);
+		$this->job = new TenantDeprovisionJob(new \OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime($this->createMock(ITimeFactory::class), $this->createMock(\OCP\IAppConfig::class), $logger), new \OCA\OpenRegister\BackgroundJob\Support\TenantRecords($this->mapper, $this->createMock(\OCA\OpenRegister\Db\TenantUsageMapperInterface::class), $this->lifecycle));
 	}
 
 	private function runJob(): void {

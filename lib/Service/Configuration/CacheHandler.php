@@ -96,15 +96,18 @@ class CacheHandler {
 
 		// Step 3: Check if configurations are cached in session.
 		$cachedData = $this->session->get($sessionKey);
-		if ($cachedData !== null) {
-			// Configurations are cached - unserialize and return.
+		if (is_string($cachedData) === true) {
 			// SEC-SVC-10: restrict unserialize to the expected entity/value
 			// classes so a tampered session blob cannot instantiate arbitrary
 			// objects (PHP object injection).
-			return unserialize(
+			// NOSEMGREP: php.lang.security.unserialize-use.unserialize-use -- Only Configuration and DateTime may load; only a Configuration list is used.
+			$cached = unserialize(
 				$cachedData,
 				['allowed_classes' => [Configuration::class, \DateTime::class]]
 			);
+			if ($this->isConfigurationList(value: $cached) === true) {
+				return $cached;
+			}
 		}
 
 		// Step 4: Not cached - fetch configurations from database.
@@ -116,4 +119,25 @@ class CacheHandler {
 		// Step 6: Return fetched configurations.
 		return $configurations;
 	}//end getConfigurationsForActiveOrganisation()
+
+	/**
+	 * Whether a value read back from the session is a list of configurations.
+	 *
+	 * @param mixed $value The unserialized value.
+	 *
+	 * @return bool True when it is an array holding only Configuration entities.
+	 */
+	private function isConfigurationList(mixed $value): bool {
+		if (is_array($value) === false) {
+			return false;
+		}
+
+		foreach ($value as $configuration) {
+			if ($configuration instanceof Configuration === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end isConfigurationList()
 }//end class

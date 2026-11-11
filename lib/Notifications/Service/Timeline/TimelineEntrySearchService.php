@@ -40,9 +40,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
+use OCA\OpenRegister\Notifications\Db\TimelineSearch;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use Psr\Log\LoggerInterface;
@@ -103,38 +105,6 @@ class TimelineEntrySearchService {
 	}//end __construct()
 
 	/**
-	 * Entries matching a term, on objects the caller may read.
-	 *
-	 * @param string      $term       The search term.
-	 * @param string|null $visibility The visibility the caller is entitled to, or null for both.
-	 * @param string|null $kind       Narrow to one kind.
-	 * @param integer     $limit      How many hits to return.
-	 *
-	 * @return array<int, array{entry: TimelineEntry, object: ObjectEntity}> The hits, each naming its object.
-	 *
-	 * @spec openspec/changes/timeline-entries-are-records/specs/unified-search-provider/spec.md
-	 */
-	public function search(string $term, ?string $visibility = null, ?string $kind = null, int $limit = 25): array {
-		return $this->findHits(search: new EntrySearch(term: $term, visibility: $visibility, kind: $kind, limit: $limit));
-	}//end search()
-
-	/**
-	 * The entries a caller may read as a plain payload, each naming its object.
-	 *
-	 * @param string      $term       The search term.
-	 * @param string|null $visibility The visibility the caller is entitled to.
-	 * @param string|null $kind       Narrow to one kind.
-	 * @param integer     $limit      How many hits to return.
-	 *
-	 * @return array<int, array<string,mixed>> The hits.
-	 *
-	 * @spec openspec/changes/timeline-entries-are-records/specs/unified-search-provider/spec.md
-	 */
-	public function searchAsArrays(string $term, ?string $visibility = null, ?string $kind = null, int $limit = 25): array {
-		return $this->findHitsAsArrays(search: new EntrySearch(term: $term, visibility: $visibility, kind: $kind, limit: $limit));
-	}//end searchAsArrays()
-
-	/**
 	 * Entries matching a search, on objects the caller may read.
 	 *
 	 * @param EntrySearch $search The term, the visibility the caller is entitled to (null for both),
@@ -155,10 +125,12 @@ class TimelineEntrySearchService {
 			$normalised = $this->visibility->normalise(value: $search->visibility);
 		}
 
-		$candidates = $this->entries->search(
-			term: $trimmed,
-			scope: new TimelineEntryScope(objectUuids: null, kind: $search->kind, limit: ($search->limit * self::OVERFETCH)),
-			visibility: $normalised
+		$candidates = $this->entries->searchEntries(
+			search: new TimelineSearch(
+				term: $trimmed,
+				scope: new TimelineEntryScope(objectUuids: null, kind: $search->kind, limit: ($search->limit * self::OVERFETCH)),
+				visibility: $normalised
+			)
 		);
 
 		return $this->readableHits(candidates: $candidates, limit: $search->limit);
@@ -244,10 +216,9 @@ class TimelineEntrySearchService {
 		try {
 			$object = $this->objects->find(
 				id: $objectUuid,
+				options: new ObjectFindOptions(render: false, audit: false),
 				_rbac: true,
-				_multitenancy: true,
-				_render: false,
-				_audit: false
+				_multitenancy: true
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(

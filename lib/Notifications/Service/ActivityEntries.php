@@ -22,12 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service;
 
-use OCP\IURLGenerator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -39,19 +37,17 @@ class ActivityEntries {
 	/**
 	 * Constructor.
 	 *
-	 * @param IURLGenerator $urlGenerator The URL generator.
+	 * @param ObjectDeepLinks $links The URL generator and the owning app's detail route per register and schema.
 	 * @param LoggerInterface $logger The logger.
 	 * @param SchemaMapperInterface|null $schemaMapper Resolves the schema title an object activity names; null only in hand-built tests.
-	 * @param DeepLinkResolverInterface|null $deepLinks The owning app's detail route per register and schema.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function __construct(
-		private IURLGenerator $urlGenerator,
+		private ObjectDeepLinks $links,
 		private LoggerInterface $logger,
 		private ?SchemaMapperInterface $schemaMapper = null,
-		private ?DeepLinkResolverInterface $deepLinks = null,
 	) {
 	}//end __construct()
 
@@ -184,7 +180,7 @@ class ActivityEntries {
 			return $owned;
 		}
 
-		return $this->urlGenerator->getAbsoluteURL($owned);
+		return $this->links->urls->getAbsoluteURL($owned);
 	}//end buildObjectLink()
 
 	/**
@@ -197,12 +193,12 @@ class ActivityEntries {
 	private function ownedLink(ObjectEntity $object): string {
 		$registerId = $object->getRegister();
 		$schemaId   = $object->getSchema();
-		if ($this->deepLinks === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+		if ($this->links->resolver === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
 			return '';
 		}
 
 		$uuid = (string)$object->getUuid();
-		return (string)$this->deepLinks->resolveUrl(
+		return (string)$this->links->resolver->resolveUrl(
 			registerId: (int)$registerId,
 			schemaId: (int)$schemaId,
 			objectData: (($object->getObject() ?? []) + ['uuid' => $uuid, 'id' => $uuid])
@@ -215,7 +211,7 @@ class ActivityEntries {
 	 * @return string
 	 */
 	private function dashboardUrl(): string {
-		return $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
+		return $this->links->urls->linkToRouteAbsolute('openregister.dashboard.page');
 	}//end dashboardUrl()
 
 	/**

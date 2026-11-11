@@ -119,7 +119,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'an email link'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'an email link', fields: self::FIELDS)),
 				fn (): string => $this->neededRefusal(data: $data),
 				fn (): string => $this->mailRefusal(data: $data, users: $users),
 				fn (): string => $this->detailRefusal(data: $data),
@@ -225,15 +225,23 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
 	public function write(ExampleSetRow $row): array {
-		$app = $row->app;
-		$key = $row->key;
 		$data = $row->data;
 		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: (string) $data['object']);
 		if ($object === null) {
 			return ['error' => 'no object "'.(string) $data['object'].'" to link the mail to', 'entry' => null];
 		}
 
-		$link = $this->newLink(app: $app, key: $key, object: $object, data: $data);
+		return $this->insert(link: $this->newLink(row: $row, object: $object));
+	}//end write()
+
+	/**
+	 * Store the link, recording its id, or why the insert failed.
+	 *
+	 * @param EmailLink $link The link to store.
+	 *
+	 * @return array{error: string, entry: array{id: string}|null} The record entry, or why the write failed.
+	 */
+	private function insert(EmailLink $link): array {
 		try {
 			$saved = $this->mapper()->insert($link);
 		} catch (Throwable $e) {
@@ -241,25 +249,26 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 		}
 
 		return ['error' => '', 'entry' => ['id' => (string) $saved->getId()]];
-	}//end write()
+	}//end insert()
 
 	/**
 	 * The link of the mail to the object, as the set writes it.
 	 *
-	 * @param string               $app    The app that ships the fragment, the linker unless linkedBy names one.
-	 * @param string               $key    The link's key in the fragment.
-	 * @param ObjectEntity         $object The object.
-	 * @param array<string, mixed> $data   The filled link fields.
+	 * @param ExampleSetRow $row    The link row: the app that ships the fragment (the linker unless linkedBy names one),
+	 *                              the link's key in the fragment and the filled link fields.
+	 * @param ObjectEntity  $object The object.
 	 *
 	 * @return EmailLink
 	 */
-	private function newLink(string $app, string $key, ObjectEntity $object, array $data): EmailLink {
+	private function newLink(ExampleSetRow $row, ObjectEntity $object): EmailLink {
+		$app  = $row->app;
+		$data = $row->data;
 		$link = new EmailLink();
 		$link->setObjectUuid((string) $data['object']);
 		$link->setRegisterId((int) $object->getRegister());
 		$link->setSchemaId((int) $object->getSchema());
 		$this->setMail(link: $link, data: $data);
-		$link->setMetadata((string) json_encode($this->metadata(source: 'example-set:'.$app.'/'.$key, data: $data)));
+		$link->setMetadata((string) json_encode($this->metadata(source: 'example-set:'.$app.'/'.$row->key, data: $data)));
 		$link->setLinkedBy((string) ($data['linkedBy'] ?? $app));
 		$link->setLinkedAt(new DateTime());
 

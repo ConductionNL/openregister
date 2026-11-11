@@ -35,7 +35,7 @@ class SipMetsDocumentTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('u');
 		$contents = new SipContents();
-		$contents->addMetadataDocument(uuid: 'u', path: 'objects/u/mdto.xml', content: '<m/>');
+		$contents->listAsMetadata(uuid: 'u', row: $contents->addDocument(path: 'objects/u/mdto.xml', content: '<m/>'));
 
 		$mets = new SipMetsDocument(transferId: 't1');
 		$mets->addObject(

@@ -88,28 +88,61 @@ class ExportValueRenderer {
 		}
 
 		if (is_bool($value) === true) {
-			if ($value === true) {
-				return 'yes';
-			}
-
-			return 'no';
+			return $this->yesOrNo(value: $value);
 		}
 
 		if (is_array($value) === true) {
-			$parts = [];
-			foreach ($value as $item) {
-				$parts[] = $this->rendered(value: $item, column: $column);
-			}
-
-			return implode('; ', $parts);
+			return $this->renderedList(values: $value, column: $column);
 		}
 
 		if (is_object($value) === true) {
 			return (string)json_encode($value);
 		}
 
-		$scalar = (string)$value;
+		return $this->renderedScalar(scalar: (string)$value, column: $column);
+	}//end rendered()
 
+	/**
+	 * A boolean as a surface shows it.
+	 *
+	 * @param bool $value The value.
+	 *
+	 * @return string `yes` or `no`.
+	 */
+	private function yesOrNo(bool $value): string {
+		if ($value === true) {
+			return 'yes';
+		}
+
+		return 'no';
+	}//end yesOrNo()
+
+	/**
+	 * A list, each item rendered and joined with semicolons.
+	 *
+	 * @param array           $values The items.
+	 * @param ColumnRendering $column The column's schema property and the uuid to name map.
+	 *
+	 * @return string The cell.
+	 */
+	private function renderedList(array $values, ColumnRendering $column): string {
+		$parts = [];
+		foreach ($values as $item) {
+			$parts[] = $this->rendered(value: $item, column: $column);
+		}
+
+		return implode('; ', $parts);
+	}//end renderedList()
+
+	/**
+	 * A scalar as its resolved name, its enum label, or its written-out date or text.
+	 *
+	 * @param string          $scalar The value as text.
+	 * @param ColumnRendering $column The column's schema property and the uuid to name map.
+	 *
+	 * @return string The cell.
+	 */
+	private function renderedScalar(string $scalar, ColumnRendering $column): string {
 		if (isset($column->names[$scalar]) === true) {
 			return $column->names[$scalar];
 		}
@@ -120,7 +153,7 @@ class ExportValueRenderer {
 		}
 
 		return $this->formatDate(value: $scalar);
-	}//end rendered()
+	}//end renderedScalar()
 
 	/**
 	 * The administered label for a code list value, when the schema names one.

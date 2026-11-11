@@ -28,9 +28,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -50,6 +53,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
@@ -182,7 +188,7 @@ class MagicRbacHandlerGoldenTest extends TestCase {
 	public function testUnsafeAliasIsRefused(): void {
 		$handler = $this->handler(null, [], 'mysql', 'web');
 		$this->expectException(\InvalidArgumentException::class);
-		$handler->buildRbacPredicateForAlias(new Schema(), 'r; DROP');
+		$handler->buildRbacPredicateForAlias(new Schema(), new AliasedRows('r; DROP'));
 	}//end testUnsafeAliasIsRefused()
 
 	private function outcome(array $caller, string $authName, string $platform, string $mode): array {
@@ -205,10 +211,10 @@ class MagicRbacHandlerGoldenTest extends TestCase {
 
 		$run = function () use ($handler, $schema): array {
 			$out = [];
-			$out['sql read'] = $this->capture(fn () => $handler->buildRbacConditionsSql($schema, 'read', '', 'openregister_table_1_2'));
-			$out['sql update prefixed'] = $this->capture(fn () => $handler->buildRbacConditionsSql($schema, 'update', 'r.'));
-			$out['alias predicate'] = $this->capture(fn () => $handler->buildRbacPredicateForAlias($schema, 'rel', 'read'));
-			$out['row predicate'] = $this->capture(fn () => $handler->buildRbacRowPredicateSql($schema, 'read'));
+			$out['sql read'] = $this->capture(fn () => $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema, columnPrefix: ''))->forAction('read')->onTable('openregister_table_1_2')));
+			$out['sql update prefixed'] = $this->capture(fn () => $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema, columnPrefix: 'r.'))->forAction('update')));
+			$out['alias predicate'] = $this->capture(fn () => $handler->buildRbacPredicateForAlias($schema, new AliasedRows('rel', 'read')));
+			$out['row predicate'] = $this->capture(fn () => $handler->buildRbacRowPredicateSql((new RbacAccessCall(schema: $schema))->forAction('read')));
 			$out['qualifies read'] = $this->capture(fn () => $handler->callerQualifiesForAction($schema, 'read'));
 			$out['qualifies update'] = $this->capture(fn () => $handler->callerQualifiesForAction($schema, 'update'));
 			$out['bypasses multitenancy'] = $this->capture(fn () => $handler->hasConditionalRulesBypassingMultitenancy($schema, 'read'));
@@ -226,7 +232,7 @@ class MagicRbacHandlerGoldenTest extends TestCase {
 			$this->queryLog = [];
 
 			foreach (['read', 'update'] as $action) {
-				$thrown = $this->capture(fn () => $handler->applyRbacFilters($this->recordingBuilder(), $schema, $action, 'openregister_table_1_2'));
+				$thrown = $this->capture(fn () => $handler->applyRbacFilters((new RbacFilterCall(qb: $this->recordingBuilder(), schema: $schema))->forAction($action)->onTable('openregister_table_1_2')));
 				$out['qb ' . $action] = [$thrown, $this->queryLog];
 				$this->queryLog = [];
 			}
@@ -288,13 +294,9 @@ class MagicRbacHandlerGoldenTest extends TestCase {
 		}
 
 		$args = [
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->appConfig(),
-			$this->matcher($uid, $groups),
-			$this->container($uid, $platform),
-			$this->logger(),
+			new MagicMapperIdentity($userSession, $groupManager, $this->createMock(IUserManager::class)),
+			new MagicRbacSettings($this->appConfig()),
+			new MagicRbacSupport($this->matcher($uid, $groups), $this->container($uid, $platform), $this->logger()),
 		];
 
 		if ($mode === 'cli') {

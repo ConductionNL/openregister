@@ -49,26 +49,6 @@ class TalkChatExporter {
 	/**
 	 * The transcript of a conversation.
 	 *
-	 * @param string                           $conversation The conversation's name.
-	 * @param array<int, array<string, mixed>> $messages     Each: `actorDisplayName`, `timestamp` (unix), `message`.
-	 * @param string                           $savedBy      Who saved it.
-	 * @param DateTimeImmutable                $savedAt      When.
-	 *
-	 * @return array{filename: string, content: string} The file.
-	 *
-	 * @throws InvalidArgumentException When there are no messages or too many.
-	 *
-	 * @spec openspec/changes/files-leaf-save-to-object/specs/file-actions/spec.md#requirement-a-talk-action-saves-a-conversation-to-a-register-object
-	 */
-	public function export(string $conversation, array $messages, string $savedBy, DateTimeImmutable $savedAt): array {
-		return $this->exportTranscript(
-			request: new ChatTranscriptRequest(conversation: $conversation, messages: $messages, savedBy: $savedBy, savedAt: $savedAt)
-		);
-	}//end export()
-
-	/**
-	 * The transcript of a conversation.
-	 *
 	 * @param ChatTranscriptRequest $request The conversation, its messages, and who saved it when.
 	 *
 	 * @return array{filename: string, content: string} The file.

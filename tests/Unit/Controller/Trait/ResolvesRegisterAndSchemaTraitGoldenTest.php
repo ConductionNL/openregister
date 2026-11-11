@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -54,7 +55,7 @@ class ResolvesRegisterAndSchemaTraitGoldenTest extends TestCase {
 			use ResolvesRegisterAndSchemaTrait;
 
 			public function resolve(string $register, string $schema, ObjectOperationsInterface $service): array {
-				return $this->resolveRegisterAndSchema(register: $register, schema: $schema, objectService: $service);
+				return $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $service);
 			}//end resolve()
 		};
 	}//end consumer()

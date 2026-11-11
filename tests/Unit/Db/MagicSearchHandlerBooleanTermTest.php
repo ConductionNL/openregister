@@ -200,13 +200,7 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 	private function queryBuilderSql(string $search, ?array $properties = null): string {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyFullTextSearch');
 		$method->setAccessible(true);
-		$method->invoke(
-			$this->handler,
-			$this->makeQueryBuilder(),
-			$search,
-			$this->makeSchema(properties: $properties),
-			false
-		);
+		$method->invoke($this->handler, new TableFilterRun(qb: $this->makeQueryBuilder(), query: ['_search' => $search], table: new MagicReadTable(schema: $this->makeSchema(properties: $properties))), false);
 
 		return implode(' ', $this->captured);
 	}//end queryBuilderSql()

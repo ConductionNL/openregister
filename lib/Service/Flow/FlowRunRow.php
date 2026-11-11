@@ -63,19 +63,18 @@ class FlowRunRow {
 	 * dead-end, attribution, delegation — runs BEFORE this, so this method
 	 * deliberately performs no checks and assumes an attributed dispatch.
 	 *
-	 * @param string $flowId  The flow being dispatched.
-	 * @param array  $subject The subject object, when the trigger names one.
-	 * @param string $trigger What caused the dispatch.
-	 * @param array  $context The starting context.
+	 * @param string              $flowId  The flow being dispatched.
+	 * @param FlowRunQueueOptions $options The subject (when the trigger names one), what caused the dispatch and the
+	 *                                     starting context; its user is not read here.
 	 *
 	 * @return FlowRun The unsaved run.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	public function build(string $flowId, array $subject, string $trigger, array $context): FlowRun {
-		$run = $this->queued(flowId: $flowId, trigger: $trigger);
-		$run->setContext($context);
-		$this->placeSubject(run: $run, subject: $subject);
+	public function build(string $flowId, FlowRunQueueOptions $options): FlowRun {
+		$run = $this->queued(flowId: $flowId, trigger: $options->trigger);
+		$run->setContext($options->context);
+		$this->placeSubject(run: $run, subject: $options->subject);
 
 		return $this->attributedAndPinned(run: $run);
 	}//end build()

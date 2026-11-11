@@ -103,7 +103,7 @@ class BulkSafeguardSchemaResolutionTest extends TestCase {
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 
 		$this->service = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->schemaMapper, registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->createMock(MagicMapper::class)), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $this->createMock(IUserSession::class), organisationService: $this->createMock(OrganisationService::class), groupManager: $this->createMock(IGroupManager::class)),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $this->createMock(IEventDispatcher::class), auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
 			checks: new BulkRowChecks(permissionHandler: $this->permissionHandler, validateHandler: $this->createMock(ValidateObject::class))

@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\LinkedEntityService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\EntityLink;
 
 /**
  * Unit tests for LinkedEntityService.
@@ -119,7 +120,7 @@ class LinkedEntityServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessageMatches('/Invalid linked entity type/');
 
-		$this->service->addLink(objectUuid: 'some-uuid', type: 'unknown', entityId: 'e-1');
+		$this->service->addLink(objectUuid: 'some-uuid', link: new EntityLink('unknown', 'e-1'));
 	}//end testAddLinkThrowsForUnknownType()
 
 	/**
@@ -150,7 +151,7 @@ class LinkedEntityServiceTest extends TestCase {
 		$this->magicMapper->method('find')->willReturn($object);
 		$this->magicMapper->expects($this->once())->method('update');
 
-		$result = $this->service->addLink(objectUuid: 'obj-uuid', type: 'notes', entityId: 'note-1');
+		$result = $this->service->addLink(objectUuid: 'obj-uuid', link: new EntityLink('notes', 'note-1'));
 		$this->assertSame(['note-1'], $result);
 	}//end testAddLinkSucceedsForRegisteredType()
 
@@ -165,7 +166,7 @@ class LinkedEntityServiceTest extends TestCase {
 		$this->registry->method('listIds')->willReturn(['mail']);
 
 		$this->expectException(Exception::class);
-		$this->service->removeLink(objectUuid: 'u', type: 'invalid', entityId: 'e');
+		$this->service->removeLink(objectUuid: 'u', link: new EntityLink(type: 'invalid', entityId: 'e'));
 	}//end testRemoveLinkThrowsForUnknownType()
 
 	/**
@@ -179,7 +180,7 @@ class LinkedEntityServiceTest extends TestCase {
 		$this->registry->method('listIds')->willReturn(['files', 'notes', 'mail']);
 
 		try {
-			$this->service->addLink(objectUuid: 'u', type: 'unknown', entityId: 'e');
+			$this->service->addLink(objectUuid: 'u', link: new EntityLink('unknown', 'e'));
 			$this->fail('Expected Exception was not thrown');
 		} catch (Exception $e) {
 			$this->assertStringContainsString('files', $e->getMessage());

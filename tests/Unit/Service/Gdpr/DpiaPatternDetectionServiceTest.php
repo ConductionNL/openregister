@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace Unit\Service\Gdpr;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Gdpr\DpiaDetectionRequest;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
 use PHPUnit\Framework\TestCase;
 
@@ -65,7 +66,7 @@ class DpiaPatternDetectionServiceTest extends TestCase {
 			$this->case(uuid: 'c', type: 'access', scope: '  Camera   Data ', daysAgo: 20, flagged: true),
 			$this->case(uuid: 'd', type: 'erasure', scope: 'camera data', daysAgo: 5),
 		];
-		$groups = $this->service->detect(cases: $cases, config: self::CONFIG, now: $this->now);
+		$groups = $this->service->detect(request: new DpiaDetectionRequest(cases: $cases, config: self::CONFIG, now: $this->now));
 
 		$this->assertCount(1, $groups);
 		$this->assertSame('type=access|scope=camera data', $groups[0]['key']);
@@ -87,7 +88,7 @@ class DpiaPatternDetectionServiceTest extends TestCase {
 			$this->case(uuid: 'b', type: 'access', scope: 's', daysAgo: 15),
 			$this->case(uuid: 'c', type: 'access', scope: 's', daysAgo: 45),
 		];
-		$groups = $this->service->detect(cases: $cases, config: self::CONFIG, now: $this->now);
+		$groups = $this->service->detect(request: new DpiaDetectionRequest(cases: $cases, config: self::CONFIG, now: $this->now));
 
 		// Only two cases inside the 30-day window — below the threshold of 3.
 		$this->assertSame([], $groups);
@@ -106,7 +107,7 @@ class DpiaPatternDetectionServiceTest extends TestCase {
 			$this->case(uuid: 'b', type: 'access', scope: 's', daysAgo: 2, flagged: true),
 			$this->case(uuid: 'c', type: 'access', scope: 's', daysAgo: 3, flagged: true),
 		];
-		$groups = $this->service->detect(cases: $cases, config: self::CONFIG, now: $this->now);
+		$groups = $this->service->detect(request: new DpiaDetectionRequest(cases: $cases, config: self::CONFIG, now: $this->now));
 
 		$this->assertCount(1, $groups);
 		$this->assertSame([], $groups[0]['unflaggedUuids']);
@@ -129,7 +130,7 @@ class DpiaPatternDetectionServiceTest extends TestCase {
 		foreach ([[], ['threshold' => 0, 'windowDays' => 30], ['threshold' => 3, 'windowDays' => 0]] as $config) {
 			$this->assertSame(
 				[],
-				$this->service->detect(cases: $cases, config: $config, now: $this->now)
+				$this->service->detect(request: new DpiaDetectionRequest(cases: $cases, config: $config, now: $this->now))
 			);
 		}
 
@@ -146,14 +147,10 @@ class DpiaPatternDetectionServiceTest extends TestCase {
 			$this->case(uuid: 'b', type: 'access', scope: 's', daysAgo: 2),
 		];
 
-		$strict = $this->service->detect(cases: $cases, config: self::CONFIG, now: $this->now);
+		$strict = $this->service->detect(request: new DpiaDetectionRequest(cases: $cases, config: self::CONFIG, now: $this->now));
 		$this->assertSame([], $strict);
 
-		$lowered = $this->service->detect(
-			cases: $cases,
-			config: array_merge(self::CONFIG, ['threshold' => 2]),
-			now: $this->now
-		);
+		$lowered = $this->service->detect(request: new DpiaDetectionRequest(cases: $cases, config: array_merge(self::CONFIG, ['threshold' => 2]), now: $this->now));
 		$this->assertCount(1, $lowered);
 
 	}//end testPackDrivenThreshold()

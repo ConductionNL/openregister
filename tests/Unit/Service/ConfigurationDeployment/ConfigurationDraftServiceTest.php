@@ -46,6 +46,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftTarget;
 
 final class ConfigurationDraftServiceTest extends TestCase {
 
@@ -145,7 +146,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		$store->expects($this->never())->method('write');
 		$store->expects($this->never())->method('remove');
 
-		$draft = $service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => false]);
+		$draft = $service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac')), ['enabled' => false]);
 
 		$this->assertSame('rbac', $draft->getConfigKey());
 		$this->assertSame(['enabled' => false], $draft->readDraftValue());
@@ -191,7 +192,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 			'openregister'
 		);
 
-		$draft = $service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => true]);
+		$draft = $service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac')), ['enabled' => true]);
 
 		$this->assertSame('draft-1', $draft->getUuid());
 		$this->assertSame(['enabled' => true], $draft->readDraftValue());
@@ -201,7 +202,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		[$service, $store] = $this->service($this->set());
 		$store->expects($this->never())->method('remove');
 
-		$draft = $service->draftRemoval('set-1', ConfigurationLayer::INSTANCE, null, 'rbac');
+		$draft = $service->draftRemoval(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac')));
 
 		// Unsetting a key and setting it to null are different acts, and the
 		// draft has to record which one it is: a rollback restores the
@@ -215,7 +216,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 	public function testDraftingAValueIsNotARemoval(): void {
 		[$service] = $this->service($this->set());
 
-		$draft = $service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => false]);
+		$draft = $service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac')), ['enabled' => false]);
 
 		$this->assertFalse($draft->getRemoves());
 	}//end testDraftingAValueIsNotARemoval()
@@ -226,7 +227,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 			new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac'), ['enabled' => true], true, new ConfigurationProvenance('dep-1'))
 		);
 
-		$draft = $service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => false]);
+		$draft = $service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac')), ['enabled' => false]);
 
 		$this->assertSame(
 			['set-1', ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => true], true, ['enabled' => false], false, 'author'],
@@ -250,7 +251,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 
 		foreach ([[ConfigurationLayer::INSTANCE, null, 'whatever'], [ConfigurationLayer::REGISTER, null, 'integration.mail']] as [$layer, $ref, $key]) {
 			try {
-				$service->draftRemoval('set-1', $layer, $ref, $key);
+				$service->draftRemoval(new ConfigurationDraftTarget('set-1', new ConfigurationAddress($layer, $ref, $key)));
 				$this->fail('the address should be refused');
 			} catch (DeploymentRefusedException $exception) {
 				$this->assertSame(DeploymentRefusedException::REASON_INVALID, $exception->getReason());
@@ -267,13 +268,13 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		[$service] = $this->service($this->set());
 
 		try {
-			$service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'rbac', 'not a shape');
+			$service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac')), 'not a shape');
 			$this->fail('a value of the wrong shape should be refused');
 		} catch (DeploymentRefusedException $exception) {
 			$this->assertSame(DeploymentRefusedException::REASON_INVALID, $exception->getReason());
 		}
 
-		$this->assertTrue($service->draftRemoval('set-1', ConfigurationLayer::INSTANCE, null, 'rbac')->getRemoves());
+		$this->assertTrue($service->draftRemoval(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac')))->getRemoves());
 	}//end testAValueIsShapeCheckedButARemovalIsNot()
 
 	public function testFourEyesAreRequired(): void {
@@ -319,7 +320,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		$this->expectException(DeploymentRefusedException::class);
 		$this->expectExceptionMessage('no longer takes values');
 
-		$service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => false]);
+		$service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac')), ['enabled' => false]);
 	}//end testADeployedSetTakesNoMoreValues()
 
 	public function testADeployedSetCannotBeDiscarded(): void {
@@ -337,7 +338,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		$this->expectException(DeploymentRefusedException::class);
 		$this->expectExceptionMessage('needs a reference');
 
-		$service->draftValue('set-1', ConfigurationLayer::REGISTER, null, 'integration.mail', ['relay' => 'x']);
+		$service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::REGISTER, null, 'integration.mail')), ['relay' => 'x']);
 	}//end testALowerLayerNeedsAReference()
 
 	public function testAnUndeclaredKeyIsRefusedAtDraftTime(): void {
@@ -346,7 +347,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		$this->expectException(DeploymentRefusedException::class);
 		$this->expectExceptionMessage('not a declared configuration key');
 
-		$service->draftValue('set-1', ConfigurationLayer::INSTANCE, null, 'whatever', 'x');
+		$service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'whatever')), 'x');
 	}//end testAnUndeclaredKeyIsRefusedAtDraftTime()
 
 	public function testAnInstanceSettingCannotBeSetAtTheRegisterLayer(): void {
@@ -355,7 +356,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		$this->expectException(DeploymentRefusedException::class);
 		$this->expectExceptionMessage('is an instance setting');
 
-		$service->draftValue('set-1', ConfigurationLayer::REGISTER, 'zaken', 'rbac', ['enabled' => false]);
+		$service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::REGISTER, 'zaken', 'rbac')), ['enabled' => false]);
 	}//end testAnInstanceSettingCannotBeSetAtTheRegisterLayer()
 
 	public function testASetNeedsAName(): void {

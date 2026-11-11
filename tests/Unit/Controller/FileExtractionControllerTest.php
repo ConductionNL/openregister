@@ -9,6 +9,7 @@ use OCA\OpenRegister\Files\Controller\FileExtractionController;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Db\FileSourceOrder;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Files\Service\FileExtractionOptions;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -870,7 +871,7 @@ class FileExtractionControllerTest extends TestCase {
 	public function testExtractSuccess(): void {
 		$this->textExtractor->expects($this->once())
 			->method('extractFile')
-			->with(1, false);
+			->with(1, new FileExtractionOptions(forceReExtract: false));
 
 		$result = $this->controller->extract(1);
 
@@ -883,7 +884,7 @@ class FileExtractionControllerTest extends TestCase {
 	public function testExtractWithForceReExtract(): void {
 		$this->textExtractor->expects($this->once())
 			->method('extractFile')
-			->with(1, true);
+			->with(1, new FileExtractionOptions(forceReExtract: true));
 
 		$result = $this->controller->extract(1, true);
 

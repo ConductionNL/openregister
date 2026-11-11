@@ -102,6 +102,11 @@ class EndpointsControllerAnswersGoldenTest extends TestCase {
 			}
 
 			$logs->method($method)->willReturnCallback(function (...$args) use ($method, $fail) {
+				if ($method === 'findPageWithin') {
+					[$scope, $query] = $args;
+					$args = [$scope->visibleIds, $scope->endpointId, $query->limit, $query->offset];
+				}
+
 				$this->calls[] = ['endpointLogMapper.' . $method => $this->plain(args: $args)];
 				$this->failOn(fail: $fail);
 				if ($method === 'findPageWithin') {

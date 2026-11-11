@@ -45,6 +45,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -382,7 +383,8 @@ class GitHubIssuesControllerTest extends TestCase {
 			rateLimiter: $rateLimiter,
 			userSession: $userSession,
 			cacheFactory: $cacheFactory,
-			logger: $logger
+			logger: $logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}//end buildController()
 
