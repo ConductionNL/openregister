@@ -314,6 +314,31 @@ decides.
 Next: pick the groups your schema should answer to, then write the block using
 the samples under [Code Examples](#code-examples) below.
 
+### Objects without an organisation
+
+A stored object without an organisation is readable by an administrator only.
+One exception remains in the code: a grant that reaches a schema through its
+register's cascade also admits such objects, because shared reference data was
+stored that way.
+
+The repair step `AdoptOrganisationlessRows` closes that gap in the data. On
+upgrade it gives every object without an organisation the organisation of its
+register, else of its schema, else the instance's default organisation. Once
+it has run, no stored object is without an organisation, so the cascade has
+nothing extra to admit and the admin-only rule holds for every object. A table
+for which none of the three is set keeps its objects as they are, and the step
+names that table in the upgrade output.
+
+To see what the step writes before you upgrade, or to run it again later:
+
+```bash
+occ openregister:adopt-organisationless-rows --dry-run
+occ openregister:adopt-organisationless-rows --register <slug> --schema <slug>
+```
+
+The step and the command only fill an empty organisation, so running either
+twice changes nothing the second time.
+
 ### The action vocabulary: closed by default, extensible by declaration
 
 An `authorization` block may name `create`, `read`, `update` or `delete`, plus
