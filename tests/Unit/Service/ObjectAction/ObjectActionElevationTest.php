@@ -253,10 +253,12 @@ class ObjectActionElevationTest extends TestCase {
 		$apply = new ReflectionMethod(AuditTrailMapper::class, 'applyElevation');
 
 		$elevated = new AuditTrail();
+		$elevated->setRegister(4);
 		$elevated->setSchema(9);
 		$elevated->setAction('create');
 		$elevated->setChanged(['title' => 'Besluit']);
 		$ordinary = new AuditTrail();
+		$ordinary->setRegister(4);
 		$ordinary->setSchema(9);
 		$ordinary->setAction('update');
 

@@ -121,7 +121,7 @@ class LockAuthorizationBehaviourTest extends TestCase {
 			userSession: $this->session,
 			groupManager: $this->groups,
 			schemaMapper: $this->schemas,
-			permissionHandler: $permissions
+			permissionHandler: ($permissions ?? $this->createMock(PermissionHandlerInterface::class))
 		);
 	}//end auth()
 
