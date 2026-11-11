@@ -32,7 +32,6 @@ class WebhooksControllerEventsGoldenTest extends TestCase {
 
 	public function testEventsMatchTheRecordedCatalogue(): void {
 		$controller = WebhooksControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(WebhookMapper::class),
 			$this->createMock(WebhookLogMapper::class),
@@ -61,7 +60,6 @@ class WebhooksControllerEventsGoldenTest extends TestCase {
 		$webhookMapper = $this->createMock(WebhookMapper::class);
 		$webhookMapper->expects($this->never())->method('insert');
 		$controller = WebhooksControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$webhookMapper,
 			$this->createMock(WebhookLogMapper::class),

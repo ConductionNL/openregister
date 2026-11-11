@@ -85,7 +85,6 @@ final class SchemasManageGuardGoldenTest extends TestCase {
 		$container->method('get')->willThrowException(new RuntimeException('no session'));
 
 		return SchemasControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),
 			$this->schemaMapper,

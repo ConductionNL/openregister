@@ -393,7 +393,6 @@ class GdprEntitiesControllerAccessGoldenTest extends TestCase {
 		);
 
 		return GdprEntitiesControllerFactory::create(
-			'openregister',
 			$request ?? $this->createMock(IRequest::class),
 			$entityMapper,
 			$relationMapper,

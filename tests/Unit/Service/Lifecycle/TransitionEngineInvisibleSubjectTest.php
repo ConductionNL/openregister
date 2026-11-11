@@ -95,7 +95,7 @@ class TransitionEngineInvisibleSubjectTest extends TestCase {
 		$request->method('getParam')->willReturnCallback(
 			static fn (string $key) => ['action' => 'approve'][$key] ?? null
 		);
-		$controller = new TransitionController('openregister', $request, $this->engine());
+		$controller = new TransitionController($request, $this->engine());
 
 		return $controller->transition(self::OBJECT_ID)->getStatus();
 	}//end transitionStatus()
@@ -105,7 +105,6 @@ class TransitionEngineInvisibleSubjectTest extends TestCase {
 	 */
 	private function availableActionsStatus(): int {
 		$controller = new TransitionController(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->engine()
 		);

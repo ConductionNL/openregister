@@ -113,7 +113,6 @@ class RetentionControllerDestructionListGoldenTest extends TestCase {
 	public function testDestructionListActionMatchesTheRecording(array $case): void {
 		$this->calls = [];
 		$controller = RetentionControllerFactory::create(
-			'openregister',
 			$this->request($case),
 			$this->retentionService($case),
 			$this->createMock(ObjectRetentionHandler::class),

@@ -158,7 +158,6 @@ class CredentialControllerCharacterisationTest extends TestCase {
 		$request->method('getHeader')->willReturnCallback(fn (): string => $this->token);
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$request,
 			$session,
 			$groups,

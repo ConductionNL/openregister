@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GdprEntitiesControllerServices;
 use OCA\OpenRegister\Controller\Support\OrganisationScopeFilter;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
@@ -125,16 +126,14 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * GdprEntitiesController constructor
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param GdprEntitiesControllerServices $services The gdpr entities controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		GdprEntitiesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->entityMapper = $services->mappers->entityMapper;
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
 		$this->db = $services->platform->db;

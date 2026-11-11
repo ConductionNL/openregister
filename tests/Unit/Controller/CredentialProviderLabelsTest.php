@@ -120,7 +120,6 @@ class CredentialProviderLabelsTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$session,
 			$this->createMock(IGroupManager::class),

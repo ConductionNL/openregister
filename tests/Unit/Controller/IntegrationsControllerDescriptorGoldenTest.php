@@ -110,7 +110,6 @@ class IntegrationsControllerDescriptorGoldenTest extends TestCase {
 		);
 
 		return IntegrationsControllerFactory::create(
-			'openregister',
 			$request,
 			$registry ?? $this->registry(),
 			$this->session($uid),

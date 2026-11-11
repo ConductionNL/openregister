@@ -82,7 +82,6 @@ class RulesControllerScopeTest extends TestCase {
 		);
 
 		return RulesControllerFactory::create(
-			appName: 'openregister',
 			request: $request,
 			schemaMapper: $schemas,
 			inventory: $inventory,

@@ -78,7 +78,6 @@ class SchemasControllerResolveAndRelatedCharacterisationTest extends TestCase {
 			fn (string $key, mixed $default = null) => (array_key_exists($key, $this->params) === true ? $this->params[$key] : $default)
 		);
 		$args = SchemasControllerFactory::args(
-			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),
 			$this->schemaMapper,
@@ -94,8 +93,8 @@ class SchemasControllerResolveAndRelatedCharacterisationTest extends TestCase {
 			$this->createMock(\Psr\Container\ContainerInterface::class),
 			$this->createMock(SchemaVersioningService::class)
 		);
-		$services = $args[2];
-		$args[2] = new SchemasControllerServices(
+		$services = $args[1];
+		$args[1] = new SchemasControllerServices(
 			mappers: $services->mappers,
 			schemas: $services->schemas,
 			semantics: new SchemaSemantics(semanticTypeResolver: $resolver),

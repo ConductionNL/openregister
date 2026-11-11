@@ -18,7 +18,6 @@ final class WebhooksControllerFactory {
 	/**
 	 * The constructor arguments of WebhooksController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param WebhookMapper $webhookMapper Constructor argument.
 	 * @param WebhookLogMapper $webhookLogMapper Constructor argument.
@@ -30,7 +29,6 @@ final class WebhooksControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Db\WebhookMapper $webhookMapper,
 		\OCA\OpenRegister\Db\WebhookLogMapper $webhookLogMapper,
@@ -40,7 +38,6 @@ final class WebhooksControllerFactory {
 		?\OCP\IGroupManager $groupManager = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\WebhooksControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\WebhooksMappers(

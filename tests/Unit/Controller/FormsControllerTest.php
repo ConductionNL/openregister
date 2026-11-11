@@ -103,7 +103,6 @@ class FormsControllerTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		$this->controller = FormsControllerFactory::create(
-			appName: 'openregister',
 			request: $this->request,
 			resolver: $this->resolver,
 			submitter: $this->submitter,

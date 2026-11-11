@@ -55,7 +55,6 @@ class TransitionControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->engine = $this->createMock(TransitionEngine::class);
 		$this->controller = new TransitionController(
-			'openregister',
 			$this->request,
 			$this->engine
 		);

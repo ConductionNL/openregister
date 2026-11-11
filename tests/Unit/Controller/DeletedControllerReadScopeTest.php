@@ -96,7 +96,6 @@ class DeletedControllerReadScopeTest extends TestCase {
 		);
 
 		$this->controller = DeletedControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->objectMapper,
 			$this->createMock(RegisterMapper::class),

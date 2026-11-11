@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\IntegrationsControllerServices;
 use OCA\OpenRegister\Service\Integration\IntegrationAdminView;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
@@ -86,18 +87,16 @@ class IntegrationsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
 	 * @param IntegrationsControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		IntegrationsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->registry = $services->registry;
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;

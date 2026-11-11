@@ -360,7 +360,6 @@ class CredentialShareApiTest extends TestCase {
 		$appManager->method('getAppPath')->with('openregister')->willReturn(dirname(__DIR__, 3));
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$request,
 			$session,
 			$groupManager,

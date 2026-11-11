@@ -107,7 +107,6 @@ class DsarCaseControllerTest extends TestCase {
 		}
 
 		return DsarCaseControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
 			($accessor ?? $this->createMock(CaseObjectAccessor::class)),
@@ -233,7 +232,6 @@ class DsarCaseControllerTest extends TestCase {
 		$harvest->expects($this->never())->method('harvest');
 
 		$controller = DsarCaseControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
 			$accessor,
@@ -376,7 +374,6 @@ class DsarCaseControllerTest extends TestCase {
 		RegulatorEscalateRegistry $regulatorRegistry,
 	): DsarCaseController {
 		return DsarCaseControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
 			$accessor,
@@ -437,7 +434,6 @@ class DsarCaseControllerTest extends TestCase {
 		$access->method('mayAct')->willReturn($mayAct);
 
 		return DsarCaseControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(ObjectService::class),
 			$accessor,

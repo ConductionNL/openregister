@@ -79,7 +79,6 @@ class WebhookMappingPreviewTest extends TestCase {
 		$groups->method('isAdmin')->willReturn($admin);
 
 		return WebhooksControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->createMock(WebhookMapper::class),
 			$this->createMock(WebhookLogMapper::class),

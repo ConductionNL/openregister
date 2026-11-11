@@ -18,7 +18,6 @@ final class FormsControllerFactory {
 	/**
 	 * The constructor arguments of FormsController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param FormDefinitionResolver $resolver Constructor argument.
 	 * @param FormSubmitService $submitter Constructor argument.
@@ -33,7 +32,6 @@ final class FormsControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Form\FormDefinitionResolver $resolver,
 		\OCA\OpenRegister\Service\Form\FormSubmitService $submitter,
@@ -46,7 +44,6 @@ final class FormsControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\FormsControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\FlowNodeRunMappers(

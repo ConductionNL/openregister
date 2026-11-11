@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Controller\Support\DsarCaseControllerServices;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControlInterface;
@@ -62,7 +63,7 @@ use Throwable;
  * RBAC + case-level access controlled DSAR case-management endpoints.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Transport controller wiring the case-engine services + object store.
- * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor-injected case-engine collaborators + framework appName/request.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor-injected case-engine collaborators + framework request.
  */
 class DsarCaseController extends Controller {
 	/**
@@ -145,16 +146,14 @@ class DsarCaseController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param DsarCaseControllerServices $services The dsar case controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		DsarCaseControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objectService = $services->cases->objectService;
 		$this->accessor = $services->cases->accessor;
 		$this->accessControl = $services->cases->accessControl;

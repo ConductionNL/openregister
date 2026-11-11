@@ -88,7 +88,6 @@ class DeletedControllerCharacterisationTest extends TestCase {
 		);
 
 		$this->controller = DeletedControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->objectMapper,
 			$this->registerMapper,

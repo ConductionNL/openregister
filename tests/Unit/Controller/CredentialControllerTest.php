@@ -187,7 +187,6 @@ class CredentialControllerTest extends TestCase {
 		);
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$request,
 			$session,
 			$this->createMock(IGroupManager::class),
@@ -628,7 +627,6 @@ class CredentialControllerTest extends TestCase {
 		);
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$request,
 			$session,
 			$this->createMock(IGroupManager::class),
@@ -767,7 +765,6 @@ class CredentialControllerTest extends TestCase {
 		$groups->method('isAdmin')->willReturn(true);
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$session,
 			$groups,

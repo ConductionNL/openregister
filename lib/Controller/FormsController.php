@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FormsControllerServices;
 use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -138,18 +139,16 @@ class FormsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                   $appName     The app id.
 	 * @param IRequest                 $request     The request.
 	 * @param FormsControllerServices $services The forms controller services.
 	 *
 	 * request, session, throttler, translations and logger every public controller here takes.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FormsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->resolver = $services->domain->resolver;
 		$this->submitter = $services->domain->submitter;
 		$this->validator = $services->domain->validator;
