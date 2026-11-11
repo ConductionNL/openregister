@@ -8,7 +8,7 @@ sidebar_position: 3
 
 Our answers to the high-level description questionnaire for a security assessment. Each row quotes the question, answers it briefly and links where the subject is written up.
 
-OpenRegister builds on Nextcloud's security instead of its own. Nextcloud handles login, sessions, CSRF, rate limits, encryption and secrets; OpenRegister adds schema and register authorisation, multi-tenancy and the audit trail on Nextcloud users and groups. The [overview](./index.md#nextcloud-is-the-framework) explains why.
+OpenRegister builds on Nextcloud's security instead of its own. Nextcloud handles login, sessions, CSRF, rate limits, encryption and secrets; OpenRegister adds schema and register authorisation, multi-tenancy and the audit trail on Nextcloud users and groups. The [overview](./index.md#nextcloud-is-the-framework) explains why, and [building on Nextcloud's security](https://docs.conduction.nl/iso/security/#we-build-on-nextclouds-security) states it for every Conduction app.
 
 Report a vulnerability as described in [SECURITY.md](https://github.com/ConductionNL/openregister/blob/main/SECURITY.md) and our [security policy](https://docs.conduction.nl/iso/security/), never in a public issue.
 
