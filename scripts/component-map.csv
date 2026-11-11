@@ -1938,6 +1938,8 @@ Service/ConfigurationDeployment/ConfigurationValueStore.php,155,Service,Configur
 Service/ConfigurationDeployment/DeploymentPreviewService.php,138,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentPreviewService.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentRefusedException.php,38,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentRefusedException.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentService.php,260,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentService.php,0,,Configuration
+Service/ConfigurationDeployment/SettingsDomainMap.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/SettingsDraftGate.php,,Service,,,,,Configuration
 Service/ConfigurationService.php,457,Service,Configuration,Configuration/Service/ConfigurationService.php,200,47,Configuration
 Service/ConfigurationServiceInterface.php,40,Service,Configuration,Configuration/Service/ConfigurationServiceInterface.php,0,,Configuration
 Service/Connection/ConnectionReporter.php,162,Service,Integrations,Integrations/Service/Connection/ConnectionReporter.php,0,163,Integrations
