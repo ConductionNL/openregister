@@ -94,7 +94,8 @@ class SecretsAtRestTest extends TestCase {
 		$broken = SecretAtRest::PREFIX . 'garbage';
 
 		$read = new ReflectionMethod(ConsumerMapper::class, 'mapRowToEntity');
-		$loaded = $read->invoke($mapper, ['id' => 1, 'authorization_configuration' => json_encode(['apiKey' => $broken, 'publicKey' => $broken, 'algorithm' => 'HS256'])]);
+		$stored = json_encode(['apiKey' => $broken, 'publicKey' => $broken, 'algorithm' => 'HS256']);
+		$loaded = $read->invoke($mapper, ['id' => 1, 'authorization_configuration' => $stored]);
 
 		$this->assertSame(['apiKey' => null, 'publicKey' => null, 'algorithm' => 'HS256'], $loaded->getAuthorizationConfiguration());
 	}//end testAConsumerSecretThatCannotBeOpenedIsAbsentNotItsCiphertext()
