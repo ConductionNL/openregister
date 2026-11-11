@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Tests\Unit\Db\Support\RecordsQueries;
 use PHPUnit\Framework\TestCase;
 
@@ -41,10 +43,10 @@ class FlowTriggerMapperTest extends TestCase {
 		return new FlowTriggerMapper($this->recordingConnection());
 	}//end mapper()
 
-	public function testFlowUuidsForMatchesEventRegisterSchemaAndOnlyEnabledRows(): void {
+	public function testFlowUuidsSubscribedToMatchesEventRegisterSchemaAndOnlyEnabledRows(): void {
 		$this->rowSets = [[['flow_uuid' => 'f1'], ['flow_uuid' => 22]]];
 
-		$this->assertSame(['f1', '22'], $this->mapper()->flowUuidsFor('object.created', 'zaken', 'zaak'));
+		$this->assertSame(['f1', '22'], $this->mapper()->flowUuidsSubscribedTo('object.created', new RegisterSchemaRef(register: 'zaken', schema: 'zaak')));
 		$this->assertSame(
 			[
 				'selectDistinct(flow_uuid)',
@@ -57,11 +59,11 @@ class FlowTriggerMapperTest extends TestCase {
 			],
 			$this->queries[0]
 		);
-	}//end testFlowUuidsForMatchesEventRegisterSchemaAndOnlyEnabledRows()
+	}//end testFlowUuidsSubscribedToMatchesEventRegisterSchemaAndOnlyEnabledRows()
 
-	public function testFlowUuidsForWithoutAMatchIsEmpty(): void {
-		$this->assertSame([], $this->mapper()->flowUuidsFor('object.deleted', 'r', 's'));
-	}//end testFlowUuidsForWithoutAMatchIsEmpty()
+	public function testFlowUuidsSubscribedToWithoutAMatchIsEmpty(): void {
+		$this->assertSame([], $this->mapper()->flowUuidsSubscribedTo('object.deleted', new RegisterSchemaRef(register: 'r', schema: 's')));
+	}//end testFlowUuidsSubscribedToWithoutAMatchIsEmpty()
 
 	public function testFindBySchemaListsEachTriggerTypedAndOrdered(): void {
 		$this->rowSets = [[
@@ -104,12 +106,14 @@ class FlowTriggerMapperTest extends TestCase {
 		$this->statementResults = [5];
 
 		$written = $this->mapper()->replaceFor(
-			'f1',
-			[
-				['event' => 'object.created', 'register' => 'zaken', 'schema' => 'zaak'],
-				['event' => 'object.updated', 'register' => 7, 'schema' => 'besluit'],
-			],
-			false
+			new FlowTriggerSet(
+				flowUuid: 'f1',
+				triggers: [
+					['event' => 'object.created', 'register' => 'zaken', 'schema' => 'zaak'],
+					['event' => 'object.updated', 'register' => 7, 'schema' => 'besluit'],
+				],
+				enabled: false
+			)
 		);
 
 		$this->assertSame(2, $written);
@@ -126,7 +130,7 @@ class FlowTriggerMapperTest extends TestCase {
 	}//end testReplaceForDeletesTheOldRowsThenInsertsOnePerTrigger()
 
 	public function testReplaceForWithNoTriggersOnlyClearsTheFlow(): void {
-		$this->assertSame(0, $this->mapper()->replaceFor('f1', [], true));
+		$this->assertSame(0, $this->mapper()->replaceFor(new FlowTriggerSet(flowUuid: 'f1', triggers: [], enabled: true)));
 		$this->assertCount(1, $this->queries);
 		$this->assertSame('delete(openregister_flow_triggers)', $this->queries[0][0]);
 	}//end testReplaceForWithNoTriggersOnlyClearsTheFlow()

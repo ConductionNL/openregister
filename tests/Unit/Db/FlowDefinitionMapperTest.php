@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\FlowDefinition;
 use OCA\OpenRegister\Db\FlowDefinitionMapper;
 use OCA\OpenRegister\Tests\Unit\Db\Support\RecordsQueries;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -107,7 +108,7 @@ class FlowDefinitionMapperTest extends TestCase {
 	public function testStoreReturnsTheExistingRowWithoutWriting(): void {
 		$this->rowSets = [[['id' => 3, 'hash' => 'h1', 'definition' => 'old']]];
 
-		$definition = $this->mapper()->store('h1', 'new', 'f1');
+		$definition = $this->mapper()->store(self::definition('h1', 'new', 'f1'));
 
 		$this->assertSame(3, $definition?->getId());
 		$this->assertSame('old', $definition?->getDefinition());
@@ -118,7 +119,7 @@ class FlowDefinitionMapperTest extends TestCase {
 		$this->rowSets = [[]];
 		$this->lastInsertId = 8;
 
-		$definition = $this->mapper()->store('h2', '{"nodes":[1]}', 'f1');
+		$definition = $this->mapper()->store(self::definition('h2', '{"nodes":[1]}', 'f1'));
 
 		$this->assertSame(8, $definition?->getId());
 		$this->assertInstanceOf(DateTime::class, $definition?->getCreated());
@@ -130,7 +131,7 @@ class FlowDefinitionMapperTest extends TestCase {
 	public function testAFailedInsertRereadsAndReturnsTheRaceWinner(): void {
 		$this->rowSets = [[], [['id' => 11, 'hash' => 'h2', 'definition' => 'winner']]];
 
-		$definition = $this->mapperFailingAt(2)->store('h2', 'mine');
+		$definition = $this->mapperFailingAt(2)->store(self::definition('h2', 'mine'));
 
 		$this->assertSame(11, $definition?->getId());
 		$this->assertSame('winner', $definition?->getDefinition());
@@ -140,6 +141,26 @@ class FlowDefinitionMapperTest extends TestCase {
 	public function testAFailedInsertWithNoWinnerLeavesTheRunUnpinned(): void {
 		$this->rowSets = [[], []];
 
-		$this->assertNull($this->mapperFailingAt(2)->store('h2', 'mine'));
+		$this->assertNull($this->mapperFailingAt(2)->store(self::definition('h2', 'mine')));
 	}//end testAFailedInsertWithNoWinnerLeavesTheRunUnpinned()
+
+	/**
+	 * A definition to store.
+	 *
+	 * @param string      $hash     The canonical hash.
+	 * @param string      $json     The definition JSON.
+	 * @param string|null $flowUuid The originating flow, or null to leave it unset.
+	 *
+	 * @return FlowDefinition The definition.
+	 */
+	private static function definition(string $hash, string $json, ?string $flowUuid=null): FlowDefinition {
+		$definition = new FlowDefinition();
+		$definition->setHash($hash);
+		$definition->setDefinition($json);
+		if ($flowUuid !== null) {
+			$definition->setFlowUuid($flowUuid);
+		}
+
+		return $definition;
+	}//end definition()
 }//end class

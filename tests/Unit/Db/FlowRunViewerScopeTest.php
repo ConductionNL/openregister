@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Tests\Unit\Db\Support\RecordsQueries;
 use PHPUnit\Framework\TestCase;
 
@@ -42,7 +44,7 @@ class FlowRunViewerScopeTest extends TestCase {
 	 * @return list<string>
 	 */
 	private function filtersFor(?string $requester, array $owned): array {
-		(new FlowRunMapper($this->recordingConnection()))->findAllRuns(requesterUid: $requester, ownedFlowIds: $owned);
+		(new FlowRunMapper($this->recordingConnection()))->findAllRuns(listing: new FlowRunListing(), viewer: new FlowRunViewer(requesterUid: $requester, ownedFlowIds: $owned));
 
 		return array_values(array_filter($this->queries[0], static fn (string $call): bool => str_starts_with($call, 'andWhere') || str_starts_with($call, 'where')));
 	}//end filtersFor()
