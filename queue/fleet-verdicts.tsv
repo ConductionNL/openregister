@@ -3138,6 +3138,8 @@ humaniq	1057	f762c289b27ca0a53ddf429fe087bf51b66eab95	GREEN	FV9-08:3	tree of 25 
 humaniq	1058	6bdf6d8b8e594c23fee5e8745852ef3e115a3b6e	GREEN	FV9-08:3	tree of 25 green: phpunit 3682 ok (0 inherited failures), floor held
 humaniq	1059	8be6bb6f2501fdb9a11473d11ebfd02f9270f12a	GREEN	FV9-08:3	tree of 25 green: phpunit 3682 ok (0 inherited failures), floor held
 humaniq	1060	aa80b2bf7e12fb03f2dae991331b53b88505c1e5	GREEN	FV9-08:3	tree of 25 green: phpunit 3682 ok (0 inherited failures), floor held
+humaniq	1025	aeedec43015a0c22de5117411846530909bbe371	CONFLICT	FV9-08:4	conflicts with #1023 in lib/Service/SettingsService.php
+humaniq	1029	91761046360fc8aed3925047acbc76f7dd73a1fc	CONFLICT	FV9-08:4	conflicts with #1027 in lib/Service/SettingsService.php
 learniq	2291	b3c97aa85858670f8a6ffb95873c39159b483a8d	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
 learniq	2292	b603fcb825ece4b034968765b681cc51d94583aa	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
 learniq	2294	175b672963b8f60b6914c4f96c72493dca630ea2	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
