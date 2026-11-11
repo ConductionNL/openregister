@@ -25,10 +25,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Closure;
+use OCA\OpenRegister\Db\Support\SecretAtRest;
 use OCA\OpenRegister\Db\Webhook;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
+use RuntimeException;
 
 /**
  * Headers (with the HMAC signature), timeouts and redirect policy for sending a
@@ -60,6 +62,8 @@ final class WebhookRequestOptions {
 	 *
 	 * @return array<string, string>
 	 *
+	 * @throws RuntimeException When the stored secret cannot be decrypted.
+	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function headers(array $payload): array {
@@ -72,6 +76,11 @@ final class WebhookRequestOptions {
 		);
 
 		$secret = $this->webhook->getSecret();
+		if (SecretAtRest::isSealed(value: $secret) === true) {
+			// A secret the instance cannot decrypt must not become an unsigned delivery.
+			throw new RuntimeException('The webhook signing secret cannot be decrypted; the delivery is not sent.');
+		}
+
 		if ($secret !== null) {
 			$headers['X-Webhook-Signature'] = hash_hmac('sha256', json_encode($payload), $secret);
 		}

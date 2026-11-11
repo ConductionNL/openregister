@@ -24,7 +24,8 @@
         "OCA\\OpenRegister\\Db\\OrganisationMapperInterface",
         "OCP\\IUserSession",
         "OCP\\IGroupManager",
-        "OCP\\IAppConfig"
+        "OCP\\IAppConfig",
+        "OCP\\Security\\ICrypto"
     ],
     "OCA\\OpenRegister\\Db\\MagicMapper": [
         "OCP\\IDBConnection",

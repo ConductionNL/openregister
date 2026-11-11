@@ -18,7 +18,9 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\Support\SecretAtRest;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -39,12 +41,96 @@ class ConsumerMapper extends QBMapper implements ConsumerMapperInterface {
 	/**
 	 * ConsumerMapper constructor.
 	 *
-	 * @param IDBConnection $db The database connection
+	 * @param IDBConnection     $db      The database connection
+	 * @param SecretAtRest|null $secrets Encrypts the secret configuration values at rest; null stores them as given
 	 */
-	public function __construct(IDBConnection $db) {
+	public function __construct(
+		IDBConnection $db,
+		private readonly ?SecretAtRest $secrets = null,
+	) {
 		parent::__construct(db: $db, tableName: 'openregister_consumers');
-
 	}//end __construct()
+
+	/**
+	 * Insert a consumer with the secret values of its authorization configuration sealed.
+	 *
+	 * @param Consumer $entity The consumer.
+	 *
+	 * @return Consumer The inserted consumer, with its configuration open.
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	public function insert(Entity $entity): Entity {
+		$this->sealConfiguration(entity: $entity);
+		try {
+			return parent::insert(entity: $entity);
+		} finally {
+			$this->openConfiguration(entity: $entity);
+		}
+	}//end insert()
+
+	/**
+	 * Update a consumer with the secret values of its authorization configuration sealed.
+	 *
+	 * @param Consumer $entity The consumer.
+	 *
+	 * @return Consumer The updated consumer, with its configuration open.
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	public function update(Entity $entity): Entity {
+		$this->sealConfiguration(entity: $entity);
+		try {
+			return parent::update(entity: $entity);
+		} finally {
+			$this->openConfiguration(entity: $entity);
+		}
+	}//end update()
+
+	/**
+	 * Seal the secret values of a consumer's configuration before it is written.
+	 *
+	 * @param Entity $entity The consumer.
+	 *
+	 * @return void
+	 */
+	private function sealConfiguration(Entity $entity): void {
+		if ($this->secrets !== null && $entity instanceof Consumer) {
+			$entity->setAuthorizationConfiguration($this->secrets->sealConfiguration(configuration: $entity->getAuthorizationConfiguration()));
+		}
+	}//end sealConfiguration()
+
+	/**
+	 * Open the secret values of a consumer's configuration again after it was written.
+	 *
+	 * @param Entity $entity The consumer.
+	 *
+	 * @return void
+	 */
+	private function openConfiguration(Entity $entity): void {
+		if ($this->secrets !== null && $entity instanceof Consumer) {
+			$entity->setAuthorizationConfiguration($this->secrets->openConfiguration(configuration: $entity->getAuthorizationConfiguration()));
+		}
+	}//end openConfiguration()
+
+	/**
+	 * A stored row as a consumer, with the secret values of its configuration opened.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return Entity The consumer.
+	 */
+	protected function mapRowToEntity(array $row): Entity {
+		$stored = ($row['authorization_configuration'] ?? null);
+		if ($this->secrets !== null && is_string($stored) === true && $stored !== '') {
+			$configuration = json_decode($stored, true);
+			if (is_array($configuration) === true) {
+				$row['authorization_configuration'] = json_encode($this->secrets->openConfiguration(configuration: $configuration));
+			}
+		}
+
+		return parent::mapRowToEntity(row: $row);
+	}//end mapRowToEntity()
 
 	/**
 	 * Find a Consumer by its ID.
