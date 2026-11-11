@@ -39,6 +39,10 @@ trait HydrateBySettersTrait {
 	 */
 	public function hydrate(array $object): static {
 		foreach ($object as $key => $value) {
+			if (HydrationKey::isFieldName(key: $key) === false) {
+				continue;
+			}
+
 			$method = 'set' . ucfirst($key);
 
 			try {
