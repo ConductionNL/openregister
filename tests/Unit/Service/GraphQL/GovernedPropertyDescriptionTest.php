@@ -135,6 +135,49 @@ class GovernedPropertyDescriptionTest extends TestCase {
 		$this->assertSame($expected, array_values(array_intersect($type->getFieldNames(), self::PROPERTIES)));
 	}//end testTheObjectTypeKeepsWhatSomeRowCouldShow()
 
+	public static function withheldCounts(): array {
+		return [
+			'in the group'     => ['alice', 1],
+			'outside it'       => ['bob', 3],
+			'anonymous'        => [null, 3],
+			'an administrator' => ['root', null],
+		];
+	}//end withheldCounts()
+
+	#[DataProvider('withheldCounts')]
+	public function testTheObjectTypeStatesHowManyPropertiesAreWithheld(?string $uid, ?int $expected): void {
+		$schema = $this->generated($uid);
+		$type = $schema->getType('People');
+		$this->assertInstanceOf(ObjectType::class, $type);
+
+		if ($expected === null) {
+			$this->assertFalse($type->hasField('_withheldProperties'));
+			return;
+		}
+
+		$field = $type->getField('_withheldProperties');
+		$this->assertSame($expected, ($field->resolveFn)([]));
+		$this->assertStringNotContainsString('salary', (string)$field->description);
+		$this->assertStringNotContainsString('odd', (string)$field->description);
+	}//end testTheObjectTypeStatesHowManyPropertiesAreWithheld()
+
+	public function testAnUngovernedSchemaStatesNoWithheldCount(): void {
+		$plain = new Schema();
+		$plain->setId(2);
+		$plain->setSlug('notes');
+		$plain->setTitle('Notes');
+		$plain->setProperties(['body' => ['type' => 'string']]);
+
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn(null);
+		$mapper = $this->createMock(SchemaMapper::class);
+		$mapper->method('findAll')->willReturn([$plain]);
+
+		$type = (new SchemaGenerator($mapper, $session, $this->rbac($session)))->generate()->getType('Notes');
+		$this->assertInstanceOf(ObjectType::class, $type);
+		$this->assertFalse($type->hasField('_withheldProperties'));
+	}//end testAnUngovernedSchemaStatesNoWithheldCount()
+
 	#[DataProvider('objectFields')]
 	public function testOnlyAnAdministratorReadsTheGroupsOfARule(?string $uid): void {
 		$type = $this->generated($uid)->getType('People');
