@@ -119,22 +119,6 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	}//end isOpenConnectorAvailable()
 
 	/**
-	 * Active session UID, or throw if no user is logged in.
-	 *
-	 * @return string The user id.
-	 *
-	 * @throws Exception When there is no active user.
-	 */
-	private function requireUid(): string {
-		$user = $this->runtime->userSession()->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in', 401);
-		}
-
-		return $user->getUID();
-	}//end requireUid()
-
-	/**
 	 * Link an existing OpenProject work package to an OR object.
 	 *
 	 * Idempotent: a duplicate link raises a 409 Exception. Work-package
@@ -152,7 +136,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function linkWorkPackage(LinkTarget $target, int $workPackageId): OpenProjectLink {
-		$this->requireUid();
+		$this->runtime->requireUid();
 
 		if ($workPackageId === 0) {
 			throw new Exception('workPackageId is required', 400);
@@ -200,7 +184,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * @return OpenProjectLink The persisted link row.
 	 */
 	private function insertLink(LinkTarget $target, OpenProjectLink $link): OpenProjectLink {
-		$target->stamp(link: $link, linkedBy: $this->requireUid());
+		$target->stamp(link: $link, linkedBy: $this->runtime->requireUid());
 
 		return $this->openProjectLinkMapper->insert($link);
 	}//end insertLink()
@@ -219,7 +203,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function createAndLinkDraft(LinkTarget $target, WorkPackageDraft $draft): OpenProjectLink {
-		$this->requireUid();
+		$this->runtime->requireUid();
 
 		$created = $this->createWorkPackage(target: $target, payload: $this->createPayload(draft: $draft));
 		$link = $this->hydrateLink(workPackageId: $this->createdId(created: $created), info: $this->normaliseRow(row: $created));
@@ -348,7 +332,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function unlink(string $objectUuid, int $workPackageId): void {
-		$this->requireUid();
+		$this->runtime->requireUid();
 
 		$deleted = $this->openProjectLinkMapper->deleteByObjectAndWorkPackage($objectUuid, $workPackageId);
 		if ($deleted === 0) {

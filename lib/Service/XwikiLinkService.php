@@ -133,17 +133,6 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	}//end getProvider()
 
 	/**
-	 * Active session UID, or throw if no user is logged in.
-	 *
-	 * @return string The user id.
-	 *
-	 * @throws Exception When there is no active user.
-	 */
-	private function requireUid(): string {
-		return $this->runtime->userSession()->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
-	}//end requireUid()
-
-	/**
 	 * Build the unconfigured-source descriptor that mirrors the
 	 * XwikiProvider 503-with-cause pattern.
 	 *
@@ -179,7 +168,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function linkPage(LinkTarget $target, string $pageReference): XwikiLink {
-		$uid           = $this->requireUid();
+		$uid           = $this->runtime->requireUid();
 		$pageReference = trim($pageReference);
 		if ($pageReference === '') {
 			throw new Exception('Page reference is required', 400);
@@ -267,7 +256,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function createAndLinkPage(LinkTarget $target, XwikiPageDraft $draft): XwikiLink {
-		$uid   = $this->requireUid();
+		$uid   = $this->runtime->requireUid();
 		$draft = new XwikiPageDraft(space: trim($draft->space), title: trim($draft->title));
 		if ($draft->title === '') {
 			throw new Exception('Page title is required', 400);
@@ -372,7 +361,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function unlinkPage(string $objectUuid, string $pageReference): void {
-		$this->requireUid();
+		$this->runtime->requireUid();
 
 		$deleted = $this->xwikiLinkMapper->deleteByObjectAndPage($objectUuid, $pageReference);
 		if ($deleted === 0) {

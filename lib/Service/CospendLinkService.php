@@ -136,22 +136,6 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	}//end getProjectService()
 
 	/**
-	 * Active session UID, or throw if no user is logged in.
-	 *
-	 * @return string The user id.
-	 *
-	 * @throws Exception When there is no active user.
-	 */
-	private function requireUid(): string {
-		$user = $this->runtime->userSession()->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in', 401);
-		}
-
-		return $user->getUID();
-	}//end requireUid()
-
-	/**
 	 * Link an existing NC Cospend project to an OR object.
 	 *
 	 * Idempotent: a duplicate link raises a 409 Exception. Project name +
@@ -168,7 +152,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the link contract is owned by the integration-cospend capability.
 	 */
 	public function linkProject(LinkTarget $target, string $projectId): CospendLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 		$this->assertProjectLinkable(target: $target, projectId: $projectId);
 
 		$project = $this->fetchProject(projectId: $projectId);
@@ -262,7 +246,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 *                   duplicate (409), Cospend unavailable (503).
 	 */
 	private function linkBillEntry(LinkTarget $target, CospendEntryKey $entry): CospendLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 		$this->assertBillLinkable(target: $target, entry: $entry);
 
 		$bill = $this->fetchBill(projectId: $entry->projectId, billId: (int)$entry->billId());
@@ -353,7 +337,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-cospend capability.
 	 */
 	public function createAndLinkProject(LinkTarget $target, CospendProjectDraft $draft): CospendLink {
-		$uid  = $this->requireUid();
+		$uid  = $this->runtime->requireUid();
 		$name = self::requiredProjectName(draft: $draft);
 
 		$projectId     = $this->createNamedProject(name: $name, uid: $uid);
@@ -607,7 +591,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink contract is owned by the integration-cospend capability.
 	 */
 	public function unlink(string $objectUuid, int $entryId): void {
-		$this->requireUid();
+		$this->runtime->requireUid();
 
 		$deleted = $this->cospendLinkMapper->deleteByObjectAndId($objectUuid, $entryId);
 		if ($deleted === 0) {

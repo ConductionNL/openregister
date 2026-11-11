@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use Exception;
 use OCP\App\IAppManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -69,6 +70,19 @@ class LinkServiceRuntime {
 	public function userSession(): IUserSession {
 		return $this->userSession;
 	}//end userSession()
+
+	/**
+	 * The signed-in user's UID.
+	 *
+	 * @return string The user id.
+	 *
+	 * @throws Exception When there is no active user (code 401).
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
+	 */
+	public function requireUid(): string {
+		return $this->userSession->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
+	}//end requireUid()
 
 	/**
 	 * The logger.
