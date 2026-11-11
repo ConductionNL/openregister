@@ -81,40 +81,72 @@ class ExampleSetProfiles {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
 	 */
 	public function fromPerson(array $person, DateTimeImmutable $today): array {
-		$absence = null;
-		if (is_array($person['absence'] ?? null) === true) {
-			$from    = (int) ($person['absence']['fromDay'] ?? 0);
-			$until   = (int) ($person['absence']['untilDay'] ?? 0);
-			$absence = [
-				'firstDay' => $today->modify(sprintf('%+d days', $from))->format('Y-m-d'),
-				'lastDay'  => $today->modify(sprintf('%+d days', $until))->format('Y-m-d'),
-				'status'   => (string) ($person['absence']['status'] ?? ''),
-				'message'  => (string) ($person['absence']['message'] ?? ''),
-			];
-		}
+		return [
+			'headline'     => (string) ($person['function'] ?? ''),
+			'role'         => self::rolesOf(person: $person),
+			'organisation' => (string) ($person['department'] ?? ''),
+			'absence'      => self::absenceOf(person: $person, today: $today),
+			'status'       => self::statusOf(person: $person),
+		];
+	}//end fromPerson()
 
-		$status = null;
-		if (is_array($person['status'] ?? null) === true) {
-			$status = [
-				'status'  => (string) ($person['status']['status'] ?? 'online'),
-				'message' => (string) ($person['status']['message'] ?? ''),
-				'icon'    => (string) ($person['status']['icon'] ?? ''),
-			];
-		}
-
+	/**
+	 * The person's roles, joined when there are several.
+	 *
+	 * @param array<string, mixed> $person The cast person.
+	 *
+	 * @return string The roles.
+	 */
+	private static function rolesOf(array $person): string {
 		$roles = ($person['roles'] ?? '');
 		if (is_array($roles) === true) {
 			$roles = implode(', ', $roles);
 		}
 
+		return (string) $roles;
+	}//end rolesOf()
+
+	/**
+	 * The person's absence with its days resolved against the install day, or null when none is cast.
+	 *
+	 * @param array<string, mixed> $person The cast person.
+	 * @param DateTimeImmutable    $today  The install day.
+	 *
+	 * @return array<string, string>|null The absence.
+	 */
+	private static function absenceOf(array $person, DateTimeImmutable $today): ?array {
+		if (is_array($person['absence'] ?? null) === false) {
+			return null;
+		}
+
+		$from  = (int) ($person['absence']['fromDay'] ?? 0);
+		$until = (int) ($person['absence']['untilDay'] ?? 0);
 		return [
-			'headline'     => (string) ($person['function'] ?? ''),
-			'role'         => (string) $roles,
-			'organisation' => (string) ($person['department'] ?? ''),
-			'absence'      => $absence,
-			'status'       => $status,
+			'firstDay' => $today->modify(sprintf('%+d days', $from))->format('Y-m-d'),
+			'lastDay'  => $today->modify(sprintf('%+d days', $until))->format('Y-m-d'),
+			'status'   => (string) ($person['absence']['status'] ?? ''),
+			'message'  => (string) ($person['absence']['message'] ?? ''),
 		];
-	}//end fromPerson()
+	}//end absenceOf()
+
+	/**
+	 * The person's status, or null when none is cast.
+	 *
+	 * @param array<string, mixed> $person The cast person.
+	 *
+	 * @return array<string, string>|null The status.
+	 */
+	private static function statusOf(array $person): ?array {
+		if (is_array($person['status'] ?? null) === false) {
+			return null;
+		}
+
+		return [
+			'status'  => (string) ($person['status']['status'] ?? 'online'),
+			'message' => (string) ($person['status']['message'] ?? ''),
+			'icon'    => (string) ($person['status']['icon'] ?? ''),
+		];
+	}//end statusOf()
 
 	/**
 	 * Write a profile on an account; the reasons a part was not written, empty when all were.

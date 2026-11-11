@@ -3774,6 +3774,10 @@
             "refused": "OCA\\OpenRegister\\Exception\\CaseAccessDeniedException",
             "message": "Verb 'attach' denied: the caller holds none of the item's authorizations."
         },
+        "attach denied at root": {
+            "refused": "OCA\\OpenRegister\\Exception\\CaseAccessDeniedException",
+            "message": "Verb 'attach' denied: the caller holds none of the item's authorizations."
+        },
         "attach invalid": {
             "refused": "OCA\\OpenRegister\\Exception\\CaseValidationException",
             "message": "An ad-hoc item cannot be discretionary; it is entered by the act of attaching it."

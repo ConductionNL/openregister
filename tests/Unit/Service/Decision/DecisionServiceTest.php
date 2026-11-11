@@ -41,12 +41,16 @@ class DecisionServiceTest extends TestCase {
 		);
 
 		$decision = (new DecisionService(decisionMapper: $mapper))->record(
-			subjectType: 'entity-relation',
-			subjectId: '7',
-			verdict: 'release',
-			decidedBy: 'coord',
-			note: 'Publicly known name.',
-			supersedes: 'd-1'
+			decision: self::draft(
+				fields: [
+					'subjectType' => 'entity-relation',
+					'subjectId' => '7',
+					'verdict' => 'release',
+					'decidedBy' => 'coord',
+					'note' => 'Publicly known name.',
+					'supersedes' => 'd-1',
+				]
+			)
 		);
 
 		self::assertSame(
@@ -78,7 +82,7 @@ class DecisionServiceTest extends TestCase {
 			$args = ['subjectType' => 'entity-relation', 'subjectId' => '7', 'verdict' => 'redact', 'decidedBy' => 'j.devries'];
 			$args[$field] = $value;
 			try {
-				$service->record(...$args);
+				$service->record(decision: self::draft(fields: $args));
 				self::fail('A decision without '.$field.' was stored.');
 			} catch (InvalidArgumentException $e) {
 				self::assertStringContainsString($field, $e->getMessage());
@@ -86,8 +90,24 @@ class DecisionServiceTest extends TestCase {
 		}
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->record(subjectType: 'entity-relation', subjectId: '7', verdict: 'redact', decidedBy: 'j.devries', note: str_repeat('x', DecisionService::MAX_NOTE + 1));
+		$service->record(decision: self::draft(fields: ['subjectType' => 'entity-relation', 'subjectId' => '7', 'verdict' => 'redact', 'decidedBy' => 'j.devries', 'note' => str_repeat('x', DecisionService::MAX_NOTE + 1)]));
 	}//end testAnIncompleteDecisionIsRefused()
+
+	/**
+	 * An unsaved decision carrying the given fields.
+	 *
+	 * @param array<string, string> $fields Field name to value.
+	 *
+	 * @return Decision The decision.
+	 */
+	private static function draft(array $fields): Decision {
+		$decision = new Decision();
+		foreach ($fields as $field => $value) {
+			$decision->{'set'.ucfirst($field)}($value);
+		}
+
+		return $decision;
+	}//end draft()
 
 	/**
 	 * Finding answers the decision, or null for an empty or unknown uuid.

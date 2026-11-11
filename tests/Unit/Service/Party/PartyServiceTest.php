@@ -11,6 +11,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
 use Exception;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -78,7 +82,7 @@ class PartyServiceTest extends TestCase {
 		$this->schemas->method('find')->willReturn($this->partySchema());
 		$this->schemas->method('findAll')->willReturn([$this->partySchema()]);
 
-		$this->service = new PartyService($this->objects, $this->schemas);
+		$this->service = new PartyService($this->objects, $this->catalog(schemas: $this->schemas, registers: $this->createMock(RegisterMapperInterface::class)));
 	}//end setUp()
 
 	/**
@@ -151,8 +155,8 @@ class PartyServiceTest extends TestCase {
 		$this->assertSame('correspondence', $addresses[0]['kind']);
 		$this->assertSame('email', $addresses[0]['type']);
 		$this->assertSame('oud@example.org', $addresses[0]['value']);
-		$this->assertCount(1, $this->service->addressesOfKind(party: $party, kind: 'case'));
-		$this->assertCount(2, $this->service->addressesOfKind(party: $party, kind: 'correspondence'));
+		$this->assertCount(1, $this->service->addressesOfKind(party: $party, selection: new PartyAddressSelection(kind: 'case')));
+		$this->assertCount(2, $this->service->addressesOfKind(party: $party, selection: new PartyAddressSelection(kind: 'correspondence')));
 	}//end testAddressesCarryAKindAndABareStringStillReads()
 
 	/**
@@ -293,6 +297,49 @@ class PartyServiceTest extends TestCase {
 	}//end testAGoodParentIsAllowed()
 
 	/**
+	 * A cycle that closes further up the chain, not through the party itself,
+	 * is refused naming the party it closes through; a chain exactly at the
+	 * bound is allowed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function testACycleAboveThePartyAndTheBoundItself(): void {
+		$this->party(uuid: 'org-b', data: ['moeder' => 'org-c']);
+		$this->party(uuid: 'org-c', data: ['moeder' => 'org-b']);
+		$this->party(uuid: 'org-x', data: ['moeder' => 'org-y']);
+		$this->party(uuid: 'org-y', data: []);
+
+		$this->service->assertParentAllowed(partyUuid: 'org-w', parentUuid: 'org-x');
+
+		try {
+			$this->service->assertParentAllowed(partyUuid: 'org-a', parentUuid: 'org-b');
+			$this->fail('expected a refusal');
+		} catch (Exception $e) {
+			$this->assertSame(400, $e->getCode());
+			$this->assertSame('Party "org-b" cannot be the parent of "org-a": it would close a cycle through "org-b"', $e->getMessage());
+		}
+	}//end testACycleAboveThePartyAndTheBoundItself()
+
+	/**
+	 * Resolution by address skips a candidate that is not an object and a
+	 * candidate that holds only a similar address, and returns the first exact holder.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function testTheFirstExactHolderWins(): void {
+		$near   = $this->party(uuid: 'party-n', data: ['adressen' => ['x.a@example.org']]);
+		$first  = $this->party(uuid: 'party-f', data: ['adressen' => [['kind' => 'case', 'value' => ' A@example.org ']]]);
+		$second = $this->party(uuid: 'party-s', data: ['adressen' => ['a@example.org']]);
+		$this->objects->method('findAll')->willReturn(['junk', $near, $first, $second]);
+
+		$this->assertSame($first, $this->service->resolveByAddress(address: 'a@EXAMPLE.org'));
+	}//end testTheFirstExactHolderWins()
+
+	/**
 	 * A party service whose object layer records every lookup and holds `$held` in register 3, schema 7.
 	 *
 	 * @param array<int, array<string, mixed>> $calls Every lookup, as its arguments.
@@ -334,8 +381,23 @@ class PartyServiceTest extends TestCase {
 			->getMock();
 		$registers->method('getAllRegisterIdsWithSchema')->willReturn([3]);
 
-		return new PartyService($objects, $this->schemas, $registers);
+		return new PartyService($objects, $this->catalog(schemas: $this->schemas, registers: $registers));
 	}//end scopedService()
+
+	/**
+	 * A schema catalog serving the given schema and register mappers.
+	 *
+	 * @param SchemaMapperInterface   $schemas   The schema mapper.
+	 * @param RegisterMapperInterface $registers The register mapper.
+	 *
+	 * @return SchemaCatalogInterface The catalog.
+	 */
+	private function catalog(SchemaMapperInterface $schemas, RegisterMapperInterface $registers): SchemaCatalogInterface {
+		$catalog = $this->createMock(SchemaCatalogInterface::class);
+		$catalog->method('schemas')->willReturn($schemas);
+		$catalog->method('registers')->willReturn($registers);
+		return $catalog;
+	}//end catalog()
 
 	/**
 	 * A party is read from the party table, without searching every table on the instance.

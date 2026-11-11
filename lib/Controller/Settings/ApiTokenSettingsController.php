@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ApiTokenProbe;
 use OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
@@ -101,24 +102,28 @@ class ApiTokenSettingsController extends Controller {
 	private readonly ConnectionReporterInterface $connectionReporter;
 
 	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param ApiTokenSettingsControllerServices $services The api token settings controller services.
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		ApiTokenSettingsControllerServices $services,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->config = $services->config;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->config = $services->reporting->appConfig;
 		$this->settingsService = $services->settingsService;
 		$this->clientService = $services->clientService;
-		$this->connectionReporter = $services->connectionReporter;
+		$this->connectionReporter = $services->reporting->connectionReporter;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

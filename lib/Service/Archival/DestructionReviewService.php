@@ -161,12 +161,26 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function assignReviewer(array $listData, string $entryUuid, ?string $reviewer, ?DateTimeInterface $assignedAt = null): array {
-		$index = $this->indexOf(listData: $listData, entryUuid: $entryUuid);
+		$assignment = new ReviewerAssignment(entryUuid: $entryUuid, reviewer: $reviewer, assignedAt: ($assignedAt ?? new DateTimeImmutable()));
+		return $this->assign(listData: $listData, assignment: $assignment);
+	}//end assignReviewer()
+
+	/**
+	 * Assign or unassign the reviewer of one undecided entry.
+	 *
+	 * @param array<string, mixed> $listData   The destruction list's own data.
+	 * @param ReviewerAssignment   $assignment The entry, the reviewer (null or blank to unassign) and the moment.
+	 *
+	 * @return array<string, mixed> The list data, with the entry assigned.
+	 *
+	 * @throws InvalidArgumentException When the list has no such entry, or the entry is decided.
+	 */
+	private function assign(array $listData, ReviewerAssignment $assignment): array {
+		$index = $this->indexOf(listData: $listData, entryUuid: $assignment->entryUuid);
 		$entry = $listData['objects'][$index];
-		$this->guardUnanswered(entry: $entry, entryUuid: $entryUuid);
+		$this->guardUnanswered(entry: $entry, entryUuid: $assignment->entryUuid);
 
-		$moment = ($assignedAt ?? new DateTimeImmutable());
-
+		$reviewer = $assignment->reviewer;
 		if ($reviewer === null || trim($reviewer) === '') {
 			unset($entry['reviewer'], $entry['assignedAt']);
 			$listData['objects'][$index] = $entry;
@@ -174,11 +188,11 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 		}
 
 		$entry['reviewer'] = $reviewer;
-		$entry['assignedAt'] = $moment->format('c');
+		$entry['assignedAt'] = $assignment->assignedAt->format('c');
 		$listData['objects'][$index] = $entry;
 
 		return $listData;
-	}//end assignReviewer()
+	}//end assign()
 
 	/**
 	 * Refuse to reassign an entry that has already been answered.
@@ -222,6 +236,21 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	 */
 	public function recordAnswer(array $listData, string $entryUuid, ReviewerAnswer $given, ?string $transferRef = null): array {
 		$answer = new ReviewAnswer(answer: $given->answer, reason: $given->reason, newDate: $given->newDate, transferRef: $transferRef);
+		return $this->record(listData: $listData, decided: new DecidedEntry(entryUuid: $entryUuid, given: $given, answer: $answer));
+	}//end recordAnswer()
+
+	/**
+	 * Record one decided entry in the list's one decision history.
+	 *
+	 * @param array<string, mixed> $listData The destruction list's own data.
+	 * @param DecidedEntry         $decided  The entry, the answer as the reviewer gave it, and as it is recorded.
+	 *
+	 * @return array<string, mixed> The list data, with the entry decided and the history appended.
+	 *
+	 * @throws InvalidArgumentException When the answer, the entry, the reviewer or the reason is wrong.
+	 */
+	private function record(array $listData, DecidedEntry $decided): array {
+		[$entryUuid, $given, $answer] = [$decided->entryUuid, $decided->given, $decided->answer];
 		$this->guardAnswer(given: $answer);
 
 		$reviewer = (string)$given->reviewer;
@@ -234,7 +263,7 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 		$decision = $this->withAnswerFacts(decision: $decision, given: $answer);
 
 		return $this->appendDecision(listData: $listData, decision: $decision);
-	}//end recordAnswer()
+	}//end record()
 
 	/**
 	 * A reviewer's answer, as the reviewer gave it.
@@ -334,16 +363,29 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function pendingEntries(array $listData, string $listUuid, ?string $reviewer = null, ?DateTimeInterface $waitingSince = null): array {
-		$list    = ['list' => $listUuid, 'listStatus' => ($listData['status'] ?? null)];
+		$query = new PendingReviewQuery(listUuid: $listUuid, reviewer: $reviewer, waitingSince: $waitingSince);
+		return $this->pending(listData: $listData, query: $query);
+	}//end pendingEntries()
+
+	/**
+	 * The entries of one list that match a pending-review query.
+	 *
+	 * @param array<string, mixed> $listData The destruction list's own data.
+	 * @param PendingReviewQuery   $query    The list's uuid, the reviewer, and how long an entry must have waited.
+	 *
+	 * @return array<int, array<string, mixed>> The pending entries, each naming its list.
+	 */
+	private function pending(array $listData, PendingReviewQuery $query): array {
+		$list    = ['list' => $query->listUuid, 'listStatus' => ($listData['status'] ?? null)];
 		$pending = [];
-		foreach ($this->openEntries(listData: $listData, reviewer: $reviewer) as $entry) {
-			if ($this->waitedLongEnough(entry: $entry, waitingSince: $waitingSince) === true) {
+		foreach ($this->openEntries(listData: $listData, reviewer: $query->reviewer) as $entry) {
+			if ($this->waitedLongEnough(entry: $entry, waitingSince: $query->waitingSince) === true) {
 				$pending[] = $this->pendingRow(list: $list, entry: $entry);
 			}
 		}
 
 		return $pending;
-	}//end pendingEntries()
+	}//end pending()
 
 	/**
 	 * The entries that are assigned, unanswered and this reviewer's, in list order.

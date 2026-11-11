@@ -16,6 +16,8 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
+use OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
@@ -148,9 +150,9 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 		$this->schema(survivorship: ['sourceLink' => ['mode' => 'reverseFk']]);
 		$this->sources->method('isReverseFk')->willReturn(true);
 		$this->sources->expects($this->once())->method('resolveSources')
-			->with(['goldenRecord' => ['name' => 'Kept'], 'id' => 'master-1'], 'master-1', ['sourceLink' => ['mode' => 'reverseFk']], '5')
+			->with(new MasterRecord(data: ['goldenRecord' => ['name' => 'Kept'], 'id' => 'master-1'], uuid: 'master-1', register: '5'), ['sourceLink' => ['mode' => 'reverseFk']])
 			->willReturn([]);
-		$this->resolver->expects($this->never())->method('resolveGoldenRecord');
+		$this->resolver->expects($this->never())->method('resolve');
 		$this->objects->expects($this->never())->method('findAll');
 
 		$object = $this->object(data: ['goldenRecord' => ['name' => 'Kept']]);
@@ -168,7 +170,7 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 		$this->schema(survivorship: ['sourceLink' => ['mode' => 'reverseFk'], 'goldenRecordField' => 'master']);
 		$this->sources->method('isReverseFk')->willReturn(true);
 		$this->sources->method('resolveSources')->willReturn([]);
-		$this->resolver->expects($this->once())->method('resolveGoldenRecord')->willReturn(self::RESOLUTION);
+		$this->resolver->expects($this->once())->method('resolve')->willReturn(self::RESOLUTION);
 
 		$object = $this->object(data: ['goldenRecord' => ['name' => 'Ignored']]);
 		$this->listener()->handle(new ObjectCreatingEvent($object));
@@ -185,7 +187,7 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 		$this->schema(survivorship: ['sourceLinkField' => 'sources']);
 		$this->sources->method('isReverseFk')->willReturn(false);
 		$this->sources->method('resolveSources')->willReturn([]);
-		$this->resolver->expects($this->once())->method('resolveGoldenRecord')->willReturn(self::RESOLUTION);
+		$this->resolver->expects($this->once())->method('resolve')->willReturn(self::RESOLUTION);
 
 		$object = $this->object(data: ['goldenRecord' => ['name' => 'Old']]);
 		$this->listener()->handle(new ObjectCreatingEvent($object));
@@ -210,10 +212,12 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 			->with(['filters' => ['schema' => 'trustConfiguration', 'entityType' => 'company']], true, true)
 			->willReturn([$row, ['not' => 'an entity']]);
 		$seen = [];
-		$this->resolver->expects($this->once())->method('resolveGoldenRecord')
+		$this->resolver->expects($this->once())->method('resolve')
 			->willReturnCallback(
-				function (string $entityType, array $sourceRecords, array $passed, array $trustRows, TrustTierResolver $trust, \DateTimeImmutable $asOf, mixed $overrides) use (&$seen): array {
-					$seen = [$entityType, $sourceRecords, $passed, $trustRows, $overrides];
+				function (GoldenRecordRequest $request) use (&$seen): array {
+					[$sourceRecords, $passed, $trust, $overrides] = [$request->sourceRecords, $request->config, $request->trust, $request->overrides];
+					$this->assertInstanceOf(TrustTierResolver::class, $trust->trustResolver);
+					$seen = [$trust->entityType, $sourceRecords, $passed, $trust->trustRows, $overrides];
 
 					return self::RESOLUTION;
 				}
@@ -243,10 +247,10 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 			->with(['filters' => ['schema' => 'trustConfiguration', 'entityType' => 'organisation']], true, true)
 			->willThrowException(new RuntimeException('denied'));
 		$seen = [];
-		$this->resolver->expects($this->once())->method('resolveGoldenRecord')
+		$this->resolver->expects($this->once())->method('resolve')
 			->willReturnCallback(
-				function (string $entityType, array $sourceRecords, array $passed, array $trustRows, TrustTierResolver $trust, \DateTimeImmutable $asOf, mixed $overrides) use (&$seen): array {
-					$seen = [$trustRows, $overrides];
+				function (GoldenRecordRequest $request) use (&$seen): array {
+					$seen = [$request->trust->trustRows, $request->overrides];
 
 					return self::RESOLUTION;
 				}
@@ -269,7 +273,7 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 		$this->schema(survivorship: ['sourceLinkField' => 'sources'], slug: null);
 		$this->sources->method('resolveSources')->willReturn([['values' => []]]);
 		$this->objects->expects($this->never())->method('findAll');
-		$this->resolver->expects($this->once())->method('resolveGoldenRecord')->willReturn(self::RESOLUTION);
+		$this->resolver->expects($this->once())->method('resolve')->willReturn(self::RESOLUTION);
 
 		$this->listener()->handle(new ObjectCreatingEvent($this->object(data: [])));
 	}//end testNoEntityTypeNeverQueriesTrustRows()
@@ -307,7 +311,7 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 	public function testFailureIsLoggedAndDataUntouched(): void {
 		$this->schema(survivorship: ['sourceLinkField' => 'sources']);
 		$this->sources->method('resolveSources')->willReturn([['values' => []]]);
-		$this->resolver->method('resolveGoldenRecord')->willThrowException(new RuntimeException('bad tier'));
+		$this->resolver->method('resolve')->willThrowException(new RuntimeException('bad tier'));
 		$this->logger->expects($this->once())->method('warning')
 			->with('Survivorship resolution failed on master-1: bad tier');
 

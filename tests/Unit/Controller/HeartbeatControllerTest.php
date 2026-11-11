@@ -32,15 +32,6 @@ class HeartbeatControllerTest extends TestCase {
 		);
 	}
 
-	public function testConstructorCreatesInstance(): void {
-		$controller = new HeartbeatController(
-			'openregister',
-			$this->request
-		);
-
-		$this->assertInstanceOf(HeartbeatController::class, $controller);
-	}
-
 	public function testControllerExtendsBaseController(): void {
 		$this->assertInstanceOf(Controller::class, $this->controller);
 	}
@@ -49,6 +40,8 @@ class HeartbeatControllerTest extends TestCase {
 		$result = $this->controller->heartbeat();
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame('alive', $result->getData()['status']);
+		$this->assertEqualsWithDelta(time(), $result->getData()['timestamp'], 5);
 	}
 
 	public function testHeartbeatReturnsAliveStatus(): void {

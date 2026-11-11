@@ -25,8 +25,13 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use DateTimeZone;
+use OCA\OpenRegister\Db\FlowActivityWindow;
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunFilter;
+use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunViewer;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -172,11 +177,11 @@ final class FlowRunMapperListGoldenTest extends TestCase {
 
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->recordingBuilder());
-		$mapper = new FlowRunMapper($db, $this->createMock(IEventDispatcher::class));
+		$mapper = new FlowRunMapper($db, new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)));
 
 		$outcome = [];
 		try {
-			$outcome['result'] = $this->render(value: $mapper->$method(...$args));
+			$outcome['result'] = $this->render(value: $mapper->$method(...$this->valueObjectArgs(method: $method, args: $args)));
 		} catch (\Throwable $e) {
 			$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage();
 		}
@@ -184,6 +189,36 @@ final class FlowRunMapperListGoldenTest extends TestCase {
 		$outcome['queries'] = $this->queryLog;
 		return $outcome;
 	}//end outcome()
+
+	/**
+	 * The case tables keep the flat argument names the golden was recorded
+	 * with; the mapper now takes them as value objects. Building those here
+	 * leaves the case names and the recorded fixture untouched, so an
+	 * unchanged fixture proves the queries did not change.
+	 *
+	 * @param string               $method The method.
+	 * @param array<string, mixed> $args   Flat named arguments.
+	 *
+	 * @return array<string, mixed> The arguments the mapper takes.
+	 */
+	private function valueObjectArgs(string $method, array $args): array {
+		$viewer = new FlowRunViewer(requesterUid: ($args['requesterUid'] ?? null), ownedFlowIds: ($args['ownedFlowIds'] ?? []));
+		if ($method === 'summarizeByFlow') {
+			return ['window' => new FlowActivityWindow(flowIds: $args['flowIds'], since: $args['since']), 'viewer' => $viewer];
+		}
+
+		if ($method !== 'findAllRuns') {
+			return $args;
+		}
+
+		$filter = new FlowRunFilter(
+			flowId: ($args['flowId'] ?? null),
+			status: ($args['status'] ?? null),
+			since: ($args['since'] ?? null),
+			flowIds: ($args['flowIds'] ?? [])
+		);
+		return ['listing' => new FlowRunListing(filter: $filter, limit: ($args['limit'] ?? 50), offset: ($args['offset'] ?? 0)), 'viewer' => $viewer];
+	}//end valueObjectArgs()
 
 	/**
 	 * A result as plain data.

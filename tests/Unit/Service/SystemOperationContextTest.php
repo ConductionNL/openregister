@@ -99,4 +99,35 @@ class SystemOperationContextTest extends TestCase {
 		$this->assertTrue($afterInnerActive);
 		$this->assertFalse(SystemOperationContext::isActive());
 	}//end testNestedScopesCompose()
+
+	/**
+	 * suspend() lifts the scope for its callable, lets a nested run() elevate, and restores the scope after a throw.
+	 *
+	 * @return void
+	 */
+	public function testSuspendLiftsTheScopeAndRestoresIt(): void {
+		$seen = SystemOperationContext::run(
+			static function (): array {
+				$inside = SystemOperationContext::suspend(static fn (): bool => SystemOperationContext::isActive());
+				$nested = SystemOperationContext::suspend(
+					static fn (): bool => SystemOperationContext::run(static fn (): bool => SystemOperationContext::isActive())
+				);
+
+				try {
+					SystemOperationContext::suspend(
+						static function (): void {
+							throw new \RuntimeException('failed');
+						}
+					);
+				} catch (\RuntimeException) {
+					// Expected.
+				}
+
+				return [$inside, $nested, SystemOperationContext::isActive()];
+			}
+		);
+
+		$this->assertSame([false, true, true], $seen);
+		$this->assertFalse(SystemOperationContext::isActive());
+	}//end testSuspendLiftsTheScopeAndRestoresIt()
 }//end class

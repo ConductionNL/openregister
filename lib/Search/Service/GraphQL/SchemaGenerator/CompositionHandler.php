@@ -18,6 +18,7 @@
 
 namespace OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
 
+use Closure;
 use GraphQL\Type\Definition\InterfaceType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\UnionType;
@@ -35,52 +36,19 @@ use OCA\OpenRegister\Db\Schema as RegisterSchema;
 class CompositionHandler {
 
 	/**
-	 * Callback to resolve a $ref string to a RegisterSchema.
-	 *
-	 * @var callable(string): ?RegisterSchema
-	 */
-	private $refResolver;
-
-	/**
-	 * Callback to get/create an ObjectType for a schema.
-	 *
-	 * @var callable(RegisterSchema): ObjectType
-	 */
-	private $objectTypeFactory;
-
-	/**
-	 * Callback to build object fields for a schema.
-	 *
-	 * @var callable(RegisterSchema): array<string, array<string, mixed>>
-	 */
-	private $fieldBuilder;
-
-	/**
-	 * Callback to convert a slug to a PascalCase type name.
-	 *
-	 * @var callable(string, ?int): string
-	 */
-	private $typeNameConverter;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param callable $refResolver Resolves a $ref to a RegisterSchema
-	 * @param callable $objectTypeFactory Gets/creates an ObjectType for a schema
-	 * @param callable $fieldBuilder Builds object fields for a schema
-	 * @param callable $typeNameConverter Converts a slug to a PascalCase type name
+	 * @param Closure(string): ?RegisterSchema                                   $refResolver       Resolves a $ref to a RegisterSchema
+	 * @param Closure(RegisterSchema): ObjectType                               $objectTypeFactory Gets/creates an ObjectType for a schema
+	 * @param Closure(RegisterSchema): array<string, array<string, mixed>>      $fieldBuilder      Builds object fields for a schema
+	 * @param Closure(string, ?int): string                                     $typeNameConverter Converts a slug to a PascalCase type name
 	 */
 	public function __construct(
-		callable $refResolver,
-		callable $objectTypeFactory,
-		callable $fieldBuilder,
-		callable $typeNameConverter,
+		private readonly Closure $refResolver,
+		private readonly Closure $objectTypeFactory,
+		private readonly Closure $fieldBuilder,
+		private readonly Closure $typeNameConverter,
 	) {
-		$this->refResolver = $refResolver;
-		$this->objectTypeFactory = $objectTypeFactory;
-		$this->fieldBuilder = $fieldBuilder;
-		$this->typeNameConverter = $typeNameConverter;
-
 	}//end __construct()
 
 	/**

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
+use OCP\IUserSession;
 
 /**
  * The services of SurvivorshipController, bundled so its constructor stays small.
@@ -38,11 +39,13 @@ final class SurvivorshipControllerServices {
 	 * @param ObjectOperationsInterface     $objectService        Object read/write path (RBAC + tenant scoped).
 	 * @param SchemaMapperInterface         $schemaMapper         Schema lookup for the survivorship annotation.
 	 * @param SourceRecordResolverInterface $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
+	 * @param IUserSession $userSession The user session.
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly SourceRecordResolverInterface $sourceRecordResolver,
+		public readonly IUserSession $userSession,
 	) {
 	}//end __construct()
 }//end class

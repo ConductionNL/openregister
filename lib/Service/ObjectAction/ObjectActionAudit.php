@@ -63,11 +63,13 @@ class ObjectActionAudit {
 	 * Constructor.
 	 *
 	 * @param AuditTrailMapperInterface $auditTrail Writes the entry.
-	 * @param LoggerInterface  $logger     Records a failure to write it.
+	 * @param LoggerInterface           $logger     Records a failure to write it.
+	 * @param ObjectActionGate          $gate       The acting user.
 	 */
 	public function __construct(
 		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
+		private readonly ObjectActionGate $gate,
 	) {
 	}//end __construct()
 
@@ -78,7 +80,6 @@ class ObjectActionAudit {
 	 * @param ObjectActionDefinition $definition   The declared action: its key and kind.
 	 * @param ObjectActionRunOutcome $outcome      The run's uuid (null for a transition), its changes and its outcome.
 	 * @param string                 $inputsDigest The digest of the storable inputs.
-	 * @param string|null            $userId       The acting user.
 	 *
 	 * @return void
 	 *
@@ -89,7 +90,6 @@ class ObjectActionAudit {
 		ObjectActionDefinition $definition,
 		ObjectActionRunOutcome $outcome,
 		string $inputsDigest,
-		?string $userId,
 	): void {
 		try {
 			$this->auditTrail->createAuditTrailEntry(
@@ -103,7 +103,7 @@ class ObjectActionAudit {
 					'changes' => $outcome->changes,
 					'outcome' => $outcome->outcome,
 				],
-				actorId: $userId
+				actorId: $this->gate->userId()
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

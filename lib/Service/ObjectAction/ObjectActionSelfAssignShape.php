@@ -60,17 +60,29 @@ final class ObjectActionSelfAssignShape {
 			return [sprintf('Action "%s": "selfAssign" must be {"field": "<property>"} and nothing else.', $key)];
 		}
 
-		$extra = array_values(array_intersect(['inputs', 'elevate'], array_keys($definition)));
-		if (($definition['mode'] ?? 'sync') !== 'sync') {
-			$extra[] = 'mode';
-		}
-
+		$extra = self::extraKeys(definition: $definition);
 		if ($extra !== []) {
 			return [sprintf('Action "%s": a self-assign action takes no %s.', $key, implode(' or ', $extra))];
 		}
 
 		return [];
 	}//end refusals()
+
+	/**
+	 * The keys a self-assign action may not carry: inputs, an elevation, or a mode other than sync.
+	 *
+	 * @param array<string, mixed> $definition The action definition.
+	 *
+	 * @return array<int, string> The offending keys, in that order.
+	 */
+	private static function extraKeys(array $definition): array {
+		$extra = array_values(array_intersect(['inputs', 'elevate'], array_keys($definition)));
+		if (($definition['mode'] ?? 'sync') !== 'sync') {
+			$extra[] = 'mode';
+		}
+
+		return $extra;
+	}//end extraKeys()
 
 	/**
 	 * The property a `selfAssign` body names, or null when it names none.

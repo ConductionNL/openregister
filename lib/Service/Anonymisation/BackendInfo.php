@@ -33,21 +33,41 @@ use JsonSerializable;
  */
 final class BackendInfo implements JsonSerializable {
 	/**
+	 * Whether the backend is reachable per the latest probe.
+	 *
+	 * @var boolean
+	 */
+	public readonly bool $available;
+
+	/**
+	 * ISO-8601 timestamp of the latest probe, or null.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $lastProbedAt;
+
+	/**
+	 * Latency of the latest probe in milliseconds, or null.
+	 *
+	 * @var integer|null
+	 */
+	public readonly ?int $latencyMs;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $name The method enum (regex/presidio/openanonymiser/llm/hybrid).
-	 * @param bool $available Whether the backend is reachable per the latest probe.
-	 * @param bool $configured Whether the backend has usable configuration.
-	 * @param string|null $lastProbedAt ISO-8601 timestamp of the latest probe, or null.
-	 * @param int|null $latencyMs Latency of the latest probe in milliseconds, or null.
+	 * @param string      $name       The method enum (regex/presidio/openanonymiser/llm/hybrid).
+	 * @param bool        $configured Whether the backend has usable configuration.
+	 * @param ProbeResult $probe      The latest probe: reachability, when, and its latency.
 	 */
 	public function __construct(
 		public readonly string $name,
-		public readonly bool $available,
 		public readonly bool $configured,
-		public readonly ?string $lastProbedAt,
-		public readonly ?int $latencyMs,
+		ProbeResult $probe,
 	) {
+		$this->available = $probe->reachable;
+		$this->lastProbedAt = $probe->probedAt;
+		$this->latencyMs = $probe->latencyMs;
 	}//end __construct()
 
 	/**

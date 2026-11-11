@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Config;
 
 use OCA\OpenRegister\Service\Config\BundleSigner;
+use OCA\OpenRegister\Service\Config\ConfigPublishTarget;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\FederatedConfigTransport;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
@@ -197,11 +198,8 @@ class FederatedConfigServiceGoldenTest extends TestCase {
 				'publish' => $service->publish(
 					($scenario['typeId'] ?? 'demo.type'),
 					['x' => 1],
-					($scenario['repo'] ?? 'o/r'),
-					'/dir/set.json',
-					'cred-1',
-					($scenario['branch'] ?? 'main'),
-					($scenario['private'] ?? false)
+					new ConfigPublishTarget(($scenario['repo'] ?? 'o/r'), '/dir/set.json', ($scenario['branch'] ?? 'main'), ($scenario['private'] ?? false)),
+					'cred-1'
 				),
 				'discover' => $service->discover(($scenario['topic'] ?? 'demo'), ($scenario['credentialId'] ?? null)),
 				default => $service->fetchBundle(($scenario['repo'] ?? 'o/r'), ($scenario['path'] ?? 'b.json'), ($scenario['credentialId'] ?? null)),

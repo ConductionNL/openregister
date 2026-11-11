@@ -119,7 +119,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'an email link'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'an email link', fields: self::FIELDS)),
 				fn (): string => $this->neededRefusal(data: $data),
 				fn (): string => $this->mailRefusal(data: $data, users: $users),
 				fn (): string => $this->detailRefusal(data: $data),
@@ -233,7 +233,17 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 			return ['error' => 'no object "'.(string) $data['object'].'" to link the mail to', 'entry' => null];
 		}
 
-		$link = $this->newLink(app: $app, key: $key, object: $object, data: $data);
+		return $this->insert(link: $this->newLink(app: $app, key: $key, object: $object, data: $data));
+	}//end write()
+
+	/**
+	 * Store the link, recording its id, or why the insert failed.
+	 *
+	 * @param EmailLink $link The link to store.
+	 *
+	 * @return array{error: string, entry: array{id: string}|null} The record entry, or why the write failed.
+	 */
+	private function insert(EmailLink $link): array {
 		try {
 			$saved = $this->mapper()->insert($link);
 		} catch (Throwable $e) {
@@ -241,7 +251,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 		}
 
 		return ['error' => '', 'entry' => ['id' => (string) $saved->getId()]];
-	}//end write()
+	}//end insert()
 
 	/**
 	 * The link of the mail to the object, as the set writes it.

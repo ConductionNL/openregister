@@ -32,8 +32,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CalendarFeedControllerServices;
+use OCA\OpenRegister\Controller\Support\CalendarFeedPlatform;
+use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
+use OCA\OpenRegister\Controller\Support\TrimmedRequestParam;
+use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeServiceInterface;
+use OCA\OpenRegister\Service\Calendar\AttendeeResponse;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
@@ -48,8 +54,6 @@ use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
-use OCP\Security\Bruteforce\IThrottler;
-use Psr\Log\LoggerInterface;
 
 /**
  * Calendar feed controller.
@@ -96,39 +100,45 @@ class CalendarFeedController extends Controller {
 	private readonly IUserSession $userSession;
 
 	/**
-	 * Brute-force throttler for rejected tokens.
+	 * Counts rejected requests against the brute-force throttler.
 	 *
-	 * @var IThrottler
+	 * @var ObjectShareLinkThrottle
 	 */
-	private readonly IThrottler $throttler;
-
-	/**
-	 * PSR logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
+	private readonly ObjectShareLinkThrottle $rejections;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by Nextcloud).
 	 * @param IRequest $request Current request.
 	 * @param CalendarFeedControllerServices $services The calendar feed controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		CalendarFeedControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->tokens = $services->domain->tokens;
 		$this->feed = $services->domain->feed;
 		$this->attendees = $services->domain->attendees;
 		$this->userSession = $services->domain->userSession;
-		$this->throttler = $services->platform->throttler;
-		$this->logger = $services->platform->logger;
+		$this->rejections = self::rejectionCounter(platform: $services->platform);
 	}//end __construct()
+
+	/**
+	 * The counter of rejected requests on this surface.
+	 *
+	 * @param CalendarFeedPlatform $platform The throttler and logger
+	 *
+	 * @return ObjectShareLinkThrottle The counter
+	 */
+	private static function rejectionCounter(CalendarFeedPlatform $platform): ObjectShareLinkThrottle {
+		return new ObjectShareLinkThrottle(
+			throttler: $platform->throttler,
+			logger: $platform->logger,
+			action: self::THROTTLE_ACTION,
+			label: 'CalendarFeedController'
+		);
+	}//end rejectionCounter()
 
 	/**
 	 * GET /api/public/calendar-feeds/{token}.ics
@@ -163,6 +173,17 @@ class CalendarFeedController extends Controller {
 
 		$this->tokens->noteRead(token: $resolved);
 
+		return $this->calendarDocument(body: $body);
+	}//end feed()
+
+	/**
+	 * Serve a rendered feed as a private, uncached iCalendar document.
+	 *
+	 * @param string $body The rendered iCalendar text
+	 *
+	 * @return DataDisplayResponse The calendar document
+	 */
+	private function calendarDocument(string $body): DataDisplayResponse {
 		return new DataDisplayResponse(
 			$body,
 			Http::STATUS_OK,
@@ -172,7 +193,7 @@ class CalendarFeedController extends Controller {
 				'Cache-Control' => 'no-store, private',
 			]
 		);
-	}//end feed()
+	}//end calendarDocument()
 
 	/**
 	 * POST /api/calendar-feeds
@@ -191,14 +212,13 @@ class CalendarFeedController extends Controller {
 			return new JSONResponse(['message' => 'Not Found'], Http::STATUS_NOT_FOUND);
 		}
 
+		$draft = new CalendarFeedToken();
+		$draft->setScopeType((string)$this->request->getParam('scopeType', ''));
+		$draft->setScopeId((string)$this->request->getParam('scopeId', ''));
+		$draft->setLabel($this->stringParam(name: 'label'));
+
 		try {
-			$minted = $this->tokens->mint(
-				userId: $user->getUID(),
-				scopeType: (string)$this->request->getParam('scopeType', ''),
-				scopeId: (string)$this->request->getParam('scopeId', ''),
-				label: $this->stringParam(name: 'label'),
-				ttlSeconds: $this->intParam(name: 'ttlSeconds')
-			);
+			$minted = $this->tokens->mint(userId: $user->getUID(), draft: $draft, ttlSeconds: $this->intParam(name: 'ttlSeconds'));
 		} catch (InvalidArgumentException $refused) {
 			return new JSONResponse(['message' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
@@ -302,11 +322,13 @@ class CalendarFeedController extends Controller {
 		}
 
 		try {
-			$responses = $this->attendees->recordResponse(
-				objectUuid: $id,
-				attendee: (string)$this->request->getParam('attendee', ''),
-				status: (string)$this->request->getParam('status', ''),
-				respondedBy: $this->stringParam(name: 'respondedBy')
+			$responses = $this->attendees->recordAttendeeResponse(
+				response: new AttendeeResponse(
+					objectUuid: $id,
+					attendee: (string)$this->request->getParam('attendee', ''),
+					status: (string)$this->request->getParam('status', ''),
+					respondedBy: $this->stringParam(name: 'respondedBy')
+				)
 			);
 		} catch (InvalidArgumentException $refused) {
 			return new JSONResponse(['message' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);
@@ -346,16 +368,7 @@ class CalendarFeedController extends Controller {
 	 * @return void
 	 */
 	private function registerRejectedAttempt(): void {
-		try {
-			$this->throttler->registerAttempt(
-				action: self::THROTTLE_ACTION,
-				ip: $this->request->getRemoteAddress()
-			);
-		} catch (\Throwable $throttlerFailure) {
-			$this->logger->warning(
-				'CalendarFeedController: registerAttempt failed: ' . $throttlerFailure->getMessage()
-			);
-		}
+		$this->rejections->countRejected(address: $this->request->getRemoteAddress());
 	}//end registerRejectedAttempt()
 
 	/**
@@ -366,18 +379,7 @@ class CalendarFeedController extends Controller {
 	 * @return string|null The value, or null.
 	 */
 	private function stringParam(string $name): ?string {
-		$value = $this->request->getParam($name, null);
-
-		if (is_string($value) === false) {
-			return null;
-		}
-
-		$trimmed = trim($value);
-		if ($trimmed === '') {
-			return null;
-		}
-
-		return $trimmed;
+		return TrimmedRequestParam::read(request: $this->request, name: $name);
 	}//end stringParam()
 
 	/**

@@ -38,6 +38,11 @@
         },
         {
             "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
                 "SaveObjectWriterInterface"
             ]
         },
@@ -251,6 +256,11 @@
         {
             "get": [
                 "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
             ]
         },
         {
@@ -865,6 +875,11 @@
         },
         {
             "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
                 "SaveObjectWriterInterface"
             ]
         },
@@ -1460,6 +1475,11 @@
         },
         {
             "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
                 "SaveObjectWriterInterface"
             ]
         },
@@ -1709,6 +1729,11 @@
         },
         {
             "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
                 "SaveObjectWriterInterface"
             ]
         },
@@ -1841,6 +1866,11 @@
         {
             "get": [
                 "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
             ]
         },
         {
@@ -2344,6 +2374,11 @@
         },
         {
             "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
                 "SaveObjectWriterInterface"
             ]
         },
@@ -2556,6 +2591,11 @@
         },
         {
             "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
                 "SaveObjectWriterInterface"
             ]
         },
@@ -2617,6 +2657,11 @@
         },
         {
             "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
                 "SaveObjectWriterInterface"
             ]
         },
@@ -2672,6 +2717,11 @@
         {
             "get": [
                 "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
             ]
         },
         {
@@ -2746,6 +2796,11 @@
         {
             "get": [
                 "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
             ]
         },
         {
@@ -2936,6 +2991,11 @@
         {
             "get": [
                 "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
             ]
         },
         {

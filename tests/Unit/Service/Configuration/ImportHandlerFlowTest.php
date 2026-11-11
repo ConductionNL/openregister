@@ -30,7 +30,10 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SchemaImportSteps;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -72,15 +75,20 @@ class ImportHandlerFlowTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->createMock(SchemaMapper::class),
-			registerMapper:      $this->createMock(RegisterMapper::class),
-			objectEntityMapper:  $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $this->createMock(MappingMapper::class),
-			appConfig:           $this->createMock(IAppConfig::class),
-			logger:              $this->logger,
-			appDataPath:         '/tmp',
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new SchemaImportSteps(),
+			logger: $this->logger,
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 
 		$this->handler->setFlowMapper($this->flowMapper);
@@ -105,15 +113,20 @@ class ImportHandlerFlowTest extends TestCase {
 	 */
 	public function testImportFlowSkipsWhenNoFlowMapper(): void {
 		$handler = new ImportHandler(
-			schemaMapper:        $this->createMock(SchemaMapper::class),
-			registerMapper:      $this->createMock(RegisterMapper::class),
-			objectEntityMapper:  $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $this->createMock(MappingMapper::class),
-			appConfig:           $this->createMock(IAppConfig::class),
-			logger:              $this->createMock(LoggerInterface::class),
-			appDataPath:         '/tmp',
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new SchemaImportSteps(),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 
 		$result = $this->invokeMethod($handler, 'importFlow', [['uuid' => 'abc'], null, null, false]);
@@ -260,21 +273,21 @@ class ImportHandlerFlowTest extends TestCase {
 	}//end testImportFlowLeavesExistingDraftAlone()
 
 	/**
-	 * importFlow() falls back to a direct published patch when publish() refuses a dead end.
+	 * A flow the publish guard refuses for a dead-end node is imported as a draft, never marked published.
 	 */
-	public function testImportFlowFallsBackToDirectPublishOnDeadEndRefusal(): void {
+	public function testImportFlowWithADeadEndStaysADraft(): void {
 		$existing = new Flow();
 		$existing->setUuid('flow-uuid-1');
 		$existing->setNodes(['old']);
 		$existing->setLifecycleStatus(FlowVersion::STATUS_DRAFT);
 
 		$this->flowMapper->method('findByUuid')->willReturn($existing);
-		$this->flowVersionService->method('publish')->willThrowException(
+		$this->flowVersionService->expects($this->once())->method('publish')->willThrowException(
 			new FlowLifecycleRefused(reason: FlowLifecycleRefused::REASON_DEAD_END, flowId: 'flow-uuid-1')
 		);
 
-		// Once for applyImportedFlowFields' persist, once for the fallback patch.
-		$this->flowMapper->expects($this->exactly(2))->method('update')->willReturnArgument(0);
+		// Only the persist of the imported fields; no write that sets the status.
+		$this->flowMapper->expects($this->once())->method('update')->willReturnArgument(0);
 		$this->logger->expects($this->once())->method('warning');
 
 		$result = $this->invokeMethod($this->handler, 'importFlow', [
@@ -284,13 +297,35 @@ class ImportHandlerFlowTest extends TestCase {
 			false,
 		]);
 
-		$this->assertSame(FlowVersion::STATUS_PUBLISHED, $result->getLifecycleStatus());
-	}//end testImportFlowFallsBackToDirectPublishOnDeadEndRefusal()
+		$this->assertSame(FlowVersion::STATUS_DRAFT, $result->getLifecycleStatus());
+	}//end testImportFlowWithADeadEndStaysADraft()
 
 	/**
-	 * importFlow() logs and leaves the flow as a draft for any OTHER publish refusal — no fallback patch.
+	 * A new flow with a dead-end node is inserted as a draft and never updated to published.
 	 */
-	public function testImportFlowDoesNotFallBackForNonDeadEndRefusal(): void {
+	public function testANewFlowWithADeadEndIsImportedAsADraft(): void {
+		$this->flowMapper->method('findByUuid')
+			->willThrowException(new DoesNotExistException('not found'));
+		$this->flowMapper->expects($this->once())->method('insert')->willReturnArgument(0);
+		$this->flowMapper->expects($this->never())->method('update');
+		$this->flowVersionService->method('publish')->willThrowException(
+			new FlowLifecycleRefused(reason: FlowLifecycleRefused::REASON_DEAD_END, flowId: 'flow-uuid-1')
+		);
+
+		$result = $this->invokeMethod($this->handler, 'importFlow', [
+			['uuid' => 'flow-uuid-1', 'nodes' => ['n1']],
+			null,
+			null,
+			false,
+		]);
+
+		$this->assertNotSame(FlowVersion::STATUS_PUBLISHED, $result->getLifecycleStatus());
+	}//end testANewFlowWithADeadEndIsImportedAsADraft()
+
+	/**
+	 * importFlow() logs and leaves the flow as a draft for any other publish refusal.
+	 */
+	public function testImportFlowStaysADraftForAnotherRefusal(): void {
 		$existing = new Flow();
 		$existing->setUuid('flow-uuid-1');
 		$existing->setNodes(['old']);
@@ -301,7 +336,7 @@ class ImportHandlerFlowTest extends TestCase {
 			new FlowLifecycleRefused(reason: FlowLifecycleRefused::REASON_NOT_A_DRAFT, flowId: 'flow-uuid-1')
 		);
 
-		// Only the main persist — no fallback patch for a non-dead-end refusal.
+		// Only the main persist.
 		$this->flowMapper->expects($this->once())->method('update')->willReturnArgument(0);
 		$this->logger->expects($this->once())->method('warning');
 
@@ -313,7 +348,7 @@ class ImportHandlerFlowTest extends TestCase {
 		]);
 
 		$this->assertInstanceOf(Flow::class, $result);
-	}//end testImportFlowDoesNotFallBackForNonDeadEndRefusal()
+	}//end testImportFlowStaysADraftForAnotherRefusal()
 
 	/**
 	 * importFlow() leaves a new flow as a draft when no FlowVersionService was wired.

@@ -37,32 +37,11 @@ namespace OCA\OpenRegister\Service\Rbac;
 final class HierarchyDescent {
 
 	/**
-	 * Everything decided so far, direct or inherited.
-	 *
-	 * @var array<string, array{mask: int, root: string}>
-	 */
-	public array $seen;
-
-	/**
-	 * The grant map: object UUID => core permission bitmask.
-	 *
-	 * @var array<string, int>
-	 */
-	public array $granted;
-
-	/**
-	 * The provenance map: inherited object UUID => the root it came from.
-	 *
-	 * @var array<string, string>
-	 */
-	public array $sources;
-
-	/**
 	 * How many descendants the descent has taken.
 	 *
 	 * @var integer
 	 */
-	public int $added;
+	public int $added = 0;
 
 	/**
 	 * Constructor.
@@ -73,10 +52,10 @@ final class HierarchyDescent {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function __construct(array $seen, array $granted, array $sources) {
-		$this->seen    = $seen;
-		$this->granted = $granted;
-		$this->sources = $sources;
-		$this->added   = 0;
+	public function __construct(
+		public array $seen,
+		public array $granted,
+		public array $sources,
+	) {
 	}//end __construct()
 }//end class

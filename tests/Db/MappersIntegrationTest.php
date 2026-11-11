@@ -14,10 +14,13 @@
 namespace OCA\OpenRegister\Tests\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\ConfigurationSyncResult;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
@@ -445,7 +448,7 @@ class MappersIntegrationTest extends TestCase {
 		$this->insertWebhookLogDirectly($webhookId);
 		$this->insertWebhookLogDirectly($webhookId);
 
-		$results = $this->webhookLogMapper->findByWebhook($webhookId, 1);
+		$results = $this->webhookLogMapper->findByWebhook($webhookId, new ListQuery(1));
 		$this->assertCount(1, $results);
 	}
 
@@ -454,7 +457,7 @@ class MappersIntegrationTest extends TestCase {
 		$this->insertWebhookLogDirectly($webhookId);
 		$this->insertWebhookLogDirectly($webhookId);
 
-		$results = $this->webhookLogMapper->findByWebhook($webhookId, null, 1);
+		$results = $this->webhookLogMapper->findByWebhook($webhookId, new ListQuery(ListQuery::UNBOUNDED, 1));
 		$this->assertCount(1, $results);
 	}
 
@@ -542,7 +545,7 @@ class MappersIntegrationTest extends TestCase {
 		$this->insertWebhookDirectly();
 
 		// findAll applies organisation filtering, so may return 0 if no org is active.
-		$results = $this->webhookMapper->findAll();
+		$results = $this->webhookMapper->findAll(ListQuery::unbounded());
 		$this->assertIsArray($results);
 	}
 
@@ -550,17 +553,17 @@ class MappersIntegrationTest extends TestCase {
 		$this->insertWebhookDirectly();
 		$this->insertWebhookDirectly();
 
-		$results = $this->webhookMapper->findAll(1);
+		$results = $this->webhookMapper->findAll(new ListQuery(limit: 1));
 		$this->assertLessThanOrEqual(1, count($results));
 	}
 
 	public function testWebhookMapperFindAllWithFilters(): void {
-		$results = $this->webhookMapper->findAll(null, null, ['enabled' => 'IS NOT NULL']);
+		$results = $this->webhookMapper->findAll(ListQuery::unbounded(filters: ['enabled' => 'IS NOT NULL']));
 		$this->assertIsArray($results);
 	}
 
 	public function testWebhookMapperFindAllWithIsNullFilter(): void {
-		$results = $this->webhookMapper->findAll(null, null, ['secret' => 'IS NULL']);
+		$results = $this->webhookMapper->findAll(ListQuery::unbounded(filters: ['secret' => 'IS NULL']));
 		$this->assertIsArray($results);
 	}
 
@@ -733,8 +736,7 @@ class MappersIntegrationTest extends TestCase {
 		try {
 			$updated = $this->configurationMapper->updateSyncStatus(
 				$config->getId(),
-				'success',
-				new DateTime()
+				new ConfigurationSyncResult('success', new DateTime())
 			);
 			$this->assertSame('success', $updated->getSyncStatus());
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -900,7 +902,7 @@ class MappersIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->objectMapper->getStatistics($register->getId());
+		$stats = $this->objectMapper->getStatistics(new StatisticsScope(registerId: $register->getId()));
 		$this->assertSame(1, $stats['total'], 'a magic table created after the first call MUST be counted');
 	}
 
@@ -909,7 +911,7 @@ class MappersIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->objectMapper->getStatistics($register->getId());
+		$stats = $this->objectMapper->getStatistics(new StatisticsScope(registerId: $register->getId()));
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
@@ -919,7 +921,7 @@ class MappersIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->objectMapper->getStatistics(null, $schema->getId());
+		$stats = $this->objectMapper->getStatistics(new StatisticsScope(schemaId: $schema->getId()));
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
 
@@ -929,16 +931,15 @@ class MappersIntegrationTest extends TestCase {
 		$this->createTestObject($register, $schema);
 
 		$stats = $this->objectMapper->getStatistics(
-			[$register->getId()],
-			[$schema->getId()]
+			new StatisticsScope(registerId: [$register->getId()], schemaId: [$schema->getId()])
 		);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
 
 	public function testMagicMapperStatisticsGetStatisticsWithExclude(): void {
-		$stats = $this->objectMapper->getStatistics(null, null, [
-			['register' => 999999, 'schema' => 999999],
-		]);
+		$stats = $this->objectMapper->getStatistics(
+			new StatisticsScope(exclude: [['register' => 999999, 'schema' => 999999]])
+		);
 		$this->assertIsArray($stats);
 	}
 

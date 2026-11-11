@@ -36,6 +36,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertion;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
@@ -332,10 +333,14 @@ class PortalTaskControllerA24GoldenTest extends TestCase {
 			->with(
 				$subject,
 				't-1',
-				$expected,
-				'c',
-				[['name' => 'b.txt', 'type' => 'text/plain', 'size' => 3, 'tmp_name' => '/tmp/b', 'error' => 0]],
-				'approve'
+				$this->equalTo(
+					new PortalCompletion(
+						answers: $expected,
+						comment: 'c',
+						files: [['name' => 'b.txt', 'type' => 'text/plain', 'size' => 3, 'tmp_name' => '/tmp/b', 'error' => 0]],
+						outcome: 'approve'
+					)
+				)
 			)
 			->willReturn($task);
 		$this->portal->method('row')->willReturn(['done' => true]);
@@ -368,10 +373,14 @@ class PortalTaskControllerA24GoldenTest extends TestCase {
 			->with(
 				$this->anything(),
 				't-1',
-				[],
-				null,
-				[['name' => 'a.pdf', 'type' => 'p', 'size' => 1, 'tmp_name' => '/a', 'error' => 0]],
-				PortalTaskService::DEFAULT_OUTCOME
+				$this->equalTo(
+					new PortalCompletion(
+						answers: [],
+						comment: null,
+						files: [['name' => 'a.pdf', 'type' => 'p', 'size' => 1, 'tmp_name' => '/a', 'error' => 0]],
+						outcome: PortalTaskService::DEFAULT_OUTCOME
+					)
+				)
 			)
 			->willReturn(new Task());
 		$this->portal->method('row')->willReturn([]);

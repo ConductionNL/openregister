@@ -29,7 +29,7 @@ use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Flow\FlowRunContextInterface;
-use OCA\OpenRegister\Service\Object\RetentionDestruction;
+use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -48,12 +48,14 @@ use OCP\IUserSession;
 class ObjectStateDeleteGuardListener implements IEventListener {
 
 	/**
-	 * @param IUserSession   $userSession The caller.
-	 * @param FlowRunContextInterface $runContext  The ambient flow run, so a lock a run took admits that run.
+	 * @param IUserSession                  $userSession The caller.
+	 * @param FlowRunContextInterface       $runContext  The ambient flow run, so a lock a run took admits that run.
+	 * @param RetentionDestructionInterface $retention   Whether the retention machinery is destroying, which no lock or archive stops.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly FlowRunContextInterface $runContext,
+		private readonly RetentionDestructionInterface $retention,
 	) {
 	}//end __construct()
 
@@ -67,7 +69,7 @@ class ObjectStateDeleteGuardListener implements IEventListener {
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectDeletingEvent === false || (new RetentionDestruction())->isRunning() === true) {
+		if ($event instanceof ObjectDeletingEvent === false || $this->retention->isRunning() === true) {
 			return;
 		}
 

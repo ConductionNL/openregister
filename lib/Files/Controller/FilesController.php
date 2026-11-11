@@ -26,12 +26,14 @@ namespace OCA\OpenRegister\Files\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Service\File\FileBatchRequest;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
 use OCA\OpenRegister\Files\Controller\Support\FileActionTarget;
+use OCA\OpenRegister\Files\Controller\Support\FileObjectRoute;
 use OCA\OpenRegister\Files\Controller\Support\FileTransfer;
 use OCA\OpenRegister\Files\Controller\Support\FilesControllerServices;
-use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FileCopiedEvent;
 use OCA\OpenRegister\Event\FileLockedEvent;
@@ -45,15 +47,20 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\OfficeOpenRequest;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
+use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -71,6 +78,11 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
+use OCA\OpenRegister\Service\File\FileOverwrite;
+use OCA\OpenRegister\Service\File\FileRename;
+use OCA\OpenRegister\Service\File\FileTransfer as AttachedFileTransfer;
+use OCA\OpenRegister\Support\ContentDisposition;
 
 /**
  * FilesController handles file operations for objects in registers
@@ -211,19 +223,17 @@ class FilesController extends Controller {
 	 * Initializes controller with required dependencies for file operations.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param FilesControllerServices $services The files controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FilesControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->rootFolder = $services->store->rootFolder;
 		$this->userManager = $services->platform->userManager;
 		$this->eventDispatcher = $services->platform->eventDispatcher;
@@ -410,13 +420,11 @@ class FilesController extends Controller {
 	private function objectUnderRule(FileAccessCheck $check): ObjectEntity {
 		$route = $check->route;
 		if ($check->change === false) {
-			return $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
+			return $this->objectFileAccess->readable(ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id));
 		}
 
 		$object = $this->objectFileAccess->changeable(
-			register: $route->register,
-			schema: $route->schema,
-			id: $route->id,
+			ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id),
 			verb: $check->verb
 		);
 		// REQ-OAS-007: a frozen or archived object's files do not change
@@ -493,7 +501,7 @@ class FilesController extends Controller {
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
-			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
 			return $this->attachCallerNode(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
@@ -545,7 +553,7 @@ class FilesController extends Controller {
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
-			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
 			return $this->savePostedChat(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
@@ -561,14 +569,17 @@ class FilesController extends Controller {
 	 */
 	private function savePostedChat(ObjectEntity $object): JSONResponse {
 		$user = $this->userSession?->getUser();
-		$transcript = (new TalkChatExporter())->export(
+		$transcript = (new TalkChatExporter())->exportTranscript(request: new ChatTranscriptRequest(
 			conversation: (string)$this->request->getParam('conversation', ''),
 			messages: (array)$this->request->getParam('messages', []),
 			savedBy: (string)($user?->getDisplayName() ?? $user?->getUID() ?? ''),
 			savedAt: new DateTimeImmutable()
-		);
+		));
 
-		$file = $this->fileService->addFile(objectEntity: $object, fileName: $transcript['filename'], content: $transcript['content']);
+		$file = $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $transcript['filename'], content: $transcript['content'], share: false)
+		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end savePostedChat()
@@ -813,7 +824,7 @@ class FilesController extends Controller {
 			// A person sees the list only when they may read the object. Every
 			// file sits in the openregister account's home, so without this
 			// check any signed-in user could list any object's files.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$object = $this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forAnyone()->forReading());
 			return new JSONResponse(data: $this->listedFiles(route: $route, object: $object));
 		} catch (\Exception $e) {
@@ -824,12 +835,12 @@ class FilesController extends Controller {
 	/**
 	 * The files of an object, as far as the caller may see them.
 	 *
-	 * @param ObjectLinkRoute   $route  The object, as the route names it.
+	 * @param FileObjectRoute   $route  The object, as the route names it.
 	 * @param ObjectEntity|null $object The object the access check resolved.
 	 *
 	 * @return array<string, mixed> The formatted page of files.
 	 */
-	private function listedFiles(ObjectLinkRoute $route, ?ObjectEntity $object): array {
+	private function listedFiles(FileObjectRoute $route, ?ObjectEntity $object): array {
 		// SECURITY (H6): anonymous callers see only published (shared) files.
 		$isAnonymous = $this->isAnonymousRequest();
 
@@ -873,7 +884,7 @@ class FilesController extends Controller {
 	 * objects hold is answered as not found, the answer the files listing gives every
 	 * refused read (file-actions REQ-OFOA-002), and lists neither object's files.
 	 *
-	 * @param ObjectLinkRoute $route The object, as the route names it.
+	 * @param FileObjectRoute $route The object, as the route names it.
 	 *
 	 * @return ObjectEntity The object.
 	 *
@@ -881,7 +892,7 @@ class FilesController extends Controller {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
-	private function objectInScope(ObjectLinkRoute $route): ObjectEntity {
+	private function objectInScope(FileObjectRoute $route): ObjectEntity {
 		try {
 			$object = $this->objectWithoutChecks(route: $route);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
@@ -898,7 +909,7 @@ class FilesController extends Controller {
 	/**
 	 * Look an object up within its register and schema, without read, tenancy or audit.
 	 *
-	 * @param ObjectLinkRoute $route The object, as the route names it.
+	 * @param FileObjectRoute $route The object, as the route names it.
 	 *
 	 * @return mixed What the object service finds.
 	 *
@@ -906,7 +917,7 @@ class FilesController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function objectWithoutChecks(ObjectLinkRoute $route): mixed {
+	private function objectWithoutChecks(FileObjectRoute $route): mixed {
 		return WriteCause::asLookup(
 			fn () => $this->objectService->find(
 				id: $route->id,
@@ -952,7 +963,7 @@ class FilesController extends Controller {
 			// SEC-CTRL-5: the object read rule decides for authenticated callers
 			// (404 when they may not read it). Anonymous callers are gated
 			// separately on publication, in shownFile().
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forAnyone()->forReading()->onFile(fileId: $fileId));
 
 			return $this->streamInline(file: $this->shownFile(object: $object, fileId: $fileId), object: $object);
@@ -1038,7 +1049,7 @@ class FilesController extends Controller {
 	private function streamInline(File $file, ?ObjectEntity $object): StreamResponse {
 		$response = new StreamResponse($file->fopen('r'));
 		$response->addHeader('Content-Type', $file->getMimeType());
-		$response->addHeader('Content-Disposition', $this->buildContentDisposition(disposition: 'inline', filename: $file->getName()));
+		$response->addHeader('Content-Disposition', (new ContentDisposition(disposition: 'inline', filename: $file->getName()))->headerValue());
 		$response->addHeader('Content-Length', (string)$file->getSize());
 
 		// Record download (counter + audit). Best-effort.
@@ -1159,7 +1170,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before adding files.
-			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
 			return $this->addPostedFile(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
@@ -1178,11 +1189,13 @@ class FilesController extends Controller {
 	private function addPostedFile(ObjectEntity $object): JSONResponse {
 		$data = $this->request->getParams();
 		$file = $this->fileService->addFile(
-			objectEntity: $object,
-			fileName: $this->postedFileName(data: $data),
-			content: (string)$data['content'],
-			share: $this->parseBool(value: $data['share'] ?? false),
-			tags: $this->normalizeTags(tags: $data['tags'] ?? [])
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(
+				fileName: $this->postedFileName(data: $data),
+				content: (string)$data['content'],
+				share: $this->parseBool(value: $data['share'] ?? false),
+				tags: $this->normalizeTags(tags: $data['tags'] ?? [])
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
@@ -1243,7 +1256,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before saving files.
-			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
 			return $this->savePostedFile(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
@@ -1264,10 +1277,12 @@ class FilesController extends Controller {
 		$this->requireNameAndContent(data: $data);
 		$file = $this->fileService->saveFile(
 			objectEntity: $object,
-			fileName: $data['name'],
-			content: (string)$data['content'],
-			share: (($data['share'] ?? false) === true),
-			tags: $this->savedTags(tags: $data['tags'] ?? [])
+			upload: new FileUpload(
+				fileName: $data['name'],
+				content: (string)$data['content'],
+				share: (($data['share'] ?? false) === true),
+				tags: $this->savedTags(tags: $data['tags'] ?? [])
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
@@ -1339,7 +1354,7 @@ class FilesController extends Controller {
 	public function createMultipart(string $register, string $schema, string $id): JSONResponse {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before accepting uploads.
-			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
 			$this->setObjectContext(register: $register, schema: $schema);
 			return $this->storeUploads(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
@@ -1621,7 +1636,10 @@ class FilesController extends Controller {
 			throw new Exception('Failed to read uploaded file content for: ' . $fileName);
 		}
 
-		return $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags']);
+		return $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags'])
+		);
 	}//end storeUpload()
 
 	/**
@@ -1677,7 +1695,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 			$this->objectService->setObject($id);
 			return $this->updateFromRequest(fileId: $fileId);
@@ -1697,11 +1715,13 @@ class FilesController extends Controller {
 		$data = $this->request->getParams();
 
 		// Content is optional for metadata-only updates.
-		$result = $this->fileService->updateFile(
-			filePath: $fileId,
-			content: $data['content'] ?? null,
-			tags: $data['tags'] ?? [],
-			object: $this->objectService->getObject()
+		$result = $this->fileService->overwriteFile(
+			overwrite: new FileOverwrite(
+				filePath: $fileId,
+				content: $data['content'] ?? null,
+				tags: $data['tags'] ?? [],
+				object: $this->objectService->getObject()
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($result));
@@ -1736,7 +1756,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before deleting files.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forRemoving()->onFile(fileId: $fileId));
 			$this->objectService->setObject($id);
 			$result = $this->fileService->deleteFile(file: $fileId, object: $this->objectService->getObject());
@@ -1893,39 +1913,6 @@ class FilesController extends Controller {
 	}//end mayReadObject()
 
 	/**
-	 * Build an RFC 6266 compliant Content-Disposition header value.
-	 *
-	 * SEC-CTRL-9: a raw filename can contain quotes, control chars, or non-ASCII
-	 * bytes that break the header or allow header/response splitting. This emits a
-	 * sanitised ASCII `filename="..."` fallback plus a UTF-8 `filename*` parameter.
-	 *
-	 * @param string $disposition Either 'inline' or 'attachment'.
-	 * @param string $filename The raw file name.
-	 *
-	 * @return string The encoded Content-Disposition header value.
-	 */
-	private function buildContentDisposition(string $disposition, string $filename): string {
-		// Strip control characters (incl. CR/LF) that could split headers.
-		$clean = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
-		if ($clean === null) {
-			$clean = '';
-		}
-
-		// ASCII fallback: replace non-ASCII and quote/backslash with underscore.
-		$ascii = preg_replace('/[^\x20-\x7E]/', '_', $clean);
-		if ($ascii === null) {
-			$ascii = '';
-		}
-
-		$ascii = str_replace(['\\', '"'], '_', $ascii);
-
-		// RFC 5987 / 6266 UTF-8 encoded form for capable clients.
-		$encoded = rawurlencode($clean);
-
-		return $disposition . '; filename="' . $ascii . '"; filename*=UTF-8\'\'' . $encoded;
-	}//end buildContentDisposition()
-
-	/**
 	 * Get a human-readable error message for PHP file upload errors
 	 *
 	 * This helper method translates PHP's file upload error codes into
@@ -2034,7 +2021,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 			return $this->renameTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
 		} catch (Exception $e) {
@@ -2053,7 +2040,7 @@ class FilesController extends Controller {
 		$data = $this->request->getParams();
 		$newName = $data['name'] ?? '';
 		$names = ['oldName' => $data['oldName'] ?? '', 'newName' => $newName];
-		$file = $this->fileService->renameFile(object: $target->object, fileId: $target->fileId, newName: $newName);
+		$file = $this->fileService->renameAttachedFile(rename: new FileRename(object: $target->object, fileId: $target->fileId, newName: $newName));
 
 		// Audit trail entry (best-effort -- handler swallows failures).
 		$this->fileService->getAuditHandler()->logFileAction(object: $target->object, fileId: $target->fileId, action: 'file.renamed', data: $names);
@@ -2098,12 +2085,12 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function copy(string $register, string $schema, string $id, int $fileId): JSONResponse {
-		$transfer = new FileTransfer(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), fileId: $fileId);
+		$transfer = new FileTransfer(route: new FileObjectRoute(register: $register, schema: $schema, id: $id), fileId: $fileId);
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: object-level RBAC on the source object.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forReading()->onFile(fileId: $fileId));
 			return $this->transferFile(transfer: $transfer);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
@@ -2134,12 +2121,12 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function move(string $register, string $schema, string $id, int $fileId): JSONResponse {
-		$transfer = (new FileTransfer(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), fileId: $fileId))->asMove();
+		$transfer = (new FileTransfer(route: new FileObjectRoute(register: $register, schema: $schema, id: $id), fileId: $fileId))->asMove();
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: object-level RBAC on the source object; the file leaves it, so this needs deleteFiles.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forRemoving()->onFile(fileId: $fileId));
 			return $this->transferFile(transfer: $transfer);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
@@ -2214,7 +2201,7 @@ class FilesController extends Controller {
 		// ADR-005 / gate-7: the caller must also have access to the target object.
 		return $this->loadTransferTarget(
 			transfer: $transfer,
-			route: new ObjectLinkRoute(register: $transfer->targetRegister, schema: $transfer->targetSchema, id: $targetObjectId)
+			route: new FileObjectRoute(register: $transfer->targetRegister, schema: $transfer->targetSchema, id: $targetObjectId)
 		);
 	}//end resolveTransferTarget()
 
@@ -2222,13 +2209,13 @@ class FilesController extends Controller {
 	 * Check the caller may change the target and load it.
 	 *
 	 * @param FileTransfer    $transfer The transfer.
-	 * @param ObjectLinkRoute $route    The target object.
+	 * @param FileObjectRoute $route    The target object.
 	 *
 	 * @return JSONResponse|null A 404 when the target is missing, else null.
 	 *
 	 * @throws DoesNotExistException When the target object does not exist; the public action answers 404.
 	 */
-	private function loadTransferTarget(FileTransfer $transfer, ObjectLinkRoute $route): ?JSONResponse {
+	private function loadTransferTarget(FileTransfer $transfer, FileObjectRoute $route): ?JSONResponse {
 		$this->ensureObjectAccess(check: new FileAccessCheck(route: $route));
 		$this->setObjectContext(register: $route->register, schema: $route->schema);
 		$this->objectService->setObject($route->id);
@@ -2275,10 +2262,14 @@ class FilesController extends Controller {
 	 */
 	private function transferredFile(FileTransfer $transfer): File {
 		if ($transfer->isMove() === true) {
-			return $this->fileService->moveFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
+			return $this->fileService->moveAttachedFile(
+				transfer: new AttachedFileTransfer(source: $transfer->source, fileId: $transfer->fileId, target: $transfer->target)
+			);
 		}
 
-		return $this->fileService->copyFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
+		return $this->fileService->copyAttachedFile(
+			transfer: new AttachedFileTransfer(source: $transfer->source, fileId: $transfer->fileId, target: $transfer->target)
+		);
 	}//end transferredFile()
 
 	/**
@@ -2327,7 +2318,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: object read access required to list versions.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forReading()->onFile(fileId: $fileId));
 			$file = $this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
 
@@ -2363,7 +2354,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before restoring.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 			return $this->restoreTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId), versionId: $versionId);
 		} catch (Exception $e) {
@@ -2436,7 +2427,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before locking.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 			return $this->lockTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
 		} catch (Exception $e) {
@@ -2499,7 +2490,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before unlocking.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 			return $this->unlockTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
 		} catch (Exception $e) {
@@ -2583,7 +2574,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before batch mutation.
-			$check = new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
+			$check = new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id));
 			if (($this->request->getParams()['action'] ?? '') === 'delete') {
 				$check->forRemoving();
 			}
@@ -2610,7 +2601,10 @@ class FilesController extends Controller {
 		}
 
 		$handler = $this->fileService->getBatchHandler();
-		$result = $handler->executeBatch(object: $object, action: $data['action'] ?? '', fileIds: $fileIds, params: $data);
+		$result = $handler->runBatch(
+			request: new FileBatchRequest(object: $object, action: $data['action'] ?? '', params: $data),
+			fileIds: $fileIds
+		);
 
 		$statusCode = 200;
 		if ($result['summary']['failed'] > 0) {
@@ -2650,7 +2644,7 @@ class FilesController extends Controller {
 			}
 
 			// ADR-005 / gate-7: authenticated callers must have object read access.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forAnyone()->forReading()->onFile(fileId: $fileId));
 
 			return $this->previewOf(file: $this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId));
@@ -2716,7 +2710,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: the same object-level RBAC updateLabels applies; metadata is no less a mutation for being descriptive.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 			$this->routedObject(id: $id);
 			return $this->updatePostedMetadata(fileId: $fileId);
@@ -2743,11 +2737,13 @@ class FilesController extends Controller {
 			$labels = (array)$data['labels'];
 		}
 
-		$entity = $this->fileService->updateFileMetadata(
-			fileId: $fileId,
-			description: $this->postedText(data: $data, key: 'description'),
-			category: $this->postedText(data: $data, key: 'category'),
-			labels: $labels
+		$entity = $this->fileService->changeFileMetadata(
+			change: new FileMetadataChange(
+				fileId: $fileId,
+				description: $this->postedText(data: $data, key: 'description'),
+				category: $this->postedText(data: $data, key: 'category'),
+				labels: $labels
+			)
 		);
 
 		return new JSONResponse(data: $entity->jsonSerialize());
@@ -2804,7 +2800,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: the same object-level RBAC the per-file endpoints apply. Editing six files at once is six mutations.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: new FileAccessCheck(route: $route));
 			return $this->savePostedForm(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
@@ -2855,7 +2851,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating labels.
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 			return $this->labelTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
 		} catch (Exception $e) {
@@ -2876,7 +2872,9 @@ class FilesController extends Controller {
 			$labels = [];
 		}
 
-		$file = $this->fileService->updateFile(filePath: $target->fileId, content: null, tags: $labels, object: $target->object);
+		$file = $this->fileService->overwriteFile(
+			overwrite: new FileOverwrite(filePath: $target->fileId, content: null, tags: $labels, object: $target->object)
+		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end labelTarget()
@@ -2901,7 +2899,7 @@ class FilesController extends Controller {
 	#[NoAdminRequired]
 	public function office(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		try {
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			return new JSONResponse(data: $this->openOfficeSession(route: $route, fileId: $fileId)->toArray());
 		} catch (NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
@@ -2933,7 +2931,7 @@ class FilesController extends Controller {
 	#[NoCSRFRequired]
 	public function officePage(string $register, string $schema, string $id, int $fileId): TemplateResponse|JSONResponse {
 		try {
-			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			return $this->officeFrame(session: $this->openOfficeSession(route: $route, fileId: $fileId));
 		} catch (NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
@@ -2965,7 +2963,7 @@ class FilesController extends Controller {
 	/**
 	 * Apply the object rule and issue the Office session.
 	 *
-	 * @param ObjectLinkRoute $route  The object, as the route names it.
+	 * @param FileObjectRoute $route  The object, as the route names it.
 	 * @param int             $fileId The file id.
 	 *
 	 * @return \OCA\OpenRegister\Files\Service\File\OfficeSession The issued session.
@@ -2973,21 +2971,21 @@ class FilesController extends Controller {
 	 * @throws NotAuthorizedException When the caller may not read the object (404).
 	 * @throws OfficeOpenRefusedException When Office cannot open the document.
 	 */
-	private function openOfficeSession(ObjectLinkRoute $route, int $fileId): \OCA\OpenRegister\Files\Service\File\OfficeSession {
+	private function openOfficeSession(FileObjectRoute $route, int $fileId): \OCA\OpenRegister\Files\Service\File\OfficeSession {
 		$user = $this->userSession?->getUser();
 		if ($user === null || $this->objectFileAccess === null) {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
 		}
 
-		$object = $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
+		$object = $this->objectFileAccess->readable(ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id));
 		$file = $this->officeFile(object: $object, fileId: $fileId);
 
-		return $this->officeSessions()->open(
+		return $this->officeSessions()->openSession(request: new OfficeOpenRequest(
 			file: $file,
 			editorUid: $user->getUID(),
 			displayName: $user->getDisplayName(),
 			canWrite: $this->objectFileAccess->mayChangeFiles(object: $object)
-		);
+		));
 	}//end openOfficeSession()
 
 	/**

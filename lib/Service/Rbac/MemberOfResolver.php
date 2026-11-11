@@ -36,8 +36,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use Closure;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -124,7 +127,7 @@ class MemberOfResolver {
 
 		$key = $userId . '|' . json_encode($spec);
 		if (array_key_exists($key, $this->cache) === false) {
-			$this->cache[$key] = $this->read(spec: $spec, userId: $userId);
+			$this->cache[$key] = $this->read(lookup: new MemberOfLookup(spec: $spec, userId: $userId));
 		}
 
 		return $this->cache[$key];
@@ -147,14 +150,27 @@ class MemberOfResolver {
 	 * @spec openspec/changes/access-follows-membership/specs/rbac-scopes/spec.md#requirement-a-match-can-admit-by-the-callers-membership-records
 	 */
 	public function resolveOperators(array $operators, ?string $userId, callable $resolveSibling): ?array {
-		$set = $this->valuesFor(operand: ($operators[self::OPERATOR] ?? null), userId: $userId);
+		$siblings = static fn (): array => array_map($resolveSibling, array_diff_key($operators, [self::OPERATOR => true]));
+		return $this->narrowed(set: $this->valuesFor(operand: ($operators[self::OPERATOR] ?? null), userId: $userId), siblings: $siblings);
+	}//end resolveOperators()
+
+	/**
+	 * The resolved sibling operators with `$in` narrowed to the membership set.
+	 *
+	 * The siblings are resolved only once the set is known, so an unresolvable
+	 * operand denies without resolving anything else.
+	 *
+	 * @param string[]|null $set      The caller's membership set, or null when the operand is unresolvable.
+	 * @param Closure       $siblings Resolves the sibling operators.
+	 *
+	 * @return array<string, mixed>|null The operators with `$in`, or null (deny) when unresolvable.
+	 */
+	private function narrowed(?array $set, Closure $siblings): ?array {
 		if ($set === null) {
 			return null;
 		}
 
-		unset($operators[self::OPERATOR]);
-		$resolved = array_map($resolveSibling, $operators);
-
+		$resolved = $siblings();
 		$sibling = ($resolved['$in'] ?? $set);
 		if (is_array($sibling) === false || array_is_list($sibling) === false) {
 			return null;
@@ -163,7 +179,7 @@ class MemberOfResolver {
 		$resolved['$in'] = array_values(array_intersect($set, $sibling));
 
 		return $resolved;
-	}//end resolveOperators()
+	}//end narrowed()
 
 	/**
 	 * Check the operand and fill in its defaults.
@@ -245,63 +261,107 @@ class MemberOfResolver {
 	/**
 	 * Read the caller's membership rows and collect the set.
 	 *
-	 * @param array  $spec   The normalised operand.
-	 * @param string $userId The current user.
+	 * @param MemberOfLookup $lookup The normalised operand and the current user.
 	 *
 	 * @return string[] The set.
 	 */
-	private function read(array $spec, string $userId): array {
+	private function read(MemberOfLookup $lookup): array {
 		try {
-			$schema = $this->lookup->schemas->find($spec['schema'], _rbac: false, _multitenancy: false);
-
-			$registerId = $spec['register'];
-			if ($registerId === '') {
-				$registerId = (string)$this->lookup->registers->getFirstRegisterWithSchema((int)$schema->getId());
-			}
-
-			if ($registerId === '') {
-				return [];
-			}
-
-			$register = $this->lookup->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
-
-			$rows = $this->container->get(MagicMapperInterface::class)->searchObjects(
-				query: [
-					'@self'        => ['register' => (string)$register->getId(), 'schema' => (string)$schema->getId()],
-					$spec['match'] => $userId,
-					'_limit'       => self::ROW_LIMIT,
-				],
-				_rbac: false,
-				_multitenancy: false
-			);
+			$rows = $this->searchRows(lookup: $lookup);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[MemberOfResolver] Could not read the membership rows; the caller is a member of nothing',
-				context: ['schema' => $spec['schema'], 'error' => $e->getMessage()]
+				context: ['schema' => $lookup->spec['schema'], 'error' => $e->getMessage()]
 			);
 			return [];
-		}//end try
+		}
 
 		if (is_array($rows) === false) {
 			return [];
 		}
 
-		return $this->setFrom(rows: $rows, spec: $spec, userId: $userId);
+		return $this->setFrom(rows: $rows, lookup: $lookup);
 	}//end read()
+
+	/**
+	 * Search the membership schema for the caller's rows, unscoped and capped.
+	 *
+	 * @param MemberOfLookup $lookup The normalised operand and the current user.
+	 *
+	 * @return mixed The search answer, or null when no register holds the schema.
+	 *
+	 * @throws Throwable When the schema, the register or the mapper cannot be read.
+	 */
+	private function searchRows(MemberOfLookup $lookup): mixed {
+		$schema = $this->lookup->schemas->find($lookup->spec['schema'], _rbac: false, _multitenancy: false);
+
+		$register = $this->registerHolding(lookup: $lookup, schemaId: (int)$schema->getId());
+		if ($register === null) {
+			return null;
+		}
+
+		return $this->container->get(MagicMapperInterface::class)->searchObjects(
+			query: self::membershipQuery(
+				lookup: $lookup,
+				table: new RegisterSchemaRef(register: (string)$register->getId(), schema: (string)$schema->getId())
+			),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end searchRows()
+
+	/**
+	 * The register the operand names, else the first one holding the schema; null when there is none.
+	 *
+	 * @param MemberOfLookup $lookup   The normalised operand.
+	 * @param int            $schemaId The membership schema's id.
+	 *
+	 * @return Register|null The register.
+	 *
+	 * @throws Throwable When the register cannot be read.
+	 */
+	private function registerHolding(MemberOfLookup $lookup, int $schemaId): ?Register {
+		$registerId = $lookup->spec['register'];
+		if ($registerId === '') {
+			$registerId = (string)$this->lookup->registers->getFirstRegisterWithSchema($schemaId);
+		}
+
+		if ($registerId === '') {
+			return null;
+		}
+
+		return $this->lookup->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
+	}//end registerHolding()
+
+	/**
+	 * The search for the caller's membership rows in one register and schema.
+	 *
+	 * @param MemberOfLookup    $lookup The operand's match field and the current user.
+	 * @param RegisterSchemaRef $table  The register and the membership schema.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private static function membershipQuery(MemberOfLookup $lookup, RegisterSchemaRef $table): array {
+		return [
+			'@self'               => ['register' => $table->register, 'schema' => $table->schema],
+			$lookup->spec['match'] => $lookup->userId,
+			'_limit'              => self::ROW_LIMIT,
+		];
+	}//end membershipQuery()
 
 	/**
 	 * The set over the rows that belong to the caller and pass the filters and window.
 	 *
 	 * @param array<int, mixed> $rows   The rows the search returned.
-	 * @param array             $spec   The normalised operand.
-	 * @param string            $userId The current user.
+	 * @param MemberOfLookup    $lookup The normalised operand and the current user.
 	 *
 	 * @return string[] The set.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) DepartmentMatrixPersonValues::collect() is the one pure reader of a
 	 *      user's values off rows that re-checks the user match; calling it keeps the two readers identical.
 	 */
-	private function setFrom(array $rows, array $spec, string $userId): array {
+	private function setFrom(array $rows, MemberOfLookup $lookup): array {
+		$spec = $lookup->spec;
 		if (count($rows) >= self::ROW_LIMIT) {
 			$this->logger->warning(
 				message: '[MemberOfResolver] The caller has more membership rows than are read; the set is truncated',
@@ -309,6 +369,23 @@ class MemberOfResolver {
 			);
 		}
 
+		return DepartmentMatrixPersonValues::collect(
+			persons: $this->countedRows(rows: $rows, spec: $spec),
+			property: $spec['property'],
+			match: $spec['match'],
+			userId: $lookup->userId
+		);
+	}//end setFrom()
+
+	/**
+	 * The rows' data that count for the operand: its `where` and its window.
+	 *
+	 * @param array<int, mixed>    $rows The rows the search returned.
+	 * @param array<string, mixed> $spec The normalised operand.
+	 *
+	 * @return array<int, array<string, mixed>> The counted rows' data.
+	 */
+	private function countedRows(array $rows, array $spec): array {
 		$kept = [];
 		foreach ($rows as $row) {
 			$data = $row;
@@ -321,13 +398,8 @@ class MemberOfResolver {
 			}
 		}
 
-		return DepartmentMatrixPersonValues::collect(
-			persons: $kept,
-			property: $spec['property'],
-			match: $spec['match'],
-			userId: $userId
-		);
-	}//end setFrom()
+		return $kept;
+	}//end countedRows()
 
 	/**
 	 * Whether a membership row passes the operand's filters and window.
@@ -339,30 +411,49 @@ class MemberOfResolver {
 	 */
 	private function rowCounts(array $data, array $spec): bool {
 		foreach ($spec['where'] as $field => $expected) {
-			$actual = ($data[$field] ?? null);
-			if (is_array($expected) === true) {
-				if ($this->operators->valueMatchesOperator(value: $actual, operators: $expected) === false) {
-					return false;
-				}
-
-				continue;
-			}
-
-			if ($actual !== $expected) {
+			if ($this->fieldPasses(actual: ($data[$field] ?? null), expected: $expected) === false) {
 				return false;
 			}
 		}
 
-		if ($spec['current'] === null) {
+		return $this->inWindow(data: $data, current: $spec['current']);
+	}//end rowCounts()
+
+	/**
+	 * Whether one field of a membership row passes its `where` filter.
+	 *
+	 * @param mixed $actual   The row's value, null when absent.
+	 * @param mixed $expected The filter: an operator map, or a value to equal.
+	 *
+	 * @return bool True when the value passes.
+	 */
+	private function fieldPasses(mixed $actual, mixed $expected): bool {
+		if (is_array($expected) === true) {
+			return $this->operators->valueMatchesOperator(value: $actual, operators: $expected) !== false;
+		}
+
+		return $actual === $expected;
+	}//end fieldPasses()
+
+	/**
+	 * Whether a membership row is current today, by the operand's validity window.
+	 *
+	 * @param array<string, mixed>                    $data    The row's data.
+	 * @param array{from: string, until: string}|null $current The window's field names, or null for no window.
+	 *
+	 * @return bool True when there is no window, or today falls inside it.
+	 */
+	private function inWindow(array $data, ?array $current): bool {
+		if ($current === null) {
 			return true;
 		}
 
 		$today = date('Y-m-d');
-		$from  = $this->dayOf(value: ($data[$spec['current']['from']] ?? null));
-		$until = $this->dayOf(value: ($data[$spec['current']['until']] ?? null));
+		$from  = $this->dayOf(value: ($data[$current['from']] ?? null));
+		$until = $this->dayOf(value: ($data[$current['until']] ?? null));
 
 		return ($from === '' || $from <= $today) && ($until === '' || $until >= $today);
-	}//end rowCounts()
+	}//end inWindow()
 
 	/**
 	 * The `Y-m-d` day of a stored date, or '' when there is none.

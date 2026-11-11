@@ -24,6 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Reference;
 
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\AppHost\Reference\AbstractSchemaReferenceProvider;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -134,9 +137,7 @@ class AbstractSchemaReferenceProviderTest extends TestCase {
 	private function buildProvider(?string $userId = 'test-user'): TestLeadReferenceProvider {
 		return new TestLeadReferenceProvider(
 			$this->formatter,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->createMock(LoggerInterface::class),
+			new SchemaScopeLookups(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)), $this->createMock(LoggerInterface::class)),
 			$userId
 		);
 	}//end buildProvider()

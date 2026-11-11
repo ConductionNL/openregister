@@ -21,6 +21,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -47,10 +50,16 @@ class CacheHandlerNoSessionTest extends TestCase {
 
 		$organisations = $this->organisations();
 		$handler = new CacheHandler(
-			organisationMapper: $organisations,
-			logger: $this->createMock(LoggerInterface::class),
-			groupManager: $groupManager,
-			appConfig: $appConfig
+			stores: new CacheHandlerStores(
+				organisationMapper: $organisations
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			nameScope: new CacheNameScopeSources(
+				groupManager: $groupManager,
+				appConfig: $appConfig
+			)
 		);
 
 		$this->assertSame([self::DEFAULT_ORG], $this->resolveScope($handler));
@@ -65,8 +74,13 @@ class CacheHandlerNoSessionTest extends TestCase {
 		$organisations = $this->createMock(OrganisationMapperInterface::class);
 		$organisations->expects($this->never())->method('getActiveOrganisationWithFallback');
 		$handler = new CacheHandler(
-			organisationMapper: $organisations,
-			logger: $this->createMock(LoggerInterface::class)
+			stores: new CacheHandlerStores(
+				organisationMapper: $organisations
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			nameScope: new CacheNameScopeSources()
 		);
 
 		$method = (new ReflectionClass($handler))->getMethod('getActiveOrganisationCacheScope');
@@ -88,9 +102,14 @@ class CacheHandlerNoSessionTest extends TestCase {
 		$container->method('get')->willReturn($objects);
 
 		$handler = new CacheHandler(
-			organisationMapper: $this->createMock(OrganisationMapperInterface::class),
-			logger: $this->createMock(LoggerInterface::class),
-			container: $container
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->createMock(OrganisationMapperInterface::class)
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->createMock(LoggerInterface::class),
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources()
 		);
 		$handler->setObjectName(identifier: $uuid, name: 'A name', organisation: null, source: '1:5');
 

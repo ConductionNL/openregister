@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob;
+use OCA\OpenRegister\BackgroundJob\CalendarRecomputeJobInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCP\BackgroundJob\IJobList;
@@ -173,7 +173,7 @@ class WorkingCalendarChangedListener implements IEventListener {
 	 */
 	private function queueRecompute(array $key): void {
 		try {
-			$this->jobs->add(RecomputeTimersForCalendarJob::class, $key);
+			$this->jobs->add(CalendarRecomputeJobInterface::JOB, $key);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				sprintf('[WorkingCalendarChangedListener] could not queue a recompute for "%s": %s', $key['slug'], $e->getMessage())

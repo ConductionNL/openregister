@@ -24,6 +24,7 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ContentSearchHandler;
+use OCA\OpenRegister\Service\Object\ContentSearchWidening;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
@@ -36,6 +37,9 @@ use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\QueryHandlers;
+use OCA\OpenRegister\Service\Object\QueryPlatform;
+use OCA\OpenRegister\Service\Object\QueryRefinements;
 
 /**
  * Pins the pagination arithmetic, the queries handed to the mapper, the render
@@ -232,8 +236,10 @@ class QueryHandlerPaginatedDatabaseTest extends TestCase {
 		$performance->method('getActiveOrganisationForContext')->willReturn('org-1');
 
 		$content = $this->createMock(ContentSearchHandler::class);
-		$content->method('augmentWithChunkMatches')->willReturnCallback(
-			static function (...$args) use ($calls): array {
+		$content->method('widen')->willReturnCallback(
+			static function (ContentSearchWidening $widening, bool $_rbac = true, bool $_multitenancy = true) use ($calls): array {
+				$page    = $widening->page;
+				$args    = [$widening->query, $page->results, $page->total, $page->limit, $_rbac, $_multitenancy, $page->offset, $widening->activeOrgUuid];
 				$calls[] = ['augmentWithChunkMatches', $args];
 				return ['results' => [['id' => 'chunk-hit']], 'total' => 99];
 			}
@@ -251,14 +257,20 @@ class QueryHandlerPaginatedDatabaseTest extends TestCase {
 		}
 
 		return new QueryHandler(
-			$mapper,
-			$render,
-			$this->createMock(SearchQueryHandler::class),
-			$facets,
-			$performance,
-			$content,
-			$this->createMock(IAppContainer::class),
-			$history
+			platform: new QueryPlatform(
+				objectMapper: $mapper,
+				renderHandler: $render,
+				container: $this->createMock(IAppContainer::class)
+			),
+			handlers: new QueryHandlers(
+				searchQueryHandler: $this->createMock(SearchQueryHandler::class),
+				facetHandler: $facets,
+				performanceHandler: $performance,
+				contentSearchHandler: $content
+			),
+			refinements: new QueryRefinements(
+				historyNarrowing: $history
+			)
 		);
 	}//end handlerFor()
 }//end class

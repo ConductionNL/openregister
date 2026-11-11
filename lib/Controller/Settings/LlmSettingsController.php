@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
@@ -28,6 +29,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe;
 
 /**
  * Controller for LLM (Large Language Model) settings.
@@ -101,16 +103,14 @@ class LlmSettingsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param LlmSettingsControllerServices $services The llm settings controller services.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		LlmSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->container = $services->platform->container;
 		$this->settingsService = $services->domain->settingsService;
 		$this->vectorizationService = $services->domain->vectorizationService;
@@ -226,7 +226,8 @@ class LlmSettingsController extends Controller {
 				return $invalid;
 			}
 
-			$result = $this->vectorizationService->testEmbedding(provider: $provider, config: $config, testText: $testText);
+			$probe  = new EmbeddingProbe(provider: $provider, config: $config, testText: $testText);
+			$result = $this->vectorizationService->testEmbedding(probe: $probe);
 			return $this->testResult(result: $result);
 		} catch (Exception $e) {
 			return $this->testFailure(prefix: 'Failed to generate embedding: ', e: $e);
@@ -262,25 +263,21 @@ class LlmSettingsController extends Controller {
 				return $invalid;
 			}
 
-			return $this->testResult(result: $this->runChatTest(provider: $provider, config: $config, message: $testMessage));
+			$result = $this->chatService()->testChat(provider: $provider, config: $config, _testMessage: $testMessage);
+			return $this->testResult(result: $result);
 		} catch (Exception $e) {
 			return $this->testFailure(prefix: 'Failed to test chat: ', e: $e);
 		}
 	}//end testChat()
 
 	/**
-	 * Send the test message through the chat service.
+	 * The chat service that sends a test message, resolved when a test runs.
 	 *
-	 * @param string $provider The provider to test.
-	 * @param mixed  $config   The provider configuration.
-	 * @param string $message  The test message.
-	 *
-	 * @return array The chat service's test result
+	 * @return mixed The chat service
 	 */
-	private function runChatTest(string $provider, mixed $config, string $message): array {
-		$chatService = $this->container->get('OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface');
-		return $chatService->testChat(provider: $provider, config: $config, _testMessage: $message);
-	}//end runChatTest()
+	private function chatService(): mixed {
+		return $this->container->get('OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface');
+	}//end chatService()
 
 	/**
 	 * The 400 answer for a connection test that names no provider or no config, if any.

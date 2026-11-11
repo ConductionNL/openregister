@@ -34,15 +34,18 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\CalendarEventsController;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarPickerWindow;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\CalendarEventsControllerFactory;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -129,7 +132,7 @@ class CalendarEventsControllerTest extends TestCase {
 	 */
 	public function testEveryWriteNeedsTheObjectUpdateRight(string $write): void {
 		$this->mayUpdate = false;
-		$this->calendarLinkService->expects($this->never())->method('createAndLinkEvent');
+		$this->calendarLinkService->expects($this->never())->method('createLinkedEvent');
 		$this->calendarLinkService->expects($this->never())->method('unlinkEvent');
 		$this->calendarEventService->expects($this->never())->method('deleteEvent');
 
@@ -164,8 +167,8 @@ class CalendarEventsControllerTest extends TestCase {
 			'eventUid' => 'ev-uid-1',
 		]);
 		$this->calendarLinkService->expects($this->once())
-			->method('linkEvent')
-			->with(self::OBJ_UUID, 1, 2, 'personal', 'ev-uid-1')
+			->method('linkLocatedEvent')
+			->with((new LinkTarget(objectUuid: self::OBJ_UUID, registerId: 1))->inSchema(schemaId: 2), new CalendarEventKey(calendarUri: 'personal', eventUid: 'ev-uid-1'))
 			->willReturn($this->buildLink());
 
 		$response = $this->controller->link('r', 's', 'id');
@@ -187,8 +190,8 @@ class CalendarEventsControllerTest extends TestCase {
 	public function testCreateMirrorsViaLinkService(): void {
 		$this->request->method('getParams')->willReturn(['summary' => 'New meeting']);
 		$this->calendarLinkService->expects($this->once())
-			->method('createAndLinkEvent')
-			->with(self::OBJ_UUID, 1, 2, $this->callback(function ($data) {
+			->method('createLinkedEvent')
+			->with((new LinkTarget(objectUuid: self::OBJ_UUID, registerId: 1))->inSchema(schemaId: 2), $this->callback(function ($data) {
 				$this->assertSame('New meeting', $data['summary']);
 				$this->assertSame('Object title', $data['objectTitle']);
 				return true;
@@ -215,7 +218,7 @@ class CalendarEventsControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 		$this->calendarLinkService->expects($this->once())
 			->method('getEventsForCalendar')
-			->with('personal', 100, $this->isInstanceOf(\DateTimeInterface::class))
+			->with('personal', $this->callback(static fn (CalendarPickerWindow $window): bool => $window->limit === 100 && $window->after instanceof \DateTimeInterface))
 			->willReturn([
 				['uid' => 'ev-1', 'summary' => 'S', 'calendarUri' => 'personal'],
 			]);

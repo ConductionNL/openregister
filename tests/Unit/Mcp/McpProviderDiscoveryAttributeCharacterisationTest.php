@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Mcp\McpDiscoveryRun;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -121,8 +122,10 @@ class McpProviderDiscoveryAttributeCharacterisationTest extends TestCase
             }
         };
         $method = new ReflectionMethod(McpProviderDiscovery::class, 'collectAttributeMcpProviders');
-        $method->invokeArgs($discovery, [$container, $this->logger(), &$providers]);
-        return $providers;
+        $run = new McpDiscoveryRun($container, $this->logger());
+        $run->addAll($providers);
+        $method->invokeArgs($discovery, [$run]);
+        return $run->providers();
     }
 
     private function handWritten(string $appId, array $ids): IMcpToolProvider

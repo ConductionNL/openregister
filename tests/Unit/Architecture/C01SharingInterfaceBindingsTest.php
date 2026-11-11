@@ -82,7 +82,7 @@ final class C01SharingInterfaceBindingsTest extends TestCase {
 	 */
 	private const KEPT_CALLERS = [
 		FederationShareService::class => ['Federation/OpenRegisterCloudFederationProvider.php'],
-		FederatedShareMapper::class => ['Command/FederationShareRightsCommand.php', 'Service/FederationShareService.php'],
+		FederatedShareMapper::class => [],
 	];
 
 	/**

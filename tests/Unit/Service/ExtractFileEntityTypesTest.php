@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Files\Service\FileExtractionOptions;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
@@ -110,7 +111,7 @@ class ExtractFileEntityTypesTest extends TestCase {
 			new WordExtractor($logger)
 		);
 
-		$service->extractFile(1, ...$arguments);
+		$service->extractFile(1, new FileExtractionOptions(...$arguments));
 
 		return $received;
 

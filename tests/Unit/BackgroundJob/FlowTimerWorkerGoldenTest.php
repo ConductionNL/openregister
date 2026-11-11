@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\BackgroundJob\FlowTimerWorker;
@@ -95,7 +96,7 @@ class FlowTimerWorkerGoldenTest extends TestCase {
 			}
 		};
 
-		$job = new FlowTimerWorker($time, $sweep, $config, $logger);
+		$job = new FlowTimerWorker(new ConfiguredJobRuntime($time, $config, $logger), $sweep);
 		(new ReflectionMethod($job, 'run'))->invoke($job, null);
 
 		return $this->trace;

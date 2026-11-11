@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -98,7 +99,7 @@ class SaveObjectCascadeScopeTest extends TestCase {
 	private function saveIncident(bool $rbac, ?string $uuid = null): array {
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true): void {
+			function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true): void {
 				$this->checks[] = $_rbac;
 				throw new NotAuthorizedException(message: "no {$action} in {$schema->getSlug()}");
 			}
@@ -115,28 +116,46 @@ class SaveObjectCascadeScopeTest extends TestCase {
 		$mapper->method('find')->willReturn($stored);
 
 		$handler = new SaveObject(
-			$mapper,
-			$this->createMock(MagicMapper::class),
-			$this->createMock(MetadataHydrationHandler::class),
-			$this->createMock(FilePropertyHandler::class),
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IURLGenerator::class),
-			$this->createMock(OrganisationService::class),
-			$this->createMock(CacheHandler::class),
-			$this->createMock(SettingsService::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$translations,
-			$this->createMock(TranslationProjectionService::class),
-			$this->createMock(TranslationStatusService::class),
-			new NullLogger(),
-			$this->createMock(TmloService::class),
-			$this->createMock(FolderManagementHandler::class),
-			$permissions
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+						settingsService: $this->createMock(SettingsService::class),
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->createMock(CacheHandler::class)
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(MetadataHydrationHandler::class),
+						filePropertyHandler: $this->createMock(FilePropertyHandler::class),
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $translations,
+						translationProjectionService: $this->createMock(TranslationProjectionService::class),
+						translationStatusService: $this->createMock(TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->createMock(IUserSession::class),
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: new NullLogger()
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->createMock(OrganisationService::class)
+				)
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
+			permissionHandler: $permissions,
+			folderManagementHandler: $this->createMock(FolderManagementHandler::class)
 		);
 
 		$note = new Schema();

@@ -37,6 +37,7 @@ use OCA\OpenRegister\Listener\StateFieldRuleListener;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldLists;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
@@ -49,6 +50,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use OCA\OpenRegister\Listener\Support\StateFieldRulePlatform;
+use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Pins what each guard allows, refuses, grants and queues, written against the
@@ -179,7 +185,7 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 		$full = $this->createStub(ObjectQuotaService::class);
 		$full->method('limitFor')->willReturn(3);
 		$full->method('count')->willReturn(3);
-		$event = $this->quotaCreate(new ObjectQuotaListener($full, $schemas, new NullLogger()));
+		$event = $this->quotaCreate(new ObjectQuotaListener($full, $this->eventSchemaLookup($schemas, new NullLogger())));
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame(
 			[
@@ -196,7 +202,7 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 		$broken = $this->createStub(ObjectQuotaService::class);
 		$broken->method('limitFor')->willReturn(3);
 		$broken->method('count')->willThrowException(new RuntimeException('db down'));
-		$event = $this->quotaCreate(new ObjectQuotaListener($broken, $schemas, new NullLogger()));
+		$event = $this->quotaCreate(new ObjectQuotaListener($broken, $this->eventSchemaLookup($schemas, new NullLogger())));
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame(
 			[
@@ -209,7 +215,7 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 		$room = $this->createStub(ObjectQuotaService::class);
 		$room->method('limitFor')->willReturn(3);
 		$room->method('count')->willReturn(2);
-		$event = $this->quotaCreate(new ObjectQuotaListener($room, $schemas, new NullLogger()));
+		$event = $this->quotaCreate(new ObjectQuotaListener($room, $this->eventSchemaLookup($schemas, new NullLogger())));
 		$this->assertFalse($event->isPropagationStopped());
 	}//end testObjectQuotaRefusalPayloads()
 
@@ -274,8 +280,8 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testStateFieldRuleOutcomes(): void {
-		$open = new StateFieldRules(state: 'open', hidden: ['secret'], readOnly: ['ref'], required: ['name'], messages: ['ref' => 'Ref is fixed.']);
-		$rules = ['open' => $open, 'done' => new StateFieldRules(state: 'done', required: ['outcome'])];
+		$open = new StateFieldRules(state: 'open', fields: new StateFieldLists(hidden: ['secret'], readOnly: ['ref'], required: ['name']), messages: ['ref' => 'Ref is fixed.']);
+		$rules = ['open' => $open, 'done' => new StateFieldRules(state: 'done', fields: new StateFieldLists(required: ['outcome']))];
 
 		$this->assertSame(
 			[true, ['code' => 'state-field-read-only', 'field' => 'ref', 'state' => 'open', 'message' => 'Ref is fixed.']],
@@ -307,4 +313,14 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 		);
 		$this->assertSame([false, []], $this->stateRules(['x' => 1], ['y' => 2], $rules));
 	}//end testStateFieldRuleOutcomes()
+
+	/**
+	 * The schema lookup a listener under test resolves through.
+	 */
+	private function eventSchemaLookup(SchemaMapperInterface $schemas, LoggerInterface $logger): EventSchemaLookup {
+		return new EventSchemaLookup(
+			new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemas, $this->createMock(MagicMapperInterface::class)),
+			$logger
+		);
+	}
 }//end class

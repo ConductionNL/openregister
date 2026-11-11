@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Survivorship;
 
-use DateTimeImmutable;
 
 /**
  * Resolves a golden record from linked source records, as the recompute listener asks for it.
@@ -39,28 +38,11 @@ interface SurvivorshipResolverInterface {
 	 * abort the whole resolution. Likewise a malformed override map (or
 	 * malformed override entry) is skipped without throwing.
 	 *
-	 * @param string $entityType Entity type (passed through to the trust lookup; never hardcoded).
-	 * @param array<int, array<string, mixed>> $sourceRecords Linked source records.
-	 * @param array<string, mixed> $config The `x-openregister-survivorship` annotation.
-	 * @param array<int, array<string, mixed>> $trustRows Candidate trust-configuration rows.
-	 * @param TrustTierResolverInterface $trustResolver Pure trust-tier lookup + decay engine.
-	 * @param DateTimeImmutable $asOf Reference instant for effectiveFrom + decay.
-	 * @param mixed $overrides Optional per-object attribute-override map
-	 *                         (`attribute => {value, overriddenBy, rationale?}`
-	 *                         or a bare `attribute => value` shorthand);
-	 *                         untrusted input, validated defensively.
+	 * @param GoldenRecordRequest $request The source records, annotation, trust lookup and overrides.
 	 *
 	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
 	 *
 	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
 	 */
-	public function resolveGoldenRecord(
-		string $entityType,
-		array $sourceRecords,
-		array $config,
-		array $trustRows,
-		TrustTierResolverInterface $trustResolver,
-		DateTimeImmutable $asOf,
-		mixed $overrides = null,
-	): array;
+	public function resolve(GoldenRecordRequest $request): array;
 }//end interface

@@ -1595,6 +1595,16 @@
             ]
         ],
         [
+            "logger.debug",
+            [
+                "[ImportHandler] No configuration found by source URL",
+                {
+                    "sourceUrl": "https://example.test/config.json",
+                    "exception": "not found"
+                }
+            ]
+        ],
+        [
             "config.findByApp",
             [
                 "myapp"

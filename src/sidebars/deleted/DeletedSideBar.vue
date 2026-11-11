@@ -17,54 +17,37 @@ import {
 		:subname="t('openregister', 'Restore or permanently delete items')"
 		:open="navigationStore.sidebarState.deleted"
 		@update:open="(e) => navigationStore.setSidebarState('deleted', e)">
-		<FiltersSidebarTab>
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Deleted Items') }}</h3>
-				<ScopeFilterFields
-					@registerChange="handleRegisterChange"
-					@schemaChange="handleSchemaChange" />
-				<div class="filterGroup">
-					<label for="deletedBySelect">{{
-						t('openregister', 'Deleted By')
-					}}</label>
-					<NcSelect
-						id="deletedBySelect"
-						v-model="selectedDeletedBy"
-						:options="userOptions"
-						:placeholder="t('openregister', 'Any user')"
-						:inputLabel="t('openregister', 'Deleted By')"
-						:clearable="true"
-						@update:modelValue="applyFilters">
-						<template #option="{ label }">
-							{{ label }}
-						</template>
-					</NcSelect>
-				</div>
-				<div class="filterGroup">
-					<label>{{ t('openregister', 'Deletion Date Range') }}</label>
-					<NcDateTimePickerNative
-						v-model="dateFrom"
-						:label="t('openregister', 'From date')"
-						type="date"
-						@update:modelValue="applyFilters" />
-					<NcDateTimePickerNative
-						v-model="dateTo"
-						:label="t('openregister', 'To date')"
-						type="date"
-						@update:modelValue="applyFilters" />
-				</div>
+		<ScopeFiltersTab
+			:title="t('openregister', 'Filter Deleted Items')"
+			:hint="
+				t(
+					'openregister',
+					'Use filters to narrow down deleted items by register, schema, deletion date, or user who deleted them.',
+				)
+			"
+			@registerChange="handleRegisterChange"
+			@schemaChange="handleSchemaChange">
+			<SidebarFilterSelect
+				id="deletedBySelect"
+				v-model="selectedDeletedBy"
+				:options="userOptions"
+				:placeholder="t('openregister', 'Any user')"
+				:label="t('openregister', 'Deleted By')"
+				@update:modelValue="applyFilters" />
+			<div class="filterGroup">
+				<label>{{ t('openregister', 'Deletion Date Range') }}</label>
+				<NcDateTimePickerNative
+					v-model="dateFrom"
+					:label="t('openregister', 'From date')"
+					type="date"
+					@update:modelValue="applyFilters" />
+				<NcDateTimePickerNative
+					v-model="dateTo"
+					:label="t('openregister', 'To date')"
+					type="date"
+					@update:modelValue="applyFilters" />
 			</div>
-
-			<NcNoteCard type="info" class="filter-hint">
-				{{
-					t(
-						'openregister',
-						'Use filters to narrow down deleted items by register, schema, deletion date, or user who deleted them.',
-					)
-				}}
-			</NcNoteCard>
-		</FiltersSidebarTab>
+		</ScopeFiltersTab>
 
 		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
@@ -126,15 +109,13 @@ import {
 	NcAppSidebar,
 	NcDateTimePickerNative,
 	NcLoadingIcon,
-	NcNoteCard,
-	NcSelect,
 } from '@nextcloud/vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 import CountListItem from '../../components/shared/CountListItem.vue'
-import FiltersSidebarTab from '../../components/shared/FiltersSidebarTab.vue'
 import SidebarStatCard from '../../components/shared/SidebarStatCard.vue'
 import StatisticsSidebarTab from '../../components/shared/StatisticsSidebarTab.vue'
-import ScopeFilterFields from '../ScopeFilterFields.vue'
+import ScopeFiltersTab from '../ScopeFiltersTab.vue'
+import SidebarFilterSelect from '../SidebarFilterSelect.vue'
 import eventBus from '../../eventBus.js'
 import { addDateRange, addScope, routeDate } from '../../services/routeQuery.js'
 import { applyRouteScope } from '../../services/routeScope.js'
@@ -156,11 +137,9 @@ export default {
 	name: 'DeletedSideBar',
 	components: {
 		CountListItem,
-		FiltersSidebarTab,
-		ScopeFilterFields,
+		ScopeFiltersTab,
+		SidebarFilterSelect,
 		NcAppSidebar,
-		NcSelect,
-		NcNoteCard,
 		NcDateTimePickerNative,
 		NcLoadingIcon,
 		AccountCircle,

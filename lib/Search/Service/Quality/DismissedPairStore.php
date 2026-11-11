@@ -139,13 +139,7 @@ class DismissedPairStore {
 		try {
 			$objects = $this->objectService->findAll(
 				[
-					'filters' => [
-						'register' => self::REGISTER,
-						'schema' => self::SCHEMA,
-						'registerSlug' => $registerSlug,
-						'schemaSlug' => $schemaSlug,
-						'active' => true,
-					],
+					'filters' => $this->scopeFilters(registerSlug: $registerSlug, schemaSlug: $schemaSlug) + ['active' => true],
 					'limit' => self::MAX_DISMISSALS,
 				]
 			);
@@ -154,6 +148,34 @@ class DismissedPairStore {
 			return [];
 		}
 
+		return $this->rowsByPairKey(objects: $objects);
+	}//end activeFor()
+
+	/**
+	 * The filters that scope a lookup to the dismissals of one register/schema.
+	 *
+	 * @param string $registerSlug Register the pairs were reviewed in.
+	 * @param string $schemaSlug   Schema the pairs were reviewed under.
+	 *
+	 * @return array<string, string>
+	 */
+	private function scopeFilters(string $registerSlug, string $schemaSlug): array {
+		return [
+			'register' => self::REGISTER,
+			'schema' => self::SCHEMA,
+			'registerSlug' => $registerSlug,
+			'schemaSlug' => $schemaSlug,
+		];
+	}//end scopeFilters()
+
+	/**
+	 * Key the dismissal rows by canonical pair; rows without both uuids are skipped.
+	 *
+	 * @param array<int, mixed> $objects The stored dismissal objects.
+	 *
+	 * @return array<string, array<string, mixed>> Dismissal rows (with the row's uuid as `id`) by pair key.
+	 */
+	private function rowsByPairKey(array $objects): array {
 		$rows = [];
 		foreach ($objects as $object) {
 			if ($object instanceof ObjectEntity === false) {
@@ -172,7 +194,7 @@ class DismissedPairStore {
 		}
 
 		return $rows;
-	}//end activeFor()
+	}//end rowsByPairKey()
 
 	/**
 	 * Record that two objects were reviewed and are not the same.
@@ -182,38 +204,41 @@ class DismissedPairStore {
 	 * answer, and two rows disagreeing about it is a bug waiting to be found
 	 * by whichever one the scorer happened to read first.
 	 *
-	 * @param ReviewedPair $pair The two uuids and the register and schema they were reviewed under.
-	 * @param string $fingerprint Opaque hash of the compared values, computed by the scorer.
-	 * @param string $reason Why the reviewer decided the two are not the same.
-	 * @param string $dismissedBy Acting uid.
+	 * @param ReviewedPair  $pair      The two uuids and the register and schema they were reviewed under.
+	 * @param PairDismissal $dismissal The compared-values fingerprint, the reason and the acting uid.
 	 *
 	 * @return array<string, mixed> The stored row.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
-	public function dismiss(
-		ReviewedPair $pair,
-		string $fingerprint,
-		string $reason,
-		string $dismissedBy,
-	): array {
+	public function dismiss(ReviewedPair $pair, PairDismissal $dismissal): array {
+		return $this->store(row: $this->dismissalRow(pair: $pair, verdict: $dismissal->verdict()), existing: $this->findRow(pair: $pair));
+	}//end dismiss()
+
+	/**
+	 * The active dismissal row of a pair: the canonical pair, its scope, the verdict and when it was given.
+	 *
+	 * @param ReviewedPair         $pair    The two uuids and the register and schema they were reviewed under.
+	 * @param array<string, mixed> $verdict The fingerprint, the reason and who dismissed it, in that order.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function dismissalRow(ReviewedPair $pair, array $verdict): array {
 		[$a, $b] = self::canonical(first: $pair->first, second: $pair->second);
-		$registerSlug = $pair->registerSlug;
-		$schemaSlug = $pair->schemaSlug;
+		$row = ['objectA' => $a, 'objectB' => $b, 'registerSlug' => $pair->registerSlug, 'schemaSlug' => $pair->schemaSlug];
 
-		$row = [
-			'objectA' => $a,
-			'objectB' => $b,
-			'registerSlug' => $registerSlug,
-			'schemaSlug' => $schemaSlug,
-			'fingerprint' => $fingerprint,
-			'reason' => $reason,
-			'dismissedBy' => $dismissedBy,
-			'dismissedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
-			'active' => true,
-		];
+		return $row + $verdict + ['dismissedAt' => (new DateTimeImmutable())->format(DATE_ATOM), 'active' => true];
+	}//end dismissalRow()
 
-		$existing = $this->findRow(first: $a, second: $b, registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+	/**
+	 * Save a dismissal row, over the existing one when there is one, and return it as stored with its id.
+	 *
+	 * @param array<string, mixed> $row      The row to save.
+	 * @param ObjectEntity|null    $existing The pair's stored row, or null to create one.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function store(array $row, ?ObjectEntity $existing): array {
 		$uuid = null;
 		if ($existing !== null) {
 			$uuid = (string)$existing->getUuid();
@@ -230,7 +255,7 @@ class DismissedPairStore {
 		$stored['id'] = $saved->getUuid();
 
 		return $stored;
-	}//end dismiss()
+	}//end store()
 
 	/**
 	 * Undo a dismissal, so the pair is offered again.
@@ -248,9 +273,7 @@ class DismissedPairStore {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function undismiss(ReviewedPair $pair, string $reversedBy): ?array {
-		[$a, $b] = self::canonical(first: $pair->first, second: $pair->second);
-
-		$existing = $this->findRow(first: $a, second: $b, registerSlug: $pair->registerSlug, schemaSlug: $pair->schemaSlug);
+		$existing = $this->findRow(pair: $pair);
 		if ($existing === null) {
 			return null;
 		}
@@ -260,43 +283,25 @@ class DismissedPairStore {
 		$row['reversedBy'] = $reversedBy;
 		$row['reversedAt'] = (new DateTimeImmutable())->format(DATE_ATOM);
 
-		$saved = $this->objectService->saveObject(
-			object: $row,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: (string)$existing->getUuid()
-		);
-
-		$stored = ($saved->getObject() ?? []);
-		$stored['id'] = $saved->getUuid();
-
-		return $stored;
+		return $this->store(row: $row, existing: $existing);
 	}//end undismiss()
 
 	/**
 	 * Find the row for one canonical pair, active or not.
 	 *
-	 * @param string $first Canonical first uuid.
-	 * @param string $second Canonical second uuid.
-	 * @param string $registerSlug Register the pair was reviewed in.
-	 * @param string $schemaSlug Schema the pair was reviewed under.
+	 * @param ReviewedPair $pair The two uuids, in either order, and the register and schema they were reviewed under.
 	 *
 	 * @return ObjectEntity|null The row, or null when there is none.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
-	private function findRow(string $first, string $second, string $registerSlug, string $schemaSlug): ?ObjectEntity {
+	private function findRow(ReviewedPair $pair): ?ObjectEntity {
+		[$first, $second] = self::canonical(first: $pair->first, second: $pair->second);
+		$scope = $this->scopeFilters(registerSlug: $pair->registerSlug, schemaSlug: $pair->schemaSlug);
 		try {
 			$objects = $this->objectService->findAll(
 				[
-					'filters' => [
-						'register' => self::REGISTER,
-						'schema' => self::SCHEMA,
-						'registerSlug' => $registerSlug,
-						'schemaSlug' => $schemaSlug,
-						'objectA' => $first,
-						'objectB' => $second,
-					],
+					'filters' => $scope + ['objectA' => $first, 'objectB' => $second],
 					'limit' => 1,
 				]
 			);
@@ -305,6 +310,17 @@ class DismissedPairStore {
 			return null;
 		}
 
+		return $this->firstEntity(objects: $objects);
+	}//end findRow()
+
+	/**
+	 * The first object entity in a lookup result.
+	 *
+	 * @param array<int, mixed> $objects The lookup result.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function firstEntity(array $objects): ?ObjectEntity {
 		foreach ($objects as $object) {
 			if ($object instanceof ObjectEntity) {
 				return $object;
@@ -312,5 +328,5 @@ class DismissedPairStore {
 		}
 
 		return null;
-	}//end findRow()
+	}//end firstEntity()
 }//end class

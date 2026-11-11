@@ -25,6 +25,7 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\MailMessageKey;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
@@ -115,7 +116,7 @@ class EmailLinkServiceLinkGoldenTest extends TestCase {
 			$this->builder(['user_id' => 'alice']),
 			$this->builder(false)
 		);
-		$this->mapper->method('findByObjectAccountMessageUid')->with('obj', 42, 7, null)->willReturn(null);
+		$this->mapper->method('findByObjectAccountMessageUid')->with('obj', new MailMessageKey(42, 7, null))->willReturn(null);
 		$this->mapper->expects($this->never())->method('insert');
 
 		[$target, $message] = $this->request('');
@@ -168,7 +169,7 @@ class EmailLinkServiceLinkGoldenTest extends TestCase {
 			$this->builder(['user_id' => 'alice']),
 			$this->builder(['uid' => 'row-uid'])
 		);
-		$this->mapper->method('findByObjectAccountMessageUid')->with('obj', 42, 7, 'mine')->willReturn(null);
+		$this->mapper->method('findByObjectAccountMessageUid')->with('obj', new MailMessageKey(42, 7, 'mine'))->willReturn(null);
 		$this->mapper->method('insert')->willReturnArgument(0);
 
 		[$target, $message] = $this->request('mine');

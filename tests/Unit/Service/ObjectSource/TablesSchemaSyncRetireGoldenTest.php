@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
+use OCA\OpenRegister\Service\ObjectSource\TablesRetireRun;
 use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
 use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -152,8 +153,7 @@ class TablesSchemaSyncRetireGoldenTest extends TestCase {
 
 		$retired = (new \ReflectionMethod(TablesSchemaSyncService::class, 'retireMissing'))->invoke(
 			$service,
-			$this->registerFor(service: $service),
-			[1]
+			new TablesRetireRun(register: $this->registerFor(service: $service), keepTableIds: [1])
 		);
 
 		$this->assertSame(1, $retired);

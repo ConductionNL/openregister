@@ -216,14 +216,20 @@
             [
                 "findAllRuns",
                 [
-                    "flow-1",
-                    null,
-                    7,
-                    0,
-                    null,
-                    [],
-                    null,
-                    []
+                    {
+                        "filter": {
+                            "flowId": "flow-1",
+                            "status": null,
+                            "since": null,
+                            "flowIds": []
+                        },
+                        "limit": 7,
+                        "offset": 0
+                    },
+                    {
+                        "requesterUid": null,
+                        "ownedFlowIds": []
+                    }
                 ]
             ]
         ]
@@ -275,14 +281,20 @@
             [
                 "findAllRuns",
                 [
-                    "flow-1",
-                    null,
-                    100,
-                    0,
-                    null,
-                    [],
-                    null,
-                    []
+                    {
+                        "filter": {
+                            "flowId": "flow-1",
+                            "status": null,
+                            "since": null,
+                            "flowIds": []
+                        },
+                        "limit": 100,
+                        "offset": 0
+                    },
+                    {
+                        "requesterUid": null,
+                        "ownedFlowIds": []
+                    }
                 ]
             ],
             [

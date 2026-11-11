@@ -73,10 +73,7 @@ interface PortalTaskServiceInterface {
 	 *
 	 * @param PortalSubject                    $subject The acting subject.
 	 * @param string                           $uuid    The task uuid.
-	 * @param array<string, mixed>             $answers The submitted answer fields.
-	 * @param string|null                      $comment The party's comment, when any.
-	 * @param array<int, array<string, mixed>> $files   The uploads.
-	 * @param string                           $outcome The outcome to record; defaults to `submitted`.
+	 * @param PortalCompletion $completion What the party submitted: answers, comment, uploads and outcome.
 	 * @param string                           $viaApp  The app completing the task in-process, or empty.
 	 *
 	 * @return Task The completed task.
@@ -84,10 +81,7 @@ interface PortalTaskServiceInterface {
 	public function complete(
 		PortalSubject $subject,
 		string $uuid,
-		array $answers = [],
-		?string $comment = null,
-		array $files = [],
-		string $outcome = self::DEFAULT_OUTCOME,
+		PortalCompletion $completion=new PortalCompletion(),
 		string $viaApp = '',
 	): Task;
 }//end interface

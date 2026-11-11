@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
 use OCP\EventDispatcher\Event;
@@ -117,9 +118,7 @@ class AutoTransitionRecordListener implements IEventListener {
 		}
 
 		$this->pass->record(
-			uuid: (string)$object->getUuid(),
-			register: (string)$object->getRegister(),
-			schema: $schemaRef,
+			ref: new ObjectRef(register: (string)$object->getRegister(), schema: $schemaRef, id: (string)$object->getUuid()),
 			previous: $this->dataOf(object: $old)
 		);
 	}//end recordWrite()

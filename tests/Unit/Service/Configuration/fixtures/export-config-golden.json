@@ -8,10 +8,10 @@
                 "endpoints": [],
                 "sources": [],
                 "mappings": [],
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -384,10 +384,10 @@
                         "slug": "mapping-43"
                     }
                 },
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -789,10 +789,10 @@
                 "endpoints": [],
                 "sources": [],
                 "mappings": [],
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -1171,10 +1171,10 @@
                 "endpoints": [],
                 "sources": [],
                 "mappings": [],
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -1580,10 +1580,10 @@
                         "slug": "mapping-43"
                     }
                 },
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -1680,10 +1680,10 @@
                 "endpoints": [],
                 "sources": [],
                 "mappings": [],
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -2047,10 +2047,10 @@
                     }
                 },
                 "endpoints": [],
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "securitySchemes": {
                     "oauth2": {
@@ -2443,10 +2443,10 @@
                 "endpoints": [],
                 "sources": [],
                 "mappings": [],
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [
                     {
@@ -2460,42 +2460,42 @@
                     {
                         "@self": {
                             "id": "o1",
-                            "register": "reg-one",
-                            "schema": "person"
+                            "register": "7",
+                            "schema": 99
                         },
                         "name": "n1"
                     },
                     {
                         "@self": {
-                            "id": "o2",
-                            "register": "7",
-                            "schema": 99
-                        },
-                        "name": "n2"
-                    },
-                    {
-                        "@self": {
                             "id": "o0",
-                            "register": "reg-two",
-                            "schema": "item"
+                            "register": "reg-one",
+                            "schema": "person"
                         },
                         "name": "n0"
                     },
                     {
                         "@self": {
                             "id": "o1",
-                            "register": "reg-two",
-                            "schema": "person"
+                            "register": "7",
+                            "schema": 99
                         },
                         "name": "n1"
                     },
                     {
                         "@self": {
-                            "id": "o2",
+                            "id": "o0",
+                            "register": "reg-two",
+                            "schema": "person"
+                        },
+                        "name": "n0"
+                    },
+                    {
+                        "@self": {
+                            "id": "o1",
                             "register": "7",
                             "schema": 99
                         },
-                        "name": "n2"
+                        "name": "n1"
                     }
                 ],
                 "securitySchemes": {
@@ -2548,23 +2548,18 @@
                 "register.getIdToSlugMap"
             ],
             [
-                "objects.findAll",
-                [
-                    null,
-                    null,
-                    {
-                        "register": 1
-                    },
-                    null,
-                    null,
-                    [],
-                    null,
-                    null,
-                    null,
-                    false,
-                    null,
-                    null
-                ]
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "objects.findAllInRegisterSchemaTable",
+                1,
+                11
+            ],
+            [
+                "objects.findAllInRegisterSchemaTable",
+                1,
+                12
             ],
             [
                 "register.find",
@@ -2581,23 +2576,13 @@
                 "register.getIdToSlugMap"
             ],
             [
-                "objects.findAll",
-                [
-                    null,
-                    null,
-                    {
-                        "register": 2
-                    },
-                    null,
-                    null,
-                    [],
-                    null,
-                    null,
-                    null,
-                    false,
-                    null,
-                    null
-                ]
+                "register.getSchemasByRegisterId",
+                2
+            ],
+            [
+                "objects.findAllInRegisterSchemaTable",
+                2,
+                12
             ]
         ]
     },
@@ -2865,10 +2850,10 @@
                 "endpoints": [],
                 "sources": [],
                 "mappings": [],
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -3172,10 +3157,10 @@
                 "endpoints": [],
                 "sources": [],
                 "mappings": [],
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [
                     {
@@ -3189,18 +3174,26 @@
                     {
                         "@self": {
                             "id": "o1",
-                            "register": "reg-one",
-                            "schema": "person"
+                            "register": "7",
+                            "schema": 99
                         },
                         "name": "n1"
                     },
                     {
                         "@self": {
-                            "id": "o2",
+                            "id": "o0",
+                            "register": "reg-one",
+                            "schema": "person"
+                        },
+                        "name": "n0"
+                    },
+                    {
+                        "@self": {
+                            "id": "o1",
                             "register": "7",
                             "schema": 99
                         },
-                        "name": "n2"
+                        "name": "n1"
                     }
                 ],
                 "securitySchemes": {
@@ -3239,23 +3232,18 @@
                 "register.getIdToSlugMap"
             ],
             [
-                "objects.findAll",
-                [
-                    null,
-                    null,
-                    {
-                        "register": 1
-                    },
-                    null,
-                    null,
-                    [],
-                    null,
-                    null,
-                    null,
-                    false,
-                    null,
-                    null
-                ]
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "objects.findAllInRegisterSchemaTable",
+                1,
+                11
+            ],
+            [
+                "objects.findAllInRegisterSchemaTable",
+                1,
+                12
             ]
         ]
     },
@@ -3574,10 +3562,10 @@
                 "endpoints": [],
                 "sources": [],
                 "mappings": [],
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -3960,10 +3948,10 @@
                 "endpoints": [],
                 "sources": [],
                 "mappings": [],
-                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {

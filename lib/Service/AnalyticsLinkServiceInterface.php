@@ -64,8 +64,7 @@ interface AnalyticsLinkServiceInterface {
 	 * `$type`.
 	 *
 	 * @param LinkTarget $target The object to link to.
-	 * @param string     $name   New report name.
-	 * @param int|null   $type   NC Analytics datasource type (default group).
+	 * @param AnalyticsReportDraft $draft The report name and optional datasource type (default group).
 	 *
 	 * @return AnalyticsLink The persisted link row.
 	 *
@@ -74,7 +73,7 @@ interface AnalyticsLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkReport(LinkTarget $target, string $name, ?int $type = null): AnalyticsLink;
+	public function createAndLinkReport(LinkTarget $target, AnalyticsReportDraft $draft): AnalyticsLink;
 
 	/**
 	 * Unlink a report from an object.

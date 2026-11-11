@@ -32,11 +32,14 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
 use OCA\OpenRegister\Service\ProcessingLogService;
+use OCA\OpenRegister\Service\ProcessingRead;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ProcessingLogService
@@ -149,7 +152,7 @@ final class ProcessingLogServiceGoldenTest extends TestCase {
 			});
 		}
 
-		return new ProcessingLogService($logMapper, $vrwMapper, $schemaMapper, $registerMapper, $session, $logger);
+		return new ProcessingLogService($logMapper, $vrwMapper, new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), $session, $logger);
 	}//end service()
 
 	/**
@@ -215,7 +218,7 @@ final class ProcessingLogServiceGoldenTest extends TestCase {
 		]];
 		$this->activities['ref-export'] = $this->activity('act-export');
 		$service = $this->service();
-		$service->logRead($this->object(['kvk' => '', 'bsn' => 123456789]), 'export', null, 'actor-x');
+		$service->recordRead($this->object(['kvk' => '', 'bsn' => 123456789]), new ProcessingRead('export', null, 'actor-x'));
 		$this->assertSame(1, $service->pendingCount());
 		$this->assertSame([[
 			'activityId' => 'act-export',
@@ -256,8 +259,8 @@ final class ProcessingLogServiceGoldenTest extends TestCase {
 		foreach ($configs as $config) {
 			$this->schemaConfigs['5'] = $config;
 			$service = $this->service();
-			$service->logRead($this->object());
-			$service->logReadList([$this->object()]);
+			$service->recordRead($this->object(), new ProcessingRead());
+			$service->recordReadList([$this->object()], new ProcessingRead());
 			$this->assertSame(0, $service->pendingCount(), json_encode($config));
 		}
 
@@ -278,11 +281,11 @@ final class ProcessingLogServiceGoldenTest extends TestCase {
 		$this->activities['ref-reg-read'] = $this->activity('act-reg-read');
 		$this->activities['ref-schema-read'] = $this->activity('act-schema-read');
 		$service = $this->service();
-		$service->logRead($this->object(['bsn' => '1']));
+		$service->recordRead($this->object(['bsn' => '1']), new ProcessingRead());
 		$this->schemaConfigs['5'] = ['x-openregister-processing-activity' => 'ref-schema-read'];
-		$service->logRead($this->object(['bsn' => '1']));
+		$service->recordRead($this->object(['bsn' => '1']), new ProcessingRead());
 		$this->schemaConfigs['5'] = ['x-openregister-processing' => ['logReads' => true, 'attribution' => ['read' => 'ref-schema-read']]];
-		$service->logRead($this->object(['bsn' => '1']));
+		$service->recordRead($this->object(['bsn' => '1']), new ProcessingRead());
 		$rows = $this->flushedRows($service);
 		$this->assertSame(['act-reg-read', 'act-schema-read'], array_column($rows, 'activityId'));
 		$this->assertSame(['BSN', null], array_column($rows, 'subjectIdType'));
@@ -298,10 +301,10 @@ final class ProcessingLogServiceGoldenTest extends TestCase {
 		$this->activities['ref-retired'] = $this->activity('act-retired', 'retired');
 		$this->loggedIn = false;
 		$service = $this->service();
-		$service->logRead($this->object());
+		$service->recordRead($this->object(), new ProcessingRead());
 		$this->activities['code:niet-geclassificeerde-verwerking'] = $this->activity('existing-fallback');
 		$this->schemaConfigs['5']['x-openregister-processing']['attribution'] = ['default' => 'ref-missing'];
-		$service->logRead($this->object());
+		$service->recordRead($this->object(), new ProcessingRead());
 		$rows = $this->flushedRows($service);
 		$this->assertSame(['fallback-uuid', 'existing-fallback'], array_column($rows, 'activityId'));
 		$this->assertSame(['system', 'system'], array_column($rows, 'actor'));
@@ -321,15 +324,15 @@ final class ProcessingLogServiceGoldenTest extends TestCase {
 		$this->schemaConfigs['5'] = ['x-openregister-processing' => ['logReads' => true, 'attribution' => ['default' => 'ref'], 'subjectIdFields' => ['BSN' => 'bsn']]];
 		$this->activities['ref'] = $this->activity('act');
 		$service = $this->service();
-		$service->logReadList([], 'read');
-		$service->logReadList(['k' => $this->object(['bsn' => '1'], 'a'), 'l' => $this->object([], 'b')], 'search', 'api', null, ['q' => 'x']);
+		$service->recordReadList([], new ProcessingRead('read'));
+		$service->recordReadList(['k' => $this->object(['bsn' => '1'], 'a'), 'l' => $this->object([], 'b')], new ProcessingRead('search', 'api', null, ['q' => 'x']));
 		$big = [];
 		for ($i = 0; $i < 101; $i++) {
 			$big[] = $this->object([], 'o' . $i);
 		}
 
-		$service->logReadList($big);
-		$service->logReadList(['not-an-entity']);
+		$service->recordReadList($big, new ProcessingRead());
+		$service->recordReadList(['not-an-entity'], new ProcessingRead());
 		$rows = $this->flushedRows($service);
 		$this->assertCount(2, $rows);
 		$this->assertSame([
@@ -363,13 +366,13 @@ final class ProcessingLogServiceGoldenTest extends TestCase {
 	public function testCaptureAndFlushAreFailSoft(): void {
 		$this->schemaConfigs['5'] = ['x-openregister-processing' => ['logReads' => true, 'subjectIdFields' => ['BSN' => ['not', 'a', 'key']]]];
 		$service = $this->service();
-		$service->logRead($this->object(['bsn' => '1']));
+		$service->recordRead($this->object(['bsn' => '1']), new ProcessingRead());
 		$this->assertSame(0, $service->pendingCount());
 		$this->assertCount(1, $this->inserted, 'the fallback is created before the subject is read');
 		$this->assertStringStartsWith('debug:[AVG] processing-log capture skipped:', $this->logs[0]);
 
 		$this->schemaConfigs['5'] = ['x-openregister-processing' => ['logReads' => true]];
-		$service->logRead($this->object());
+		$service->recordRead($this->object(), new ProcessingRead());
 		$this->flushFails = true;
 		$this->assertSame(0, $service->flush());
 		$this->assertSame(1, $service->pendingCount());
@@ -387,7 +390,7 @@ final class ProcessingLogServiceGoldenTest extends TestCase {
 	public function testAListCaptureFailureIsLogged(): void {
 		$this->schemaConfigs['5'] = ['x-openregister-processing' => ['logReads' => true, 'subjectIdFields' => ['BSN' => ['bad']]]];
 		$service = $this->service();
-		$service->logReadList([$this->object(['bsn' => '1'])]);
+		$service->recordReadList([$this->object(['bsn' => '1'])], new ProcessingRead());
 		$this->assertSame(0, $service->pendingCount());
 		$this->assertStringStartsWith('debug:[AVG] processing-log list capture skipped:', $this->logs[0]);
 	}//end testAListCaptureFailureIsLogged()

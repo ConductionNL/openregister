@@ -37,6 +37,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Golden record of the citing-row lookups: the SQL sent for each platform and property shape, the
@@ -214,7 +216,7 @@ class ReferentialIntegrityReferencingGoldenTest extends TestCase {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));
 		$service = new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $cacheFactory),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $cacheFactory),
 			storage: new IntegrityStorage(objectEntityMapper: $mapper, db: $db),
 			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->createMock(ArchivalRetentionGuard::class)),
 			logger: $logger

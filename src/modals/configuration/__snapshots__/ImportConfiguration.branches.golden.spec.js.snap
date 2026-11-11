@@ -1,0 +1,433 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ImportConfiguration.fetchBranches fetches github branches, answering defaultFlag 1`] = `
+{
+  "branches": [
+    {
+      "id": "dev",
+      "label": "dev",
+    },
+    {
+      "id": "release",
+      "label": "release",
+    },
+  ],
+  "configFiles": [],
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "github",
+      {
+        "owner": "owner",
+        "repo": "repo",
+      },
+    ],
+    [
+      "fetchConfigurationFiles",
+      {
+        "id": "release",
+        "label": "release",
+      },
+      true,
+    ],
+  ],
+  "selectedBranch": {
+    "id": "release",
+    "label": "release",
+  },
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches github branches, answering empty 1`] = `
+{
+  "branches": [],
+  "configFiles": [],
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "github",
+      {
+        "owner": "owner",
+        "repo": "repo",
+      },
+    ],
+  ],
+  "selectedBranch": null,
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches github branches, answering failed 1`] = `
+{
+  "branches": [],
+  "configFiles": [],
+  "error": "Repository not found",
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "github",
+      {
+        "owner": "owner",
+        "repo": "repo",
+      },
+    ],
+  ],
+  "selectedBranch": null,
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches github branches, answering failedSilently 1`] = `
+{
+  "branches": [],
+  "configFiles": [],
+  "error": "Failed to fetch branches",
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "github",
+      {
+        "owner": "owner",
+        "repo": "repo",
+      },
+    ],
+  ],
+  "selectedBranch": null,
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches github branches, answering main 1`] = `
+{
+  "branches": [
+    {
+      "id": "feature",
+      "label": "feature",
+    },
+    {
+      "id": "main",
+      "label": "main",
+    },
+  ],
+  "configFiles": [],
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "github",
+      {
+        "owner": "owner",
+        "repo": "repo",
+      },
+    ],
+    [
+      "fetchConfigurationFiles",
+      {
+        "id": "main",
+        "label": "main",
+      },
+      true,
+    ],
+  ],
+  "selectedBranch": {
+    "id": "main",
+    "label": "main",
+  },
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches github branches, answering master 1`] = `
+{
+  "branches": [
+    {
+      "id": "master",
+      "label": "master",
+    },
+    {
+      "id": "x",
+      "label": "x",
+    },
+  ],
+  "configFiles": [],
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "github",
+      {
+        "owner": "owner",
+        "repo": "repo",
+      },
+    ],
+    [
+      "fetchConfigurationFiles",
+      {
+        "id": "master",
+        "label": "master",
+      },
+      true,
+    ],
+  ],
+  "selectedBranch": {
+    "id": "master",
+    "label": "master",
+  },
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches github branches, answering noDefault 1`] = `
+{
+  "branches": [
+    {
+      "id": "a",
+      "label": "a",
+    },
+    {
+      "id": "b",
+      "label": "b",
+    },
+  ],
+  "configFiles": [],
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "github",
+      {
+        "owner": "owner",
+        "repo": "repo",
+      },
+    ],
+  ],
+  "selectedBranch": null,
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches gitlab branches, answering defaultFlag 1`] = `
+{
+  "branches": [
+    {
+      "id": "dev",
+      "label": "dev",
+    },
+    {
+      "id": "release",
+      "label": "release",
+    },
+  ],
+  "configFiles": [],
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "gitlab",
+      {
+        "namespace": "ns",
+        "project": "proj",
+      },
+    ],
+    [
+      "fetchConfigurationFiles",
+      {
+        "id": "release",
+        "label": "release",
+      },
+      true,
+    ],
+  ],
+  "selectedBranch": {
+    "id": "release",
+    "label": "release",
+  },
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches gitlab branches, answering empty 1`] = `
+{
+  "branches": [],
+  "configFiles": [],
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "gitlab",
+      {
+        "namespace": "ns",
+        "project": "proj",
+      },
+    ],
+  ],
+  "selectedBranch": null,
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches gitlab branches, answering failed 1`] = `
+{
+  "branches": [],
+  "configFiles": [],
+  "error": "Repository not found",
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "gitlab",
+      {
+        "namespace": "ns",
+        "project": "proj",
+      },
+    ],
+  ],
+  "selectedBranch": null,
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches gitlab branches, answering failedSilently 1`] = `
+{
+  "branches": [],
+  "configFiles": [],
+  "error": "Failed to fetch branches",
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "gitlab",
+      {
+        "namespace": "ns",
+        "project": "proj",
+      },
+    ],
+  ],
+  "selectedBranch": null,
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches gitlab branches, answering main 1`] = `
+{
+  "branches": [
+    {
+      "id": "feature",
+      "label": "feature",
+    },
+    {
+      "id": "main",
+      "label": "main",
+    },
+  ],
+  "configFiles": [],
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "gitlab",
+      {
+        "namespace": "ns",
+        "project": "proj",
+      },
+    ],
+    [
+      "fetchConfigurationFiles",
+      {
+        "id": "main",
+        "label": "main",
+      },
+      true,
+    ],
+  ],
+  "selectedBranch": {
+    "id": "main",
+    "label": "main",
+  },
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches gitlab branches, answering master 1`] = `
+{
+  "branches": [
+    {
+      "id": "master",
+      "label": "master",
+    },
+    {
+      "id": "x",
+      "label": "x",
+    },
+  ],
+  "configFiles": [],
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "gitlab",
+      {
+        "namespace": "ns",
+        "project": "proj",
+      },
+    ],
+    [
+      "fetchConfigurationFiles",
+      {
+        "id": "master",
+        "label": "master",
+      },
+      true,
+    ],
+  ],
+  "selectedBranch": {
+    "id": "master",
+    "label": "master",
+  },
+  "selectedFile": null,
+}
+`;
+
+exports[`ImportConfiguration.fetchBranches fetches gitlab branches, answering noDefault 1`] = `
+{
+  "branches": [
+    {
+      "id": "a",
+      "label": "a",
+    },
+    {
+      "id": "b",
+      "label": "b",
+    },
+  ],
+  "configFiles": [],
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "getBranches",
+      "gitlab",
+      {
+        "namespace": "ns",
+        "project": "proj",
+      },
+    ],
+  ],
+  "selectedBranch": null,
+  "selectedFile": null,
+}
+`;

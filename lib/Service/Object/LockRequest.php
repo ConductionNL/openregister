@@ -30,20 +30,34 @@ namespace OCA\OpenRegister\Service\Object;
 final class LockRequest {
 
 	/**
+	 * Flow run taking the lock, for a run-scoped lock.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $runUuid;
+
+	/**
+	 * Flow node that took it, recorded for the sweep.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $nodeId;
+
+	/**
 	 * Constructor
 	 *
 	 * @param string      $identifier Object ID or UUID.
 	 * @param string|null $process    What the lock is taken for.
 	 * @param int|null    $duration   Lock duration in seconds.
-	 * @param string|null $runUuid    Flow run taking the lock, for a run-scoped lock.
-	 * @param string|null $nodeId     Flow node that took it, recorded for the sweep.
+	 * @param LockRunStep $runStep    The flow run and node taking it, both null outside a run.
 	 */
 	public function __construct(
 		public readonly string $identifier,
 		public readonly ?string $process,
 		public readonly ?int $duration,
-		public readonly ?string $runUuid,
-		public readonly ?string $nodeId,
+		LockRunStep $runStep,
 	) {
+		$this->runUuid = $runStep->runUuid;
+		$this->nodeId = $runStep->nodeId;
 	}//end __construct()
 }//end class

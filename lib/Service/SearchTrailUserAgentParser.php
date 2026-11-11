@@ -80,29 +80,10 @@ final class SearchTrailUserAgentParser {
 		foreach (self::BROWSER_PATTERNS as $browser => $pattern) {
 			if (preg_match($pattern, $userAgent, $matches) === 1) {
 				// Group 1 is set: preg_match returned 1 and every pattern has one group.
-				return $this->browserInfo(browser: $browser, version: $matches[1], userAgent: $userAgent);
+				return ['browser' => $browser, 'version' => $matches[1], 'full_string' => $userAgent];
 			}
 		}
 
-		return $this->browserInfo(browser: 'unknown', version: 'unknown', userAgent: $userAgent);
+		return ['browser' => 'unknown', 'version' => 'unknown', 'full_string' => $userAgent];
 	}//end parse()
-
-	/**
-	 * Build the browser information record.
-	 *
-	 * @param string $browser   Browser name
-	 * @param string $version   Browser version
-	 * @param string $userAgent The full user agent string
-	 *
-	 * @return string[]
-	 *
-	 * @psalm-return array{browser: string, version: string, full_string: string}
-	 */
-	private function browserInfo(string $browser, string $version, string $userAgent): array {
-		return [
-			'browser' => $browser,
-			'version' => $version,
-			'full_string' => $userAgent,
-		];
-	}//end browserInfo()
 }//end class

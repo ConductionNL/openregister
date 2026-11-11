@@ -30,7 +30,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory
 use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
-use OC\Files\AppData\Factory;
+use OCP\Files\AppData\IAppDataFactory as Factory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Controller\ChatController;
 use OCA\OpenRegister\Controller\ConversationController;
@@ -1767,7 +1767,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	 */
 	private function buildChatController(): ChatController {
 		return ChatControllerFactory::create(
-			'openregister',
 			$this->request,
 			\OC::$server->get(ChatService::class),
 			\OC::$server->get(ConversationMapper::class),
@@ -1788,7 +1787,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	 */
 	private function buildConversationController(): ConversationController {
 		return ConversationControllerFactory::create(
-			'openregister',
 			$this->request,
 			\OC::$server->get(ConversationMapper::class),
 			\OC::$server->get(MessageMapper::class),
@@ -1970,9 +1968,11 @@ class ControllersIntegrationTest2 extends TestCase {
 	private function buildFileSettingsController(): FileSettingsController {
 		return new FileSettingsController(
 			$this->request,
-			\OC::$server->get(ContainerInterface::class),
-			\OC::$server->get(SettingsService::class),
-			$this->logger
+			new \OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices(
+				\OC::$server->get(ContainerInterface::class),
+				\OC::$server->get(SettingsService::class),
+				$this->logger
+			)
 		);
 	}//end buildFileSettingsController()
 

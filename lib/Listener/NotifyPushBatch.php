@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Listener;
  *
  * @spec openspec/changes/add-live-updates/tasks.md#task-4
  */
-final class NotifyPushBatch {
+final class NotifyPushBatch implements NotifyPushBatchInterface {
 
 	/**
 	 * Enable or disable batch mode.
@@ -43,7 +43,7 @@ final class NotifyPushBatch {
 	 *
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-4
 	 */
-	public static function setBatchMode(bool $enabled): void {
+	public function setBatchMode(bool $enabled): void {
 		NotifyPushListener::setBatchMode(enabled: $enabled);
 	}//end setBatchMode()
 
@@ -54,7 +54,7 @@ final class NotifyPushBatch {
 	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
-	public static function hasBatchedCollections(): bool {
+	public function hasBatchedCollections(): bool {
 		return NotifyPushListener::hasBatchedCollections();
 	}//end hasBatchedCollections()
 
@@ -68,7 +68,7 @@ final class NotifyPushBatch {
 	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
-	public static function addBatchedCollection(string $registerSlug, string $schemaSlug): void {
+	public function addBatchedCollection(string $registerSlug, string $schemaSlug): void {
 		NotifyPushListener::addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
 	}//end addBatchedCollection()
 
@@ -81,7 +81,7 @@ final class NotifyPushBatch {
 	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
-	public static function flushBatch(object $queue): void {
+	public function flushBatch(object $queue): void {
 		NotifyPushListener::flushBatch(queue: $queue);
 	}//end flushBatch()
 }//end class

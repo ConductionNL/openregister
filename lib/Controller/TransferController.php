@@ -32,10 +32,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\BackgroundJob\QueuedJobClassesInterface;
 use OCA\OpenRegister\Controller\Support\TransferControllerServices;
 use OCA\OpenRegister\Service\Edepot\TransferListServiceInterface;
 use OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface;
+use OCA\OpenRegister\Service\Edepot\TransferRejection;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -87,18 +89,16 @@ class TransferController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param TransferControllerServices $services The transfer controller services.
 	 * @param IUserSession $userSession Names the archivist who decided.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		TransferControllerServices $services,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->transferRecordService = $services->transferRecords;
 		$this->jobList = $services->jobList;
 		$this->logger = $services->logger;
@@ -242,10 +242,9 @@ class TransferController extends Controller {
 			);
 		}
 
-		return $this->transferListService->rejectTransferList(
+		return $this->transferListService->reject(
 			transferList: $list,
-			archivistId: $decision['archivist'],
-			reason: $decision['reason']
+			rejection: new TransferRejection(archivistId: $decision['archivist'], reason: $decision['reason'])
 		);
 	}//end applyDecision()
 
