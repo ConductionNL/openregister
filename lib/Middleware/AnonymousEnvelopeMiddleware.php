@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
+use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataResponse;
@@ -69,23 +71,41 @@ class AnonymousEnvelopeMiddleware extends Middleware {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function afterController(Controller $controller, string $methodName, Response $response): Response {
-		return $this->redactedForAnonymous(response: $response);
+		return $this->redactedForAnonymous(response: $response, configuration: $this->answersConfiguration(controller: $controller));
 	}//end afterController()
+
+	/**
+	 * Whether the controller answers with register or schema rows.
+	 *
+	 * @param Controller $controller The controller that answered.
+	 *
+	 * @return bool True for the register and schema controllers.
+	 */
+	private function answersConfiguration(Controller $controller): bool {
+		return $controller instanceof RegistersController || $controller instanceof SchemasController;
+	}//end answersConfiguration()
 
 	/**
 	 * The answer, its JSON data redacted when the caller has no session.
 	 *
-	 * @param Response $response The answer.
+	 * @param Response $response      The answer.
+	 * @param bool     $configuration Whether the answer holds register or schema rows.
 	 *
 	 * @return Response The same answer.
 	 */
-	private function redactedForAnonymous(Response $response): Response {
+	private function redactedForAnonymous(Response $response, bool $configuration): Response {
 		if ($this->userSession->getUser() !== null) {
 			return $response;
 		}
 
 		if ($response instanceof JSONResponse === true || $response instanceof DataResponse === true) {
-			$response->setData($this->envelope->redact(data: $response->getData()));
+			$data = $response->getData();
+			if ($configuration === true) {
+				$response->setData($this->envelope->redactConfiguration(data: $data));
+				return $response;
+			}
+
+			$response->setData($this->envelope->redact(data: $data));
 		}
 
 		return $response;

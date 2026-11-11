@@ -26,6 +26,8 @@ use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -40,7 +42,7 @@ use Psr\Log\LoggerInterface;
 class SearchQueryHandlerFilterSpellingTest extends TestCase {
 
 	/**
-	 * A handler whose schema lookup answers with the given properties.
+	 * A handler for a signed-in caller whose schema lookup answers with the given properties.
 	 *
 	 * @param array<string, mixed> $properties The schema's declared properties.
 	 *
@@ -54,12 +56,18 @@ class SearchQueryHandlerFilterSpellingTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('bob');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
 		return new SearchQueryHandler(
 			$this->createMock(ViewScopeApplier::class),
 			$schemaMapper,
 			$this->createMock(SettingsService::class),
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(SearchTrailService::class)
+			$this->createMock(SearchTrailService::class),
+			$session
 		);
 	}//end makeHandler()
 

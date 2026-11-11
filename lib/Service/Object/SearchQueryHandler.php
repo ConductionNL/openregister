@@ -113,6 +113,18 @@ class SearchQueryHandler {
 	private const NO_PERSONAL_LENS_USER = '__no-personal-lens-user__';
 
 	/**
+	 * The id an owner filter falls back to when there is no caller.
+	 *
+	 * Without a session the owner is withheld from every answer, so filtering
+	 * or sorting on it would still tell which records a user owns through the
+	 * count and the order. An owner filter answers nothing and an owner sort
+	 * is dropped.
+	 *
+	 * @var string
+	 */
+	private const NO_OWNER_FOR_ANONYMOUS = '__no-owner-for-anonymous__';
+
+	/**
 	 * Memoized effective search-trail recording mode for this request.
 	 *
 	 * The recording mode is read from settings once per request instead of
@@ -532,8 +544,41 @@ class SearchQueryHandler {
 	 * @return array The query.
 	 */
 	private function applyLenses(array $query): array {
-		return $this->applyPersonalLenses(query: $this->applyUnreadLens(query: $this->applyWatchingLens(query: $query)));
+		$query = $this->applyPersonalLenses(query: $this->applyUnreadLens(query: $this->applyWatchingLens(query: $query)));
+
+		return $this->withoutOwnerLensForAnonymous(query: $query);
 	}//end applyLenses()
+
+	/**
+	 * Take the owner out of an anonymous caller's filter and sort.
+	 *
+	 * @param array $query The query.
+	 *
+	 * @return array The query.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function withoutOwnerLensForAnonymous(array $query): array {
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($uid !== null && $uid !== '') {
+			return $query;
+		}
+
+		if (is_array($query['@self'] ?? null) === true && array_key_exists('owner', $query['@self']) === true) {
+			unset($query['@self']['owner']);
+			$query['_ids'] = [self::NO_OWNER_FOR_ANONYMOUS];
+		}
+
+		if (is_array($query['_order'] ?? null) === true) {
+			$query['_order'] = array_filter(
+				$query['_order'],
+				static fn ($field): bool => in_array((string)$field, ['owner', '@self.owner', '_owner'], true) === false,
+				ARRAY_FILTER_USE_KEY
+			);
+		}
+
+		return $query;
+	}//end withoutOwnerLensForAnonymous()
 
 	/**
 	 * Undo PHP's dot-to-underscore mangling of parameter names (`@self_register` back to `@self.register`).
