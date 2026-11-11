@@ -2430,3 +2430,4 @@ learniq	2175	94333516fa55baf2f1a4043909e60895a57e2973	GREEN	FV12:6	tree green (u
 larpinq	978	3254365b170588aebec15d8af2a2c815af1d51d8	GREEN	FV15:5	tree green (phpunit 23 baseline failures only, same names on 3 reruns; one earlier run had 30 extra errors in untouched code that did not reproduce; no JS changes)
 dossiq	5645	7d1ffd766212c20fcaffd693b801170337cc1c55	GREEN	FXL	golden default window recorded as placeholders; merged
 dossiq	5578	d6d8bfe84660d09e8a767dbf6daf0f570f95d072	GREEN	FXL	allowlist entry renamed to findRows; merged
+dossiq	5575	6ea6b94c728a538f9d8d0e5db47fa36af0d243b9	GREEN	FXL	readiness spec matches the merge by shape; merged
