@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\FormatFactory;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -2234,7 +2235,12 @@ class ValidateObject implements ValidateObjectInterface {
 		}
 
 		$filters = self::uniqueFilters(object: $object, uniqueFields: $uniqueFields);
-		if ($this->lookups->objectMapper->countAll(_filters: $filters, schema: $schema) !== 0) {
+		// A unique check counts every existing value in the schema, including values the caller may not read:
+		// a read rule that refused the filter would otherwise count 0 and let a duplicate through.
+		$existing = SystemOperationContext::run(
+			fn (): int => $this->lookups->objectMapper->countAll(_filters: $filters, schema: $schema)
+		);
+		if ($existing !== 0) {
 			throw self::notUniqueException(object: $object, uniqueFields: $uniqueFields);
 		}
 	}//end validateUniqueFields()
