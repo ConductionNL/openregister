@@ -390,15 +390,20 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$handler = new ImportHandler(
-			schemaMapper:        $this->createMock(SchemaMapper::class),
-			registerMapper:      $registerMapper,
-			objectEntityMapper:  $plainMapper,
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $this->createMock(MappingMapper::class),
-			appConfig:           $appConfig,
-			logger:              $this->createMock(LoggerInterface::class),
-			appDataPath:         '/tmp',
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $registerMapper,
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $plainMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 		$handler->setObjectMapper($routing);
 		$handler->setSlugHandler($this->slugHandlerFor(routing: $routing, registerMapper: $registerMapper, holders: $slugHolders));

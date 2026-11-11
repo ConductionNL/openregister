@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Service\CaseTypeAuthorizationService;
+use OCA\OpenRegister\Service\ZgwAutorisatieGrant;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -104,9 +105,8 @@ class CaseTypeAuthorizationServiceTest extends TestCase {
 	// === ZGW Autorisatie → authorization block ===
 
 	public function testMapZgwAutorisatieWithoutClearanceProducesBareGroupRules(): void {
-		$block = $this->service->mapZgwAutorisatie(
-			['zaken.lezen', 'zaken.aanmaken'],
-			'zaaksysteem-1'
+		$block = $this->service->mapGrant(
+			grant: new ZgwAutorisatieGrant(scopes: ['zaken.lezen', 'zaken.aanmaken'], group: 'zaaksysteem-1')
 		);
 
 		$this->assertSame([
@@ -116,10 +116,12 @@ class CaseTypeAuthorizationServiceTest extends TestCase {
 	}
 
 	public function testMapZgwAutorisatieWithClearanceProducesConditionalRules(): void {
-		$block = $this->service->mapZgwAutorisatie(
-			['zaken.lezen'],
-			'zaaksysteem-1-lezen',
-			'zaakvertrouwelijk'
+		$block = $this->service->mapGrant(
+			grant: new ZgwAutorisatieGrant(
+				scopes: ['zaken.lezen'],
+				group: 'zaaksysteem-1-lezen',
+				maxLevel: 'zaakvertrouwelijk'
+			)
 		);
 
 		$this->assertSame([
@@ -137,9 +139,8 @@ class CaseTypeAuthorizationServiceTest extends TestCase {
 	}
 
 	public function testMapZgwAutorisatieSkipsUnknownScopes(): void {
-		$block = $this->service->mapZgwAutorisatie(
-			['zaken.lezen', 'zaken.toveren', ''],
-			'g'
+		$block = $this->service->mapGrant(
+			grant: new ZgwAutorisatieGrant(scopes: ['zaken.lezen', 'zaken.toveren', ''], group: 'g')
 		);
 
 		$this->assertSame(['read' => ['g']], $block);
