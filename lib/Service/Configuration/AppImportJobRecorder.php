@@ -119,35 +119,44 @@ class AppImportJobRecorder {
 	}//end end()
 
 	/**
-	 * Record a finished job for an app id when it created at least one traceable object.
+	 * Record a finished job for its app id when it created at least one traceable object.
 	 *
-	 * @param string $appId          The app id the import ran under (e.g. `learniq.demo`).
-	 * @param string $importJobId    The job id begin() returned.
-	 * @param string $version        The version the app imported.
-	 * @param int    $objectsWritten How many objects the import reported writing.
+	 * @param FinishedImportJob $job The job that ended.
 	 *
 	 * @return bool True when the job was recorded.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
 	 */
-	public function record(string $appId, string $importJobId, string $version, int $objectsWritten): bool {
-		$created = $this->auditTrailMapper->countByImportJobId(importJobId: $importJobId, action: 'create');
+	public function recordFinished(FinishedImportJob $job): bool {
+		$created = $this->auditTrailMapper->countByImportJobId(importJobId: $job->importJobId, action: 'create');
 		if ($created === 0) {
-			$this->warnWhenUntraceable(appId: $appId, importJobId: $importJobId, objectsWritten: $objectsWritten);
+			$this->warnWhenUntraceable(job: $job);
 			return false;
 		}
 
-		$jobs = $this->jobs(appId: $appId);
-		$jobs[] = [
-			'jobId' => $importJobId,
-			'version' => $version,
+		$jobs   = $this->jobs(appId: $job->appId);
+		$jobs[] = $this->jobEntry(job: $job, created: $created);
+		$this->store(appId: $job->appId, jobs: array_slice($jobs, -self::MAX_JOBS));
+
+		return true;
+	}//end recordFinished()
+
+	/**
+	 * The record of one finished import job: its id, version, the objects it created, and when.
+	 *
+	 * @param FinishedImportJob $job     The finished job.
+	 * @param int               $created The objects it created.
+	 *
+	 * @return array<string, mixed> The record.
+	 */
+	private function jobEntry(FinishedImportJob $job, int $created): array {
+		return [
+			'jobId' => $job->importJobId,
+			'version' => $job->version,
 			'created' => $created,
 			'importedAt' => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
 		];
-		$this->store(appId: $appId, jobs: array_slice($jobs, -self::MAX_JOBS));
-
-		return true;
-	}//end record()
+	}//end jobEntry()
 
 	/**
 	 * The recorded jobs of an app id, oldest first.
@@ -264,32 +273,41 @@ class AppImportJobRecorder {
 	 * but it cannot be removed by job, and an empty list would read as
 	 * "nothing to remove" rather than "nothing was traced".
 	 *
-	 * @param string $appId          The app id the import ran under.
-	 * @param string $importJobId    The job id.
-	 * @param int    $objectsWritten How many objects the import reported writing.
+	 * @param FinishedImportJob $job The job that ended.
 	 *
 	 * @return void
 	 */
-	private function warnWhenUntraceable(string $appId, string $importJobId, int $objectsWritten): void {
-		if ($objectsWritten === 0) {
+	private function warnWhenUntraceable(FinishedImportJob $job): void {
+		if ($job->objectsWritten === 0) {
 			return;
 		}
 
-		if ($this->auditTrailMapper->countByImportJobId(importJobId: $importJobId, action: null) > 0) {
+		if ($this->auditTrailMapper->countByImportJobId(importJobId: $job->importJobId, action: null) > 0) {
 			return;
 		}
 
+		$this->warnUntraceable(job: $job);
+	}//end warnWhenUntraceable()
+
+	/**
+	 * Warn that an import wrote objects none of which carries its job, so it cannot be removed by job.
+	 *
+	 * @param FinishedImportJob $job The finished job.
+	 *
+	 * @return void
+	 */
+	private function warnUntraceable(FinishedImportJob $job): void {
 		$this->logger->warning(
 			message: sprintf(
 				'[AppImportJobRecorder] The import for %s wrote %d object(s) and none carries import job %s. '
 				. 'The audit trail is probably off, so this import cannot be removed by job.',
-				$appId,
-				$objectsWritten,
-				$importJobId
+				$job->appId,
+				$job->objectsWritten,
+				$job->importJobId
 			),
-			context: ['app' => 'openregister', 'importJobId' => $importJobId]
+			context: ['app' => 'openregister', 'importJobId' => $job->importJobId]
 		);
-	}//end warnWhenUntraceable()
+	}//end warnUntraceable()
 
 	/**
 	 * Write an app id's job list.
@@ -346,6 +364,7 @@ class AppImportJobRecorder {
 			return $key;
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return self::KEY_PREFIX . sha1($appId);
 	}//end key()
 }//end class

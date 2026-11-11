@@ -131,12 +131,13 @@ final class ProcessingPurposeControllerA24GoldenTest extends TestCase {
 		);
 
 		return new ProcessingPurposeController(
-			'openregister',
 			$request,
-			$this->purposes,
-			$registry,
-			$this->audit,
-			new ControllerSession($session, $groups, $this->createMock(LoggerInterface::class))
+			new \OCA\OpenRegister\Controller\Support\ProcessingPurposeControllerServices(
+				$this->purposes,
+				$registry,
+				$this->audit,
+				new ControllerSession($session, $groups, $this->createMock(LoggerInterface::class)),
+			)
 		);
 	}//end controller()
 

@@ -23,6 +23,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -35,6 +36,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Free-text search SQL, recorded per term, platform, fuzzy flag and column set.
@@ -138,11 +141,7 @@ class MagicSearchHandlerSearchLeafGoldenTest extends TestCase {
 			$query['_fuzzy'] = 'true';
 		}
 
-		return $this->handler(isPostgres: $isPostgres, fuzzy: $fuzzy)->buildWhereConditionsSql(
-			query: $query,
-			schema: $this->schema(),
-			existingColumns: $columns
-		);
+		return $this->handler(isPostgres: $isPostgres, fuzzy: $fuzzy)->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: $this->schema()), existingColumns: $columns));
 	}//end unionSql()
 
 	/**
@@ -157,13 +156,7 @@ class MagicSearchHandlerSearchLeafGoldenTest extends TestCase {
 	private function queryBuilderSql(bool $isPostgres, bool $fuzzy, string $search): array {
 		$this->captured = [];
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyFullTextSearch');
-		$method->invoke(
-			$this->handler(isPostgres: $isPostgres, fuzzy: $fuzzy),
-			$this->queryBuilder(),
-			$search,
-			$this->schema(),
-			$fuzzy
-		);
+		$method->invoke($this->handler(isPostgres: $isPostgres, fuzzy: $fuzzy), new TableFilterRun(qb: $this->queryBuilder(), query: ['_search' => $search], table: new MagicReadTable(schema: $this->schema())), $fuzzy);
 
 		return $this->captured;
 	}//end queryBuilderSql()

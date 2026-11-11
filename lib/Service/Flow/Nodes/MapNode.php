@@ -32,7 +32,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\MappingMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -151,56 +153,57 @@ class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlo
 	 * transformed, and a downstream step reading the un-mapped shape would fail
 	 * somewhere else entirely — the error would surface far from its cause.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The transformed items.
 	 *
 	 * @throws RuntimeException When the mapping cannot be resolved or applied.
 	 *
-	 * `FlowItems::item()` is the item constructor every node uses; going through
-	 * an injected factory would give the engine two ways to build an item and no
-	 * way to tell which one a node used. `$context` is part of the IFlowNode
-	 * contract and unused here — a mapping transforms the item, not the run.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * `$context` is part of the IFlowNode contract and unused here — a mapping
+	 * transforms the item, not the run.
 	 *
 	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		$reference = trim((string)($config['mapping'] ?? ''));
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		return $this->mapAll(items: $items, reference: trim((string)($config['mapping'] ?? '')));
+	}//end execute()
+
+	/**
+	 * Every item run through the mapping the reference names.
+	 *
+	 * `FlowItems::item()` is the item constructor every node uses; going through
+	 * an injected factory would give the engine two ways to build an item and no
+	 * way to tell which one a node used.
+	 *
+	 * @param array  $items     The input items.
+	 * @param string $reference The mapping identifier.
+	 *
+	 * @return array The transformed items.
+	 *
+	 * @throws RuntimeException When the mapping cannot be resolved or applied.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	private function mapAll(array $items, string $reference): array {
 		$mapping = $this->resolve(reference: $reference);
 
 		$mapped = [];
 		foreach ($items as $index => $item) {
-			$input = (array)($item[FlowItems::JSON] ?? []);
-
 			try {
-				$result = $this->mappings->executeMapping(mapping: $mapping, input: $input);
+				$result = $this->mappings->executeMapping(mapping: $mapping, input: (array)($item[FlowItems::JSON] ?? []));
 			} catch (Throwable $e) {
-				throw new RuntimeException(
-					sprintf(
-						'Mapping "%s" failed on item %d: %s',
-						$reference,
-						$index,
-						$e->getMessage()
-					),
-					0,
-					$e
-				);
+				throw new RuntimeException(sprintf('Mapping "%s" failed on item %d: %s', $reference, $index, $e->getMessage()), 0, $e);
 			}
 
-			$mapped[] = FlowItems::item(
-				json: $result,
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
-			);
-		}//end foreach
+			$mapped[] = FlowItems::item(json: $result, options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index));
+		}
 
 		return $mapped;
-	}//end execute()
+	}//end mapAll()
 
 	/**
 	 * Resolve a mapping by numeric id, uuid, slug or reference.
@@ -230,7 +233,7 @@ class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlo
 		// reference" while the row sat there matching two of the four.
 		try {
 			return $this->mapper->find($reference);
-		} catch (Throwable $e) {
+		} catch (\Exception $e) {
 			// Fall through to the reference lookup below.
 		}
 

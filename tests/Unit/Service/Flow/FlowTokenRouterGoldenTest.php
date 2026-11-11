@@ -154,31 +154,31 @@ class FlowTokenRouterGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['hi'],
-			$this->router->takenExits($flow, $transition, [$this->item(['n' => 20])], [])
+			$this->router->takenExits(exits: $this->router->exitsOf(flow: $flow, transition: $transition), output: new \OCA\OpenRegister\Service\Flow\FlowStepOutput(items: [$this->item(['n' => 20])], context: []))
 		);
 		$this->assertSame(
 			['lo'],
-			$this->router->takenExits($flow, $transition, [$this->item(['n' => 1])], [])
+			$this->router->takenExits(exits: $this->router->exitsOf(flow: $flow, transition: $transition), output: new \OCA\OpenRegister\Service\Flow\FlowStepOutput(items: [$this->item(['n' => 1])], context: []))
 		);
 		$this->assertSame(
 			['hi', 'lo'],
-			$this->router->takenExits($this->flow(exits: [], edges: $edges), $transition, [], [])
+			$this->router->takenExits(exits: $this->router->exitsOf(flow: $this->flow(exits: [], edges: $edges), transition: $transition), output: new \OCA\OpenRegister\Service\Flow\FlowStepOutput(items: [], context: []))
 		);
 		$this->assertSame(
 			['hi', 'lo'],
-			$this->router->takenExits(['nodes' => []], $transition, [], [])
+			$this->router->takenExits(exits: $this->router->exitsOf(flow: ['nodes' => []], transition: $transition), output: new \OCA\OpenRegister\Service\Flow\FlowStepOutput(items: [], context: []))
 		);
 
 		$noElse = $this->flow(exits: [['id' => 'big', 'condition' => ['>' => [['var' => 'json.n'], 10]]]], edges: $edges);
-		$this->assertSame([], $this->router->takenExits($noElse, $transition, [$this->item(['n' => 1])], []));
+		$this->assertSame([], $this->router->takenExits(exits: $this->router->exitsOf(flow: $noElse, transition: $transition), output: new \OCA\OpenRegister\Service\Flow\FlowStepOutput(items: [$this->item(['n' => 1])], context: [])));
 
 		// A tag on a place (rather than the exit id) also selects the exit.
 		$twoElses = $this->flow(
 			exits: [['id' => 'big'], ['id' => 'else']],
 			edges: $edges
 		);
-		$this->assertSame(['lo'], $this->router->takenExits($twoElses, $transition, [$this->item([], 'lo')], []));
-		$this->assertSame(['hi'], $this->router->takenExits($twoElses, $transition, [$this->item([], 'nowhere')], []));
+		$this->assertSame(['lo'], $this->router->takenExits(exits: $this->router->exitsOf(flow: $twoElses, transition: $transition), output: new \OCA\OpenRegister\Service\Flow\FlowStepOutput(items: [$this->item([], 'lo')], context: [])));
+		$this->assertSame(['hi'], $this->router->takenExits(exits: $this->router->exitsOf(flow: $twoElses, transition: $transition), output: new \OCA\OpenRegister\Service\Flow\FlowStepOutput(items: [$this->item([], 'nowhere')], context: [])));
 
 	}//end testTakenExitsOutcomes()
 
@@ -199,9 +199,9 @@ class FlowTokenRouterGoldenTest extends TestCase {
 			],
 		];
 
-		$this->assertSame(['hi', 'lo'], $this->router->placesForExit($flow, 'split', 'x', ['hi', 'lo']));
-		$this->assertSame([], $this->router->placesForExit($flow, 'split', 'z', ['hi', 'lo']));
-		$this->assertSame([], $this->router->placesForExit([], 'split', 'x', ['hi']));
+		$this->assertSame(['hi', 'lo'], $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $flow, nodeId: 'split', candidates: ['hi', 'lo']), exitId: 'x'));
+		$this->assertSame([], $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $flow, nodeId: 'split', candidates: ['hi', 'lo']), exitId: 'z'));
+		$this->assertSame([], $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: [], nodeId: 'split', candidates: ['hi']), exitId: 'x'));
 
 	}//end testPlacesForExitOutcomes()
 
@@ -248,18 +248,14 @@ class FlowTokenRouterGoldenTest extends TestCase {
 				['from' => 'split', 'fromExit' => 'two', 'to' => ['hi', 'lo']],
 			],
 		];
-		$items = $this->router->resolveOutputTags(
-			$flow,
-			$this->transition(name: 'split', tos: ['hi', 'lo']),
-			[
+		$items = $this->router->resolveOutputTags(exits: $this->router->exitsOf(flow: $flow, transition: $this->transition(name: 'split', tos: ['hi', 'lo'])), items: [
 				'scalar',
 				$this->item([]),
 				$this->item([], 'lo'),
 				$this->item([], 'one'),
 				$this->item([], 'two'),
 				$this->item([], 'none'),
-			]
-		);
+			]);
 
 		$this->assertSame('scalar', $items[0]);
 		$this->assertArrayNotHasKey('output', $items[1]);

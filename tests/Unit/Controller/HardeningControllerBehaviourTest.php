@@ -76,7 +76,7 @@ class HardeningControllerBehaviourTest extends TestCase {
 			}
 		);
 		$services = new HardeningControllerServices($this->report, $this->settings, new HardeningPolicy($appConfig), $this->elevation);
-		return new HardeningController('openregister', $request, $services);
+		return new HardeningController($request, $services);
 	}
 
 	private function floorRefusal(): HardeningFloorException {

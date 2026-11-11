@@ -30,18 +30,22 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\MigrationStart;
 use OCA\OpenRegister\Controller\Support\PropertyConversionChange;
 use OCA\OpenRegister\Controller\Support\RetentionPlatform;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationDomain;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationMappers;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
+use OCA\OpenRegister\Service\Schema\MigrationRequest;
 use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
+use OCA\OpenRegister\Service\Schema\RevalidationRequest;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -77,16 +81,14 @@ class SchemaMigrationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param SchemaMigrationControllerServices $services The schema migration controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SchemaMigrationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->mappers = $services->mappers;
 		$this->domain = $services->domain;
 		$this->platform = $services->platform;
@@ -215,7 +217,10 @@ class SchemaMigrationController extends Controller {
 		$limit = $this->intParam(name: '_limit');
 		$offset = $this->intParam(name: '_offset');
 
-		$entries = $this->mappers->changelogMapper->findBySchema(schemaId: $id, limit: $limit, offset: $offset);
+		$entries = $this->mappers->changelogMapper->findBySchema(
+			schemaId: $id,
+			query: new ListQuery(limit: $limit ?? ListQuery::UNBOUNDED, offset: $offset)
+		);
 
 		return new JSONResponse(['results' => array_map(static fn ($e) => $e->jsonSerialize(), $entries)]);
 	}//end changelog()
@@ -238,9 +243,9 @@ class SchemaMigrationController extends Controller {
 		}
 
 		try {
-			$run = $this->domain->revalidationService->start(
-				schemaId: $id, registerId: $registerId,
-				proposedDefinition: $this->proposedDefinition(), startedBy: $this->currentUid()
+			$run = $this->domain->revalidationService->startRevalidation(
+				request: new RevalidationRequest(schemaId: $id, registerId: $registerId, proposedDefinition: $this->proposedDefinition()),
+				startedBy: $this->currentUid()
 			);
 		} catch (SchemaRunConcurrencyException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 409);
@@ -277,8 +282,7 @@ class SchemaMigrationController extends Controller {
 	public function runs(int $id): JSONResponse {
 		$runs = $this->mappers->runMapper->findBySchema(
 			schemaId: $id,
-			limit: $this->intParam(name: '_limit'),
-			offset: $this->intParam(name: '_offset')
+			query: new ListQuery(limit: $this->intParam(name: '_limit') ?? ListQuery::UNBOUNDED, offset: $this->intParam(name: '_offset'))
 		);
 
 		return new JSONResponse(['results' => array_map(static fn ($r) => $r->jsonSerialize(), $runs)]);
@@ -343,7 +347,8 @@ class SchemaMigrationController extends Controller {
 			return $registerId;
 		}
 
-		return new JSONResponse(['results' => $this->domain->migrationService->preview($id, $registerId, $plan, $this->sampleSize())]);
+		$request = new MigrationRequest(schemaId: $id, registerId: $registerId, plan: $plan);
+		return new JSONResponse(['results' => $this->domain->migrationService->previewSample(request: $request, sampleSize: $this->sampleSize())]);
 	}//end previewMigration()
 
 	/**
@@ -389,11 +394,9 @@ class SchemaMigrationController extends Controller {
 	 */
 	private function startMigration(MigrationStart $start): JSONResponse {
 		try {
-			$run = $this->domain->migrationService->start(
-				schemaId: $start->schemaId,
-				registerId: $start->registerId,
-				plan: $start->plan,
-				options: $this->migrationOptions(), startedBy: $this->currentUid()
+			$run = $this->domain->migrationService->startMigration(
+				request: new MigrationRequest(schemaId: $start->schemaId, registerId: $start->registerId, plan: $start->plan, options: $this->migrationOptions()),
+				startedBy: $this->currentUid()
 			);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['error' => 'Invalid migration plan', 'problems' => [$e->getMessage()]], 422);

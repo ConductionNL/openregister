@@ -35,17 +35,10 @@ namespace OCA\OpenRegister\Command;
 use DateTimeInterface;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
-use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -58,62 +51,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RematerialiseCalculationsCommand extends Command {
-	/**
-	 * Register lookup mapper.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Schema lookup mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Magic table mapper for objects.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $magicMapper;
-
-	/**
-	 * Object persistence service.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Expression evaluator.
-	 *
-	 * @var CalculationEvaluatorInterface
-	 */
-	private readonly CalculationEvaluatorInterface $evaluator;
-
-	/**
-	 * Cross-object reference pre-resolver.
-	 *
-	 * @var ReferenceResolverInterface
-	 */
-	private readonly ReferenceResolverInterface $references;
-
-	/**
-	 * Aggregate-reference pre-resolver.
-	 *
-	 * @var AggregateReferenceResolverInterface
-	 */
-	private readonly AggregateReferenceResolverInterface $aggregates;
-
-	/**
-	 * Restores the stored form of `type: string` values the read decoded.
-	 *
-	 * @var SchemaTypeConverterInterface
-	 */
-	private readonly SchemaTypeConverterInterface $types;
-
 	/**
 	 * Wire the mappers, evaluator, and object service used by the command.
 	 *
@@ -128,18 +65,10 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
 	 */
 	public function __construct(
-		RematerialiseStorage $storage,
-		RematerialiseEvaluation $evaluation,
-		SchemaTypeConverterInterface $types,
+		private readonly RematerialiseStorage $storage,
+		private readonly RematerialiseEvaluation $evaluation,
+		private readonly SchemaTypeConverterInterface $types,
 	) {
-		$this->registerMapper = $storage->registerMapper;
-		$this->schemaMapper = $storage->schemaMapper;
-		$this->magicMapper = $storage->magicMapper;
-		$this->objectService = $storage->objectService;
-		$this->evaluator = $evaluation->evaluator;
-		$this->references = $evaluation->references;
-		$this->aggregates = $evaluation->aggregates;
-		$this->types = $types;
 		parent::__construct();
 	}//end __construct()
 
@@ -172,14 +101,14 @@ class RematerialiseCalculationsCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		try {
-			$register = $this->registerMapper->find((string)$input->getArgument('register'), _multitenancy: false);
-			$schema = $this->schemaMapper->find((string)$input->getArgument('schema'), _multitenancy: false);
+			$register = $this->storage->registerMapper->find((string)$input->getArgument('register'), _multitenancy: false);
+			$schema = $this->storage->schemaMapper->find((string)$input->getArgument('schema'), _multitenancy: false);
 		} catch (\Throwable $e) {
 			$output->writeln('<error>' . $e->getMessage() . '</error>');
 			return Command::FAILURE;
 		}
 
-		$run = new RematerialiseRun(register: $register, schema: $schema, output: $output);
+		$run = new RematerialiseRun(table: new RegisterSchema(register: $register, schema: $schema), output: $output);
 		$run->dryRun = (bool)$input->getOption('dry-run');
 		if ($run->calculations === []) {
 			$output->writeln('<comment>Schema declares no x-openregister-calculations — nothing to do.</comment>');
@@ -192,10 +121,9 @@ class RematerialiseCalculationsCommand extends Command {
 		}
 
 		$this->announce(run: $run);
-		$entities = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $register,
-			schema: $schema,
-			limit: 100000
+		$entities = $this->storage->magicMapper->findAllInRegisterSchemaTable(
+			table: new RegisterSchema(register: $register, schema: $schema),
+			listing: new ListQuery(limit: 100000)
 		);
 		foreach ($entities as $entity) {
 			$this->rematerialiseRow(run: $run, entity: $entity);
@@ -280,9 +208,26 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function evaluationPayload(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): ?array {
+		$payload = $this->payloadWithReferences(run: $run, entity: $entity);
+		if ($run->aggregateSpecs === null) {
+			return $payload;
+		}
+
+		return $this->payloadWithAggregates(run: $run, row: ['entity' => $entity, 'payload' => $payload]);
+	}//end evaluationPayload()
+
+	/**
+	 * The row with `@self`, and `@ref` when the schema declares cross-object references.
+	 *
+	 * @param RematerialiseRun                  $run    The run.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity The row.
+	 *
+	 * @return array<string, mixed> The payload.
+	 */
+	private function payloadWithReferences(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): array {
 		$payload = (new CalculationPayload())->withSelf(data: ($entity->getObject() ?? []), entity: $entity);
 		if ($run->referenceSpecs !== null) {
-			$payload['@ref'] = $this->references->resolveAll(
+			$payload['@ref'] = $this->evaluation->references->resolveAll(
 				payload: $payload,
 				references: $run->referenceSpecs,
 				register: $entity->getRegister(),
@@ -290,27 +235,65 @@ class RematerialiseCalculationsCommand extends Command {
 			);
 		}
 
-		if ($run->aggregateSpecs === null) {
-			return $payload;
-		}
+		return $payload;
+	}//end payloadWithReferences()
 
-		$outcome = $this->aggregates->resolveAllWithOutcome(
-			payload: $payload,
+	/**
+	 * The payload with `@aggregate`, or null (and the row FAILED) when an aggregate could not be resolved.
+	 *
+	 * @param RematerialiseRun     $run The run.
+	 * @param array<string, mixed> $row The row: entity and payload.
+	 *
+	 * @return array<string, mixed>|null The payload, or null when an aggregate failed.
+	 */
+	private function payloadWithAggregates(RematerialiseRun $run, array $row): ?array {
+		$outcome = $this->evaluation->aggregates->resolveAllWithOutcome(
+			payload: $row['payload'],
 			aggregates: $run->aggregateSpecs,
-			registerRef: $entity->getRegister()
+			registerRef: $row['entity']->getRegister()
 		);
 		if ($outcome['failed'] !== []) {
-			$run->failed++;
-			foreach ($outcome['failed'] as $name => $reason) {
-				$run->output->writeln(sprintf('  <error>! aggregate %s on %s: %s</error>', $name, (string)$entity->getUuid(), $reason));
-			}
-
+			$messages = $this->aggregateFailureMessages(failed: $outcome['failed'], uuid: (string)$row['entity']->getUuid());
+			$this->reportFailedAggregates(run: $run, messages: $messages);
 			return null;
 		}
 
+		$payload = $row['payload'];
 		$payload['@aggregate'] = $outcome['values'];
 		return $payload;
-	}//end evaluationPayload()
+	}//end payloadWithAggregates()
+
+	/**
+	 * One error line per aggregate that could not be resolved.
+	 *
+	 * @param array<string, string> $failed The failure reason per aggregate name.
+	 * @param string                $uuid   The row's uuid.
+	 *
+	 * @return string[] The lines.
+	 */
+	private function aggregateFailureMessages(array $failed, string $uuid): array {
+		$messages = [];
+		foreach ($failed as $name => $reason) {
+			$messages[] = sprintf('  <error>! aggregate %s on %s: %s</error>', $name, $uuid, $reason);
+		}
+
+		return $messages;
+	}//end aggregateFailureMessages()
+
+	/**
+	 * Count the row as FAILED and write its aggregate error lines.
+	 *
+	 * @param RematerialiseRun $run      The run.
+	 * @param string[]         $messages The error lines.
+	 *
+	 * @return void
+	 */
+	private function reportFailedAggregates(RematerialiseRun $run, array $messages): void {
+		$run->failed++;
+		foreach ($messages as $message) {
+			$run->output->writeln($message);
+		}
+	}//end reportFailedAggregates()
 
 	/**
 	 * Evaluate the materialised calculations and keep the values that differ from the stored ones.
@@ -329,30 +312,86 @@ class RematerialiseCalculationsCommand extends Command {
 	 */
 	private function changedValues(RematerialiseRun $run, array $row): array {
 		$expected = [];
-		foreach ($run->materialised as $name => $spec) {
-			if ($this->evaluator->expressionUsesSequence($spec['expression'] ?? null) === true) {
-				continue;
+		foreach ($this->recomputedValues(run: $run, row: $row) as $name => $value) {
+			if (($row['data'][$name] ?? null) !== $value) {
+				$expected[$name] = $value;
 			}
-
-			try {
-				$value = $this->evaluator->evaluate($row['payload'], $spec['expression'] ?? null);
-				if ($value instanceof DateTimeInterface) {
-					$value = $value->format(DateTimeInterface::ATOM);
-				}
-
-				if (($row['data'][(string)$name] ?? null) !== $value) {
-					$expected[(string)$name] = $value;
-				}
-			} catch (\Throwable $e) {
-				$run->failed++;
-				$run->output->writeln(
-					sprintf('  <error>! %s on %s: %s</error>', (string)$name, (string)$row['entity']->getUuid(), $e->getMessage())
-				);
-			}
-		}//end foreach
+		}
 
 		return $expected;
 	}//end changedValues()
+
+	/**
+	 * Evaluate every materialised calculation that does not use a sequence; a failing one is reported.
+	 *
+	 * @param RematerialiseRun     $run The run.
+	 * @param array<string, mixed> $row The row: entity, stored data and payload.
+	 *
+	 * @return array<string, mixed> The evaluated values, by calculation name.
+	 */
+	private function recomputedValues(RematerialiseRun $run, array $row): array {
+		$values = [];
+		foreach ($this->recomputableCalculations(run: $run) as $name => $spec) {
+			try {
+				$values[(string)$name] = $this->evaluatedValue(payload: $row['payload'], spec: $spec);
+			} catch (\Throwable $e) {
+				$this->reportFailedCalculation(
+					run: $run,
+					message: sprintf('  <error>! %s on %s: %s</error>', (string)$name, (string)$row['entity']->getUuid(), $e->getMessage())
+				);
+			}
+		}
+
+		return $values;
+	}//end recomputedValues()
+
+	/**
+	 * The materialised calculations whose expression uses no sequence.
+	 *
+	 * @param RematerialiseRun $run The run.
+	 *
+	 * @return array<string, array> The calculations, by name.
+	 */
+	private function recomputableCalculations(RematerialiseRun $run): array {
+		$recomputable = [];
+		foreach ($run->materialised as $name => $spec) {
+			if ($this->evaluation->evaluator->expressionUsesSequence($spec['expression'] ?? null) === false) {
+				$recomputable[$name] = $spec;
+			}
+		}
+
+		return $recomputable;
+	}//end recomputableCalculations()
+
+	/**
+	 * A calculation's value for a payload, a date written as ATOM.
+	 *
+	 * @param array<string, mixed> $payload The evaluation payload.
+	 * @param array                $spec    The calculation.
+	 *
+	 * @return mixed The value.
+	 */
+	private function evaluatedValue(array $payload, array $spec): mixed {
+		$value = $this->evaluation->evaluator->evaluate($payload, $spec['expression'] ?? null);
+		if ($value instanceof DateTimeInterface) {
+			return $value->format(DateTimeInterface::ATOM);
+		}
+
+		return $value;
+	}//end evaluatedValue()
+
+	/**
+	 * Count a calculation failure and write its error line.
+	 *
+	 * @param RematerialiseRun $run     The run.
+	 * @param string           $message The error line.
+	 *
+	 * @return void
+	 */
+	private function reportFailedCalculation(RematerialiseRun $run, string $message): void {
+		$run->failed++;
+		$run->output->writeln($message);
+	}//end reportFailedCalculation()
 
 	/**
 	 * Save a row whose calculations changed, unless an earlier save in this run already materialised it.
@@ -380,9 +419,9 @@ class RematerialiseCalculationsCommand extends Command {
 			return;
 		}
 
-		$stored = $this->types->restoreStringTypedValues(data: $row['data'], properties: ($run->schema->getProperties() ?? []));
-		$checked = array_diff_key($row['expected'], $run->fallbacks());
-		if ($this->saveForMaterialisation(entity: $row['entity'], stored: $stored, expected: $checked, output: $run->output) === true) {
+		$row['data'] = $this->types->restoreStringTypedValues(data: $row['data'], properties: ($run->schema->getProperties() ?? []));
+		$row['expected'] = array_diff_key($row['expected'], $run->fallbacks());
+		if ($this->saveForMaterialisation(run: $run, row: $row) === true) {
 			$run->touched++;
 			return;
 		}
@@ -406,7 +445,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @spec openspec/changes/rematerialise-rereads-before-save/specs/computed-fields/spec.md
 	 */
 	private function withCurrentState(RematerialiseRun $run, array $row): array {
-		$current = $this->reread(entity: $row['entity'], register: $run->register, schema: $run->schema);
+		$current = $this->reread(run: $run, entity: $row['entity']);
 		if ($current === null) {
 			return $row;
 		}
@@ -423,20 +462,19 @@ class RematerialiseCalculationsCommand extends Command {
 	/**
 	 * Read a row's stored data as it is now, not as the run's first read saw it.
 	 *
-	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity   The row from the run's first read.
-	 * @param Register                          $register The register.
-	 * @param Schema                            $schema   The schema.
+	 * @param RematerialiseRun                  $run    The run, for its register and schema.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity The row from the run's first read.
 	 *
 	 * @return array<string, mixed>|null The stored data, or null when the row cannot be read again.
 	 *
 	 * @spec openspec/changes/rematerialise-rereads-before-save/specs/computed-fields/spec.md
 	 */
-	private function reread(\OCA\OpenRegister\Db\ObjectEntity $entity, Register $register, Schema $schema): ?array {
+	private function reread(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): ?array {
 		try {
-			$fresh = $this->magicMapper->find(
+			$fresh = $this->storage->magicMapper->find(
 				identifier: (string)$entity->getUuid(),
-				register: $register,
-				schema: $schema,
+				register: $run->register,
+				schema: $run->schema,
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -457,25 +495,19 @@ class RematerialiseCalculationsCommand extends Command {
 	 * temporal sweep relies on; the command re-saves the stored data, as the
 	 * sweep does, and then reads back that each changed value arrived.
 	 *
-	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity   The row.
-	 * @param array<string, mixed>              $stored   Its stored data.
-	 * @param array<string, mixed>              $expected The values the calculations now give, by name.
-	 * @param OutputInterface                   $output   The output.
+	 * @param RematerialiseRun     $run The run, for its output.
+	 * @param array<string, mixed> $row The row: entity, its stored data and the values the calculations now give, by name.
 	 *
 	 * @return bool True when every expected value is on the saved row.
 	 *
 	 * @spec openspec/changes/rematerialise-writes-calculated-values/specs/computed-fields/spec.md
 	 */
-	private function saveForMaterialisation(
-		\OCA\OpenRegister\Db\ObjectEntity $entity,
-		array $stored,
-		array $expected,
-		OutputInterface $output
-	): bool {
+	private function saveForMaterialisation(RematerialiseRun $run, array $row): bool {
+		$entity = $row['entity'];
 		try {
 			// No user session under occ: write as the system (live pass O7).
-			$saved = $this->objectService->saveObject(
-				object: $stored,
+			$saved = $this->storage->objectService->saveObject(
+				object: $row['data'],
 				register: $entity->getRegister(),
 				schema: $entity->getSchema(),
 				uuid: $entity->getUuid(),
@@ -483,23 +515,16 @@ class RematerialiseCalculationsCommand extends Command {
 				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
-			$output->writeln(sprintf('  <error>save failed on %s: %s</error>', (string)$entity->getUuid(), $e->getMessage()));
+			$run->output->writeln(sprintf('  <error>save failed on %s: %s</error>', (string)$entity->getUuid(), $e->getMessage()));
 			return false;
 		}
 
-		$after = $saved->getObject() ?? [];
-		$missing = [];
-		foreach (array_keys($expected) as $name) {
-			if (($after[$name] ?? null) === ($stored[$name] ?? null)) {
-				$missing[] = $name;
-			}
-		}
-
+		$missing = self::notMaterialised(after: ($saved->getObject() ?? []), row: $row);
 		if ($missing === []) {
 			return true;
 		}
 
-		$output->writeln(
+		$run->output->writeln(
 			sprintf(
 				'  <error>saved %s but the save did not materialise: %s</error>',
 				(string)$entity->getUuid(),
@@ -508,4 +533,23 @@ class RematerialiseCalculationsCommand extends Command {
 		);
 		return false;
 	}//end saveForMaterialisation()
+
+	/**
+	 * The expected values the save left as they were stored.
+	 *
+	 * @param array<string, mixed> $after The saved row's data.
+	 * @param array<string, mixed> $row   The row: its stored data and the expected values, by name.
+	 *
+	 * @return array<int, string> The names that did not materialise.
+	 */
+	private static function notMaterialised(array $after, array $row): array {
+		$missing = [];
+		foreach (array_keys($row['expected']) as $name) {
+			if (($after[$name] ?? null) === ($row['data'][$name] ?? null)) {
+				$missing[] = $name;
+			}
+		}
+
+		return $missing;
+	}//end notMaterialised()
 }//end class

@@ -9,7 +9,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -29,6 +32,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Pins what a legitimate rule key compiles to on every RBAC emitter.
@@ -132,15 +138,21 @@ class RuleKeyColumnsGoldenTest extends TestCase {
 		);
 
 		return new MagicRbacHandler(
-			$session,
-			$groups,
-			$this->createMock(IUserManager::class),
-			$config,
-			$matcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher())),
-			new DenyEnforcementMode($config, new NullLogger())
+			identity: new MagicMapperIdentity(
+				userSession: $session,
+				groupManager: $groups,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $config,
+				denyEnforcementMode: new DenyEnforcementMode($config, new NullLogger())
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $matcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher()))
 		);
 	}//end handler()
 
@@ -261,12 +273,12 @@ class RuleKeyColumnsGoldenTest extends TestCase {
 		$cross = $this->schema(['read' => [['group' => 'editors', 'crossOrganisation' => true, 'match' => $match]]]);
 
 		$wheres = [];
-		$handler->applyRbacFilters($this->queryBuilder($wheres), $allow);
+		$handler->applyRbacFilters((new RbacFilterCall(qb: $this->queryBuilder($wheres), schema: $allow)));
 
 		return [
-			'union'    => $handler->buildRbacConditionsSql(schema: $allow, action: 'read')['conditions'],
-			'aliased'  => $handler->buildRbacPredicateForAlias(schema: $allow, alias: 'r0'),
-			'row'      => $handler->buildRbacRowPredicateSql(schema: $allow),
+			'union'    => $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $allow))->forAction('read'))['conditions'],
+			'aliased'  => $handler->buildRbacPredicateForAlias(schema: $allow, rows: new AliasedRows(alias: 'r0')),
+			'row'      => $handler->buildRbacRowPredicateSql((new RbacAccessCall(schema: $allow))),
 			'crossSql' => $handler->getCrossOrganisationBranchSql(schema: $cross),
 			'crossQb'  => (string)$handler->getCrossOrganisationBranch($this->queryBuilder(), $cross),
 			'qb'       => $wheres,
@@ -285,11 +297,11 @@ class RuleKeyColumnsGoldenTest extends TestCase {
 		$deny = $this->schema(['read' => ['editors'], 'deny' => ['read' => [['group' => 'editors', 'match' => $match]]]]);
 
 		$wheres = [];
-		$handler->applyRbacFilters($this->queryBuilder($wheres), $deny);
+		$handler->applyRbacFilters((new RbacFilterCall(qb: $this->queryBuilder($wheres), schema: $deny)));
 
 		return [
-			'union'   => $this->denyTerm(sql: (string)($handler->buildRbacConditionsSql(schema: $deny, action: 'read')['conditions'][0] ?? '')),
-			'aliased' => $this->denyTerm(sql: $handler->buildRbacPredicateForAlias(schema: $deny, alias: 'r0')),
+			'union'   => $this->denyTerm(sql: (string)($handler->buildRbacConditionsSql((new RbacAccessCall(schema: $deny))->forAction('read'))['conditions'][0] ?? '')),
+			'aliased' => $this->denyTerm(sql: $handler->buildRbacPredicateForAlias(schema: $deny, rows: new AliasedRows(alias: 'r0'))),
 			'qb'      => $this->denyTerm(sql: (string)($wheres[0] ?? '')),
 		];
 	}//end denied()

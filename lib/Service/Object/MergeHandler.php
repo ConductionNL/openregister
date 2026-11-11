@@ -21,6 +21,8 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -46,6 +48,14 @@ use OCP\IUserSession;
  * @version  1.0.0
  */
 class MergeHandler {
+
+	/**
+	 * The report statistic each file outcome counter goes into.
+	 */
+	private const FILE_STATISTICS = [
+		'transferred' => 'filesTransferred',
+		'deleted' => 'filesDeleted',
+	];
 
 	/**
 	 * Report labels of a file transfer.
@@ -273,28 +283,34 @@ class MergeHandler {
 		$fileAction = $run->option(name: 'fileAction', default: 'transfer');
 		if ($fileAction === 'transfer') {
 			$result = $this->transferObjectFiles(sourceObject: $run->source, targetObject: $run->target);
-			$this->reportFiles(run: $run, result: $result, statistic: 'filesTransferred', counter: 'transferred');
+			$this->reportFiles(run: $run, result: $result);
 		}
 
 		if ($fileAction === 'delete') {
 			$result = $this->deleteObjectFiles(sourceObject: $run->source);
-			$this->reportFiles(run: $run, result: $result, statistic: 'filesDeleted', counter: 'deleted');
+			$this->reportFiles(run: $run, result: $result);
 		}
 	}//end mergeFiles()
 
 	/**
 	 * Put the outcome of a file transfer or delete in the report; its errors become warnings.
 	 *
-	 * @param MergeRun $run       The merge
-	 * @param array    $result    The outcome: files, the counter, errors
-	 * @param string   $statistic The statistic the counter goes into
-	 * @param string   $counter   The counter key of the outcome
+	 * The outcome names its own counter (`transferred` or `deleted`), and
+	 * FILE_STATISTICS names the statistic that counter goes into.
+	 *
+	 * @param MergeRun $run    The merge
+	 * @param array    $result The outcome: files, the counter, errors
 	 *
 	 * @return void
 	 */
-	private function reportFiles(MergeRun $run, array $result, string $statistic, string $counter): void {
-		$run->report['actions']['files']       = $result['files'];
-		$run->report['statistics'][$statistic] = $result[$counter];
+	private function reportFiles(MergeRun $run, array $result): void {
+		$counter = 'deleted';
+		if (array_key_exists('transferred', $result) === true) {
+			$counter = 'transferred';
+		}
+
+		$run->report['actions']['files'] = $result['files'];
+		$run->report['statistics'][self::FILE_STATISTICS[$counter]] = $result[$counter];
 		$run->report['warnings']               = array_merge($run->report['warnings'], $result['errors']);
 	}//end reportFiles()
 
@@ -490,10 +506,13 @@ class MergeHandler {
 	 * @return array{files: list<array<string, mixed>>, transferred: int, errors: list<string>}
 	 */
 	private function transferObjectFiles(ObjectEntity $sourceObject, ObjectEntity $targetObject): array {
+		$move    = new FileMove(source: $sourceObject, target: $targetObject);
 		$outcome = $this->eachSourceFile(
 			sourceObject: $sourceObject,
-			labels: self::FILE_TRANSFER,
-			apply: fn (File $file): string => $this->transferFile(file: $file, sourceObject: $sourceObject, targetObject: $targetObject)
+			run: new FileActionRun(
+				labels: self::FILE_TRANSFER,
+				apply: fn (File $file): string => $this->transferFile(file: $file, move: $move)
+			)
 		);
 
 		return ['files' => $outcome['files'], 'transferred' => $outcome['count'], 'errors' => $outcome['errors']];
@@ -509,8 +528,10 @@ class MergeHandler {
 	private function deleteObjectFiles(ObjectEntity $sourceObject): array {
 		$outcome = $this->eachSourceFile(
 			sourceObject: $sourceObject,
-			labels: self::FILE_DELETE,
-			apply: fn (File $file): string => $this->deleteSourceFile(file: $file, sourceObject: $sourceObject)
+			run: new FileActionRun(
+				labels: self::FILE_DELETE,
+				apply: fn (File $file): string => $this->deleteSourceFile(file: $file, sourceObject: $sourceObject)
+			)
 		);
 
 		return ['files' => $outcome['files'], 'deleted' => $outcome['count'], 'errors' => $outcome['errors']];
@@ -521,47 +542,43 @@ class MergeHandler {
 	 *
 	 * A failure to read the source's files is reported as one error.
 	 *
-	 * @param ObjectEntity                 $sourceObject The source object.
-	 * @param array<string, string>        $labels       FILE_TRANSFER or FILE_DELETE.
-	 * @param callable(File): string       $apply        Applies the action and returns the file's name.
+	 * @param ObjectEntity  $sourceObject The source object.
+	 * @param FileActionRun $run          The labels, the action, and the outcome it collects.
 	 *
 	 * @return array{files: list<array<string, mixed>>, count: int, errors: list<string>} The files, how many were done, the errors.
 	 */
-	private function eachSourceFile(ObjectEntity $sourceObject, array $labels, callable $apply): array {
-		$result = ['files' => [], 'count' => 0, 'errors' => []];
-
+	private function eachSourceFile(ObjectEntity $sourceObject, FileActionRun $run): array {
 		try {
 			foreach ($this->fileService->getFiles($sourceObject) as $file) {
 				if (($file instanceof File) === true) {
-					$this->applyToFile(file: $file, labels: $labels, apply: $apply, result: $result);
+					$this->applyToFile(file: $file, run: $run);
 				}
 			}
 		} catch (Exception $e) {
-			$result['errors'][] = 'Failed to access source files: ' . $e->getMessage();
+			$run->result['errors'][] = 'Failed to access source files: ' . $e->getMessage();
 		}
 
-		return $result;
+		return $run->result;
 	}//end eachSourceFile()
 
 	/**
 	 * Apply one file action to one file and report it as done or failed.
 	 *
-	 * @param File                   $file   The source file.
-	 * @param array<string, string>  $labels FILE_TRANSFER or FILE_DELETE.
-	 * @param callable(File): string $apply  Applies the action and returns the file's name.
-	 * @param array{files: list<array<string, mixed>>, count: int, errors: list<string>} $result The outcome so far, by reference.
+	 * @param File          $file The source file.
+	 * @param FileActionRun $run  The labels, the action, and the outcome so far.
 	 *
 	 * @return void
 	 */
-	private function applyToFile(File $file, array $labels, callable $apply, array &$result): void {
+	private function applyToFile(File $file, FileActionRun $run): void {
+		$labels = $run->labels;
 		try {
-			$fileName = $apply($file);
+			$fileName = ($run->apply)($file);
 
-			$result['files'][] = ['name' => $fileName, 'action' => $labels['done'], 'success' => true];
-			$result['count']++;
+			$run->result['files'][] = ['name' => $fileName, 'action' => $labels['done'], 'success' => true];
+			$run->result['count']++;
 		} catch (Exception $e) {
-			$result['files'][]  = ['name' => $file->getName(), 'action' => $labels['failed'], 'success' => false, 'error' => $e->getMessage()];
-			$result['errors'][] = $labels['error'] . $file->getName() . ': ' . $e->getMessage();
+			$run->result['files'][]  = ['name' => $file->getName(), 'action' => $labels['failed'], 'success' => false, 'error' => $e->getMessage()];
+			$run->result['errors'][] = $labels['error'] . $file->getName() . ': ' . $e->getMessage();
 		}
 	}//end applyToFile()
 
@@ -572,19 +589,23 @@ class MergeHandler {
 	 * the delete was aborted and Nextcloud does not say so) is not a transfer: the
 	 * copy is taken back instead of reporting the file as moved.
 	 *
-	 * @param File         $file         The source file.
-	 * @param ObjectEntity $sourceObject The source object.
-	 * @param ObjectEntity $targetObject The target object.
+	 * @param File     $file The source file.
+	 * @param FileMove $move The source and the target object.
 	 *
 	 * @return string The file's name.
 	 *
 	 * @throws Exception When the file could not be copied or removed from the source.
 	 */
-	private function transferFile(File $file, ObjectEntity $sourceObject, ObjectEntity $targetObject): string {
-		$fileContent = $file->getContent();
+	private function transferFile(File $file, FileMove $move): string {
+		$sourceObject = $move->source;
+		$targetObject = $move->target;
+		$fileContent  = $file->getContent();
 		$fileName    = $file->getName();
 
-		$copy = $this->fileService->addFile(objectEntity: $targetObject, fileName: $fileName, content: $fileContent, share: false, tags: []);
+		$copy = $this->fileService->addFile(
+			target: new FileTarget(object: $targetObject),
+			upload: new FileUpload(fileName: $fileName, content: $fileContent, share: false)
+		);
 		if ($this->fileService->deleteFile(file: $file, object: $sourceObject) === false) {
 			$this->fileService->deleteFile(file: $copy, object: $targetObject);
 			throw new Exception('The file could not be removed from the source object');

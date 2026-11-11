@@ -60,7 +60,6 @@ class ApplicationsControllerGoldenTest extends TestCase {
 			}
 		);
 		$this->controller = ApplicationsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->service,
 			$this->mapper,

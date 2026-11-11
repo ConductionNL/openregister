@@ -69,7 +69,7 @@ class DsarControllerBehaviourTest extends TestCase {
 			$groupManager->method('getUserGroupIds')->with($user)->willReturn($groups);
 		}
 
-		return new DsarController('openregister', $request, new DsarControllerServices($this->dsar, $this->compliance, $session, $groupManager));
+		return new DsarController($request, new DsarControllerServices($this->dsar, $this->compliance, $session, $groupManager));
 	}
 
 	public static function endpoints(): array {

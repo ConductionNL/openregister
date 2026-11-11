@@ -87,9 +87,8 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	/**
 	 * Run the work, recording it.
 	 *
-	 * @param string             $jobClass The job class the run belongs to.
-	 * @param callable           $work     The execution to observe.
-	 * @param JobRunContext|null $context  The cause, actor, argument and details; null for a scheduled run.
+	 * @param JobRunStart $start The job class the run belongs to, with its cause, actor, argument and details.
+	 * @param callable    $work  The execution to observe.
 	 *
 	 * @return mixed Whatever the work returned.
 	 *
@@ -97,18 +96,14 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function around(
-		string $jobClass,
-		callable $work,
-		?JobRunContext $context = null,
-	): mixed {
-		if (($this->depth[$jobClass] ?? 0) > 0) {
+	public function around(JobRunStart $start, callable $work): mixed {
+		if (($this->depth[$start->jobClass] ?? 0) > 0) {
 			// An outer recorder already holds this run and already carries the
 			// cause and the actor. One execution is one row.
 			return $work();
 		}
 
-		return $this->observe(run: $this->start(jobClass: $jobClass, context: ($context ?? new JobRunContext())), work: $work);
+		return $this->observe(run: $this->start(jobClass: $start->jobClass, context: $start->context), work: $work);
 
 	}//end around()
 
@@ -119,18 +114,15 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	 * durations, and they belong on the same log as the runs because the
 	 * question the log answers is "what has been done to this instance".
 	 *
-	 * @param string               $jobClass The act, as a class-shaped name.
-	 * @param string               $actor    The uid that performed it.
-	 * @param array<string, mixed> $details  What the act concerned.
-	 * @param string|null          $message  A sentence about the act.
+	 * @param OperatorAct $act The act (as a class-shaped name), the uid that performed it, what it concerned and a sentence about it.
 	 *
 	 * @return JobRun|null The row, or null when the log could not be written.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
-	public function recordAct(string $jobClass, string $actor, array $details, ?string $message = null): ?JobRun {
-		$row = $this->actRow(jobClass: $jobClass, context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $actor, details: $details));
-		$row->setMessage($message);
+	public function recordAct(OperatorAct $act): ?JobRun {
+		$row = $this->actRow(jobClass: $act->jobClass, context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $act->actor, details: $act->details));
+		$row->setMessage($act->message);
 
 		return $this->insertAct(row: $row);
 
@@ -237,17 +229,7 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	 * @return JobRun|null The open row, or null when the log is unwritable.
 	 */
 	private function open(string $jobClass, JobRunContext $context): ?JobRun {
-		$run = new JobRun();
-		$run->setJobClass($jobClass);
-		$run->setStarted(new DateTime());
-		$run->setOutcome(JobRun::OUTCOME_RUNNING);
-		$run->setCause($context->cause);
-		$run->setActor($context->actor);
-		$run->setArgumentDigest($this->digest(argument: $context->argument));
-
-		if ($context->details !== null) {
-			$run->setDetails($this->encodedDetails(details: $context->details));
-		}
+		$run = $this->runningRow(jobClass: $jobClass, context: $context);
 
 		try {
 			return $this->runs->insert($run);
@@ -265,6 +247,30 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	}//end open()
 
 	/**
+	 * A row for a run that starts now, with its cause, actor, argument digest and details.
+	 *
+	 * @param string        $jobClass The job class.
+	 * @param JobRunContext $context  The cause, actor, argument and details.
+	 *
+	 * @return JobRun The unsaved row.
+	 */
+	private function runningRow(string $jobClass, JobRunContext $context): JobRun {
+		$run = new JobRun();
+		$run->setJobClass($jobClass);
+		$run->setStarted(new DateTime());
+		$run->setOutcome(JobRun::OUTCOME_RUNNING);
+		$run->setCause($context->cause);
+		$run->setActor($context->actor);
+		$run->setArgumentDigest($this->digest(argument: $context->argument));
+
+		if ($context->details !== null) {
+			$run->setDetails($this->encodedDetails(details: $context->details));
+		}
+
+		return $run;
+	}//end runningRow()
+
+	/**
 	 * Close the row with its outcome and duration.
 	 *
 	 * @param RecordingRun $run     The run; its row is null when opening failed.
@@ -279,15 +285,7 @@ class JobRunRecorder implements JobRunRecorderInterface {
 			return;
 		}
 
-		$row->setEnded(new DateTime());
-		$row->setDurationMs((int)round(((microtime(true) - $run->startedAt) * 1000)));
-		$row->setOutcome(JobRun::OUTCOME_FAILED);
-
-		if ($failure === null) {
-			$row->setOutcome(JobRun::OUTCOME_COMPLETED);
-		}
-
-		$row->setMessage($failure);
+		$this->markEnded(run: $run, failure: $failure);
 
 		try {
 			$this->runs->update($row);
@@ -299,6 +297,27 @@ class JobRunRecorder implements JobRunRecorderInterface {
 		}
 
 	}//end close()
+
+	/**
+	 * Stamp the run's row with its end, duration, outcome and failure message.
+	 *
+	 * @param RecordingRun $run     The run, its row open.
+	 * @param string|null  $failure The failure message when it failed, null when it completed.
+	 *
+	 * @return void
+	 */
+	private function markEnded(RecordingRun $run, ?string $failure): void {
+		$row = $run->row;
+		$row->setEnded(new DateTime());
+		$row->setDurationMs((int)round(((microtime(true) - $run->startedAt) * 1000)));
+		$row->setOutcome(JobRun::OUTCOME_FAILED);
+
+		if ($failure === null) {
+			$row->setOutcome(JobRun::OUTCOME_COMPLETED);
+		}
+
+		$row->setMessage($failure);
+	}//end markEnded()
 
 	/**
 	 * The failure, as the row keeps it.
@@ -334,6 +353,7 @@ class JobRunRecorder implements JobRunRecorderInterface {
 			return null;
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return substr(sha1($encoded), 0, 16);
 
 	}//end digest()

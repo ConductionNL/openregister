@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Command;
 use OCA\OpenRegister\Command\BackfillSystemOwnerCommand;
 use OCA\OpenRegister\Command\EncryptFieldCommand;
 use OCA\OpenRegister\Command\MagicTableSelection;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -224,7 +225,7 @@ class MagicTableCommandsGoldenTest extends TestCase {
 	}//end encryption()
 
 	private function selection(): MagicTableSelection {
-		return new MagicTableSelection($this->registerMapper(), $this->schemaMapper(), $this->magicMapper());
+		return new MagicTableSelection(new SchemaCatalog($this->registerMapper(), $this->schemaMapper(), $this->magicMapper()));
 	}//end selection()
 
 	private function backfill(): Command {

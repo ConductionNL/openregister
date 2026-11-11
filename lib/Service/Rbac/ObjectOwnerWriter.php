@@ -41,8 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -68,27 +67,30 @@ class ObjectOwnerWriter {
 	/**
 	 * Write the owner of one object.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The schema.
-	 * @param string $objectUuid The object UUID.
-	 * @param string $owner The new owner's uid.
+	 * @param RegisterSchema  $table      The register and schema the object is stored under.
+	 * @param OwnerAssignment $assignment The object UUID and the new owner's uid.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function writeOwner(
-		Register $register,
-		Schema $schema,
-		string $objectUuid,
-		string $owner,
-	): void {
-		$table = $this->mapper->getTableNameForRegisterSchema($register, $schema);
+	public function writeOwner(RegisterSchema $table, OwnerAssignment $assignment): void {
+		$this->writeOwnerTo(table: $this->mapper->getTableNameForRegisterSchema($table->register, $table->schema), assignment: $assignment);
+	}//end writeOwner()
 
+	/**
+	 * Write the owner of one object into its magic table.
+	 *
+	 * @param string          $table      The magic table the object is stored in.
+	 * @param OwnerAssignment $assignment The object and its new owner.
+	 *
+	 * @return void
+	 */
+	private function writeOwnerTo(string $table, OwnerAssignment $assignment): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($table)
-			->set('_owner', $qb->createNamedParameter($owner))
-			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($objectUuid)));
+			->set('_owner', $qb->createNamedParameter($assignment->owner))
+			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($assignment->objectUuid)));
 		$qb->executeStatement();
 
 		$this->logger->info(
@@ -96,10 +98,10 @@ class ObjectOwnerWriter {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'uuid' => $objectUuid,
-				'owner' => $owner,
+				'uuid' => $assignment->objectUuid,
+				'owner' => $assignment->owner,
 			]
 		);
-	}//end writeOwner()
+	}//end writeOwnerTo()
 
 }//end class

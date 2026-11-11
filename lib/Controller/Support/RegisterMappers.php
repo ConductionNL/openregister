@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -33,21 +34,42 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  * @spec openspec/specs/register-service-extensions/spec.md
  */
 final class RegisterMappers {
+
+	/**
+	 * The register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * The schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * The object table mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public readonly MagicMapperInterface $objectEntityMapper;
+
 	/**
 	 * Bundle the services.
 	 *
-	 * @param RegisterMapperInterface   $registerMapper     The register mapper.
-	 * @param SchemaMapperInterface     $schemaMapper       The schema mapper.
-	 * @param AuditTrailMapperInterface $auditTrailMapper   The audit trail mapper.
-	 * @param MagicMapperInterface      $objectEntityMapper The object table mapper.
+	 * @param SchemaCatalogInterface    $catalog          The register, schema and object table mappers.
+	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper.
 	 *
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 */
 	public function __construct(
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		public readonly SchemaCatalogInterface $catalog,
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
-		public readonly MagicMapperInterface $objectEntityMapper,
 	) {
+		$this->registerMapper     = $catalog->registers();
+		$this->schemaMapper       = $catalog->schemas();
+		$this->objectEntityMapper = $catalog->tables();
 	}//end __construct()
 }//end class

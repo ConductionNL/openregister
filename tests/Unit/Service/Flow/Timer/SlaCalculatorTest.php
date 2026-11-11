@@ -22,9 +22,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use DateTimeZone;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Service\Flow\Timer\RollRule;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
+use OCA\OpenRegister\Service\Flow\Timer\UnitConversion;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use PHPUnit\Framework\TestCase;
 
@@ -60,7 +64,7 @@ class SlaCalculatorTest extends TestCase {
 
 	public function testThreeBusinessDaysFromThursdayLandOnTuesday(): void {
 		// 3 September 2026 is a Thursday.
-		$landing = $this->calculator->add(from: $this->at('2026-09-03 10:00'), value: 3, unit: 'businessDays', calendar: $this->calendar);
+		$landing = $this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->at('2026-09-03 10:00')), value: 3, unit: 'businessDays', calendar: $this->calendar));
 		self::assertSame('2026-09-08 10:00 Tuesday', $landing->format('Y-m-d H:i l'));
 	}//end testThreeBusinessDaysFromThursdayLandOnTuesday()
 
@@ -71,52 +75,52 @@ class SlaCalculatorTest extends TestCase {
 
 	public function testHolidaysAreSkippedLikeWeekends(): void {
 		// Thursday 24 December 2026 + 1 business day skips Kerst (25, 26 falls on Saturday) and the weekend.
-		$landing = $this->calculator->add(from: $this->at('2026-12-24 09:00'), value: 1, unit: 'businessDays', calendar: $this->calendar);
+		$landing = $this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->at('2026-12-24 09:00')), value: 1, unit: 'businessDays', calendar: $this->calendar));
 		self::assertSame('2026-12-28 09:00 Monday', $landing->format('Y-m-d H:i l'));
 	}//end testHolidaysAreSkippedLikeWeekends()
 
 	public function testAWeekendMeasuresZeroBusinessDays(): void {
-		self::assertSame(0.0, $this->calculator->measure(from: $this->at('2026-09-05 10:00'), to: $this->at('2026-09-06 18:00'), unit: 'businessDays', calendar: $this->calendar));
+		self::assertSame(0.0, $this->calculator->measure(span: new CalendarSpan(from: $this->at('2026-09-05 10:00'), to: $this->at('2026-09-06 18:00'), calendar: $this->calendar), unit: 'businessDays'));
 		// Friday 17:00 to Monday 09:00: 7 hours of Friday plus 9 hours of Monday, as fractions of a day.
-		$span = $this->calculator->measure(from: $this->at('2026-09-04 17:00'), to: $this->at('2026-09-07 09:00'), unit: 'businessDays', calendar: $this->calendar);
+		$span = $this->calculator->measure(span: new CalendarSpan(from: $this->at('2026-09-04 17:00'), to: $this->at('2026-09-07 09:00'), calendar: $this->calendar), unit: 'businessDays');
 		self::assertEqualsWithDelta((7 + 9) / 24, $span, 0.0001);
 		// Negative direction is signed.
-		self::assertEqualsWithDelta(-((7 + 9) / 24), $this->calculator->measure(from: $this->at('2026-09-07 09:00'), to: $this->at('2026-09-04 17:00'), unit: 'businessDays', calendar: $this->calendar), 0.0001);
+		self::assertEqualsWithDelta(-((7 + 9) / 24), $this->calculator->measure(span: new CalendarSpan(from: $this->at('2026-09-07 09:00'), to: $this->at('2026-09-04 17:00'), calendar: $this->calendar), unit: 'businessDays'), 0.0001);
 	}//end testAWeekendMeasuresZeroBusinessDays()
 
 	public function testMeasureAndAddAgreeAcrossAWeekend(): void {
 		$from = $this->at('2026-09-04 17:00');
-		$to = $this->calculator->add(from: $from, value: 1, unit: 'businessDays', calendar: $this->calendar);
+		$to = $this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($from), value: 1, unit: 'businessDays', calendar: $this->calendar));
 		self::assertSame('2026-09-07 17:00', $to->format('Y-m-d H:i'));
-		self::assertEqualsWithDelta(1.0, $this->calculator->measure(from: $from, to: $to, unit: 'businessDays', calendar: $this->calendar), 0.0001);
+		self::assertEqualsWithDelta(1.0, $this->calculator->measure(span: new CalendarSpan(from: $from, to: $to, calendar: $this->calendar), unit: 'businessDays'), 0.0001);
 	}//end testMeasureAndAddAgreeAcrossAWeekend()
 
 	public function testHoursAndCalendarDaysIgnoreTheCalendar(): void {
 		$from = $this->at('2026-09-04 17:00');
-		self::assertSame('2026-09-06 17:00', $this->calculator->add(from: $from, value: 48, unit: 'hours', calendar: $this->calendar)->format('Y-m-d H:i'));
-		self::assertSame('2026-09-06 17:00', $this->calculator->add(from: $from, value: 2, unit: 'calendarDays', calendar: $this->calendar)->format('Y-m-d H:i'));
-		self::assertSame(48.0, $this->calculator->measure(from: $from, to: $this->at('2026-09-06 17:00'), unit: 'hours', calendar: $this->calendar));
-		self::assertSame(2.0, $this->calculator->measure(from: $from, to: $this->at('2026-09-06 17:00'), unit: 'calendarDays', calendar: $this->calendar));
+		self::assertSame('2026-09-06 17:00', $this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($from), value: 48, unit: 'hours', calendar: $this->calendar))->format('Y-m-d H:i'));
+		self::assertSame('2026-09-06 17:00', $this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($from), value: 2, unit: 'calendarDays', calendar: $this->calendar))->format('Y-m-d H:i'));
+		self::assertSame(48.0, $this->calculator->measure(span: new CalendarSpan(from: $from, to: $this->at('2026-09-06 17:00'), calendar: $this->calendar), unit: 'hours'));
+		self::assertSame(2.0, $this->calculator->measure(span: new CalendarSpan(from: $from, to: $this->at('2026-09-06 17:00'), calendar: $this->calendar), unit: 'calendarDays'));
 	}//end testHoursAndCalendarDaysIgnoreTheCalendar()
 
 	public function testCalendarDaysAreDatesAcrossADstChange(): void {
 		// DST ends on 25 October 2026 in Europe/Amsterdam: 60 calendar days still land at 09:00.
 		$from = $this->at('2026-09-01 09:00');
-		$to = $this->calculator->add(from: $from, value: 60, unit: 'calendarDays', calendar: $this->calendar);
+		$to = $this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($from), value: 60, unit: 'calendarDays', calendar: $this->calendar));
 		self::assertSame('2026-10-31 09:00', $to->format('Y-m-d H:i'));
-		self::assertSame(60.0, $this->calculator->measure(from: $from, to: $to, unit: 'calendarDays', calendar: $this->calendar));
-		self::assertSame(-60.0, $this->calculator->measure(from: $to, to: $from, unit: 'calendarDays', calendar: $this->calendar));
-		self::assertSame(1441.0, $this->calculator->measure(from: $from, to: $to, unit: 'hours', calendar: $this->calendar), 'hours are elapsed time');
+		self::assertSame(60.0, $this->calculator->measure(span: new CalendarSpan(from: $from, to: $to, calendar: $this->calendar), unit: 'calendarDays'));
+		self::assertSame(-60.0, $this->calculator->measure(span: new CalendarSpan(from: $to, to: $from, calendar: $this->calendar), unit: 'calendarDays'));
+		self::assertSame(1441.0, $this->calculator->measure(span: new CalendarSpan(from: $from, to: $to, calendar: $this->calendar), unit: 'hours'), 'hours are elapsed time');
 		// A fractional calendar day is the fraction of a day in seconds.
-		self::assertSame('2026-09-02 21:00', $this->calculator->add(from: $from, value: 1.5, unit: 'calendarDays', calendar: $this->calendar)->format('Y-m-d H:i'));
+		self::assertSame('2026-09-02 21:00', $this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($from), value: 1.5, unit: 'calendarDays', calendar: $this->calendar))->format('Y-m-d H:i'));
 		self::assertSame('2026-08-30 21:00', $this->calculator->sub(from: $from, value: 1.5, unit: 'calendarDays', calendar: $this->calendar)->format('Y-m-d H:i'));
 	}//end testCalendarDaysAreDatesAcrossADstChange()
 
 	public function testConversionPivotsOnWorkingHours(): void {
-		self::assertSame(16.0, $this->calculator->convert(value: 2, fromUnit: 'businessDays', toUnit: 'hours', calendar: $this->calendar));
-		self::assertSame(1.0, $this->calculator->convert(value: 24, fromUnit: 'hours', toUnit: 'calendarDays', calendar: $this->calendar));
-		self::assertSame(3.0, $this->calculator->convert(value: 1, fromUnit: 'calendarDays', toUnit: 'businessDays', calendar: $this->calendar));
-		self::assertSame(5.0, $this->calculator->convert(value: 5, fromUnit: 'hours', toUnit: 'hours', calendar: $this->calendar));
+		self::assertSame(16.0, $this->calculator->convert(conversion: new UnitConversion(value: 2, fromUnit: 'businessDays', toUnit: 'hours', calendar: $this->calendar)));
+		self::assertSame(1.0, $this->calculator->convert(conversion: new UnitConversion(value: 24, fromUnit: 'hours', toUnit: 'calendarDays', calendar: $this->calendar)));
+		self::assertSame(3.0, $this->calculator->convert(conversion: new UnitConversion(value: 1, fromUnit: 'calendarDays', toUnit: 'businessDays', calendar: $this->calendar)));
+		self::assertSame(5.0, $this->calculator->convert(conversion: new UnitConversion(value: 5, fromUnit: 'hours', toUnit: 'hours', calendar: $this->calendar)));
 	}//end testConversionPivotsOnWorkingHours()
 
 	/**
@@ -131,10 +135,10 @@ class SlaCalculatorTest extends TestCase {
 	public function testWithoutARollTheDeadlineStaysWhereTheBudgetPutIt(): void {
 		// 42 calendar days from 23 February 2026 is Sunday 5 April 2026, which
 		// is Easter Sunday on this calendar.
-		$landed = $this->calculator->add(from: $this->at('2026-02-22 09:00'), value: 42, unit: 'calendarDays', calendar: $this->calendar);
+		$landed = $this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->at('2026-02-22 09:00')), value: 42, unit: 'calendarDays', calendar: $this->calendar));
 		self::assertSame('2026-04-05 09:00 Sunday', $landed->format('Y-m-d H:i l'));
 
-		$rolled = $this->calculator->roll(moment: $landed, roll: SlaCalculator::ROLL_NONE, calendar: $this->calendar);
+		$rolled = $this->calculator->roll(moment: $landed, rule: new RollRule(roll: SlaCalculator::ROLL_NONE, calendar: $this->calendar));
 		self::assertSame($landed->format('c'), $rolled['at']->format('c'));
 		self::assertNull($rolled['unrolledAt'], 'nothing moved, so nothing is reported as having moved');
 		self::assertNull($rolled['rolledBy']);
@@ -148,7 +152,7 @@ class SlaCalculatorTest extends TestCase {
 	 */
 	public function testNextWalksTheWholeEasterCluster(): void {
 		$landed = $this->at('2026-04-05 09:00');
-		$rolled = $this->calculator->roll(moment: $landed, roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar);
+		$rolled = $this->calculator->roll(moment: $landed, rule: new RollRule(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
 
 		self::assertSame('2026-04-07 09:00 Tuesday', $rolled['at']->format('Y-m-d H:i l'));
 		self::assertSame('2026-04-05', $rolled['unrolledAt']->format('Y-m-d'));
@@ -165,7 +169,7 @@ class SlaCalculatorTest extends TestCase {
 	 */
 	public function testANamedHolidayIsReportedByItsDeclaredName(): void {
 		// Tweede Paasdag 2026 is Monday 6 April.
-		$rolled = $this->calculator->roll(moment: $this->at('2026-04-06 14:30'), roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar);
+		$rolled = $this->calculator->roll(moment: $this->at('2026-04-06 14:30'), rule: new RollRule(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
 
 		self::assertSame('2026-04-07 14:30', $rolled['at']->format('Y-m-d H:i'));
 		self::assertSame('Tweede Paasdag', $rolled['rolledBy']);
@@ -177,7 +181,7 @@ class SlaCalculatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testPreviousWalksBackwards(): void {
-		$rolled = $this->calculator->roll(moment: $this->at('2026-04-06 16:45'), roll: SlaCalculator::ROLL_PREVIOUS, calendar: $this->calendar);
+		$rolled = $this->calculator->roll(moment: $this->at('2026-04-06 16:45'), rule: new RollRule(roll: SlaCalculator::ROLL_PREVIOUS, calendar: $this->calendar));
 
 		// Back past Easter Sunday and the Saturday to Friday 3 April — which is
 		// Goede Vrijdag on this calendar, so back again to Thursday the 2nd.
@@ -195,7 +199,7 @@ class SlaCalculatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnObservedShiftIsFollowed(): void {
-		$rolled = $this->calculator->roll(moment: $this->at('2031-04-26 09:00'), roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar);
+		$rolled = $this->calculator->roll(moment: $this->at('2031-04-26 09:00'), rule: new RollRule(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
 
 		self::assertSame('2031-04-28 09:00 Monday', $rolled['at']->format('Y-m-d H:i l'));
 		self::assertSame('Koningsdag', $rolled['rolledBy'], 'the observed date is the one that stopped it');
@@ -208,8 +212,8 @@ class SlaCalculatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testABusinessDayBudgetNeedsNoRoll(): void {
-		$landed = $this->calculator->add(from: $this->at('2026-04-02 09:00'), value: 1, unit: 'businessDays', calendar: $this->calendar);
-		$rolled = $this->calculator->roll(moment: $landed, roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar);
+		$landed = $this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->at('2026-04-02 09:00')), value: 1, unit: 'businessDays', calendar: $this->calendar));
+		$rolled = $this->calculator->roll(moment: $landed, rule: new RollRule(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
 
 		self::assertSame($landed->format('c'), $rolled['at']->format('c'));
 		self::assertNull($rolled['unrolledAt']);
@@ -225,7 +229,7 @@ class SlaCalculatorTest extends TestCase {
 	 */
 	public function testWithoutACalendarNothingRolls(): void {
 		$landed = $this->at('2026-04-05 09:00');
-		$rolled = $this->calculator->roll(moment: $landed, roll: SlaCalculator::ROLL_NEXT, calendar: null);
+		$rolled = $this->calculator->roll(moment: $landed, rule: new RollRule(roll: SlaCalculator::ROLL_NEXT, calendar: null));
 
 		self::assertSame($landed->format('c'), $rolled['at']->format('c'));
 		self::assertNull($rolled['rolledBy']);
@@ -271,6 +275,6 @@ class SlaCalculatorTest extends TestCase {
 
 	public function testUnknownUnitIsRefusedEverywhere(): void {
 		$this->expectException(FlowTimerValidationException::class);
-		$this->calculator->add(from: $this->at('2026-09-04 17:00'), value: 1, unit: 'fortnights', calendar: $this->calendar);
+		$this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->at('2026-09-04 17:00')), value: 1, unit: 'fortnights', calendar: $this->calendar));
 	}//end testUnknownUnitIsRefusedEverywhere()
 }//end class

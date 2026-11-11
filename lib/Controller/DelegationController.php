@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DelegationControllerServices;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
@@ -139,16 +140,14 @@ class DelegationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                   $appName      The app id.
 	 * @param IRequest                 $request      The request.
 	 * @param DelegationControllerServices $services The delegation controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		DelegationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->grants = $services->mappers->grants;
 		$this->consent = $services->domain->consent;
 		$this->notifier = $services->domain->notifier;
@@ -210,8 +209,7 @@ class DelegationController extends Controller {
 			return new JSONResponse(['error' => 'Not signed in.'], Http::STATUS_UNAUTHORIZED);
 		}
 
-		$body = $this->request->getParams();
-		$actingAs = trim((string)($body['actingAs'] ?? ''));
+		$actingAs = trim((string)($this->request->getParams()['actingAs'] ?? ''));
 
 		if ($this->mayRequestOver(caller: $caller, actingAs: $actingAs) === false) {
 			// ONE response for two different facts, deliberately. See
@@ -222,6 +220,27 @@ class DelegationController extends Controller {
 				Http::STATUS_NOT_FOUND
 			);
 		}
+
+		return $this->storedRequest(caller: $caller, actingAs: $actingAs);
+	}//end request()
+
+	/**
+	 * Store the delegation request with the body's scope and reason, then notify.
+	 *
+	 * Notify AFTER the store. Calling this unconditionally is safe because the
+	 * notification is keyed on the GRANT's uuid, and the consent service reuses
+	 * an outstanding request rather than creating a second one — so N blocked
+	 * units of work asking again produce one notification that gets replaced in
+	 * place, not N prompts. Deduping at this call site instead would leave every
+	 * other future caller free to reintroduce the storm.
+	 *
+	 * @param string $caller   The signed-in principal
+	 * @param string $actingAs The account the caller may ask
+	 *
+	 * @return JSONResponse 201 with the request, or 400 for a meaningless one
+	 */
+	private function storedRequest(string $caller, string $actingAs): JSONResponse {
+		$body = $this->request->getParams();
 
 		try {
 			$grant = $this->consent->request(
@@ -234,16 +253,10 @@ class DelegationController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
-		// Notify AFTER the store. Calling this unconditionally is safe because
-		// the notification is keyed on the GRANT's uuid, and the consent service
-		// reuses an outstanding request rather than creating a second one — so
-		// N blocked units of work asking again produce one notification that gets
-		// replaced in place, not N prompts. Deduping at this call site instead
-		// would leave every other future caller free to reintroduce the storm.
 		$this->notifier->requested(grant: $grant);
 
 		return new JSONResponse($this->consent->describe($grant), Http::STATUS_CREATED);
-	}//end request()
+	}//end storedRequest()
 
 	/**
 	 * Allow or deny a request to act as you.
@@ -367,6 +380,18 @@ class DelegationController extends Controller {
 			return true;
 		}
 
+		return $this->sharesAnOrganisation(caller: $caller, actingAs: $actingAs);
+	}//end mayRequestOver()
+
+	/**
+	 * Whether the account is a member of one of the caller's organisations.
+	 *
+	 * @param string $caller   The signed-in principal
+	 * @param string $actingAs An existing account
+	 *
+	 * @return bool True when an organisation of the caller lists the account; false when the tenancy is unreadable
+	 */
+	private function sharesAnOrganisation(string $caller, string $actingAs): bool {
 		try {
 			$organisations = $this->organisations->getUserOrganisations();
 		} catch (Throwable $e) {
@@ -389,7 +414,7 @@ class DelegationController extends Controller {
 		}
 
 		return false;
-	}//end mayRequestOver()
+	}//end sharesAnOrganisation()
 
 	/**
 	 * The caller's uid, or null when there is no session.

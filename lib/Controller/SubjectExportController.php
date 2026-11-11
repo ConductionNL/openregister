@@ -28,7 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportRequest;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -50,16 +52,14 @@ class SubjectExportController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string               $appName The app name.
 	 * @param IRequest             $request The request.
 	 * @param SubjectExportServiceInterface $exports The export service.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly SubjectExportServiceInterface $exports,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->params = new GdprRequestParams(request: $request);
 	}//end __construct()
@@ -90,10 +90,12 @@ class SubjectExportController extends Controller {
 			);
 		}
 
-		$export = $this->exports->request(
-			subject: $subject,
-			type: $this->params->castTrimmed(key: 'type'),
-			requestId: $this->params->castTrimmed(key: 'request')
+		$export = $this->exports->requestFor(
+			request: new SubjectExportRequest(
+				subject: $subject,
+				type: $this->params->castTrimmed(key: 'type'),
+				requestId: $this->params->castTrimmed(key: 'request')
+			)
 		);
 
 		return new JSONResponse(data: $export->jsonSerialize());

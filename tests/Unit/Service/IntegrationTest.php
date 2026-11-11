@@ -17,10 +17,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Search\Controller\SearchController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -86,9 +88,7 @@ class IntegrationTest extends TestCase {
 			logger: $this->logger
 		);
 
-		$this->searchController = new SearchController(
-			'openregister',
-			$this->request,
+		$this->searchController = new SearchController($this->request,
 			$this->objectService
 		);
 	}
@@ -126,11 +126,10 @@ class IntegrationTest extends TestCase {
 
 		// Mock: RBAC permission check within organisation context.
 		$this->objectMapper->expects($this->once())
-			->method('findAll')
+			->method('findAllListed')
 			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->callback(function ($filters) {
+				$this->callback(function (MagicListRequest $request) {
+					$filters = $request->query->filters;
 					return isset($filters['organisation'])
 						   && $filters['organisation'] === 'acme-org-uuid';
 				})
@@ -138,10 +137,8 @@ class IntegrationTest extends TestCase {
 			->willReturn([$protectedObject]);
 
 		// Act: Search within organisation with RBAC filtering.
-		$results = $this->objectMapper->findAll(
-			null, // limit
-			null, // offset
-			['organisation' => 'acme-org-uuid'] // Organisation filter
+		$results = $this->objectMapper->findAllListed(
+			new MagicListRequest(table: null, query: ListQuery::unbounded(['organisation' => 'acme-org-uuid']))
 		);
 
 		// Assert: RBAC and multi-tenancy work together.
@@ -204,23 +201,17 @@ class IntegrationTest extends TestCase {
 
 		// Mock: Audit trail query with organisation filtering.
 		$this->auditTrailMapper->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->callback(function ($filters) {
-					return isset($filters['organisation'])
-						   && $filters['organisation'] === 'audit-org-uuid';
+				$this->callback(function (ListQuery $query) {
+					return isset($query->filters['organisation'])
+						   && $query->filters['organisation'] === 'audit-org-uuid';
 				})
 			)
 			->willReturn($auditEntries);
 
 		// Act: Get audit trails for organisation context.
-		$trails = $this->auditTrailMapper->findAll(
-			null, // limit
-			null, // offset
-			['organisation' => 'audit-org-uuid'] // Organisation context
-		);
+		$trails = $this->auditTrailMapper->findTrail(ListQuery::unbounded(['organisation' => 'audit-org-uuid']));
 
 		// Assert: Audit trails include organisation context.
 		$this->assertCount(3, $trails);
@@ -256,11 +247,10 @@ class IntegrationTest extends TestCase {
 
 		// Mock: Attempt to search Organisation B's data.
 		$this->objectMapper->expects($this->once())
-			->method('findAll')
+			->method('findAllListed')
 			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->callback(function ($filters) {
+				$this->callback(function (MagicListRequest $request) {
+					$filters = $request->query->filters;
 					// Should only include Bob's organisations.
 					return isset($filters['organisation'])
 						   && $filters['organisation'] === ['orgA-uuid']
@@ -270,10 +260,8 @@ class IntegrationTest extends TestCase {
 			->willReturn([]); // No results from different org
 
 		// Act: Search should be filtered by user's organisations.
-		$results = $this->objectMapper->findAll(
-			null,
-			null,
-			['organisation' => ['orgA-uuid']] // Only Bob's orgs
+		$results = $this->objectMapper->findAllListed(
+			new MagicListRequest(table: null, query: ListQuery::unbounded(['organisation' => ['orgA-uuid']]))
 		);
 
 		// Assert: Access is properly restricted.
@@ -301,11 +289,11 @@ class IntegrationTest extends TestCase {
 		]);
 
 		// Mock: Organisation service validates all objects in same org.
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn(array_merge([$parentObject], $childObjects));
 
 		// Act: Verify all related objects are in same organisation.
-		$allObjects = $this->objectMapper->findAll();
+		$allObjects = $this->objectMapper->findAllListed(new MagicListRequest(table: null, query: ListQuery::unbounded()));
 
 		// Assert: Relationship integrity within organisation.
 		foreach ($allObjects as $object) {

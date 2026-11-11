@@ -40,6 +40,8 @@ use DateTimeInterface;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
@@ -97,17 +99,14 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	/**
 	 * Arm the timers of an item that just became active.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param string|null $actor The identity that moved it.
-	 * @param DateTimeInterface|null $now The clock; null is the real clock.
+	 * @param CaseItem     $item The item.
+	 * @param FlowTimerAct $act  The identity that moved it and the clock.
 	 *
 	 * @return int How many timers were armed.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	public function onEntered(CaseItem $item, ?string $actor, ?DateTimeInterface $now = null): int {
-		$act = new FlowTimerAct(actor: $actor, now: DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable()));
-
+	public function onEntered(CaseItem $item, FlowTimerAct $act): int {
 		return $this->armDeadlines(item: $item, act: $act);
 	}//end onEntered()
 
@@ -163,29 +162,14 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	 * nothing for one whose term has already passed: that one is reported as
 	 * overdue for the caller to enforce.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param DateTimeInterface $now The clock.
-	 * @param string|null $actor The arming identity.
+	 * @param CaseItem     $item The item.
+	 * @param FlowTimerAct $act  The arming identity and the moment of the pass.
 	 *
 	 * @return string One of the REARM_* constants.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	public function rearmStatutoryExpiry(CaseItem $item, DateTimeInterface $now, ?string $actor = null): string {
-		return $this->rearmExpiry(item: $item, act: new FlowTimerAct(actor: $actor, now: DateTimeImmutable::createFromInterface($now)));
-	}//end rearmStatutoryExpiry()
-
-	/**
-	 * Arm the statutory expiry of an active item again: see {@see rearmStatutoryExpiry()}.
-	 *
-	 * @param CaseItem     $item The active item.
-	 * @param FlowTimerAct $act  The arming identity and the moment of the pass.
-	 *
-	 * @return string One of the REARM_* outcomes.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
-	 */
-	private function rearmExpiry(CaseItem $item, FlowTimerAct $act): string {
+	public function rearmStatutoryExpiry(CaseItem $item, FlowTimerAct $act): string {
 		if ($this->hasStatutoryExpiry(item: $item) === false) {
 			return self::REARM_NONE;
 		}
@@ -200,7 +184,8 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 		}
 
 		return self::REARM_FAILED;
-	}//end rearmExpiry()
+	}//end rearmStatutoryExpiry()
+
 
 	/**
 	 * Cancel the open timers of an item that reached a terminal state.
@@ -216,7 +201,10 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 		try {
 			$uuid = (string)$item->getUuid();
 
-			return $this->timers->cancelForSubject(subjectType: self::SUBJECT_TYPE, subjectUuid: $uuid, reason: $reason, actor: self::ACTOR);
+			return $this->timers->cancelForSubject(
+				subject: new TimerSubjectRef(type: self::SUBJECT_TYPE, uuid: $uuid),
+				change: new TimerChange(reason: $reason, actor: self::ACTOR)
+			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[CasePlanItemTimers] Could not cancel a plan item\'s timers; the sweep will find them moot: ' . $failure->getMessage(),
@@ -414,7 +402,7 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	 */
 	private function submit(CaseTimerArmRun $run): bool {
 		try {
-			$this->timers->arm(config: $run->config, actor: $run->actor);
+			$this->timers->arm(config: $run->config, act: FlowTimerAct::of(actor: $run->actor));
 
 			return true;
 		} catch (Throwable $failure) {

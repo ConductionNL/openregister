@@ -37,6 +37,8 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Document;
 use Sabre\VObject\Reader;
+use OCA\OpenRegister\Service\CalendarEvent\VeventDraft;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 
 /**
  * CalendarEventService wraps CalDAV VEVENT operations for OpenRegister objects.
@@ -159,8 +161,9 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 */
 	private function parsedEventsIn(mixed $calendarId, string $needle): array {
 		$events = [];
+		$scan   = new CalendarScanRun(calendarId: $calendarId, needle: $needle);
 		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $calendarObject) {
-			$event = $this->parseStoredEvent(calendarId: $calendarId, uri: $calendarObject['uri'], needle: $needle);
+			$event = $this->parseStoredEvent(scan: $scan, uri: $calendarObject['uri']);
 			if ($event !== null) {
 				$events[] = $event;
 			}
@@ -172,20 +175,19 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	/**
 	 * Parse one stored calendar object into an event array, if it is a VEVENT mentioning the needle.
 	 *
-	 * @param mixed  $calendarId The calendar ID.
-	 * @param string $uri        The calendar object URI.
-	 * @param string $needle     Text the raw iCalendar data must contain.
+	 * @param CalendarScanRun $scan The calendar being scanned and the text the raw iCalendar data must contain.
+	 * @param string          $uri  The calendar object URI.
 	 *
 	 * @return array<string, mixed>|null The event, or null when skipped.
 	 */
-	private function parseStoredEvent(mixed $calendarId, string $uri, string $needle): ?array {
-		$calendarData = ($this->calDavBackend->getCalendarObject($calendarId, $uri)['calendardata'] ?? null);
-		if (empty($calendarData) === true || $this->mentionsAll(data: $calendarData, needles: [$needle, 'VEVENT']) === false) {
+	private function parseStoredEvent(CalendarScanRun $scan, string $uri): ?array {
+		$calendarData = ($this->calDavBackend->getCalendarObject($scan->calendarId, $uri)['calendardata'] ?? null);
+		if (empty($calendarData) === true || $this->mentionsAll(data: $calendarData, needles: [$scan->needle, 'VEVENT']) === false) {
 			return null;
 		}
 
 		try {
-			return $this->veventToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $uri);
+			return $this->veventToArray(stored: new StoredEvent(calendarId: (string)$scan->calendarId, uri: $uri, calendarData: $calendarData));
 		} catch (Exception $e) {
 			$this->logParseFailure(e: $e, uri: $uri);
 			return null;
@@ -351,7 +353,7 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	/**
 	 * Get all VEVENTs across the acting user's VEVENT-supporting calendars.
 	 *
-	 * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::getAllUserTasks()}
+	 * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::listUserTasks()}
 	 * for events: it enumerates every calendar the user owns (not just the pinned
 	 * one), skips non-VEVENT objects, and returns the parsed event arrays sorted by
 	 * start date (soonest first, undated last). Backs the `calendar-event-source`
@@ -416,17 +418,9 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	public function createEvent(
-		int $registerId,
-		int $schemaId,
-		string $objectUuid,
-		string $objectTitle,
-		array $data,
-	): ?array {
-		return $this->createTaggedEvent(
-			link: ['registerId' => $registerId, 'schemaId' => $schemaId, 'objectUuid' => $objectUuid, 'objectTitle' => $objectTitle],
-			data: $data
-		);
+	public function createEvent(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): ?array {
+		$link = ['registerId' => $registerId, 'schemaId' => $schemaId, 'objectUuid' => $objectUuid, 'objectTitle' => $objectTitle];
+		return $this->createTaggedEvent(link: $link, data: $data);
 	}//end createEvent()
 
 	/**
@@ -457,17 +451,12 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 		$calendarId = $this->findUserCalendar()['id'];
 
 		$uid = strtoupper(bin2hex(random_bytes(16)));
-		$calendarData = $this->veventCodec->calendarData(
-			uid: $uid,
-			dtstart: $dtstart,
-			data: $data,
-			link: $link
-		);
+		$calendarData = $this->veventCodec->calendarDataOf(draft: new VeventDraft(uid: $uid, dtstart: $dtstart, data: $data, link: $link));
 		$uri = $uid . '.ics';
 
 		$this->calDavBackend->createCalendarObject($calendarId, $uri, $calendarData);
 
-		return $this->veventToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $uri);
+		return $this->veventToArray(stored: new StoredEvent(calendarId: (string)$calendarId, uri: $uri, calendarData: $calendarData));
 	}//end createTaggedEvent()
 
 	/**
@@ -485,21 +474,13 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	public function linkEvent(
-		int $calendarId,
-		string $eventUri,
-		int $registerId,
-		int $schemaId,
-		string $objectUuid,
-	): ?array {
-		return $this->tagEvent(
-			event: new CalendarObjectRef(calendarId: $calendarId, uri: $eventUri),
-			target: (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId)
-		);
+	public function linkEvent(int $calendarId, string $eventUri, int $registerId, int $schemaId, string $objectUuid): ?array {
+		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
+		return $this->linkEventTo(event: new CalendarObjectRef(calendarId: $calendarId, uri: $eventUri), target: $target);
 	}//end linkEvent()
 
 	/**
-	 * Tag a stored VEVENT with the register, schema and object it is linked to.
+	 * Tag a stored VEVENT with the register, schema and object it is linked to, as {@see linkEvent()} describes.
 	 *
 	 * @param CalendarObjectRef $event  The stored event.
 	 * @param LinkTarget        $target The object, register and schema.
@@ -507,8 +488,10 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 * @return array|null The updated event.
 	 *
 	 * @throws Exception When the event does not exist or is not a VEVENT.
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	private function tagEvent(CalendarObjectRef $event, LinkTarget $target): ?array {
+	public function linkEventTo(CalendarObjectRef $event, LinkTarget $target): ?array {
 		$vcalendar = $this->readVevent(calendarId: $event->calendarId, eventUri: $event->uri);
 		$vevent = $this->veventOf(document: $vcalendar);
 		$vevent->add('X-OPENREGISTER-REGISTER', (string)$target->registerId);
@@ -518,8 +501,8 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 		$calendarData = $vcalendar->serialize();
 		$this->calDavBackend->updateCalendarObject($event->calendarId, $event->uri, $calendarData);
 
-		return $this->veventToArray(calendarData: $calendarData, calendarId: (string)$event->calendarId, uri: $event->uri);
-	}//end tagEvent()
+		return $this->veventToArray(stored: new StoredEvent(calendarId: (string)$event->calendarId, uri: $event->uri, calendarData: $calendarData));
+	}//end linkEventTo()
 
 	/**
 	 * Load a stored calendar object that must hold a VEVENT.
@@ -548,9 +531,8 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	/**
 	 * Refuse an event that is not one of the caller's events on the given object.
 	 *
-	 * @param string $objectUuid The object the caller addressed.
-	 * @param string $calendarId The calendar the caller named.
-	 * @param string $eventUri   The event the caller named.
+	 * @param string                $objectUuid The object the caller addressed.
+	 * @param CalendarObjectAddress $event      The calendar and event the caller named.
 	 *
 	 * @return void
 	 *
@@ -558,15 +540,25 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function requireEventOf(string $objectUuid, string $calendarId, string $eventUri): void {
-		foreach ($this->getEventsForObject(objectUuid: $objectUuid) as $event) {
-			if ((string)$event['calendarId'] === $calendarId && $event['id'] === $eventUri) {
-				return;
-			}
+	public function requireEventOf(string $objectUuid, CalendarObjectAddress $event): void {
+		if (in_array([$event->calendarId, $event->uri], $this->heldEvents(objectUuid: $objectUuid), true) === false) {
+			throw new Exception('Calendar event not found', 404);
 		}
-
-		throw new Exception('Calendar event not found', 404);
 	}//end requireEventOf()
+
+	/**
+	 * The caller's events on an object, each as its calendar ID (a string) and event URI.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return list<array{0: string, 1: mixed}> One [calendarId, eventUri] pair per event.
+	 */
+	private function heldEvents(string $objectUuid): array {
+		return array_map(
+			static fn (array $event): array => [(string)$event['calendarId'], $event['id']],
+			$this->getEventsForObject(objectUuid: $objectUuid)
+		);
+	}//end heldEvents()
 
 	/**
 	 * Unlink an event from an object (remove X-OPENREGISTER-* properties).
@@ -736,19 +728,17 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	/**
 	 * Parse a VEVENT iCalendar string into a JSON-friendly array.
 	 *
-	 * @param string $calendarData The raw iCalendar string
-	 * @param string $calendarId The calendar ID
-	 * @param string $uri The calendar object URI
+	 * @param StoredEvent $stored The calendar ID, calendar object URI and raw iCalendar string.
 	 *
 	 * @return array|null Event array or null if not a VEVENT
 	 */
-	private function veventToArray(string $calendarData, string $calendarId, string $uri): ?array {
-		$vevent = $this->veventOf(document: Reader::read($calendarData));
+	private function veventToArray(StoredEvent $stored): ?array {
+		$vevent = $this->veventOf(document: Reader::read($stored->calendarData));
 		if ($vevent === null) {
 			return null;
 		}
 
-		return $this->veventCodec->eventArray(vevent: $vevent, calendarId: $calendarId, uri: $uri);
+		return $this->veventCodec->eventArrayAt(vevent: $vevent, address: new CalendarObjectAddress(calendarId: $stored->calendarId, uri: $stored->uri));
 	}//end veventToArray()
 
 	/**

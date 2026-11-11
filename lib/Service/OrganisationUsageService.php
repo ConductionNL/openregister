@@ -28,9 +28,8 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -45,16 +44,15 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface     $magicMapper  Reads the folders of the organisation's objects.
-	 * @param FileMapperInterface      $fileMapper   Sums file cache sizes.
-	 * @param LoggerInterface $logger       Logger.
-	 * @param SchemaMapperInterface    $schemaMapper Resolves the schema slug an object quota counts.
+	 * @param SchemaCatalogInterface $catalog    Reads the folders and counts the objects of the organisation
+	 *                                           (tables), and resolves the schema slug an object quota counts (schemas).
+	 * @param FileMapperInterface    $fileMapper Sums file cache sizes.
+	 * @param LoggerInterface        $logger     Logger.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly FileMapperInterface $fileMapper,
 		private readonly LoggerInterface $logger,
-		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 
@@ -108,10 +106,11 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 		}
 
 		try {
-			$folderIds = $this->magicMapper->findFolderIdsByOrganisation(organisationUuid: $uuid);
+			$folderIds = $this->catalog->tables()->findFolderIdsByOrganisation(organisationUuid: $uuid);
 			return $this->fileMapper->sumSizesByFileIds(fileIds: $folderIds);
 		} catch (Exception $e) {
-			return $this->unmeasured(message: '[OrganisationUsageService] Could not measure storage', uuid: $uuid, error: $e);
+			$this->logger->warning(message: '[OrganisationUsageService] Could not measure storage', context: self::failure(uuid: $uuid, error: $e));
+			return null;
 		}
 	}//end measureStorage()
 
@@ -133,7 +132,8 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 		try {
 			return $this->countQuotaObjects(organisation: $organisation, uuid: $uuid);
 		} catch (Exception $e) {
-			return $this->unmeasured(message: '[OrganisationUsageService] Could not count objects', uuid: $uuid, error: $e);
+			$this->logger->warning(message: '[OrganisationUsageService] Could not count objects', context: self::failure(uuid: $uuid, error: $e));
+			return null;
 		}
 	}//end measureObjects()
 
@@ -155,24 +155,22 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 			return 0;
 		}
 
-		return $this->magicMapper->countObjectsByOrganisation(organisationUuid: $uuid, schemaIds: $schemaIds);
+		return $this->catalog->tables()->countObjectsByOrganisation(organisationUuid: $uuid, schemaIds: $schemaIds);
 	}//end countQuotaObjects()
 
 	/**
-	 * Log a figure that could not be measured; it is null, never 0.
+	 * The log context of a figure that could not be measured; the figure is null, never 0.
 	 *
-	 * @param string    $message What could not be measured.
-	 * @param string    $uuid    The organisation uuid.
-	 * @param Exception $error   Why.
+	 * @param string    $uuid  The organisation uuid.
+	 * @param Exception $error Why.
 	 *
-	 * @return null Always null.
+	 * @return array{uuid: string, error: string}
 	 *
 	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
-	private function unmeasured(string $message, string $uuid, Exception $error): null {
-		$this->logger->warning(message: $message, context: ['uuid' => $uuid, 'error' => $error->getMessage()]);
-		return null;
-	}//end unmeasured()
+	private static function failure(string $uuid, Exception $error): array {
+		return ['uuid' => $uuid, 'error' => $error->getMessage()];
+	}//end failure()
 
 	/**
 	 * The schema ids the object quota counts.
@@ -189,7 +187,7 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 			return [];
 		}
 
-		$ids = ($this->schemaMapper->findIdsBySlugs(slugs: [$slug])[strtolower($slug)] ?? []);
+		$ids = ($this->catalog->schemas()->findIdsBySlugs(slugs: [$slug])[strtolower($slug)] ?? []);
 		if ($ids === []) {
 			return null;
 		}

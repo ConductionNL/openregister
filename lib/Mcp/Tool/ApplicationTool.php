@@ -28,9 +28,8 @@ namespace OCA\OpenRegister\Mcp\Tool;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * ApplicationTool
@@ -45,26 +44,16 @@ use Psr\Log\LoggerInterface;
 class ApplicationTool extends AbstractTool implements ToolInterface {
 
 	/**
-	 * Application mapper for database operations
+	 * Constructor
 	 *
-	 * @var ApplicationMapperInterface
-	 */
-	private ApplicationMapperInterface $applicationMapper;
-
-	/**
-	 * ApplicationTool constructor
-	 *
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 * @param ApplicationMapperInterface $applicationMapper Application mapper instance
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger instance
 	 */
 	public function __construct(
-		ApplicationMapperInterface $applicationMapper,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		ToolCallTrail $trail,
+		private readonly ApplicationMapperInterface $applicationMapper,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->applicationMapper = $applicationMapper;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**
@@ -138,32 +127,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 */
 	public function listApplications(int $limit = 50, int $offset = 0): array {
 		try {
-			$this->logger->info(
-				message: '[ApplicationTool] Listing applications',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'limit' => $limit,
-					'offset' => $offset,
-				]
-			);
-
-			// Get applications via mapper (RBAC is enforced in mapper).
-			$applications = $this->applicationMapper->findAll(limit: $limit, offset: $offset);
-			$total = $this->applicationMapper->countAll();
-
-			// Convert to array.
-			$results = array_map(fn ($app) => $app->jsonSerialize(), $applications);
-
-			return $this->formatSuccess(
-				data: [
-					'applications' => $results,
-					'total' => $total,
-					'limit' => $limit,
-					'offset' => $offset,
-				],
-				message: "Found {$total} applications."
-			);
+			return $this->applicationPage(limit: $limit, offset: $offset);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ApplicationTool] Failed to list applications',
@@ -176,6 +140,55 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			return $this->formatError(message: 'Failed to list applications: ' . $e->getMessage());
 		}//end try
 	}//end listApplications()
+
+	/**
+	 * One page of the applications the caller may see, with the total.
+	 *
+	 * @param int $limit  Maximum number of results.
+	 * @param int $offset Offset for pagination.
+	 *
+	 * @return array The formatted success response.
+	 */
+	private function applicationPage(int $limit, int $offset): array {
+		$this->logListing(limit: $limit, offset: $offset);
+
+		// Get applications via mapper (RBAC is enforced in mapper).
+		$applications = $this->applicationMapper->findAllBy(query: new ListQuery(limit: $limit, offset: $offset));
+		$total        = $this->applicationMapper->countAll();
+
+		// Convert to array.
+		$results = array_map(fn ($app) => $app->jsonSerialize(), $applications);
+
+		return $this->formatSuccess(
+			data: [
+				'applications' => $results,
+				'total' => $total,
+				'limit' => $limit,
+				'offset' => $offset,
+			],
+			message: "Found {$total} applications."
+		);
+	}//end applicationPage()
+
+	/**
+	 * Log a listing request.
+	 *
+	 * @param int $limit  Maximum number of results.
+	 * @param int $offset Offset for pagination.
+	 *
+	 * @return void
+	 */
+	private function logListing(int $limit, int $offset): void {
+		$this->logger->info(
+			message: '[ApplicationTool] Listing applications',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'limit' => $limit,
+				'offset' => $offset,
+			]
+		);
+	}//end logListing()
 
 	/**
 	 * Get application details
@@ -221,9 +234,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	/**
 	 * Create application
 	 *
-	 * @param string $name Application name
-	 * @param string|null $description Application description
-	 * @param string|null $_domain Application domain/URL (unused, kept for API compatibility)
+	 * @param CreateApplicationCommand $command The application's name and optional description; the domain is not stored
 	 *
 	 * @return (bool|mixed|string)[] Response with created application
 	 *
@@ -231,12 +242,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createApplication(
-		string $name,
-		?string $description = null,
-		?string $_domain = null,
-	): array {
-		return $this->insertApplication(name: $name, description: $description);
+	public function createApplication(CreateApplicationCommand $command): array {
+		return $this->insertApplication(name: $command->name, description: $command->description);
 	}//end createApplication()
 
 	/**
@@ -287,10 +294,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	/**
 	 * Update application
 	 *
-	 * @param string $uuid Application UUID
-	 * @param string|null $name New name
-	 * @param string|null $description New description
-	 * @param string|null $_domain New domain (unused, kept for API compatibility)
+	 * @param UpdateApplicationCommand $command The application's UUID and the fields to change; null keeps one, the domain is not stored
 	 *
 	 * @return (bool|mixed|string)[] Response with updated application
 	 *
@@ -298,13 +302,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function updateApplication(
-		string $uuid,
-		?string $name = null,
-		?string $description = null,
-		?string $_domain = null,
-	): array {
-		return $this->patchApplication(uuid: $uuid, fields: ['setName' => $name, 'setDescription' => $description]);
+	public function updateApplication(UpdateApplicationCommand $command): array {
+		return $this->patchApplication(uuid: $command->uuid, fields: ['setName' => $command->name, 'setDescription' => $command->description]);
 	}//end updateApplication()
 
 	/**
@@ -319,43 +318,64 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 */
 	private function patchApplication(string $uuid, array $fields): array {
 		try {
-			$this->logger->info(
-				message: '[ApplicationTool] Updating application',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
-			);
-
-			// Find application (RBAC enforced in mapper).
-			$application = $this->applicationMapper->findByUuid(uuid: $uuid);
-
-			// Update fields.
-			foreach ($fields as $setter => $value) {
-				if ($value !== null) {
-					$application->$setter($value);
-				}
-			}
-
-			// Save changes (RBAC enforced in mapper).
-			$application = $this->applicationMapper->update($application);
-
-			return $this->formatSuccess(
-				data: $application->jsonSerialize(),
-				message: 'Application updated successfully.'
-			);
+			return $this->saveApplicationPatch(uuid: $uuid, fields: $fields);
 		} catch (DoesNotExistException $e) {
 			return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ApplicationTool] Failed to update application',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logUpdateFailure(uuid: $uuid, error: $e);
 			return $this->formatError(message: 'Failed to update application: ' . $e->getMessage());
 		}//end try
 	}//end patchApplication()
+
+	/**
+	 * Log a failed application update.
+	 *
+	 * @param string     $uuid  The application UUID.
+	 * @param \Exception $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logUpdateFailure(string $uuid, \Exception $error): void {
+		$this->logger->error(
+			message: '[ApplicationTool] Failed to update application',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUpdateFailure()
+
+	/**
+	 * Load, patch and save one application.
+	 *
+	 * @param string               $uuid   The application UUID.
+	 * @param array<string, mixed> $fields Setter name → value; null values are left alone.
+	 *
+	 * @return array The formatted success response.
+	 *
+	 * @throws DoesNotExistException When no application has that UUID.
+	 * @throws \Exception When loading or saving fails.
+	 */
+	private function saveApplicationPatch(string $uuid, array $fields): array {
+		$this->logger->info(
+			message: '[ApplicationTool] Updating application',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+		);
+
+		// Find application (RBAC enforced in mapper).
+		$application = $this->applicationMapper->findByUuid(uuid: $uuid);
+		self::applySetters(entity: $application, fields: $fields);
+
+		// Save changes (RBAC enforced in mapper).
+		$application = $this->applicationMapper->update($application);
+
+		return $this->formatSuccess(
+			data: $application->jsonSerialize(),
+			message: 'Application updated successfully.'
+		);
+	}//end saveApplicationPatch()
 
 	/**
 	 * Delete application

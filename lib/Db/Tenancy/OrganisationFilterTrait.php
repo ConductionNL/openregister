@@ -166,27 +166,20 @@ trait OrganisationFilterTrait {
 	/**
 	 * Apply filter when no active organisation is set
 	 *
-	 * @param IQueryBuilder $qb                 Query builder
-	 * @param mixed         $user               User object
-	 * @param bool          $allowNullOrg       Allow NULL organisation
-	 * @param string        $organisationColumn Organisation column name
+	 * @param IQueryBuilder $qb    Query builder
+	 * @param array         $scope The scope (see the trait's docblock) with the session user under `user`.
 	 *
 	 * @return void
 	 */
-	private function applyNoActiveOrgFilter(
-		IQueryBuilder $qb,
-		mixed $user,
-		bool $allowNullOrg,
-		string $organisationColumn,
-	): void {
-		if ($this->adminOverrides(user: $user) === true) {
+	private function applyNoActiveOrgFilter(IQueryBuilder $qb, array $scope): void {
+		if ($this->adminOverrides(user: $scope['user']) === true) {
 			return;
 		}
 
 		// Allow null organisation entities when explicitly permitted by the caller.
 		// This is used for system-wide resources like Registers and Schemas.
-		if ($allowNullOrg === true) {
-			$qb->andWhere($qb->expr()->isNull($organisationColumn));
+		if ($scope['allowNullOrg'] === true) {
+			$qb->andWhere($qb->expr()->isNull($scope['organisationColumn']));
 			return;
 		}
 
@@ -207,16 +200,15 @@ trait OrganisationFilterTrait {
 	 * the WHERE clause.
 	 *
 	 * @param IQueryBuilder $qb    Query builder
-	 * @param mixed         $user  User object
-	 * @param array         $scope The scope (see the trait's docblock).
+	 * @param array         $scope The scope (see the trait's docblock) with the session user under `user`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	private function applyActiveOrgFilter(IQueryBuilder $qb, mixed $user, array $scope): void {
-		if ($this->adminOverrides(user: $user) === true) {
-			$this->logAdminOverride(user: $user);
+	private function applyActiveOrgFilter(IQueryBuilder $qb, array $scope): void {
+		if ($this->adminOverrides(user: $scope['user']) === true) {
+			$this->logAdminOverride(user: $scope['user']);
 			return;
 		}
 
@@ -263,7 +255,7 @@ trait OrganisationFilterTrait {
 	 */
 	private function scopePredicates(IQueryBuilder $qb, array $scope): array {
 		$organisationColumn = $scope['organisationColumn'];
-		$orgPredicates = $this->buildOrganisationConditions(qb: $qb, activeOrgUuids: $scope['activeOrgUuids'], organisationColumn: $organisationColumn);
+		$orgPredicates = $this->buildOrganisationConditions(qb: $qb, scope: $scope);
 
 		// Allow null organisation entities when explicitly permitted by the caller.
 		// This is used for system-wide resources like Registers and Schemas.
@@ -301,8 +293,7 @@ trait OrganisationFilterTrait {
 			$userId = $user->getUID();
 		}
 
-		$this->logRedacted(
-			level: 'info',
+		$this->infoRedacted(
 			message: '[MultiTenancyTrait] Admin override: cross-organisation access granted',
 			context: ['type' => 'cross_tenant_access_admin_override', 'actor' => $userId]
 		);
@@ -311,49 +302,48 @@ trait OrganisationFilterTrait {
 	/**
 	 * Build organisation filter conditions
 	 *
-	 * @param IQueryBuilder $qb                 Query builder
-	 * @param array         $activeOrgUuids     Active organisation UUIDs
-	 * @param string        $organisationColumn Organisation column name
+	 * With a direct active organisation: that one, then its parents. Without
+	 * one: every organisation of the scope's hierarchy, or nothing.
+	 *
+	 * @param IQueryBuilder $qb    Query builder
+	 * @param array         $scope The scope (see the trait's docblock): its
+	 *                             `activeOrgUuids` and `organisationColumn`.
 	 *
 	 * @return array Array of conditions
 	 */
-	private function buildOrganisationConditions(IQueryBuilder $qb, array $activeOrgUuids, string $organisationColumn): array {
+	private function buildOrganisationConditions(IQueryBuilder $qb, array $scope): array {
 		$directActiveOrgUuid = $this->getActiveOrganisationUuid();
-		if ($directActiveOrgUuid !== null) {
-			return $this->directOrganisationConditions(
-				qb: $qb,
-				directActiveOrgUuid: $directActiveOrgUuid,
-				activeOrgUuids: $activeOrgUuids,
-				column: $organisationColumn
-			);
+		if ($directActiveOrgUuid === null) {
+			return $this->hierarchyConditions(qb: $qb, scope: $scope);
 		}
 
-		if (empty($activeOrgUuids) === true) {
-			return [];
-		}
-
-		return [$qb->expr()->in($organisationColumn, $qb->createNamedParameter($activeOrgUuids, IQueryBuilder::PARAM_STR_ARRAY))];
-	}//end buildOrganisationConditions()
-
-	/**
-	 * The conditions for a session with a direct active organisation: that one, then its parents.
-	 *
-	 * @param IQueryBuilder $qb                  Query builder
-	 * @param string        $directActiveOrgUuid The session's active organisation.
-	 * @param array         $activeOrgUuids      Active organisation UUIDs
-	 * @param string        $column              Organisation column name
-	 *
-	 * @return array Array of conditions
-	 */
-	private function directOrganisationConditions(IQueryBuilder $qb, string $directActiveOrgUuid, array $activeOrgUuids, string $column): array {
+		$column = $scope['organisationColumn'];
 		$conditions = [];
 		$conditions[] = $qb->expr()->eq($column, $qb->createNamedParameter($directActiveOrgUuid, IQueryBuilder::PARAM_STR));
 
-		$parentOrgs = array_filter($activeOrgUuids, fn ($uuid) => $uuid !== $directActiveOrgUuid);
+		$parentOrgs = array_filter($scope['activeOrgUuids'], fn ($uuid) => $uuid !== $directActiveOrgUuid);
 		if (count($parentOrgs) > 0) {
 			$conditions[] = $qb->expr()->in($column, $qb->createNamedParameter($parentOrgs, IQueryBuilder::PARAM_STR_ARRAY));
 		}
 
 		return $conditions;
-	}//end directOrganisationConditions()
+	}//end buildOrganisationConditions()
+
+	/**
+	 * The condition for a session without a direct active organisation: any
+	 * organisation of the scope's hierarchy, or none when it is empty.
+	 *
+	 * @param IQueryBuilder $qb    Query builder
+	 * @param array         $scope The scope (see the trait's docblock).
+	 *
+	 * @return array Array of conditions
+	 */
+	private function hierarchyConditions(IQueryBuilder $qb, array $scope): array {
+		$activeOrgUuids = $scope['activeOrgUuids'];
+		if (empty($activeOrgUuids) === true) {
+			return [];
+		}
+
+		return [$qb->expr()->in($scope['organisationColumn'], $qb->createNamedParameter($activeOrgUuids, IQueryBuilder::PARAM_STR_ARRAY))];
+	}//end hierarchyConditions()
 }//end trait

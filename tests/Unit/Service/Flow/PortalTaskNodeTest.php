@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\PortalPartyNotFoundException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -50,6 +51,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
 
 /**
  * Behavioural tests for {@see PortalTaskNode} and {@see PortalTaskConfig}.
@@ -282,14 +284,15 @@ class PortalTaskNodeTest extends TestCase {
 
 		$this->bridge->expects($this->once())
 			->method('record')
-			->with('t-1', 'match', 'caseworker', $this->stringContains("role 'initiator' on case 'case-7' to 'party:bsn-1'"));
+			->with($this->callback(static fn (TaskAuditEntry $entry): bool => [$entry->uuid, $entry->action, $entry->actor] === ['t-1', 'match', 'caseworker']
+				&& str_contains($entry->reason, "role 'initiator' on case 'case-7' to 'party:bsn-1'")));
 
 		$this->delivery->expects($this->once())
 			->method('request')
 			->with($created, PortalTaskDelivery::KIND_ASK, $this->isType('array'));
 
 		try {
-			$this->node->execute($this->items(), $this->config(), $this->context($state));
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 			$this->fail('Expected the node to suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull($suspension->getResumeAt(), 'a null resumeAt is the one shape the 14-day reaper fails');
@@ -314,7 +317,7 @@ class PortalTaskNodeTest extends TestCase {
 		$this->bridge->method('createTask')->willReturn($this->task(state: Task::STATE_ACTIVE));
 
 		$this->expectException(FlowSuspension::class);
-		$this->node->execute($this->items(), $this->config(['partyRole' => 'applicant']), $this->context(new FlowResumeState()));
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(['partyRole' => 'applicant']), context: $this->context(new FlowResumeState())));
 	}//end testTheConfiguredPartyRoleIsMatched()
 
 	/**
@@ -330,7 +333,7 @@ class PortalTaskNodeTest extends TestCase {
 
 		$this->expectException(PortalPartyNotFoundException::class);
 		$this->expectExceptionMessageMatches("/role 'initiator'/");
-		$this->node->execute($this->items(), $this->config(), $this->context(new FlowResumeState()));
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context(new FlowResumeState())));
 	}//end testACaseWithNoPartyForTheRoleFailsTheFiringAndCreatesNothing()
 
 	/**
@@ -343,7 +346,7 @@ class PortalTaskNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/no case to match/');
-		$this->node->execute([FlowItems::item(json: ['document' => 'x'])], $this->config(), $this->context(new FlowResumeState()));
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: ['document' => 'x'])], config: $this->config(), context: $this->context(new FlowResumeState())));
 	}//end testAnItemWithoutACaseObjectFailsTheFiring()
 
 	/**
@@ -355,7 +358,7 @@ class PortalTaskNodeTest extends TestCase {
 		$this->bridge->expects($this->never())->method('createTask');
 		$this->parties->expects($this->never())->method('resolveFromObject');
 
-		$this->assertSame([], $this->node->execute([], $this->config(), $this->context(new FlowResumeState())));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: $this->config(), context: $this->context(new FlowResumeState()))));
 	}//end testAnEmptyBranchCreatesNothingAndDoesNotSuspend()
 
 	/**
@@ -366,7 +369,7 @@ class PortalTaskNodeTest extends TestCase {
 	public function testANodeWithoutAResumeSlotRefusesToRun(): void {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/resume slot/');
-		$this->node->execute($this->items(), $this->config(), [FlowRunContext::CONTEXT_RUN => 'run-1']);
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: [FlowRunContext::CONTEXT_RUN => 'run-1']));
 	}//end testANodeWithoutAResumeSlotRefusesToRun()
 
 	/**
@@ -383,7 +386,7 @@ class PortalTaskNodeTest extends TestCase {
 		$this->delivery->expects($this->once())->method('request')->willReturn([]);
 
 		try {
-			$this->node->execute($this->items(), $this->config(), $this->context($state));
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 			$this->fail('Expected the node to suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull($suspension->getResumeAt());
@@ -409,7 +412,7 @@ class PortalTaskNodeTest extends TestCase {
 		$this->delivery->expects($this->never())->method('request');
 
 		try {
-			$this->node->execute($this->items(), $this->config(), $this->context($state));
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 			$this->fail('Expected the node to suspend again.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull($suspension->getResumeAt());
@@ -430,7 +433,7 @@ class PortalTaskNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/no longer exists/');
-		$this->node->execute($this->items(), $this->config(), $this->context($state));
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 	}//end testAVanishedTaskFailsTheStep()
 
 	/**
@@ -454,7 +457,7 @@ class PortalTaskNodeTest extends TestCase {
 			FlowItems::item(json: ['n' => 2, '@self' => ['uuid' => 'case-7']]),
 			'not-an-item',
 		];
-		$out = $this->node->execute($items, $this->config(['outcomeKey' => 'answer']), $this->context($state));
+		$out = $this->node->execute(new FlowNodeCall(items: $items, config: $this->config(['outcomeKey' => 'answer']), context: $this->context($state)));
 
 		$this->assertCount(3, $out);
 		foreach ([0, 1] as $index) {
@@ -490,7 +493,7 @@ class PortalTaskNodeTest extends TestCase {
 		$this->bridge->method('taskOrNull')->willReturn($task);
 		$this->bridge->expects($this->once())->method('recordHeartbeatRecovery')->with($task);
 
-		$this->node->execute($this->items(), $this->config(), $this->context($state));
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 	}//end testAHeartbeatRecoveredAnswerIsAuditedOnTheTask()
 
 	/**
@@ -509,11 +512,11 @@ class PortalTaskNodeTest extends TestCase {
 		$this->bridge->method('taskOrNull')->willReturn($task);
 		$this->bridge->expects($this->never())->method('recordHeartbeatRecovery');
 
-		$this->node->execute(
-			$this->items(),
-			$this->config(),
-			$this->context($state, extra: [FlowRunService::SIGNAL_CONTEXT_KEY => []])
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items(),
+			config: $this->config(),
+			context: $this->context($state, extra: [FlowRunService::SIGNAL_CONTEXT_KEY => []])
+		));
 	}//end testASignalDeliveredAnswerRecordsNoHeartbeatRecovery()
 
 	/**
@@ -528,7 +531,7 @@ class PortalTaskNodeTest extends TestCase {
 		$task->setOutcome('expired');
 		$this->bridge->method('taskOrNull')->willReturn($task);
 
-		$out = $this->node->execute($this->items(), $this->config(), $this->context($state));
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 		$bag = $out[0][FlowItems::JSON]['portalTask'];
 		$this->assertFalse($bag['decided']);
 		$this->assertTrue($bag['expired']);
@@ -574,7 +577,7 @@ class PortalTaskNodeTest extends TestCase {
 
 		$items = $this->items(['review' => ['outcome' => 'rejected', 'comment' => 'The scan is unreadable']]);
 		try {
-			$this->node->execute($items, $this->config(['reasonField' => 'review.comment']), $this->context($state));
+			$this->node->execute(new FlowNodeCall(items: $items, config: $this->config(['reasonField' => 'review.comment']), context: $this->context($state)));
 			$this->fail('Expected the re-ask to suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull($suspension->getResumeAt());
@@ -602,7 +605,7 @@ class PortalTaskNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/no reason under "review\.comment"/');
-		$this->node->execute($this->items(), $this->config(['reasonField' => 'review.comment']), $this->context($state));
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(['reasonField' => 'review.comment']), context: $this->context($state)));
 	}//end testReEntryWithoutAReasonIsRefusedAndCreatesNothing()
 
 	// ---- Config boundary ---------------------------------------------------

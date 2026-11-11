@@ -34,8 +34,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\TriggerLookup;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -112,7 +115,7 @@ class FlowLocator implements FlowLocatorInterface {
 	}//end resolveFlow()
 
 	/**
-	 * Load the object a run walks against.
+	 * Load the object a run walks against, by reference.
 	 *
 	 * Loads with RBAC and multitenancy OFF, which is correct here and ONLY
 	 * here: a trigger fires with no acting user, so there is no session whose
@@ -126,9 +129,7 @@ class FlowLocator implements FlowLocatorInterface {
 	 * here. Anything that later routes a request into this method must apply
 	 * its own authorisation first.
 	 *
-	 * @param string $uuid The subject uuid.
-	 * @param string $register The register slug.
-	 * @param string $schema The schema slug.
+	 * @param ObjectRef $ref The subject's register, schema and uuid.
 	 *
 	 * @return object|null The subject, or null when it cannot be found.
 	 *
@@ -136,16 +137,16 @@ class FlowLocator implements FlowLocatorInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	public function resolveSubject(string $uuid, string $register, string $schema): ?object {
-		if ($uuid === '' || $register === '' || $schema === '') {
+	public function resolveObject(ObjectRef $ref): ?object {
+		if ($ref->id === '' || $ref->register === '' || $ref->schema === '') {
 			return null;
 		}
 
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $uuid,
-				register: $register,
-				schema: $schema,
+				id: $ref->id,
+				register: $ref->register,
+				schema: $ref->schema,
 				_rbac: false,
 				_multitenancy: false
 			));
@@ -158,10 +159,10 @@ class FlowLocator implements FlowLocatorInterface {
 		}
 
 		return null;
-	}//end resolveSubject()
+	}//end resolveObject()
 
 	/**
-	 * The ids of the flows a fired event should start.
+	 * The ids of the flows an event fired on one register and schema should start.
 	 *
 	 * A flow that matches the event but cannot dispatch is REFUSED OUT LOUD
 	 * rather than filtered away in SQL. The distinction matters: a flow that
@@ -170,66 +171,108 @@ class FlowLocator implements FlowLocatorInterface {
 	 * working. An ownerless flow is the common case — a trigger has no acting
 	 * user, so the flow's owner is the only identity a run could execute as.
 	 *
-	 * @param string $event The event id.
-	 * @param string $register The register the event fired on.
-	 * @param string $schema The schema the event fired on.
+	 * NODES FIRST. A flow that has any row in the derived index has been
+	 * converted, and its NODES decide entirely — including deciding that it
+	 * does not want this event. The column match is kept ONLY for unconverted
+	 * flows, and among those only for flows a published version can back — see
+	 * {@see self::columnFallbackMatches()} for both halves of that rule.
+	 *
+	 * @param string            $event The event id.
+	 * @param RegisterSchemaRef $table The register and schema the event fired on.
 	 *
 	 * @return array<int, string> The ids of the flows to run.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function flowsForTrigger(string $event, string $register, string $schema): array {
-		// NODES FIRST. A flow that has any row in the derived index has been
-		// converted, and its NODES decide entirely — including deciding that it
-		// does not want this event. Falling back for such a flow would let a
-		// deleted trigger node keep firing through the column it no longer
-		// reflects, which is the opposite of what removing the node meant.
+	public function flowsForEvent(string $event, RegisterSchemaRef $table): array {
+		$index = $this->triggerIndex(event: $event, table: $table);
+		$candidates = $this->columnCandidates(event: $event, table: $table);
+		if ($candidates === null) {
+			return [];
+		}
+
+		$matched = $this->withPublishedVersion(
+			matched: $this->columnFallbackMatches(candidates: $candidates, converted: $index['converted']),
+			event: $event
+		);
+
+		return $this->dispatchableUuids(matched: $this->withIndexed(matched: $matched, indexed: $index['indexed']), event: $event);
+	}//end flowsForEvent()
+
+	/**
+	 * The derived trigger index: the flows whose nodes want this event, and
+	 * every flow the index represents at all.
+	 *
+	 * An unreadable index — during the upgrade that creates it, or if it is
+	 * dropped — leaves every flow on its columns, which is exactly the
+	 * pre-cutover behaviour. Degrading to "no flow was interested" here would
+	 * silently stop the whole engine.
+	 *
+	 * @param string            $event The event id.
+	 * @param RegisterSchemaRef $table The register and schema the event fired on.
+	 *
+	 * @return array{indexed: array<int, string>, converted: array<string, int>}
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function triggerIndex(string $event, RegisterSchemaRef $table): array {
 		$indexed = [];
-		$converted = [];
 		try {
-			$indexed = $this->stores->triggerMapper->flowUuidsFor(
-				event: $event,
-				register: $register,
-				schema: $schema
-			);
+			$indexed = $this->stores->triggerMapper->flowUuidsFor(event: $event, register: (string)$table->register, schema: (string)$table->schema);
 			$converted = array_flip($this->stores->triggerMapper->representedFlowUuids());
 		} catch (Throwable $e) {
-			// The index is unreadable — during the upgrade that creates it, or
-			// if it is dropped. Every flow then falls back to its columns,
-			// which is exactly the pre-cutover behaviour. Degrading to "no
-			// flow was interested" here would silently stop the whole engine.
 			$this->logger->warning(
 				message: '[FlowLocator] Trigger index unreadable for "' . $event . '": ' . $e->getMessage()
 					. '. Falling back to the flow trigger columns for every flow.',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			$converted = [];
+			// Whatever the index already answered is kept; only the
+			// conversion picture is lost, so every flow keeps its columns.
+			return ['indexed' => $indexed, 'converted' => []];
 		}
 
+		return ['indexed' => $indexed, 'converted' => $converted];
+	}//end triggerIndex()
+
+	/**
+	 * The flows whose trigger columns match the event, or null when they cannot be listed.
+	 *
+	 * @param string            $event The event id.
+	 * @param RegisterSchemaRef $table The register and schema the event fired on.
+	 *
+	 * @return array<int, Flow>|null
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function columnCandidates(string $event, RegisterSchemaRef $table): ?array {
 		try {
-			$candidates = $this->stores->mapper->findByTrigger(
-				trigger: $event,
-				register: $register,
-				schema: $schema
-			);
+			$lookup = new TriggerLookup(trigger: $event, register: (string)$table->register, schema: (string)$table->schema);
+			return $this->stores->mapper->findByTrigger(lookup: $lookup);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowLocator] Could not list flows for trigger "' . $event . '": ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return [];
+			return null;
 		}
+	}//end columnCandidates()
 
-		// The column match is kept ONLY for unconverted flows, and among those
-		// only for flows a published version can back — see the docblock of
-		// {@see self::columnFallbackMatches()} for both halves of that rule.
-		$matched = $this->withPublishedVersion(
-			matched: $this->columnFallbackMatches(candidates: $candidates, converted: $converted),
-			event: $event
-		);
-
-		// The index answers in UUIDs; the dispatch check needs the row. These
-		// are the flows whose NODES want this event.
+	/**
+	 * Add the flows whose NODES want this event to the column matches.
+	 *
+	 * The index answers in UUIDs; the dispatch check needs the row. An index
+	 * row for a flow that no longer exists is reported rather than skipped
+	 * silently: it means a delete did not reach the index, and the row will
+	 * keep being read on every event.
+	 *
+	 * @param array<string, Flow> $matched The column matches, by uuid.
+	 * @param array<int, string>  $indexed The uuids the index names.
+	 *
+	 * @return array<string, Flow>
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function withIndexed(array $matched, array $indexed): array {
 		foreach ($indexed as $uuid) {
 			if (isset($matched[$uuid]) === true) {
 				continue;
@@ -238,19 +281,16 @@ class FlowLocator implements FlowLocatorInterface {
 			try {
 				$matched[$uuid] = $this->stores->mapper->findByUuid(uuid: $uuid);
 			} catch (Throwable $e) {
-				// An index row for a flow that no longer exists. Report it
-				// rather than skip silently: it means a delete did not reach
-				// the index, and the row will keep being read on every event.
 				$this->logger->warning(
 					message: '[FlowLocator] Trigger index names flow "' . $uuid . '" which could not be loaded: '
 						. $e->getMessage() . '. Its index rows are stale.',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $uuid]
 				);
 			}
-		}//end foreach
+		}
 
-		return $this->dispatchableUuids(matched: $matched, event: $event);
-	}//end flowsForTrigger()
+		return $matched;
+	}//end withIndexed()
 
 	/**
 	 * The column-fallback matches: unconverted flows a published version can back.
@@ -352,7 +392,7 @@ class FlowLocator implements FlowLocatorInterface {
 	/**
 	 * The uuids of the matched flows that can actually be dispatched.
 	 *
-	 * Extracted from `flowsForTrigger()`, which sat exactly on the configured
+	 * Extracted from `flowsForEvent()`, which sat exactly on the configured
 	 * Cyclomatic Complexity threshold (10 of 10). Behaviour is unchanged: the
 	 * ownerless flow is still skipped and still says out loud why, which is the
 	 * point — a flow that matched and then vanished without a word is the
@@ -395,8 +435,27 @@ class FlowLocator implements FlowLocatorInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function scheduledFlows(): array {
+		$candidates = [];
+		foreach ($this->findScheduled() as $flow) {
+			if ($flow->canDispatch() === false) {
+				$this->warnNotDispatched(flow: $flow);
+				continue;
+			}
+
+			$candidates[] = $this->scheduleCandidate(flow: $flow);
+		}
+
+		return $candidates;
+	}//end scheduledFlows()
+
+	/**
+	 * The flows stored with a schedule trigger, or none when they cannot be listed.
+	 *
+	 * @return array<int, Flow> The flows.
+	 */
+	private function findScheduled(): array {
 		try {
-			$flows = $this->stores->mapper->findScheduled();
+			return $this->stores->mapper->findScheduled();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowLocator] Could not list scheduled flows: ' . $e->getMessage(),
@@ -404,32 +463,42 @@ class FlowLocator implements FlowLocatorInterface {
 			);
 			return [];
 		}
+	}//end findScheduled()
 
-		$candidates = [];
-		foreach ($flows as $flow) {
-			if ($flow->canDispatch() === false) {
-				$this->logger->warning(
-					message: '[FlowLocator] Scheduled flow "' . $flow->getUuid()
-						. '" was not dispatched: it is disabled, or its definition has no owner and is therefore '
-						. 'an orphan that cannot be listed, found or edited either. This is not the identity '
-						. 'check — whose rights a run uses comes from the schedule trigger node\'s runAs.',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
-				);
-				continue;
-			}
+	/**
+	 * Say why a scheduled flow is not dispatched.
+	 *
+	 * @param Flow $flow The flow that cannot dispatch.
+	 *
+	 * @return void
+	 */
+	private function warnNotDispatched(Flow $flow): void {
+		$this->logger->warning(
+			message: '[FlowLocator] Scheduled flow "' . $flow->getUuid()
+				. '" was not dispatched: it is disabled, or its definition has no owner and is therefore '
+				. 'an orphan that cannot be listed, found or edited either. This is not the identity '
+				. 'check — whose rights a run uses comes from the schedule trigger node\'s runAs.',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
+		);
+	}//end warnNotDispatched()
 
-			$candidates[] = [
-				'id' => (string)$flow->getUuid(),
-				'enabled' => (bool)$flow->getEnabled(),
-				'trigger' => (string)($flow->getTrigger() ?? ''),
-				'cron' => (string)($flow->getCron() ?? ''),
-				'owner' => $flow->getOwner(),
-				'since' => $this->savedAt(flow: $flow),
-			];
-		}//end foreach
-
-		return $candidates;
-	}//end scheduledFlows()
+	/**
+	 * The scheduler's view of one dispatchable flow.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return array{id: string, enabled: bool, trigger: string, cron: string, owner: string|null, since: string} The candidate.
+	 */
+	private function scheduleCandidate(Flow $flow): array {
+		return [
+			'id' => (string)$flow->getUuid(),
+			'enabled' => (bool)$flow->getEnabled(),
+			'trigger' => (string)($flow->getTrigger() ?? ''),
+			'cron' => (string)($flow->getCron() ?? ''),
+			'owner' => $flow->getOwner(),
+			'since' => $this->savedAt(flow: $flow),
+		];
+	}//end scheduleCandidate()
 
 	/**
 	 * When a flow was last saved, as an ATOM timestamp, or the empty string.

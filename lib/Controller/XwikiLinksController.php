@@ -39,14 +39,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\XwikiLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
 use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\XwikiLinkServiceInterface;
+use OCA\OpenRegister\Service\XwikiPageDraft;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -61,20 +65,32 @@ class XwikiLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var XwikiLinkServiceInterface
+	 */
+	private readonly XwikiLinkServiceInterface $xwikiLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request HTTP request.
-	 * @param XwikiLinkServiceInterface $xwikiLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param IRequest                     $request  HTTP request.
+	 * @param XwikiLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly XwikiLinkServiceInterface $xwikiLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		XwikiLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->xwikiLinkService = $services->xwikiLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -114,7 +130,7 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		$action = LinkedSourceActions::linkByTexts(request: $this->request, params: ['pageReference'], link: $this->linkPage(...));
+		$action = (new LinkedSourceActions(request: $this->request))->linkByTexts(params: ['pageReference'], link: $this->linkPage(...));
 
 		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end link()
@@ -136,7 +152,7 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
-		$action = LinkedSourceActions::linkByTexts(request: $this->request, params: ['space', 'title'], link: $this->createPage(...));
+		$action = (new LinkedSourceActions(request: $this->request))->linkByTexts(params: ['space', 'title'], link: $this->createPage(...));
 
 		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end createAndLink()
@@ -220,7 +236,7 @@ class XwikiLinksController extends Controller {
 		$limit  = (int)$this->request->getParam('limit', 25);
 		$offset = (int)$this->request->getParam('offset', 0);
 
-		$result = $this->xwikiLinkService->searchPages($query, $limit, $offset);
+		$result = $this->xwikiLinkService->searchPages(new ListQuery(limit: $limit, offset: $offset, search: $query));
 
 		// Unconfigured-source / upstream-down → 503 with details.cause so the
 		// consumer renders its Configure-XWiki / unavailable state (4-state UX).
@@ -253,7 +269,7 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	private function createPage(ObjectEntity $object, string $space, string $title): XwikiLink {
-		return $this->xwikiLinkService->createAndLinkPage($this->linkTargetOf(object: $object), $space, $title);
+		return $this->xwikiLinkService->createAndLinkPage($this->linkTargetOf(object: $object), new XwikiPageDraft(space: $space, title: $title));
 	}//end createPage()
 
 	/**

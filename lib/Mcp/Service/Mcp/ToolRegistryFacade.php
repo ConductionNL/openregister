@@ -74,6 +74,37 @@ use Psr\Log\LoggerInterface;
  */
 class ToolRegistryFacade {
 	/**
+	 * The verbs a tool name may carry, and the CRUD right each one describes.
+	 *
+	 * @var array<string, string>
+	 */
+	private const VERBS = [
+		'create' => 'create',
+		'add' => 'create',
+		'new' => 'create',
+		'import' => 'create',
+		'send' => 'create',
+		'start' => 'create',
+		'list' => 'read',
+		'get' => 'read',
+		'read' => 'read',
+		'search' => 'read',
+		'find' => 'read',
+		'fetch' => 'read',
+		'show' => 'read',
+		'describe' => 'read',
+		'export' => 'read',
+		'update' => 'update',
+		'edit' => 'update',
+		'set' => 'update',
+		'patch' => 'update',
+		'move' => 'update',
+		'delete' => 'delete',
+		'remove' => 'delete',
+		'destroy' => 'delete',
+	];
+
+	/**
 	 * Constructor
 	 *
 	 * Both dependencies are autowired by Nextcloud's DI container — no
@@ -135,13 +166,10 @@ class ToolRegistryFacade {
 
 		foreach ($this->resolveRegisteredTools(toolWhitelist: []) as $registryId => $tool) {
 			foreach ($tool->getFunctions() as $function) {
-				$allowed = $this->functionIsWhitelisted(
-					function: $function,
-					registryId: (string)$registryId,
-					toolWhitelist: $toolWhitelist
-				);
-
-				if ($allowed === false) {
+				// An empty whitelist admits everything (ADR-035 Decision 4).
+				if ($toolWhitelist !== []
+					&& array_intersect($this->functionIds(function: $function, registryId: (string)$registryId), $toolWhitelist) === []
+				) {
 					continue;
 				}
 
@@ -187,66 +215,98 @@ class ToolRegistryFacade {
 		$described = [];
 
 		foreach ($this->resolveRegisteredTools(toolWhitelist: []) as $registryId => $tool) {
-			// `<app>.<group>` — the app is authoritative here and nowhere else.
-			$segments = explode('.', (string)$registryId);
-			$app = ($segments[0] ?? '');
-			$group = ($segments[1] ?? '');
-
-			foreach ($tool->getFunctions() as $function) {
-				$name = (string)($function['name'] ?? '');
-				if ($name === '') {
-					continue;
-				}
-
-				// Prefer the STRUCTURE the producer declared over anything
-				// re-derived from the id. A tool that states its own app,
-				// subject and action needs no parsing; only tools that declare
-				// nothing fall back to the id split and the name heuristic
-				// below, and those are exactly the ones a consumer cannot
-				// reliably guess about either.
-				$declaredApp = (string)($function['app'] ?? '');
-				$declaredSubject = (string)($function['subject'] ?? '');
-				$declaredAction = (string)($function['action'] ?? '');
-
-				$resolvedApp = $app;
-				if ($declaredApp !== '') {
-					$resolvedApp = $declaredApp;
-				}
-
-				// Null rather than a guess when the producer said nothing: a
-				// consumer can render "no declared subject" honestly, but it
-				// cannot tell an inferred subject from a real one.
-				$resolvedSubject = null;
-				if ($declaredSubject !== '') {
-					$resolvedSubject = $declaredSubject;
-				}
-
-				$resolvedAction = null;
-				if ($declaredAction !== '') {
-					$resolvedAction = $declaredAction;
-				}
-
-				$described[] = [
-					'name' => $name,
-					'description' => (string)($function['description'] ?? ''),
-					'app' => $resolvedApp,
-					'subject' => $resolvedSubject,
-					'action' => $resolvedAction,
-					// The FUNCTION, not its group. Grouping collapsed
-					// `cms_create_page` and `cms_create_publication` into one
-					// label — "opencatalogi | cms | create" twice over — and a
-					// picker with two identical rows is one an author cannot
-					// choose from. The group is still available as `group` for
-					// anything that wants to bucket them.
-					'tool' => $name,
-					'group' => $group,
-					'right' => self::rightOf(name: $name),
-				];
-			}//end foreach
-		}//end foreach
+			array_push($described, ...$this->describeTool(registryId: (string)$registryId, tool: $tool));
+		}
 
 		return $described;
 	}//end describeTools()
+
+	/**
+	 * One entry per named function of one registered tool.
+	 *
+	 * @param string        $registryId The tool's registry id, `<app>.<group>`.
+	 * @param ToolInterface $tool       The registered tool.
+	 *
+	 * @return list<array<string, string|null>>
+	 */
+	private function describeTool(string $registryId, ToolInterface $tool): array {
+		$described = [];
+		foreach ($tool->getFunctions() as $function) {
+			$name = (string)($function['name'] ?? '');
+			if ($name !== '') {
+				$described[] = $this->describeFunction(function: $function, registryId: $registryId);
+			}
+		}
+
+		return $described;
+	}//end describeTool()
+
+	/**
+	 * The person-facing description of one named function.
+	 *
+	 * Prefer the STRUCTURE the producer declared over anything re-derived from
+	 * the id. A tool that states its own app, subject and action needs no
+	 * parsing; only tools that declare nothing fall back to the id split and
+	 * the name heuristic, and those are exactly the ones a consumer cannot
+	 * reliably guess about either.
+	 *
+	 * @param array<string, mixed> $function   The LLPhant function descriptor; its `name` is not empty.
+	 * @param string               $registryId The owning tool's registry id, `<app>.<group>`.
+	 *
+	 * @return array<string, string|null>
+	 */
+	private function describeFunction(array $function, string $registryId): array {
+		$name = (string)$function['name'];
+
+		return [
+			'name' => $name,
+			'description' => (string)($function['description'] ?? ''),
+			'app' => (self::declared(value: ($function['app'] ?? '')) ?? self::registrySegment(registryId: $registryId, index: 0)),
+			'subject' => self::declared(value: ($function['subject'] ?? '')),
+			'action' => self::declared(value: ($function['action'] ?? '')),
+			// The FUNCTION, not its group. Grouping collapsed
+			// `cms_create_page` and `cms_create_publication` into one
+			// label — "opencatalogi | cms | create" twice over — and a
+			// picker with two identical rows is one an author cannot
+			// choose from. The group is still available as `group` for
+			// anything that wants to bucket them.
+			'tool' => $name,
+			'group' => self::registrySegment(registryId: $registryId, index: 1),
+			'right' => self::rightOf(name: $name),
+		];
+	}//end describeFunction()
+
+	/**
+	 * A declared facet, or null rather than a guess when the producer said nothing.
+	 *
+	 * A consumer can render "no declared subject" honestly, but it cannot tell
+	 * an inferred subject from a real one.
+	 *
+	 * @param mixed $value The declared value, `''` when absent.
+	 *
+	 * @return string|null
+	 */
+	private static function declared(mixed $value): ?string {
+		$declared = (string)$value;
+		if ($declared === '') {
+			return null;
+		}
+
+		return $declared;
+	}//end declared()
+
+	/**
+	 * One segment of a `<app>.<group>` registry id — the app is authoritative here and nowhere else.
+	 *
+	 * @param string $registryId The registry id.
+	 * @param int    $index      0 for the app, 1 for the group.
+	 *
+	 * @return string The segment, `''` when the id has none there.
+	 */
+	private static function registrySegment(string $registryId, int $index): string {
+		$segments = explode('.', $registryId);
+		return ($segments[$index] ?? '');
+	}//end registrySegment()
 
 	/**
 	 * The operation a tool name describes: a CRUD verb, or `special`.
@@ -266,37 +326,11 @@ class ToolRegistryFacade {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
 	private static function rightOf(string $name): string {
-		$verbs = [
-			'create' => 'create',
-			'add' => 'create',
-			'new' => 'create',
-			'import' => 'create',
-			'send' => 'create',
-			'start' => 'create',
-			'list' => 'read',
-			'get' => 'read',
-			'read' => 'read',
-			'search' => 'read',
-			'find' => 'read',
-			'fetch' => 'read',
-			'show' => 'read',
-			'describe' => 'read',
-			'export' => 'read',
-			'update' => 'update',
-			'edit' => 'update',
-			'set' => 'update',
-			'patch' => 'update',
-			'move' => 'update',
-			'delete' => 'delete',
-			'remove' => 'delete',
-			'destroy' => 'delete',
-		];
-
 		$spaced = preg_replace('/([a-z0-9])([A-Z])/', '$1 $2', $name);
 		foreach (preg_split('/[_.\s]+/', (string)$spaced) as $part) {
 			$verb = strtolower((string)$part);
-			if (isset($verbs[$verb]) === true) {
-				return $verbs[$verb];
+			if (isset(self::VERBS[$verb]) === true) {
+				return self::VERBS[$verb];
 			}
 		}
 
@@ -304,25 +338,19 @@ class ToolRegistryFacade {
 	}//end rightOf()
 
 	/**
-	 * Whether one function descriptor is admitted by a whitelist.
+	 * The ids a whitelist entry may name one function descriptor by.
 	 *
-	 * An empty whitelist admits everything (ADR-035 Decision 4). Otherwise the
-	 * entry must name the function's `name`, its dotted `mcpId`, or the registry
-	 * id of the tool that owns it.
+	 * An entry admits the function when it names the function's `name`, its
+	 * dotted `mcpId`, or the registry id of the tool that owns it.
 	 *
-	 * @param array<string,mixed> $function The LLPhant function descriptor.
-	 * @param string $registryId Registry id of the owning tool.
-	 * @param array<int,string> $toolWhitelist The whitelist to apply.
+	 * @param array<string,mixed> $function   The LLPhant function descriptor.
+	 * @param string              $registryId Registry id of the owning tool.
 	 *
-	 * @return bool True when the descriptor should be listed.
+	 * @return array<int,string> The registry id, then the name and mcpId when set.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
-	private function functionIsWhitelisted(array $function, string $registryId, array $toolWhitelist): bool {
-		if ($toolWhitelist === []) {
-			return true;
-		}
-
+	private function functionIds(array $function, string $registryId): array {
 		$candidates = [$registryId];
 
 		$name = ($function['name'] ?? null);
@@ -335,8 +363,8 @@ class ToolRegistryFacade {
 			$candidates[] = $mcpId;
 		}
 
-		return (array_intersect($candidates, $toolWhitelist) !== []);
-	}//end functionIsWhitelisted()
+		return $candidates;
+	}//end functionIds()
 
 	/**
 	 * Invoke a tool function by its descriptor name or dotted mcpId.
@@ -366,10 +394,7 @@ class ToolRegistryFacade {
 		$tool = $this->findOwningTool(toolId: $toolId);
 
 		if ($tool === null) {
-			return [
-				'result' => ['error' => 'Unknown tool: ' . $toolId],
-				'isError' => true,
-			];
+			return self::errorEnvelope(message: 'Unknown tool: ' . $toolId);
 		}
 
 		try {
@@ -384,17 +409,40 @@ class ToolRegistryFacade {
 			// argument must not escape the facade as an uncaught 500 —
 			// matching the \Throwable catches in McpProviderBridge and
 			// McpToolsService.
-			$this->logger->error(
-				message: '[ToolRegistryFacade] Tool invocation failed',
-				context: ['tool' => $toolId, 'error' => $e->getMessage()]
-			);
-
-			return [
-				'result' => ['error' => $e->getMessage()],
-				'isError' => true,
-			];
-		}//end try
+			return $this->failedInvocation(toolId: $toolId, error: $e);
+		}
 	}//end invokeTool()
+
+	/**
+	 * Log a failed invocation and wrap its message in the error envelope.
+	 *
+	 * @param string     $toolId The function name or dotted mcpId invoked.
+	 * @param \Throwable $error  The failure.
+	 *
+	 * @return array{result: array<string,mixed>, isError: bool}
+	 */
+	private function failedInvocation(string $toolId, \Throwable $error): array {
+		$this->logger->error(
+			message: '[ToolRegistryFacade] Tool invocation failed',
+			context: ['tool' => $toolId, 'error' => $error->getMessage()]
+		);
+
+		return self::errorEnvelope(message: $error->getMessage());
+	}//end failedInvocation()
+
+	/**
+	 * The result envelope of an invocation that failed or found no tool.
+	 *
+	 * @param string $message The error message.
+	 *
+	 * @return array{result: array<string,mixed>, isError: bool}
+	 */
+	private static function errorEnvelope(string $message): array {
+		return [
+			'result' => ['error' => $message],
+			'isError' => true,
+		];
+	}//end errorEnvelope()
 
 	/**
 	 * Resolve the registered ToolInterface instances, optionally whitelisted.

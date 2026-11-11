@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface;
+use OCA\OpenRegister\Service\Lifecycle\CarriedLineage;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
@@ -217,24 +218,42 @@ class AutoTransitionJob extends ActorForwardedJob {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function applyEntry(array $entry): void {
-		$uuid = (string)($entry['uuid'] ?? '');
+		$uuid   = (string)($entry['uuid'] ?? '');
 		$action = (string)($entry['action'] ?? '');
 		if ($uuid === '' || $action === '') {
 			return;
 		}
 
-		$visited = ($entry['visited'] ?? []);
+		$this->pass->resumeLineage(uuid: $uuid, lineage: self::lineageOf(entry: $entry));
+		$this->attemptTransition(uuid: $uuid, action: $action);
+	}//end applyEntry()
+
+	/**
+	 * The lineage an entry carried: its move count and the states it visited.
+	 *
+	 * @param array<string, mixed> $entry The deferred entry.
+	 *
+	 * @return CarriedLineage
+	 */
+	private static function lineageOf(array $entry): CarriedLineage {
+		$visited       = ($entry['visited'] ?? []);
 		$visitedStates = [];
 		if (is_array($visited) === true) {
 			$visitedStates = $visited;
 		}
 
-		$this->pass->resume(
-			uuid: $uuid,
-			moves: (int)($entry['moves'] ?? 0),
-			visited: $visitedStates
-		);
+		return new CarriedLineage(moves: (int)($entry['moves'] ?? 0), visited: $visitedStates);
+	}//end lineageOf()
 
+	/**
+	 * Apply one queued transition; a refusal is logged and does not abort the chunk.
+	 *
+	 * @param string $uuid   The object's UUID.
+	 * @param string $action The transition action.
+	 *
+	 * @return void
+	 */
+	private function attemptTransition(string $uuid, string $action): void {
 		try {
 			$this->engine->transition(objectId: $uuid, action: $action);
 		} catch (Throwable $e) {
@@ -249,5 +268,5 @@ class AutoTransitionJob extends ActorForwardedJob {
 				]
 			);
 		}
-	}//end applyEntry()
+	}//end attemptTransition()
 }//end class

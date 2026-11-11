@@ -52,9 +52,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-use Throwable;
 
 /**
  * Turns collected reveals into hash-chained audit rows, once per request.
@@ -76,14 +74,12 @@ class RevealFlusher implements RevealFlusherInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RevealCollector $collector What the read path collected.
-	 * @param AuditTrailMapperInterface $mapper The trail, which owns the chain.
-	 * @param LoggerInterface $logger The logger.
+	 * @param RevealRecording           $recording What the read path collected, and the logger.
+	 * @param AuditTrailMapperInterface $mapper    The trail, which owns the chain.
 	 */
 	public function __construct(
-		private readonly RevealCollector $collector,
+		private readonly RevealRecording $recording,
 		private readonly AuditTrailMapperInterface $mapper,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -95,56 +91,87 @@ class RevealFlusher implements RevealFlusherInterface {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function flush(): int {
-		$overflowed = $this->collector->overflowed();
+		$collector = $this->recording->reveals;
+		if ($collector === null) {
+			return 0;
+		}
+
+		$pending = $this->takePending(collector: $collector);
+		if ($pending === []) {
+			return 0;
+		}
+
+		// See the class docblock: the reads have already happened, so a
+		// failure here is a recording problem and must not become an
+		// availability one.
+		return (new AuditRowWriter(mapper: $this->mapper, logger: $this->recording->logger))->write(
+			rows: $this->rowsFor(pending: $pending),
+			failure: '[RevealFlusher] Could not write the reveal entries; they are lost for this request'
+		);
+	}//end flush()
+
+	/**
+	 * Empty the collector, and say so when it overflowed before anything is written.
+	 *
+	 * @param RevealCollector $collector The request's collector.
+	 *
+	 * @return array<int, array<string, mixed>> The entries taken.
+	 */
+	private function takePending(RevealCollector $collector): array {
+		$overflowed = $collector->overflowed();
 
 		// TAKEN BEFORE ANYTHING CAN FAIL. `take()` empties the collector, so a
 		// flush that threw halfway after reading without taking would try the
 		// same rows again on the next flush of the same request and write the
 		// ones that did land a second time.
-		$pending = $this->collector->take();
-		if ($pending === []) {
-			return 0;
+		$pending = $collector->take();
+		if ($pending !== []) {
+			$this->reportOverflow(overflowed: $overflowed);
 		}
 
-		if ($overflowed === true) {
-			// Said out loud rather than inferred from a count nobody compares.
-			// A trail that is quietly incomplete is worse than one that names
-			// where it stopped.
-			$this->logger->error(
-				message: '[RevealFlusher] More reveals happened this request than the collector records; the trail for it is incomplete',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'bound' => RevealCollector::MAX_PER_REQUEST,
-				]
-			);
+		return $pending;
+	}//end takePending()
+
+	/**
+	 * Say at ERROR that the collector stopped recording, when it did.
+	 *
+	 * Said out loud rather than inferred from a count nobody compares. A trail
+	 * that is quietly incomplete is worse than one that names where it stopped.
+	 *
+	 * @param bool $overflowed Whether more reveals happened than the collector records.
+	 *
+	 * @return void
+	 */
+	private function reportOverflow(bool $overflowed): void {
+		if ($overflowed === false) {
+			return;
 		}
 
+		$this->recording->logger->error(
+			message: '[RevealFlusher] More reveals happened this request than the collector records; the trail for it is incomplete',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'bound' => RevealCollector::MAX_PER_REQUEST,
+			]
+		);
+	}//end reportOverflow()
+
+	/**
+	 * The collected reveals, as rows the mapper can seal.
+	 *
+	 * @param array<int, array<string, mixed>> $pending The entries taken from the collector.
+	 *
+	 * @return array<int, AuditTrail> The rows.
+	 */
+	private function rowsFor(array $pending): array {
 		$rows = [];
 		foreach ($pending as $entry) {
 			$rows[] = $this->rowFor(entry: $entry);
 		}
 
-		try {
-			$this->mapper->insertAuditTrails(entries: $rows, chunkSize: self::CHUNK);
-		} catch (Throwable $e) {
-			// See the class docblock: the reads have already happened, so a
-			// failure here is a recording problem and must not become an
-			// availability one.
-			$this->logger->error(
-				message: '[RevealFlusher] Could not write the reveal entries; they are lost for this request',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'entries' => count($rows),
-					'exception' => $e->getMessage(),
-				]
-			);
-			return 0;
-		}
-
-		return count($rows);
-	}//end flush()
+		return $rows;
+	}//end rowsFor()
 
 	/**
 	 * One collected reveal, as a row the mapper can seal.
@@ -169,6 +196,21 @@ class RevealFlusher implements RevealFlusherInterface {
 		$row->setUserName((string)($entry['user'] ?? ''));
 		$row->setCreated(new DateTime());
 
+		$this->placeRow(row: $row, entry: $entry);
+		$row->setChanged(self::changedFor(entry: $entry));
+
+		return $row;
+	}//end rowFor()
+
+	/**
+	 * Point the row at the object, schema and register the entry names, where it names them.
+	 *
+	 * @param AuditTrail           $row   The row being built.
+	 * @param array<string, mixed> $entry One entry from the collector.
+	 *
+	 * @return void
+	 */
+	private function placeRow(AuditTrail $row, array $entry): void {
 		$objectUuid = (string)($entry['object'] ?? '');
 		if ($objectUuid !== '') {
 			$row->setObjectUuid($objectUuid);
@@ -181,7 +223,18 @@ class RevealFlusher implements RevealFlusherInterface {
 		if (($entry['register'] ?? null) !== null) {
 			$row->setRegister((int)$entry['register']);
 		}
+	}//end placeRow()
 
+	/**
+	 * What the row records as changed: the property name, or the process run.
+	 *
+	 * Never the property's value; see rowFor().
+	 *
+	 * @param array<string, mixed> $entry One entry from the collector.
+	 *
+	 * @return array<string, int|string> The changed field.
+	 */
+	private static function changedFor(array $entry): array {
 		$changed = ['property' => (string)($entry['property'] ?? '')];
 
 		// D-3's process entry carries the run rather than an object, so the
@@ -193,8 +246,6 @@ class RevealFlusher implements RevealFlusherInterface {
 			unset($changed['property']);
 		}
 
-		$row->setChanged($changed);
-
-		return $row;
-	}//end rowFor()
+		return $changed;
+	}//end changedFor()
 }//end class

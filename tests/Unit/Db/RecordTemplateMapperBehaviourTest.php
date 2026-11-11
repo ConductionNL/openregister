@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Db\RecordTemplateMapper;
@@ -92,7 +93,7 @@ class RecordTemplateMapperBehaviourTest extends TestCase {
 	public function testFindCandidatesNarrowsToRegisterAndSchema(): void {
 		$this->queuedRows = [[['id' => 1], ['id' => 2]]];
 
-		$rows = $this->mapper()->findCandidates('anna', 'reg', 'sch');
+		$rows = $this->mapper()->findCandidates('anna', ListQuery::unbounded(filters: ['register' => 'reg', 'schema' => 'sch']));
 
 		$this->assertCount(2, $rows);
 		$log = $this->log();
@@ -112,7 +113,7 @@ class RecordTemplateMapperBehaviourTest extends TestCase {
 	public function testFindCandidatesWithoutScopeIsNotNarrowed(): void {
 		$this->queuedRows = [[]];
 
-		$this->assertSame([], $this->mapper()->findCandidates('anna', '', null));
+		$this->assertSame([], $this->mapper()->findCandidates('anna', ListQuery::unbounded(filters: ['register' => '', 'schema' => null])));
 		$log = $this->log();
 		$this->assertStringNotContainsString('eq(register', $log);
 		$this->assertStringNotContainsString('eq(schema', $log);

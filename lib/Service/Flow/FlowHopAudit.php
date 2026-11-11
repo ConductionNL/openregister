@@ -197,23 +197,38 @@ class FlowHopAudit {
 	 * @return array<string, mixed> The `changed` payload.
 	 */
 	private function summary(FlowRun $run, FlowRunStep $step): array {
-		$output = (array)($step->getOutput() ?? []);
-
 		return array_filter(
-			[
-				'flow' => $run->getFlowId(),
-				'organisation' => $run->getOrganisation(),
-				'subject' => $run->getSubjectUuid(),
-				'nodeType' => $step->getNodeType(),
-				'status' => $step->getStatus(),
-				'streamId' => $step->getStreamId(),
-				'durationMs' => $step->getDurationMs(),
-				'failed' => ($step->getError() !== null),
-				'itemsIn' => ($output['itemsIn'] ?? null),
-				'itemsOut' => ($output['itemsOut'] ?? null),
-				'checkId' => ($output['checkId'] ?? null),
-			],
+			array_merge(
+				[
+					'flow' => $run->getFlowId(),
+					'organisation' => $run->getOrganisation(),
+					'subject' => $run->getSubjectUuid(),
+				],
+				self::stepFacts(step: $step)
+			),
 			static fn ($value): bool => $value !== null
 		);
 	}//end summary()
+
+	/**
+	 * What the hop's step says about itself: its node type, status, stream, duration, failure and counts.
+	 *
+	 * @param FlowRunStep $step The step.
+	 *
+	 * @return array<string, mixed> The facts, nulls included.
+	 */
+	private static function stepFacts(FlowRunStep $step): array {
+		$output = (array)($step->getOutput() ?? []);
+
+		return [
+			'nodeType' => $step->getNodeType(),
+			'status' => $step->getStatus(),
+			'streamId' => $step->getStreamId(),
+			'durationMs' => $step->getDurationMs(),
+			'failed' => ($step->getError() !== null),
+			'itemsIn' => ($output['itemsIn'] ?? null),
+			'itemsOut' => ($output['itemsOut'] ?? null),
+			'checkId' => ($output['checkId'] ?? null),
+		];
+	}//end stepFacts()
 }//end class

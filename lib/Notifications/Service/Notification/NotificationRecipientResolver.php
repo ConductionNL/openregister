@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
 use OCP\IUserManager;
@@ -125,11 +126,26 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 		array $context = [],
 		array $roleGroups = [],
 	): array {
-		return $this->resolveFrom(
-			recipientsSpec: $recipientsSpec,
-			source: new RecipientSource(data: $data, object: $object, context: $context, roleGroups: $roleGroups)
-		);
+		$source = new RecipientSource(data: $data, object: $object, context: $context, roleGroups: $roleGroups);
+
+		return $this->resolveFromSource(recipientsSpec: $recipientsSpec, source: $source);
 	}//end resolveWithDiagnostics()
+
+	/**
+	 * Resolve a recipients spec against one source, and say which entries resolved to nobody.
+	 *
+	 * The outcome of {@see resolveWithDiagnostics()}, for a caller that holds the source.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param RecipientSource   $source         The object, its data, the trigger context and the role assignment.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	public function resolveFromSource(array $recipientsSpec, RecipientSource $source): array {
+		return $this->resolveFrom(recipientsSpec: $recipientsSpec, source: $source);
+	}//end resolveFromSource()
 
 	/**
 	 * Resolve a recipients spec against one source, with the entries that resolved to nobody.
@@ -356,44 +372,81 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
 	 */
 	private function expandGroup(string $gid, string $kind): array {
+		$members = $this->groupMemberUids(gid: $gid);
+		if (is_string($members) === true) {
+			return [
+				'uids' => [],
+				'unresolved' => [['kind' => $kind, 'id' => $gid, 'reason' => $members]],
+			];
+		}
+
+		// A real group with no members is not a fault: the members are resolved
+		// at dispatch, and an empty team is a quiet team, not a broken rule.
+		return ['uids' => $members, 'unresolved' => []];
+	}//end expandGroup()
+
+	/**
+	 * The uids of a group's members, or why they could not be read.
+	 *
+	 * @param string $gid The Nextcloud group id.
+	 *
+	 * @return array<int, string>|string The member uids, or the reason: `group-not-found` or `group-lookup-failed` (logged).
+	 */
+	private function groupMemberUids(string $gid): array|string {
+		$group = $this->findGroup(gid: $gid);
+		if (is_string($group) === true) {
+			return $group;
+		}
+
+		try {
+			return $this->memberUidsOf(group: $group);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[NotificationRecipientResolver] group "%s" member read failed: %s', $gid, $e->getMessage())
+			);
+			return 'group-lookup-failed';
+		}
+	}//end groupMemberUids()
+
+	/**
+	 * Look a group up, or say why it could not be had.
+	 *
+	 * @param string $gid The Nextcloud group id.
+	 *
+	 * @return IGroup|string The group, or the reason: `group-not-found` or `group-lookup-failed` (logged).
+	 */
+	private function findGroup(string $gid): IGroup|string {
 		try {
 			$group = $this->groupManager->get($gid);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf('[NotificationRecipientResolver] group "%s" lookup failed: %s', $gid, $e->getMessage())
 			);
-			return [
-				'uids' => [],
-				'unresolved' => [['kind' => $kind, 'id' => $gid, 'reason' => 'group-lookup-failed']],
-			];
+			return 'group-lookup-failed';
 		}
 
 		if ($group === null) {
-			return [
-				'uids' => [],
-				'unresolved' => [['kind' => $kind, 'id' => $gid, 'reason' => 'group-not-found']],
-			];
+			return 'group-not-found';
 		}
 
+		return $group;
+	}//end findGroup()
+
+	/**
+	 * The uids of a group's members, in the order the group lists them.
+	 *
+	 * @param IGroup $group The group.
+	 *
+	 * @return array<int, string> The member uids.
+	 */
+	private function memberUidsOf(IGroup $group): array {
 		$uids = [];
-		try {
-			foreach ($group->getUsers() as $user) {
-				$uids[] = $user->getUID();
-			}
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf('[NotificationRecipientResolver] group "%s" member read failed: %s', $gid, $e->getMessage())
-			);
-			return [
-				'uids' => [],
-				'unresolved' => [['kind' => $kind, 'id' => $gid, 'reason' => 'group-lookup-failed']],
-			];
+		foreach ($group->getUsers() as $user) {
+			$uids[] = $user->getUID();
 		}
 
-		// A real group with no members is not a fault: the members are resolved
-		// at dispatch, and an empty team is a quiet team, not a broken rule.
-		return ['uids' => $uids, 'unresolved' => []];
-	}//end expandGroup()
+		return $uids;
+	}//end memberUidsOf()
 
 	/**
 	 * Resolve the object's watchers, checking read at DISPATCH time.
@@ -428,34 +481,7 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 		}
 
 		try {
-			$watchers = $this->serverContainer->get(WatcherServiceInterface::class);
-			$uids = $watchers->watcherUids(objectUuid: (string)$object->getUuid());
-			if ($uids === []) {
-				return [];
-			}
-
-			$readable = $this->serverContainer->get(PermissionHandlerInterface::class)
-				->getReadableByUsers(object: $object);
-			if ($readable === []) {
-				return $uids;
-			}
-
-			$kept = [];
-			$lost = [];
-			foreach ($uids as $uid) {
-				if (in_array($uid, $readable, true) === true) {
-					$kept[] = $uid;
-					continue;
-				}
-
-				$lost[] = $uid;
-			}
-
-			if ($lost !== []) {
-				$watchers->dropWatchers(objectUuid: (string)$object->getUuid(), userIds: $lost);
-			}
-
-			return $kept;
+			return $this->readableWatchers(object: $object);
 		} catch (\Throwable $e) {
 			// Fail CLOSED: an unresolvable watcher list tells nobody rather than
 			// telling everybody.
@@ -465,6 +491,60 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 			return [];
 		}//end try
 	}//end resolveWatcherRecipients()
+
+	/**
+	 * The object's watchers who may still read it, dropping the subscriptions of those who lost read.
+	 *
+	 * @param ObjectEntity $object The triggering object.
+	 *
+	 * @return array<int, string> The watching uids that may still read the object; all of them when
+	 *                            the readable-user list is empty (no targeted audience).
+	 *
+	 * @throws \Throwable When the watchers or the read rule cannot be resolved.
+	 */
+	private function readableWatchers(ObjectEntity $object): array {
+		$watchers = $this->serverContainer->get(WatcherServiceInterface::class);
+		$uids = $watchers->watcherUids(objectUuid: (string)$object->getUuid());
+		if ($uids === []) {
+			return [];
+		}
+
+		$readable = $this->serverContainer->get(PermissionHandlerInterface::class)
+			->getReadableByUsers(object: $object);
+		if ($readable === []) {
+			return $uids;
+		}
+
+		$split = $this->splitByReadable(uids: $uids, readable: $readable);
+		if ($split['lost'] !== []) {
+			$watchers->dropWatchers(objectUuid: (string)$object->getUuid(), userIds: $split['lost']);
+		}
+
+		return $split['kept'];
+	}//end readableWatchers()
+
+	/**
+	 * Split watcher uids into those that may read the object and those that may not, keeping their order.
+	 *
+	 * @param array<int, string> $uids     The watching uids.
+	 * @param array<int, string> $readable The uids the object's read rule names.
+	 *
+	 * @return array{kept: array<int, string>, lost: array<int, string>}
+	 */
+	private function splitByReadable(array $uids, array $readable): array {
+		$kept = [];
+		$lost = [];
+		foreach ($uids as $uid) {
+			if (in_array($uid, $readable, true) === true) {
+				$kept[] = $uid;
+				continue;
+			}
+
+			$lost[] = $uid;
+		}
+
+		return ['kept' => $kept, 'lost' => $lost];
+	}//end splitByReadable()
 
 	/**
 	 * Verify that a uid corresponds to an actual Nextcloud user.
@@ -596,36 +676,53 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	 * ACL entries; each needs its own null-guard and uid extraction.
 	 */
 	private function resolveObjectAclRecipients(ObjectEntity $object, string $permission): array {
-		$uids = [];
-		$owner = $object->getOwner();
-		if (is_string($owner) === true && $owner !== '') {
-			$uids[] = $owner;
-		}
+		$uids = $this->aclOwner(object: $object);
 
 		if ($permission === 'manage') {
 			return $uids;
 		}
 
+		return $this->withAclGroupMembers(uids: $uids, object: $object);
+	}//end resolveObjectAclRecipients()
+
+	/**
+	 * The object's owner as a one-uid list, or none when it has no owner.
+	 *
+	 * @param ObjectEntity $object The object whose ACL should be read.
+	 *
+	 * @return array<int, string>
+	 */
+	private function aclOwner(ObjectEntity $object): array {
+		$owner = $object->getOwner();
+		if (is_string($owner) === true && $owner !== '') {
+			return [$owner];
+		}
+
+		return [];
+	}//end aclOwner()
+
+	/**
+	 * Append the members of the object's ACL groups; on a failure keep what was gathered and log it.
+	 *
+	 * @param array<int, string> $uids   The uids gathered so far.
+	 * @param ObjectEntity       $object The object whose ACL should be read.
+	 *
+	 * @return array<int, string>
+	 */
+	private function withAclGroupMembers(array $uids, ObjectEntity $object): array {
 		// Read permission: also include groups via getGroups(). The
 		// Entity base uses __call magic for accessors, so method_exists()
 		// is unreliable — fall through and let the magic call surface
 		// the value (or throw, which is caught below).
 		try {
-			$groupsRaw = $object->getGroups();
-			if (is_array($groupsRaw) === true) {
-				foreach ($groupsRaw as $gid) {
-					if (is_string($gid) === false || $gid === '') {
-						continue;
-					}
+			foreach ($this->aclGroupIds(object: $object) as $gid) {
+				$group = $this->groupManager->get($gid);
+				if ($group === null) {
+					continue;
+				}
 
-					$group = $this->groupManager->get($gid);
-					if ($group === null) {
-						continue;
-					}
-
-					foreach ($group->getUsers() as $user) {
-						$uids[] = $user->getUID();
-					}
+				foreach ($group->getUsers() as $user) {
+					$uids[] = $user->getUID();
 				}
 			}
 		} catch (\Throwable $e) {
@@ -635,7 +732,28 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 		}//end try
 
 		return $uids;
-	}//end resolveObjectAclRecipients()
+	}//end withAclGroupMembers()
+
+	/**
+	 * The non-empty string group ids on the object's ACL, in order.
+	 *
+	 * @param ObjectEntity $object The object whose ACL should be read.
+	 *
+	 * @return array<int, string>
+	 */
+	private function aclGroupIds(ObjectEntity $object): array {
+		$groupsRaw = $object->getGroups();
+		if (is_array($groupsRaw) === false) {
+			return [];
+		}
+
+		return array_values(
+			array_filter(
+				$groupsRaw,
+				static fn ($gid): bool => is_string($gid) === true && $gid !== ''
+			)
+		);
+	}//end aclGroupIds()
 
 	/**
 	 * Resolve recipients via a DI-tagged RecipientResolverInterface.

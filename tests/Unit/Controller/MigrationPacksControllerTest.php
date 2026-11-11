@@ -63,6 +63,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Service\MigrationPack\PackRevision;
 
 class MigrationPacksControllerTest extends TestCase {
 	use PassThroughL10nTrait;
@@ -131,7 +132,6 @@ class MigrationPacksControllerTest extends TestCase {
 	 */
 	private function controllerFor(IRequest $request, ?MigrationPackService $service = null): MigrationPacksController {
 		return MigrationPacksControllerFactory::create(
-			'openregister',
 			$request,
 			$service ?? $this->service,
 			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->logger),
@@ -295,7 +295,7 @@ class MigrationPacksControllerTest extends TestCase {
 		$this->setupUser('admin', true);
 		$refusal = new InvalidPackDefinitionException(['"version" must be a semver string']);
 		$this->service->method('create')->willThrowException($refusal);
-		$this->service->method('update')->willThrowException($refusal);
+		$this->service->method('revise')->willThrowException($refusal);
 		$this->service->method('importDefinition')->willThrowException($refusal);
 
 		$controller = $this->controller;
@@ -332,7 +332,7 @@ class MigrationPacksControllerTest extends TestCase {
 		$this->setupUser('admin', true);
 		$failure = new RuntimeException('SQLSTATE[HY000] secret-table-name');
 		$this->service->method('create')->willThrowException($failure);
-		$this->service->method('update')->willThrowException($failure);
+		$this->service->method('revise')->willThrowException($failure);
 		$this->service->method('delete')->willThrowException($failure);
 		$this->service->method('importDefinition')->willThrowException($failure);
 		$this->logger->expects($this->once())
@@ -417,7 +417,7 @@ class MigrationPacksControllerTest extends TestCase {
 		$this->setupUser('admin', true);
 		$missing = new DoesNotExistException('not found');
 		$this->service->method('find')->willThrowException($missing);
-		$this->service->method('update')->willThrowException($missing);
+		$this->service->method('revise')->willThrowException($missing);
 		$this->service->method('delete')->willThrowException($missing);
 
 		$response = $this->controller->$method(999);
@@ -439,7 +439,7 @@ class MigrationPacksControllerTest extends TestCase {
 		$this->setupUser('admin', true);
 		$pack = new MigrationPack();
 		$pack->setPackSlug('a-pack');
-		$this->service->expects($this->once())->method('update')->willReturn($pack);
+		$this->service->expects($this->once())->method('revise')->willReturn($pack);
 
 		$response = $this->controller->update(1);
 		$this->assertSame(200, $response->getStatus());
@@ -529,8 +529,8 @@ class MigrationPacksControllerTest extends TestCase {
 		settype($dispatchedId, 'integer');
 
 		$this->service->expects($this->once())
-			->method('update')
-			->with(5, $this->validDefinition())
+			->method('revise')
+			->with(5, new PackRevision($this->validDefinition()))
 			->willReturn($this->packEntity('stackiq-topdesk-module'));
 
 		$response = $this->controllerFor($request)->update($dispatchedId);
@@ -545,8 +545,8 @@ class MigrationPacksControllerTest extends TestCase {
 		);
 
 		$this->service->expects($this->once())
-			->method('update')
-			->with(5, $this->validDefinition())
+			->method('revise')
+			->with(5, new PackRevision($this->validDefinition()))
 			->willReturn($this->packEntity('stackiq-topdesk-module'));
 
 		$response = $this->controllerFor($request)->update($request->dispatchedInt('id'));
@@ -561,11 +561,10 @@ class MigrationPacksControllerTest extends TestCase {
 		);
 
 		$this->service->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				5,
-				$this->validDefinition(),
-				(new DateTimeImmutable('2026-10-12T10:00:00+00:00'))->getTimestamp()
+				new PackRevision($this->validDefinition(), (new DateTimeImmutable('2026-10-12T10:00:00+00:00'))->getTimestamp())
 			)
 			->willReturn($this->packEntity('stackiq-topdesk-module'));
 
@@ -581,8 +580,8 @@ class MigrationPacksControllerTest extends TestCase {
 		);
 
 		$this->service->expects($this->once())
-			->method('update')
-			->with(5, $this->validDefinition(), null)
+			->method('revise')
+			->with(5, new PackRevision($this->validDefinition(), null))
 			->willReturn($this->packEntity('stackiq-topdesk-module'));
 
 		$this->assertSame(200, $this->controllerFor($request)->update(5)->getStatus());
@@ -594,7 +593,7 @@ class MigrationPacksControllerTest extends TestCase {
 			['_route' => 'openregister.migrationPacks.update', 'id' => '5'],
 			['definition' => $this->validDefinition(), 'expectedUpdatedAt' => '2026-10-12T10:00:00+00:00']
 		);
-		$this->service->method('update')
+		$this->service->method('revise')
 			->willThrowException(new PackChangedException('Migration pack 5 was saved after 2026-10-12T10:00:00+00:00'));
 		$this->logger->expects($this->never())->method('info');
 
@@ -625,7 +624,7 @@ class MigrationPacksControllerTest extends TestCase {
 			['_route' => 'openregister.migrationPacks.update', 'id' => '5'],
 			['definition' => $this->validDefinition(), 'expectedUpdatedAt' => $expected]
 		);
-		$this->service->expects($this->never())->method('update');
+		$this->service->expects($this->never())->method('revise');
 
 		$response = $this->controllerFor($request)->update(5);
 
@@ -641,8 +640,8 @@ class MigrationPacksControllerTest extends TestCase {
 		);
 
 		$this->service->expects($this->once())
-			->method('update')
-			->with(5, $this->validDefinition())
+			->method('revise')
+			->with(5, new PackRevision($this->validDefinition()))
 			->willReturn($this->packEntity('stackiq-topdesk-module'));
 
 		// The dispatcher hands in 0 (the cast slug); the controller must still
@@ -657,7 +656,7 @@ class MigrationPacksControllerTest extends TestCase {
 		unset($body['id']);
 		$request = new MergingRequestFake(['_route' => 'openregister.migrationPacks.update', 'id' => '5'], $body);
 
-		$this->service->expects($this->never())->method('update');
+		$this->service->expects($this->never())->method('revise');
 
 		$response = $this->controllerFor($request)->update($request->dispatchedInt('id'));
 
@@ -676,7 +675,7 @@ class MigrationPacksControllerTest extends TestCase {
 			$this->validDefinition(['id' => '5'])
 		);
 
-		$this->service->expects($this->never())->method('update');
+		$this->service->expects($this->never())->method('revise');
 
 		$response = $this->controllerFor($request)->update($request->dispatchedInt('id'));
 
@@ -693,8 +692,8 @@ class MigrationPacksControllerTest extends TestCase {
 		);
 
 		$this->service->expects($this->once())
-			->method('update')
-			->with(5, $this->validDefinition(['id' => '5']))
+			->method('revise')
+			->with(5, new PackRevision($this->validDefinition(['id' => '5'])))
 			->willReturn($this->packEntity('5'));
 
 		$this->assertSame(200, $this->controllerFor($request)->update($request->dispatchedInt('id'))->getStatus());
@@ -736,7 +735,7 @@ class MigrationPacksControllerTest extends TestCase {
 
 	public function testUpdateRenamingABuiltinPackReturns422WithErrorCode(): void {
 		$this->setupUser('admin', true);
-		$this->service->method('update')
+		$this->service->method('revise')
 			->willThrowException(new BuiltinPackSlugLockedException('locked'));
 
 		$response = $this->controller->update(1);
@@ -760,7 +759,7 @@ class MigrationPacksControllerTest extends TestCase {
 	#[DataProvider('slugWrites')]
 	public function testATakenSlugAnswersItsOwnCodeWithoutEnglishDetails(string $method): void {
 		$this->setupUser('admin', true);
-		$this->service->method($method)
+		$this->service->method($method === 'update' ? 'revise' : $method)
 			->willThrowException(new PackSlugExistsException('stackiq-topdesk-module'));
 
 		$response = $method === 'create' ? $this->controller->create() : $this->controller->update(1);
@@ -774,7 +773,7 @@ class MigrationPacksControllerTest extends TestCase {
 
 	public function testUpdateLogsTheActorAndSlug(): void {
 		$this->setupUser('admin', true);
-		$this->service->method('update')->willReturn($this->packEntity('stackiq-topdesk-module'));
+		$this->service->method('revise')->willReturn($this->packEntity('stackiq-topdesk-module'));
 
 		$this->logger->expects($this->once())
 			->method('info')
@@ -792,7 +791,7 @@ class MigrationPacksControllerTest extends TestCase {
 
 	public function testUpdateFailureWritesNoAuditLine(): void {
 		$this->setupUser('admin', true);
-		$this->service->method('update')->willThrowException(new DoesNotExistException('not found'));
+		$this->service->method('revise')->willThrowException(new DoesNotExistException('not found'));
 		$this->logger->expects($this->never())->method('info');
 
 		$this->assertSame(404, $this->controller->update(1)->getStatus());

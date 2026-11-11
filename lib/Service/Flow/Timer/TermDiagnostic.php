@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use DateTimeImmutable;
 
 /**
  * Runs the term engine read-only and returns its working.
@@ -108,7 +109,7 @@ class TermDiagnostic implements TermDiagnosticInterface {
 		// The ENGINE'S roll, not a second one. Two implementations of the same
 		// walk would agree until the day they did not, and the diagnostic is
 		// the surface somebody would believe.
-		$rolled = $this->calculator->roll(moment: $landed, roll: $roll, calendar: $calendar);
+		$rolled = $this->calculator->roll(moment: $landed, rule: new RollRule(roll: $roll, calendar: $calendar));
 		$firesAt = $rolled['at'];
 
 		return [
@@ -159,10 +160,12 @@ class TermDiagnostic implements TermDiagnosticInterface {
 		foreach ($ladder as $index => $rung) {
 			$normalised = $this->calculator->validateSla(sla: $rung);
 			$firesAt = $this->calculator->add(
-				from: $anchor,
-				value: (float)$normalised['value'],
-				unit: $normalised['unit'],
-				calendar: $query->calendar
+				addition: new SlaAddition(
+					start: DateTimeImmutable::createFromInterface($anchor),
+					value: (float)$normalised['value'],
+					unit: $normalised['unit'],
+					calendar: $query->calendar
+				)
 			);
 
 			$rungs[] = [

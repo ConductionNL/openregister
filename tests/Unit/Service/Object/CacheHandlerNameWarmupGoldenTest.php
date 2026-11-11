@@ -172,7 +172,7 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 			$handler = $this->handler(['columns' => $columns]);
 			$method = (new ReflectionClass($handler))->getMethod('queryTableForNames');
 			$method->setAccessible(true);
-			return $method->invoke($handler, 'tbl', $uuids, $source);
+			return $method->invoke($handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'tbl', uuids: $uuids, source: $source));
 		};
 
 		return [
@@ -290,7 +290,7 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 			$record('acrossMagic', $uuids, $rest);
 			return self::answer($setup['acrossMagic'] ?? []);
 		});
-		$mapper->method('findAll')->willReturnCallback(fn () => self::answer($setup['findAll'] ?? []));
+		$mapper->method('findAllListed')->willReturnCallback(fn () => self::answer($setup['findAll'] ?? []));
 		$mapper->method('filterReadableUuids')->willReturn($setup['readable'] ?? []);
 
 		$container = $this->createMock(IAppContainer::class);

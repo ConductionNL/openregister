@@ -28,6 +28,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
+use OCA\OpenRegister\Controller\Support\ObjectTask;
 use OCA\OpenRegister\Controller\Support\TasksControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TaskInboxAudience;
@@ -38,7 +39,10 @@ use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskStateRules;
@@ -363,13 +367,10 @@ class TasksController extends Controller {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		return $this->onObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: fn (ObjectEntity $object): JSONResponse => $this->listing(
-				tasks: $this->taskService->getTasksForObject($object->getUuid())
-			),
-			failure: $this->listFailure(...)
-		);
+		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+		$action = fn (ObjectEntity $object): JSONResponse => $this->listing(tasks: $this->taskService->getTasksForObject($object->getUuid()));
+
+		return $this->listingOn(route: $route, action: $action);
 	}//end index()
 
 	/**
@@ -387,11 +388,7 @@ class TasksController extends Controller {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		return $this->onObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->createFor(...),
-			failure: fn (Exception $e): JSONResponse => $this->failure(e: $e, status: Http::STATUS_BAD_REQUEST)
-		);
+		return $this->creatingOn(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $this->createFor(...));
 	}//end create()
 
 	/**
@@ -410,11 +407,10 @@ class TasksController extends Controller {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function update(string $register, string $schema, string $id, string $taskId): JSONResponse {
-		return $this->onObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: fn (ObjectEntity $object): JSONResponse => $this->updateFor(object: $object, taskId: $taskId),
-			failure: $this->writeFailure(...)
-		);
+		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+		$action = fn (ObjectEntity $object): JSONResponse => $this->updateFor(object: $object, taskId: $taskId);
+
+		return $this->writingOn(route: $route, action: $action);
 	}//end update()
 
 	/**
@@ -433,26 +429,75 @@ class TasksController extends Controller {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function destroy(string $register, string $schema, string $id, string $taskId): JSONResponse {
-		return $this->onObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: fn (ObjectEntity $object): JSONResponse => $this->destroyFor(object: $object, taskId: $taskId),
-			failure: $this->writeFailure(...)
-		);
+		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+		$action = fn (ObjectEntity $object): JSONResponse => $this->destroyFor(object: $object, taskId: $taskId);
+
+		return $this->writingOn(route: $route, action: $action);
 	}//end destroy()
+
+	/**
+	 * List on the object; a failure other than an absent object is answered by listFailure().
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param callable        $action Receives the ObjectEntity.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function listingOn(ObjectLinkRoute $route, callable $action): JSONResponse {
+		try {
+			return $this->onObject(route: $route, action: $action);
+		} catch (Exception $e) {
+			return $this->listFailure(e: $e);
+		}
+	}//end listingOn()
+
+	/**
+	 * Create on the object; a failure other than an absent object is answered 400.
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param callable        $action Receives the ObjectEntity.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function creatingOn(ObjectLinkRoute $route, callable $action): JSONResponse {
+		try {
+			return $this->onObject(route: $route, action: $action);
+		} catch (Exception $e) {
+			return $this->failure(e: $e, status: Http::STATUS_BAD_REQUEST);
+		}
+	}//end creatingOn()
+
+	/**
+	 * Update or delete on the object; a failure other than an absent object is answered by writeFailure().
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param callable        $action Receives the ObjectEntity.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function writingOn(ObjectLinkRoute $route, callable $action): JSONResponse {
+		try {
+			return $this->onObject(route: $route, action: $action);
+		} catch (Exception $e) {
+			return $this->writeFailure(e: $e);
+		}
+	}//end writingOn()
 
 	/**
 	 * Resolve the object, then run the action on it; the object guard runs first.
 	 *
-	 * An absent object (null or DoesNotExistException) is answered 404 before
-	 * any task is touched; any other Exception goes to the verb's own mapping.
+	 * An absent object (null or DoesNotExistException, from the lookup or the
+	 * action) is answered 404 before any task is touched; any other Exception
+	 * goes to the caller, which maps it for its verb.
 	 *
-	 * @param ObjectLinkRoute $route   The object as the route names it.
-	 * @param callable        $action  Receives the ObjectEntity.
-	 * @param callable        $failure Maps an Exception to the response.
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param callable        $action Receives the ObjectEntity.
 	 *
 	 * @return JSONResponse The response.
+	 *
+	 * @throws Exception Any failure other than an absent object.
 	 */
-	private function onObject(ObjectLinkRoute $route, callable $action, callable $failure): JSONResponse {
+	private function onObject(ObjectLinkRoute $route, callable $action): JSONResponse {
 		try {
 			$object = $this->validateObject(route: $route);
 			if ($object === null) {
@@ -462,8 +507,6 @@ class TasksController extends Controller {
 			return $action($object);
 		} catch (DoesNotExistException $e) {
 			return $this->objectNotFound();
-		} catch (Exception $e) {
-			return $failure($e);
 		}
 	}//end onObject()
 
@@ -482,12 +525,9 @@ class TasksController extends Controller {
 			return new JSONResponse(data: ['error' => 'Task summary is required'], statusCode: Http::STATUS_BAD_REQUEST);
 		}
 
-		$task = $this->taskService->createTask(
-			registerId: (int)$object->getRegister(),
-			schemaId: (int)$object->getSchema(),
-			objectUuid: $object->getUuid(),
-			objectTitle: $object->getName() ?? $object->getUuid(),
-			data: $data
+		$task = $this->taskService->createObjectTask(
+			ref: new ObjectRef(register: (int)$object->getRegister(), schema: (int)$object->getSchema(), id: (string)$object->getUuid()),
+			draft: new LinkedTaskDraft(objectTitle: $object->getName() ?? $object->getUuid(), data: $data)
 		);
 
 		return new JSONResponse(data: $task, statusCode: Http::STATUS_CREATED);
@@ -508,10 +548,10 @@ class TasksController extends Controller {
 		$calendarId = ($data['calendarId'] ?? $this->calendarOf(object: $object, taskId: $taskId));
 
 		return $this->onOwnedTask(
-			object: $object,
-			taskId: $taskId,
-			calendarId: $calendarId,
-			operation: fn (): JSONResponse => new JSONResponse(data: $this->taskService->updateTask($calendarId, $taskId, $data))
+			task: new ObjectTask(object: $object, taskId: $taskId, calendarId: $calendarId),
+			operation: fn (): JSONResponse => new JSONResponse(
+				data: $this->taskService->changeTask(at: new TaskLocation(calendarId: $calendarId, uri: $taskId), data: $data)
+			)
 		);
 	}//end updateFor()
 
@@ -527,9 +567,7 @@ class TasksController extends Controller {
 		$calendarId = $this->calendarOf(object: $object, taskId: $taskId);
 
 		return $this->onOwnedTask(
-			object: $object,
-			taskId: $taskId,
-			calendarId: $calendarId,
+			task: new ObjectTask(object: $object, taskId: $taskId, calendarId: $calendarId),
 			operation: function () use ($calendarId, $taskId): JSONResponse {
 				$this->taskService->deleteTask($calendarId, $taskId);
 				return new JSONResponse(data: ['success' => true]);
@@ -540,19 +578,20 @@ class TasksController extends Controller {
 	/**
 	 * Run the operation only once the task is proven to belong to the object.
 	 *
-	 * @param ObjectEntity $object     The object.
-	 * @param string       $taskId     The task URI.
-	 * @param mixed        $calendarId The task's calendar, or null when unknown.
-	 * @param callable     $operation  The write.
+	 * @param ObjectTask $task      The object, the task URI and its calendar (null when unknown).
+	 * @param callable   $operation The write.
 	 *
 	 * @return JSONResponse The write's response, or 404 'Task not found'.
 	 */
-	private function onOwnedTask(ObjectEntity $object, string $taskId, mixed $calendarId, callable $operation): JSONResponse {
-		if ($calendarId === null) {
+	private function onOwnedTask(ObjectTask $task, callable $operation): JSONResponse {
+		if ($task->calendarId === null) {
 			return new JSONResponse(data: ['error' => 'Task not found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
-		$this->taskService->requireTaskOf((string)$object->getUuid(), (string)$calendarId, $taskId);
+		$this->taskService->requireTaskAt(
+			objectUuid: (string)$task->object->getUuid(),
+			at: new TaskLocation(calendarId: (string)$task->calendarId, uri: $task->taskId)
+		);
 
 		return $operation();
 	}//end onOwnedTask()

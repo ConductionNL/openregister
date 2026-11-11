@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Error;
 use OCA\OpenRegister\Controller\AccessLinkPageController;
+use OCA\OpenRegister\Controller\Support\AccessLinkPageControllerServices;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\Template\PublicTemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
@@ -41,10 +42,11 @@ class AccessLinkPageControllerTest extends TestCase {
 			->with('accessLinkAnchor', 'AnchorValueThatIsOpaque');
 
 		$controller = new AccessLinkPageController(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
-			initialState: $initialState,
-			l10n: $this->createMock(IL10N::class)
+			services: new AccessLinkPageControllerServices(
+				initialState: $initialState,
+				l10n: $this->createMock(IL10N::class)
+			)
 		);
 
 		try {

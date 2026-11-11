@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -34,6 +35,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\RegisterMapper
@@ -128,15 +130,15 @@ class RegisterMapperFindGoldenTest extends TestCase {
 		}
 
 		return new RegisterMapper(
-			$db,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$logger
+			db: $db,
+			tenancy: new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				container: $this->createMock(ContainerInterface::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: $logger
+			)
 		);
 	}//end makeMapper()
 }//end class

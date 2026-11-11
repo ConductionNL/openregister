@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,10 +37,12 @@ final class UserSettingsControllerServices {
 	 *
 	 * @param GitHubClientInterface $gitHubService GitHub service
 	 * @param LoggerInterface       $logger        Logger
+	 * @param IUserSession $userSession The user session.
 	 */
 	public function __construct(
 		public readonly GitHubClientInterface $gitHubService,
 		public readonly LoggerInterface $logger,
+		public readonly IUserSession $userSession,
 	) {
 	}//end __construct()
 }//end class

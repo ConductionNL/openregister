@@ -5,7 +5,8 @@
  *
  * Records every query-builder call of findAll() (and findLocalTenants()) with
  * an IS NOT NULL, an IS NULL, an integer and a string filter, with no filters
- * and with null filters. Re-record with UPDATE_GOLDEN=1.
+ * and with null filters. A ListQuery read expresses "no filter set" (the null
+ * set) as a ListQuery without filters. Re-record with UPDATE_GOLDEN=1.
  *
  * @category  Test
  * @package   OCA\OpenRegister\Tests\Unit\Db
@@ -24,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\ConsumerMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -43,6 +45,7 @@ use ReflectionNamedType;
  * @covers \OCA\OpenRegister\Db\SchemaMapper
  * @covers \OCA\OpenRegister\Db\SourceMapper
  * @covers \OCA\OpenRegister\Db\WebhookMapper
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses   \OCA\OpenRegister\Db\QueryPage
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
  */
@@ -53,7 +56,7 @@ class MapperColumnFiltersGoldenTest extends TestCase {
 
 	private static function sites(): array {
 		return [
-			'webhook findAll' => [WebhookMapper::class, 'findAll', []],
+			'webhook findAll' => [WebhookMapper::class, 'findAll', ['query' => ListQuery::class]],
 			'register findAll' => [RegisterMapper::class, 'findAll', ['_rbac' => false, '_multitenancy' => false]],
 			'organisation findAll' => [OrganisationMapper::class, 'findAll', []],
 			'organisation findLocalTenants' => [OrganisationMapper::class, 'findLocalTenants', []],
@@ -80,7 +83,7 @@ class MapperColumnFiltersGoldenTest extends TestCase {
 					continue;
 				}
 
-				$actual["{$site} / {$setName}"] = $this->read(class: $class, method: $method, args: ['filters' => $filters] + $extra);
+				$actual["{$site} / {$setName}"] = $this->read(class: $class, method: $method, args: self::argsFor(filters: $filters, extra: $extra));
 			}
 		}
 
@@ -103,12 +106,23 @@ class MapperColumnFiltersGoldenTest extends TestCase {
 	 */
 	public function testEveryMixedReadAppliesTheFilters(): void {
 		foreach (self::sites() as $site => [$class, $method, $extra]) {
-			$outcome = $this->read(class: $class, method: $method, args: ['filters' => self::filterSets()['mixed']] + $extra);
+			$outcome = $this->read(class: $class, method: $method, args: self::argsFor(filters: self::filterSets()['mixed'], extra: $extra));
 			$calls = preg_replace('/^#\d+ /', '', $outcome['queries']);
 			$this->assertContains('andWhere(isNotNull(a))', $calls, $site);
 			$this->assertContains('andWhere(isNull(b))', $calls, $site);
 		}
 	}//end testEveryMixedReadAppliesTheFilters()
+
+	/**
+	 * The call arguments for a filter set; a ListQuery read takes the filters as one unbounded ListQuery.
+	 */
+	private static function argsFor(?array $filters, array $extra): array {
+		if (($extra['query'] ?? null) === ListQuery::class) {
+			return ['query' => ListQuery::unbounded(filters: ($filters ?? []))];
+		}
+
+		return ['filters' => $filters] + $extra;
+	}//end argsFor()
 
 	private function read(string $class, string $method, array $args): array {
 		$this->queryLog = [];

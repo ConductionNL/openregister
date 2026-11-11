@@ -21,7 +21,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStateHandle;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -272,28 +274,40 @@ class FlowStateNode extends LogicNodeBase implements IFlowNode, FlowStateNodeInt
 	/**
 	 * Run the step.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
 	 * @throws InvalidArgumentException When flow state is unavailable.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$step = new FlowStateStep(state: $this->stateOf(context: $context), config: $config);
 
+		return $this->applyEach(step: $step, items: $items);
+	}//end execute()
+
+	/**
+	 * Apply the operation to every item, in order.
+	 *
+	 * @param FlowStateStep $step  The state handle and configuration.
+	 * @param array         $items The input items.
+	 *
+	 * @return array The output items.
+	 */
+	private function applyEach(FlowStateStep $step, array $items): array {
 		$output = [];
 		foreach ($items as $index => $item) {
 			$output[] = FlowItems::item(
 				json: $this->apply(step: $step, json: (array)($item['json'] ?? [])),
-				binary: (array)($item['binary'] ?? []),
-				fromItemIndex: (int)$index
+				options: new FlowItemOptions(binary: (array)($item['binary'] ?? []), fromItemIndex: (int)$index)
 			);
 		}
 
 		return $output;
-	}//end execute()
+	}//end applyEach()
 
 	/**
 	 * The run's flow-state handle.

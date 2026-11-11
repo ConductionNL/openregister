@@ -44,7 +44,9 @@ use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Controller\Support\ProcessingLogAccess;
 use OCA\OpenRegister\Controller\Support\ProcessingLogPolicy;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ProcessingLogReadScope;
+use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -199,16 +201,18 @@ class ProcessingLogController extends Controller {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	private function filtered(?string $organisationId, bool $includeConfidential): array {
-		return $this->services->logMapper->findFiltered(
-			filters: $this->filters(),
+		return $this->services->logMapper->findListed(
+			query: new ListQuery(
+				limit: $this->params->boundedInt(key: 'limit', default: 100, max: 1000),
+				offset: $this->params->boundedInt(key: 'offset', default: 0, max: 1000000),
+				filters: $this->filters()
+			),
 			scope: new ProcessingLogReadScope(
 				from: $this->dateParam(key: 'from'),
 				to: $this->dateParam(key: 'to'),
 				organisationId: $organisationId,
 				includeConfidential: $includeConfidential
-			),
-			limit: $this->params->boundedInt(key: 'limit', default: 100, max: 1000),
-			offset: $this->params->boundedInt(key: 'offset', default: 0, max: 1000000)
+			)
 		);
 	}//end filtered()
 
@@ -251,8 +255,8 @@ class ProcessingLogController extends Controller {
 			return $rangeError;
 		}
 
-		$entries = $this->services->logMapper->findBySubject(
-			idType: $subject['idType'], idValue: $subject['idValue'],
+		$entries = $this->services->logMapper->findForSubject(
+			subject: new ProcessingLogSubject(type: $subject['idType'], value: $subject['idValue']),
 			scope: new ProcessingLogReadScope(
 				from: $from, to: $to,
 				organisationId: $scope['organisationId'], includeConfidential: $scope['includeConfidential']

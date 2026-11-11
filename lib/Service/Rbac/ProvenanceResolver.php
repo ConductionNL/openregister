@@ -154,30 +154,23 @@ class ProvenanceResolver {
 	 * cascade resolves in and an answer that named a broader rule than the one
 	 * that actually decided would send an administrator to the wrong screen.
 	 *
-	 * @param array<int, string>              $actions    The verbs to report on, for the caller of forPrincipals().
-	 * @param array<string, mixed>            $blocks     Keys: object, schema, register, roleDefinitions.
-	 * @param array<string, array|null>       $denials    The denial per action, where there is one.
-	 * @param bool                            $enforced   Whether a denial changes an answer yet.
+	 * @param array<int, string> $actions The verbs to report on, for the caller of forPrincipals().
+	 * @param ProvenanceOptions  $options The cascade blocks, the denial per action and whether denials decide yet.
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function forActions(
-		array $actions,
-		array $blocks = [],
-		array $denials = [],
-		bool $enforced = true,
-	): array {
+	public function forActions(array $actions, ProvenanceOptions $options = new ProvenanceOptions()): array {
 		$provenance = [];
 		foreach ($actions as $action) {
-			$grant = $this->grantFor(action: $action, blocks: $blocks);
-			if ($enforced === true) {
-				$provenance[$action] = $this->withDenial(grant: $grant, denial: ($denials[$action] ?? null));
+			$grant = $this->grantFor(action: $action, blocks: $options->blocks);
+			if ($options->enforced === true) {
+				$provenance[$action] = $this->withDenial(grant: $grant, denial: ($options->denials[$action] ?? null));
 				continue;
 			}
 
-			$provenance[$action] = $this->withStagedDenial(grant: $grant, denial: ($denials[$action] ?? null));
+			$provenance[$action] = $this->withStagedDenial(grant: $grant, denial: ($options->denials[$action] ?? null));
 		}
 
 		return $provenance;
@@ -189,19 +182,28 @@ class ProvenanceResolver {
 	 * Typed, so a block that is neither an array nor null is refused here
 	 * rather than read as "not configured".
 	 *
-	 * @param array|null $objectAuthorization The object's own block.
-	 * @param array|null $schemaAuthorization The schema's block.
-	 * @param array|null $registerAuth        The register's block.
+	 * @param array<string, mixed> $blocks Keys: object, schema, register (each an array or null).
 	 *
 	 * @return array<string, array|null> Level name to block.
 	 */
-	private function levelsOf(?array $objectAuthorization, ?array $schemaAuthorization, ?array $registerAuth): array {
+	private function levelsOf(array $blocks): array {
 		return [
-			self::SOURCE_OBJECT => $objectAuthorization,
-			self::SOURCE_SCHEMA => $schemaAuthorization,
-			self::SOURCE_REGISTER => $registerAuth,
+			self::SOURCE_OBJECT => $this->typedBlock(block: ($blocks['object'] ?? null)),
+			self::SOURCE_SCHEMA => $this->typedBlock(block: ($blocks['schema'] ?? null)),
+			self::SOURCE_REGISTER => $this->typedBlock(block: ($blocks['register'] ?? null)),
 		];
 	}//end levelsOf()
+
+	/**
+	 * One level's block, refused with a TypeError when it is neither an array nor null.
+	 *
+	 * @param array|null $block The block.
+	 *
+	 * @return array|null The same block.
+	 */
+	private function typedBlock(?array $block): ?array {
+		return $block;
+	}//end typedBlock()
 
 	/**
 	 * Attach an enforced denial to a grant record: the denial is the answer.
@@ -281,11 +283,7 @@ class ProvenanceResolver {
 	 */
 	private function grantFor(string $action, array $blocks): array {
 		$configured = $this->configuredLevels(
-			levels: $this->levelsOf(
-				objectAuthorization: ($blocks['object'] ?? null),
-				schemaAuthorization: ($blocks['schema'] ?? null),
-				registerAuth: ($blocks['register'] ?? null)
-			)
+			levels: $this->levelsOf(blocks: $blocks)
 		);
 		$carrying = $this->rolesCarrying(action: $action, roleDefinitions: ($blocks['roleDefinitions'] ?? null));
 

@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolverInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateMove;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -38,19 +40,33 @@ use Psr\Log\LoggerInterface;
  */
 class LifecycleEditReader {
 	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Logger for failed lookups.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface       $schemaMapper       Schema lookup mapper.
+	 * @param SchemaReading                        $schemas            Schema lookup mapper and the logger for failed lookups.
 	 * @param LifecycleTransitionResolverInterface $transitionResolver Decides which declared transition an edit is.
-	 * @param LoggerInterface             $logger             Logger for failed lookups.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
+		SchemaReading $schemas,
 		private readonly LifecycleTransitionResolverInterface $transitionResolver,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $schemas->schemaMapper;
+		$this->logger = $schemas->logger;
 	}//end __construct()
 
 	/**
@@ -114,9 +130,7 @@ class LifecycleEditReader {
 	public function attemptOf(LifecycleEdit $edit): ?LifecycleAttempt {
 		$matched = $this->transitionResolver->resolve(
 			transitions: $edit->declaration->transitions(),
-			uuid: $edit->uuid(),
-			oldValue: $edit->getFromState(),
-			newValue: $edit->getToState()
+			move: new StateMove(uuid: $edit->uuid(), from: $edit->getFromState(), to: $edit->getToState())
 		);
 		if ($matched === null) {
 			return null;

@@ -23,12 +23,10 @@
 
 namespace OCA\OpenRegister\Mcp\Tool;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
-use ReflectionMethod;
 use RuntimeException;
 
 /**
@@ -50,26 +48,16 @@ use RuntimeException;
 class ObjectsTool extends AbstractTool {
 
 	/**
-	 * Object service
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private ObjectOperationsInterface $objectService;
-
-	/**
 	 * Constructor
 	 *
-	 * @param IUserSession $userSession User session service
-	 * @param LoggerInterface $logger Logger service
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 * @param ObjectOperationsInterface $objectService Object service
 	 */
 	public function __construct(
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		ObjectOperationsInterface $objectService,
+		ToolCallTrail $trail,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->objectService = $objectService;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**
@@ -144,7 +132,7 @@ class ObjectsTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		return $this->executeWithUser(functionName: $functionName, parameters: $parameters, userId: $userId);
+		return $this->executeWithUser(call: new ToolCall(functionName: $functionName, parameters: $parameters), userId: $userId);
 	}//end executeFunction()
 
 	/**
@@ -183,11 +171,11 @@ class ObjectsTool extends AbstractTool {
 		// volunteering an extra hint should not be a fatal.
 		$methodName = $this->functionMethod(functionName: $functionName);
 		$known      = [];
-		foreach ((new ReflectionMethod($this, $methodName))->getParameters() as $parameter) {
+		foreach ($this->bindingTarget(methodName: $methodName)->getParameters() as $parameter) {
 			$known[$parameter->getName()] = true;
 		}
 
-		return $this->$methodName(...array_intersect_key($parameters, $known));
+		return $this->callMethod(methodName: $methodName, arguments: array_intersect_key($parameters, $known));
 	}//end invokeFunction()
 
 	/**
@@ -207,76 +195,47 @@ class ObjectsTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function searchObjects(
-		int $limit = 20,
-		int $offset = 0,
-		?string $register = null,
-		?string $schema = null,
-		?string $query = null,
-	): array {
-		return $this->findPage(
-			filters: $this->searchFilters(scope: ['register' => $register, 'schema' => $schema], query: $query),
-			page: ['limit' => $limit, 'offset' => $offset]
-		);
+	public function searchObjects(int $limit = 20, int $offset = 0, ?string $register = null, ?string $schema = null, ?string $query = null): array {
+		return $this->findPage(query: new ListQuery(limit: $limit, offset: $offset, filters: ['register' => $register, 'schema' => $schema], search: $query));
 	}//end searchObjects()
 
 	/**
-	 * The search filters: the given register and schema, and a non-empty query.
+	 * The search filters: the query's non-null filters, and its search when it is not empty.
 	 *
-	 * @param array<string, string|null> $scope The register and schema; null leaves one out.
-	 * @param string|null                $query Search query
+	 * @param ListQuery $query The page, the register and schema filters, and the search.
 	 *
 	 * @return array<string, string> The filters.
 	 */
-	private function searchFilters(array $scope, ?string $query): array {
+	private function searchFilters(ListQuery $query): array {
 		$filters = [];
-		foreach ($scope as $key => $value) {
+		foreach ($query->filters as $key => $value) {
 			if ($value !== null) {
 				$filters[$key] = $value;
 			}
 		}
 
-		if ($query !== null && $query !== '') {
-			$filters['_search'] = $query;
+		if ($query->search !== null && $query->search !== '') {
+			$filters['_search'] = $query->search;
 		}
 
 		return $filters;
 	}//end searchFilters()
 
 	/**
-	 * Find one page of objects matching the filters, with the view filters applied.
+	 * Find one page of objects matching the query, with the view filters applied.
 	 *
-	 * @param array<string, string> $filters The filters.
-	 * @param array<string, int>    $page    The `limit` and `offset`.
+	 * @param ListQuery $query The page, the register and schema filters, and the search.
 	 *
 	 * @return (mixed|string|true)[] Result with list of objects
 	 *
 	 * @psalm-return array{success: true, message: string, data: mixed}
 	 */
-	private function findPage(array $filters, array $page): array {
-		$filters = $this->applyViewFilters(params: $filters);
-
-		$result = $this->objectService->findAll(
-			config: [
-				'limit' => $page['limit'],
-				'offset' => $page['offset'],
-				'filters' => $filters,
-			]
-		);
+	private function findPage(ListQuery $query): array {
+		$result = $this->findObjects(query: $query);
 
 		$objectList = array_map(
-			function (ObjectEntity $object): array {
-				return [
-					'id' => $object->getId(),
-					'uuid' => $object->getUuid(),
-					'register' => $object->getRegister(),
-					'schema' => $object->getSchema(),
-					'data' => $object->getObject(),
-					'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
-					'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
-				];
-			},
-			$result['results'] ?? []
+			static fn (ObjectEntity $object): array => self::objectSummary(object: $object),
+			($result['results'] ?? [])
 		);
 
 		return $this->formatSuccess(
@@ -287,6 +246,44 @@ class ObjectsTool extends AbstractTool {
 			message: sprintf('Found %d objects', count($objectList))
 		);
 	}//end findPage()
+
+	/**
+	 * Find one page of objects matching the query and the view's filters.
+	 *
+	 * @param ListQuery $query The page and search terms.
+	 *
+	 * @return array The object service's result, with `results` and `total`.
+	 */
+	private function findObjects(ListQuery $query): array {
+		$filters = $this->applyViewFilters(params: $this->searchFilters(query: $query));
+
+		return $this->objectService->findAll(
+			config: [
+				'limit' => $query->limit,
+				'offset' => $query->offset,
+				'filters' => $filters,
+			]
+		);
+	}//end findObjects()
+
+	/**
+	 * The summary of one object a listing returns.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function objectSummary(ObjectEntity $object): array {
+		return [
+			'id' => $object->getId(),
+			'uuid' => $object->getUuid(),
+			'register' => $object->getRegister(),
+			'schema' => $object->getSchema(),
+			'data' => $object->getObject(),
+			'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
+			'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
+		];
+	}//end objectSummary()
 
 	/**
 	 * Get a specific object
@@ -309,28 +306,34 @@ class ObjectsTool extends AbstractTool {
 			throw new RuntimeException("Object with id {$id} not found.");
 		}
 
-		return $this->formatSuccess(
-			data: [
-				'id' => $object->getId(),
-				'uuid' => $object->getUuid(),
-				'register' => $object->getRegister(),
-				'schema' => $object->getSchema(),
-				'data' => $object->getObject(),
-				'organisation' => $object->getOrganisation(),
-				'owner' => $object->getOwner(),
-				'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
-				'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
-			],
-			message: 'Object retrieved successfully'
-		);
+		return $this->formatSuccess(data: self::objectDetails(object: $object), message: 'Object retrieved successfully');
 	}//end getObject()
+
+	/**
+	 * The full row of one object: its identity, place, data, ownership and dates.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function objectDetails(ObjectEntity $object): array {
+		return [
+			'id' => $object->getId(),
+			'uuid' => $object->getUuid(),
+			'register' => $object->getRegister(),
+			'schema' => $object->getSchema(),
+			'data' => $object->getObject(),
+			'organisation' => $object->getOrganisation(),
+			'owner' => $object->getOwner(),
+			'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
+			'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
+		];
+	}//end objectDetails()
 
 	/**
 	 * Create a new object
 	 *
-	 * @param string $register Register identifier
-	 * @param string $schema Schema identifier
-	 * @param array $data Object data
+	 * @param CreateObjectCommand $command The register and schema identifiers and the object data
 	 *
 	 * @return (mixed|string|true)[] Result with created object
 	 *
@@ -340,8 +343,8 @@ class ObjectsTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createObject(string $register, string $schema, array $data): array {
-		return $this->saveNew(scope: ['register' => $register, 'schema' => $schema], data: $data);
+	public function createObject(CreateObjectCommand $command): array {
+		return $this->saveNew(scope: ['register' => $command->register, 'schema' => $command->schema], data: $command->data);
 	}//end createObject()
 
 	/**

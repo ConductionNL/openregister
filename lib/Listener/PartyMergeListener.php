@@ -43,6 +43,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Listener\Support\PartyCarryOver;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -125,30 +126,25 @@ class PartyMergeListener implements IEventListener {
 			return;
 		}
 
-		$this->carryOver(
-			survivorUuid: $event->getSurvivorUuid(),
-			mergedFromUuids: $event->getMergedFromUuids(),
-			operationId: $event->getMergeOperationId()
-		);
+		$this->carryOver(event: $event);
 	}//end apply()
 
 	/**
 	 * Move every role the merged-away parties held onto the survivor.
 	 *
-	 * @param string $survivorUuid The surviving party.
-	 * @param array<int, string> $mergedFromUuids The parties merged away.
-	 * @param string $operationId The merge operation.
+	 * @param ObjectsMergedEvent $event The merge event: survivor, parties merged away and operation.
 	 *
 	 * @return void
 	 */
-	private function carryOver(string $survivorUuid, array $mergedFromUuids, string $operationId): void {
+	private function carryOver(ObjectsMergedEvent $event): void {
+		$survivorUuid = $event->getSurvivorUuid();
 		$definition = $this->survivorDefinition(survivorUuid: $survivorUuid);
 		if ($definition === null) {
 			return;
 		}
 
-		foreach ($mergedFromUuids as $fromUuid) {
-			$step = new PartyCarryOver(survivorUuid: $survivorUuid, fromUuid: $fromUuid, operationId: $operationId, definition: $definition);
+		foreach ($event->getMergedFromUuids() as $fromUuid) {
+			$step = new PartyCarryOver(survivorUuid: $survivorUuid, fromUuid: $fromUuid, operationId: $event->getMergeOperationId(), definition: $definition);
 			$this->carryOverOne(step: $step);
 		}
 	}//end carryOver()
@@ -195,9 +191,11 @@ class PartyMergeListener implements IEventListener {
 	 */
 	private function carryLink(ContactLink $link, PartyCarryOver $step): void {
 		$held = $this->links->findByObjectContactAndRole(
-			objectUuid: (string)($link->getObjectUuid() ?? ''),
-			contactUid: ContactLink::partyUid(partyUuid: $step->survivorUuid),
-			role: $link->getRole()
+			ref: new PersonLinkRef(
+				objectUuid: (string)($link->getObjectUuid() ?? ''),
+				contactUid: ContactLink::partyUid(partyUuid: $step->survivorUuid),
+				role: $link->getRole()
+			)
 		);
 
 		if ($held !== null) {
@@ -205,7 +203,8 @@ class PartyMergeListener implements IEventListener {
 			// is the duplicate the merge exists to remove. Absorb the
 			// losing row into the one that stays, so the reversal can put
 			// it back and the unique key is never violated.
-			$this->absorb(into: $held, loser: $link, step: $step);
+			$this->absorb(into: $held, memo: self::absorbedMemo(loser: $link, step: $step));
+			$this->links->delete($link);
 			return;
 		}
 
@@ -229,22 +228,31 @@ class PartyMergeListener implements IEventListener {
 	}//end moveLink()
 
 	/**
-	 * Record a losing duplicate on the link that stays, then remove it.
+	 * Record a losing duplicate on the link that stays; the caller then removes the duplicate.
 	 *
-	 * @param ContactLink    $into  The survivor's link on that object and role.
-	 * @param ContactLink    $loser The merged-away party's link.
-	 * @param PartyCarryOver $step  The party carried over.
+	 * @param ContactLink          $into The survivor's link on that object and role.
+	 * @param array<string, mixed> $memo The absorbed memo, from {@see self::absorbedMemo()}.
 	 *
 	 * @return void
 	 */
-	private function absorb(ContactLink $into, ContactLink $loser, PartyCarryOver $step): void {
-		$memo = $step->memo(mode: 'absorbed');
-		$memo['absorbed'] = array_merge(self::placementOf(link: $loser), self::detailsOf(link: $loser));
-
+	private function absorb(ContactLink $into, array $memo): void {
 		$into->setMetadata(self::withMemo(metadata: $into->getMetadata(), memo: $memo));
 		$this->links->update($into);
-		$this->links->delete($loser);
 	}//end absorb()
+
+	/**
+	 * The memo recording an absorbed duplicate, with the full snapshot a reversal needs.
+	 *
+	 * @param ContactLink    $loser The merged-away party's link.
+	 * @param PartyCarryOver $step  The party carried over.
+	 *
+	 * @return array<string, mixed> The memo.
+	 */
+	private static function absorbedMemo(ContactLink $loser, PartyCarryOver $step): array {
+		$memo = $step->memo(mode: 'absorbed');
+		$memo['absorbed'] = array_merge(self::placementOf(link: $loser), self::detailsOf(link: $loser));
+		return $memo;
+	}//end absorbedMemo()
 
 	/**
 	 * Where an absorbed link sat: its object, register, schema, role and contact.
@@ -304,31 +312,34 @@ class PartyMergeListener implements IEventListener {
 			return;
 		}
 
-		$this->saveUnion(survivor: $survivor, loser: $loser, step: $step);
+		$run = new PartyAddressUnionRun();
+		$run->survivor = $survivor;
+		$run->loser = $loser;
+		$run->step = $step;
+		$this->saveUnion(run: $run);
 	}//end unionAddresses()
 
 	/**
 	 * Save the survivor with the loser's new addresses added, when there are any.
 	 *
-	 * @param ObjectEntity   $survivor The surviving party.
-	 * @param ObjectEntity   $loser    The party merged away.
-	 * @param PartyCarryOver $step     The party carried over.
+	 * @param PartyAddressUnionRun $run The survivor, the party merged away and the carry-over.
 	 *
 	 * @return void
 	 */
-	private function saveUnion(ObjectEntity $survivor, ObjectEntity $loser, PartyCarryOver $step): void {
-		$united = $this->unitedAddresses(survivor: $survivor, loser: $loser, definition: $step->definition);
+	private function saveUnion(PartyAddressUnionRun $run): void {
+		$united = $this->unitedAddresses(run: $run);
 		if ($united === null) {
 			return;
 		}
 
+		$survivor = $run->survivor;
 		$data = $survivor->getObject();
-		$data[$step->definition->addressesProperty()] = $united;
+		$data[$run->step->definition->addressesProperty()] = $united;
 		$this->objects->saveObject(
 			object: $data,
 			register: $survivor->getRegister(),
 			schema: $survivor->getSchema(),
-			uuid: $step->survivorUuid
+			uuid: $run->step->survivorUuid
 		);
 	}//end saveUnion()
 
@@ -336,22 +347,21 @@ class PartyMergeListener implements IEventListener {
 	 * The survivor's stored addresses followed by the loser's addresses it
 	 * does not hold yet, or null when the loser adds none.
 	 *
-	 * @param ObjectEntity    $survivor   The surviving party.
-	 * @param ObjectEntity    $loser      The party merged away.
-	 * @param PartyDefinition $definition The survivor's party declaration.
+	 * @param PartyAddressUnionRun $run The survivor, the party merged away and the carry-over.
 	 *
 	 * @return array<int, mixed>|null The united address list.
 	 */
-	private function unitedAddresses(ObjectEntity $survivor, ObjectEntity $loser, PartyDefinition $definition): ?array {
+	private function unitedAddresses(PartyAddressUnionRun $run): ?array {
+		$definition = $run->step->definition;
 		$added = self::newAddresses(
-			held: $this->addressKeys(party: $survivor, definition: $definition),
-			candidates: $this->parties->addresses(party: $loser, definition: $definition)
+			held: $this->addressKeys(party: $run->survivor, definition: $definition),
+			candidates: $this->parties->addresses(party: $run->loser, definition: $definition)
 		);
 		if ($added === []) {
 			return null;
 		}
 
-		$existing = ($survivor->getObject()[$definition->addressesProperty()] ?? []);
+		$existing = ($run->survivor->getObject()[$definition->addressesProperty()] ?? []);
 		if (is_array($existing) === false) {
 			$existing = [];
 		}

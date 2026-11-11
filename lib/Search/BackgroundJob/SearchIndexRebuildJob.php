@@ -24,11 +24,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
-use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
-use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
-use OCP\AppFramework\Utility\ITimeFactory;
-use RuntimeException;
+use OCA\OpenRegister\BackgroundJob\RecordedJobRuntime;
 use OCA\OpenRegister\BackgroundJob\RecordedQueuedJob;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
+use RuntimeException;
 
 /**
  * Rebuilds the search index and leaves a run row behind.
@@ -50,16 +50,14 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory           $time     Time factory for the parent job class.
-	 * @param JobRunRecorderInterface         $recorder The wrapper that writes the run row.
-	 * @param SearchIndexMaintenance $index    The rebuild itself.
+	 * @param RecordedJobRuntime     $runtime The scheduler clock and the recorder that writes the run row.
+	 * @param SearchIndexMaintenance $index   The rebuild itself.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		JobRunRecorderInterface $recorder,
+		RecordedJobRuntime $runtime,
 		private readonly SearchIndexMaintenance $index,
 	) {
-		parent::__construct(time: $time, recorder: $recorder);
+		parent::__construct(time: $runtime->time, recorder: $runtime->recorder);
 
 	}//end __construct()
 
@@ -75,14 +73,39 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	protected function runRecorded(mixed $argument): void {
+		$pass   = new SearchIndexPass(apply: true, progress: null);
+		$report = $this->index->rebuild(registerId: self::registerIdOf(argument: $argument), pass: $pass);
+
+		self::assertRebuilt(report: $report);
+	}//end runRecorded()
+
+	/**
+	 * The register a rebuild is limited to; null for every register.
+	 *
+	 * @param mixed $argument The job arguments.
+	 *
+	 * @return int|null
+	 */
+	private static function registerIdOf(mixed $argument): ?int {
 		$registerId = null;
 
 		if (is_array($argument) === true && isset($argument['registerId']) === true) {
 			$registerId = (int)$argument['registerId'];
 		}
 
-		$report = $this->index->rebuild(registerId: $registerId, apply: true);
+		return $registerId;
+	}//end registerIdOf()
 
+	/**
+	 * Fail the run when the rebuild was refused or left failed indexes.
+	 *
+	 * @param array<string, mixed> $report The rebuild report.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the rebuild did not succeed.
+	 */
+	private static function assertRebuilt(array $report): void {
 		if (($report['state'] ?? null) === 'refused') {
 			throw new RuntimeException((string)($report['reason'] ?? 'The rebuild was refused.'));
 		}
@@ -92,6 +115,5 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 				'The rebuild finished with '.(int)$report['failed'].' failed index(es).'
 			);
 		}
-
-	}//end runRecorded()
+	}//end assertRebuilt()
 }//end class

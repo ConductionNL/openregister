@@ -51,6 +51,9 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
 
 /**
  * Golden outcomes of FlowRunController's reads and signal, and FlowTestRunController::test().
@@ -149,7 +152,6 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 	 */
 	private function testRuns(): FlowTestRunController {
 		return FlowTestRunControllerFactory::create(
-			appName: 'openregister',
 			request: $this->request,
 			runner: $this->runner,
 			resolvers: $this->resolvers,
@@ -371,7 +373,7 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 		$this->params = ['flowId' => 'flow-1'];
 		$this->flows->method('find')->willThrowException(new \RuntimeException('gone'));
 		$this->resolvers->expects($this->never())->method('resolveFlow');
-		$this->runner->expects($this->never())->method('queue');
+		$this->runner->expects($this->never())->method('queueRun');
 
 		$this->assertSame(404, $this->testRuns()->test()->getStatus());
 	}
@@ -383,13 +385,12 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 		$run = $this->suspendedRun();
 		$this->flows->method('find')->willReturn($flow);
 		$this->resolvers->method('resolveFlow')->with('flow-1')->willReturn(['id' => 'flow-1']);
-		$this->runner->expects($this->once())->method('queue')
-			->with('flow-1', [], 'test', ['pins' => []], 'alice')->willReturn($run);
-		$this->runner->expects($this->once())->method('execute')->willReturnCallback(
-			function (...$positional) use ($run): FlowRun {
-				$args = $this->named(FlowRunService::class, 'execute', $positional);
-				$this->assertNull($args['seedItems']);
-				$this->assertNull($args['startAt']);
+		$this->runner->expects($this->once())->method('queueRun')
+			->with('flow-1', $this->equalTo(new FlowRunQueueOptions(subject: [], trigger: 'test', context: ['pins' => []], user: 'alice')))->willReturn($run);
+		$this->runner->expects($this->once())->method('executePass')->willReturnCallback(
+			function (FlowRunPass $pass, FlowRunOrigin $origin) use ($run): FlowRun {
+				$this->assertNull($origin->items);
+				$this->assertNull($origin->startAt);
 				return $run;
 			}
 		);
@@ -404,14 +405,13 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 		$run = $this->suspendedRun();
 		$this->flows->method('find')->willReturn($flow);
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1']);
-		$this->runner->method('queue')->with('flow-1', [], 'test', ['pins' => ['n1' => [1]]], 'alice')->willReturn($run);
+		$this->runner->method('queueRun')->with('flow-1', $this->equalTo(new FlowRunQueueOptions(subject: [], trigger: 'test', context: ['pins' => ['n1' => [1]]], user: 'alice')))->willReturn($run);
 		$this->runner->expects($this->once())->method('seedItemsFrom')->with([['json' => ['a' => 1]]])
 			->willReturnCallback(static fn (mixed $value): array => FlowItems::normalise(value: $value));
-		$this->runner->expects($this->once())->method('execute')->willReturnCallback(
-			function (...$positional) use ($run): FlowRun {
-				$args = $this->named(FlowRunService::class, 'execute', $positional);
-				$this->assertIsArray($args['seedItems']);
-				$this->assertNotEmpty($args['seedItems']);
+		$this->runner->expects($this->once())->method('executePass')->willReturnCallback(
+			function (FlowRunPass $pass, FlowRunOrigin $origin) use ($run): FlowRun {
+				$this->assertIsArray($origin->items);
+				$this->assertNotEmpty($origin->items);
 				return $run;
 			}
 		);

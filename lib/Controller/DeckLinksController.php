@@ -30,14 +30,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Support\DeckLinksControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\DeckPlacement;
 use OCA\OpenRegister\Service\DeckLinkServiceInterface;
 use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -76,16 +80,14 @@ class DeckLinksController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param DeckLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		DeckLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->deckLinkService = $services->deckLinkService;
 		$this->objectService = $services->objectService;
 		$this->settingsService = $services->settingsService;
@@ -106,15 +108,26 @@ class DeckLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * List linked Deck cards for an object: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
 		if ($this->deckLinkService->isDeckAvailable() === false) {
 			return $this->appNotInstalled(appName: 'Nextcloud Deck');
 		}
 
 		return $this->listLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->deckLinkService->getLinkedCards($object->getUuid()))
 		);
-	}//end index()
+	}//end indexFor()
 
 	/**
 	 * Link an existing Deck card.
@@ -133,12 +146,23 @@ class DeckLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end link()
+
+	/**
+	 * Link an existing Deck card: the body of link() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkFor(ObjectRef $ref): JSONResponse {
 		if ($this->deckLinkService->isDeckAvailable() === false) {
 			return $this->appNotInstalled(appName: 'Nextcloud Deck');
 		}
 
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object): JSONResponse {
 				$cardId = (int)$this->request->getParam('cardId', 0);
 				if ($cardId === 0) {
@@ -153,7 +177,7 @@ class DeckLinksController extends Controller {
 				return new JSONResponse($link->jsonSerialize(), 201);
 			}
 		);
-	}//end link()
+	}//end linkFor()
 
 	/**
 	 * Create a new Deck card and link it.
@@ -178,13 +202,24 @@ class DeckLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
+		return $this->createNewFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end createNew()
+
+	/**
+	 * Create a new Deck card and link it: the body of createNew() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createNewFor(ObjectRef $ref): JSONResponse {
 		if ($this->deckLinkService->isDeckAvailable() === false) {
 			return $this->appNotInstalled(appName: 'Nextcloud Deck');
 		}
 
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object) use ($schema): JSONResponse {
+			route: $this->routeOf(ref: $ref),
+			action: function (ObjectEntity $object) use ($ref): JSONResponse {
 				$boardId = (int)$this->request->getParam('boardId', 0);
 				$stackId = (int)$this->request->getParam('stackId', 0);
 				$title = (string)$this->request->getParam('title', '');
@@ -218,15 +253,14 @@ class DeckLinksController extends Controller {
 
 				// AD-1: persist sticky schema-level default after each successful create.
 				$this->settingsService->setDeckDefault(
-					schemaSlug: $schema,
-					boardId: $boardId,
-					stackId: $stackId,
+					schemaSlug: (string)$ref->schema,
+					placement: new DeckPlacement(boardId: $boardId, stackId: $stackId),
 				);
 
 				return new JSONResponse($link->jsonSerialize(), 201);
 			}
 		);
-	}//end createNew()
+	}//end createNewFor()
 
 	/**
 	 * Unlink a card.
@@ -244,19 +278,31 @@ class DeckLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $cardId): JSONResponse {
+		return $this->destroyFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id), cardId: $cardId);
+	}//end destroy()
+
+	/**
+	 * Unlink a card: the body of destroy() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string $cardId Deck card id (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyFor(ObjectRef $ref, string $cardId): JSONResponse {
 		if ($this->deckLinkService->isDeckAvailable() === false) {
 			return $this->appNotInstalled(appName: 'Nextcloud Deck');
 		}
 
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object) use ($cardId): JSONResponse {
 				$this->deckLinkService->unlinkCard($object->getUuid(), (int)$cardId);
 
 				return new JSONResponse(['success' => true]);
 			}
 		);
-	}//end destroy()
+	}//end destroyFor()
 
 	/**
 	 * List Deck boards visible to the current user.
@@ -358,8 +404,7 @@ class DeckLinksController extends Controller {
 
 		$this->settingsService->setDeckDefault(
 			schemaSlug: $schema,
-			boardId: $boardId,
-			stackId: $stackId,
+			placement: new DeckPlacement(boardId: $boardId, stackId: $stackId),
 		);
 
 		return new JSONResponse(['boardId' => $boardId, 'stackId' => $stackId]);
@@ -379,19 +424,17 @@ class DeckLinksController extends Controller {
 	 * @return JSONResponse
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if ($code === 409) {
-			return new JSONResponse(['error' => $exception->getMessage()], 409);
-		}
-
-		if ($code === 404) {
-			return new JSONResponse(['error' => $exception->getMessage()], 404);
-		}
-
-		if ($code === 503) {
-			return new JSONResponse(['error' => $exception->getMessage()], 503);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [404, 409, 503]);
 	}//end mapException()
+
+	/**
+	 * The link route of the object a route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return ObjectLinkRoute The route the link traits resolve.
+	 */
+	private function routeOf(ObjectRef $ref): ObjectLinkRoute {
+		return new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end routeOf()
 }//end class

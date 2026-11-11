@@ -28,7 +28,9 @@ use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Controller\Support\AddressedObject;
 use OCA\OpenRegister\Notifications\Controller\Support\NotePath;
+use OCA\OpenRegister\Notifications\Controller\Support\NoteStep;
 use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
+use OCA\OpenRegister\Notifications\Controller\Support\NoteUpdate;
 use OCA\OpenRegister\Notifications\Controller\Support\ObjectNote;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
@@ -40,6 +42,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
 
 /**
  * NotesController handles note operations for objects in registers.
@@ -114,12 +117,25 @@ class NotesController extends Controller {
 		string $schema,
 		string $id,
 	): JSONResponse {
-		return $this->onObject(
-			path: new NotePath(register: $register, schema: $schema, id: $id),
-			action: fn (ObjectEntity $object): JSONResponse => $this->listNotes(object: $object),
-			failure: $this->failureWith(status: 500)
-		);
+		return $this->notesAt(path: new NotePath(register: $register, schema: $schema, id: $id));
 	}//end index()
+
+	/**
+	 * The notes on the object at a route path.
+	 *
+	 * @param NotePath $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function notesAt(NotePath $path): JSONResponse {
+		return $this->onObject(
+			path: $path,
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->listNotes(object: $object),
+				failure: $this->failureWith(status: 500)
+			)
+		);
+	}//end notesAt()
 
 	/**
 	 * Create a new note on a specific object.
@@ -140,14 +156,25 @@ class NotesController extends Controller {
 		string $schema,
 		string $id,
 	): JSONResponse {
-		$path = new NotePath(register: $register, schema: $schema, id: $id);
+		return $this->createAt(path: new NotePath(register: $register, schema: $schema, id: $id));
+	}//end create()
 
+	/**
+	 * Add a note to the object at a route path.
+	 *
+	 * @param NotePath $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function createAt(NotePath $path): JSONResponse {
 		return $this->onObject(
 			path: $path,
-			action: fn (ObjectEntity $object): JSONResponse => $this->createOn(target: new AddressedObject(object: $object, path: $path)),
-			failure: $this->failureWith(status: 400)
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->createOn(target: new AddressedObject(object: $object, path: $path)),
+				failure: $this->failureWith(status: 400)
+			)
 		);
-	}//end create()
+	}//end createAt()
 
 	/**
 	 * Update a note.
@@ -170,12 +197,26 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
-		return $this->onObject(
-			path: new NotePath(register: $register, schema: $schema, id: $id),
-			action: fn (ObjectEntity $object): JSONResponse => $this->updateOn(object: $object, noteId: (int)$noteId),
-			failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
-		);
+		return $this->updateAt(path: new NotePath(register: $register, schema: $schema, id: $id), noteId: $noteId);
 	}//end update()
+
+	/**
+	 * Update one note on the object at a route path.
+	 *
+	 * @param NotePath $path   The register, schema and object id from the route.
+	 * @param string   $noteId The note id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function updateAt(NotePath $path, string $noteId): JSONResponse {
+		return $this->onObject(
+			path: $path,
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->updateOn(object: $object, noteId: (int)$noteId),
+				failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
+			)
+		);
+	}//end updateAt()
 
 	/**
 	 * Update a note, reached over PATCH.
@@ -231,12 +272,26 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
-		return $this->onObject(
-			path: new NotePath(register: $register, schema: $schema, id: $id),
-			action: fn (ObjectEntity $object): JSONResponse => $this->versionsOf(object: $object, noteId: (int)$noteId),
-			failure: $this->failureWith(status: 400)
-		);
+		return $this->versionsAt(path: new NotePath(register: $register, schema: $schema, id: $id), noteId: $noteId);
 	}//end versions()
+
+	/**
+	 * The versions of one note on the object at a route path.
+	 *
+	 * @param NotePath $path   The register, schema and object id from the route.
+	 * @param string   $noteId The note id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function versionsAt(NotePath $path, string $noteId): JSONResponse {
+		return $this->onObject(
+			path: $path,
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->versionsOf(object: $object, noteId: (int)$noteId),
+				failure: $this->failureWith(status: 400)
+			)
+		);
+	}//end versionsAt()
 
 	/**
 	 * Delete a note.
@@ -259,12 +314,26 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
-		return $this->onObject(
-			path: new NotePath(register: $register, schema: $schema, id: $id),
-			action: fn (ObjectEntity $object): JSONResponse => $this->destroyOn(object: $object, noteId: (int)$noteId),
-			failure: fn (Exception $e): JSONResponse => $this->failureWith(status: $this->statusFor(e: $e))($e)
-		);
+		return $this->destroyAt(path: new NotePath(register: $register, schema: $schema, id: $id), noteId: $noteId);
 	}//end destroy()
+
+	/**
+	 * Delete one note on the object at a route path.
+	 *
+	 * @param NotePath $path   The register, schema and object id from the route.
+	 * @param string   $noteId The note id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function destroyAt(NotePath $path, string $noteId): JSONResponse {
+		return $this->onObject(
+			path: $path,
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->destroyOn(object: $object, noteId: (int)$noteId),
+				failure: fn (Exception $e): JSONResponse => $this->failureWith(status: $this->statusFor(e: $e))($e)
+			)
+		);
+	}//end destroyAt()
 
 	/**
 	 * Run an action on the object the path names, translating the shared outcomes.
@@ -273,24 +342,23 @@ class NotesController extends Controller {
 	 * before the action runs; any other failure is handed to `$failure`. A
 	 * `DoesNotExistException` raised by the action itself answers the same 404.
 	 *
-	 * @param NotePath                             $path    The register, schema and object id.
-	 * @param \Closure(ObjectEntity): JSONResponse $action  What to do with the object.
-	 * @param \Closure(Exception): JSONResponse    $failure How to answer any other failure.
+	 * @param NotePath $path The register, schema and object id.
+	 * @param NoteStep $step What to do with the object, and how to answer any other failure.
 	 *
 	 * @return JSONResponse The answer.
 	 */
-	private function onObject(NotePath $path, \Closure $action, \Closure $failure): JSONResponse {
+	private function onObject(NotePath $path, NoteStep $step): JSONResponse {
 		try {
 			$object = $this->validateObject(path: $path);
 			if ($object === null) {
 				return $this->notFound(what: 'Object');
 			}
 
-			return $action($object);
+			return ($step->action)($object);
 		} catch (DoesNotExistException $e) {
 			return $this->notFound(what: 'Object');
 		} catch (Exception $e) {
-			return $failure($e);
+			return ($step->failure)($e);
 		}
 	}//end onObject()
 
@@ -490,9 +558,10 @@ class NotesController extends Controller {
 			return $write['refusal'];
 		}
 
+		$update    = new NoteUpdate(target: $target, message: $write['message'], visibility: $write['visibility'], previous: $write['previous']);
 		$mayManage = $this->services->visibility->mayManageObject(object: $object);
-		$note = $this->noteService->updateNote(noteId: $noteId, message: $write['message'], visibility: $write['visibility'], mayManage: $mayManage);
-		$this->recordUpdate(target: $target, write: $write, note: $note);
+		$note = $this->noteService->updateNote(noteId: $noteId, message: $update->message, visibility: $update->visibility, mayManage: $mayManage);
+		$this->recordUpdate(update: $update, note: $note);
 
 		return new JSONResponse(data: $note);
 	}//end updateOn()
@@ -506,27 +575,27 @@ class NotesController extends Controller {
 	 * text that was just rewritten: an index answering with yesterday's
 	 * sentence is worse than no index, because it looks like a hit.
 	 *
-	 * @param ObjectNote                                                                      $target The note and the object it hangs on.
-	 * @param array{refusal: null, message: string|null, visibility: string|null, previous: string|null} $write  The write made.
-	 * @param array<string, mixed>                                                            $note   The updated note.
+	 * @param NoteUpdate           $update The edit made.
+	 * @param array<string, mixed> $note   The updated note.
 	 *
 	 * @return void
 	 */
-	private function recordUpdate(ObjectNote $target, array $write, array $note): void {
-		$object = $target->object;
-		$noteId = $target->noteId;
-		if ($write['message'] !== null) {
+	private function recordUpdate(NoteUpdate $update, array $note): void {
+		$object = $update->target->object;
+		$noteId = $update->target->noteId;
+		if ($update->message !== null) {
 			$this->noteService->auditEdit(object: $object, noteId: $noteId, versions: (int)($note['versionCount'] ?? 0));
 		}
 
 		$this->services->timeline->rewrite(
 			object: $object,
-			rewrite: new NoteRewrite(commentId: $noteId, message: $write['message'], visibility: $write['visibility'])
+			rewrite: new NoteRewrite(commentId: $noteId, message: $update->message, visibility: $update->visibility)
 		);
 
-		if ($write['previous'] !== null) {
+		if ($update->previous !== null) {
 			$to = (string)($note['visibility'] ?? '');
-			$this->services->visibility->auditVisibilityChange(object: $object, noteId: $noteId, from: $write['previous'], to: $to);
+			$move = new NoteVisibilityMove(noteId: $noteId, from: $update->previous, to: $to);
+			$this->services->visibility->auditNoteMove(object: $object, move: $move);
 		}
 	}//end recordUpdate()
 

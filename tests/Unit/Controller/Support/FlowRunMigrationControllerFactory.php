@@ -18,7 +18,7 @@ final class FlowRunMigrationControllerFactory {
 	/**
 	 * The constructor arguments of FlowRunMigrationController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param FlowRunMapperInterface $mapper Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
@@ -36,7 +36,6 @@ final class FlowRunMigrationControllerFactory {
 		?\OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface $migrations = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\FlowRunMigrationControllerServices(
 				mapper: $mapper,

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Search\Controller\DashboardController;
 use OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices;
 use OCA\OpenRegister\Search\Service\DashboardService;
@@ -44,9 +45,8 @@ class DashboardControllerAnonymousTest extends TestCase {
 		$service->expects($this->never())->method($this->anything());
 
 		$controller = new DashboardController(
-			'openregister',
 			$this->createMock(IRequest::class),
-			new DashboardControllerServices($service, $this->createMock(LoggerInterface::class), $session, $groups)
+			new DashboardControllerServices($service, new ControllerSession($session, $groups, $this->createMock(LoggerInterface::class)))
 		);
 
 		$index = $controller->index();

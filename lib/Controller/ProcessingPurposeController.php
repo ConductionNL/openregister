@@ -24,10 +24,12 @@ namespace OCA\OpenRegister\Controller;
 
 use Closure;
 use DateTime;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\GdprRegisterAccess;
 use OCA\OpenRegister\Controller\Support\GdprRegisterReplies;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
+use OCA\OpenRegister\Controller\Support\ProcessingPurposeControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ProcessingPurpose;
 use OCA\OpenRegister\Db\ProcessingPurposeMapperInterface;
@@ -72,24 +74,48 @@ class ProcessingPurposeController extends Controller {
 	private readonly GdprRequestParams $params;
 
 	/**
+	 * The administered list.
+	 *
+	 * @var ProcessingPurposeMapperInterface
+	 */
+	private readonly ProcessingPurposeMapperInterface $purposes;
+
+	/**
+	 * Resolves a purpose to its activity.
+	 *
+	 * @var PurposeRegistryInterface
+	 */
+	private readonly PurposeRegistryInterface $registry;
+
+	/**
+	 * Counts entries per purpose.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrail;
+
+	/**
+	 * Session, group manager and logger.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName    App identifier.
-	 * @param IRequest                  $request    Active request.
-	 * @param ProcessingPurposeMapperInterface   $purposes   The administered list.
-	 * @param PurposeRegistryInterface  $registry   Resolves a purpose to its activity.
-	 * @param AuditTrailMapperInterface $auditTrail Counts entries per purpose.
-	 * @param ControllerSession         $session    Session, group manager and logger.
+	 * @param IRequest                            $request  Active request.
+	 * @param ProcessingPurposeControllerServices $services The purposes, registry, audit trail and session.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ProcessingPurposeMapperInterface $purposes,
-		private readonly PurposeRegistryInterface $registry,
-		private readonly AuditTrailMapperInterface $auditTrail,
-		private readonly ControllerSession $session,
+		ProcessingPurposeControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->purposes = $services->purposes;
+		$this->registry = $services->registry;
+		$this->auditTrail = $services->auditTrail;
+		$this->session = $services->session;
 
 		$this->access = new GdprRegisterAccess(session: $this->session);
 		$this->replies = new GdprRegisterReplies();

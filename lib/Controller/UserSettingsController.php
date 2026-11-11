@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -66,21 +67,17 @@ class UserSettingsController extends Controller {
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName The app name
 	 * @param IRequest $request The request object
 	 * @param UserSettingsControllerServices $services The services, bundled.
-	 * @param IUserSession $userSession User session
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		UserSettingsControllerServices $services,
-		IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->gitHubService = $services->gitHubService;
-		$this->userSession = $userSession;
+		$this->userSession = $services->userSession;
 		$this->logger = $services->logger;
 	}//end __construct()
 

@@ -112,14 +112,14 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\ContactsProvider' => [
-			'OCA\OpenRegister\Service\ContactService',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
+			'OCA\OpenRegister\Service\ContactService',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\DeckProvider' => [
-			'OCA\OpenRegister\Service\DeckLinkService',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
+			'OCA\OpenRegister\Service\DeckLinkService',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\EmailProvider' => [
 			'OCA\OpenRegister\Notifications\Service\EmailServiceInterface',
@@ -137,12 +137,10 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
-			'OCA\OpenRegister\Db\FormLinkMapperInterface',
 			'Psr\Log\LoggerInterface',
+			'OCA\OpenRegister\Db\FormLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\SharesProvider' => [
-			'OCP\IDBConnection',
-			'OCP\App\IAppManager',
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\ShareLinkService' => [
@@ -162,14 +160,14 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IGroupManager',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider' => [
-			'OCA\OpenRegister\Db\BookmarkLinkMapperInterface',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
+			'OCA\OpenRegister\Db\BookmarkLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\TalkProvider' => [
 			'OCP\App\IAppManager',
-			'OCP\IUserSession',
 			'OCP\IL10N',
+			'OCP\IUserSession',
 			'OCA\OpenRegister\Db\TalkLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\TalkLinkService' => [
@@ -183,18 +181,16 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
 			'OCA\OpenRegister\Db\PollLinkMapperInterface',
-			'OCP\IUserSession',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\FlowProvider' => [
-			'OCA\OpenRegister\Db\FlowLinkMapperInterface',
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
+			'OCA\OpenRegister\Db\FlowLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\ActivityFilterService' => [
 			'OCP\IDBConnection',
-			'OCP\App\IAppManager',
-			'Psr\Log\LoggerInterface',
+			'OCA\OpenRegister\Service\LinkServiceRuntime',
 		],
 		'OCA\OpenRegister\Service\FlowLinkService' => [
 			'OCA\OpenRegister\Db\FlowLinkMapperInterface',
@@ -208,8 +204,8 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
-			'OCA\OpenRegister\Db\MapLinkMapperInterface',
 			'Psr\Log\LoggerInterface',
+			'OCA\OpenRegister\Db\MapLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\MapLinkService' => [
 			'OCA\OpenRegister\Db\MapLinkMapperInterface',
@@ -220,8 +216,8 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
-			'OCA\OpenRegister\Db\PhotoLinkMapperInterface',
 			'Psr\Log\LoggerInterface',
+			'OCA\OpenRegister\Db\PhotoLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\PhotoLinkService' => [
 			'OCA\OpenRegister\Db\PhotoLinkMapperInterface',
@@ -232,15 +228,15 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
-			'OCA\OpenRegister\Db\CollectiveLinkMapperInterface',
 			'Psr\Log\LoggerInterface',
+			'OCA\OpenRegister\Db\CollectiveLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider' => [
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
-			'OCA\OpenRegister\Db\AnalyticsLinkMapperInterface',
 			'Psr\Log\LoggerInterface',
+			'OCA\OpenRegister\Db\AnalyticsLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\CospendProvider' => [
 			'OCP\IDBConnection',
@@ -266,9 +262,9 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
+			'Psr\Log\LoggerInterface',
 			'OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface',
 			'OCP\IConfig',
-			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\TimeTrackerLinkService' => [
 			'OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface',
@@ -280,10 +276,11 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		'OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner' => [
 		],
 		'OCA\OpenRegister\Service\Schema\SchemaVersioningService' => [
-			'OCA\OpenRegister\Service\Schema\SchemaDiffService',
 			'OCA\OpenRegister\Db\SchemaChangelogMapperInterface',
 			'OCA\OpenRegister\Db\SchemaRunMapperInterface',
 			'OCA\OpenRegister\Db\SchemaRunEntryMapperInterface',
+			'OCA\OpenRegister\Db\SchemaMapperInterface',
+			'OCA\OpenRegister\Service\ObjectService',
 			'OCP\IUserSession',
 			'Psr\Log\LoggerInterface',
 		],
@@ -293,7 +290,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
 			'OCA\OpenRegister\Service\Object\ValidateObject',
-			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\Schema\SchemaMigrationService' => [
 			'OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner',
@@ -301,7 +297,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Db\SchemaRunEntryMapperInterface',
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
-			'Psr\Log\LoggerInterface',
 		],
 	];
 

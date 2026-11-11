@@ -56,10 +56,10 @@ final class CaseCascadeStepTest extends TestCase {
 	private static function fields(CaseCascadeStep $step): array {
 		return [
 			'to' => $step->to,
-			'cause' => $step->cause,
-			'causeRef' => $step->causeRef,
-			'actor' => $step->actor,
-			'reason' => $step->reason,
+			'cause' => $step->why->cause,
+			'causeRef' => $step->why->causeRef,
+			'actor' => $step->why->actor,
+			'reason' => $step->why->reason,
 		];
 	}//end fields()
 
@@ -142,7 +142,7 @@ final class CaseCascadeStepTest extends TestCase {
 			['to' => CaseItem::STATE_ACTIVE, 'cause' => CaseItemAudit::CAUSE_USER, 'causeRef' => 'enable', 'actor' => 'alice', 'reason' => null],
 			self::fields(step: $withActor)
 		);
-		$this->assertNull($withoutActor->actor);
+		$this->assertNull($withoutActor->why->actor);
 	}//end testEnabledStarts()
 
 	/**

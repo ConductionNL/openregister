@@ -28,8 +28,6 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * The in-table half of LogService's object lookup, extracted unchanged.
@@ -61,9 +59,7 @@ final class LogObjectInTable {
 	 * only when the live rows alone are still ambiguous, or none is live, is the lookup
 	 * refused.
 	 *
-	 * @param string   $id       The object identifier (ID, UUID or slug).
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
+	 * @param TableObjectRef $object The identifier (ID, UUID or slug) and its register and schema.
 	 *
 	 * @return ObjectEntity The object.
 	 *
@@ -73,57 +69,48 @@ final class LogObjectInTable {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
-	public function find(string $id, Register $register, Schema $schema): ObjectEntity {
+	public function find(TableObjectRef $object): ObjectEntity {
 		try {
-			return $this->inTable(id: $id, register: $register, schema: $schema, includeDeleted: true);
+			return $this->inTable(object: $object, includeDeleted: true);
 		} catch (MultipleObjectsReturnedException $e) {
-			return $this->singleLiveHolder(id: $id, register: $register, schema: $schema, ambiguous: $e);
+			return $this->singleLiveHolder(object: $object, ambiguous: $e);
 		}
 	}//end find()
 
 	/**
-	 * The one live object holding an identifier a deleted object also holds.
+	 * The one live object holding an identifier that several objects share, deleted ones included.
 	 *
-	 * @param string                           $id        The identifier.
-	 * @param Register                         $register  The register.
-	 * @param Schema                           $schema    The schema.
+	 * @param TableObjectRef                   $object    The identifier and its register and schema.
 	 * @param MultipleObjectsReturnedException $ambiguous The refusal when no single live holder exists.
 	 *
 	 * @return ObjectEntity The live object.
 	 *
 	 * @throws MultipleObjectsReturnedException When no object, or more than one, is live.
 	 */
-	private function singleLiveHolder(
-		string $id,
-		Register $register,
-		Schema $schema,
-		MultipleObjectsReturnedException $ambiguous
-	): ObjectEntity {
+	private function singleLiveHolder(TableObjectRef $object, MultipleObjectsReturnedException $ambiguous): ObjectEntity {
 		try {
-			return $this->inTable(id: $id, register: $register, schema: $schema, includeDeleted: false);
+			return $this->inTable(object: $object, includeDeleted: false);
 		} catch (DoesNotExistException $none) {
 			throw $ambiguous;
 		}
 	}//end singleLiveHolder()
 
 	/**
-	 * Look an object up in its register+schema table, without access filters.
+	 * Look an object up in its register+schema table, without RBAC or multitenancy.
 	 *
-	 * @param string   $id             Object id, uuid or slug.
-	 * @param Register $register       The register.
-	 * @param Schema   $schema         The schema.
-	 * @param bool     $includeDeleted Whether soft-deleted objects count.
+	 * @param TableObjectRef $object         The identifier and its register and schema.
+	 * @param bool           $includeDeleted Whether soft-deleted objects count.
 	 *
 	 * @return ObjectEntity The object.
 	 *
 	 * @throws DoesNotExistException            When no object matches.
 	 * @throws MultipleObjectsReturnedException When the identifier is ambiguous.
 	 */
-	private function inTable(string $id, Register $register, Schema $schema, bool $includeDeleted): ObjectEntity {
+	private function inTable(TableObjectRef $object, bool $includeDeleted): ObjectEntity {
 		return $this->objectMapper->findInRegisterSchemaTable(
-			identifier: $id,
-			register: $register,
-			schema: $schema,
+			identifier: $object->id,
+			register: $object->table->register,
+			schema: $object->table->schema,
 			_rbac: false,
 			_multitenancy: false,
 			includeDeleted: $includeDeleted

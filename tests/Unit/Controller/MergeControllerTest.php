@@ -26,7 +26,9 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\MergeController;
+use OCA\OpenRegister\Controller\Support\MergeControllerServices;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -59,10 +61,11 @@ class MergeControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 
 		$this->controller = new MergeController(
-			'openregister',
 			$this->request,
-			$this->mergeService,
-			$this->userSession
+			new MergeControllerServices(
+				$this->mergeService,
+				$this->userSession
+			)
 		);
 	}//end setUp()
 
@@ -120,7 +123,7 @@ class MergeControllerTest extends TestCase {
 	public function testPreviewNeverWrites(): void {
 		$this->request->method('getParam')->willReturnArgument(1);
 		$this->mergeService->expects($this->once())->method('previewMerge')->willReturn([]);
-		$this->mergeService->expects($this->never())->method('executeMerge');
+		$this->mergeService->expects($this->never())->method('merge');
 		$this->mergeService->expects($this->never())->method('reverseMerge');
 
 		$this->controller->preview();
@@ -132,7 +135,7 @@ class MergeControllerTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$this->mergeService->method('executeMerge')->willThrowException(
+		$this->mergeService->method('merge')->willThrowException(
 			new NotAuthorizedException(message: 'denied')
 		);
 
@@ -155,8 +158,8 @@ class MergeControllerTest extends TestCase {
 
 		$operation = ['mergedIntoUuid' => 'into-uuid', 'mergedFromUuids' => ['from-uuid']];
 		$this->mergeService->expects($this->once())
-			->method('executeMerge')
-			->with('from-uuid', 'into-uuid', 'dup-review', 'alice')
+			->method('merge')
+			->with(new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'dup-review', mergedBy: 'alice'))
 			->willReturn($operation);
 
 		$response = $this->controller->execute();
@@ -168,7 +171,7 @@ class MergeControllerTest extends TestCase {
 	public function testExecuteMapsRuntimeExceptionToNotFound(): void {
 		$this->request->method('getParam')->willReturnArgument(1);
 		$this->userSession->method('getUser')->willReturn(null);
-		$this->mergeService->method('executeMerge')->willThrowException(new RuntimeException('missing'));
+		$this->mergeService->method('merge')->willThrowException(new RuntimeException('missing'));
 
 		$response = $this->controller->execute();
 

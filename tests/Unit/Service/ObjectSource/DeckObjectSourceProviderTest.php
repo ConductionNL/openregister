@@ -34,6 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
@@ -71,7 +73,7 @@ class DeckObjectSourceProviderTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 
-		return new DeckObjectSourceProvider($appManager, $userSession, $container, new NullLogger());
+		return new DeckObjectSourceProvider(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $container, logger: new NullLogger()), userSession: $userSession);
 	}//end provider()
 
 	/**
@@ -115,9 +117,9 @@ class DeckObjectSourceProviderTest extends TestCase {
 		[$register, $schema] = $this->binding();
 		$provider = $this->provider(true, false);
 
-		$this->assertSame([], $provider->findAll($register, $schema));
-		$this->assertSame(0, $provider->count($register, $schema));
-		$this->assertNull($provider->find($register, $schema, 'any'));
+		$this->assertSame([], $provider->findAll(new SourcedTable(new RegisterSchema($register, $schema))));
+		$this->assertSame(0, $provider->count(new SourcedTable(new RegisterSchema($register, $schema))));
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'any'));
 	}//end testFailsClosedWithoutUser()
 
 	/**
@@ -134,8 +136,8 @@ class DeckObjectSourceProviderTest extends TestCase {
 		[$register, $schema] = $this->binding();
 		$provider = $this->provider(true, true);
 
-		$this->assertSame([], $provider->findAll($register, $schema));
-		$this->assertSame(0, $provider->count($register, $schema));
-		$this->assertNull($provider->find($register, $schema, 'any'));
+		$this->assertSame([], $provider->findAll(new SourcedTable(new RegisterSchema($register, $schema))));
+		$this->assertSame(0, $provider->count(new SourcedTable(new RegisterSchema($register, $schema))));
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'any'));
 	}//end testFailsClosedWhenDeckAbsent()
 }//end class

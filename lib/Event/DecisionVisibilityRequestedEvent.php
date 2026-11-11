@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\Decision;
-use OCA\OpenRegister\Service\Decision\ReviewPolicy;
+use OCA\OpenRegister\Kernel\Contracts\ReviewPolicyInterface;
 
 /**
  * A question with one answer: may this user see this hidden decision?
@@ -55,19 +55,19 @@ class DecisionVisibilityRequestedEvent extends AbstractDecisionRequestEvent {
 	/**
 	 * Constructor.
 	 *
-	 * @param Decision|null        $decision The hidden decision, or null when its record is gone.
-	 * @param string               $actorId  The user who reads it.
-	 * @param ReviewPolicy         $policy   The policy that applies.
-	 * @param array<string, mixed> $subject  What the decision is on: subjectType,
-	 *                                       subjectId and, when known, register,
-	 *                                       schema, objectUuid and fileId.
+	 * @param Decision|null         $decision The hidden decision, or null when its record is gone.
+	 * @param string                $actorId  The user who reads it.
+	 * @param ReviewPolicyInterface $policy   The policy that applies.
+	 * @param array<string, mixed>  $subject  What the decision is on: subjectType,
+	 *                                        subjectId and, when known, register,
+	 *                                        schema, objectUuid and fileId.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
 	 */
 	public function __construct(
 		private readonly ?Decision $decision,
 		string $actorId,
-		ReviewPolicy $policy,
+		ReviewPolicyInterface $policy,
 		array $subject,
 	) {
 		parent::__construct(actorId: $actorId, policy: $policy, subject: $subject);

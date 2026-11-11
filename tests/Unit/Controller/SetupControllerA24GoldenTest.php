@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SetupController;
+use OCA\OpenRegister\Controller\Support\SetupControllerServices;
 use OCA\OpenRegister\Service\DemoDataServiceInterface;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -113,7 +114,7 @@ class SetupControllerA24GoldenTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => ($params[$key] ?? $default));
 
-		return new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		return new SetupController($request, new SetupControllerServices($this->appConfig, $this->logger, $this->demoData));
 	}//end controller()
 
 	/**

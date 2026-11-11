@@ -214,9 +214,13 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 
 		$result = ['invalid' => [], 'errors' => [], 'statistics' => ['invalid' => 0, 'errors' => 0]];
 		$rows   = [0 => ['a' => 0], 1 => ['a' => 1], 'k' => ['a' => 'k'], 3 => ['a' => 3]];
-		$passed = $this->call($handler, 'refuseInvalidDecisionTables', [$rows, 10, 7, &$result]);
+		$run           = new BulkSaveRun();
+		$run->register = 10;
+		$run->schema   = 7;
+		$run->result   = $result;
+		$passed        = $this->call($handler, 'refuseInvalidDecisionTables', [$run, $rows]);
 
-		return ['passed' => $passed, 'result' => $result];
+		return ['passed' => $passed, 'result' => $run->result];
 	}//end refuseDecisionTables()
 
 	/**
@@ -318,11 +322,7 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 		$organisations->method('hasAccessToOrganisation')->willReturn(false);
 
 		return new SaveObjects(
-			stores: new BulkSaveStores(
-				objectEntityMapper: $this->objectMapper(),
-				schemaMapper: $this->schemaMapper(),
-				registerMapper: $this->registerMapper(),
-				saveHandler: $this->createMock(SaveObject::class)
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper(), schemas: $this->schemaMapper(), tables: $this->objectMapper()), saveHandler: $this->createMock(SaveObject::class)
 			),
 			session: new BulkSaveSession(userSession: $session, organisationService: $organisations),
 			reporting: new BulkSaveReporting(logger: $logger),

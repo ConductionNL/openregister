@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Repair;
 
+use OCA\OpenRegister\Repair\RegisterDescriptorImport;
 use OCA\OpenRegister\Repair\ImportDsarRegisters;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
@@ -96,7 +97,9 @@ final class ImportDsarRegistersTest extends TestCase {
 	private function step(): ImportDsarRegisters {
 		$apps = $this->createMock(IAppManager::class);
 		$apps->method('getAppPath')->with('openregister')->willReturn($this->appPath);
-		return new ImportDsarRegisters(configurationService: $this->importer, appManager: $apps, logger: $this->logger);
+		return new ImportDsarRegisters(
+			import: new RegisterDescriptorImport(configurationService: $this->importer, appManager: $apps, logger: $this->logger)
+		);
 	}//end step()
 
 	/**

@@ -28,11 +28,15 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\BatchOutcome;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
+use OCA\OpenRegister\Controller\Support\PurgeRequest;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowInterface;
@@ -43,6 +47,8 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowQuery;
 
 /**
  * Class DeletedController
@@ -59,6 +65,38 @@ use OCP\IUserSession;
  */
 
 class DeletedController extends Controller {
+	/**
+	 * Special parameters and system fields that are never a listing filter.
+	 *
+	 * @var list<string>
+	 */
+	private const LIST_CONTROL_PARAMS = [
+		'limit',
+		'_limit',
+		'offset',
+		'_offset',
+		'page',
+		'_page',
+		'search',
+		'_search',
+		'sort',
+		'_sort',
+		'order',
+		'_order',
+		'_route',
+		'id',
+	];
+
+	/**
+	 * The verb a bulk outcome message uses, by the key its done count is reported under.
+	 *
+	 * @var array<string, string>
+	 */
+	private const BATCH_VERBS = [
+		'restored' => 'Restored',
+		'deleted'  => 'Permanently deleted',
+	];
+
 	/**
 	 * The controller's injected services.
 	 *
@@ -88,8 +126,6 @@ class DeletedController extends Controller {
 	 * Helper method to extract request parameters for deleted objects
 	 *
 	 * @return array Request parameters including pagination and filters
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private function extractRequestParameters(): array {
 		$params = $this->request->getParams();
@@ -97,78 +133,91 @@ class DeletedController extends Controller {
 		// Extract pagination parameters.
 		$limit = (int)($params['limit'] ?? $params['_limit'] ?? 20);
 
-		$offset = null;
-		if (($params['offset'] ?? null) !== null) {
-			$offset = (int)$params['offset'];
-		} elseif (($params['_offset'] ?? null) !== null) {
-			$offset = (int)$params['_offset'];
+		return [
+			'limit' => $limit,
+			'offset' => $this->requestedOffset(params: $params, limit: $limit),
+			'page' => $this->aliasedInt(params: $params, name: 'page'),
+			'filters' => $this->listFilters(params: $params),
+			'sort' => $this->requestedSort(params: $params),
+			'search' => $params['search'] ?? $params['_search'] ?? null,
+		];
+	}//end extractRequestParameters()
+
+	/**
+	 * A parameter given under its plain name or its underscore alias, as an integer.
+	 *
+	 * @param array  $params The request parameters.
+	 * @param string $name   The plain name (`offset`, `page`).
+	 *
+	 * @return integer|null The value, or null when neither name carries one.
+	 */
+	private function aliasedInt(array $params, string $name): ?int {
+		foreach ([$name, '_' . $name] as $key) {
+			if (($params[$key] ?? null) !== null) {
+				return (int)$params[$key];
+			}
 		}
 
-		$page = null;
-		if (($params['page'] ?? null) !== null) {
-			$page = (int)$params['page'];
-		} elseif (($params['_page'] ?? null) !== null) {
-			$page = (int)$params['_page'];
+		return null;
+	}//end aliasedInt()
+
+	/**
+	 * The requested offset; a page without an offset is converted with the limit.
+	 *
+	 * @param array   $params The request parameters.
+	 * @param integer $limit  The page size.
+	 *
+	 * @return integer|null The offset, or null when neither an offset nor a page is given.
+	 */
+	private function requestedOffset(array $params, int $limit): ?int {
+		$offset = $this->aliasedInt(params: $params, name: 'offset');
+		if ($offset !== null) {
+			return $offset;
 		}
 
-		// If we have a page but no offset, calculate the offset.
-		if ($page !== null && $offset === null) {
-			$offset = ($page - 1) * $limit;
+		$page = $this->aliasedInt(params: $params, name: 'page');
+		if ($page === null) {
+			return null;
 		}
 
-		// Extract search parameter.
-		$search = $params['search'] ?? $params['_search'] ?? null;
+		return ($page - 1) * $limit;
+	}//end requestedOffset()
 
-		// Extract sort parameters.
-		$sort = [];
-		if (($params['sort'] ?? null) !== null || (($params['_sort'] ?? null) !== null) === true) {
-			$sortField = $params['sort'] ?? $params['_sort'] ?? 'updated';
-			$sortOrder = $params['order'] ?? $params['_order'] ?? 'DESC';
-			$sort[$sortField] = $sortOrder;
-		}
-
-		if (empty($sort) === true) {
+	/**
+	 * The requested sort, by updated (last modified) DESC when none is given.
+	 *
+	 * @param array $params The request parameters.
+	 *
+	 * @return array<string, string> One field mapped to its order.
+	 */
+	private function requestedSort(array $params): array {
+		if (($params['sort'] ?? null) === null && ($params['_sort'] ?? null) === null) {
 			// Default sort by updated (last modified) which includes soft delete time.
 			// Note: Cannot sort by 'deleted' directly as it's a JSON column in PostgreSQL.
-			$sort['updated'] = 'DESC';
+			return ['updated' => 'DESC'];
 		}
 
-		// Filter out special parameters and system fields.
-		$filters = array_filter(
+		$sortField = $params['sort'] ?? $params['_sort'] ?? 'updated';
+		$sortOrder = $params['order'] ?? $params['_order'] ?? 'DESC';
+		return [$sortField => $sortOrder];
+	}//end requestedSort()
+
+	/**
+	 * The request parameters minus the special parameters and system fields.
+	 *
+	 * @param array $params The request parameters.
+	 *
+	 * @return array The filters.
+	 */
+	private function listFilters(array $params): array {
+		return array_filter(
 			$params,
 			function ($key) {
-				return !in_array(
-					$key,
-					[
-						'limit',
-						'_limit',
-						'offset',
-						'_offset',
-						'page',
-						'_page',
-						'search',
-						'_search',
-						'sort',
-						'_sort',
-						'order',
-						'_order',
-						'_route',
-						'id',
-					]
-				);
+				return !in_array($key, self::LIST_CONTROL_PARAMS);
 			},
 			ARRAY_FILTER_USE_KEY
 		);
-
-		return [
-			'limit' => $limit,
-			'offset' => $offset,
-			'page' => $page,
-			'filters' => $filters,
-			'sort' => $sort,
-			'search' => $search,
-		];
-	}//end extractRequestParameters()
+	}//end listFilters()
 
 	/**
 	 * Attach the published recovery window to every row of a trash listing.
@@ -188,9 +237,8 @@ class DeletedController extends Controller {
 		$rows = [];
 		foreach ($objects as $object) {
 			$row = $object->jsonSerialize();
-			$window = $this->services->store->deletion->window->windowFor(
-				object: $object,
-				schema: $this->services->access->authorizer->resolveSchema(object: $object)
+			$window = $this->services->store->deletion->window->windowOf(
+				query: new DeletionWindowQuery(object: $object, schema: $this->services->access->authorizer->resolveSchema(object: $object))
 			);
 
 			$row['deletionWindow'] = null;
@@ -425,9 +473,8 @@ class DeletedController extends Controller {
 			);
 		}
 
-		$window = $this->services->store->deletion->window->windowFor(
-			object: $object,
-			schema: $this->services->access->authorizer->resolveSchema(object: $object)
+		$window = $this->services->store->deletion->window->windowOf(
+			query: new DeletionWindowQuery(object: $object, schema: $this->services->access->authorizer->resolveSchema(object: $object))
 		);
 
 		// Objects live in per-register/schema magic tables, so the restore goes through MagicMapper.
@@ -484,12 +531,13 @@ class DeletedController extends Controller {
 		}
 
 		try {
-			$this->services->store->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: 'object.restored',
-				context: $context,
-				actorId: $actor,
-				actorName: $actorName
+			$this->services->store->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: 'object.restored',
+					context: $context,
+					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $actor, name: $actorName))
+				)
 			);
 		} catch (\Throwable $e) {
 			// Swallowed on purpose, see the docblock.
@@ -514,77 +562,80 @@ class DeletedController extends Controller {
 	 */
 	public function restoreMultiple(): JSONResponse {
 		if ($this->services->access->userSession->getUser() === null) {
-			return new JSONResponse(
-				data: ['error' => 'Not authenticated'],
-				statusCode: 401
-			);
+			return $this->notAuthenticated();
 		}
 
 		$ids = $this->request->getParam('ids', []);
-
 		if (empty($ids) === true) {
-			return new JSONResponse(
-				data: [
-					'error' => 'No object IDs provided',
-				],
-				statusCode: 400
-			);
+			return $this->noObjectIdsProvided();
 		}
 
 		try {
-			// Resolve across ALL magic tables, including deleted rows. findAll()
-			// without register/schema context returns [] (it cannot know which
-			// magic table to query), so a UUID-keyed cross-table lookup is
-			// required to actually find the soft-deleted objects.
-			$objects = $this->services->store->objectEntityMapper->findMultipleAcrossAllMagicTables(
-				uuids: $ids,
-				includeDeleted: true
-			);
-
-			// Track results.
-			$restored = 0;
-			$failed = 0;
-			$foundIds = [];
-
-			// Process found objects.
-			foreach ($objects as $object) {
-				$foundIds[] = $object->getUuid();
-
-				// The lookup's rows are slim: each is read in full and restored as the single route does.
-				try {
-					if ($this->restoreFound(object: $this->fullDeletedRow(uuid: (string)$object->getUuid()))->getStatus() === 200) {
-						$restored++;
-						continue;
-					}
-
-					$failed++;
-				} catch (\Exception $e) {
-					$failed++;
-				}//end try
-			}//end foreach
-
-			// Count objects that were requested but not found in database.
-			$notFound = count(array_diff($ids, $foundIds));
-			$failed += $notFound;
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'restored' => $restored,
-					'failed' => $failed,
-					'notFound' => $notFound,
-					'message' => $this->formatRestoreMessage(restored: $restored, failed: $failed, notFound: $notFound),
-				]
-			);
+			return $this->restoreFoundBatch(ids: $ids);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to restore objects: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->batchFailure(message: 'Failed to restore objects: ' . $e->getMessage());
+		}
 	}//end restoreMultiple()
+
+	/**
+	 * Restore every soft-deleted object among the requested uuids and report the counts.
+	 *
+	 * Resolve across ALL magic tables, including deleted rows. findAll()
+	 * without register/schema context returns [] (it cannot know which
+	 * magic table to query), so a UUID-keyed cross-table lookup is
+	 * required to actually find the soft-deleted objects.
+	 *
+	 * @param array $ids The requested uuids.
+	 *
+	 * @return JSONResponse The restored, failed and not-found counts.
+	 */
+	private function restoreFoundBatch(array $ids): JSONResponse {
+		$objects = $this->services->store->objectEntityMapper->findMultipleAcrossAllMagicTables(
+			uuids: $ids,
+			includeDeleted: true
+		);
+
+		$restored = $this->restoreEach(objects: $objects);
+		$notFound = $this->notFoundCount(ids: $ids, objects: $objects);
+		$outcome  = new BatchOutcome(done: $restored, failed: count($objects) - $restored + $notFound, notFound: $notFound);
+
+		return $this->batchResponse(outcome: $outcome, doneKey: 'restored');
+	}//end restoreFoundBatch()
+
+	/**
+	 * Restore each found row of a bulk restore.
+	 *
+	 * @param ObjectEntity[] $objects The slim rows the lookup found.
+	 *
+	 * @return integer How many were restored; every other row failed.
+	 */
+	private function restoreEach(array $objects): int {
+		$restored = 0;
+		foreach ($objects as $object) {
+			if ($this->restoredInBatch(object: $object) === true) {
+				$restored++;
+			}
+		}
+
+		return $restored;
+	}//end restoreEach()
+
+	/**
+	 * Restore one row of a bulk restore, the way the single route does.
+	 *
+	 * The lookup's rows are slim: each is read in full and restored as the single route does.
+	 *
+	 * @param ObjectEntity $object The slim row the lookup found.
+	 *
+	 * @return boolean Whether it was restored; a failure of any kind counts as not.
+	 */
+	private function restoredInBatch(ObjectEntity $object): bool {
+		try {
+			return $this->restoreFound(object: $this->fullDeletedRow(uuid: (string)$object->getUuid()))->getStatus() === 200;
+		} catch (\Exception $e) {
+			return false;
+		}
+	}//end restoredInBatch()
 
 	/**
 	 * Permanently delete an object
@@ -642,17 +693,21 @@ class DeletedController extends Controller {
 		}
 
 		$schema = $this->services->access->authorizer->resolveSchema(object: $object);
-		$window = $this->services->store->deletion->window->windowFor(object: $object, schema: $schema);
-		$force = filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN);
+		$purge = new PurgeRequest(
+			object: $object,
+			schema: $schema,
+			window: $this->services->store->deletion->window->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema)),
+			force: filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN)
+		);
 
 		// The right, both retention clocks and the open recovery window each
 		// refuse in turn, naming the rule that refused.
-		$refusal = $this->refuseDestruction(object: $object, schema: $schema, window: $window, force: $force);
+		$refusal = $this->refuseDestruction(purge: $purge);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		return $this->performDestruction(object: $object, schema: $schema, window: $window, force: $force);
+		return $this->performDestruction(purge: $purge);
 	}//end destroyFound()
 
 	/**
@@ -714,17 +769,15 @@ class DeletedController extends Controller {
 	 * object can still come back, so destroying it needs the window waived
 	 * explicitly and the refusal says how long is left.
 	 *
-	 * @param ObjectEntity $object The object being purged.
-	 * @param Schema|null $schema The object's resolved schema.
-	 * @param DeletionWindowInterface|null $window The published recovery window.
-	 * @param bool $force Whether the caller explicitly waived the window.
+	 * @param PurgeRequest $purge The object, its schema, its recovery window and the caller's waiver.
 	 *
 	 * @return JSONResponse|null The refusal, or null when the destruction may proceed.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function refuseDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindowInterface $window, bool $force): ?JSONResponse {
-		$refusal = $this->services->store->deletion->destroyRight->refusalFor(object: $object, schema: $schema);
+	private function refuseDestruction(PurgeRequest $purge): ?JSONResponse {
+		$object = $purge->object;
+		$refusal = $this->services->store->deletion->destroyRight->refusalFor(object: $object, schema: $purge->schema);
 		if ($refusal !== null) {
 			return new JSONResponse(
 				data: $refusal->toResponseBody(),
@@ -740,15 +793,15 @@ class DeletedController extends Controller {
 			);
 		}
 
-		if ($window !== null && $window->hasLapsed() === false && $force === false) {
+		if ($purge->windowRefuses() === true) {
 			return new JSONResponse(
 				data: [
 					'error' => 'DESTRUCTION_REFUSED',
 					'rule' => 'recovery-window-open',
 					'message' => 'This object can still be restored until '
-						. $window->destroyableFrom()->format('Y-m-d') . '. Destroying it before then '
+						. $purge->window->destroyableFrom()->format('Y-m-d') . '. Destroying it before then '
 						. 'requires the window to be waived explicitly.',
-					'deletionWindow' => $window->toArray(),
+					'deletionWindow' => $purge->window->toArray(),
 				],
 				statusCode: 409
 			);
@@ -764,26 +817,26 @@ class DeletedController extends Controller {
 	 * them leaves an over-recorded destruction rather than an unrecorded one. A
 	 * scope this instance cannot honour refuses before anything is touched.
 	 *
-	 * @param ObjectEntity $object The object being purged.
-	 * @param Schema|null $schema The object's resolved schema.
-	 * @param DeletionWindowInterface|null $window The published recovery window.
-	 * @param bool $force Whether the caller explicitly waived the window.
+	 * @param PurgeRequest $purge The object, its schema, its recovery window and the caller's waiver.
 	 *
 	 * @return JSONResponse The destruction record, or the scope refusal.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function performDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindowInterface $window, bool $force): JSONResponse {
+	private function performDestruction(PurgeRequest $purge): JSONResponse {
+		$object = $purge->object;
 		try {
-			$scopeReport = $this->services->store->deletion->destruction->scope->destroy(object: $object, schema: $schema);
-			$record = $this->services->store->deletion->destruction->recorder->record(
-				object: $object,
-				scope: $scopeReport,
-				rule: 'destroy-right-granted',
-				context: [
-					'deletionWindow' => $window?->toArray(),
-					'windowWaived' => ($force === true),
-				]
+			$scopeReport = $this->services->store->deletion->destruction->scope->destroy(object: $object, schema: $purge->schema);
+			$record = $this->services->store->deletion->destruction->recorder->recordDestruction(
+				command: new RecordDestructionCommand(
+					object: $object,
+					scope: $scopeReport,
+					rule: 'destroy-right-granted',
+					context: [
+						'deletionWindow' => $purge->window?->toArray(),
+						'windowWaived' => ($purge->force === true),
+					]
+				)
 			);
 		} catch (DestructionRefusedException $e) {
 			return new JSONResponse(
@@ -844,7 +897,7 @@ class DeletedController extends Controller {
 				);
 			}
 
-			$window = $this->services->store->deletion->window->windowFor(object: $object, schema: $schema);
+			$window = $this->services->store->deletion->window->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema));
 
 			return new JSONResponse(
 				data: [
@@ -936,113 +989,161 @@ class DeletedController extends Controller {
 	 */
 	public function destroyMultiple(): JSONResponse {
 		if ($this->services->access->userSession->getUser() === null) {
-			return new JSONResponse(
-				data: ['error' => 'Not authenticated'],
-				statusCode: 401
-			);
+			return $this->notAuthenticated();
 		}
 
 		$ids = $this->request->getParam('ids', []);
-
 		if (empty($ids) === true) {
-			return new JSONResponse(
-				data: [
-					'error' => 'No object IDs provided',
-				],
-				statusCode: 400
-			);
+			return $this->noObjectIdsProvided();
 		}
 
 		try {
-			// Resolve across ALL magic tables, including deleted rows. findAll()
-			// without register/schema context returns [], so a UUID-keyed
-			// cross-table lookup is required to find the soft-deleted objects.
-			$objects = $this->services->store->objectEntityMapper->findMultipleAcrossAllMagicTables(
-				uuids: $ids,
-				includeDeleted: true
-			);
-
-			// Track results.
-			$deleted = 0;
-			$failed = 0;
-			$foundIds = [];
-
-			// Process found objects.
-			foreach ($objects as $object) {
-				$foundIds[] = $object->getUuid();
-
-				// The lookup's rows are slim: each is read in full, then the delete right and every refusal of the single route.
-				try {
-					$full = $this->fullDeletedRow(uuid: (string)$object->getUuid());
-					if ($this->services->access->authorizer->userMayActOnDeletedObject(object: $full, action: 'delete') === true
-						&& $this->destroyFound(object: $full)->getStatus() === 200
-					) {
-						$deleted++;
-						continue;
-					}
-
-					$failed++;
-				} catch (\Exception $e) {
-					$failed++;
-				}
-			}//end foreach
-
-			// Count objects that were requested but not found in database.
-			$notFound = count(array_diff($ids, $foundIds));
-			$failed += $notFound;
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'deleted' => $deleted,
-					'failed' => $failed,
-					'notFound' => $notFound,
-					'message' => $this->formatDeleteMessage(deleted: $deleted, failed: $failed, notFound: $notFound),
-				]
-			);
+			return $this->destroyFoundBatch(ids: $ids);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to permanently delete objects: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->batchFailure(message: 'Failed to permanently delete objects: ' . $e->getMessage());
+		}
 	}//end destroyMultiple()
 
 	/**
-	 * Format restore message.
+	 * Permanently delete every destroyable object among the requested uuids and report the counts.
 	 *
-	 * @param int $restored Number of restored objects.
-	 * @param int $failed Number of failed restorations.
-	 * @param int $notFound Number of objects not found.
+	 * Resolve across ALL magic tables, including deleted rows. findAll()
+	 * without register/schema context returns [], so a UUID-keyed
+	 * cross-table lookup is required to find the soft-deleted objects.
 	 *
-	 * @return string Formatted message.
+	 * @param array $ids The requested uuids.
+	 *
+	 * @return JSONResponse The deleted, failed and not-found counts.
 	 */
-	private function formatRestoreMessage(int $restored, int $failed, int $notFound): string {
-		$message = "Restored {$restored} objects, {$failed} failed";
-		if ($notFound > 0) {
-			$message .= " ({$notFound} not found)";
-		}
+	private function destroyFoundBatch(array $ids): JSONResponse {
+		$objects = $this->services->store->objectEntityMapper->findMultipleAcrossAllMagicTables(
+			uuids: $ids,
+			includeDeleted: true
+		);
 
-		return $message;
-	}//end formatRestoreMessage()
+		$deleted  = $this->destroyEach(objects: $objects);
+		$notFound = $this->notFoundCount(ids: $ids, objects: $objects);
+		$outcome  = new BatchOutcome(done: $deleted, failed: count($objects) - $deleted + $notFound, notFound: $notFound);
+
+		return $this->batchResponse(outcome: $outcome, doneKey: 'deleted');
+	}//end destroyFoundBatch()
 
 	/**
-	 * Format delete message.
+	 * Permanently delete each found row of a bulk destroy.
 	 *
-	 * @param int $deleted Number of deleted objects.
-	 * @param int $failed Number of failed deletions.
-	 * @param int $notFound Number of objects not found.
+	 * @param ObjectEntity[] $objects The slim rows the lookup found.
 	 *
-	 * @return string Formatted message.
+	 * @return integer How many were deleted; every other row failed.
 	 */
-	private function formatDeleteMessage(int $deleted, int $failed, int $notFound): string {
-		$message = "Permanently deleted {$deleted} objects, {$failed} failed";
-		if ($notFound > 0) {
-			$message .= " ({$notFound} not found)";
+	private function destroyEach(array $objects): int {
+		$deleted = 0;
+		foreach ($objects as $object) {
+			if ($this->destroyedInBatch(object: $object) === true) {
+				$deleted++;
+			}
 		}
 
-		return $message;
-	}//end formatDeleteMessage()
+		return $deleted;
+	}//end destroyEach()
+
+	/**
+	 * Destroy one row of a bulk destroy: the delete right, then every refusal of the single route.
+	 *
+	 * The lookup's rows are slim: each is read in full first.
+	 *
+	 * @param ObjectEntity $object The slim row the lookup found.
+	 *
+	 * @return boolean Whether it was deleted; a refusal or failure of any kind counts as not.
+	 */
+	private function destroyedInBatch(ObjectEntity $object): bool {
+		try {
+			$full = $this->fullDeletedRow(uuid: (string)$object->getUuid());
+			if ($this->services->access->authorizer->userMayActOnDeletedObject(object: $full, action: 'delete') === false) {
+				return false;
+			}
+
+			return $this->destroyFound(object: $full)->getStatus() === 200;
+		} catch (\Exception $e) {
+			return false;
+		}
+	}//end destroyedInBatch()
+
+	/**
+	 * How many requested uuids the lookup did not find.
+	 *
+	 * @param array          $ids     The requested uuids.
+	 * @param ObjectEntity[] $objects The rows the lookup found.
+	 *
+	 * @return integer The count of requested uuids with no row.
+	 */
+	private function notFoundCount(array $ids, array $objects): int {
+		$foundIds = [];
+		foreach ($objects as $object) {
+			$foundIds[] = $object->getUuid();
+		}
+
+		return count(array_diff($ids, $foundIds));
+	}//end notFoundCount()
+
+	/**
+	 * The response of a finished bulk restore or destroy.
+	 *
+	 * @param BatchOutcome $outcome The counts.
+	 * @param string       $doneKey The key the done count is reported under (`restored`, `deleted`).
+	 *
+	 * @return JSONResponse The counts and their message.
+	 */
+	private function batchResponse(BatchOutcome $outcome, string $doneKey): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				$doneKey => $outcome->done,
+				'failed' => $outcome->failed,
+				'notFound' => $outcome->notFound,
+				'message' => $outcome->message(verb: self::BATCH_VERBS[$doneKey]),
+			]
+		);
+	}//end batchResponse()
+
+	/**
+	 * The 500 of a bulk restore or destroy that failed as a whole.
+	 *
+	 * @param string $message The error message.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function batchFailure(string $message): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $message,
+			],
+			statusCode: 500
+		);
+	}//end batchFailure()
+
+	/**
+	 * The 401 of a bulk request without a signed-in user.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function notAuthenticated(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Not authenticated'],
+			statusCode: 401
+		);
+	}//end notAuthenticated()
+
+	/**
+	 * The 400 of a bulk request without object ids.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function noObjectIdsProvided(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'No object IDs provided',
+			],
+			statusCode: 400
+		);
+	}//end noObjectIdsProvided()
 }//end class

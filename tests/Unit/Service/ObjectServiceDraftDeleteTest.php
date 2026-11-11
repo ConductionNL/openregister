@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -78,6 +79,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that a stored draft can be deleted on every schema, for good, and that nothing else gets past the archival gate.
@@ -157,7 +159,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 			}
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -196,7 +198,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}//end setUp()
@@ -255,9 +257,8 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 	 */
 	private function recordHandler(array &$asked): void {
 		$this->deleteHandler->method('deleteObject')->willReturnCallback(
-			static function (mixed ...$args) use (&$asked): bool {
-				// Position 8 is `permanent` in DeleteObject::deleteObject().
-				$asked[] = ($args[8] ?? false);
+			static function (DeletionRequest $request) use (&$asked): bool {
+				$asked[] = $request->options->permanent;
 
 				return true;
 			}

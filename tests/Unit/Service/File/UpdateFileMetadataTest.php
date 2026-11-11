@@ -29,6 +29,7 @@ use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
 use OCA\OpenRegister\Service\File\UpdateFileGuards;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
@@ -92,11 +93,11 @@ class UpdateFileMetadataTest extends TestCase {
 	public function testWithoutAMapperItRefuses(): void {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('FileMapper is not wired; cannot update OR-side metadata');
-		$this->handler(null)->updateFileMetadata(1, 'd');
+		$this->handler(null)->updateFileMetadata(new FileMetadataChange(1, 'd'));
 	}//end testWithoutAMapperItRefuses()
 
 	public function testOnlyTheGivenFieldsAreWrittenInOrder(): void {
-		$result = $this->handler($this->mapper())->updateFileMetadata(4, '', null, ['a', 'b']);
+		$result = $this->handler($this->mapper())->updateFileMetadata(new FileMetadataChange(4, '', null, ['a', 'b']));
 
 		$this->assertSame(['find:4', 'description:', 'labels:a,b'], $this->calls);
 		$this->assertSame('labels', $result->getCategory());
@@ -113,14 +114,14 @@ class UpdateFileMetadataTest extends TestCase {
 	}//end testOnlyTheGivenFieldsAreWrittenInOrder()
 
 	public function testAllFieldsAreWrittenAndTheLastWriteIsReturned(): void {
-		$result = $this->handler($this->mapper())->updateFileMetadata(4, 'd', 'c', []);
+		$result = $this->handler($this->mapper())->updateFileMetadata(new FileMetadataChange(4, 'd', 'c', []));
 
 		$this->assertSame(['find:4', 'description:d', 'category:c', 'labels:'], $this->calls);
 		$this->assertSame('labels', $result->getCategory());
 	}//end testAllFieldsAreWrittenAndTheLastWriteIsReturned()
 
 	public function testNothingToWriteReturnsTheFoundRow(): void {
-		$result = $this->handler($this->mapper())->updateFileMetadata(4);
+		$result = $this->handler($this->mapper())->updateFileMetadata(new FileMetadataChange(4));
 
 		$this->assertSame(['find:4'], $this->calls);
 		$this->assertSame('found', $result->getCategory());

@@ -25,8 +25,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 
 /**
@@ -38,10 +37,8 @@ interface ObjectSharingServiceInterface {
 	/**
 	 * Set one object's scope, as its owner or an administrator.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The schema.
-	 * @param ObjectEntity $object The object.
-	 * @param string $scope The requested scope.
+	 * @param RegisterSchema $table  The register and schema the object lives in.
+	 * @param ScopeChange    $change The object and the requested scope.
 	 *
 	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
 	 * @throws InvalidArgumentException When the scope is not in the vocabulary.
@@ -50,7 +47,7 @@ interface ObjectSharingServiceInterface {
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
-	public function setScope(Register $register, Schema $schema, ObjectEntity $object, string $scope): array;
+	public function setScope(RegisterSchema $table, ScopeChange $change): array;
 
 	/**
 	 * List the grants on one object.
@@ -69,15 +66,14 @@ interface ObjectSharingServiceInterface {
 	public function listGrants(ObjectEntity $object): array;
 
 	/**
-	 * Grant one principal access to one object.
+	 * Grant one principal access to one object with core permissions only.
 	 *
-	 * The grant is a real Nextcloud share on the object's folder, so core owns
-	 * the record and its whole lifecycle (design D1).
+	 * Kept for the apps that call it by class name; grantWithTerms takes the request.
 	 *
-	 * @param ObjectEntity $object The object to share.
-	 * @param string $type One of the GRANTABLE_TYPES keys.
-	 * @param string $shareWith The principal to grant.
-	 * @param integer $permissions Core permission bitmask.
+	 * @param ObjectEntity $object      The object to share.
+	 * @param string       $type        One of the GRANTABLE_TYPES keys.
+	 * @param string       $shareWith   The principal to grant.
+	 * @param integer      $permissions Core permission bitmask.
 	 *
 	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
 	 * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
@@ -87,6 +83,24 @@ interface ObjectSharingServiceInterface {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function grant(ObjectEntity $object, string $type, string $shareWith, int $permissions = 1): array;
+
+	/**
+	 * Grant one principal access to one object, on declared terms.
+	 *
+	 * The grant is a real Nextcloud share on the object's folder, so core owns
+	 * the record and its whole lifecycle (design D1).
+	 *
+	 * @param ObjectEntity $object  The object to share.
+	 * @param GrantRequest $request The principal type (one of the GRANTABLE_TYPES keys), the principal and the terms.
+	 *
+	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
+	 * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
+	 *
+	 * @return array<string, mixed> The created grant.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	public function grantWithTerms(ObjectEntity $object, GrantRequest $request): array;
 
 	/**
 	 * Create a tokenised LINK to an object, optionally expiring and passworded.
@@ -105,10 +119,9 @@ interface ObjectSharingServiceInterface {
 	 * Everything about the token's lifecycle — generation, expiry enforcement,
 	 * password hashing, revocation — stays core's.
 	 *
-	 * @param ObjectEntity $object The object to link.
-	 * @param integer $permissions Core permission bitmask; defaults to READ.
-	 * @param string|null $password Optional password.
-	 * @param string|null $expiration Optional expiry, any format DateTime parses.
+	 * @param ObjectEntity   $object     The object to link.
+	 * @param LinkInvitation $invitation The permissions (READ unless asked otherwise) and the link's protection:
+	 *                                   an optional password and expiry (any format DateTime parses).
 	 *
 	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
 	 * @throws InvalidArgumentException On an unresolvable folder or a bad expiry.
@@ -117,12 +130,7 @@ interface ObjectSharingServiceInterface {
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function createLink(
-		ObjectEntity $object,
-		int $permissions = 1,
-		?string $password = null,
-		?string $expiration = null,
-	): array;
+	public function createLink(ObjectEntity $object, LinkInvitation $invitation): array;
 
 	/**
 	 * Invite an EMAIL ADDRESS to an object.
@@ -136,11 +144,9 @@ interface ObjectSharingServiceInterface {
 	 * reach the object, so revoking it still works after the mail has been sent.
 	 * Delivery is core's mailer, not ours.
 	 *
-	 * @param ObjectEntity $object The object to share.
-	 * @param string $email The address to invite.
-	 * @param integer $permissions Core permission bitmask; defaults to READ.
-	 * @param string|null $password Optional password.
-	 * @param string|null $expiration Optional expiry.
+	 * @param ObjectEntity   $object     The object to share.
+	 * @param LinkInvitation $invitation The address to invite, the permissions (READ unless asked otherwise) and
+	 *                                   the invitation's protection: an optional password and expiry.
 	 *
 	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
 	 * @throws InvalidArgumentException On a missing address or unresolvable folder.
@@ -149,13 +155,7 @@ interface ObjectSharingServiceInterface {
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function inviteByEmail(
-		ObjectEntity $object,
-		string $email,
-		int $permissions = 1,
-		?string $password = null,
-		?string $expiration = null,
-	): array;
+	public function inviteByEmail(ObjectEntity $object, LinkInvitation $invitation): array;
 
 	/**
 	 * Revoke one grant.

@@ -18,7 +18,6 @@ final class FlowTestRunControllerFactory {
 	/**
 	 * The constructor arguments of FlowTestRunController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param FlowRunServiceInterface $runner Constructor argument.
 	 * @param FlowLocatorInterface $resolvers Constructor argument.
@@ -28,7 +27,6 @@ final class FlowTestRunControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Flow\FlowRunServiceInterface $runner,
 		\OCA\OpenRegister\Service\Flow\FlowLocatorInterface $resolvers,
@@ -36,7 +34,6 @@ final class FlowTestRunControllerFactory {
 		\OCA\OpenRegister\Service\Flow\FlowRunnableGuard $guard,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\FlowTestRunControllerServices(
 				runner: $runner,

@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\MergeController;
+use OCA\OpenRegister\Controller\Support\MergeControllerServices;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -64,10 +65,11 @@ class MergeControllerReverseNotFoundTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		$this->controller = new MergeController(
-			'openregister',
 			$this->createMock(IRequest::class),
-			$this->mergeService,
-			$userSession
+			new MergeControllerServices(
+				$this->mergeService,
+				$userSession
+			)
 		);
 	}//end setUp()
 

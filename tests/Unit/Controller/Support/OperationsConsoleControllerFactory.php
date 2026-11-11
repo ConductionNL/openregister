@@ -24,6 +24,7 @@ final class OperationsConsoleControllerFactory {
 	 * @param OperationsJobsServiceInterface $jobsService Constructor argument.
 	 * @param JobAlertServiceInterface $alerts Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
+	 * @param IGroupManager $groupManager Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -34,16 +35,20 @@ final class OperationsConsoleControllerFactory {
 		\OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface $jobsService,
 		\OCA\OpenRegister\Service\Operations\JobAlertServiceInterface $alerts,
 		\OCP\IUserSession $userSession,
+		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\OperationsConsoleControllerServices(
 				console: $console,
 				jobsService: $jobsService,
 				alerts: $alerts,
+				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+					userSession: $userSession,
+					groupManager: $groupManager,
+					logger: new \Psr\Log\NullLogger(),
+				),
 			),
-			$userSession,
 		];
 	}
 

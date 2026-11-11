@@ -111,9 +111,11 @@ class AggregationControllerFilterSpellingTest extends TestCase {
 	private function makeController(array $params, AggregationRunner $runner, ?LoggerInterface $logger = null): AggregationController {
 		return new AggregationController(
 			$this->makeRequest($params),
-			$runner,
-			$this->createMock(TimeseriesRequestValidator::class),
-			($logger ?? $this->createMock(LoggerInterface::class))
+			new \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices(
+				$runner,
+				$this->createMock(TimeseriesRequestValidator::class),
+				($logger ?? $this->createMock(LoggerInterface::class))
+			)
 		);
 	}//end makeController()
 
@@ -293,7 +295,7 @@ class AggregationControllerFilterSpellingTest extends TestCase {
 		$captured = null;
 		$runner->method('run')->willReturnCallback(
 			function (...$args) use (&$captured) {
-				$captured = ($args[5] ?? null);
+				$captured = $args[1]?->extraFilter;
 				return ['value' => 1, 'backend' => 'postgres'];
 			}
 		);

@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Credential;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
@@ -92,34 +93,6 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	public const BLOCKING_STATUSES = ['relink_needed', 'disabled'];
 
 	/**
-	 * Holds the token set; the only place it is ever written.
-	 *
-	 * @var CredentialStore
-	 */
-	private readonly CredentialStore $credentialStore;
-
-	/**
-	 * Updates the credential's non-secret metadata.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Spends the refresh token and classifies the answer.
-	 *
-	 * @var OAuth2RefreshExchange
-	 */
-	private readonly OAuth2RefreshExchange $exchange;
-
-	/**
-	 * Announces a lost grant to the instance and its owner.
-	 *
-	 * @var CredentialRelinkNotifier
-	 */
-	private readonly CredentialRelinkNotifier $relinkNotifier;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param OAuth2RefreshStores $stores The token-set store and the credential object store.
@@ -130,25 +103,18 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 * @return void
 	 */
 	public function __construct(
-		OAuth2RefreshStores $stores,
+		private readonly OAuth2RefreshStores $stores,
 		private readonly CredentialLock $lock,
-		OAuth2RefreshSteps $steps,
+		private readonly OAuth2RefreshSteps $steps,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->credentialStore = $stores->credentialStore;
-		$this->objectService = $stores->objectService;
-		$this->exchange = $steps->exchange;
-		$this->relinkNotifier = $steps->relinkNotifier;
 	}//end __construct()
 
 	/**
 	 * Return an access token that is valid now, refreshing first when it is not.
 	 *
-	 * @param array<string, mixed> $credential The credential object's serialised data (must carry an `id`/`uuid`).
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $credentialId The credential UUID.
-	 * @param string $scope The credential scope (`personal`|`organisation`).
-	 * @param string|null $actingUserId The asserted user for a sessionless caller.
+	 * @param OAuth2RefreshTarget $target The credential's serialised data (must carry an `id`/`uuid`), its catalogue
+	 *                                    provider entry, its UUID and scope, and the asserted user for a sessionless caller.
 	 *
 	 * @return string The access token to inject.
 	 *
@@ -158,18 +124,29 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
 	 */
-	public function accessTokenFor(array $credential, array $provider, string $credentialId, string $scope, ?string $actingUserId=null): string {
-		$this->assertNotBlocked(credential: $credential, credentialId: $credentialId);
+	public function accessTokenFor(OAuth2RefreshTarget $target): string {
+		return $this->validAccessToken(target: $target);
+	}//end accessTokenFor()
 
-		$set = $this->storedSet(credentialId: $credentialId, scope: $scope);
+	/**
+	 * The access token of a target, refreshed first when it is about to expire.
+	 *
+	 * @param OAuth2RefreshTarget $target The credential being read.
+	 *
+	 * @return string The access token to inject.
+	 *
+	 * @throws CredentialRelinkRequiredException When the credential is blocked or its grant is gone.
+	 * @throws CredentialUpstreamException When the provider cannot be reached.
+	 */
+	private function validAccessToken(OAuth2RefreshTarget $target): string {
+		$this->assertNotBlocked(credential: $target->credential, credentialId: $target->credentialId);
+
+		$set = $this->storedSet(credentialId: $target->credentialId, scope: $target->scope);
 		if ($set->needsRefresh(marginSeconds: self::REFRESH_MARGIN_SECONDS) === false) {
 			return $set->getAccessToken();
 		}
 
-		$target = new OAuth2RefreshTarget(
-			credential: $credential, provider: $provider, address: new TokenSetAddress(credentialId: $credentialId, scope: $scope), actingUserId: $actingUserId
-		);
-		if ($this->lock->acquire($credentialId) === false) {
+		if ($this->lock->acquire($target->credentialId) === false) {
 			return $this->afterContention(target: $target);
 		}
 
@@ -191,22 +168,35 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-daily-job-refreshes-active-token-sets-before-they-expire
 	 */
 	public function sweepCredential(array $credential, array $provider, string $credentialId, string $scope): bool {
-		$this->assertNotBlocked(credential: $credential, credentialId: $credentialId);
+		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
+		$owner   = $this->nullIfEmpty(value: trim((string)($credential['owner'] ?? '')));
 
-		$set = $this->storedSet(credentialId: $credentialId, scope: $scope);
+		return $this->sweep(target: new OAuth2RefreshTarget(credential: $credential, provider: $provider, address: $address, actingUserId: $owner));
+	}//end sweepCredential()
+
+	/**
+	 * Rotate a target that is inside the sweep window and not already being rotated.
+	 *
+	 * @param OAuth2RefreshTarget $target The credential being swept; acts as its owner.
+	 *
+	 * @return boolean True when a rotation happened.
+	 *
+	 * @throws CredentialRelinkRequiredException When the credential is blocked or its grant is gone.
+	 */
+	private function sweep(OAuth2RefreshTarget $target): bool {
+		$this->assertNotBlocked(credential: $target->credential, credentialId: $target->credentialId);
+
+		$set = $this->storedSet(credentialId: $target->credentialId, scope: $target->scope);
 		if ($set->needsRefresh(marginSeconds: self::SWEEP_WINDOW_SECONDS) === false) {
 			return false;
 		}
 
-		if ($this->lock->acquire($credentialId) === false) {
+		if ($this->lock->acquire($target->credentialId) === false) {
 			// The read path is already rotating it. Leaving it to them is the whole
 			// point of the lock; the next sweep picks up anything they did not finish.
 			return false;
 		}
 
-		$owner = $this->nullIfEmpty(value: trim((string)($credential['owner'] ?? '')));
-		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
-		$target = new OAuth2RefreshTarget(credential: $credential, provider: $provider, address: $address, actingUserId: $owner);
 		$this->rotateLocked(target: $target, current: $set);
 
 		return true;
@@ -225,7 +215,7 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
 	 */
 	public function storedSet(string $credentialId, string $scope): OAuth2TokenSet {
-		$stored = $this->credentialStore->get($credentialId, $scope);
+		$stored = $this->stores->credentialStore->get($credentialId, $scope);
 		if ($stored === null || $stored === '') {
 			throw new CredentialAccessDeniedException(message: 'no token set stored for credential');
 		}
@@ -249,10 +239,11 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 * so a failed custody write never leaves the object claiming a token the leaf
 	 * does not hold.
 	 *
-	 * @param string $credentialId The credential UUID.
-	 * @param string $scope The credential scope.
-	 * @param OAuth2TokenSet $set The set to store.
-	 * @param array<string, mixed> $extraMetadata Additional non-secret properties to write on the object.
+	 * The mirrored metadata marks the credential `active`, which is also what a
+	 * re-authorisation repairing it in place needs.
+	 *
+	 * @param TokenSetAddress $address Where the set is held: the credential and its scope.
+	 * @param OAuth2TokenSet  $set     The set to store.
 	 *
 	 * @return void
 	 *
@@ -260,12 +251,12 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
-	public function persist(string $credentialId, string $scope, OAuth2TokenSet $set, array $extraMetadata = []): void {
+	public function persist(TokenSetAddress $address, OAuth2TokenSet $set): void {
 		// The secret is kept under the uuid of the stored credential, not under the identifier as sent.
-		$uuid = (string) $this->storedCredential(credentialId: $credentialId)->getUuid();
-		$this->credentialStore->put($uuid, $set->toStoredJson(), $scope);
+		$uuid = (string) $this->storedCredential(credentialId: $address->credentialId)->getUuid();
+		$this->stores->credentialStore->put($uuid, $set->toStoredJson(), $address->scope);
 
-		$this->writeMetadata(credentialId: $uuid, metadata: array_merge($this->mirroredMetadata(set: $set), $extraMetadata));
+		$this->writeMetadata(credentialId: $uuid, metadata: $this->mirroredMetadata(set: $set));
 	}//end persist()
 
 	/**
@@ -352,8 +343,8 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	private function rotate(OAuth2RefreshTarget $target, OAuth2TokenSet $current): OAuth2TokenSet {
 		$refreshToken = $this->refreshTokenOf(target: $target, current: $current);
 		$response = $this->redeemOrRelink(target: $target, refreshToken: $refreshToken);
-		$rotated = OAuth2TokenSet::fromTokenResponse(response: $response, requestedScopes: $current->getScopes(), previous: $current);
-		$this->persist(credentialId: $target->credentialId, scope: $target->scope, set: $rotated);
+		$rotated = OAuth2TokenSet::fromResponse(response: $response, options: new TokenResponseOptions(requestedScopes: $current->getScopes(), previous: $current));
+		$this->persist(address: new TokenSetAddress(credentialId: $target->credentialId, scope: $target->scope), set: $rotated);
 
 		return $rotated;
 	}//end rotate()
@@ -395,13 +386,7 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 */
 	private function redeemOrRelink(OAuth2RefreshTarget $target, #[\SensitiveParameter] string $refreshToken): array {
 		try {
-			return $this->exchange->redeem(
-				credential: $target->credential,
-				provider: $target->provider,
-				credentialId: $target->credentialId,
-				refreshToken: $refreshToken,
-				actingUserId: $target->actingUserId
-			);
+			return $this->steps->exchange->redeemFor(target: $target, refreshToken: $refreshToken);
 		} catch (CredentialRelinkRequiredException $grantGone) {
 			$this->markRelinkNeeded(credential: $target->credential, credentialId: $target->credentialId, reason: OAuth2RefreshExchange::TERMINAL_ERROR);
 			throw $grantGone;
@@ -467,11 +452,13 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 			metadata: ['status' => 'relink_needed', 'lastError' => $reason]
 		);
 
-		$this->relinkNotifier->announce(
-			credentialId: $credentialId,
-			provider: (string)($credential['provider'] ?? ''),
-			owner: (string)($credential['owner'] ?? ''),
-			reason: $reason
+		$this->steps->relinkNotifier->announce(
+			event: new CredentialRelinkRequiredEvent(
+				credentialId: $credentialId,
+				provider: (string)($credential['provider'] ?? ''),
+				owner: (string)($credential['owner'] ?? ''),
+				reason: $reason
+			)
 		);
 	}//end markRelinkNeeded()
 
@@ -486,7 +473,7 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 * @throws Throwable When the lookup itself fails.
 	 */
 	private function storedCredential(string $credentialId): ObjectEntity {
-		$stored = WriteCause::asLookup(fn () => $this->objectService->find(
+		$stored = WriteCause::asLookup(fn () => $this->stores->objectService->find(
 			register: CredentialBrokerService::REGISTER,
 			schema: CredentialBrokerService::SCHEMA,
 			id: $credentialId,
@@ -542,7 +529,7 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 		$data = $existing->jsonSerialize();
 		unset($data['@self']);
 
-		$this->objectService->saveObject(
+		$this->stores->objectService->saveObject(
 			object: array_merge($data, $metadata),
 			register: CredentialBrokerService::REGISTER,
 			schema: CredentialBrokerService::SCHEMA,

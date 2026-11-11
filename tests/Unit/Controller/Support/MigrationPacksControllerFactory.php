@@ -18,7 +18,6 @@ final class MigrationPacksControllerFactory {
 	/**
 	 * The constructor arguments of MigrationPacksController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param MigrationPackServiceInterface $service Constructor argument.
 	 * @param ControllerSession $session Constructor argument.
@@ -28,7 +27,6 @@ final class MigrationPacksControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\MigrationPackServiceInterface $service,
 		\OCA\OpenRegister\Controller\Support\ControllerSession $session,
@@ -36,7 +34,6 @@ final class MigrationPacksControllerFactory {
 		\OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder $errors,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\MigrationPacksControllerServices(
 				service: $service,

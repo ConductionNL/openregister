@@ -40,6 +40,7 @@ use DateTime;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationWrite;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -113,6 +114,17 @@ class ShippedBaselineStore {
 			return null;
 		}
 
+		return self::baselineIn(snapshot: $snapshot);
+	}//end read()
+
+	/**
+	 * The baseline a snapshot holds, or null when it holds none or a malformed one.
+	 *
+	 * @param ConfigurationSnapshot $snapshot What the subject address holds.
+	 *
+	 * @return array{definition: array<string, mixed>, app: string, appVersion: string, recordedAt: string}|null The baseline.
+	 */
+	private static function baselineIn(ConfigurationSnapshot $snapshot): ?array {
 		if ($snapshot->present === false) {
 			return null;
 		}
@@ -128,7 +140,7 @@ class ShippedBaselineStore {
 			'appVersion' => (string)($stored['appVersion'] ?? ''),
 			'recordedAt' => (string)($stored['recordedAt'] ?? ''),
 		];
-	}//end read()
+	}//end baselineIn()
 
 	/**
 	 * Record what an app shipped for one subject.
@@ -138,20 +150,17 @@ class ShippedBaselineStore {
 	 * fail an upgrade. A missing baseline degrades to today's behaviour, which
 	 * is the state every instance is in before this ships.
 	 *
-	 * @param string               $subject    The subject reference.
-	 * @param array<string, mixed> $definition What the app ships.
-	 * @param string               $app        The app.
-	 * @param string               $appVersion The app version.
-	 * @param string               $configKey  Which baseline.
+	 * @param string            $subject The subject reference.
+	 * @param ShippedDefinition $shipped What the app ships, and which release.
 	 *
 	 * @return bool True when it was recorded.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	public function record(string $subject, array $definition, string $app, string $appVersion, string $configKey = self::KEY_SCHEMA): bool {
-		$address = new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: $subject, configKey: $configKey);
+	public function record(string $subject, ShippedDefinition $shipped): bool {
+		$address = new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: $subject, configKey: self::KEY_SCHEMA);
 
-		return $this->recordAt(address: $address, shipped: new ShippedDefinition(definition: $definition, app: $app, appVersion: $appVersion));
+		return $this->recordAt(address: $address, shipped: $shipped);
 	}//end record()
 
 	/**

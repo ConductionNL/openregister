@@ -43,6 +43,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\EntityLink;
 
 /**
  * LinkedEntityControllerTest.
@@ -106,7 +107,7 @@ class LinkedEntityControllerTest extends TestCase {
 
 		$this->service->expects($this->once())
 			->method('addLink')
-			->with('uuid-1', 'deck', 'card-7')
+			->with('uuid-1', new EntityLink('deck', 'card-7'))
 			->willReturn(['card-3', 'card-7']);
 
 		$response = $this->controller->addObjectLink('uuid-1', 'deck');
@@ -140,7 +141,7 @@ class LinkedEntityControllerTest extends TestCase {
 	public function testRemoveObjectLinkReturnsTheRemainingIds(): void {
 		$this->service->expects($this->once())
 			->method('removeLink')
-			->with('uuid-1', 'deck', 'card-7')
+			->with('uuid-1', new EntityLink(type: 'deck', entityId: 'card-7'))
 			->willReturn(['card-3']);
 
 		$response = $this->controller->removeObjectLink('uuid-1', 'deck', 'card-7');
@@ -174,7 +175,7 @@ class LinkedEntityControllerTest extends TestCase {
 
 		$this->service->expects($this->once())
 			->method('addLinkToRegister')
-			->with('reg-uuid', 'deck', 'board-2')
+			->with('reg-uuid', new EntityLink('deck', 'board-2'))
 			->willReturn(['board-2']);
 
 		$response = $this->controller->addRegisterLink('reg-uuid', 'deck');
@@ -198,7 +199,7 @@ class LinkedEntityControllerTest extends TestCase {
 
 		$this->service->expects($this->once())
 			->method('addLinkToSchema')
-			->with('schema-uuid', 'contacts', 'contact-5')
+			->with('schema-uuid', new EntityLink('contacts', 'contact-5'))
 			->willReturn(['contact-5']);
 
 		$response = $this->controller->addSchemaLink('schema-uuid', 'contacts');

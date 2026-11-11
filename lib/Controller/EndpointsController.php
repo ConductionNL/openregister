@@ -24,11 +24,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EndpointsControllerServices;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapperInterface;
+use OCA\OpenRegister\Db\EndpointLogScope;
 use OCA\OpenRegister\Db\EndpointMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\EndpointServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -117,19 +120,17 @@ class EndpointsController extends Controller {
 	 * Initializes controller with required dependencies for endpoint management.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param EndpointsControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		EndpointsControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		// Store dependencies for use in controller methods.
 		$this->endpointMapper = $services->endpointMapper;
@@ -663,10 +664,8 @@ class EndpointsController extends Controller {
 		if ($this->isCurrentUserAdmin() === false) {
 			$visibleIds = array_map(static fn (Endpoint $endpoint): int => (int)$endpoint->getId(), $this->endpointMapper->findAll());
 			[$logs, $total] = $this->endpointLogMapper->findPageWithin(
-				visibleIds: $visibleIds,
-				endpointId: $endpointId,
-				limit: $limit,
-				offset: $offset
+				scope: new EndpointLogScope(visibleIds: $visibleIds, endpointId: $endpointId),
+				query: new ListQuery(limit: $limit, offset: $offset)
 			);
 			return new JSONResponse(data: ['results' => $logs, 'total' => $total], statusCode: 200);
 		}

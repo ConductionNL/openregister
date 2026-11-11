@@ -13,11 +13,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\DiscardDraftRequest;
 use OCA\OpenRegister\Service\Object\DraftDiscard;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\ObjectService;
@@ -100,7 +103,8 @@ class DraftDiscardTest extends TestCase {
 			}
 		);
 
-		$this->discard = new DraftDiscard(objects: $objects, registers: $registers, schemas: $schemas);
+		$catalog = new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapperInterface::class));
+		$this->discard = new DraftDiscard(objects: $objects, catalog: $catalog);
 	}//end setUp()
 
 	/**
@@ -122,9 +126,11 @@ class DraftDiscardTest extends TestCase {
 		$this->store(uuid: 'd1', owner: 'portal:subject-1', status: 'draft');
 
 		$discarded = $this->discard->discard(
-			destination: ['register' => 'portal', 'schema' => 'case'],
-			draftId: 'd1',
-			owner: DraftOwner::portalSubject(subjectRef: 'subject-1')
+			request: new DiscardDraftRequest(
+				destination: ['register' => 'portal', 'schema' => 'case'],
+				draftId: 'd1',
+				owner: DraftOwner::portalSubject(subjectRef: 'subject-1')
+			)
 		);
 
 		$this->assertTrue($discarded);
@@ -145,9 +151,11 @@ class DraftDiscardTest extends TestCase {
 
 		$this->assertTrue(
 			$this->discard->discard(
-				destination: ['register' => $this->register, 'schema' => $this->schema],
-				draftId: 'd1',
-				owner: DraftOwner::portalSubject(subjectRef: 'subject-1')
+				request: new DiscardDraftRequest(
+					destination: ['register' => $this->register, 'schema' => $this->schema],
+					draftId: 'd1',
+					owner: DraftOwner::portalSubject(subjectRef: 'subject-1')
+				)
 			)
 		);
 	}//end testAcceptsEntitiesAsTheDestination()
@@ -163,13 +171,13 @@ class DraftDiscardTest extends TestCase {
 		$owner = DraftOwner::portalSubject(subjectRef: 'subject-1');
 		$destination = ['register' => 'portal', 'schema' => 'case'];
 
-		$this->assertFalse($this->discard->discard(destination: $destination, draftId: 'theirs', owner: $owner));
-		$this->assertFalse($this->discard->discard(destination: $destination, draftId: 'sent', owner: $owner));
-		$this->assertFalse($this->discard->discard(destination: $destination, draftId: 'nope', owner: $owner));
-		$this->assertFalse($this->discard->discard(destination: $destination, draftId: '', owner: $owner));
-		$this->assertFalse($this->discard->discard(destination: ['register' => 'gone', 'schema' => 'case'], draftId: 'sent', owner: $owner));
-		$this->assertFalse($this->discard->discard(destination: ['register' => 'portal', 'schema' => 'gone'], draftId: 'sent', owner: $owner));
-		$this->assertFalse($this->discard->discard(destination: $destination, draftId: 'stuck', owner: $owner));
+		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: $destination, draftId: 'theirs', owner: $owner)));
+		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: $destination, draftId: 'sent', owner: $owner)));
+		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: $destination, draftId: 'nope', owner: $owner)));
+		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: $destination, draftId: '', owner: $owner)));
+		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: ['register' => 'gone', 'schema' => 'case'], draftId: 'sent', owner: $owner)));
+		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: ['register' => 'portal', 'schema' => 'gone'], draftId: 'sent', owner: $owner)));
+		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: $destination, draftId: 'stuck', owner: $owner)));
 		$this->assertSame([], $this->deletes);
 		$this->assertArrayHasKey('theirs', $this->stored);
 		$this->assertArrayHasKey('sent', $this->stored);

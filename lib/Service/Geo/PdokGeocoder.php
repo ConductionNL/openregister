@@ -116,36 +116,61 @@ class PdokGeocoder implements PdokGeocoderInterface {
 	 * failure (OpenConnector down, upstream error, malformed payload)
 	 * an empty list is returned — geocoding is non-blocking (REQ-GEO-005).
 	 *
-	 * @param string $query The free-text address.
-	 * @param int $maxItems Maximum suggestions to return.
-	 * @param bool $bagOnly Restrict to BAG `type:adres` results.
+	 * @param string              $query   The free-text address.
+	 * @param GeocodeOptions|null $options How many suggestions, and whether only BAG addresses count; defaults when null.
 	 *
 	 * @return array<int, array<string, mixed>> Suggestions (possibly empty).
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-006
 	 */
-	public function geocodeFree(string $query, int $maxItems = 5, bool $bagOnly = false): array {
-		$query = trim($query);
-		if ($query === '') {
+	public function geocodeFree(string $query, ?GeocodeOptions $options = null): array {
+		$options ??= new GeocodeOptions();
+
+		return $this->suggestionsFor(address: new AddressQuery(query: trim($query), maxItems: $options->maxItems, bagOnly: $options->bagOnly));
+	}//end geocodeFree()
+
+	/**
+	 * The suggestions for one address search; empty on a blank query or any failure.
+	 *
+	 * @param AddressQuery $address The trimmed text, the maximum and the BAG-only flag.
+	 *
+	 * @return array<int, array<string, mixed>> Suggestions (possibly empty).
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-006
+	 */
+	private function suggestionsFor(AddressQuery $address): array {
+		if ($address->query === '') {
 			return [];
 		}
 
-		$params = [
-			'q' => $query,
-			'rows' => max(1, $maxItems),
-		];
-		if ($bagOnly === true) {
-			$params['fq'] = 'type:adres';
-		}
-
-		$payload = $this->request(endpoint: 'free', params: $params);
+		$payload = $this->request(endpoint: 'free', params: $this->freeSearchParams(address: $address));
 		if ($payload === null) {
 			return [];
 		}
 
-		return $this->shapeSuggestions(payload: $payload, maxItems: $maxItems);
-	}//end geocodeFree()
+		return $this->shapeSuggestions(payload: $payload, maxItems: $address->maxItems);
+	}//end suggestionsFor()
+
+	/**
+	 * The Locatieserver `free` query parameters for one address search.
+	 *
+	 * @param AddressQuery $address The trimmed text, the maximum and the BAG-only flag.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 */
+	private function freeSearchParams(AddressQuery $address): array {
+		$params = [
+			'q' => $address->query,
+			'rows' => max(1, $address->maxItems),
+		];
+		if ($address->bagOnly === true) {
+			$params['fq'] = 'type:adres';
+		}
+
+		return $params;
+	}//end freeSearchParams()
 
 	/**
 	 * Reverse geocoding: coordinates -> nearest address (or null).
@@ -194,21 +219,8 @@ class PdokGeocoder implements PdokGeocoderInterface {
 		}
 
 		$suggestions = [];
-		foreach ($docs as $doc) {
-			if (is_array($doc) === false) {
-				continue;
-			}
-
-			$coords = $this->parseCentroid(point: ($doc['centroide_ll'] ?? null));
-
-			$suggestions[] = [
-				'display' => (string)($doc['weergavenaam'] ?? ''),
-				'type' => (string)($doc['type'] ?? ''),
-				'lon' => $coords[0],
-				'lat' => $coords[1],
-				'bagId' => ($doc['nummeraanduiding_id'] ?? null),
-			];
-
+		foreach (array_filter($docs, 'is_array') as $doc) {
+			$suggestions[] = $this->suggestionFrom(doc: $doc);
 			if (count($suggestions) >= $maxItems) {
 				break;
 			}
@@ -216,6 +228,25 @@ class PdokGeocoder implements PdokGeocoderInterface {
 
 		return $suggestions;
 	}//end shapeSuggestions()
+
+	/**
+	 * One suggestion shaped from one Locatieserver doc.
+	 *
+	 * @param array $doc The doc.
+	 *
+	 * @return array<string, mixed> The suggestion.
+	 */
+	private function suggestionFrom(array $doc): array {
+		$coords = $this->parseCentroid(point: ($doc['centroide_ll'] ?? null));
+
+		return [
+			'display' => (string)($doc['weergavenaam'] ?? ''),
+			'type' => (string)($doc['type'] ?? ''),
+			'lon' => $coords[0],
+			'lat' => $coords[1],
+			'bagId' => ($doc['nummeraanduiding_id'] ?? null),
+		];
+	}//end suggestionFrom()
 
 	/**
 	 * Parse a PDOK `POINT(lon lat)` WKT centroid into `[lon, lat]`.
@@ -252,17 +283,7 @@ class PdokGeocoder implements PdokGeocoderInterface {
 		$url = (self::LOCATIESERVER_BASE . '/' . $endpoint);
 
 		if ($this->transport !== null) {
-			try {
-				$result = ($this->transport)($url, $params);
-				if (is_array($result) === true) {
-					return $result;
-				}
-
-				return null;
-			} catch (Throwable $e) {
-				$this->logger->warning('PDOK geocoding transport failed: ' . $e->getMessage());
-				return null;
-			}
+			return $this->requestViaTransport(url: $url, params: $params);
 		}
 
 		if ($this->isAvailable() === false) {
@@ -270,6 +291,40 @@ class PdokGeocoder implements PdokGeocoderInterface {
 			return null;
 		}
 
+		return $this->requestViaOpenConnector(url: $url, params: $params);
+	}//end request()
+
+	/**
+	 * Perform the request through the injected transport override.
+	 *
+	 * @param string $url    The Locatieserver URL.
+	 * @param array  $params Query parameters.
+	 *
+	 * @return array|null The payload, or null when it is not an array or the transport failed.
+	 */
+	private function requestViaTransport(string $url, array $params): ?array {
+		try {
+			$result = ($this->transport)($url, $params);
+			if (is_array($result) === true) {
+				return $result;
+			}
+
+			return null;
+		} catch (Throwable $e) {
+			$this->logger->warning('PDOK geocoding transport failed: ' . $e->getMessage());
+			return null;
+		}
+	}//end requestViaTransport()
+
+	/**
+	 * Perform the request through OpenConnector's CallService.
+	 *
+	 * @param string $url    The Locatieserver URL.
+	 * @param array  $params Query parameters.
+	 *
+	 * @return array|null The decoded payload, or null on any failure.
+	 */
+	private function requestViaOpenConnector(string $url, array $params): ?array {
 		try {
 			// The class is OCA\Integriq\Service\CallService on development and
 			// OCA\OpenConnector\Service\CallService on beta/main. `get()` on
@@ -290,7 +345,7 @@ class PdokGeocoder implements PdokGeocoderInterface {
 			return null;
 		}
 
-	}//end request()
+	}//end requestViaOpenConnector()
 
 	/**
 	 * Decode an OpenConnector CallService response into an array.
@@ -306,16 +361,7 @@ class PdokGeocoder implements PdokGeocoderInterface {
 			return $response;
 		}
 
-		$body = null;
-		if (is_object($response) === true && method_exists($response, 'getResponse') === true) {
-			$resp = $response->getResponse();
-			$body = ($resp['body'] ?? null);
-		}
-
-		if (is_string($response) === true) {
-			$body = $response;
-		}
-
+		$body = $this->responseBody(response: $response);
 		if (is_string($body) === false) {
 			return null;
 		}
@@ -327,4 +373,25 @@ class PdokGeocoder implements PdokGeocoderInterface {
 
 		return null;
 	}//end decode()
+
+	/**
+	 * The raw body of a CallService response: its own text, or the `body` of its wrapped response.
+	 *
+	 * @param mixed $response The CallService return value.
+	 *
+	 * @return mixed The body, or null when the response carries none.
+	 */
+	private function responseBody(mixed $response): mixed {
+		$body = null;
+		if (is_object($response) === true && method_exists($response, 'getResponse') === true) {
+			$resp = $response->getResponse();
+			$body = ($resp['body'] ?? null);
+		}
+
+		if (is_string($response) === true) {
+			$body = $response;
+		}
+
+		return $body;
+	}//end responseBody()
 }//end class

@@ -41,9 +41,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use Symfony\Component\Console\Command\Command;
@@ -60,10 +59,48 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class PruneRetiredSchemasCommand extends Command {
 	/**
+	 * The options, in declaration order: name => [mode, description]. None has a shortcut.
+	 */
+	private const OPTIONS = [
+		'app' => [
+			InputOption::VALUE_REQUIRED,
+			'The owning application id, exactly as it appears in the schema\'s `application` column '
+			. '(for example `filinq`). Scoping is mandatory: it is what stops this command reaching '
+			. 'a same-slug schema another app owns.',
+		],
+		'slug' => [
+			(InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY),
+			'A retired schema slug. Repeat the option to prune several.',
+		],
+		'apply' => [
+			InputOption::VALUE_NONE,
+			'Actually delete. Without this flag the command reports what it WOULD delete.',
+		],
+		'force' => [
+			InputOption::VALUE_NONE,
+			'Also delete a schema that still owns objects. DANGEROUS: it drops those objects. '
+			. 'Has no effect without --apply.',
+		],
+		'force-archival' => [
+			InputOption::VALUE_NONE,
+			'Also delete a schema declaring x-openregister-archival, destroying records the '
+			. 'operator may be legally required to retain. Deliberately separate from --force: '
+			. 'an operator pruning a retired schema that happens to hold a few leftover rows has '
+			. 'said nothing about retained records, and this flag is where they say it. Requires '
+			. '--force and --apply.',
+		],
+		'force-kept-rows' => [
+			InputOption::VALUE_NONE,
+			'Also delete a schema holding frozen, archived or locked rows, or rows of a register '
+			. 'that no longer exists. Deliberately separate from --force, and written to the audit '
+			. 'trail as a forced removal. Requires --force and --apply.',
+		],
+	];
+
+	/**
 	 * Wire the mappers and the cascade service.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper (app-scoped resolution).
-	 * @param RegisterMapperInterface $registerMapper Register mapper, to unlink the retired id.
+	 * @param SchemaCatalogInterface  $catalog         Schema lookups (app-scoped resolution) and the register mapper, to unlink the retired id.
 	 * @param SchemaTeardownInterface $deletionService Cascade teardown (objects, tables, row).
 	 *
 	 * @return void
@@ -71,8 +108,7 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly SchemaTeardownInterface $deletionService,
 	) {
 		parent::__construct();
@@ -90,52 +126,10 @@ class PruneRetiredSchemasCommand extends Command {
 			->setDescription(
 				'Remove schemas an app has retired from its register descriptor '
 				. '(the import unions ids, so it never removes them itself).'
-			)
-			->addOption(
-				'app',
-				null,
-				InputOption::VALUE_REQUIRED,
-				'The owning application id, exactly as it appears in the schema\'s `application` column '
-				. '(for example `filinq`). Scoping is mandatory: it is what stops this command reaching '
-				. 'a same-slug schema another app owns.'
-			)
-			->addOption(
-				'slug',
-				null,
-				(InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY),
-				'A retired schema slug. Repeat the option to prune several.'
-			)
-			->addOption(
-				'apply',
-				null,
-				InputOption::VALUE_NONE,
-				'Actually delete. Without this flag the command reports what it WOULD delete.'
-			)
-			->addOption(
-				'force',
-				null,
-				InputOption::VALUE_NONE,
-				'Also delete a schema that still owns objects. DANGEROUS: it drops those objects. '
-				. 'Has no effect without --apply.'
-			)
-			->addOption(
-				'force-archival',
-				null,
-				InputOption::VALUE_NONE,
-				'Also delete a schema declaring x-openregister-archival, destroying records the '
-				. 'operator may be legally required to retain. Deliberately separate from --force: '
-				. 'an operator pruning a retired schema that happens to hold a few leftover rows has '
-				. 'said nothing about retained records, and this flag is where they say it. Requires '
-				. '--force and --apply.'
-			)
-			->addOption(
-				'force-kept-rows',
-				null,
-				InputOption::VALUE_NONE,
-				'Also delete a schema holding frozen, archived or locked rows, or rows of a register '
-				. 'that no longer exists. Deliberately separate from --force, and written to the audit '
-				. 'trail as a forced removal. Requires --force and --apply.'
 			);
+		foreach (self::OPTIONS as $name => [$mode, $description]) {
+			$this->addOption(name: $name, shortcut: null, mode: $mode, description: $description);
+		}
 	}//end configure()
 
 	/**
@@ -149,20 +143,38 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$appId = (string)$input->getOption('app');
-		$slugs = (array)$input->getOption('slug');
-		$apply = (bool)$input->getOption('apply');
-		$force = (bool)$input->getOption('force');
-		$override = new SchemaTeardownOverride(
-			archivalSchema: (bool)$input->getOption('force-archival'),
-			keptRows: (bool)$input->getOption('force-kept-rows')
-		);
-		$run = new PruneRetiredSchemasRun(appId: $appId, dryRun: ($apply === false), force: $force, override: $override);
+		$run = $this->startRun(input: $input, output: $output);
+		if ($run === null) {
+			return Command::FAILURE;
+		}
 
-		$invalid = $this->invalidArguments(appId: $appId, slugs: $slugs);
+		$pass = new PruneRetiredSchemasPass(run: $run, output: $output);
+		foreach ((array)$input->getOption('slug') as $slug) {
+			$this->pruneSlug(slug: (string)$slug, pass: $pass);
+		}
+
+		$this->writeSummary(pass: $pass);
+
+		return Command::SUCCESS;
+	}//end execute()
+
+	/**
+	 * Read the operator's options into a run, refuse incomplete arguments and announce a dry run.
+	 *
+	 * @param InputInterface  $input  Console input.
+	 * @param OutputInterface $output Console output stream.
+	 *
+	 * @return PruneRetiredSchemasRun|null The run, or null after printing why the arguments are incomplete.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function startRun(InputInterface $input, OutputInterface $output): ?PruneRetiredSchemasRun {
+		$run = $this->runFromOptions(input: $input);
+
+		$invalid = $this->invalidArguments(appId: $run->appId, slugs: (array)$input->getOption('slug'));
 		if ($invalid !== null) {
 			$output->writeln($invalid);
-			return Command::FAILURE;
+			return null;
 		}
 
 		if ($run->dryRun === true) {
@@ -172,17 +184,47 @@ class PruneRetiredSchemasCommand extends Command {
 			);
 		}
 
-		$pass = new PruneRetiredSchemasPass(run: $run, output: $output);
-		foreach ($slugs as $slug) {
-			$this->pruneSlug(slug: (string)$slug, pass: $pass);
-		}
+		return $run;
+	}//end startRun()
 
-		$suffix = '';
-		if ($run->dryRun === true) {
-			$suffix = ' (dry run, no writes performed)';
-		}
+	/**
+	 * The run the operator's options describe.
+	 *
+	 * @param InputInterface $input Console input.
+	 *
+	 * @return PruneRetiredSchemasRun The run.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function runFromOptions(InputInterface $input): PruneRetiredSchemasRun {
+		$apply = (bool)$input->getOption('apply');
+		$override = new SchemaTeardownOverride(
+			archivalSchema: (bool)$input->getOption('force-archival'),
+			keptRows: (bool)$input->getOption('force-kept-rows')
+		);
 
-		$output->writeln(
+		return new PruneRetiredSchemasRun(
+			appId: (string)$input->getOption('app'),
+			dryRun: ($apply === false),
+			force: (bool)$input->getOption('force'),
+			override: $override
+		);
+	}//end runFromOptions()
+
+	/**
+	 * Print the run's tally.
+	 *
+	 * @param PruneRetiredSchemasPass $pass The run's tally and the console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function writeSummary(PruneRetiredSchemasPass $pass): void {
+		$run = $pass->run;
+		$suffix = $this->dryRunSuffix(run: $run);
+
+		$pass->output->writeln(
 			sprintf(
 				'<info>Done. Pruned=%d, skipped=%d, not-found=%d%s</info>',
 				$run->pruned,
@@ -191,9 +233,24 @@ class PruneRetiredSchemasCommand extends Command {
 				$suffix
 			)
 		);
+	}//end writeSummary()
 
-		return Command::SUCCESS;
-	}//end execute()
+	/**
+	 * The summary's dry-run marker.
+	 *
+	 * @param PruneRetiredSchemasRun $run The run.
+	 *
+	 * @return string The marker, empty when the run applied its deletions.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function dryRunSuffix(PruneRetiredSchemasRun $run): string {
+		if ($run->dryRun === true) {
+			return ' (dry run, no writes performed)';
+		}
+
+		return '';
+	}//end dryRunSuffix()
 
 	/**
 	 * The error line for missing required options, or null when both are given.
@@ -228,10 +285,6 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	private function pruneSlug(string $slug, PruneRetiredSchemasPass $pass): void {
-		$run = $pass->run;
-		$output = $pass->output;
-		$appId = $run->appId;
-
 		// EVERY row under this (application, slug), not the first.
 		//
 		// `findByApplicationAndSlug()` caps at one, which is correct where
@@ -243,43 +296,89 @@ class PruneRetiredSchemasCommand extends Command {
 		// instance: opencatalogi owned two `document` rows (39 and 40), this
 		// pruned 40, printed `Pruned=1, skipped=0`, and left 39 answering
 		// every lookup.
-		$schemas = $this->schemaMapper->findAllByApplicationAndSlug(slug: $slug, application: $appId);
+		$rows = new RetiredSlugRows(
+			slug: $slug,
+			schemas: $this->catalog->schemas()->findAllByApplicationAndSlug(slug: $slug, application: $pass->run->appId)
+		);
 
-		if ($schemas === []) {
-			$run->missing++;
-			$output->writeln(
-				sprintf(
-					'<comment>SKIP "%s": app "%s" owns no schema with that slug (already pruned, or never imported).</comment>',
-					$slug,
-					$appId
-				)
-			);
+		if ($rows->schemas === []) {
+			$this->reportMissing(rows: $rows, pass: $pass);
 			return;
 		}
 
-		if (count($schemas) > 1) {
-			$output->writeln(
-				sprintf(
-					'<comment>"%s": app "%s" owns %d rows under this slug. All of them are handled below.</comment>',
-					$slug,
-					$appId,
-					count($schemas)
-				)
-			);
+		$this->noteSeveralRows(rows: $rows, pass: $pass);
+		$this->pruneRows(rows: $rows, pass: $pass);
+	}//end pruneSlug()
+
+	/**
+	 * Report a slug the app owns no schema under.
+	 *
+	 * @param RetiredSlugRows         $rows The slug and its (empty) rows.
+	 * @param PruneRetiredSchemasPass $pass The run's tally and the console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function reportMissing(RetiredSlugRows $rows, PruneRetiredSchemasPass $pass): void {
+		$pass->run->missing++;
+		$pass->output->writeln(
+			sprintf(
+				'<comment>SKIP "%s": app "%s" owns no schema with that slug (already pruned, or never imported).</comment>',
+				$rows->slug,
+				$pass->run->appId
+			)
+		);
+	}//end reportMissing()
+
+	/**
+	 * Say so when the app owns more than one row under the slug.
+	 *
+	 * @param RetiredSlugRows         $rows The slug and its rows.
+	 * @param PruneRetiredSchemasPass $pass The run and the console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function noteSeveralRows(RetiredSlugRows $rows, PruneRetiredSchemasPass $pass): void {
+		if (count($rows->schemas) <= 1) {
+			return;
 		}
 
-		foreach ($schemas as $schema) {
+		$pass->output->writeln(
+			sprintf(
+				'<comment>"%s": app "%s" owns %d rows under this slug. All of them are handled below.</comment>',
+				$rows->slug,
+				$pass->run->appId,
+				count($rows->schemas)
+			)
+		);
+	}//end noteSeveralRows()
+
+	/**
+	 * Prune each row under the slug, counting its objects just before its turn.
+	 *
+	 * @param RetiredSlugRows         $rows The slug and its rows.
+	 * @param PruneRetiredSchemasPass $pass The run's flags and tally, and the console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function pruneRows(RetiredSlugRows $rows, PruneRetiredSchemasPass $pass): void {
+		foreach ($rows->schemas as $schema) {
 			// The count the DELETE would produce, from the deletion service that
 			// enumerates the tables — not a second, narrower count of its own.
 			// The guard and the delete disagreeing is the whole defect.
 			$row = new RetiredSchemaRow(
 				schema: $schema,
-				slug: $slug,
+				slug: $rows->slug,
 				objectCount: $this->deletionService->countObjectsCascadeWouldDelete(schema: $schema)
 			);
 			$this->pruneSchema(row: $row, pass: $pass);
 		}
-	}//end pruneSlug()
+	}//end pruneRows()
 
 	/**
 	 * Report one schema, apply the guards, then tear it down unless this is a dry run.
@@ -292,40 +391,65 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	private function pruneSchema(RetiredSchemaRow $row, PruneRetiredSchemasPass $pass): void {
-		$schema = $row->schema;
 		$run = $pass->run;
-		$output = $pass->output;
-		$objectCount = $row->objectCount;
-		$schemaId = (int)$schema->getId();
-		$linkedRegisters = $this->registersReferencing(schemaId: $schemaId);
-
-		$output->writeln(
-			sprintf(
-				'<info>%s (id=%d, app=%s): %d object(s), referenced by %d register(s)</info>',
-				$row->slug,
-				$schemaId,
-				$run->appId,
-				$objectCount,
-				count($linkedRegisters)
-			)
-		);
+		$this->reportSchema(row: $row, pass: $pass);
 
 		$skip = $this->skipReason(row: $row, run: $run);
 		if ($skip !== null) {
 			$run->skipped++;
-			$output->writeln($skip);
+			$pass->output->writeln($skip);
 			return;
 		}
 
 		if ($run->dryRun === true) {
-			$output->writeln(
-				sprintf('  <comment>WOULD DELETE (objects=%d)</comment>%s', $objectCount, $this->forcedNote(schema: $schema))
-			);
+			$this->reportWouldDelete(row: $row, pass: $pass);
 			return;
 		}
 
 		$this->tearDown(row: $row, pass: $pass);
 	}//end pruneSchema()
+
+	/**
+	 * Print what a dry run would delete for one schema.
+	 *
+	 * @param RetiredSchemaRow        $row  The schema and the objects the cascade would delete.
+	 * @param PruneRetiredSchemasPass $pass The console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function reportWouldDelete(RetiredSchemaRow $row, PruneRetiredSchemasPass $pass): void {
+		$pass->output->writeln(
+			sprintf('  <comment>WOULD DELETE (objects=%d)</comment>%s', $row->objectCount, $this->forcedNote(schema: $row->schema))
+		);
+	}//end reportWouldDelete()
+
+	/**
+	 * Print the schema's id, owner, object count and how many registers reference it.
+	 *
+	 * @param RetiredSchemaRow        $row  The schema to prune, its slug and its object count.
+	 * @param PruneRetiredSchemasPass $pass The run and the console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function reportSchema(RetiredSchemaRow $row, PruneRetiredSchemasPass $pass): void {
+		$schemaId = (int)$row->schema->getId();
+		$linkedRegisters = $this->registersReferencing(schemaId: $schemaId);
+
+		$pass->output->writeln(
+			sprintf(
+				'<info>%s (id=%d, app=%s): %d object(s), referenced by %d register(s)</info>',
+				$row->slug,
+				$schemaId,
+				$pass->run->appId,
+				$row->objectCount,
+				count($linkedRegisters)
+			)
+		);
+	}//end reportSchema()
 
 	/**
 	 * Why this schema is skipped before any write: the object guard, then the refusals.
@@ -359,55 +483,96 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	private function tearDown(RetiredSchemaRow $row, PruneRetiredSchemasPass $pass): void {
-		$schema = $row->schema;
-		$objectCount = $row->objectCount;
-		$run = $pass->run;
-		$output = $pass->output;
-		$forcedNote = $this->forcedNote(schema: $schema);
-
-		try {
-			$result = $this->deletionService->cascadeDeleteSchema(
-				schema: $schema,
-				override: $run->override
-			);
-		} catch (\Throwable $e) {
-			$run->skipped++;
-			$output->writeln(sprintf('  <error>FAILED: %s</error>', $e->getMessage()));
+		$forcedNote = $this->forcedNote(schema: $row->schema);
+		$result = $this->cascadeDelete(row: $row, pass: $pass);
+		if ($result === null) {
 			return;
 		}
 
-		$this->unlinkFromRegisters(schemaId: (int)$schema->getId(), output: $output);
+		$this->unlinkFromRegisters(schemaId: (int)$row->schema->getId(), output: $pass->output);
 
-		$run->pruned++;
-		$tableDropped = 'no';
-		if ($result['tableDropped'] === true) {
-			$tableDropped = 'yes';
-		}
-
-		$output->writeln(
-			sprintf(
-				'  <info>DELETED (objects removed=%d, table dropped=%s)</info>%s',
-				(int)$result['deletedCount'],
-				$tableDropped,
-				$forcedNote
-			)
-		);
+		$pass->run->pruned++;
+		$pass->output->writeln($this->deletedLine(result: $result, forcedNote: $forcedNote));
 
 		// The count that gated the deletion and the count the deletion
 		// reports must agree. When they do not, the guard above passed on a
 		// number that did not describe what was destroyed, and the operator
 		// who read "0 object(s)" in the dry run needs to know that.
-		if ((int)$result['deletedCount'] !== $objectCount) {
-			$output->writeln(
-				sprintf(
-					'  <error>COUNT MISMATCH: the guard saw %d object(s), the delete removed %d. '
-					. 'The guard was wrong about what it was protecting.</error>',
-					$objectCount,
-					(int)$result['deletedCount']
-				)
-			);
+		$mismatch = $this->countMismatchLine(result: $result, objectCount: $row->objectCount);
+		if ($mismatch !== null) {
+			$pass->output->writeln($mismatch);
 		}
 	}//end tearDown()
+
+	/**
+	 * Run the cascade teardown; a failure is counted as a skip and printed.
+	 *
+	 * @param RetiredSchemaRow        $row  The schema to delete.
+	 * @param PruneRetiredSchemasPass $pass The run's flags and tally, and the console output stream.
+	 *
+	 * @return array<string, mixed>|null The teardown result, or null when it failed.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function cascadeDelete(RetiredSchemaRow $row, PruneRetiredSchemasPass $pass): ?array {
+		try {
+			return $this->deletionService->cascadeDeleteSchema(
+				schema: $row->schema,
+				override: $pass->run->override
+			);
+		} catch (\Throwable $e) {
+			$pass->run->skipped++;
+			$pass->output->writeln(sprintf('  <error>FAILED: %s</error>', $e->getMessage()));
+			return null;
+		}
+	}//end cascadeDelete()
+
+	/**
+	 * The line reporting a completed teardown.
+	 *
+	 * @param array<string, mixed> $result     The teardown result.
+	 * @param string               $forcedNote The note marking protected records, read before the teardown.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function deletedLine(array $result, string $forcedNote): string {
+		$tableDropped = 'no';
+		if ($result['tableDropped'] === true) {
+			$tableDropped = 'yes';
+		}
+
+		return sprintf(
+			'  <info>DELETED (objects removed=%d, table dropped=%s)</info>%s',
+			(int)$result['deletedCount'],
+			$tableDropped,
+			$forcedNote
+		);
+	}//end deletedLine()
+
+	/**
+	 * The line reporting that the guard's count and the teardown's count disagree, if they do.
+	 *
+	 * @param array<string, mixed> $result      The teardown result.
+	 * @param int                  $objectCount The count the guard checked.
+	 *
+	 * @return string|null The line, or null when the counts agree.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function countMismatchLine(array $result, int $objectCount): ?string {
+		if ((int)$result['deletedCount'] === $objectCount) {
+			return null;
+		}
+
+		return sprintf(
+			'  <error>COUNT MISMATCH: the guard saw %d object(s), the delete removed %d. '
+			. 'The guard was wrong about what it was protecting.</error>',
+			$objectCount,
+			(int)$result['deletedCount']
+		);
+	}//end countMismatchLine()
 
 	/**
 	 * Why this schema is skipped, told here as well as in the service.
@@ -504,20 +669,33 @@ class PruneRetiredSchemasCommand extends Command {
 		return array_values(
 			array_filter(
 				$schemaRefs,
-				static function ($ref) use ($schemaId) {
-					if (is_int($ref) === false && is_string($ref) === false) {
-						return true;
-					}
-
-					if (is_string($ref) === true && is_numeric($ref) === false) {
-						return true;
-					}
-
-					return ((int)$ref !== $schemaId);
-				}
+				static fn ($ref): bool => self::refersToSchemaId(ref: $ref, schemaId: $schemaId) === false
 			)
 		);
 	}//end unlinkSchemaId()
+
+	/**
+	 * Whether one entry of a register's schema list is the given id, as an
+	 * integer or a numeric string. Anything else never matches.
+	 *
+	 * @param mixed $ref      One entry of the register's schema list.
+	 * @param int   $schemaId The id to match.
+	 *
+	 * @return bool True when the entry names the id.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private static function refersToSchemaId(mixed $ref, int $schemaId): bool {
+		if (is_int($ref) === false && is_string($ref) === false) {
+			return false;
+		}
+
+		if (is_string($ref) === true && is_numeric($ref) === false) {
+			return false;
+		}
+
+		return ((int)$ref === $schemaId);
+	}//end refersToSchemaId()
 
 
 	/**
@@ -541,7 +719,7 @@ class PruneRetiredSchemasCommand extends Command {
 			$register->setSchemas(self::unlinkSchemaId(schemaRefs: $register->getSchemas(), schemaId: $schemaId));
 
 			try {
-				$this->registerMapper->update($register);
+				$this->catalog->registers()->update($register);
 				$output->writeln(sprintf('  <info>unlinked from %s</info>', $label));
 			} catch (\Throwable $e) {
 				$output->writeln(
@@ -563,7 +741,7 @@ class PruneRetiredSchemasCommand extends Command {
 	private function registersReferencing(int $schemaId): array {
 		$matches = [];
 
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+		foreach ($this->catalog->registers()->findAll(_rbac: false, _multitenancy: false) as $register) {
 			foreach ($register->getSchemas() as $ref) {
 				if ((int)$ref === $schemaId) {
 					$matches[] = $register;

@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
@@ -44,6 +45,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Task\TaskFormInlineSave;
 use OCA\OpenRegister\Service\Task\TaskFormSubjectWriter;
+use OCA\OpenRegister\Service\Task\TaskFormSubmission;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -116,7 +118,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 		$this->engine->expects($this->never())->method('resolveTransitionInputs');
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$this->writer->write(self::task(), null, []);
+		$this->writer->write(new TaskFormSubmission(self::task(), [], null), null);
 	}
 
 	public function testAnExternalFormRunsAnyValuesThroughAnEmptyAllowlist(): void {
@@ -125,7 +127,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 			->willThrowException(new InvalidTransitionInputException('undeclared input', ['x']));
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(), ['kind' => 'external'], ['x' => 1]));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), ['x' => 1], null), ['kind' => 'external']));
 
 		$this->assertInstanceOf(TaskFormRefusedException::class, $refused);
 		$this->assertSame(TaskFormRefusedException::KIND_UNDECLARED, $refused->getKind());
@@ -135,7 +137,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 	public function testAFieldFormWithoutASubjectIsRefused(): void {
 		$this->engine->expects($this->never())->method('resolveTransitionInputs');
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(' '), self::fieldForm(), ['title' => 'New']));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(' '), ['title' => 'New'], null), self::fieldForm()));
 
 		$this->assertInstanceOf(TaskFormRefusedException::class, $refused);
 		$this->assertSame(TaskFormRefusedException::KIND_NO_SUBJECT, $refused->getKind());
@@ -149,18 +151,18 @@ class TaskFormSubjectWriterTest extends TestCase {
 		$this->objects->expects($this->once())->method('saveObject')
 			->with(['title' => 'New', 'keep' => 1, 'id' => 'obj-1'], [], '5', '6', 'obj-1', true, true, false, true, null, $this->user)
 			->willReturn(self::subject());
-		$this->runContext->expects($this->once())->method('push')->with('run-1', 'task-form', 0);
+		$this->runContext->expects($this->once())->method('push')->with(new FlowRunFrame('run-1', 'task-form', 0));
 		$this->runContext->expects($this->once())->method('pop');
 
-		$this->writer->write(self::task(), self::fieldForm(), ['title' => 'New']);
+		$this->writer->write(new TaskFormSubmission(self::task(), ['title' => 'New'], null), self::fieldForm());
 	}
 
 	public function testAnInlineSaveWithoutARunPushesNoRunUuid(): void {
 		$this->engine->method('resolveTransitionInputs')->willReturn(['title' => 'New']);
 		$this->objects->method('find')->willReturn(self::subject());
-		$this->runContext->expects($this->once())->method('push')->with(null, 'task-form', 0);
+		$this->runContext->expects($this->once())->method('push')->with(new FlowRunFrame(null, 'task-form', 0));
 
-		$this->writer->write(self::task('obj-1', '  '), self::fieldForm(), ['title' => 'New']);
+		$this->writer->write(new TaskFormSubmission(self::task('obj-1', '  '), ['title' => 'New'], null), self::fieldForm());
 	}
 
 	public function testNothingAcceptedMeansNothingWritten(): void {
@@ -168,13 +170,13 @@ class TaskFormSubjectWriterTest extends TestCase {
 		$this->objects->expects($this->never())->method('find');
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$this->writer->write(self::task(), self::fieldForm(), []);
+		$this->writer->write(new TaskFormSubmission(self::task(), [], null), self::fieldForm());
 	}
 
 	public function testAMissingDeclaredFieldIsAMissingRefusal(): void {
 		$this->engine->method('resolveTransitionInputs')->willThrowException(new InvalidTransitionInputException('nope', ['title']));
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm(), []));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), [], null), self::fieldForm()));
 
 		$this->assertSame(TaskFormRefusedException::KIND_MISSING, $refused->getKind());
 	}
@@ -182,7 +184,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 	public function testAnUndeclaredFieldOnAFieldFormIsAnUndeclaredRefusal(): void {
 		$this->engine->method('resolveTransitionInputs')->willThrowException(new InvalidTransitionInputException('nope', ['title', 'rogue']));
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm(), ['rogue' => 1]));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), ['rogue' => 1], null), self::fieldForm()));
 
 		$this->assertSame(TaskFormRefusedException::KIND_UNDECLARED, $refused->getKind());
 	}
@@ -190,7 +192,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 	public function testARefusalNamingNoFieldIsUndeclared(): void {
 		$this->engine->method('resolveTransitionInputs')->willThrowException(new InvalidTransitionInputException('nope', []));
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm(), []));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), [], null), self::fieldForm()));
 
 		$this->assertSame(TaskFormRefusedException::KIND_UNDECLARED, $refused->getKind());
 	}
@@ -200,7 +202,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 		$this->objects->method('find')->willReturn(null);
 		$this->runContext->expects($this->never())->method('push');
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm(), ['title' => 'New']));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), ['title' => 'New'], null), self::fieldForm()));
 
 		$this->assertInstanceOf(TaskSubjectWriteRefusedException::class, $refused);
 		$this->assertStringContainsString('"obj-1" no longer exists', $refused->getMessage());
@@ -212,7 +214,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 		$this->objects->method('saveObject')->willThrowException(new NotAuthorizedException('no write'));
 		$this->runContext->expects($this->once())->method('pop');
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm(), ['title' => 'New']));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), ['title' => 'New'], null), self::fieldForm()));
 
 		$this->assertInstanceOf(TaskAccessDeniedException::class, $refused);
 		$this->assertSame('no write', $refused->getMessage());
@@ -224,7 +226,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 		$cause = new ValidationException('title too long');
 		$this->objects->method('saveObject')->willThrowException($cause);
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm(), ['title' => 'New']));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), ['title' => 'New'], null), self::fieldForm()));
 
 		$this->assertInstanceOf(TaskSubjectWriteRefusedException::class, $refused);
 		$this->assertSame($cause, $refused->getPrevious());
@@ -235,26 +237,26 @@ class TaskFormSubjectWriterTest extends TestCase {
 		$this->engine->expects($this->never())->method('resolveTransitionInputs');
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$this->writer->write(self::task(), self::fieldForm('approve'), ['title' => 'New']);
+		$this->writer->write(new TaskFormSubmission(self::task(), ['title' => 'New'], null), self::fieldForm('approve'));
 	}
 
 	public function testAnEmptyActionFallsBackToTheInlineSave(): void {
 		$this->engine->expects($this->never())->method('transition');
 		$this->engine->expects($this->once())->method('resolveTransitionInputs')->willReturn([]);
 
-		$this->writer->write(self::task(), self::fieldForm(''), []);
+		$this->writer->write(new TaskFormSubmission(self::task(), [], null), self::fieldForm(''));
 	}
 
 	public function testATransitionInputRefusalIsKindedByItsMessage(): void {
 		$this->engine->method('transition')->willThrowException(new InvalidTransitionInputException('Transition is missing required input: title', ['title']));
-		$missing = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm('approve'), []));
+		$missing = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), [], null), self::fieldForm('approve')));
 
 		$this->assertSame(TaskFormRefusedException::KIND_MISSING, $missing->getKind());
 	}
 
 	public function testATransitionInputRefusalWithoutMissingIsUndeclared(): void {
 		$this->engine->method('transition')->willThrowException(new InvalidTransitionInputException('Undeclared input: rogue', ['rogue']));
-		$undeclared = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm('approve'), ['rogue' => 1]));
+		$undeclared = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), ['rogue' => 1], null), self::fieldForm('approve')));
 
 		$this->assertSame(TaskFormRefusedException::KIND_UNDECLARED, $undeclared->getKind());
 	}
@@ -262,7 +264,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 	public function testAnUnauthorizedTransitionIsAnAccessDenial(): void {
 		$this->engine->method('transition')->willThrowException(new NotAuthorizedException('not yours'));
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm('approve'), []));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), [], null), self::fieldForm('approve')));
 
 		$this->assertInstanceOf(TaskAccessDeniedException::class, $refused);
 		$this->assertSame('not yours', $refused->getMessage());
@@ -273,7 +275,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 			new LifecycleSubjectNotFoundException('not found', 404, new NotAuthorizedException('hidden'))
 		);
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm('approve'), []));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), [], null), self::fieldForm('approve')));
 
 		$this->assertInstanceOf(TaskAccessDeniedException::class, $refused);
 		$this->assertSame('hidden', $refused->getMessage());
@@ -283,7 +285,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 		$missing = new LifecycleSubjectNotFoundException('gone');
 		$this->engine->method('transition')->willThrowException($missing);
 
-		$refused = $this->refusalOf(fn () => $this->writer->write(self::task(), self::fieldForm('approve'), []));
+		$refused = $this->refusalOf(fn () => $this->writer->write(new TaskFormSubmission(self::task(), [], null), self::fieldForm('approve')));
 
 		$this->assertInstanceOf(TaskSubjectWriteRefusedException::class, $refused);
 		$this->assertSame($missing, $refused->getPrevious());
@@ -295,7 +297,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 			$engine->method('transition')->willThrowException($cause);
 			$writer = new TaskFormSubjectWriter($engine, new TaskFormInlineSave($this->objects, $this->createMock(IUserSession::class)));
 
-			$refused = $this->refusalOf(fn () => $writer->write(self::task(), self::fieldForm('approve'), []));
+			$refused = $this->refusalOf(fn () => $writer->write(new TaskFormSubmission(self::task(), [], null), self::fieldForm('approve')));
 
 			$this->assertInstanceOf(TaskSubjectWriteRefusedException::class, $refused);
 			$this->assertSame($cause, $refused->getPrevious());

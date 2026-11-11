@@ -1,0 +1,5 @@
+# Test methods that cannot fail yet, one "path/under/tests/Unit.php::method" per line.
+# A method listed here may stay as it is; a new one may not. Remove a line once its test asserts something.
+#
+# SPDX-License-Identifier: EUPL-1.2
+# SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>

@@ -118,7 +118,7 @@ class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterf
 	public function countTimelineLinks(string $objectUuid): int {
 		$total = 0;
 		foreach ($this->timelineLinkReaders(objectUuid: $objectUuid) as $label => $read) {
-			$total += $this->countOf(label: $label, read: $read, objectUuid: $objectUuid);
+			$total += $this->countOf(source: $label . ' for object ' . $objectUuid, read: $read);
 		}
 
 		return $total;
@@ -133,7 +133,7 @@ class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterf
 	 */
 	private function timelineLinkReaders(string $objectUuid): array {
 		return [
-			'emails' => fn (): array => $this->links->emailService->getEmailsForObject($objectUuid),
+			'emails' => fn (): array => $this->links->emailService->getEmailsForObject($objectUuid)['results'],
 			'calendar events' => fn (): array => $this->links->calendarEventService->getEventsForObject($objectUuid),
 			'contacts' => fn (): array => $this->links->contactService->getContactsForObject($objectUuid),
 			'deck cards' => fn (): array => $this->links->deckCardService->getCardsForObject($objectUuid),
@@ -143,18 +143,17 @@ class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterf
 	/**
 	 * The rows one source holds; a source that cannot be read counts nothing and is logged.
 	 *
-	 * @param string            $label      The source's label.
-	 * @param callable(): array $read       The source's reader.
-	 * @param string            $objectUuid UUID of the object.
+	 * @param string            $source The source's label and the object, e.g. "notes for object <uuid>".
+	 * @param callable(): array $read   The source's reader.
 	 *
 	 * @return int The number of rows.
 	 */
-	private function countOf(string $label, callable $read, string $objectUuid): int {
+	private function countOf(string $source, callable $read): int {
 		try {
 			return count($read());
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'Could not count ' . $label . ' for object ' . $objectUuid . ': ' . $e->getMessage(),
+				'Could not count ' . $source . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return 0;
@@ -193,7 +192,7 @@ class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterf
 			$this->noteService->deleteNotesForObject($objectUuid);
 			$this->logger->info('Cleaned up notes for deleted object: ' . $objectUuid);
 		} catch (Exception $e) {
-			$this->warnFailed(action: 'clean up notes', objectUuid: $objectUuid, e: $e);
+			$this->warnFailed(failure: 'clean up notes for deleted object: ' . $objectUuid, e: $e);
 		}
 	}//end cleanupNotes()
 
@@ -209,7 +208,7 @@ class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterf
 			$tasks = $this->taskService->getTasksForObject($objectUuid);
 			$this->deleteTasks(tasks: $tasks, objectUuid: $objectUuid);
 		} catch (Exception $e) {
-			$this->warnFailed(action: 'clean up tasks', objectUuid: $objectUuid, e: $e);
+			$this->warnFailed(failure: 'clean up tasks for deleted object: ' . $objectUuid, e: $e);
 		}
 	}//end cleanupTasks()
 
@@ -264,7 +263,7 @@ class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterf
 				$this->logger->info('Cleaned up ' . $count . ' email link(s) for deleted object: ' . $objectUuid);
 			}
 		} catch (Exception $e) {
-			$this->warnFailed(action: 'clean up email links', objectUuid: $objectUuid, e: $e);
+			$this->warnFailed(failure: 'clean up email links for deleted object: ' . $objectUuid, e: $e);
 		}
 	}//end cleanupEmails()
 
@@ -280,7 +279,7 @@ class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterf
 			$this->links->calendarEventService->unlinkEventsForObject($objectUuid);
 			$this->logger->info('Unlinked calendar events for deleted object: ' . $objectUuid);
 		} catch (Exception $e) {
-			$this->warnFailed(action: 'unlink calendar events', objectUuid: $objectUuid, e: $e);
+			$this->warnFailed(failure: 'unlink calendar events for deleted object: ' . $objectUuid, e: $e);
 		}
 	}//end cleanupCalendarEvents()
 
@@ -296,7 +295,7 @@ class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterf
 			$this->links->contactService->deleteLinksForObject($objectUuid);
 			$this->logger->info('Cleaned up contact links for deleted object: ' . $objectUuid);
 		} catch (Exception $e) {
-			$this->warnFailed(action: 'clean up contact links', objectUuid: $objectUuid, e: $e);
+			$this->warnFailed(failure: 'clean up contact links for deleted object: ' . $objectUuid, e: $e);
 		}
 	}//end cleanupContacts()
 
@@ -314,22 +313,21 @@ class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterf
 				$this->logger->info('Cleaned up ' . $count . ' deck link(s) for deleted object: ' . $objectUuid);
 			}
 		} catch (Exception $e) {
-			$this->warnFailed(action: 'clean up deck links', objectUuid: $objectUuid, e: $e);
+			$this->warnFailed(failure: 'clean up deck links for deleted object: ' . $objectUuid, e: $e);
 		}
 	}//end cleanupDeckCards()
 
 	/**
 	 * Log a cleanup that failed for the deleted object; the other cleanups go on.
 	 *
-	 * @param string    $action     What failed, e.g. "clean up notes".
-	 * @param string    $objectUuid The object UUID.
-	 * @param Exception $e          The failure.
+	 * @param string    $failure What failed and for which object, e.g. "clean up notes for deleted object: <uuid>".
+	 * @param Exception $e       The failure.
 	 *
 	 * @return void
 	 */
-	private function warnFailed(string $action, string $objectUuid, Exception $e): void {
+	private function warnFailed(string $failure, Exception $e): void {
 		$this->logger->warning(
-			'Failed to ' . $action . ' for deleted object: ' . $objectUuid . ': ' . $e->getMessage(),
+			'Failed to ' . $failure . ': ' . $e->getMessage(),
 			['exception' => $e]
 		);
 	}//end warnFailed()

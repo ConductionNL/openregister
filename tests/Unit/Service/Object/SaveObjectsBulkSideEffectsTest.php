@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -101,7 +103,7 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 			);
 
 		$this->handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: null),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $this->eventDispatcher, auditTrailMapper: $this->auditTrailMapper),
 			checks: new BulkRowChecks(permissionHandler: null, validateHandler: null)
@@ -224,10 +226,8 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 		$this->auditTrailMapper->expects($this->never())->method('createAuditTrail');
 
 		$result = $this->handler->saveObjects(
-			objects: [['name' => 'A'], ['name' => 'B']],
-			register: $register,
-			schema: $schema,
-			_events: true
+			[['name' => 'A'], ['name' => 'B']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: true, audit: true)
 		);
 
 		// Classification repaired: raw rows land in the saved bucket.
@@ -288,10 +288,8 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 			);
 
 		$result = $this->handler->saveObjects(
-			objects: [['name' => 'A']],
-			register: $register,
-			schema: $schema,
-			_events: true
+			[['name' => 'A']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: true, audit: true)
 		);
 
 		$this->assertSame(1, $result['statistics']['updated']);
@@ -351,10 +349,8 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 
 		// Events disabled (the BulkController default).
 		$result = $this->handler->saveObjects(
-			objects: [['name' => 'A'], ['name' => 'B']],
-			register: $register,
-			schema: $schema,
-			_events: false
+			[['name' => 'A'], ['name' => 'B']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame(1, $result['statistics']['saved']);
@@ -380,11 +376,8 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 		$this->auditTrailMapper->expects($this->never())->method('insertAuditTrails');
 
 		$result = $this->handler->saveObjects(
-			objects: [['name' => 'A']],
-			register: $this->createRegister(1),
-			schema: $this->createSchema(1),
-			_events: true,
-			_audit: false
+			[['name' => 'A']],
+			new BulkSaveOptions(new BulkBatchDefaults($this->createRegister(1), $this->createSchema(1)), validation: false, events: true, audit: false)
 		);
 
 		$this->assertSame(1, $result['statistics']['saved']);
@@ -453,9 +446,8 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 		$this->mockRowConversion();
 
 		$result = $this->handler->saveObjects(
-			objects: [['name' => 'A']],
-			register: $register,
-			schema: $schema
+			[['name' => 'A']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true)
 		);
 
 		$this->assertCount(1, $result['updated']);

@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\RecordTemplate;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
@@ -89,29 +90,24 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 		private readonly ViewerReachResolver $viewers,
 	) {
 		$this->shares = new ViewShareResolver();
-		$this->input = new RecordTemplateInput();
+		$this->input = new RecordTemplateInput(shareFindings: $this->viewers->shareFindings(...));
 	}//end __construct()
 
 	/**
 	 * The templates the caller may use, each with the access they hold on it.
 	 *
-	 * @param ViewerReach $reach    The caller.
-	 * @param string|null $register Only templates for this register id.
-	 * @param string|null $schema   Only templates for this schema id.
+	 * @param ViewerReach         $reach   The caller.
+	 * @param TemplateListOptions $options Only templates for this register id and this schema id, where set.
 	 *
 	 * @return RecordTemplate[] The usable templates.
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function listFor(ViewerReach $reach, ?string $register=null, ?string $schema=null): array {
-		$usable = [];
-		foreach ($this->store->mapper->findCandidates(userId: $reach->userId, register: $register, schema: $schema) as $template) {
-			if ($this->resolveUse(template: $template, reach: $reach) === true) {
-				$usable[] = $template;
-			}
-		}
+	public function listFor(ViewerReach $reach, TemplateListOptions $options=new TemplateListOptions()): array {
+		$scope      = ListQuery::unbounded(filters: ['register' => $options->register, 'schema' => $options->schema]);
+		$candidates = $this->store->mapper->findCandidates(userId: $reach->userId, query: $scope);
 
-		return $usable;
+		return array_values(array_filter($candidates, fn (RecordTemplate $template): bool => $this->resolveUse(template: $template, reach: $reach)));
 	}//end listFor()
 
 	/**
@@ -148,7 +144,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function create(array $data, ViewerReach $reach): RecordTemplate {
-		$fields = $this->input->validated(data: $data, partial: false, shareFindings: $this->shareFindings(...));
+		$fields = $this->input->validated(data: $data, partial: false);
 		$this->assertMayCreate(schema: (string)$fields['schema'], reach: $reach);
 
 		$template = new RecordTemplate();
@@ -164,22 +160,18 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	/**
 	 * Change a template the caller owns, or any template for an administrator.
 	 *
-	 * @param string               $uuid    The template uuid.
-	 * @param array<string, mixed> $data    The fields to set.
-	 * @param ViewerReach          $reach   The caller.
-	 * @param bool                 $partial True for PATCH (only the fields sent), false for PUT.
+	 * @param TemplateChange $change The template uuid, the fields to set and whether only those are set (PATCH) or all (PUT).
+	 * @param ViewerReach    $reach  The caller.
 	 *
 	 * @return RecordTemplate The stored template.
 	 *
 	 * @throws RecordTemplateRefused 404, 403 or 400.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) PUT and PATCH differ only in this.
-	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function change(string $uuid, array $data, ViewerReach $reach, bool $partial): RecordTemplate {
-		$template = $this->administered(uuid: $uuid, reach: $reach);
-		$fields = $this->input->validated(data: $data, partial: $partial, shareFindings: $this->shareFindings(...));
+	public function change(TemplateChange $change, ViewerReach $reach): RecordTemplate {
+		$template = $this->administered(uuid: $change->uuid, reach: $reach);
+		$fields = $this->input->validated(data: $change->data, partial: $change->partial);
 		if (isset($fields['schema']) === true && $fields['schema'] !== $template->getSchema()) {
 			$this->assertMayCreate(schema: (string)$fields['schema'], reach: $reach);
 		}
@@ -216,7 +208,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @return bool True when they may use it.
 	 */
 	private function resolveUse(RecordTemplate $template, ViewerReach $reach): bool {
-		$access = $this->shares->accessFor(view: $template->jsonSerialize(), userId: $reach->userId, userGroups: $reach->groups);
+		$access = $this->shares->accessOf(view: $template->jsonSerialize(), reach: $reach);
 		if ($access === null && $reach->isAdmin === true) {
 			$access = ViewShareResolver::ACCESS_WRITE;
 		}
@@ -242,7 +234,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 */
 	private function administered(string $uuid, ViewerReach $reach): RecordTemplate {
 		$template = $this->get(uuid: $uuid, reach: $reach);
-		if ($this->shares->mayAdminister(view: $template->jsonSerialize(), userId: $reach->userId, isAdmin: $reach->isAdmin) === false) {
+		if ($this->shares->mayAdministerAs(view: $template->jsonSerialize(), reach: $reach) === false) {
 			throw new RecordTemplateRefused(status: 403, message: 'Only the owner or an administrator may change this record template.');
 		}
 
@@ -321,15 +313,4 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 
 		return $this->mayCreate[$key];
 	}//end mayCreateIn()
-
-	/**
-	 * What is wrong with a share list, judged against the groups that exist.
-	 *
-	 * @param mixed $sharedWith The declared shares.
-	 *
-	 * @return array<int, array{code: string, message: string}> The findings.
-	 */
-	private function shareFindings(mixed $sharedWith): array {
-		return $this->viewers->shareFindings(sharedWith: $sharedWith);
-	}//end shareFindings()
 }//end class

@@ -38,7 +38,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -130,37 +132,53 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	/**
 	 * Combine the already-concatenated branch items.
 	 *
-	 * @param array $items The input items (all branches, concatenated).
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The combined items.
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		$mode = (string)($config['mode'] ?? 'append');
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		return $this->merged(items: $items, config: $config);
+	}//end execute()
+
+	/**
+	 * The items combined the way the configured mode says.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The step configuration.
+	 *
+	 * @return array The combined items.
+	 */
+	private function merged(array $items, array $config): array {
 		$key = (string)($config['key'] ?? '');
 
-		if ($mode === 'mergeByKey') {
-			return $this->mergeByKey(items: $items, key: $key);
-		}
+		return match ((string)($config['mode'] ?? 'append')) {
+			'mergeByKey' => $this->mergeByKey(items: $items, key: $key),
+			'unique' => $this->unique(items: $items, key: $key),
+			default => $this->append(items: $items),
+		};
+	}//end merged()
 
-		if ($mode === 'unique') {
-			return $this->unique(items: $items, key: $key);
-		}
-
-		// Append: the engine already concatenated the branches; re-pair each
-		// item to its own position so provenance stays intact.
+	/**
+	 * Append: the engine already concatenated the branches; re-pair each
+	 * item to its own position so provenance stays intact.
+	 *
+	 * @param array $items The input items.
+	 *
+	 * @return array The items, re-paired.
+	 */
+	private function append(array $items): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
 				json: (array)($item[FlowItems::JSON] ?? []),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
 		return $out;
-	}//end execute()
+	}//end append()
 
 	/**
 	 * Group items by their `key` value and shallow-merge each group's records.
@@ -190,7 +208,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 
 		$out = [];
 		foreach ($order as $value) {
-			$out[] = FlowItems::item(json: $groups[$value]['json'], binary: [], fromItemIndex: $groups[$value]['from']);
+			$out[] = FlowItems::item(json: $groups[$value]['json'], options: new FlowItemOptions(binary: [], fromItemIndex: $groups[$value]['from']));
 		}
 
 		return $out;
@@ -219,8 +237,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 			$seen[$value] = true;
 			$out[] = FlowItems::item(
 				json: $json,
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 

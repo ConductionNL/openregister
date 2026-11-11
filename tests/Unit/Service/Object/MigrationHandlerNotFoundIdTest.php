@@ -9,6 +9,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -126,10 +128,12 @@ class MigrationHandlerNotFoundIdTest extends TestCase {
 		$handler = $this->migrationHandler(mapper: $mapper, utility: $utility, dataManip: $dataManip);
 
 		return $handler->migrateObjects(
-			source: ['1', '2'],
-			target: ['target', 'target'],
-			objectIds: $objectIds,
-			mapping: ['title' => 'title']
+			migration: new ObjectMigration(
+				source: new RegisterSchemaRef(register: '1', schema: '2'),
+				target: new RegisterSchemaRef(register: 'target', schema: 'target'),
+				objectIds: $objectIds,
+				mapping: ['title' => 'title']
+			)
 		);
 	}//end migrate()
 }//end class

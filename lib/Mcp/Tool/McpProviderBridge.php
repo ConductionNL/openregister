@@ -185,42 +185,71 @@ class McpProviderBridge implements ToolInterface {
 		$functions = [];
 		foreach ($this->provider->getTools() as $descriptor) {
 			$rawId = (string)($descriptor['id'] ?? '');
-			if ($rawId === '') {
-				continue;
+			if ($this->isExposed(rawId: $rawId) === true) {
+				$functions[] = $this->functionOf(descriptor: $descriptor, rawId: $rawId);
 			}
-
-			if ($this->onlyMcpId !== null && $rawId !== $this->onlyMcpId) {
-				continue;
-			}
-
-			// LLphant / OpenAI function names disallow dots in some models;
-			// expose the raw MCP id as the function name AND rewrite a
-			// safe alias (underscore) so both forms route back the same way.
-			$inputSchema = $descriptor['inputSchema'] ?? ['type' => 'object', 'properties' => []];
-			$function = [
-				'name' => $this->safeFunctionName(mcpId: $rawId),
-				'mcpId' => $rawId,
-				'description' => (string)($descriptor['description'] ?? $descriptor['name'] ?? $rawId),
-				'parameters' => $this->sanitiseSchema(schema: $inputSchema),
-			];
-
-			foreach (McpAnnotationValidator::HINT_KEYS as $hintKey) {
-				if (array_key_exists($hintKey, $descriptor) === true) {
-					$function[$hintKey] = $descriptor[$hintKey];
-				}
-			}
-
-			foreach (self::PASSTHROUGH_KEYS as $passthroughKey) {
-				if (array_key_exists($passthroughKey, $descriptor) === true) {
-					$function[$passthroughKey] = $descriptor[$passthroughKey];
-				}
-			}
-
-			$functions[] = $function;
-		}//end foreach
+		}
 
 		return $functions;
 	}//end getFunctions()
+
+	/**
+	 * Whether a tool id is exposed: it has one, and matches the pinned id when there is one.
+	 *
+	 * @param string $rawId The MCP tool id.
+	 *
+	 * @return bool
+	 */
+	private function isExposed(string $rawId): bool {
+		if ($rawId === '') {
+			return false;
+		}
+
+		return $this->onlyMcpId === null || $rawId === $this->onlyMcpId;
+	}//end isExposed()
+
+	/**
+	 * The function definition of one MCP tool descriptor.
+	 *
+	 * @param array<string, mixed> $descriptor The provider's tool descriptor.
+	 * @param string               $rawId      Its MCP id.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function functionOf(array $descriptor, string $rawId): array {
+		// LLphant / OpenAI function names disallow dots in some models;
+		// expose the raw MCP id as the function name AND rewrite a
+		// safe alias (underscore) so both forms route back the same way.
+		$inputSchema = $descriptor['inputSchema'] ?? ['type' => 'object', 'properties' => []];
+		$function    = [
+			'name' => $this->safeFunctionName(mcpId: $rawId),
+			'mcpId' => $rawId,
+			'description' => (string)($descriptor['description'] ?? $descriptor['name'] ?? $rawId),
+			'parameters' => $this->sanitiseSchema(schema: $inputSchema),
+		];
+
+		$carried = array_merge(McpAnnotationValidator::HINT_KEYS, self::PASSTHROUGH_KEYS);
+		return array_merge($function, self::presentKeys(descriptor: $descriptor, keys: $carried));
+	}//end functionOf()
+
+	/**
+	 * The descriptor's values for those of the keys it carries, in key order.
+	 *
+	 * @param array<string, mixed> $descriptor The provider's tool descriptor.
+	 * @param string[]             $keys       The keys to carry over.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function presentKeys(array $descriptor, array $keys): array {
+		$present = [];
+		foreach ($keys as $key) {
+			if (array_key_exists($key, $descriptor) === true) {
+				$present[$key] = $descriptor[$key];
+			}
+		}
+
+		return $present;
+	}//end presentKeys()
 
 	/**
 	 * Coerce JSON-Schema-style nullable types (`['string','null']`) into
@@ -284,24 +313,44 @@ class McpProviderBridge implements ToolInterface {
 		// Resolve the safe function name back to the original MCP id.
 		$mcpId = $this->resolveMcpId(functionName: $functionName);
 		if ($mcpId === null) {
-			return [
-				'isError' => true,
-				'error' => 'unknown_function',
-				'message' => "No MCP tool registered for function: {$functionName}",
-			];
+			return $this->unknownFunction(functionName: $functionName);
 		}
 
-		$this->logger->debug(
-			'[McpProviderBridge] Forwarding LLM call to MCP provider',
-			['function' => $functionName, 'mcpId' => $mcpId, 'appId' => $this->provider->getAppId()]
-		);
+		return $this->forward(call: new ToolCall(functionName: $functionName, parameters: $parameters), mcpId: $mcpId);
+	}//end executeFunction()
+
+	/**
+	 * The error envelope of a function no MCP tool of the provider answers to.
+	 *
+	 * @param string $functionName LLphant-side function name.
+	 *
+	 * @return array<string,mixed> The error envelope.
+	 */
+	private function unknownFunction(string $functionName): array {
+		return [
+			'isError' => true,
+			'error' => 'unknown_function',
+			'message' => "No MCP tool registered for function: {$functionName}",
+		];
+	}//end unknownFunction()
+
+	/**
+	 * Forward a call to the provider's MCP tool, turning a provider failure into an error envelope.
+	 *
+	 * @param ToolCall $call  The LLphant-side function name and the decoded MCP arguments object.
+	 * @param string   $mcpId The provider's MCP tool id.
+	 *
+	 * @return array<string,mixed> MCP-shaped response or error envelope.
+	 */
+	private function forward(ToolCall $call, string $mcpId): array {
+		$this->logForward(call: $call, mcpId: $mcpId);
 
 		try {
-			return $this->provider->invokeTool($mcpId, $parameters);
+			return $this->provider->invokeTool($mcpId, $call->parameters);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'[McpProviderBridge] Provider invocation failed',
-				['function' => $functionName, 'mcpId' => $mcpId, 'error' => $e->getMessage()]
+				['function' => $call->functionName, 'mcpId' => $mcpId, 'error' => $e->getMessage()]
 			);
 			return [
 				'isError' => true,
@@ -309,7 +358,22 @@ class McpProviderBridge implements ToolInterface {
 				'message' => $e->getMessage(),
 			];
 		}
-	}//end executeFunction()
+	}//end forward()
+
+	/**
+	 * Log a call being forwarded to the provider.
+	 *
+	 * @param ToolCall $call  The LLM's function call.
+	 * @param string   $mcpId The MCP tool id it routes to.
+	 *
+	 * @return void
+	 */
+	private function logForward(ToolCall $call, string $mcpId): void {
+		$this->logger->debug(
+			'[McpProviderBridge] Forwarding LLM call to MCP provider',
+			['function' => $call->functionName, 'mcpId' => $mcpId, 'appId' => $this->provider->getAppId()]
+		);
+	}//end logForward()
 
 	/**
 	 * Attach the active agent context.

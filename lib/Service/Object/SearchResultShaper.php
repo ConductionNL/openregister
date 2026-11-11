@@ -67,7 +67,20 @@ final class SearchResultShaper {
 			return $result;
 		}
 
-		// Apply complex rendering (extend, fields, filter, unset).
+		return $this->rendered(result: $result, request: $request);
+	}//end shape()
+
+	/**
+	 * Apply complex rendering (extend, fields, filter, unset) under the request's RBAC and multitenancy.
+	 *
+	 * @param array|int           $result  The search result.
+	 * @param SearchRenderRequest $request The query and the RBAC and multitenancy flags.
+	 *
+	 * @return array
+	 */
+	private function rendered(array|int $result, SearchRenderRequest $request): array {
+		$query = $request->query;
+
 		return $this->renderHandler->renderEntities(
 			entities: $result,
 			_extend: $query['_extend'] ?? [],
@@ -77,7 +90,7 @@ final class SearchResultShaper {
 			_rbac: $request->rbac,
 			_multitenancy: $request->multitenancy
 		);
-	}//end shape()
+	}//end rendered()
 
 	/**
 	 * Whether the query asks for `_extend`, `_fields`, `_filter` or `_unset`.
@@ -111,21 +124,35 @@ final class SearchResultShaper {
 			return false;
 		}
 
-		$schemaMapper   = $this->container->get(SchemaMapperInterface::class);
-		$checkedSchemas = [];
-		foreach ($result as $object) {
-			$schemaId = $object->getSchema();
-			if (isset($checkedSchemas[$schemaId]) === false) {
-				$checkedSchemas[$schemaId] = self::schemaHasPropertyAuthorization(schemaMapper: $schemaMapper, schemaId: $schemaId);
-			}
-
-			if ($checkedSchemas[$schemaId] === true) {
+		$schemaMapper = $this->container->get(SchemaMapperInterface::class);
+		foreach (self::schemaIdsOf(result: $result) as $schemaId) {
+			if (self::schemaHasPropertyAuthorization(schemaMapper: $schemaMapper, schemaId: $schemaId) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end anySchemaHasPropertyAuthorization()
+
+	/**
+	 * The schema ids of a result's rows, each once, in the order they first appear.
+	 *
+	 * @param array $result The search result rows.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private static function schemaIdsOf(array $result): array {
+		$schemaIds = [];
+		foreach ($result as $object) {
+			$schemaId = $object->getSchema();
+			$key = ($schemaId ?? '');
+			if (array_key_exists($key, $schemaIds) === false) {
+				$schemaIds[$key] = $schemaId;
+			}
+		}
+
+		return array_values($schemaIds);
+	}//end schemaIdsOf()
 
 	/**
 	 * Whether one schema has property-level authorization; a schema that cannot be loaded has none.

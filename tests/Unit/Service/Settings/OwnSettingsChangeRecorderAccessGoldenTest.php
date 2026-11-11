@@ -169,6 +169,32 @@ class OwnSettingsChangeRecorderAccessGoldenTest extends TestCase {
 	}//end testTheAnnouncerIsTold()
 
 	/**
+	 * A failed announcement after the rows were written still reports the rows; a failed write reports none.
+	 *
+	 * Both are logged and neither throws: the setting itself was already stored.
+	 *
+	 * @return void
+	 */
+	public function testAFailureAfterTheWriteKeepsTheCountAndAFailedWriteReportsNone(): void {
+		$announcer = $this->createMock(SecuritySettingAnnouncer::class);
+		$announcer->method('snapshot')->willReturn([]);
+		$announcer->method('announce')->willThrowException(new \RuntimeException('bus down'));
+		$recorder = $this->recorder($this->capturingAuditor(), $announcer);
+		$this->store['rbac'] = (string) json_encode(['enabled' => true]);
+
+		$this->assertSame(3, $recorder->record(before: $recorder->snapshot(keys: ['rbac']), keys: ['rbac']));
+		$this->assertSame(['[OwnSettingsChangeRecorder] A settings change was stored but not recorded: bus down'], $this->errors);
+
+		$this->errors = [];
+		$auditor = $this->createMock(SettingsChangeAuditor::class);
+		$auditor->method('recordUpdate')->willThrowException(new \RuntimeException('trail locked'));
+		$failing = $this->recorder($auditor);
+
+		$this->assertSame(0, $failing->record(before: $failing->snapshot(keys: ['rbac']), keys: ['rbac']));
+		$this->assertSame(['[OwnSettingsChangeRecorder] A settings change was stored but not recorded: trail locked'], $this->errors);
+	}//end testAFailureAfterTheWriteKeepsTheCountAndAFailedWriteReportsNone()
+
+	/**
 	 * Without an announcer the snapshot carries no security state.
 	 *
 	 * @return void

@@ -75,7 +75,7 @@ final class FlowTimerDeadlines {
 
 		$fireAt = $this->applyRoll(scope: $scope);
 		$rungs = $this->ladder->resolveLadder(timer: $timer)['rungs'];
-		$next = $this->ladder->nextRungAt(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $scope->calendar);
+		$next = $this->ladder->nextRungAt(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $scope->calendar));
 		$timer->setNextRungAt($this->values->mutableOrNull(value: $next));
 	}//end recompute()
 
@@ -91,10 +91,12 @@ final class FlowTimerDeadlines {
 	public function landed(FlowTimerScope $scope): DateTimeInterface {
 		$timer = $scope->timer;
 		return $this->calculator->add(
-			from: $timer->getRunningSince(),
-			value: max(0.0, ((float)$timer->getBudgetValue() - (float)$timer->getConsumedValue())),
-			unit: (string)$timer->getBudgetUnit(),
-			calendar: $scope->calendar
+			addition: new SlaAddition(
+				start: DateTimeImmutable::createFromInterface($timer->getRunningSince()),
+				value: max(0.0, ((float)$timer->getBudgetValue() - (float)$timer->getConsumedValue())),
+				unit: (string)$timer->getBudgetUnit(),
+				calendar: $scope->calendar
+			)
 		);
 	}//end landed()
 
@@ -113,10 +115,8 @@ final class FlowTimerDeadlines {
 		$running = 0.0;
 		if ($timer->getRunningSince() !== null && $timer->getState() === FlowTimer::STATE_ARMED) {
 			$running = $this->calculator->measure(
-				from: $timer->getRunningSince(),
-				to: $now,
-				unit: (string)$timer->getBudgetUnit(),
-				calendar: $scope->calendar
+				span: new CalendarSpan(from: $timer->getRunningSince(), to: $now, calendar: $scope->calendar),
+				unit: (string)$timer->getBudgetUnit()
 			);
 		}
 
@@ -157,8 +157,7 @@ final class FlowTimerDeadlines {
 		$timer = $scope->timer;
 		$rolled = $this->calculator->roll(
 			moment: $this->landed(scope: $scope),
-			roll: (string)($timer->getRollToWorkingDay() ?? SlaCalculatorInterface::ROLL_NONE),
-			calendar: $scope->calendar
+			rule: new RollRule(roll: (string)($timer->getRollToWorkingDay() ?? SlaCalculatorInterface::ROLL_NONE), calendar: $scope->calendar)
 		);
 		$timer->setFireAt($this->values->mutable(value: $rolled['at']));
 		$timer->setUnrolledAt($this->values->mutableOrNull(value: $rolled['unrolledAt']));

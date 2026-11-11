@@ -46,6 +46,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
+use OCA\OpenRegister\Service\Gdpr\ErasureRequest;
 
 /**
  * Golden test for DataSubjectRequestService.
@@ -221,7 +223,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 				logger: $logger
 			)), retentionGate: new SubjectRetentionGate(
 				retentionService: $this->retentionService,
-				archivalGuard: new ArchivalRetentionGuard($this->schemaMapper, $logger)
+				archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->schemaMapper, $logger))
 			), deadline: new DataSubjectDeadline(), logger: $logger);
 
 	}//end buildService()
@@ -356,7 +358,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$this->object('gone-schema', 'gone');
 		$this->failingSaves = ['broken'];
 
-		$summary = $this->buildService()->erase(subjectId: '  jane@example.org  ', eraseMode: 'nonsense');
+		$summary = $this->buildService()->erase(new ErasureRequest(subjectId: '  jane@example.org  ', eraseMode: 'nonsense'));
 
 		$this->assertSame('jane@example.org', $summary['subject']);
 		$this->assertSame(DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE, $summary['eraseMode']);
@@ -416,7 +418,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$a = $this->object('a');
 		$b = $this->object('22');
 
-		$summary = $this->buildService()->erase(subjectId: 'jane@example.org', type: 'email', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$summary = $this->buildService()->erase(new ErasureRequest(subjectId: 'jane@example.org', type: 'email', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT));
 
 		$this->assertTrue($summary['complete']);
 		$this->assertSame('email', $summary['type']);
@@ -450,7 +452,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$this->object('hold-x');
 		$this->object('arch', 'archival');
 
-		$summary = $this->buildService()->erase(subjectId: 'jane@example.org', dryRun: true);
+		$summary = $this->buildService()->erase(new ErasureRequest(subjectId: 'jane@example.org', dryRun: true));
 
 		$this->assertSame([['uuid' => 'a', 'register' => 'reg', 'schema' => 'plain']], $summary['erased']);
 		$this->assertSame(1, $summary['heldCount']);
@@ -468,7 +470,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 	 */
 	public function testDiscoveryShapes(): void {
 		$this->db->expects($this->never())->method('getQueryBuilder');
-		$this->assertSame([], $this->buildService()->findSubjectData(subjectId: '   '));
+		$this->assertSame([], $this->buildService()->findSubjectData(new SubjectQuery(subjectId: '   ')));
 		$this->assertSame([], $this->buildService()->findSubjectObjects(query: new SubjectQuery(subjectId: '')));
 
 	}//end testDiscoveryShapes()
@@ -498,7 +500,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		);
 		$this->assertSame([['a', false, false], [7, false, false], ['denied', false, false]], $this->finds);
 
-		$data = $this->buildService()->findSubjectData(subjectId: 'jane');
+		$data = $this->buildService()->findSubjectData(new SubjectQuery(subjectId: 'jane'));
 		$this->assertCount(2, $data);
 		$this->assertSame($a->jsonSerialize(), $data[0]['object']);
 		$this->assertTrue($this->finds[3][1]);
@@ -514,7 +516,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 	public function testIndexFailureYieldsNothing(): void {
 		$this->wireIndex(null);
 
-		$summary = $this->buildService()->erase(subjectId: 'jane@example.org');
+		$summary = $this->buildService()->erase(new ErasureRequest(subjectId: 'jane@example.org'));
 
 		$this->assertSame(0, $summary['matchedCount']);
 		$this->assertTrue($summary['complete']);
@@ -577,8 +579,8 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$a = $this->object('a');
 		$frozen = $this->object('frozen-3');
 
-		$this->assertNotNull($service->setRestriction(objectIdentifier: 'a', restricted: true, reason: 'contested'));
-		$this->assertNotNull($service->setObjection(objectIdentifier: 'a', objected: false, reason: 'withdrawn'));
+		$this->assertNotNull($service->setRestriction(objectIdentifier: 'a', flag: new \OCA\OpenRegister\Service\Gdpr\ProcessingFlag(active: true, reason: 'contested')));
+		$this->assertNotNull($service->setObjection(objectIdentifier: 'a', flag: new \OCA\OpenRegister\Service\Gdpr\ProcessingFlag(active: false, reason: 'withdrawn')));
 		$payload = $this->payload(object: $a);
 		$this->assertSame(['active', 'reason', 'setBy', 'setAt'], array_keys($payload['_gdprRestriction']));
 		$this->assertTrue($payload['_gdprRestriction']['active']);
@@ -588,8 +590,8 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$this->assertSame('withdrawn', $payload['_gdprObjection']['reason']);
 		$this->assertSame('activity-uuid', $a->getProcessingActivityId());
 
-		$this->assertNull($service->setRestriction(objectIdentifier: 'nope', restricted: true, reason: 'r'));
-		$this->assertNull($service->setObjection(objectIdentifier: 'frozen-3', objected: true, reason: 'r'));
+		$this->assertNull($service->setRestriction(objectIdentifier: 'nope', flag: new \OCA\OpenRegister\Service\Gdpr\ProcessingFlag(active: true, reason: 'r')));
+		$this->assertNull($service->setObjection(objectIdentifier: 'frozen-3', flag: new \OCA\OpenRegister\Service\Gdpr\ProcessingFlag(active: true, reason: 'r')));
 		$this->assertArrayNotHasKey('_gdprObjection', $this->payload(object: $frozen));
 		$this->assertSame([['a', true, true], ['a', true, true]], $this->saves);
 
@@ -606,12 +608,12 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$b = $this->object('broken');
 		$this->failingSaves = ['broken'];
 
-		$result = $service->pseudonymiseObject(object: $a, subjectId: 'jane@example.org', matched: [['value' => '0612'], ['value' => '']]);
+		$result = $service->pseudonymiseObject(match: new SubjectMatch(object: $a, matched: [['value' => '0612'], ['value' => '']]), subjectId: 'jane@example.org');
 		$this->assertSame($a->jsonSerialize(), $result);
 		$this->assertSame(['email' => '[erased]', 'tel' => '[erased]'], $this->payload(object: $a));
 		$this->assertSame('activity-uuid', $a->getProcessingActivityId());
 
-		$this->assertNull($service->pseudonymiseObject(object: $b, subjectId: 'jane@example.org', matched: []));
+		$this->assertNull($service->pseudonymiseObject(match: new SubjectMatch(object: $b, matched: []), subjectId: 'jane@example.org'));
 		$this->assertSame([['a', true, true], ['broken', true, true]], $this->saves);
 
 	}//end testPseudonymiseObject()

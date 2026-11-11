@@ -51,7 +51,7 @@
         "OCP\\IDBConnection",
         "OCA\\OpenRegister\\Db\\AuditTrailMapperInterface",
         "OCP\\IUserSession",
-        "OCP\\EventDispatcher\\IEventDispatcher",
+        "OCA\\OpenRegister\\Kernel\\Contracts\\EntityEventsInterface",
         "Psr\\Log\\LoggerInterface"
     ]
 }

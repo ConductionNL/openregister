@@ -7,10 +7,10 @@ import {
 	getRequest,
 	listPageQuery,
 	listPagination,
-	statisticsOrEmpty,
 	storeRequest,
 	withoutIds,
 } from '../../services/listPage.js'
+import { mergedStatisticsActions, statisticsGetter } from './trailStatistics.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
 
@@ -63,6 +63,8 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 	}),
 
 	actions: {
+		...mergedStatisticsActions('audit-trails'),
+		...statisticsGetter(emptyStatistics),
 		/**
 		 * Set audit trail list
 		 *
@@ -99,20 +101,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			this.auditTrailPagination = {
 				...this.auditTrailPagination,
 				...pagination,
-			}
-		},
-
-		/**
-		 * Set statistics
-		 *
-		 * @param {object} stats - The statistics object
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		setStatistics(stats) {
-			this.statistics = {
-				...this.statistics,
-				...stats,
 			}
 		},
 
@@ -172,23 +160,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 					this.setAuditTrailList(copiedResults(data))
 					this.setAuditTrailPagination(listPagination(data, 50))
 				},
-			})
-		},
-
-		/**
-		 * Fetch audit trail statistics
-		 *
-		 * @return {Promise<object>} The statistics data
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async fetchStatistics() {
-			return storeRequest(this, {
-				flag: 'statisticsLoading',
-				url: `${apiUrl}/audit-trails/statistics`,
-				request: { method: 'GET', failure: 'Failed to fetch statistics' },
-				log: (error) => console.error('Error fetching statistics:', error),
-				keep: (data) => this.setStatistics(data),
 			})
 		},
 
@@ -280,20 +251,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			})
 			requestInFlight = request
 			return request.promise
-		},
-
-		/**
-		 * Get audit trail statistics
-		 *
-		 * @return {Promise<object>} The statistics
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async getStatistics() {
-			return statisticsOrEmpty(this, {
-				empty: emptyStatistics,
-				log: (error) => console.error('Error getting statistics:', error),
-			})
 		},
 
 		/**

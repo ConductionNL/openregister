@@ -51,6 +51,17 @@ class ListPresentationResolver implements ListPresentationResolverInterface {
 	];
 
 	/**
+	 * The presentation of a schema that declares no list columns and no search fields.
+	 *
+	 * @var array{declared: bool, columns: array<int, array<string, mixed>>, searchFields: array<int, string>}
+	 */
+	private const UNDECLARED = [
+		'declared' => false,
+		'columns' => self::DEFAULT_COLUMNS,
+		'searchFields' => [],
+	];
+
+	/**
 	 * Resolve what a list surface should render for one schema.
 	 *
 	 * `declared` says whether the schema asked for this or whether it is the
@@ -69,28 +80,36 @@ class ListPresentationResolver implements ListPresentationResolverInterface {
 		$properties = ($schema->getProperties() ?? []);
 
 		if ($declaration['columns'] === [] && $declaration['searchFields'] === []) {
-			return [
-				'declared' => false,
-				'columns' => self::DEFAULT_COLUMNS,
-				'searchFields' => [],
-			];
-		}
-
-		$columns = [];
-		foreach ($declaration['columns'] as $column) {
-			$columns[] = $this->describeColumn(column: $column, properties: $properties);
-		}
-
-		if ($columns === []) {
-			$columns = self::DEFAULT_COLUMNS;
+			return self::UNDECLARED;
 		}
 
 		return [
 			'declared' => true,
-			'columns' => $columns,
+			'columns' => $this->declaredColumns(columns: $declaration['columns'], properties: $properties),
 			'searchFields' => $declaration['searchFields'],
 		];
 	}//end resolve()
+
+	/**
+	 * The declared columns described against the schema's properties, or the defaults when none are declared.
+	 *
+	 * @param array<int, mixed>    $columns    The declared columns.
+	 * @param array<string, mixed> $properties The schema's properties.
+	 *
+	 * @return array<int, array<string, mixed>> The columns.
+	 */
+	private function declaredColumns(array $columns, array $properties): array {
+		$described = [];
+		foreach ($columns as $column) {
+			$described[] = $this->describeColumn(column: $column, properties: $properties);
+		}
+
+		if ($described === []) {
+			return self::DEFAULT_COLUMNS;
+		}
+
+		return $described;
+	}//end declaredColumns()
 
 	/**
 	 * Fill a declared column out with what the schema knows about the property.
@@ -110,7 +129,7 @@ class ListPresentationResolver implements ListPresentationResolverInterface {
 			$definition = [];
 		}
 
-		$label = $this->columnLabel(column: $column, definition: $definition, property: $property);
+		$label = $this->columnLabel(column: $column, definition: $definition);
 
 		$type = ($definition['type'] ?? 'string');
 		if (is_string($type) === false) {
@@ -128,20 +147,19 @@ class ListPresentationResolver implements ListPresentationResolverInterface {
 	/**
 	 * The header of a declared column: its own label, the property's title, or the property name.
 	 *
-	 * @param array  $column     The declared column.
-	 * @param array  $definition The property's schema definition.
-	 * @param string $property   The column's property path.
+	 * @param array $column     The declared column, with its property path.
+	 * @param array $definition The property's schema definition.
 	 *
 	 * @return string The label, never empty.
 	 */
-	private function columnLabel(array $column, array $definition, string $property): string {
+	private function columnLabel(array $column, array $definition): string {
 		$label = ($column['label'] ?? null);
 		if (is_string($label) === false || $label === '') {
 			$label = ($definition['title'] ?? null);
 		}
 
 		if (is_string($label) === false || $label === '') {
-			$label = $property;
+			$label = $column['property'];
 		}
 
 		return $label;

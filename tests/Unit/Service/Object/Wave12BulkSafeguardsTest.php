@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
@@ -99,7 +100,7 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		// name keeps this fixture correct regardless of order; the positional list
 		// wave-12 shipped would bind permissionHandler into $groupManager here.
 		$this->handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), saveHandler: $this->saveHandler),
 			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: $this->groupManager),
 			reporting: new BulkSaveReporting(logger: $this->logger),
 			checks: new BulkRowChecks(permissionHandler: $this->permissionHandler, validateHandler: $this->validateHandler)
@@ -124,10 +125,16 @@ class Wave12BulkSafeguardsTest extends TestCase {
 	): array {
 		$reflection = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$reflection->setAccessible(true);
-		return $reflection->invokeArgs(
-			$this->handler,
-			[$objects, new BulkBatchDefaults($register, $schema), ['rbac' => $_rbac, 'validation' => $_validation], &$result]
+		$batch  = new SafeguardBatchRun(
+			objects: $objects,
+			defaults: new BulkBatchDefaults($register, $schema),
+			flags: ['rbac' => $_rbac, 'validation' => $_validation],
+			result: $result
 		);
+		$passed = $reflection->invokeArgs($this->handler, [$batch]);
+		$result = $batch->result;
+
+		return $passed;
 	}//end callApplyBulkSafeguards()
 
 	private function initResult(int $totalObjects): array {

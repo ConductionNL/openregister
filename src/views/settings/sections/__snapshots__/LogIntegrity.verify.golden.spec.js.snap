@@ -1,0 +1,111 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LogIntegrity.verifyChain verifies a broken chain 1`] = `
+{
+  "error": "",
+  "events": [
+    [
+      "get",
+      "/gen/apps/openregister/api/audit-trails/verify",
+      true,
+      "",
+      null,
+    ],
+    [
+      "loadStatus",
+      {
+        "brokenAt": 7,
+        "valid": false,
+      },
+    ],
+  ],
+  "logged": [],
+  "verification": {
+    "brokenAt": 7,
+    "valid": false,
+  },
+  "verifying": false,
+}
+`;
+
+exports[`LogIntegrity.verifyChain verifies a failed request 1`] = `
+{
+  "error": "t:Verification could not be completed.",
+  "events": [
+    [
+      "get",
+      "/gen/apps/openregister/api/audit-trails/verify",
+      true,
+      "",
+      null,
+    ],
+  ],
+  "logged": [
+    [
+      "Failed to verify audit chain:",
+      "offline",
+    ],
+  ],
+  "verification": null,
+  "verifying": false,
+}
+`;
+
+exports[`LogIntegrity.verifyChain verifies a failed status reload 1`] = `
+{
+  "error": "t:Verification could not be completed.",
+  "events": [
+    [
+      "get",
+      "/gen/apps/openregister/api/audit-trails/verify",
+      true,
+      "",
+      null,
+    ],
+    [
+      "loadStatus",
+      {
+        "valid": true,
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Failed to verify audit chain:",
+      "status down",
+    ],
+  ],
+  "verification": {
+    "valid": true,
+  },
+  "verifying": false,
+}
+`;
+
+exports[`LogIntegrity.verifyChain verifies an intact chain 1`] = `
+{
+  "error": "",
+  "events": [
+    [
+      "get",
+      "/gen/apps/openregister/api/audit-trails/verify",
+      true,
+      "",
+      null,
+    ],
+    [
+      "loadStatus",
+      {
+        "checked": 10,
+        "valid": true,
+      },
+    ],
+  ],
+  "logged": [],
+  "verification": {
+    "checked": 10,
+    "valid": true,
+  },
+  "verifying": false,
+}
+`;

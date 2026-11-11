@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ArchivalControllerFactory;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -48,6 +49,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 
 /**
  * Golden allowed / refused outcomes of ArchivalController.
@@ -264,7 +266,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 	public function testASchemaWideHoldIsQueuedWithItsIdsCast(): void {
 		$this->signIn('els', true);
 		$this->params = ['reason' => 'WOO', 'schemaId' => '7', 'registerId' => '3', 'objectId' => 'ignored'];
-		$this->holds->expects($this->once())->method('bulkPlaceHold')->with(7, 3, 'WOO');
+		$this->holds->expects($this->once())->method('bulkPlaceHold')->with($this->callback(static fn (\OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef $ref): bool => $ref->register === 3 && $ref->schema === 7), 'WOO');
 		$this->holds->expects($this->never())->method('placeHold');
 
 		$response = $this->controller->createLegalHold();
@@ -302,7 +304,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$held->setUuid('o-1');
 		$held->setRetention(['legalHold' => ['active' => true]]);
 		$this->objectMapper->expects($this->once())->method('find')->with('o-1')->willReturn($object);
-		$this->holds->expects($this->once())->method('placeHold')->with($object, 'WOO', 'case-9')->willReturn($held);
+		$this->holds->expects($this->once())->method('placeHold')->with($object, new \OCA\OpenRegister\Service\HoldOrder('WOO', 'case-9'))->willReturn($held);
 
 		$response = $this->controller->createLegalHold();
 
@@ -390,7 +392,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$this->params = ['reviewer' => ['els']];
 		$this->lists->method('find')->willReturn($this->listObject());
 		$this->lists->expects($this->never())->method('save');
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 
 		$response = $this->controller->assignReviewer('dl-1', 'obj-1');
 
@@ -403,7 +405,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$this->params = ['reviewer' => 'jan'];
 		$this->lists->method('find')->willReturn($this->listObject());
 		$this->lists->expects($this->never())->method('save');
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 
 		$this->assertSame(400, $this->controller->assignReviewer('dl-1', 'obj-404')->getStatus());
 	}
@@ -414,8 +416,8 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$list = $this->listObject();
 		$this->lists->method('find')->willReturn($list);
 		$this->lists->expects($this->once())->method('save');
-		$this->audit->expects($this->once())->method('createAuditTrailEntry')
-			->with($list, 'archival.review_assigned', ['entry' => 'obj-1', 'reviewer' => null]);
+		$this->audit->expects($this->once())->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([$list, 'archival.review_assigned', ['entry' => 'obj-1', 'reviewer' => null]]));
 
 		$response = $this->controller->assignReviewer('dl-1', 'obj-1');
 
@@ -476,7 +478,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn(new Schema());
 		$this->nominations->method('recompute')->willThrowException(new \RuntimeException('rule'));
 		$this->objectMapper->expects($this->never())->method('update');
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 
 		$response = $this->controller->recomputeNomination('o-1');
 
@@ -492,11 +494,11 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$this->objectMapper->method('find')->willReturn($object);
 		$this->schemaMapper->method('find')->willReturn(new Schema());
 		$this->nominations->expects($this->once())->method('recompute')
-			->with($object, $this->isInstanceOf(Schema::class), 'els', 'new list')
+			->with($this->callback(static fn (NominationRecompute $request): bool => $request->object === $object && $request->schema instanceof Schema && $request->actor === 'els' && $request->reason === 'new list'))
 			->willReturn(['status' => 'nominated', 'rule' => 'r-1']);
 		$this->objectMapper->expects($this->once())->method('update')->with($object);
-		$this->audit->expects($this->once())->method('createAuditTrailEntry')
-			->with($object, 'archival.nomination_recomputed', ['status' => 'nominated', 'rule' => 'r-1', 'reason' => 'new list']);
+		$this->audit->expects($this->once())->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([$object, 'archival.nomination_recomputed', ['status' => 'nominated', 'rule' => 'r-1', 'reason' => 'new list']]));
 
 		$response = $this->controller->recomputeNomination('o-1');
 

@@ -63,31 +63,63 @@ class FlowRunRow {
 	 * dead-end, attribution, delegation — runs BEFORE this, so this method
 	 * deliberately performs no checks and assumes an attributed dispatch.
 	 *
-	 * @param string $flowId  The flow being dispatched.
-	 * @param array  $subject The subject object, when the trigger names one.
-	 * @param string $trigger What caused the dispatch.
-	 * @param array  $context The starting context.
+	 * @param string              $flowId  The flow being dispatched.
+	 * @param FlowRunQueueOptions $options The subject (when the trigger names one), what caused the dispatch and the
+	 *                                     starting context; its user is not read here.
 	 *
 	 * @return FlowRun The unsaved run.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	public function build(
-		string $flowId,
-		array $subject,
-		string $trigger,
-		array $context,
-	): FlowRun {
+	public function build(string $flowId, FlowRunQueueOptions $options): FlowRun {
+		$run = $this->queued(flowId: $flowId, trigger: $options->trigger);
+		$run->setContext($options->context);
+		$this->placeSubject(run: $run, subject: $options->subject);
+
+		return $this->attributedAndPinned(run: $run);
+	}//end build()
+
+	/**
+	 * A fresh queued run row for this flow and trigger, with an empty log.
+	 *
+	 * @param string $flowId  The flow being run.
+	 * @param string $trigger What caused the run.
+	 *
+	 * @return FlowRun The row.
+	 */
+	private function queued(string $flowId, string $trigger): FlowRun {
 		$run = new FlowRun();
 		$run->setUuid($this->newUuid());
 		$run->setFlowId($flowId);
 		$run->setStatus(FlowRun::STATUS_QUEUED);
 		$run->setTrigger($trigger);
-		$run->setContext($context);
 		$run->setLog([]);
+
+		return $run;
+	}//end queued()
+
+	/**
+	 * Record the object the run is about, when there is one.
+	 *
+	 * @param FlowRun              $run     The row.
+	 * @param array<string, mixed> $subject The subject's uuid, register and schema.
+	 *
+	 * @return void
+	 */
+	private function placeSubject(FlowRun $run, array $subject): void {
 		$run->setSubjectUuid(($subject['uuid'] ?? null));
 		$run->setSubjectRegister(($subject['register'] ?? null));
 		$run->setSubjectSchema(($subject['schema'] ?? null));
+	}//end placeSubject()
+
+	/**
+	 * Stamp who caused and who runs the run, its organisation, its times and its pinned version.
+	 *
+	 * @param FlowRun $run The row.
+	 *
+	 * @return FlowRun The row.
+	 */
+	private function attributedAndPinned(FlowRun $run): FlowRun {
 		// Both, deliberately. `triggeredBy` is PROVENANCE and keeps recording who
 		// caused the run; `runAs` is AUTHORIZATION and is what every access
 		// decision reads from here on. They are equal at this point for a
@@ -108,8 +140,7 @@ class FlowRunRow {
 		$run->setFlowVersion($this->version);
 
 		return $run;
-
-	}//end build()
+	}//end attributedAndPinned()
 
 	/**
 	 * A v4 UUID for a new run.

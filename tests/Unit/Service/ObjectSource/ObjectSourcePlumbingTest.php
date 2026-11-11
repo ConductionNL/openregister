@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -86,10 +88,10 @@ class ObjectSourcePlumbingTest extends TestCase {
 		$schema   = new Schema();
 		$provider = $this->getMockBuilder($class)->disableOriginalConstructor()->onlyMethods(['findAll'])->getMock();
 		$provider->expects($this->once())->method('findAll')
-			->with($register, $schema, ['limit' => 2], ['k' => 'v'])
+			->with(new SourcedTable(new RegisterSchema($register, $schema), ['k' => 'v']), ['limit' => 2])
 			->willReturn([new ObjectEntity(), new ObjectEntity(), new ObjectEntity()]);
 
-		$this->assertSame(3, $provider->count($register, $schema, ['limit' => 2], ['k' => 'v']));
+		$this->assertSame(3, $provider->count(new SourcedTable(new RegisterSchema($register, $schema), ['k' => 'v']), ['limit' => 2]));
 	}//end testCountIsTheSizeOfFindAll()
 
 	/**
@@ -103,7 +105,7 @@ class ObjectSourcePlumbingTest extends TestCase {
 	 * @return object The provider.
 	 */
 	private function build(string $class, IAppManager $appManager, ContainerInterface $container, LoggerInterface $logger): object {
-		return new $class($appManager, $this->createMock(\OCP\IUserSession::class), $container, $logger);
+		return new $class(new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $container, logger: $logger), $this->createMock(\OCP\IUserSession::class));
 	}//end build()
 
 	/**
@@ -158,7 +160,7 @@ class ObjectSourcePlumbingTest extends TestCase {
 	public function testTablesReaderResolvesServicesTheSameWay(): void {
 		$this->assertServiceResolution(
 			label: 'tables',
-			build: fn (ContainerInterface $container, LoggerInterface $logger): object => new ObjectSource\TablesTableReader($this->createMock(IAppManager::class), $container, $logger)
+			build: fn (ContainerInterface $container, LoggerInterface $logger): object => new ObjectSource\TablesTableReader(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $container, logger: $logger))
 		);
 	}//end testTablesReaderResolvesServicesTheSameWay()
 

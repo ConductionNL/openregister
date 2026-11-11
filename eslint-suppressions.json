@@ -679,13 +679,18 @@
   },
   "src/modals/webhook/EditWebhook.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 4
+      "count": 2
     },
     "no-console": {
       "count": 2
     }
   },
   "src/modals/webhook/ViewWebhookLog.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 2
+    }
+  },
+  "src/modals/webhook/webhookDefaults.js": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 2
     }
@@ -764,7 +769,7 @@
   },
   "src/store/modules/auditTrail.js": {
     "no-console": {
-      "count": 7
+      "count": 5
     }
   },
   "src/store/modules/avg.js": {
@@ -784,7 +789,7 @@
   },
   "src/store/modules/deleted.js": {
     "no-console": {
-      "count": 7
+      "count": 6
     }
   },
   "src/store/modules/endpoints.ts": {
@@ -794,7 +799,7 @@
   },
   "src/store/modules/organisation.js": {
     "no-console": {
-      "count": 9
+      "count": 3
     }
   },
   "src/store/modules/quality.js": {
@@ -829,10 +834,15 @@
   },
   "src/store/modules/searchTrail.js": {
     "no-console": {
-      "count": 12
+      "count": 11
     }
   },
   "src/store/modules/source.js": {
+    "no-console": {
+      "count": 2
+    }
+  },
+  "src/store/modules/trailStatistics.js": {
     "no-console": {
       "count": 2
     }
@@ -920,7 +930,7 @@
   },
   "src/views/avg/AvgIndex.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 18
+      "count": 17
     }
   },
   "src/views/configuration/ConfigurationsIndex.vue": {
@@ -1059,9 +1069,6 @@
     "no-console": {
       "count": 1
     },
-    "vue/match-component-import-name": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -1111,7 +1118,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 13
+      "count": 11
     }
   },
   "src/views/settings/sections/FlowConfiguration.vue": {

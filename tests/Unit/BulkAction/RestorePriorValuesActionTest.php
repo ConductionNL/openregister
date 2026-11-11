@@ -29,6 +29,9 @@ namespace Unit\BulkAction;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\BulkAction\BulkStep;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\BulkAction\BulkObjectAccess;
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
@@ -79,7 +82,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 	}
 
 	private function action(): RestorePriorValuesAction {
-		return new RestorePriorValuesAction($this->memberMapper, $this->objectService, new NullLogger());
+		return new RestorePriorValuesAction($this->memberMapper, new BulkObjectAccess($this->objectService, $this->createMock(SchemaMapperInterface::class), new NullLogger()));
 	}
 
 	private function object(array $data = ['status' => 'afgehandeld']): ObjectEntity {
@@ -111,7 +114,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 			$this->record(['status' => 'in behandeling'], ['status' => 'afgehandeld'])
 		);
 
-		$result = $this->action()->apply($this->object(), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertTrue($result->isApplied());
 		$this->assertSame([['uuid' => 'case-1', 'data' => ['status' => 'in behandeling']]], $this->writes);
@@ -123,7 +126,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 			$this->record(['status' => 'in behandeling'], ['status' => 'afgehandeld'])
 		);
 
-		$result = $this->action()->apply($this->object(['status' => 'heropend']), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['status' => 'heropend']), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertStringContainsString('not reversible', (string)$result->getReason());
@@ -135,7 +138,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 	public function testAMemberTheOriginalJobNeverWroteIsSkipped(): void {
 		$this->memberMapper->method('findByJobAndObject')->willReturn(null);
 
-		$result = $this->action()->apply($this->object(), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertStringContainsString('never wrote this object', (string)$result->getReason());
@@ -148,7 +151,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 		// exactly like restoring something.
 		$this->memberMapper->method('findByJobAndObject')->willReturn($this->record(null, null));
 
-		$result = $this->action()->apply($this->object(), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertSame([], $this->writes);
@@ -159,7 +162,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 			$this->record(['status' => 'in behandeling'], ['status' => 'in behandeling'])
 		);
 
-		$result = $this->action()->apply($this->object(['status' => 'in behandeling']), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['status' => 'in behandeling']), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertStringContainsString('already carries the values it had before', (string)$result->getReason());
@@ -174,7 +177,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 			$this->record(['status' => 'in behandeling'], ['status' => 'afgehandeld'])
 		);
 
-		$result = $this->action()->apply($this->object(['status' => 'in behandeling']), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['status' => 'in behandeling']), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertStringContainsString('already carries the values it had before', (string)$result->getReason());
@@ -191,7 +194,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 			$this->record(['priority' => 3], ['priority' => '7'])
 		);
 
-		$result = $this->action()->apply($this->object(['priority' => 7]), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['priority' => 7]), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertTrue($result->isApplied(), (string)$result->getReason());
 		$this->assertSame([['uuid' => 'case-1', 'data' => ['priority' => 3]]], $this->writes);
@@ -205,7 +208,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 			$this->record(['flag' => true], ['flag' => false])
 		);
 
-		$result = $this->action()->apply($this->object(['flag' => null]), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['flag' => null]), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertStringContainsString('flag', (string)$result->getReason());
@@ -217,7 +220,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 			$this->record(['status' => 'in behandeling'], ['status' => 'afgehandeld'])
 		);
 
-		$result = $this->action()->apply($this->object(), $this->parameters(), false);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: $this->parameters(), commit: false, actor: null));
 
 		$this->assertTrue($result->isApplied());
 		$this->assertSame([], $this->writes, 'the rehearsal wrote');

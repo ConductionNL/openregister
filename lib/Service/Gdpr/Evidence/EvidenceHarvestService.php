@@ -78,9 +78,10 @@ class EvidenceHarvestService implements EvidenceHarvestServiceInterface {
 		$case = CasePayload::loaded(case: $this->accessor->load(caseUuid: $caseUuid), caseUuid: $caseUuid);
 		$data = $case->getObject();
 		$merge = new EvidenceMerge(data: $data);
+		$run = new EvidenceHarvestRun(caseUuid: $caseUuid, data: $data, merge: $merge);
 
 		foreach ($this->registry->list() as $provider) {
-			$this->harvestFrom(provider: $provider, caseUuid: $caseUuid, data: $data, merge: $merge);
+			$this->harvestFrom(run: $run, provider: $provider);
 		}
 
 		// Persist once (a single audited write) only when something changed.
@@ -93,22 +94,20 @@ class EvidenceHarvestService implements EvidenceHarvestServiceInterface {
 	}//end harvest()
 
 	/**
-	 * Ask one provider (when enabled) and merge what it returns.
+	 * Harvest one provider into the run's merge, unless it is disabled.
 	 *
+	 * @param EvidenceHarvestRun     $run      The case being harvested and its merge.
 	 * @param EvidenceSourceProvider $provider The provider.
-	 * @param string                 $caseUuid The case uuid.
-	 * @param array<string, mixed>   $data     The case payload as loaded.
-	 * @param EvidenceMerge          $merge    This pass's accumulator.
 	 *
 	 * @return void
 	 */
-	private function harvestFrom(EvidenceSourceProvider $provider, string $caseUuid, array $data, EvidenceMerge $merge): void {
+	private function harvestFrom(EvidenceHarvestRun $run, EvidenceSourceProvider $provider): void {
 		if ($provider->isEnabled() === false) {
 			return;
 		}
 
-		$merge->noteProvider(sourceId: $provider->getSourceId());
-		$merge->merge(items: $this->itemsFrom(provider: $provider, caseUuid: $caseUuid, data: $data));
+		$run->merge->noteProvider(sourceId: $provider->getSourceId());
+		$run->merge->merge(items: $this->itemsFrom(run: $run, provider: $provider));
 	}//end harvestFrom()
 
 	/**
@@ -117,21 +116,20 @@ class EvidenceHarvestService implements EvidenceHarvestServiceInterface {
 	 * A failing source is visible + re-runnable: it contributes no items this
 	 * pass, but does not abort the whole harvest.
 	 *
+	 * @param EvidenceHarvestRun     $run      The case uuid and its payload as loaded.
 	 * @param EvidenceSourceProvider $provider The provider.
-	 * @param string                 $caseUuid The case uuid.
-	 * @param array<string, mixed>   $data     The case payload as loaded.
 	 *
 	 * @return array<int, EvidenceItem>
 	 */
-	private function itemsFrom(EvidenceSourceProvider $provider, string $caseUuid, array $data): array {
+	private function itemsFrom(EvidenceHarvestRun $run, EvidenceSourceProvider $provider): array {
 		try {
-			return $provider->harvest(caseUuid: $caseUuid, case: $data);
+			return $provider->harvest(caseUuid: $run->caseUuid, case: $run->data);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf(
 					'[EvidenceHarvestService] provider "%s" failed for case "%s": %s',
 					$provider->getSourceId(),
-					$caseUuid,
+					$run->caseUuid,
 					$e->getMessage()
 				)
 			);

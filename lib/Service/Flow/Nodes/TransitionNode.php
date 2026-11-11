@@ -28,7 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -58,17 +60,31 @@ class TransitionNode extends ObjectNodeBase implements IFlowNode, TransitionNode
 	public const TYPE = 'openregister.transition';
 
 	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * For the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param TransitionEngine $engine The lifecycle engine.
-	 * @param IL10N            $l10n   Translations.
-	 * @param IURLGenerator    $urls   For the palette icon.
+	 * @param TransitionEngine     $engine       The lifecycle engine.
+	 * @param FlowNodePresentation $presentation Translations and the URL generator for the palette icon.
 	 */
 	public function __construct(
 		private readonly TransitionEngine $engine,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		FlowNodePresentation $presentation,
 	) {
+		$this->l10n = $presentation->l10n;
+		$this->urls = $presentation->urls;
 	}//end __construct()
 
 	/**
@@ -150,39 +166,65 @@ class TransitionNode extends ObjectNodeBase implements IFlowNode, TransitionNode
 	/**
 	 * Take the transition on each item's object.
 	 *
-	 * @param array $items   The input items.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array One item per moved object, carrying the saved object.
 	 *
 	 * @throws RuntimeException When an item names no object or the engine refuses the move.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The interface fixes the signature.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		$this->validateConfig(config: $config);
 
+		return $this->transitionAll(items: $items, config: $config);
+	}//end execute()
+
+	/**
+	 * Fire the configured transition on the object each item names.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array One item per input, carrying the transitioned object.
+	 *
+	 * @throws RuntimeException When a transition is refused or fails.
+	 */
+	private function transitionAll(array $items, array $config): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$objectId = $this->objectIdOf(json: $json, config: $config);
-			$action = (string)FlowValueTemplate::render(value: $config['action'], json: $json);
-			$data = (array)FlowValueTemplate::render(value: ($config['data'] ?? []), json: $json);
-
-			try {
-				$saved = $this->engine->transition(objectId: $objectId, action: $action, data: $data);
-			} catch (Throwable $e) {
-				throw new RuntimeException($e->getMessage(), 0, $e);
-			}
-
-			$out[] = FlowItems::item(json: $saved->jsonSerialize(), fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $this->transitioned(json: $json, config: $config), options: new FlowItemOptions(fromItemIndex: $index));
 		}
 
 		return $out;
-	}//end execute()
+	}//end transitionAll()
+
+	/**
+	 * Fire the configured transition for one item's record.
+	 *
+	 * @param array $json   The item's record.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array The transitioned object, serialised.
+	 *
+	 * @throws RuntimeException When the transition is refused or fails.
+	 */
+	private function transitioned(array $json, array $config): array {
+		$objectId = $this->objectIdOf(json: $json, config: $config);
+		$action = (string)FlowValueTemplate::render(value: $config['action'], json: $json);
+		$data = (array)FlowValueTemplate::render(value: ($config['data'] ?? []), json: $json);
+
+		try {
+			$saved = $this->engine->transition(objectId: $objectId, action: $action, data: $data);
+		} catch (Throwable $e) {
+			throw new RuntimeException($e->getMessage(), 0, $e);
+		}
+
+		return $saved->jsonSerialize();
+	}//end transitioned()
 
 	/**
 	 * The object an item asks to move: the configured one, or the item's own.

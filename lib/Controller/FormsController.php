@@ -29,10 +29,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\FormsControllerServices;
+use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormSubmission;
+use OCA\OpenRegister\Service\Form\FormSubmitter;
 use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
@@ -194,7 +197,10 @@ class FormsController extends Controller {
 			$mapping = [];
 		}
 
-		$findings = $this->validator->validate(mapping: $mapping, schema: $schema, options: $options);
+		$findings = $this->validator->validate(
+			mapping: $mapping,
+			destination: new FormDestination(schema: $schema, audience: ($options['audience'] ?? null))
+		);
 
 		return new JSONResponse(data: ['accepted' => ($findings === []), 'findings' => $findings]);
 	}//end validate()
@@ -221,29 +227,58 @@ class FormsController extends Controller {
 		}
 
 		try {
-			$form = $this->resolveForm(formId: $formId);
-			$subject = $this->userSession->getUser();
-			if ($this->audienceRefuses(form: $form, subject: $subject) === true) {
-				return $this->signInRequired();
-			}
-
-			$key = trim($this->request->getHeader('Idempotency-Key'));
-			if ($key === '') {
-				$key = null;
-			}
-
-			$draftId = trim((string)$this->request->getParam('_draft', ''));
-			if ($draftId === '') {
-				$draftId = null;
-			}
-
-			$answer = $this->submitForm(form: $form, subject: $subject, key: $key, draftId: $draftId);
+			$answer = $this->submittedAnswer(formId: $formId);
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}
 
+		if ($answer instanceof JSONResponse) {
+			return $answer;
+		}
+
 		return new JSONResponse(data: $answer, statusCode: 201);
 	}//end submit()
+
+	/**
+	 * Submit the payload to the form's writes as the session user, when the audience lets them.
+	 *
+	 * @param string $formId The form
+	 *
+	 * @return array<string, mixed>|JSONResponse The submitter's answer, or the sign-in refusal
+	 *
+	 * @throws FormSubmitRefusedException When the form or the submission is refused
+	 */
+	private function submittedAnswer(string $formId): array|JSONResponse {
+		$form = $this->resolveForm(formId: $formId);
+		$subject = $this->userSession->getUser();
+		if ($this->audienceRefuses(form: $form, subject: $subject) === true) {
+			return $this->signInRequired();
+		}
+
+		$key = trim($this->request->getHeader('Idempotency-Key'));
+		if ($key === '') {
+			$key = null;
+		}
+
+		$submitter = new FormSubmitter(subject: $subject, scope: $form['id'], draftId: $this->draftIdParam());
+		$submission = new FormSubmission(writes: $this->writesOf(form: $form), payload: $this->payload(), submitter: $submitter);
+
+		return $this->submitter->submit($submission, $key);
+	}//end submittedAnswer()
+
+	/**
+	 * The draft the request continues, or null for a new submission.
+	 *
+	 * @return string|null The draft id
+	 */
+	private function draftIdParam(): ?string {
+		$draftId = trim((string)$this->request->getParam('_draft', ''));
+		if ($draftId === '') {
+			return null;
+		}
+
+		return $draftId;
+	}//end draftIdParam()
 
 	/**
 	 * Save the signed-in subject's draft of this form: the destination object in status `draft`.
@@ -263,44 +298,41 @@ class FormsController extends Controller {
 	#[UserRateLimit(limit: 120, period: 60)]
 	public function draft(string $formId): JSONResponse {
 		try {
-			$form = $this->resolveForm(formId: $formId);
-			if (count($form['writes']) !== 1) {
-				$message = $this->l10n->t('A draft is one object; a form that writes several cannot be saved as a draft.');
-				throw new FormSubmitRefusedException(message: $message, status: 422);
-			}
-
-			$draftId = trim((string)$this->request->getParam('_draft', ''));
-			if ($draftId === '') {
-				$draftId = null;
-			}
-
-			$write = $form['writes'][0];
-			$destination = ['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)];
-			$subject = $this->userSession->getUser();
-			if ($draftId !== null && $this->submitter->isOwnerOfDraft($destination, $draftId, $subject) === false) {
-				// The same 404 an unknown id gets, so a draft id is not an oracle.
-				throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
-			}
-
-			$mapping = null;
-			if (is_array($write['mapping'] ?? null) === true) {
-				$mapping = $write['mapping'];
-			}
-
-			$draft = $this->submitter->saveDraft(
-				$destination,
-				$mapping,
-				$this->payload(),
-				$subject,
-				$draftId,
-				$formId
-			);
+			$draft = $this->savedDraft(formId: $formId);
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}
 
 		return new JSONResponse(data: $draft);
 	}//end draft()
+
+	/**
+	 * Save the payload as a draft of the form's one write, as the session user.
+	 *
+	 * @param string $formId The form
+	 *
+	 * @return array<string, mixed> The saved draft
+	 *
+	 * @throws FormSubmitRefusedException When the form writes several objects, or the named draft is not the caller's
+	 */
+	private function savedDraft(string $formId): array {
+		$form = $this->resolveForm(formId: $formId);
+		if (count($form['writes']) !== 1) {
+			$message = $this->l10n->t('A draft is one object; a form that writes several cannot be saved as a draft.');
+			throw new FormSubmitRefusedException(message: $message, status: 422);
+		}
+
+		$draftId = $this->draftIdParam();
+		$write = $this->writesOf(form: $form)[0];
+		$destination = ['register' => $write['register'], 'schema' => $write['schema']];
+		$submitter = new FormSubmitter(subject: $this->userSession->getUser(), scope: $formId, draftId: $draftId);
+		if ($draftId !== null && $this->submitter->isOwnerOfDraft($destination, $submitter) === false) {
+			// The same 404 an unknown id gets, so a draft id is not an oracle.
+			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+		}
+
+		return $this->submitter->saveDraft(new FormSubmission(writes: [$write], payload: $this->payload(), submitter: $submitter));
+	}//end savedDraft()
 
 	/**
 	 * Hold one file for a later submit of this form, checked against the property's file rules.
@@ -365,20 +397,17 @@ class FormsController extends Controller {
 	}//end signInRequired()
 
 	/**
-	 * One destination through FormSubmitService::submit(), a journey's writes through submitAll().
+	 * The form's writes as submitted: a journey's as they are, one destination as `{ register, schema, mapping }`.
 	 *
-	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form    The form.
-	 * @param IUser|null                                                                         $subject The subject.
-	 * @param string|null                                                                   $key     The Idempotency-Key.
-	 * @param string|null                                                                   $draftId The subject's draft to leave, when sent.
+	 * A single write drops its other keys (such as `as`), so its answer names it `write0`.
 	 *
-	 * @return array<string, mixed> The answer.
+	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form The form.
 	 *
-	 * @throws FormSubmitRefusedException On any refusal.
+	 * @return array<int, array<string, mixed>> The writes.
 	 */
-	private function submitForm(array $form, ?IUser $subject, ?string $key, ?string $draftId = null): array {
+	private function writesOf(array $form): array {
 		if (count($form['writes']) !== 1) {
-			return $this->submitter->submitAll($form['writes'], $this->payload(), $subject, $key, $form['id'], $draftId);
+			return $form['writes'];
 		}
 
 		$write = $form['writes'][0];
@@ -387,16 +416,8 @@ class FormsController extends Controller {
 			$mapping = $write['mapping'];
 		}
 
-		return $this->submitter->submit(
-			['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)],
-			$mapping,
-			$this->payload(),
-			$subject,
-			$key,
-			$form['id'],
-			$draftId
-		);
-	}//end submitForm()
+		return [['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null), 'mapping' => $mapping]];
+	}//end writesOf()
 
 	/**
 	 * The stored form, registering a brute-force attempt when it does not resolve.
@@ -436,13 +457,7 @@ class FormsController extends Controller {
 	 */
 	private function ruleFor(array $writes, string $property): array {
 		foreach ($writes as $write) {
-			try {
-				$properties = $this->schemas->find((string)($write['schema'] ?? ''), _multitenancy: false)->getProperties();
-			} catch (Throwable) {
-				continue;
-			}
-
-			$rule = ($properties[$property] ?? null);
+			$rule = ($this->schemaProperties(write: $write)[$property] ?? null);
 			if ($property !== '' && is_array($rule) === true) {
 				return $rule;
 			}
@@ -455,6 +470,21 @@ class FormsController extends Controller {
 			findings: [['property' => $property, 'code' => 'property-unknown', 'message' => $message]]
 		);
 	}//end ruleFor()
+
+	/**
+	 * The properties of a write's schema; none when the schema cannot be read.
+	 *
+	 * @param array<string, mixed> $write One write of the form
+	 *
+	 * @return array<string, mixed> The schema's properties
+	 */
+	private function schemaProperties(array $write): array {
+		try {
+			return $this->schemas->find((string)($write['schema'] ?? ''), _multitenancy: false)->getProperties();
+		} catch (Throwable) {
+			return [];
+		}
+	}//end schemaProperties()
 
 	/**
 	 * The submitted answers: the request body minus the route id and `_` control keys.

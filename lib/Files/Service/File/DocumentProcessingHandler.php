@@ -142,57 +142,6 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	private array $lastPlaceholderMap = [];
 
 	/**
-	 * Root folder for file access.
-	 *
-	 * @var IRootFolder
-	 */
-	private readonly IRootFolder $rootFolder;
-
-	/**
-	 * User session for getting current user.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger for logging operations.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Used to honour skip-anonymization flags during the redaction pass (see `entity-relation-grondslagen`).
-	 *
-	 * @var \OCA\OpenRegister\Files\Db\EntityRelationMapperInterface
-	 */
-	private readonly \OCA\OpenRegister\Files\Db\EntityRelationMapperInterface $entityRelationMapper;
-
-	/**
-	 * Office document sanitiser (DOCX / ODT).
-	 *
-	 * @var OfficeDocumentSanitizer
-	 */
-	private readonly OfficeDocumentSanitizer $sanitizer;
-
-	/**
-	 * Mapper for persisting per-run anonymisation log rows (carries the sanitisation report). Nullable so the handler stays construct-safe for tests
-	 * that do not need persistence.
-	 *
-	 * @var AnonymisationLogMapper|null
-	 */
-	private readonly ?AnonymisationLogMapper $anonymisationLogMapper;
-
-	/**
-	 * Acting-user localisation, used to translate the placeholder TYPE label (e.g. PERSON → PERSOON on a Dutch instance). Nullable: when absent the
-	 * raw English label is emitted (construct-safe for tests / non-localised callers).
-	 *
-	 * @var IL10N|null
-	 */
-	private readonly ?IL10N $l10n;
-
-	/**
 	 * Constructor for DocumentProcessingHandler.
 	 *
 	 * @param DocumentProcessingPlatform $platform  Root folder, user session and the optional acting-user localisation.
@@ -200,17 +149,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @param LoggerInterface            $logger    Logger for logging operations.
 	 */
 	public function __construct(
-		DocumentProcessingPlatform $platform,
-		DocumentRedactionServices $redaction,
-		LoggerInterface $logger,
+		private readonly DocumentProcessingPlatform $platform,
+		private readonly DocumentRedactionServices $redaction,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->rootFolder = $platform->rootFolder;
-		$this->userSession = $platform->userSession;
-		$this->l10n = $platform->l10n;
-		$this->entityRelationMapper = $redaction->entityRelationMapper;
-		$this->sanitizer = $redaction->sanitizer;
-		$this->anonymisationLogMapper = $redaction->anonymisationLogMapper;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -314,26 +256,27 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		bool $strict = false,
 		?bool $preserveStructure = null,
 	): File {
-		if (($node instanceof File) === false) {
-			throw new Exception('Node must be a file');
-		}
+		$file = $this->requireFile(node: $node);
+		$job = new DocumentReplacement(node: $file, replacements: $replacements, outputName: $outputName ?? $this->replacedNameFor(file: $file));
+		return $this->replaceDocument(job: $job->withPdfOptions(strict: $strict, preserveStructure: $preserveStructure));
+	}//end replaceWords()
 
-		$fileName = $node->getName();
-		$fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-		$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME);
-
-		// Generate output file name if not provided.
-		if ($outputName === null) {
-			$outputName = $fileBaseName . '_replaced';
-			if (empty($fileExtension) === false) {
-				$outputName .= '.' . $fileExtension;
-			}
-		}
-
-		$job = (new DocumentReplacement(node: $node, replacements: $replacements, outputName: $outputName))
-			->withPdfOptions(strict: $strict, preserveStructure: $preserveStructure);
-
-		// Process based on file type.
+	/**
+	 * Replace words in a document described by one replacement run.
+	 *
+	 * Word documents go through PHPWord, PDFs through the byte-level pipeline,
+	 * everything else through plain string replacement.
+	 *
+	 * @param DocumentReplacement $job The replacement run.
+	 *
+	 * @throws Exception If the replacement fails.
+	 *
+	 * @return File The written output file.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function replaceDocument(DocumentReplacement $job): File {
+		$fileExtension = strtolower(pathinfo($job->node->getName(), PATHINFO_EXTENSION));
 		if (in_array($fileExtension, ['doc', 'docx'], true) === true) {
 			return $this->replaceWordsInWordDocument(job: $job);
 		}
@@ -343,7 +286,42 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		}
 
 		return $this->replaceWordsInTextDocument(job: $job);
-	}//end replaceWords()
+	}//end replaceDocument()
+
+	/**
+	 * The node as a file, or a refusal when it is not one.
+	 *
+	 * @param Node $node The node to check.
+	 *
+	 * @throws Exception If the node is not a file.
+	 *
+	 * @return File The node as a file.
+	 */
+	private function requireFile(Node $node): File {
+		if (($node instanceof File) === false) {
+			throw new Exception('Node must be a file');
+		}
+
+		return $node;
+	}//end requireFile()
+
+	/**
+	 * The default output name of a replacement: `<base>_replaced[.<ext>]`.
+	 *
+	 * @param File $file The source file.
+	 *
+	 * @return string The output name.
+	 */
+	private function replacedNameFor(File $file): string {
+		$fileName = $file->getName();
+		$fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+		$outputName = pathinfo($fileName, PATHINFO_FILENAME) . '_replaced';
+		if (empty($fileExtension) === false) {
+			$outputName .= '.' . $fileExtension;
+		}
+
+		return $outputName;
+	}//end replacedNameFor()
 
 	/**
 	 * Anonymize a document by replacing entity values.
@@ -383,6 +361,27 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		?string $fileKey = null,
 		?bool $preserveStructure = null,
 	): File {
+		$options = new DocumentAnonymisationOptions(scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure);
+		return $this->anonymize(request: new DocumentAnonymisationRequest(node: $node, entities: $entities, options: $options));
+	}//end anonymizeDocument()
+
+	/**
+	 * Anonymize a document by replacing entity values with placeholders.
+	 *
+	 * See {@see anonymizeDocument()} for the placeholder scopes and the
+	 * structure-preservation option.
+	 *
+	 * @param DocumentAnonymisationRequest $request The node, the detected entities and the options.
+	 *
+	 * @throws Exception If anonymization fails.
+	 *
+	 * @return File The anonymized document file.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 */
+	public function anonymize(DocumentAnonymisationRequest $request): File {
+		$node = $request->node;
 		$this->resetRunState();
 
 		// Resolve the source file id once — the substitution placeholder
@@ -395,20 +394,20 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		$skippedValues = [];
 		$entityRows = [];
 		if ($fileId > 0) {
-			$skippedValues = $this->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
-			$entityRows = $this->entityRelationMapper->findEntityIdsByValueForFile($fileId);
+			$skippedValues = $this->redaction->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
+			$entityRows = $this->redaction->entityRelationMapper->findEntityIdsByValueForFile($fileId);
 		}
 
 		// Scope-local placeholder numbering (Decision 1 + 3): per document by
 		// first appearance, or per dossier from the whole folder's stored rows,
 		// so the same person is the same number across the dossier.
 		$translator = PlaceholderIdTranslator::perDocument();
-		if ($scope === 'dossier') {
-			$translator = $this->recomputeFileTranslator(node: $node, fileKey: $fileKey);
+		if ($request->options->scope === 'dossier') {
+			$translator = $this->recomputeFileTranslator(node: $node, fileKey: $request->options->fileKey);
 		}
 
 		$replacements = $this->replacementsFor(
-			entities: $entities,
+			entities: $request->entities,
 			lookup: new PlaceholderLookup(skippedValues: $skippedValues, entityRows: $entityRows, translator: $translator)
 		);
 		$anonymizedFileName = $this->anonymizedNameFor(node: $node);
@@ -425,10 +424,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			replacements: $replacements,
 			outputName: $anonymizedFileName,
 			strict: true,
-			preserveStructure: $preserveStructure
+			preserveStructure: $request->options->preserveStructure
 		);
 		if (($node instanceof File) === true
-			&& $this->sanitizer->isSanitizable($node->getMimeType()) === true
+			&& $this->redaction->sanitizer->isSanitizable($node->getMimeType()) === true
 		) {
 			$anonymizedFile = $this->anonymizeSanitizableDocument(
 				job: new DocumentReplacement(node: $node, replacements: $replacements, outputName: $anonymizedFileName)
@@ -460,7 +459,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		$this->persistAnonymisationLog(node: $node, replacements: $replacements);
 
 		return $anonymizedFile;
-	}//end anonymizeDocument()
+	}//end anonymize()
 
 	/**
 	 * Reset any report/residuals/placeholder-map/structure-result from a
@@ -584,7 +583,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 */
 	private function markAnonymized(int $fileId): void {
 		try {
-			$this->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
+			$this->redaction->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after redaction',
@@ -607,13 +606,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @return string The localised label (e.g. 'PERSOON' on nl), or the raw type.
 	 */
 	private function localizeEntityType(string $entityType): string {
-		if ($this->l10n === null
+		if ($this->platform->l10n === null
 			|| in_array($entityType, self::LOCALIZABLE_ENTITY_TYPES, true) === false
 		) {
 			return $entityType;
 		}
 
-		return $this->l10n->t($entityType);
+		return $this->platform->l10n->t($entityType);
 	}//end localizeEntityType()
 
 	/**
@@ -649,7 +648,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			return PlaceholderIdTranslator::perDocument();
 		}
 
-		$rows = $this->entityRelationMapper->findEntityIdsByValueForFiles(fileIds: $fileIds);
+		$rows = $this->redaction->entityRelationMapper->findEntityIdsByValueForFiles(fileIds: $fileIds);
 
 		// PII-free diagnostic (ADR-005): ids/counts only, never value → number.
 		$this->logger->debug(
@@ -682,7 +681,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// Explicit, authoritative signal: the folder id.
 		if ($fileKey !== null && trim($fileKey) !== '' && ctype_digit(trim($fileKey)) === true) {
 			try {
-				$matches = $this->rootFolder->getById((int)trim($fileKey));
+				$matches = $this->platform->rootFolder->getById((int)trim($fileKey));
 				foreach ($matches as $candidate) {
 					if ($candidate instanceof Folder) {
 						return $candidate;
@@ -758,7 +757,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	private function persistAnonymisationLog(Node $node, array $replacements): void {
-		if ($this->anonymisationLogMapper === null) {
+		if ($this->redaction->anonymisationLogMapper === null) {
 			return;
 		}
 
@@ -782,7 +781,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		$entity->setCreated(new DateTime());
 
 		try {
-			$this->anonymisationLogMapper->insert(entity: $entity);
+			$this->redaction->anonymisationLogMapper->insert(entity: $entity);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'DocumentProcessingHandler: AnonymisationLog persistence failed',
@@ -838,7 +837,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @return string The engine class short name used for the run.
 	 */
 	private function resolveEngineName(string $mimeType): string {
-		if ($this->sanitizer->isSanitizable($mimeType) === true) {
+		if ($this->redaction->sanitizer->isSanitizable($mimeType) === true) {
 			return 'OfficeDocumentSanitizer';
 		}
 
@@ -868,7 +867,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 */
 	private function anonymizeSanitizableDocument(DocumentReplacement $job): File {
 		try {
-			$result = $this->sanitizer->sanitize($job->node->getId());
+			$result = $this->redaction->sanitizer->sanitize($job->node->getId());
 		} catch (SanitizationException $e) {
 			if ($e->getReason() === SanitizationException::REASON_ENCRYPTED) {
 				// Caller-correctable: cannot anonymise an encrypted document.
@@ -1035,6 +1034,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			throw new Exception('Failed to replace words in Word document: ' . $e->getMessage(), 0, $e);
 		} finally {
 			if (file_exists($tempFile) === true) {
+				// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is the tempnam() file this method created.
 				unlink($tempFile);
 			}
 		}//end try

@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\SetupControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
@@ -78,23 +80,42 @@ class SetupController extends Controller {
 	private const DATASET_KEY = 'demo_dataset';
 
 	/**
+	 * Records the demo-data decision.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Records a failed import.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Imports the shipped demo dataset.
+	 *
+	 * @var DemoDataServiceInterface
+	 */
+	private readonly DemoDataServiceInterface $demoDataService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest        $request         The request.
-	 * @param IAppConfig      $appConfig       Records the demo-data decision.
-	 * @param LoggerInterface $logger          Records a failed import.
-	 * @param DemoDataServiceInterface $demoDataService Imports the shipped demo dataset.
+	 * @param IRequest                $request  The request.
+	 * @param SetupControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		private readonly DemoDataServiceInterface $demoDataService,
+		SetupControllerServices $services,
 	) {
-		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->appConfig = $services->appConfig;
+		$this->logger = $services->logger;
+		$this->demoDataService = $services->demoDataService;
 	}//end __construct()
 
 	/**

@@ -51,6 +51,17 @@ use UnexpectedValueException;
 final class UserTaskConfig {
 
 	/**
+	 * The config keys whose value must come from a published vocabulary, with that vocabulary.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const VOCABULARIES = [
+		'performerType' => Task::PERFORMER_TYPES,
+		'priority' => Task::PRIORITIES,
+		'routingStrategy' => Task::ROUTING_STRATEGIES,
+	];
+
+	/**
 	 * The item key the outcome lands under when the flow does not choose.
 	 *
 	 * `task`, not `signal`: a flow holding both wait nodes must not have them
@@ -105,6 +116,28 @@ final class UserTaskConfig {
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	public function validate(array $config): void {
+		$this->refuseIncompleteAsk(config: $config);
+		$this->refuseOutsideVocabularies(config: $config);
+		$this->refuseUnreadableOutcomesOrHeartbeat(config: $config);
+
+		// Throws its own message, which names the value and states the spelling.
+		FlowAdvanceBudget::fromConfig(config: $config);
+
+		// Throws naming schema, field and reason; a step with no form passes.
+		$this->forms->validate(form: $this->forms->fromConfig(config: $config));
+
+	}//end validate()
+
+	/**
+	 * Refuse a step that asks nothing, or asks nobody.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the title or every performer is missing.
+	 */
+	private function refuseIncompleteAsk(array $config): void {
 		if (trim((string)($config['title'] ?? '')) === '') {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Say what is being asked, or nobody can do it.')
@@ -118,11 +151,33 @@ final class UserTaskConfig {
 				)
 			);
 		}
+	}//end refuseIncompleteAsk()
 
-		$this->refuseOutsideVocabulary(config: $config, key: 'performerType', vocabulary: Task::PERFORMER_TYPES);
-		$this->refuseOutsideVocabulary(config: $config, key: 'priority', vocabulary: Task::PRIORITIES);
-		$this->refuseOutsideVocabulary(config: $config, key: 'routingStrategy', vocabulary: Task::ROUTING_STRATEGIES);
+	/**
+	 * Refuse a closed-vocabulary key set to a value outside its vocabulary.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When a value is outside its vocabulary.
+	 */
+	private function refuseOutsideVocabularies(array $config): void {
+		foreach (array_keys(self::VOCABULARIES) as $key) {
+			$this->refuseOutsideVocabulary(config: $config, key: $key);
+		}
+	}//end refuseOutsideVocabularies()
 
+	/**
+	 * Refuse outcomes that read as no list, and a heartbeat that is not a number.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When either is unreadable.
+	 */
+	private function refuseUnreadableOutcomesOrHeartbeat(array $config): void {
 		if (array_key_exists('outcomes', $config) === true && $this->common->listOf(value: $config['outcomes']) === []) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Possible outcomes must be a list of names, like "approved, rejected".')
@@ -134,14 +189,7 @@ final class UserTaskConfig {
 				$this->l10n->t('Re-check every (minutes) must be a number.')
 			);
 		}
-
-		// Throws its own message, which names the value and states the spelling.
-		FlowAdvanceBudget::fromConfig(config: $config);
-
-		// Throws naming schema, field and reason; a step with no form passes.
-		$this->forms->validate(form: $this->forms->fromConfig(config: $config));
-
-	}//end validate()
+	}//end refuseUnreadableOutcomesOrHeartbeat()
 
 	/**
 	 * The task fields, templated against the representative item.
@@ -354,14 +402,14 @@ final class UserTaskConfig {
 	 * Refuse a set value outside a published vocabulary, naming both.
 	 *
 	 * @param array<string, mixed> $config The step configuration.
-	 * @param string $key The config key.
-	 * @param array<int, string> $vocabulary The accepted values.
+	 * @param string $key The config key, one of {@see self::VOCABULARIES}.
 	 *
 	 * @return void
 	 *
 	 * @throws UnexpectedValueException When the value is set and not in the vocabulary.
 	 */
-	private function refuseOutsideVocabulary(array $config, string $key, array $vocabulary): void {
+	private function refuseOutsideVocabulary(array $config, string $key): void {
+		$vocabulary = self::VOCABULARIES[$key];
 		$value = trim((string)($config[$key] ?? ''));
 		if ($value === '' || in_array($value, $vocabulary, true) === true) {
 			return;

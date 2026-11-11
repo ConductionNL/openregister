@@ -23,9 +23,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -126,13 +128,15 @@ final class ConfigurationWebhookMapperTenancyGoldenTest extends TestCase {
 		if ($mapper === 'webhook') {
 			$instance = new WebhookMapper($db, new TenancyServices($organisations, $userSession, $groupManager), $appConfig);
 		} else {
-			$instance = new ConfigurationMapper($db, new TenancyServices($organisations, $userSession, $groupManager), $this->createMock(IEventDispatcher::class));
+			$instance = new ConfigurationMapper($db, new TenancyServices($organisations, $userSession, $groupManager), new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)));
 		}
 
 		$outcome = [];
 		try {
 			if ($mapper === 'configuration-off') {
 				$outcome['result'] = count($instance->findAll(null, null, [], [], [], false));
+			} elseif ($mapper === 'webhook') {
+				$outcome['result'] = count($instance->findAll(ListQuery::unbounded()));
 			} else {
 				$outcome['result'] = count($instance->findAll());
 			}

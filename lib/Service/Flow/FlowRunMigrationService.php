@@ -51,6 +51,8 @@ use OCA\OpenRegister\Db\FlowRunSubjectScope;
 use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -80,20 +82,6 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	public const LOG_ENTRY = 'migrated';
 
 	/**
-	 * Open timers of a run.
-	 *
-	 * @var FlowTimerMapperInterface
-	 */
-	private readonly FlowTimerMapperInterface $timers;
-
-	/**
-	 * Supersession.
-	 *
-	 * @var FlowTimerService
-	 */
-	private readonly FlowTimerService $timerService;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param FlowRunMapperInterface    $runs      The run store.
@@ -104,11 +92,9 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	public function __construct(
 		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunMigrationValidator $validator,
-		FlowRunMigrationTimers $timers,
+		private readonly FlowRunMigrationTimers $timers,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->timers       = $timers->timers;
-		$this->timerService = $timers->timerService;
 	}//end __construct()
 
 	/**
@@ -118,16 +104,15 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * migrate endpoint's own validate action and the two bulk paths below all
 	 * ask the question through this service.
 	 *
-	 * @param FlowRun               $run           The run.
-	 * @param int                   $targetVersion The version asked for.
-	 * @param array<string, string> $mapping       Old node id to new node id.
+	 * @param FlowRun          $run       The run.
+	 * @param FlowRunMigration $migration The version asked for and the node mapping onto it.
 	 *
 	 * @return array{ok: bool, marking: array<string, int>, unmapped: array<int, string>, reason: string}
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	public function validate(FlowRun $run, int $targetVersion, array $mapping = []): array {
-		return $this->validator->validate(run: $run, targetVersion: $targetVersion, mapping: $mapping);
+	public function validate(FlowRun $run, FlowRunMigration $migration): array {
+		return $this->validator->validate(run: $run, migration: $migration);
 	}//end validate()
 
 	/**
@@ -192,59 +177,57 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 			return $this->refusal(migration: $migration, reason: 'That run could not be found, so nothing was migrated.');
 		}
 
-		$verdict = $this->validate(run: $run, targetVersion: $migration->targetVersion, mapping: $migration->mapping());
+		$verdict = $this->validate(run: $run, migration: $migration);
 
-		return $this->actOnVerdict(run: $run, migration: $migration, verdict: $verdict);
+		return $this->actOnVerdict(move: new FlowRunMigrationRun(run: $run, migration: $migration), verdict: $verdict);
 	}//end perform()
 
 	/**
 	 * Answer a refused verdict or a dry run without writing; otherwise apply the move.
 	 *
-	 * @param FlowRun              $run       The run.
-	 * @param FlowRunMigration     $migration The request.
-	 * @param array<string, mixed> $verdict   What validate() decided.
+	 * @param FlowRunMigrationRun  $move    The run being moved, its request and the version it was on.
+	 * @param array<string, mixed> $verdict What validate() decided.
 	 *
 	 * @return array<string, mixed> The answer.
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	private function actOnVerdict(FlowRun $run, FlowRunMigration $migration, array $verdict): array {
-		$dryRun = $migration->isDryRun();
-		$from   = $run->getFlowVersion();
+	private function actOnVerdict(FlowRunMigrationRun $move, array $verdict): array {
+		$migration = $move->migration;
 		if ($verdict['ok'] === false) {
 			return $this->answer(
 				migration: $migration,
-				from: $from,
-				fields: ['dryRun' => $dryRun, 'unmapped' => $verdict['unmapped'], 'reason' => $verdict['reason']]
+				fields: ['from' => $move->from, 'dryRun' => $migration->isDryRun(), 'unmapped' => $verdict['unmapped'], 'reason' => $verdict['reason']]
 			);
 		}
 
 		// 🔑 THE DRY RUN RETURNS BEFORE THE FIRST WRITE, not after a rollback.
 		// A preview that wrote and undid would take the run lock, touch the
 		// log, and show up in an audit trail as a migration that happened.
-		if ($dryRun === true) {
-			return $this->answer(migration: $migration, from: $from, fields: ['dryRun' => true, 'marking' => $verdict['marking']]);
+		if ($migration->isDryRun() === true) {
+			return $this->answer(migration: $migration, fields: ['from' => $move->from, 'dryRun' => true, 'marking' => $verdict['marking']]);
 		}
 
-		$this->apply(run: $run, migration: $migration, marking: $verdict['marking']);
+		$this->apply(move: $move, marking: $verdict['marking']);
 
-		$applied = ['migrated' => true, 'marking' => $verdict['marking'], 'reason' => $migration->reason];
-
-		return $this->answer(migration: $migration, from: $from, fields: $applied);
+		return $this->answer(
+			migration: $migration,
+			fields: ['from' => $move->from, 'migrated' => true, 'marking' => $verdict['marking'], 'reason' => $migration->reason]
+		);
 	}//end actOnVerdict()
 
 	/**
 	 * Write the migration: the run's version, marking and log, then its timers.
 	 *
-	 * @param FlowRun            $run       The run, as read.
-	 * @param FlowRunMigration   $migration The migration being applied.
-	 * @param array<string, int> $marking   The validated marking on the target version.
+	 * @param FlowRunMigrationRun $move    The run, as read, and the migration being applied.
+	 * @param array<string, int>  $marking The validated marking on the target version.
 	 *
 	 * @return void
 	 */
-	private function apply(FlowRun $run, FlowRunMigration $migration, array $marking): void {
-		$from = $run->getFlowVersion();
-		$log  = $this->appendLog(run: $run, migration: $migration);
+	private function apply(FlowRunMigrationRun $move, array $marking): void {
+		$run       = $move->run;
+		$migration = $move->migration;
+		$log       = $this->appendLog(run: $run, migration: $migration);
 		$run->setFlowVersion($migration->targetVersion);
 		$run->setMarking($marking);
 		$run->setLog($log);
@@ -256,7 +239,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 
 		$this->logger->info(
 			message: '[FlowRunMigrationService] run ' . $migration->runUuid . ' migrated from version '
-				. (string)$from . ' to ' . $migration->targetVersion . ' by ' . $migration->actor,
+				. (string)$move->from . ' to ' . $migration->targetVersion . ' by ' . $migration->actor,
 			context: ['file' => __FILE__, 'line' => __LINE__, 'timersSuperseded' => $moved]
 		);
 	}//end apply()
@@ -264,19 +247,20 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	/**
 	 * One migration answer: the defaults of a migration that did not happen, overridden by `$fields`.
 	 *
+	 * The run's version before (`from`) is among `$fields` once the run was read.
+	 *
 	 * @param FlowRunMigration     $migration The migration asked for.
-	 * @param int|null             $from      The run's version before, when known.
 	 * @param array<string, mixed> $fields    The keys that differ from the defaults.
 	 *
 	 * @return array{migrated: bool, dryRun: bool, run: string, from: int|null, to: int,
 	 *         marking: array<string, int>, unmapped: array<int, string>, reason: string}
 	 */
-	private function answer(FlowRunMigration $migration, ?int $from, array $fields): array {
+	private function answer(FlowRunMigration $migration, array $fields): array {
 		$defaults = [
 			'migrated' => false,
 			'dryRun' => false,
 			'run' => $migration->runUuid,
-			'from' => $from,
+			'from' => null,
 			'to' => $migration->targetVersion,
 			'marking' => [],
 			'unmapped' => [],
@@ -294,19 +278,17 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * believing every run moved, and the ones that did not are exactly the ones
 	 * somebody has to go and look at.
 	 *
-	 * @param string                 $flowId        The flow.
-	 * @param int                    $sourceVersion The version to move off.
-	 * @param FlowRunMigrationTarget $target        The version to move onto, why, who asked and one mapping for all of them.
-	 * @param int                    $limit         The batch bound.
+	 * @param VersionRunsMigration $request The flow, the version to move off, the target and the batch bound.
 	 *
 	 * @return array{migrated: int, skipped: int, results: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-runs-can-be-migrated-in-bulk-per-version
 	 */
-	public function migrateRunsOfVersion(string $flowId, int $sourceVersion, FlowRunMigrationTarget $target, int $limit = 100): array {
+	public function migrateRunsOfVersion(VersionRunsMigration $request): array {
+		$listing = new FlowRunListing(filter: new FlowRunFilter(flowId: $request->flowId), limit: $request->limit);
 		$results = array_map(
-			fn (FlowRun $run): array => $this->migrate(runUuid: (string)$run->getUuid(), target: $target),
-			$this->runsOnVersion(flowId: $flowId, version: $sourceVersion, limit: $limit)
+			fn (FlowRun $run): array => $this->migrate(runUuid: (string)$run->getUuid(), target: $request->target),
+			$this->runsOnVersion(listing: $listing, version: $request->sourceVersion)
 		);
 		$migrated = count(array_filter($results, static fn (array $outcome): bool => $outcome['migrated'] === true));
 
@@ -314,7 +296,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	}//end migrateRunsOfVersion()
 
 	/**
-	 * The seam a consuming app calls: move the runs of one subject, if any.
+	 * The seam a consuming app calls: move the live runs of one subject, or say why not.
 	 *
 	 * 🔴 `migrated: true` WITH NO RUN IN FLIGHT IS THE CORRECT ANSWER, AND IT IS
 	 * THE ONE THING A CALLER MUST NOT READ AS A FAILURE. dossiq's
@@ -332,35 +314,26 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * false` naming that: the run walks a process the target does not have, and
 	 * moving it silently is exactly the write nobody could read back.
 	 *
-	 * @param string $subjectUuid         The object the run is about.
-	 * @param string $targetDefinitionRef The target version, as a number, or a flow uuid.
-	 * @param string $actorUid            Who asked, recorded as `runAs` on the entry (ADR-099).
+	 * @param SubjectRunsMigration $request The subject, the target reference and who asked.
 	 *
 	 * @return array{migrated: bool, reason: string, runs: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	public function migrateRunForSubject(string $subjectUuid, string $targetDefinitionRef, string $actorUid): array {
-		$live = $this->liveRunsOf(subjectUuid: $subjectUuid);
-		$refused = self::subjectRefusal(live: $live, targetDefinitionRef: $targetDefinitionRef);
+	public function migrateSubjectRuns(SubjectRunsMigration $request): array {
+		$live = $this->liveRunsOf(subjectUuid: $request->subjectUuid);
+		$refused = self::subjectRefusal(live: $live, targetDefinitionRef: $request->targetDefinitionRef);
 		if ($refused !== null) {
 			return $refused;
 		}
 
 		$outcomes = array_map(
-			fn (FlowRun $run): array => $this->migrate(
-				runUuid: (string)$run->getUuid(),
-				target: new FlowRunMigrationTarget(
-					targetVersion: (int)$targetDefinitionRef,
-					reason: 'Migrated with its subject by ' . $actorUid,
-					actor: $actorUid
-				),
-			),
+			fn (FlowRun $run): array => $this->migrate(runUuid: (string)$run->getUuid(), target: $request->target()),
 			($live ?? [])
 		);
 
-		return self::subjectOutcome(outcomes: $outcomes, targetDefinitionRef: $targetDefinitionRef);
-	}//end migrateRunForSubject()
+		return self::subjectOutcome(outcomes: $outcomes, targetDefinitionRef: $request->targetDefinitionRef);
+	}//end migrateSubjectRuns()
 
 	/**
 	 * The answer for a subject whose runs are not moved one by one, or null when they are.
@@ -474,34 +447,37 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	/**
 	 * The runs still pinned to one version, bounded.
 	 *
-	 * @param string $flowId  The flow.
-	 * @param int    $version The version.
-	 * @param int    $limit   The batch bound.
+	 * @param FlowRunListing $listing The flow's runs, with the batch bound.
+	 * @param int            $version The version.
 	 *
 	 * @return array<int, FlowRun> The runs.
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md
 	 */
-	public function runsOnVersion(string $flowId, int $version, int $limit = 100): array {
-		$found = [];
-		$listing = new FlowRunListing(filter: new FlowRunFilter(flowId: $flowId), limit: $limit);
+	public function runsOnVersion(FlowRunListing $listing, int $version): array {
 		$everyone = new FlowRunViewer(requesterUid: null, ownedFlowIds: []);
-		foreach ($this->runs->findAllRuns(listing: $listing, viewer: $everyone) as $run) {
-			if ($run instanceof FlowRun === false) {
-				continue;
-			}
 
-			if ((int)$run->getFlowVersion() !== $version) {
-				continue;
-			}
-
-			if (in_array((string)$run->getStatus(), FlowRunMigrationValidator::MIGRATABLE_STATUSES, true) === true) {
-				$found[] = $run;
-			}
-		}
-
-		return $found;
+		return array_values(
+			array_filter(
+				$this->runs->findAllRuns(listing: $listing, viewer: $everyone),
+				static fn (mixed $run): bool => self::migratableOn(run: $run, version: $version)
+			)
+		);
 	}//end runsOnVersion()
+
+	/**
+	 * Whether a listed row is a run on this version in a status a migration may move.
+	 *
+	 * @param mixed $run     A row of the listing.
+	 * @param int   $version The version the runs must be on.
+	 *
+	 * @return bool
+	 */
+	private static function migratableOn(mixed $run, int $version): bool {
+		return $run instanceof FlowRun
+			&& (int)$run->getFlowVersion() === $version
+			&& in_array((string)$run->getStatus(), FlowRunMigrationValidator::MIGRATABLE_STATUSES, true) === true;
+	}//end migratableOn()
 
 	/**
 	 * The run log with a `migrated` entry appended.
@@ -554,7 +530,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 		}
 
 		$moved = 0;
-		foreach ($this->timers->findOpenByRun(runUuid: $migration->runUuid) as $timer) {
+		foreach ($this->timers->timers->findOpenByRun(runUuid: $migration->runUuid) as $timer) {
 			if (self::nodeMoved(timer: $timer, mapping: $mapping) === true && $this->supersede(timer: $timer, migration: $migration) === true) {
 				$moved++;
 			}
@@ -592,7 +568,10 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	private function supersede(FlowTimer $timer, FlowRunMigration $migration): bool {
 		$uuid = (string)$timer->getUuid();
 		try {
-			$this->timerService->supersede(uuid: $uuid, anchorEventAt: new DateTime(), reason: self::LOG_ENTRY, actor: $migration->actor);
+			$this->timers->timerService->supersede(
+				move: new TimerAnchorMove(uuid: $uuid, anchorEventAt: new DateTime()),
+				change: new TimerChange(reason: self::LOG_ENTRY, actor: $migration->actor)
+			);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowRunMigrationService] run ' . $migration->runUuid . ' migrated, but timer '
@@ -614,6 +593,6 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * @return array<string, mixed> The answer.
 	 */
 	private function refusal(FlowRunMigration $migration, string $reason): array {
-		return $this->answer(migration: $migration, from: null, fields: ['reason' => $reason]);
+		return $this->answer(migration: $migration, fields: ['reason' => $reason]);
 	}//end refusal()
 }//end class

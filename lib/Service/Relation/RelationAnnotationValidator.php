@@ -94,7 +94,10 @@ final class RelationAnnotationValidator implements RelationAnnotationValidatorIn
 
 		$keys = array_keys($vocabulary);
 		foreach ($properties as $name => $property) {
-			$errors = array_merge($errors, $this->validateProperty(name: (string)$name, property: $property, vocabularyKeys: $keys));
+			$errors = array_merge($errors, $this->validateProperty(
+				property: new DeclaredProperty(name: (string)$name, definition: $property),
+				vocabularyKeys: $keys
+			));
 		}
 
 		return $errors;
@@ -203,27 +206,26 @@ final class RelationAnnotationValidator implements RelationAnnotationValidatorIn
 	/**
 	 * Refuse one property's relation declaration.
 	 *
-	 * @param string $name The property name.
-	 * @param mixed $property The property definition.
+	 * @param DeclaredProperty   $property       The property.
 	 * @param array<int, string> $vocabularyKeys The keys the schema declares.
 	 *
 	 * @return array<int, array{code: string, message: string}> The refusals.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function validateProperty(string $name, mixed $property, array $vocabularyKeys): array {
-		$declaration = self::declarationOf(property: $property);
+	private function validateProperty(DeclaredProperty $property, array $vocabularyKeys): array {
+		$declaration = self::declarationOf(property: $property->definition);
 		if ($declaration === null) {
 			return [];
 		}
 
-		$subject = sprintf('The property "%s"', $name);
+		$subject = sprintf('The property "%s"', $property->name);
 		if (is_array($declaration) === false) {
 			$message = sprintf('declares "%s", which must be an object.', self::PROPERTY_ANNOTATION);
 			return self::about(subject: $subject, refusals: [self::refusal(code: 'relation-annotation-malformed', message: $message)]);
 		}
 
-		$refusals = self::declarationRefusals(property: $property, declaration: $declaration, vocabularyKeys: $vocabularyKeys);
+		$refusals = self::declarationRefusals(property: $property->definition, vocabularyKeys: $vocabularyKeys);
 
 		$own = self::about(subject: $subject, refusals: $refusals);
 		return array_merge($own, $this->validateDeclaration(declaration: $declaration, subject: $subject));
@@ -232,13 +234,13 @@ final class RelationAnnotationValidator implements RelationAnnotationValidatorIn
 	/**
 	 * The refusals of one property's declaration itself: no `$ref`, an unknown type, a missing label.
 	 *
-	 * @param mixed                $property       The property definition.
-	 * @param array<string, mixed> $declaration    The declaration.
-	 * @param array<int, string>   $vocabularyKeys The keys the schema declares.
+	 * @param mixed              $property       The property definition, carrying a declaration that is an object.
+	 * @param array<int, string> $vocabularyKeys The keys the schema declares.
 	 *
 	 * @return array<int, array{code: string, message: string}> The refusals, messages without their subject.
 	 */
-	private static function declarationRefusals(mixed $property, array $declaration, array $vocabularyKeys): array {
+	private static function declarationRefusals(mixed $property, array $vocabularyKeys): array {
+		$declaration = self::declarationOf(property: $property);
 		return array_merge(
 			self::referenceRefusals(property: $property),
 			self::typeRefusals(type: ($declaration['type'] ?? null), vocabularyKeys: $vocabularyKeys),

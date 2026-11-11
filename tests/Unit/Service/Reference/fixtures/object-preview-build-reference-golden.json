@@ -1193,7 +1193,22 @@
                     "schema": 12
                 }
             ],
-            "logged": []
+            "logged": [
+                [
+                    "[ObjectPreviewFormatter] Schema name not resolved",
+                    {
+                        "schemaId": 12,
+                        "exception": "no schema"
+                    }
+                ],
+                [
+                    "[ObjectPreviewFormatter] Register name not resolved",
+                    {
+                        "registerId": 5,
+                        "exception": "no register"
+                    }
+                ]
+            ]
         }
     },
     "untitled schema register": {

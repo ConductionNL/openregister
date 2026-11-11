@@ -70,9 +70,7 @@ class ConceptDeleteGuardRefusalTest extends TestCase {
 	private function guard(): ConceptDeleteGuard {
 		return new ConceptDeleteGuard(
 			lifecycle: new ConceptLifecycle(),
-			schemas: $this->schemas,
-			objects: $this->objects,
-			declarationFactory: new CodedPropertyDeclarationFactory()
+			tables: new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables(schemas: $this->schemas, declarations: new CodedPropertyDeclarationFactory(), objects: $this->objects)
 		);
 	}//end guard()
 

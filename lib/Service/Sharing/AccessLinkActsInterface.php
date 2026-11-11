@@ -24,9 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Sharing;
 
-use OCA\OpenRegister\Db\AccessLink;
-use OCA\OpenRegister\Db\ObjectEntity;
-
 /**
  * Performs a comment or an upload on an object, as the access link.
  *
@@ -38,9 +35,8 @@ interface AccessLinkActsInterface {
 	/**
 	 * Leave a comment on the object, as the link.
 	 *
-	 * @param AccessLink $link The link acting.
-	 * @param ObjectEntity $object The object commented on.
-	 * @param string $message The comment.
+	 * @param LinkAct $act     The link acting and the object commented on.
+	 * @param string  $message The comment.
 	 *
 	 * @return array<string, mixed> The created note.
 	 *
@@ -48,7 +44,7 @@ interface AccessLinkActsInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
-	public function comment(AccessLink $link, ObjectEntity $object, string $message): array;
+	public function comment(LinkAct $act, string $message): array;
 
 	/**
 	 * Add a file to the object, as the link.
@@ -56,10 +52,8 @@ interface AccessLinkActsInterface {
 	 * The file is never shared on the way in: a holder adding a document must
 	 * not be able to publish it further than the link they were given.
 	 *
-	 * @param AccessLink $link The link acting.
-	 * @param ObjectEntity $object The object the file is added to.
-	 * @param string $fileName The file name.
-	 * @param string $content The file content.
+	 * @param LinkAct  $act  The link acting and the object the file is added to.
+	 * @param LinkFile $file The file name and content.
 	 *
 	 * @return array<string, mixed> The stored file, formatted.
 	 *
@@ -67,5 +61,5 @@ interface AccessLinkActsInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
-	public function upload(AccessLink $link, ObjectEntity $object, string $fileName, string $content): array;
+	public function upload(LinkAct $act, LinkFile $file): array;
 }//end interface

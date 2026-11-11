@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
 use OCP\App\IAppManager;
-use OCP\Files\File;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IURLGenerator;
@@ -72,41 +71,6 @@ class OfficeSessionService {
 	private const OWNER = 'openregister';
 
 	/**
-	 * Tells whether Office is enabled.
-	 *
-	 * @var IAppManager
-	 */
-	private readonly IAppManager $appManager;
-
-	/**
-	 * Resolves the richdocuments services lazily.
-	 *
-	 * @var ContainerInterface
-	 */
-	private readonly ContainerInterface $container;
-
-	/**
-	 * Builds the server host and the WOPI source.
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
-
-	/**
-	 * Reads the instance id.
-	 *
-	 * @var IConfig
-	 */
-	private readonly IConfig $config;
-
-	/**
-	 * Reads richdocuments' callback address.
-	 *
-	 * @var IAppConfig
-	 */
-	private readonly IAppConfig $appConfig;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param IAppManager           $appManager   Tells whether Office is enabled.
@@ -115,25 +79,20 @@ class OfficeSessionService {
 	 * @param OfficeSessionSettings $settings     The instance config and the app config.
 	 */
 	public function __construct(
-		IAppManager $appManager,
-		ContainerInterface $container,
-		IURLGenerator $urlGenerator,
-		OfficeSessionSettings $settings,
+		private readonly IAppManager $appManager,
+		private readonly ContainerInterface $container,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly OfficeSessionSettings $settings,
 	) {
-		$this->appManager = $appManager;
-		$this->container = $container;
-		$this->urlGenerator = $urlGenerator;
-		$this->config = $settings->config;
-		$this->appConfig = $settings->appConfig;
 	}//end __construct()
 
 	/**
-	 * Issue an Office session for one file.
+	 * Issue an Office session for one open request.
 	 *
-	 * @param File   $file        The object's file, already known to belong to a readable object.
-	 * @param string $editorUid   The acting person.
-	 * @param string $displayName Their display name, shown in Office.
-	 * @param bool   $canWrite    Whether the object rule lets them change the file.
+	 * Write access needs both the caller's write right and Office's own edit
+	 * right; a user Office refuses gets no token at all.
+	 *
+	 * @param OfficeOpenRequest $request The file, the editor, their display name and the caller's write right.
 	 *
 	 * @return OfficeSession The session the browser posts into the Office frame.
 	 *
@@ -141,10 +100,39 @@ class OfficeSessionService {
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
 	 */
-	public function open(File $file, string $editorUid, string $displayName, bool $canWrite): OfficeSession {
+	public function openSession(OfficeOpenRequest $request): OfficeSession {
 		$services = $this->richdocuments();
 
-		$urlSrc = $services['tokenManager']->getUrlSrcForMimeType($file->getMimeType());
+		$urlSrc = $this->officeUrl(services: $services, request: $request);
+		$this->assertOfficeForUser(services: $services, request: $request);
+
+		$writable = ($request->canWrite === true && $services['permissionManager']->userCanEdit($request->editorUid) === true);
+		$grant = new OfficeTokenGrant(request: $request, writable: $writable);
+		$wopi = $this->issueToken(services: $services, grant: $grant);
+
+		return new OfficeSession(
+			urlSrc: $urlSrc,
+			wopiSrc: $this->wopiSrc(fileId: $grant->fileId()),
+			access: new OfficeSessionToken(
+				token: (string)$wopi->getToken(),
+				tokenTtl: ((int)$wopi->getExpiry() * 1000),
+				readOnly: ($writable === false)
+			)
+		);
+	}//end openSession()
+
+	/**
+	 * The Office frame URL for the file's MIME type.
+	 *
+	 * @param array<string, object> $services The richdocuments token manager, permission manager and WOPI mapper.
+	 * @param OfficeOpenRequest     $request  The open request.
+	 *
+	 * @return string
+	 *
+	 * @throws OfficeOpenRefusedException 415 when the file type does not open in Office.
+	 */
+	private function officeUrl(array $services, OfficeOpenRequest $request): string {
+		$urlSrc = $services['tokenManager']->getUrlSrcForMimeType($request->file->getMimeType());
 		if (is_string($urlSrc) === false || $urlSrc === '') {
 			throw new OfficeOpenRefusedException(
 				httpStatus: OfficeOpenRefusedException::UNSUPPORTED_TYPE,
@@ -152,32 +140,41 @@ class OfficeSessionService {
 			);
 		}
 
-		$permissions = $services['permissionManager'];
-		if ($permissions->isEnabledForUser($editorUid) !== true) {
+		return $urlSrc;
+	}//end officeUrl()
+
+	/**
+	 * Refuse an editor Office does not let use it.
+	 *
+	 * @param array<string, object> $services The richdocuments token manager, permission manager and WOPI mapper.
+	 * @param OfficeOpenRequest     $request  The open request.
+	 *
+	 * @return void
+	 *
+	 * @throws OfficeOpenRefusedException 403 when Office refuses the editor.
+	 */
+	private function assertOfficeForUser(array $services, OfficeOpenRequest $request): void {
+		if ($services['permissionManager']->isEnabledForUser($request->editorUid) !== true) {
 			throw new OfficeOpenRefusedException(
 				httpStatus: OfficeOpenRefusedException::NOT_PERMITTED,
 				message: 'You may not use Nextcloud Office on this instance.'
 			);
 		}
+	}//end assertOfficeForUser()
 
-		$writable = ($canWrite === true && $permissions->userCanEdit($editorUid) === true);
-		$fileId = (string)$file->getId();
-
-		$guestName = $displayName;
-		if ($guestName === '') {
-			$guestName = $editorUid;
-		}
-
+	/**
+	 * Issue the WOPI token; a failure is a refusal carrying the cause.
+	 *
+	 * @param array<string, object> $services The richdocuments token manager, permission manager and WOPI mapper.
+	 * @param OfficeTokenGrant      $grant    The request and the token's write right.
+	 *
+	 * @return object The richdocuments Wopi token row.
+	 *
+	 * @throws OfficeOpenRefusedException 503-style when the token cannot be issued.
+	 */
+	private function issueToken(array $services, OfficeTokenGrant $grant): object {
 		try {
-			$wopi = $services['wopiMapper']->generateFileToken(
-				$fileId,
-				self::OWNER,
-				$editorUid,
-				'0',
-				$writable,
-				$this->urlGenerator->getAbsoluteURL('/'),
-				$guestName
-			);
+			return $this->generateToken(wopiMapper: $services['wopiMapper'], grant: $grant);
 		} catch (Throwable $e) {
 			throw new OfficeOpenRefusedException(
 				httpStatus: OfficeOpenRefusedException::UNAVAILABLE,
@@ -185,17 +182,27 @@ class OfficeSessionService {
 				previous: $e
 			);
 		}
+	}//end issueToken()
 
-		return new OfficeSession(
-			urlSrc: $urlSrc,
-			wopiSrc: $this->wopiSrc(fileId: $fileId),
-			access: new OfficeSessionToken(
-				token: (string)$wopi->getToken(),
-				tokenTtl: ((int)$wopi->getExpiry() * 1000),
-				readOnly: ($writable === false)
-			)
+	/**
+	 * Ask richdocuments for a WOPI token owned by OpenRegister and naming the editor.
+	 *
+	 * @param object           $wopiMapper The richdocuments WOPI mapper.
+	 * @param OfficeTokenGrant $grant      The request and the token's write right.
+	 *
+	 * @return object The richdocuments Wopi token row.
+	 */
+	private function generateToken(object $wopiMapper, OfficeTokenGrant $grant): object {
+		return $wopiMapper->generateFileToken(
+			$grant->fileId(),
+			self::OWNER,
+			$grant->request->editorUid,
+			'0',
+			$grant->writable,
+			$this->urlGenerator->getAbsoluteURL('/'),
+			$grant->guestName()
 		);
-	}//end open()
+	}//end generateToken()
 
 	/**
 	 * Whether Nextcloud Office is enabled on this instance.
@@ -261,12 +268,12 @@ class OfficeSessionService {
 	 * @return string The WOPI source address.
 	 */
 	private function wopiSrc(string $fileId): string {
-		$base = rtrim($this->appConfig->getValueString(self::OFFICE_APP, 'wopi_callback_url', ''), '/');
+		$base = rtrim($this->settings->appConfig->getValueString(self::OFFICE_APP, 'wopi_callback_url', ''), '/');
 		if ($base === '') {
 			$base = rtrim($this->urlGenerator->getAbsoluteURL('/'), '/');
 		}
 
-		$instanceId = $this->config->getSystemValueString('instanceid', '');
+		$instanceId = $this->settings->config->getSystemValueString('instanceid', '');
 
 		return $base . '/index.php/apps/richdocuments/wopi/files/' . $fileId . '_' . $instanceId;
 	}//end wopiSrc()

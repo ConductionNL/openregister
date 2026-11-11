@@ -121,13 +121,13 @@ class StreamYieldChannelTest extends TestCase {
 	}//end testLateRegisteredTokenCallbackOnlySeesSubsequentEmits()
 
 	public function testNoCallbackRegisteredEmitIsNoop(): void {
+		$this->expectNotToPerformAssertions();
+
 		// Channel with no registrations must not throw on emit. The
 		// controller can choose not to register every event type.
 		$channel = new StreamYieldChannel();
 		$channel->emitToken(delta: 'x');
 		$channel->emitToolCall(payload: []);
 		$channel->emitToolResult(payload: []);
-
-		$this->assertTrue(true);
 	}//end testNoCallbackRegisteredEmitIsNoop()
 }//end class

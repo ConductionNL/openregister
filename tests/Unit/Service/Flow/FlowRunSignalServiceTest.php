@@ -28,10 +28,12 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Service\Flow\RunSignal;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunAssignee;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
@@ -95,8 +97,8 @@ class FlowRunSignalServiceTest extends TestCase {
 		return new FlowRunSignalService(
 			mapper: $this->mapper,
 			runner: $this->runner,
-			logger: $this->logger,
-			groupManager: $groups
+			assignees: new FlowRunAssignee(groupManager: $groups),
+			logger: $this->logger
 		);
 	}//end seam()
 
@@ -240,7 +242,7 @@ class FlowRunSignalServiceTest extends TestCase {
 		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
 		$this->runner->expects($this->once())->method('signal')->willReturn($run);
 
-		$signalled = $this->seam()->signalAs(runUuid: 'run-1', payload: ['ok' => true], actorUid: 'alice');
+		$signalled = $this->seam()->answerByUuid(runUuid: 'run-1', signal: new RunSignal(payload: ['ok' => true], actorUid: 'alice'));
 
 		$this->assertSame($run, $signalled);
 	}//end testSignalAsResolvesTheRunByUuid()
@@ -250,7 +252,7 @@ class FlowRunSignalServiceTest extends TestCase {
 		$this->runner->expects($this->never())->method('signal');
 
 		try {
-			$this->seam()->signalAs(runUuid: 'ghost', payload: [], actorUid: 'alice');
+			$this->seam()->answerByUuid(runUuid: 'ghost', signal: new RunSignal(payload: [], actorUid: 'alice'));
 			$this->fail('Expected the signal to be refused.');
 		} catch (FlowSignalRefused $refused) {
 			$this->assertSame(FlowSignalRefused::RUN_NOT_FOUND, $refused->getReason());

@@ -32,11 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
-use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -66,16 +63,12 @@ class SeedIntakeSourceRegister implements IRepairStep, IntakeSourceRegisterSlugs
 	/**
 	 * Constructor.
 	 *
-	 * @param AppConfigurationImporterInterface $configurationService The OR configuration importer.
-	 * @param IAppManager          $appManager           Resolves the openregister app path on disk.
-	 * @param LoggerInterface      $logger               Logger for import diagnostics.
+	 * @param RegisterDescriptorImport $descriptors Importer, app path and log for the descriptor.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AppConfigurationImporterInterface $configurationService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		private readonly RegisterDescriptorImport $descriptors,
 	) {
 	}//end __construct()
 
@@ -101,30 +94,17 @@ class SeedIntakeSourceRegister implements IRepairStep, IntakeSourceRegisterSlugs
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$path = ($this->appManager->getAppPath('openregister') . self::REGISTER_PATH);
-			if (is_file($path) === false) {
-				$output->warning('Intake-sources register descriptor not found: ' . $path);
+			$descriptor = new AppRegisterDescriptor(descriptors: $this->descriptors, label: 'Intake-sources');
+			$data = $descriptor->read(relativePath: self::REGISTER_PATH, output: $output);
+			if ($data === null) {
 				return;
 			}
 
-			$data = json_decode((string)file_get_contents($path), true);
-			if (is_array($data) === false) {
-				$output->warning('Intake-sources register descriptor is not valid JSON: ' . $path);
-				return;
-			}
-
-			// The importer takes the DECODED descriptor; force: false keeps the
-			// import idempotent and leaves administrator edits in place.
-			$this->configurationService->importFromApp(
-				appId: 'openregister',
-				data: $data,
-				version: self::REGISTER_VERSION,
-				force: false
-			);
+			$descriptor->import(data: $data, version: self::REGISTER_VERSION);
 
 			$output->info('Intake-sources register imported (intake-source schema)');
 		} catch (Throwable $e) {
-			$this->logger->warning('[SeedIntakeSourceRegister] import failed: ' . $e->getMessage());
+			$this->descriptors->logger->warning('[SeedIntakeSourceRegister] import failed: ' . $e->getMessage());
 			$output->warning('Intake-sources register import skipped: ' . $e->getMessage());
 		}//end try
 	}//end run()

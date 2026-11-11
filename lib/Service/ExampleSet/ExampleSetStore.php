@@ -39,7 +39,10 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
  * Register access for the example-set loader.
@@ -100,24 +103,22 @@ class ExampleSetStore {
 	 * although the account does not exist yet; every other id is still
 	 * asked of Nextcloud's user manager.
 	 *
-	 * @param string               $register     The register slug.
-	 * @param string               $schema       The schema slug.
-	 * @param array<string, mixed> $data         The object.
-	 * @param array<int, string>   $plannedUsers Account ids the set creates before it writes objects.
+	 * @param RegisterSchemaRef $table The register slug and the schema slug.
+	 * @param ObjectCheck       $check The object and the account ids the set creates before it writes objects.
 	 *
 	 * @return array<int, string> The refusals; empty when the schema accepts the object.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
-	public function validate(string $register, string $schema, array $data, array $plannedUsers=[]): array {
-		$schemaId = $this->schemaId(register: $register, schema: $schema);
+	public function refusalsFor(RegisterSchemaRef $table, ObjectCheck $check): array {
+		$schemaId = $this->schemaId(register: (string) $table->register, schema: (string) $table->schema);
 		if ($schemaId === null) {
-			return ['this instance has no schema "'.$schema.'" in a register "'.$register.'"'];
+			return ['this instance has no schema "'.$table->schema.'" in a register "'.$table->register.'"'];
 		}
 
 		try {
 			$validator = $this->container->get(ValidateObject::class);
-			$result    = $validator->validateObjectWithPlannedUsers(object: $data, schema: $schemaId, plannedUsers: $plannedUsers);
+			$result    = $validator->validateObjectWithPlannedUsers(object: $check->object, schema: $schemaId, plannedUsers: $check->plannedUsers);
 			if ($result->isValid() === true) {
 				return [];
 			}
@@ -126,20 +127,19 @@ class ExampleSetStore {
 		} catch (Throwable $e) {
 			return ['the validator could not run: '.$e->getMessage()];
 		}
-	}//end validate()
+	}//end refusalsFor()
 
 	/**
 	 * The rows of one schema that match the filters, as plain arrays.
 	 *
-	 * @param string               $register The register slug.
-	 * @param string               $schema   The schema slug.
-	 * @param array<string, mixed> $filters  Property filters; empty reads every row.
+	 * @param RegisterSchemaRef    $table   The register slug and the schema slug.
+	 * @param array<string, mixed> $filters Property filters; empty reads every row.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
-	public function find(string $register, string $schema, array $filters): array {
+	public function find(RegisterSchemaRef $table, array $filters): array {
 		$service = $this->objectService();
 		if ($service === null) {
 			return [];
@@ -148,15 +148,15 @@ class ExampleSetStore {
 		$plain = [];
 		for ($page = 0; $page < self::MAX_PAGES; $page++) {
 			try {
-				$service->setRegister(register: $register);
-				$service->setSchema(schema: $schema);
+				$service->setRegister(register: $table->register);
+				$service->setSchema(schema: $table->schema);
 				$rows = (array) $service->findAll(
 					config: ['filters' => $filters, 'limit' => self::PAGE_SIZE, 'offset' => ($page * self::PAGE_SIZE)],
 					_rbac: false,
 					_multitenancy: false
 				);
 			} catch (Throwable $e) {
-				$this->logger->warning('OpenRegister: example set read failed', ['schema' => $schema, 'reason' => $e->getMessage()]);
+				$this->logger->warning('OpenRegister: example set read failed', ['schema' => $table->schema, 'reason' => $e->getMessage()]);
 				return $plain;
 			}
 
@@ -183,18 +183,17 @@ class ExampleSetStore {
 	 * over every row, and the match is checked here either way. Reads across
 	 * organisations, so a business key two tenants share yields both rows.
 	 *
-	 * @param string               $register The register slug.
-	 * @param string               $schema   The schema slug.
-	 * @param array<string, mixed> $where    The asked values, by field.
+	 * @param RegisterSchemaRef    $table The register slug and the schema slug.
+	 * @param array<string, mixed> $where The asked values, by field.
 	 *
 	 * @return array<int, array<string, mixed>> The matching rows; empty when none matches.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
-	public function matching(string $register, string $schema, array $where): array {
+	public function rowsMatching(RegisterSchemaRef $table, array $where): array {
 		foreach ([$where, []] as $filters) {
 			$found = [];
-			foreach ($this->find(register: $register, schema: $schema, filters: $filters) as $row) {
+			foreach ($this->find(table: $table, filters: $filters) as $row) {
 				if ($this->rowMatches(row: $row, where: $where) === false) {
 					continue;
 				}
@@ -213,7 +212,7 @@ class ExampleSetStore {
 		}
 
 		return [];
-	}//end matching()
+	}//end rowsMatching()
 
 	/**
 	 * Whether a row holds every asked value.
@@ -244,19 +243,17 @@ class ExampleSetStore {
 	 * One row by its id, or null when it is not there.
 	 *
 	 * Null is also what a read that failed gives; a caller that must tell
-	 * the two apart uses {@see self::read()}.
+	 * the two apart uses {@see self::readRow()}.
 	 *
-	 * @param string $register The register slug.
-	 * @param string $schema   The schema slug.
-	 * @param string $id       The row's id.
+	 * @param ObjectRef $ref The register slug, the schema slug and the row's id.
 	 *
 	 * @return array<string, mixed>|null The row, with `id` set.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
-	public function get(string $register, string $schema, string $id): ?array {
-		return $this->read(register: $register, schema: $schema, id: $id)['row'];
-	}//end get()
+	public function row(ObjectRef $ref): ?array {
+		return $this->readRow(ref: $ref)['row'];
+	}//end row()
 
 	/**
 	 * One row by its id, and why it could not be read when that is not simply "it is not there".
@@ -266,27 +263,25 @@ class ExampleSetStore {
 	 * be resolved says nothing about the row, so it comes back as an error:
 	 * a caller must not read it as "the instance lost the object".
 	 *
-	 * @param string $register The register slug.
-	 * @param string $schema   The schema slug.
-	 * @param string $id       The row's id.
+	 * @param ObjectRef $ref The register slug, the schema slug and the row's id.
 	 *
 	 * @return array{row: array<string, mixed>|null, error: string} The row with `id` set, or null with '' when it is
 	 *                                                              not there, or null with why the read failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
-	public function read(string $register, string $schema, string $id): array {
+	public function readRow(ObjectRef $ref): array {
 		$service = $this->objectService();
 		if ($service === null) {
 			return ['row' => null, 'error' => 'OpenRegister\'s object service is not available'];
 		}
 
-		if ($id === '') {
+		if ($ref->id === '') {
 			return ['row' => null, 'error' => ''];
 		}
 
 		try {
-			$row = $service->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+			$row = $service->find(id: $ref->id, register: $ref->register, schema: $ref->schema, _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException) {
 			return ['row' => null, 'error' => ''];
 		} catch (Throwable $e) {
@@ -294,12 +289,12 @@ class ExampleSetStore {
 		}
 
 		$row = $this->plain(row: $row);
-		if ($row === null || $this->idOf(row: $row) !== $id) {
+		if ($row === null || $this->idOf(row: $row) !== $ref->id) {
 			return ['row' => null, 'error' => ''];
 		}
 
-		return ['row' => (['id' => $id] + $row), 'error' => ''];
-	}//end read()
+		return ['row' => (['id' => $ref->id] + $row), 'error' => ''];
+	}//end readRow()
 
 	/**
 	 * Write one row.
@@ -338,16 +333,14 @@ class ExampleSetStore {
 	/**
 	 * Save an existing row with new data; '' when saved, otherwise why not.
 	 *
-	 * @param string               $register The register slug.
-	 * @param string               $schema   The schema slug.
-	 * @param string               $id       The row's id.
-	 * @param array<string, mixed> $data     The whole row as it should be stored.
+	 * @param ObjectRef            $ref  The register slug, the schema slug and the row's id.
+	 * @param array<string, mixed> $data The whole row as it should be stored.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
 	 */
-	public function update(string $register, string $schema, string $id, array $data): string {
+	public function update(ObjectRef $ref, array $data): string {
 		$service = $this->objectService();
 		if ($service === null) {
 			return 'OpenRegister\'s object service is not available';
@@ -355,15 +348,15 @@ class ExampleSetStore {
 
 		unset($data['@self'], $data['id']);
 		$actions = $this->lifecycleActions();
-		$actions?->enterDeclaredState(uuid: $id);
+		$actions?->enterDeclaredState(uuid: $ref->id);
 		try {
 			$service->runAsSystem(
-				fn () => $service->saveObject(object: $data, register: $register, schema: $schema, uuid: $id, _rbac: false, _multitenancy: false)
+				fn () => $service->saveObject(object: $data, register: $ref->register, schema: $ref->schema, uuid: $ref->id, _rbac: false, _multitenancy: false)
 			);
 		} catch (Throwable $e) {
 			return $e->getMessage();
 		} finally {
-			$actions?->leaveDeclaredState(uuid: $id);
+			$actions?->leaveDeclaredState(uuid: $ref->id);
 		}
 
 		return '';
@@ -372,17 +365,17 @@ class ExampleSetStore {
 	/**
 	 * The owner of a stored object, or null when it cannot be read.
 	 *
-	 * @param string $register The register slug.
-	 * @param string $schema   The schema slug.
-	 * @param string $id       The object's id.
+	 * @param ObjectRef $ref The register slug, the schema slug and the object's id.
 	 *
 	 * @return string|null
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
-	public function ownerOf(string $register, string $schema, string $id): ?string {
+	public function ownerOf(ObjectRef $ref): ?string {
 		try {
-			return $this->objectService()?->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false)?->getOwner();
+			return $this->objectService()
+				?->find(id: $ref->id, register: $ref->register, schema: $ref->schema, _rbac: false, _multitenancy: false)
+				?->getOwner();
 		} catch (Throwable) {
 			return null;
 		}
@@ -406,7 +399,10 @@ class ExampleSetStore {
 
 		try {
 			$outcome = $service->runAsSystem(
-				fn () => $this->container->get(ObjectOwnershipService::class)->reassignMany(identifiers: [$id], newOwner: $owner)
+				fn () => $this->container->get(ObjectOwnershipService::class)->reassign(
+					identifiers: [$id],
+					reassignment: new OwnershipReassignment(newOwner: $owner, cascade: false)
+				)
 			);
 		} catch (Throwable $e) {
 			return $e->getMessage();
@@ -524,16 +520,14 @@ class ExampleSetStore {
 	 * row under an active legal hold is never deleted. The remover is the only
 	 * caller, and only with ids from the install record.
 	 *
-	 * @param string $register The register slug.
-	 * @param string $schema   The schema slug.
-	 * @param string $id       The row's id, as the install record holds it.
+	 * @param ObjectRef $ref The register slug, the schema slug and the row's id, as the install record holds it.
 	 *
 	 * @return string '' when the row is gone; otherwise the reason it stays.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
-	public function deleteRecorded(string $register, string $schema, string $id): string {
+	public function deleteRecorded(ObjectRef $ref): string {
 		$service = $this->objectService();
 		if ($service === null) {
 			return 'OpenRegister\'s object service is not available';
@@ -542,11 +536,14 @@ class ExampleSetStore {
 		// Only a row OpenRegister says is not there is gone; a read that failed
 		// proves nothing, so the row stays in the record and the reason is named.
 		try {
-			$row = $service->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+			$row = $service->find(id: $ref->id, register: $ref->register, schema: $ref->schema, _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException) {
 			$row = null;
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenRegister: example set read before delete failed', ['schema' => $schema, 'id' => $id, 'reason' => $e->getMessage()]);
+			$this->logger->warning(
+				'OpenRegister: example set read before delete failed',
+				['schema' => $ref->schema, 'id' => $ref->id, 'reason' => $e->getMessage()]
+			);
 			return 'it could not be read: '.$e->getMessage();
 		}
 
@@ -560,15 +557,15 @@ class ExampleSetStore {
 
 		try {
 			$deleted = $service->deleteObject(
-				uuid: $id,
-				register: $register,
-				schema: $schema,
+				uuid: $ref->id,
+				register: $ref->register,
+				schema: $ref->schema,
 				_rbac: false,
 				_multitenancy: false,
 				_retentionSweep: true
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenRegister: example set delete failed', ['schema' => $schema, 'id' => $id, 'reason' => $e->getMessage()]);
+			$this->logger->warning('OpenRegister: example set delete failed', ['schema' => $ref->schema, 'id' => $ref->id, 'reason' => $e->getMessage()]);
 			return $e->getMessage();
 		}
 

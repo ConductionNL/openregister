@@ -189,6 +189,17 @@ class LanguageMiddleware extends Middleware {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function afterController($controller, $methodName, Response $response): Response {
+		return $this->withLanguageHeaders(response: $response);
+	}//end afterController()
+
+	/**
+	 * The answer with its Content-Language, fallback and source-language headers.
+	 *
+	 * @param Response $response The answer.
+	 *
+	 * @return Response The same answer.
+	 */
+	private function withLanguageHeaders(Response $response): Response {
 		$language = $this->languageService->getPreferredLanguage();
 		$response->addHeader('Content-Language', $language);
 
@@ -199,7 +210,7 @@ class LanguageMiddleware extends Middleware {
 		$this->addSourceLanguage(response: $response);
 
 		return $response;
-	}//end afterController()
+	}//end withLanguageHeaders()
 
 	/**
 	 * Add the X-Source-Language header when the request targets one object.

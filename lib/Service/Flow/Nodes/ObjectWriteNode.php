@@ -126,7 +126,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
@@ -368,15 +370,25 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 * The operation, where it would write, and the fields it would set as the
 	 * step configures them.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array `summary` and `changes` (`[{field, value}]`).
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
-	public function preview(array $items, array $config, array $context): array {
+	public function preview(FlowNodeCall $call): array {
+		$config = $call->config;
+		return $this->previewOf(config: $config);
+	}//end preview()
+
+	/**
+	 * The preview of a write: one summary sentence and the configured field changes.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return array{summary: string, changes: array<int, array{field: string, value: mixed}>} The preview.
+	 */
+	private function previewOf(array $config): array {
 		$operation = trim((string)($config['operation'] ?? 'create'));
 		$where = trim((string)($config['register'] ?? '') . ' / ' . (string)($config['schema'] ?? ''), ' /');
 
@@ -389,7 +401,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 			'summary' => sprintf('%s an object in %s', $operation, $where),
 			'changes' => $changes,
 		];
-	}//end preview()
+	}//end previewOf()
 
 	/**
 	 * The config vocabulary of an object-write step, across all four operations.
@@ -448,9 +460,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 * exception, and a run that reports success having written nothing is a
 	 * worse outcome than a run that fails loudly.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata; carries `triggeredBy`.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array One output item per input item.
 	 *
@@ -460,20 +470,33 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 *
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$this->validateConfig(config: $config);
 
 		if ($items === []) {
 			return [];
 		}
 
-		$plan = $this->writePlan(config: $config, context: $context);
+		return $this->writeAs(items: $items, plan: $this->writePlan(config: $config, context: $context));
+	}//end execute()
+
+	/**
+	 * Write every item as the plan's owner, then record what was written as the run's subject.
+	 *
+	 * @param array          $items The input items, at least one.
+	 * @param ObjectWritePlan $plan  The resolved write plan.
+	 *
+	 * @return array The written items.
+	 */
+	private function writeAs(array $items, ObjectWritePlan $plan): array {
 		$written = $this->objects->runAs($plan->owner, fn (): array => $this->writeAll(items: $items, plan: $plan));
 		$this->recordSubject(written: $written, plan: $plan);
 
 		return $written;
-
-	}//end execute()
+	}//end writeAs()
 
 	/**
 	 * Write the items down the path the step configures.
@@ -489,7 +512,10 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 		}
 
 		return array_map(
-			static fn (array $item): array => FlowItems::item(...$item),
+			static fn (array $item): array => FlowItems::item(
+				json: $item['json'],
+				options: new FlowItemOptions(binary: $item['binary'], fromItemIndex: $item['fromItemIndex'])
+			),
 			$this->bulk()->write(items: $items, plan: $plan)
 		);
 	}//end writeAll()
@@ -641,7 +667,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 */
 	private function writeItem(ObjectWritePlan $plan, ObjectWriteItem $item): array {
 		if ($this->payloads()->template->isSkipped(path: $plan->skipWhen, json: $item->json) === true) {
-			return FlowItems::item(json: $item->json, binary: $item->binary, fromItemIndex: $item->index);
+			return FlowItems::item(json: $item->json, options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index));
 		}
 
 		if ($plan->operation === self::OP_DELETE) {
@@ -677,8 +703,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 
 		return FlowItems::item(
 			json: $plan->shaped(incoming: $item->json, written: $this->writtenJson(saved: $saved, plan: $plan)),
-			binary: $item->binary,
-			fromItemIndex: $item->index
+			options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index)
 		);
 	}//end saveItem()
 
@@ -768,8 +793,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 		// its incoming record forward under `output` like any other write.
 		return FlowItems::item(
 			json: $plan->shaped(incoming: $item->json, written: $plan->deleteRecord(uuid: $uuid, deleted: $deleted)),
-			binary: $item->binary,
-			fromItemIndex: $item->index
+			options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index)
 		);
 	}//end executeDelete()
 
@@ -826,7 +850,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 			$json[$outputKey] = ['deleted' => false];
 		}
 
-		return FlowItems::item(json: $json, binary: $item->binary, fromItemIndex: $item->index);
+		return FlowItems::item(json: $json, options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index));
 	}//end unmatchedDelete()
 
 	/**

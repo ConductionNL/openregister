@@ -35,16 +35,12 @@ final readonly class ActionFlowNodes {
 	/**
 	 * Bundle the nodes.
 	 *
-	 * @param ReshapingFlowNodes $reshaping The data reshapers and the rule step.
-	 * @param MessagingFlowNodes $messaging The messaging steps.
-	 * @param HumanTaskFlowNodes $humanTasks The steps that wait for a person.
-	 * @param LockFlowNodes $locks The mutual-exclusion steps.
+	 * @param OutputFlowNodes       $output       The steps that reshape data and send messages.
+	 * @param CoordinationFlowNodes $coordination The steps that wait for a person or hold a lock on an object.
 	 */
 	public function __construct(
-		private ReshapingFlowNodes $reshaping,
-		private MessagingFlowNodes $messaging,
-		private HumanTaskFlowNodes $humanTasks,
-		private LockFlowNodes $locks,
+		private OutputFlowNodes $output,
+		private CoordinationFlowNodes $coordination,
 	) {
 	}//end __construct()
 
@@ -55,10 +51,8 @@ final readonly class ActionFlowNodes {
 	 */
 	public function nodes(): array {
 		return [
-			...$this->reshaping->nodes(),
-			...$this->messaging->nodes(),
-			...$this->humanTasks->nodes(),
-			...$this->locks->nodes(),
+			...$this->output->nodes(),
+			...$this->coordination->nodes(),
 		];
 
 	}//end nodes()

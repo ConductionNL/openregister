@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use GuzzleHttp\Client;
+use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -29,6 +30,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportRun;
 use OCA\OpenRegister\Service\Configuration\ShippedSeedContent;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -293,10 +295,13 @@ class ImportHandlerListedObjectGoldenTest extends TestCase {
 			objectService: $objectService
 		);
 
-		$user = $this->createMock(IUser::class);
-		$result = ['objects' => [], 'skipped' => ['objects' => 0], 'unchanged' => ['objects' => 0]];
+		$run = new ImportRun(data: [], configuration: new Configuration());
+		$run->appId = $appId;
+		$run->actingUser = $this->createMock(IUser::class);
+		$run->result = ['objects' => [], 'skipped' => ['objects' => 0], 'unchanged' => ['objects' => 0]];
 		$closure = (new \ReflectionMethod(ImportHandler::class, 'importListedObject'))->getClosure($handler);
-		$closure($objectData, $appId, $user, $result);
+		$closure($run, $objectData);
+		$result = $run->result;
 
 		foreach (['seedVersions', 'seedHashes'] as $ledger) {
 			(new \ReflectionMethod(ImportHandler::class, $ledger))->invoke($handler)->flush();

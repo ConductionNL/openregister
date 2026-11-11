@@ -29,7 +29,9 @@ use OCA\OpenRegister\Command\PurgeObjectCommand;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -121,8 +123,7 @@ class PurgeObjectCommandTest extends TestCase {
 
 		$tester = new CommandTester(
 			new PurgeObjectCommand(
-				objectMapper: $this->objectMapper,
-				schemaMapper: $this->schemaMapper,
+				catalog: new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $this->schemaMapper, $this->objectMapper),
 				auditTrailMapper: $this->auditTrailMapper
 			)
 		);
@@ -203,8 +204,7 @@ class PurgeObjectCommandTest extends TestCase {
 
 		$tester = new CommandTester(
 			new PurgeObjectCommand(
-				objectMapper: $this->objectMapper,
-				schemaMapper: $this->schemaMapper,
+				catalog: new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $this->schemaMapper, $this->objectMapper),
 				auditTrailMapper: $this->auditTrailMapper
 			)
 		);
@@ -257,8 +257,7 @@ class PurgeObjectCommandTest extends TestCase {
 
 		$tester = new CommandTester(
 			new PurgeObjectCommand(
-				objectMapper: $this->objectMapper,
-				schemaMapper: $this->schemaMapper,
+				catalog: new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $this->schemaMapper, $this->objectMapper),
 				auditTrailMapper: $this->auditTrailMapper
 			)
 		);
@@ -316,8 +315,7 @@ class PurgeObjectCommandTest extends TestCase {
 
 		$tester = new CommandTester(
 			new PurgeObjectCommand(
-				objectMapper: $this->objectMapper,
-				schemaMapper: $this->schemaMapper,
+				catalog: new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $this->schemaMapper, $this->objectMapper),
 				auditTrailMapper: $this->auditTrailMapper
 			)
 		);

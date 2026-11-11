@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Contract;
 
 use OCA\OpenRegister\Controller\ObjectStateController;
+use OCA\OpenRegister\Controller\Support\ObjectStateControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
@@ -72,7 +73,7 @@ class FrozenFileWriteContractTest extends TestCase {
 			->with(new ObjectStateRequest('obj-1', 'Woo-levering', 'woo', 'wooDeliveredSet'), 'geleverd')
 			->willReturn(['uuid' => 'obj-1', 'frozen' => ['state' => 'geleverd']]);
 
-		$controller = new ObjectStateController($request, $handler, $session);
+		$controller = new ObjectStateController($request, new ObjectStateControllerServices($handler, $session));
 		$response = $controller->freeze(register: 'woo', schema: 'wooDeliveredSet', id: 'obj-1');
 
 		$this->assertSame(200, $response->getStatus());

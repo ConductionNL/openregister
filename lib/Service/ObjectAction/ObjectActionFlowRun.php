@@ -27,8 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectAction;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Flow\FlowRunOptions;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
 use OCP\AppFramework\Http;
 use Psr\Log\LoggerInterface;
@@ -67,27 +68,27 @@ class ObjectActionFlowRun {
 	 * in the run's context.
 	 *
 	 * @param ObjectActionTarget     $target     The subject, its schema and its address as the caller named it.
-	 * @param ObjectActionDefinition $definition The checked action.
-	 * @param array<string, mixed>   $inputs     The inputs, defaults resolved.
+	 * @param ObjectActionInvocation $invocation The checked action and its inputs, defaults resolved.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The answer.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function run(ObjectActionTarget $target, ObjectActionDefinition $definition, array $inputs): array {
-		[$storable, $secret] = $this->inputs->split(inputs: $inputs, writeOnly: $definition->writeOnlyInputs());
-		$ref     = $this->holdSecrets(secret: $secret);
-		$context = $this->context(definition: $definition, storable: $storable, ref: $ref);
+	public function run(ObjectActionTarget $target, ObjectActionInvocation $invocation): array {
+		$definition          = $invocation->definition;
+		[$storable, $secret] = $this->inputs->split(inputs: $invocation->inputs, writeOnly: $definition->writeOnlyInputs());
+		$run = new FlowBodyRun(target: $target, definition: $definition, storable: $storable);
+		$ref = $this->holdSecrets(secret: $secret);
 
 		try {
-			$start = $this->start(schema: $target->schema, definition: $definition, subject: $target->subject(), context: $context);
+			$start = $this->start(run: $run, context: $this->context(run: $run, ref: $ref));
 		} catch (Throwable $e) {
 			return $this->failed(definition: $definition, error: $e);
 		} finally {
 			$this->releaseSecrets(ref: $ref);
 		}
 
-		return $this->answerFor(object: $target->object, definition: $definition, start: $start, inputs: $storable);
+		return $this->answerFor(run: $run, start: $start);
 	}//end run()
 
 	/**
@@ -121,14 +122,13 @@ class ObjectActionFlowRun {
 	/**
 	 * The run context: the action, the storable inputs and, when held, the secret reference.
 	 *
-	 * @param ObjectActionDefinition $definition The action.
-	 * @param array<string, mixed>   $storable   The inputs without writeOnly ones.
-	 * @param string|null            $ref        The holding reference of the writeOnly inputs.
+	 * @param FlowBodyRun $run The action and the inputs without writeOnly ones.
+	 * @param string|null $ref The holding reference of the writeOnly inputs.
 	 *
 	 * @return array<string, mixed> The context.
 	 */
-	private function context(ObjectActionDefinition $definition, array $storable, ?string $ref): array {
-		$context = ['action' => $definition->key, 'inputs' => $storable];
+	private function context(FlowBodyRun $run, ?string $ref): array {
+		$context = ['action' => $run->definition->key, 'inputs' => $run->storable];
 		if ($ref !== null) {
 			$context[ObjectActionSecrets::CONTEXT_KEY] = $ref;
 		}
@@ -180,45 +180,45 @@ class ObjectActionFlowRun {
 	 * A bound flow keeps its own run authorization (`FlowService::run()`); a
 	 * steps flow is the system's and is authorised by the action's right alone.
 	 *
-	 * @param Schema                 $schema     The schema.
-	 * @param ObjectActionDefinition $definition The action.
-	 * @param array<string, mixed>   $subject    `{uuid, register, schema}`.
-	 * @param array<string, mixed>   $context    The run context.
+	 * @param FlowBodyRun          $run     The target (its schema and `{uuid, register, schema}` subject) and the action.
+	 * @param array<string, mixed> $context The run context.
 	 *
 	 * @return ObjectActionFlowStart The started run.
 	 */
-	private function start(Schema $schema, ObjectActionDefinition $definition, array $subject, array $context): ObjectActionFlowStart {
-		$sync     = ($definition->mode !== 'async');
-		$flowUuid = $this->flowUuid(schema: $schema, definition: $definition);
+	private function start(FlowBodyRun $run, array $context): ObjectActionFlowStart {
+		$definition = $run->definition;
+		$subject    = $run->target->subject();
+		$sync       = ($definition->mode !== 'async');
+		$flowUuid   = $this->flowUuid(schema: $run->target->schema, definition: $definition);
 		if ($definition->kind === ObjectActionDefinition::KIND_STEPS) {
-			$run = $this->engines->flows->runForAction(uuid: $flowUuid, subject: $subject, context: $context, sync: $sync);
-			return new ObjectActionFlowStart(run: $run, flowUuid: $flowUuid, sync: $sync);
+			$flowRun = $this->engines->flows->runForAction(
+				uuid: $flowUuid,
+				options: new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: Flow::TRIGGER_MANUAL)
+			);
+			return new ObjectActionFlowStart(run: $flowRun, flowUuid: $flowUuid, sync: $sync);
 		}
 
-		$run = $this->engines->flows->run(uuid: $flowUuid, subject: $subject, context: $context, sync: $sync);
-		return new ObjectActionFlowStart(run: $run, flowUuid: $flowUuid, sync: $sync);
+		$flowRun = $this->engines->flows->run(uuid: $flowUuid, subject: $subject, context: $context, sync: $sync);
+		return new ObjectActionFlowStart(run: $flowRun, flowUuid: $flowUuid, sync: $sync);
 	}//end start()
 
 	/**
 	 * The answer for a started run, and its audit entry.
 	 *
-	 * @param ObjectEntity           $object     The subject.
-	 * @param ObjectActionDefinition $definition The action.
-	 * @param ObjectActionFlowStart  $start      The started run.
-	 * @param array<string, mixed>   $inputs     The storable inputs.
+	 * @param FlowBodyRun           $run   The subject, the action and the storable inputs.
+	 * @param ObjectActionFlowStart $start The started run.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The answer.
 	 */
-	private function answerFor(ObjectEntity $object, ObjectActionDefinition $definition, ObjectActionFlowStart $start, array $inputs): array {
+	private function answerFor(FlowBodyRun $run, ObjectActionFlowStart $start): array {
+		$definition = $run->definition;
 		if ($start->isPending() === true) {
-			$pending = $start->outcome(outcome: $start->pendingStatus(), changes: []);
-			$this->recorder->record(object: $object, definition: $definition, inputs: $inputs, outcome: $pending);
+			$this->record(run: $run, outcome: $start->outcome(outcome: $start->pendingStatus(), changes: []));
 			return $this->answer(status: Http::STATUS_ACCEPTED, body: $start->pendingBody(definition: $definition));
 		}
 
-		$status  = (string)$start->run->getStatus();
 		$changes = $this->engines->macros->changesOf(run: $start->run, flowUuid: $start->flowUuid);
-		$this->recorder->record(object: $object, definition: $definition, inputs: $inputs, outcome: $start->outcome(outcome: $status, changes: $changes));
+		$this->record(run: $run, outcome: $start->outcome(outcome: (string)$start->run->getStatus(), changes: $changes));
 		if ($start->isCompleted() === false) {
 			return $this->answer(status: Http::STATUS_UNPROCESSABLE_ENTITY, body: $start->endedBody(key: $definition->key));
 		}
@@ -226,6 +226,18 @@ class ObjectActionFlowRun {
 		$next = $this->engines->macros->nextForRun(flowUuid: $start->flowUuid, run: $start->run);
 		return $this->answer(status: Http::STATUS_OK, body: $start->completedBody(definition: $definition, next: $next));
 	}//end answerFor()
+
+	/**
+	 * Write the run's `action.run` entry.
+	 *
+	 * @param FlowBodyRun            $run     The subject, the action and the storable inputs.
+	 * @param ObjectActionRunOutcome $outcome The outcome.
+	 *
+	 * @return void
+	 */
+	private function record(FlowBodyRun $run, ObjectActionRunOutcome $outcome): void {
+		$this->recorder->record(object: $run->target->object, definition: $run->definition, inputs: $run->storable, outcome: $outcome);
+	}//end record()
 
 	/**
 	 * An answer.

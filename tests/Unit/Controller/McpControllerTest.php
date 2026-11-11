@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\McpController;
+use OCA\OpenRegister\Controller\Support\McpControllerServices;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
 use OCA\OpenRegister\Service\McpDiscoveryService;
 use OCP\IRequest;
@@ -26,10 +27,11 @@ class McpControllerTest extends TestCase {
 		$this->grantableRightsIndex = $this->createMock(GrantableRightsIndex::class);
 
 		$this->controller = new McpController(
-			'openregister',
 			$this->request,
-			$this->mcpDiscoveryService,
-			$this->grantableRightsIndex
+			new McpControllerServices(
+				$this->mcpDiscoveryService,
+				$this->grantableRightsIndex
+			)
 		);
 	}
 

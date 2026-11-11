@@ -32,6 +32,8 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\OasControllerServices;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasETagComputerInterface;
 use OCA\OpenRegister\Service\OasServiceInterface;
@@ -58,21 +60,25 @@ class OasController extends Controller {
 	private readonly OasServiceInterface $oasService;
 
 	/**
-	 * OasController constructor
+	 * Optional ETag computer for If-None-Match short-circuit
 	 *
-	 * @param string $appName Application name
-	 * @param IRequest $request Request object
-	 * @param OasServiceInterface $oasService OAS service instance
-	 * @param ?OasETagComputerInterface $etagComputer Optional ETag computer for If-None-Match short-circuit
+	 * @var ?OasETagComputerInterface
+	 */
+	private readonly ?OasETagComputerInterface $etagComputer;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest              $request  Request object
+	 * @param OasControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		OasServiceInterface $oasService,
-		private readonly ?OasETagComputerInterface $etagComputer = null,
+		OasControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->oasService = $oasService;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->oasService = $services->oasService;
+		$this->etagComputer = $services->etagComputer;
 	}//end __construct()
 
 	/**

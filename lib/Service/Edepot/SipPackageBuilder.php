@@ -77,30 +77,6 @@ class SipPackageBuilder {
 	}//end __construct()
 
 	/**
-	 * Build SIP package(s) for a list of objects.
-	 *
-	 * Returns an array of file paths to generated ZIP archives. Multiple archives
-	 * are created when the combined file size exceeds the maximum package size.
-	 *
-	 * @param string $transferId       The transfer list UUID.
-	 * @param array  $objectsWithFiles Objects and their file metadata (object, files[]).
-	 * @param int    $maxPackageSize   Maximum package size in bytes.
-	 * @param string $format           Output format: `zip` (default) or `bagit` (RFC 8493).
-	 *
-	 * @return array<int, string> Array of file paths to generated SIP archives.
-	 *
-	 * @throws InvalidArgumentException If no objects are provided or the format is unknown.
-	 *
-	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-bagit-output/spec.md
-	 *   (Requirement: BagIt is a serialization option on the existing builder)
-	 */
-	public function build(string $transferId, array $objectsWithFiles, int $maxPackageSize = 0, string $format = 'zip'): array {
-		return $this->package(request: new TransferPackageRequest(
-			transferId: $transferId, objectsWithFiles: $objectsWithFiles, maxPackageSize: $maxPackageSize, format: $format
-		));
-	}//end build()
-
-	/**
 	 * Build SIP package(s) for a transfer: more than one when its files exceed the maximum package size.
 	 *
 	 * @param TransferPackageRequest $request The transfer's objects, size limit and format.
@@ -117,6 +93,19 @@ class SipPackageBuilder {
 
 		$maxSize  = $this->maxPackageSize(requested: $request->maxPackageSize);
 		$batches  = self::splitIntoBatches(objectsWithFiles: $request->objectsWithFiles, maxSize: $maxSize);
+
+		return $this->buildBatches(request: $request, batches: $batches);
+	}//end package()
+
+	/**
+	 * Build one SIP archive per batch, numbered in order.
+	 *
+	 * @param TransferPackageRequest $request The transfer's id and format.
+	 * @param array<int, array>      $batches The objects of each package.
+	 *
+	 * @return array<int, string> The generated archive paths.
+	 */
+	private function buildBatches(TransferPackageRequest $request, array $batches): array {
 		$sipFiles = [];
 		foreach ($batches as $index => $batch) {
 			$part       = new SipPart(
@@ -129,7 +118,7 @@ class SipPackageBuilder {
 		}
 
 		return $sipFiles;
-	}//end package()
+	}//end buildBatches()
 
 	/**
 	 * Refuse an empty transfer and an unknown format.
@@ -245,7 +234,7 @@ class SipPackageBuilder {
 		$this->mdtoGenerator->assertTransferPreconditions($object);
 
 		$mdtoXml = $this->mdtoGenerator->generate($object, $item['files']);
-		$contents->addMetadataDocument(uuid: $uuid, path: "{$objectDir}/mdto.xml", content: $mdtoXml);
+		$contents->listAsMetadata(uuid: $uuid, row: $contents->addDocument(path: "{$objectDir}/mdto.xml", content: $mdtoXml));
 		$metadataJson = json_encode($object->jsonSerialize(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 		$contents->addDocument(path: "{$objectDir}/metadata.json", content: $metadataJson);
 		$this->addContentFiles(contents: $contents, item: $item);
@@ -269,7 +258,8 @@ class SipPackageBuilder {
 			$filePath = "objects/{$object->getUuid()}/content/".SipLayout::subDir(file: $file)."/{$file['name']}";
 			$contents->addFile(path: $filePath, file: $file);
 			$sidecar = $this->mdtoGenerator->generateBestand($object, $file);
-			$contents->addMetadataDocument(uuid: $object->getUuid(), path: $filePath.MdtoBestandGenerator::SIDECAR_SUFFIX, content: $sidecar);
+			$row = $contents->addDocument(path: $filePath.MdtoBestandGenerator::SIDECAR_SUFFIX, content: $sidecar);
+			$contents->listAsMetadata(uuid: $object->getUuid(), row: $row);
 		}
 	}//end addContentFiles()
 

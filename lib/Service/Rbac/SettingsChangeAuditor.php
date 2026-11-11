@@ -56,7 +56,6 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-use Throwable;
 
 /**
  * Turns a settings write into per-key audit rows on the existing chain.
@@ -118,56 +117,56 @@ class SettingsChangeAuditor {
 	 * against a database. A key present in one state and absent from the other
 	 * counts as a change: added and removed are both things somebody did.
 	 *
-	 * @param array<string, mixed> $before The stored settings.
-	 * @param array<string, mixed> $after The settings being written.
-	 * @param array<int, string> $secretKeys Keys declared secret.
+	 * @param SettingsChange $change The stored state, the written state and the secret keys.
 	 *
 	 * @return array<int, array{key: string, old: mixed, new: mixed, secret: bool}> The changes.
 	 *
 	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
 	 */
-	public function diff(array $before, array $after, array $secretKeys = []): array {
-		$keys = array_unique(array_merge(array_keys($before), array_keys($after)));
+	public function diff(SettingsChange $change): array {
+		$keys = array_unique(array_merge(array_keys($change->before), array_keys($change->after)));
 		sort($keys);
 
 		$changes = [];
 		foreach ($keys as $key) {
-			$key = (string)$key;
-			$hadBefore = array_key_exists($key, $before);
-			$hasAfter = array_key_exists($key, $after);
-
-			$old = ($before[$key] ?? null);
-			$new = ($after[$key] ?? null);
-
-			// A write that sets a key to the value it already had is not a
-			// change, and recording it would fill the trail with the noise of
-			// every save of a settings form that touched one field.
-			if ($hadBefore === true && $hasAfter === true && $this->same(a: $old, b: $new) === true) {
-				continue;
+			$entry = $this->changeOf(change: $change, key: (string)$key);
+			if ($entry !== null) {
+				$changes[] = $entry;
 			}
-
-			if ($hadBefore === false && $hasAfter === false) {
-				continue;
-			}
-
-			$secret = in_array($key, $secretKeys, true);
-			$shownOld = $old;
-			$shownNew = $new;
-			if ($secret === true) {
-				$shownOld = $this->maskIfPresent(present: $hadBefore);
-				$shownNew = $this->maskIfPresent(present: $hasAfter);
-			}
-
-			$changes[] = [
-				'key' => $key,
-				'old' => $shownOld,
-				'new' => $shownNew,
-				'secret' => $secret,
-			];
-		}//end foreach
+		}
 
 		return $changes;
 	}//end diff()
+
+	/**
+	 * The change one key underwent, or null when it did not change.
+	 *
+	 * @param SettingsChange $change The write.
+	 * @param string         $key    The key.
+	 *
+	 * @return array{key: string, old: mixed, new: mixed, secret: bool}|null The change.
+	 */
+	private function changeOf(SettingsChange $change, string $key): ?array {
+		$hadBefore = array_key_exists($key, $change->before);
+		$hasAfter = array_key_exists($key, $change->after);
+		$old = ($change->before[$key] ?? null);
+		$new = ($change->after[$key] ?? null);
+
+		// A write that sets a key to the value it already had is not a
+		// change, and recording it would fill the trail with the noise of
+		// every save of a settings form that touched one field.
+		if (($hadBefore === true && $hasAfter === true && $this->same(a: $old, b: $new) === true) || ($hadBefore === false && $hasAfter === false)) {
+			return null;
+		}
+
+		$secret = in_array($key, $change->secretKeys, true);
+		if ($secret === true) {
+			$old = $this->maskIfPresent(present: $hadBefore);
+			$new = $this->maskIfPresent(present: $hasAfter);
+		}
+
+		return ['key' => $key, 'old' => $old, 'new' => $new, 'secret' => $secret];
+	}//end changeOf()
 
 	/**
 	 * The keys an app's register configuration declares secret.
@@ -208,27 +207,52 @@ class SettingsChangeAuditor {
 	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
 	 */
 	public function recordUpdate(string $app, array $before, array $after, array $secretKeys = []): int {
-		$changes = $this->diff(before: $before, after: $after, secretKeys: $secretKeys);
-		if ($changes === []) {
+		return $this->recordChange(app: $app, change: new SettingsChange(before: $before, after: $after, secretKeys: $secretKeys));
+	}//end recordUpdate()
+
+	/**
+	 * Record a settings write, one row per changed key. Never throws.
+	 *
+	 * @param string         $app    The app whose settings changed.
+	 * @param SettingsChange $change The stored state, the written state and the secret keys.
+	 *
+	 * @return int How many rows were written.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	public function recordChange(string $app, SettingsChange $change): int {
+		$rows = [];
+		foreach ($this->diff(change: $change) as $entry) {
+			$rows[] = $this->updateRow(app: $app, entry: $entry);
+		}
+
+		if ($rows === []) {
 			return 0;
 		}
 
-		$rows = [];
-		foreach ($changes as $change) {
-			$rows[] = $this->row(
-				action: self::ACTION_UPDATED,
-				changed: [
-					'app' => $app,
-					'key' => $change['key'],
-					'old' => $change['old'],
-					'new' => $change['new'],
-					'secret' => $change['secret'],
-				]
-			);
-		}
-
 		return $this->write(rows: $rows);
-	}//end recordUpdate()
+	}//end recordChange()
+
+	/**
+	 * The row for one changed key.
+	 *
+	 * @param string                                                 $app   The app whose settings changed.
+	 * @param array{key: string, old: mixed, new: mixed, secret: bool} $entry The change.
+	 *
+	 * @return AuditTrail The row.
+	 */
+	private function updateRow(string $app, array $entry): AuditTrail {
+		return $this->row(
+			action: self::ACTION_UPDATED,
+			changed: [
+				'app' => $app,
+				'key' => $entry['key'],
+				'old' => $entry['old'],
+				'new' => $entry['new'],
+				'secret' => $entry['secret'],
+			]
+		);
+	}//end updateRow()
 
 	/**
 	 * Record a configuration import, as ONE row naming what it overwrote.
@@ -238,8 +262,7 @@ class SettingsChangeAuditor {
 	 * what an auditor wants beside it.
 	 *
 	 * @param string $app The app whose configuration was imported.
-	 * @param bool $forced Whether the import was forced over an existing one.
-	 * @param int $keysOverwritten How many stored keys the import replaced.
+	 * @param SettingsImport $import Whether it was forced and how many stored keys it replaced.
 	 *
 	 * @return int How many rows were written.
 	 *
@@ -249,15 +272,15 @@ class SettingsChangeAuditor {
 	 *
 	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
 	 */
-	public function recordImport(string $app, bool $forced, int $keysOverwritten): int {
+	public function recordImport(string $app, SettingsImport $import): int {
 		return $this->write(
 			rows: [
 				$this->row(
 					action: self::ACTION_IMPORTED,
 					changed: [
 						'app' => $app,
-						'forced' => $forced,
-						'keysOverwritten' => $keysOverwritten,
+						'forced' => $import->forced,
+						'keysOverwritten' => $import->keysOverwritten,
 					]
 				),
 			]
@@ -273,13 +296,7 @@ class SettingsChangeAuditor {
 	 * @return AuditTrail The row.
 	 */
 	private function row(string $action, array $changed): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		$userName = 'System';
-		if ($user !== null) {
-			$userId = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
+		[$userId, $userName] = $this->actor();
 
 		$row = new AuditTrail();
 		$row->setUuid(Uuid::v4()->toRfc4122());
@@ -293,6 +310,23 @@ class SettingsChangeAuditor {
 	}//end row()
 
 	/**
+	 * Who is making the change: the session user, or the system when there is none.
+	 *
+	 * @return array{0: string, 1: string} The user id and display name.
+	 */
+	private function actor(): array {
+		$user = $this->userSession->getUser();
+		$userId = 'system';
+		$userName = 'System';
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		return [$userId, $userName];
+	}//end actor()
+
+	/**
 	 * Write the rows through the one path that seals.
 	 *
 	 * @param array<int, AuditTrail> $rows The rows.
@@ -300,22 +334,12 @@ class SettingsChangeAuditor {
 	 * @return int How many were written.
 	 */
 	private function write(array $rows): int {
-		try {
-			$this->mapper->insertAuditTrails(entries: $rows);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[SettingsChangeAuditor] Could not record a settings change; the setting itself was stored',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'entries' => count($rows),
-					'exception' => $e->getMessage(),
-				]
-			);
-			return 0;
-		}
+		$writer = new AuditRowWriter(mapper: $this->mapper, logger: $this->logger);
 
-		return count($rows);
+		return $writer->write(
+			rows: $rows,
+			failure: '[SettingsChangeAuditor] Could not record a settings change; the setting itself was stored'
+		);
 	}//end write()
 
 	/**

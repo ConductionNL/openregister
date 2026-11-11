@@ -65,87 +65,95 @@ class ExampleSetPeople {
 	/**
 	 * Groups, accounts and memberships, each written when the record does not hold it.
 	 *
-	 * @param array<string, mixed>   $plan   The plan.
-	 * @param ExampleSetAccountTerms $terms  The set id, the adoptable account ids and the administrator's password.
-	 * @param array<string, mixed>   $report The report so far.
-	 * @param array<string, mixed>   $record The record; updated and kept after every step.
+	 * @param ExampleSetAccountsInstall $install The plan and the account terms (set id, adoptable ids, password).
+	 * @param array<string, mixed>      $record  The record; updated and kept after every step.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return array<string, mixed> The account part of the report: `users`, `groups`, `memberships`, `subAdmins`,
+	 *                              `passwords` and `dropped`.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
-	public function install(array $plan, ExampleSetAccountTerms $terms, array $report, array &$record): array {
-		$report = $this->installGroups(plan: $plan, report: $report, record: $record);
+	public function install(ExampleSetAccountsInstall $install, array &$record): array {
+		$run  = new ExampleSetPeopleRun(install: $install, record: $record);
+		$plan = $install->plan;
+		$this->installGroups(run: $run);
 		foreach ($plan['cast']['people'] as $person) {
-			$uid = (string) ($person['uid'] ?? '');
-			if ($uid === '') {
+			if ((string) ($person['uid'] ?? '') === '') {
 				continue;
 			}
 
-			$report = $this->installUser(terms: $terms, person: $person, report: $report, record: $record);
-			$report = $this->installProfile(plan: $plan, person: $person, report: $report, record: $record);
+			$this->installUser(run: $run, person: $person);
+			$this->installProfile(run: $run, person: $person);
 		}
 
 		foreach ($this->serviceAccounts(plan: $plan) as $account) {
-			$report = $this->installServiceUser(terms: $terms, account: $account, report: $report, record: $record);
+			$this->installServiceUser(run: $run, account: $account);
 		}
 
-		$report = $this->installMemberships(plan: $plan, report: $report, record: $record);
+		$this->installMemberships(run: $run);
+		$this->installSubAdmins(run: $run);
+		$record = $run->record;
 
-		return $this->installSubAdmins(plan: $plan, report: $report, record: $record);
+		return $run->report;
 	}//end install()
 
 	/**
 	 * Create every declared group the instance lacks, and record it.
 	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param array<string, mixed> $report The report so far.
-	 * @param array<string, mixed> $record The record.
+	 * @param ExampleSetPeopleRun $run The install; its report and record grow.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return void
 	 */
-	private function installGroups(array $plan, array $report, array &$record): array {
-		foreach ($this->declaredGroups(plan: $plan) as $gid => $displayName) {
-			$report['groups'][$gid] = 'kept';
+	private function installGroups(ExampleSetPeopleRun $run): void {
+		foreach ($this->declaredGroups(plan: $run->install->plan) as $gid => $displayName) {
+			$run->report['groups'][$gid] = 'kept';
 			if ($this->accounts->groupExists(gid: $gid) === true) {
-				$report['groups'][$gid] = $this->nameUnnamedGroup(set: (string) $plan['set'], gid: $gid, displayName: $displayName, record: $record);
+				$run->report['groups'][$gid] = $this->nameUnnamedGroup(run: $run, gid: $gid);
 				continue;
 			}
 
 			if ($this->accounts->createGroup(gid: $gid, displayName: $displayName) === false) {
-				$report['dropped'][] = 'group '.$gid.': Nextcloud did not create it';
+				$run->report['dropped'][] = 'group '.$gid.': Nextcloud did not create it';
 				continue;
 			}
 
-			$report['groups'][$gid] = 'created';
-			$record['groups'][]     = $gid;
-			$this->record->write(set: (string) $plan['set'], record: $record);
+			$run->report['groups'][$gid] = 'created';
+			$run->record['groups'][]     = $gid;
+			$this->written(run: $run);
 		}
-
-		return $report;
 	}//end installGroups()
+
+	/**
+	 * Write the record as the run holds it now.
+	 *
+	 * @param ExampleSetPeopleRun $run The install.
+	 *
+	 * @return void
+	 */
+	private function written(ExampleSetPeopleRun $run): void {
+		$this->record->write(set: $run->set(), record: $run->record);
+	}//end written()
 
 	/**
 	 * Give an existing group that shows only its id the declared display name, and record the name it had.
 	 *
-	 * @param string               $set         The set id.
-	 * @param string               $gid         The group id.
-	 * @param string               $displayName The declared display name.
-	 * @param array<string, mixed> $record      The record; gains the old name.
+	 * @param ExampleSetPeopleRun $run The install; the record gains the old name.
+	 * @param string              $gid The group id.
 	 *
 	 * @return string `named` or `kept`.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
 	 */
-	private function nameUnnamedGroup(string $set, string $gid, string $displayName, array &$record): string {
-		$current = $this->accounts->groupName(gid: $gid);
-		$unnamed = ($current === '' || $current === $gid);
+	private function nameUnnamedGroup(ExampleSetPeopleRun $run, string $gid): string {
+		$displayName = $this->declaredGroups(plan: $run->install->plan)[$gid];
+		$current     = $this->accounts->groupName(gid: $gid);
+		$unnamed     = ($current === '' || $current === $gid);
 		if ($displayName === '' || $unnamed === false || $this->accounts->setGroupName(gid: $gid, displayName: $displayName) === false) {
 			return 'kept';
 		}
 
-		$record['groupNames'][$gid] = ($record['groupNames'][$gid] ?? ['old' => $current, 'new' => $displayName]);
-		$this->record->write(set: $set, record: $record);
+		$run->record['groupNames'][$gid] = ($run->record['groupNames'][$gid] ?? ['old' => $current, 'new' => $displayName]);
+		$this->written(run: $run);
 
 		return 'named';
 	}//end nameUnnamedGroup()
@@ -153,64 +161,55 @@ class ExampleSetPeople {
 	/**
 	 * Add every declared membership the instance lacks, and record it.
 	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param array<string, mixed> $report The report so far.
-	 * @param array<string, mixed> $record The record.
+	 * @param ExampleSetPeopleRun $run The install; its report and record grow.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return void
 	 */
-	private function installMemberships(array $plan, array $report, array &$record): array {
-		$set = (string) $plan['set'];
-		foreach ($this->declaredMemberships(plan: $plan) as [$gid, $uid]) {
+	private function installMemberships(ExampleSetPeopleRun $run): void {
+		foreach ($this->declaredMemberships(plan: $run->install->plan) as [$gid, $uid]) {
 			$name = $gid.' / '.$uid;
-			$report['memberships'][$name] = 'kept';
+			$run->report['memberships'][$name] = 'kept';
 			if ($this->accounts->inGroup(gid: $gid, uid: $uid) === true) {
 				continue;
 			}
 
 			if ($this->accounts->addToGroup(gid: $gid, uid: $uid) === false) {
-				$report['dropped'][] = 'membership '.$name.': the group or the account is not there';
+				$run->report['dropped'][] = 'membership '.$name.': the group or the account is not there';
 				continue;
 			}
 
-			$report['memberships'][$name] = 'created';
-			$record['memberships'][]      = [$gid, $uid];
-			$this->record->write(set: $set, record: $record);
+			$run->report['memberships'][$name] = 'created';
+			$run->record['memberships'][]      = [$gid, $uid];
+			$this->written(run: $run);
 		}//end foreach
-
-		return $report;
 	}//end installMemberships()
 
 	/**
 	 * Make every declared group sub-admin one the instance lacks, and record it.
 	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param array<string, mixed> $report The report so far.
-	 * @param array<string, mixed> $record The record.
+	 * @param ExampleSetPeopleRun $run The install; its report and record grow.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return void
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
 	 */
-	private function installSubAdmins(array $plan, array $report, array &$record): array {
-		foreach ($this->declaredSubAdmins(plan: $plan) as [$gid, $uid]) {
+	private function installSubAdmins(ExampleSetPeopleRun $run): void {
+		foreach ($this->declaredSubAdmins(plan: $run->install->plan) as [$gid, $uid]) {
 			$name = $gid.' / '.$uid;
-			$report['subAdmins'][$name] = 'kept';
+			$run->report['subAdmins'][$name] = 'kept';
 			if ($this->accounts->isSubAdmin(gid: $gid, uid: $uid) === true) {
 				continue;
 			}
 
 			if ($this->accounts->addSubAdmin(gid: $gid, uid: $uid) === false) {
-				$report['dropped'][] = 'sub-admin '.$name.': the group or the account is not there';
+				$run->report['dropped'][] = 'sub-admin '.$name.': the group or the account is not there';
 				continue;
 			}
 
-			$report['subAdmins'][$name] = 'created';
-			$record['subAdmins'][]      = [$gid, $uid];
-			$this->record->write(set: (string) $plan['set'], record: $record);
+			$run->report['subAdmins'][$name] = 'created';
+			$run->record['subAdmins'][]      = [$gid, $uid];
+			$this->written(run: $run);
 		}
-
-		return $report;
 	}//end installSubAdmins()
 
 	/**
@@ -261,56 +260,139 @@ class ExampleSetPeople {
 	/**
 	 * One cast account: kept, adopted or created.
 	 *
-	 * @param ExampleSetAccountTerms $terms  The set id, the adoptable account ids and the administrator's password.
-	 * @param array<string, mixed>   $person The cast person.
-	 * @param array<string, mixed>   $report The report so far.
-	 * @param array<string, mixed>   $record The record.
+	 * @param ExampleSetPeopleRun  $run    The install; its report and record grow.
+	 * @param array<string, mixed> $person The cast person.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return void
 	 */
-	private function installUser(ExampleSetAccountTerms $terms, array $person, array $report, array &$record): array {
-		$set      = $terms->set;
-		$adopt    = $terms->adopt;
-		$password = $terms->password;
-		$uid      = (string) $person['uid'];
+	private function installUser(ExampleSetPeopleRun $run, array $person): void {
+		$uid = (string) $person['uid'];
 		if ($this->accounts->userExists(uid: $uid) === true) {
-			$report['users'][$uid] = 'kept';
-			if (isset($record['users'][$uid]) === false && in_array($uid, $adopt, true) === true) {
-				$record['users'][$uid] = 'adopted';
-				$report['users'][$uid] = 'adopted';
-				$this->record->write(set: $set, record: $record);
-			}
-
-			return $report;
+			$this->keepOrAdopt(run: $run, uid: $uid);
+			return;
 		}
 
-		$generated = '';
-		if ($password === '') {
-			$generated = $this->accounts->newPassword();
-			$password  = $generated;
-		}
-
-		$error = $this->accounts->createUser(
-			uid: $uid,
-			displayName: (string) ($person['displayName'] ?? $uid),
-			email: (string) ($person['email'] ?? ''),
-			password: $password
-		);
-		if ($error !== '') {
-			$report['dropped'][] = 'account '.$uid.': '.$error;
-			return $report;
-		}
-
-		$report['users'][$uid] = 'created';
-		if ($generated !== '') {
-			$report['passwords'][$uid] = $generated;
-		}
-
-		$record['users'][$uid] = 'created';
-		$this->record->write(set: $set, record: $record);
-
-		return $report;
+		$this->installNewUser(run: $run, person: $person);
 	}//end installUser()
+
+	/**
+	 * Create the account for a cast person that does not exist yet, and report it.
+	 *
+	 * @param ExampleSetPeopleRun  $run    The install in progress.
+	 * @param array<string, mixed> $person The cast person, its uid not yet taken.
+	 *
+	 * @return void
+	 */
+	private function installNewUser(ExampleSetPeopleRun $run, array $person): void {
+		$uid = (string) $person['uid'];
+		$generated = $this->generatedPassword(run: $run);
+		$error = $this->createAccount(person: $person, password: $this->passwordOf(run: $run, generated: $generated));
+		if ($error !== '') {
+			$run->report['dropped'][] = 'account '.$uid.': '.$error;
+			return;
+		}
+
+		$this->created(run: $run, uid: $uid);
+		if ($generated !== '') {
+			$run->report['passwords'][$uid] = $generated;
+		}
+	}//end installNewUser()
+
+	/**
+	 * A fresh password when the install terms name none, else the empty string.
+	 *
+	 * @param ExampleSetPeopleRun $run The install in progress.
+	 *
+	 * @return string The generated password, or ''.
+	 */
+	private function generatedPassword(ExampleSetPeopleRun $run): string {
+		if ($run->install->terms->password === '') {
+			return $this->accounts->newPassword();
+		}
+
+		return '';
+	}//end generatedPassword()
+
+	/**
+	 * The password a new account gets: the generated one, or else the one the terms name.
+	 *
+	 * @param ExampleSetPeopleRun $run       The install in progress.
+	 * @param string              $generated The generated password, or ''.
+	 *
+	 * @return string The password.
+	 */
+	private function passwordOf(ExampleSetPeopleRun $run, string $generated): string {
+		if ($generated !== '') {
+			return $generated;
+		}
+
+		return $run->install->terms->password;
+	}//end passwordOf()
+
+	/**
+	 * Create one account for a cast person.
+	 *
+	 * @param array<string, mixed> $person   The cast person.
+	 * @param string               $password Its password.
+	 *
+	 * @return string The error, or '' when it was created.
+	 */
+	private function createAccount(array $person, string $password): string {
+		$uid = (string) $person['uid'];
+
+		return $this->accounts->createAccount(
+			account: new ExampleSetNewAccount(
+				uid: $uid,
+				displayName: (string) ($person['displayName'] ?? $uid),
+				email: (string) ($person['email'] ?? ''),
+				password: $password
+			)
+		);
+	}//end createAccount()
+
+	/**
+	 * An account that is there: kept, or adopted when the record does not hold it and the administrator lets the set
+	 * use it.
+	 *
+	 * @param ExampleSetPeopleRun $run The install; its report and record grow.
+	 * @param string              $uid The account id.
+	 *
+	 * @return void
+	 */
+	private function keepOrAdopt(ExampleSetPeopleRun $run, string $uid): void {
+		$run->report['users'][$uid] = 'kept';
+		if (isset($run->record['users'][$uid]) === false && in_array($uid, $run->install->terms->adopt, true) === true) {
+			$this->adopted(run: $run, uid: $uid);
+		}
+	}//end keepOrAdopt()
+
+	/**
+	 * Record and report an account as adopted.
+	 *
+	 * @param ExampleSetPeopleRun $run The install; its report and record grow.
+	 * @param string              $uid The account id.
+	 *
+	 * @return void
+	 */
+	private function adopted(ExampleSetPeopleRun $run, string $uid): void {
+		$run->record['users'][$uid] = 'adopted';
+		$run->report['users'][$uid] = 'adopted';
+		$this->written(run: $run);
+	}//end adopted()
+
+	/**
+	 * Report and record an account as created.
+	 *
+	 * @param ExampleSetPeopleRun $run The install; its report and record grow.
+	 * @param string              $uid The account id.
+	 *
+	 * @return void
+	 */
+	private function created(ExampleSetPeopleRun $run, string $uid): void {
+		$run->report['users'][$uid] = 'created';
+		$run->record['users'][$uid] = 'created';
+		$this->written(run: $run);
+	}//end created()
 
 	/**
 	 * Write the function, role, absence and status of an account the set created, at every install.
@@ -318,51 +400,33 @@ class ExampleSetPeople {
 	 * An account the set adopted is someone else's: it only gains the function and role it lacks, and a value it
 	 * holds stays. An account the set found but did not adopt is left alone.
 	 *
-	 * @param array<string, mixed> $plan   The plan.
+	 * @param ExampleSetPeopleRun  $run    The install; a part that could not be written goes under `dropped`.
 	 * @param array<string, mixed> $person The cast person.
-	 * @param array<string, mixed> $report The report; a part that could not be written goes under `dropped`.
-	 * @param array<string, mixed> $record The record.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return void
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
 	 */
-	private function installProfile(array $plan, array $person, array $report, array $record): array {
+	private function installProfile(ExampleSetPeopleRun $run, array $person): void {
 		$uid  = (string) $person['uid'];
-		$held = ($record['users'][$uid] ?? null);
+		$held = ($run->record['users'][$uid] ?? null);
 		if ($this->profiles === null || in_array($held, ['created', 'adopted'], true) === false) {
-			return $report;
+			return;
 		}
 
-		$today   = new DateTimeImmutable('today', new DateTimeZone((string) ($plan['timezone'] ?? 'UTC')));
+		$today   = new DateTimeImmutable('today', new DateTimeZone((string) ($run->install->plan['timezone'] ?? 'UTC')));
 		$profile = $this->profiles->fromPerson(person: $person, today: $today);
-		$reasons = $this->writeProfile(uid: $uid, profile: $profile, adopted: $held === 'adopted');
+		// An adopted account only gains what it lacks; a created one gets the whole profile.
+		if ($held === 'adopted') {
+			$reasons = $this->profiles->fillMissing(uid: $uid, profile: $profile);
+		} else {
+			$reasons = $this->profiles->apply(uid: $uid, profile: $profile);
+		}
 
 		foreach ($reasons as $reason) {
-			$report['dropped'][] = $reason;
+			$run->report['dropped'][] = $reason;
 		}
-
-		return $report;
 	}//end installProfile()
-
-	/**
-	 * Write a created account's whole profile, or fill in what an adopted account lacks.
-	 *
-	 * @param string               $uid     The account.
-	 * @param array<string, mixed> $profile The profile, as ExampleSetProfiles::fromPerson() gives it.
-	 * @param bool                 $adopted Whether the set adopted the account rather than created it.
-	 *
-	 * @return array<int, string> Why a part was not written.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Created or adopted is the account's own fact in the record.
-	 */
-	private function writeProfile(string $uid, array $profile, bool $adopted): array {
-		if ($adopted === true) {
-			return $this->profiles->fillMissing(uid: $uid, profile: $profile);
-		}
-
-		return $this->profiles->apply(uid: $uid, profile: $profile);
-	}//end writeProfile()
 
 	/**
 	 * One service account: kept, adopted or created with a password nobody ever sees.
@@ -371,74 +435,82 @@ class ExampleSetPeople {
 	 * random one that is neither shown nor stored: nobody can sign in with it,
 	 * and the account stays enabled for the app that runs work as it.
 	 *
-	 * @param ExampleSetAccountTerms $terms   The set id and the adoptable account ids; the password is not used.
-	 * @param array<string, mixed>   $account The declared service account.
-	 * @param array<string, mixed>   $report  The report so far.
-	 * @param array<string, mixed>   $record  The record.
+	 * @param ExampleSetPeopleRun  $run     The install; its report and record grow. The password is not used.
+	 * @param array<string, mixed> $account The declared service account.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return void
 	 */
-	private function installServiceUser(ExampleSetAccountTerms $terms, array $account, array $report, array &$record): array {
-		$set   = $terms->set;
-		$adopt = $terms->adopt;
-		$uid   = (string) $account['uid'];
+	private function installServiceUser(ExampleSetPeopleRun $run, array $account): void {
+		$uid = (string) $account['uid'];
 		if ($this->accounts->userExists(uid: $uid) === true) {
-			$report['users'][$uid] = 'kept';
-			if (isset($record['users'][$uid]) === false && in_array($uid, $adopt, true) === true) {
-				$record['users'][$uid] = 'adopted';
-				$report['users'][$uid] = 'adopted';
-				$this->record->write(set: $set, record: $record);
-			}
-
-			return $report;
+			$this->keepOrAdopt(run: $run, uid: $uid);
+			return;
 		}
 
-		$error = $this->accounts->createUser(
-			uid: $uid,
-			displayName: (string) $account['displayName'],
-			email: '',
-			password: $this->accounts->newPassword().$this->accounts->newPassword()
-		);
-		if ($error === ExampleSetAccounts::ALREADY_EXISTS && isset($record['users'][$uid]) === false) {
+		$this->installNewServiceUser(run: $run, account: $account);
+	}//end installServiceUser()
+
+	/**
+	 * Create a declared service account that does not exist yet, adopting one another writer made meanwhile.
+	 *
+	 * @param ExampleSetPeopleRun  $run     The install in progress.
+	 * @param array<string, mixed> $account The declared service account.
+	 *
+	 * @return void
+	 */
+	private function installNewServiceUser(ExampleSetPeopleRun $run, array $account): void {
+		$uid = (string) $account['uid'];
+		$error = $this->createServiceAccount(account: $account);
+		if ($error === ExampleSetAccounts::ALREADY_EXISTS && isset($run->record['users'][$uid]) === false) {
 			// Another writer made the declared account in between: the set adopts it, so remove leaves it.
-			$record['users'][$uid] = 'adopted';
-			$report['users'][$uid] = 'adopted';
-			$this->record->write(set: $set, record: $record);
-			return $report;
+			$this->adopted(run: $run, uid: $uid);
+			return;
 		}
 
 		if ($error !== '') {
-			$report['dropped'][] = 'service account '.$uid.': '.$error;
-			return $report;
+			$run->report['dropped'][] = 'service account '.$uid.': '.$error;
+			return;
 		}
 
-		$report['users'][$uid] = 'created';
-		$record['users'][$uid] = 'created';
-		$this->record->write(set: $set, record: $record);
+		$this->created(run: $run, uid: $uid);
+	}//end installNewServiceUser()
 
-		return $report;
-	}//end installServiceUser()
+	/**
+	 * Create one service account: no address, and a password nobody is given.
+	 *
+	 * @param array<string, mixed> $account The declared service account.
+	 *
+	 * @return string The error, or '' when it was created.
+	 */
+	private function createServiceAccount(array $account): string {
+		return $this->accounts->createAccount(
+			account: new ExampleSetNewAccount(
+				uid: (string) $account['uid'],
+				displayName: (string) $account['displayName'],
+				email: '',
+				password: $this->accounts->newPassword().$this->accounts->newPassword()
+			)
+		);
+	}//end createServiceAccount()
 
 	/**
 	 * What the cast refuses: a BSN that fails the eleven test, a group or member
 	 * that is not in the cast, an account that belongs to somebody else.
 	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<int, string>   $adopt  Adoptable account ids.
+	 * @param array<string, mixed>      $plan    The plan.
+	 * @param ExampleSetVouchedAccounts $vouched The record and the adoptable account ids.
 	 *
 	 * @return array<int, string>
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
-	public function refusals(array $plan, array $record, array $adopt): array {
+	public function refusals(array $plan, ExampleSetVouchedAccounts $vouched): array {
 		$refusals = [];
-		$castFile = 'openregister/'.ExampleSetCatalogue::FOLDER.'/'.$plan['set'].'.json';
 		foreach ($plan['cast']['people'] as $key => $person) {
 			$refusals = array_merge(
 				$refusals,
-				$this->personRefusals(key: (string) $key, person: $person, plan: $plan, castFile: $castFile),
-				$this->accountRefusals(uid: (string) ($person['uid'] ?? ''), record: $record, adopt: $adopt)
+				$this->personRefusals(plan: $plan, key: (string) $key),
+				$this->accountRefusals(uid: (string) ($person['uid'] ?? ''), vouched: $vouched)
 			);
 		}
 
@@ -448,9 +520,22 @@ class ExampleSetPeople {
 				$refusals[] = 'service account "'.$account['key'].'": the account id '.$account['uid'].' is a cast member\'s';
 			}
 
-			$refusals = array_merge($refusals, $this->accountRefusals(uid: $account['uid'], record: $record, adopt: $adopt));
+			$refusals = array_merge($refusals, $this->accountRefusals(uid: $account['uid'], vouched: $vouched));
 		}
 
+		return array_merge($refusals, $this->groupRefusals(plan: $plan), $this->memberRefusals(plan: $plan));
+	}//end refusals()
+
+	/**
+	 * What the declared groups refuse: Nextcloud's administrators group, and a sub-admin that is not a cast person
+	 * with an account.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 *
+	 * @return array<int, string>
+	 */
+	private function groupRefusals(array $plan): array {
+		$refusals = [];
 		foreach (array_keys($this->declaredGroups(plan: $plan)) as $gid) {
 			if (strtolower($gid) === self::ADMIN_GROUP) {
 				$refusals[] = 'group "'.$gid.'": an example set never adds anyone to Nextcloud\'s administrators.'
@@ -466,20 +551,20 @@ class ExampleSetPeople {
 			}
 		}
 
-		return array_merge($refusals, $this->memberRefusals(plan: $plan));
-	}//end refusals()
+		return $refusals;
+	}//end groupRefusals()
 
 	/**
 	 * What one cast person refuses: a BSN that fails the eleven test, a group that is not in the cast.
 	 *
-	 * @param string               $key      The cast key.
-	 * @param array<string, mixed> $person   The cast person.
-	 * @param array<string, mixed> $plan     The plan.
-	 * @param string               $castFile The cast file, for messages.
+	 * @param array<string, mixed> $plan The plan.
+	 * @param string               $key  The cast key.
 	 *
 	 * @return array<int, string>
 	 */
-	private function personRefusals(string $key, array $person, array $plan, string $castFile): array {
+	private function personRefusals(array $plan, string $key): array {
+		$castFile = 'openregister/'.ExampleSetCatalogue::FOLDER.'/'.$plan['set'].'.json';
+		$person   = $plan['cast']['people'][$key];
 		$refusals = [];
 		$bsn      = (string) ($person['bsn'] ?? '');
 		if ($bsn !== '' && self::passesElevenTest(bsn: $bsn) === false) {
@@ -498,16 +583,13 @@ class ExampleSetPeople {
 	/**
 	 * Why an account id cannot be used: it exists, and neither the record nor the administrator vouches for it.
 	 *
-	 * @param string               $uid    The account id, or '' for a person without an account.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<int, string>   $adopt  Adoptable account ids.
+	 * @param string                    $uid     The account id, or '' for a person without an account.
+	 * @param ExampleSetVouchedAccounts $vouched The record and the adoptable account ids.
 	 *
 	 * @return array<int, string>
 	 */
-	private function accountRefusals(string $uid, array $record, array $adopt): array {
-		if ($uid === '' || isset($record['users'][$uid]) === true || in_array($uid, $adopt, true) === true
-			|| $this->accounts->userExists(uid: $uid) === false
-		) {
+	private function accountRefusals(string $uid, ExampleSetVouchedAccounts $vouched): array {
+		if ($uid === '' || $vouched->vouchFor(uid: $uid) === true || $this->accounts->userExists(uid: $uid) === false) {
 			return [];
 		}
 
@@ -578,6 +660,23 @@ class ExampleSetPeople {
 	 * @return array<int, array{0: string, 1: string}>
 	 */
 	private function declaredMemberships(array $plan): array {
+		$pairs = array_merge(
+			$this->castMemberships(plan: $plan),
+			$this->fragmentMemberships(plan: $plan),
+			$this->serviceAccountMemberships(plan: $plan)
+		);
+
+		return array_values(array_unique($pairs, SORT_REGULAR));
+	}//end declaredMemberships()
+
+	/**
+	 * The memberships the cast's people declare, as [gid, uid] pairs.
+	 *
+	 * @param array<string, mixed> $plan The resolved plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}> The pairs.
+	 */
+	private function castMemberships(array $plan): array {
 		$pairs = [];
 		foreach ($plan['cast']['people'] as $person) {
 			$uid = (string) ($person['uid'] ?? '');
@@ -587,6 +686,18 @@ class ExampleSetPeople {
 			}
 		}
 
+		return $pairs;
+	}//end castMemberships()
+
+	/**
+	 * The memberships the fragments' groups declare, as [gid, uid] pairs.
+	 *
+	 * @param array<string, mixed> $plan The resolved plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}> The pairs.
+	 */
+	private function fragmentMemberships(array $plan): array {
+		$pairs = [];
 		foreach ($plan['fragments'] as $fragment) {
 			foreach ($fragment['groups'] as $group) {
 				foreach ((array) ($group['members'] ?? []) as $member) {
@@ -595,14 +706,26 @@ class ExampleSetPeople {
 			}
 		}
 
+		return $pairs;
+	}//end fragmentMemberships()
+
+	/**
+	 * The memberships the service accounts declare, as [gid, uid] pairs.
+	 *
+	 * @param array<string, mixed> $plan The resolved plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}> The pairs.
+	 */
+	private function serviceAccountMemberships(array $plan): array {
+		$pairs = [];
 		foreach ($this->serviceAccounts(plan: $plan) as $account) {
 			foreach ($account['groups'] as $gid) {
 				$pairs[] = [$gid, $account['uid']];
 			}
 		}
 
-		return array_values(array_unique($pairs, SORT_REGULAR));
-	}//end declaredMemberships()
+		return $pairs;
+	}//end serviceAccountMemberships()
 
 	/**
 	 * The recorded accounts, groups and memberships that are not on the instance.
@@ -614,6 +737,20 @@ class ExampleSetPeople {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function missing(array $record): array {
+		return array_merge(
+			$this->missingAccountsAndGroups(record: $record),
+			$this->missingMembershipsAndSubAdmins(record: $record)
+		);
+	}//end missing()
+
+	/**
+	 * The recorded accounts and groups that are not on the instance.
+	 *
+	 * @param array<string, mixed> $record The record as written.
+	 *
+	 * @return array<int, string> What is missing, accounts first.
+	 */
+	private function missingAccountsAndGroups(array $record): array {
 		$missing = [];
 		foreach (array_keys($record['users']) as $uid) {
 			if ($this->accounts->userExists(uid: $uid) === false) {
@@ -627,6 +764,18 @@ class ExampleSetPeople {
 			}
 		}
 
+		return $missing;
+	}//end missingAccountsAndGroups()
+
+	/**
+	 * The recorded memberships and sub-admin rights that are not on the instance.
+	 *
+	 * @param array<string, mixed> $record The record as written.
+	 *
+	 * @return array<int, string> What is missing, memberships first.
+	 */
+	private function missingMembershipsAndSubAdmins(array $record): array {
+		$missing = [];
 		foreach ($record['memberships'] as [$gid, $uid]) {
 			if ($this->accounts->inGroup(gid: $gid, uid: $uid) === false) {
 				$missing[] = 'membership '.$gid.' / '.$uid;
@@ -640,7 +789,7 @@ class ExampleSetPeople {
 		}
 
 		return $missing;
-	}//end missing()
+	}//end missingMembershipsAndSubAdmins()
 
 	/**
 	 * Every service account the fragments declare.

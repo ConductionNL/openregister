@@ -63,18 +63,10 @@ final class RegistryAnnotationValidator implements RegistryAnnotationValidatorIn
 
 		$annotation = $schema['x-openregister-registry'];
 		if (is_array($annotation) === false) {
-			return [
-				[
-					'code' => 'registry-malformed',
-					'message' => 'x-openregister-registry must be an object.',
-				],
-			];
+			return self::oneFinding(code: 'registry-malformed', message: 'x-openregister-registry must be an object.');
 		}
 
-		$properties = $schema['properties'] ?? [];
-		if (is_array($properties) === false) {
-			$properties = [];
-		}
+		$properties = self::propertiesOf(schema: $schema);
 
 		return array_merge(
 			$this->validateRegistryId(annotation: $annotation),
@@ -82,6 +74,39 @@ final class RegistryAnnotationValidator implements RegistryAnnotationValidatorIn
 			$this->validateOwned(annotation: $annotation, properties: $properties)
 		);
 	}//end validate()
+
+	/**
+	 * The schema's own properties, or none when they are not a map.
+	 *
+	 * @param array<string, mixed> $schema The schema definition.
+	 *
+	 * @return array<string, mixed> The properties.
+	 */
+	private static function propertiesOf(array $schema): array {
+		$properties = $schema['properties'] ?? [];
+		if (is_array($properties) === false) {
+			return [];
+		}
+
+		return $properties;
+	}//end propertiesOf()
+
+	/**
+	 * A finding list holding one finding.
+	 *
+	 * @param string $code    The finding code.
+	 * @param string $message The finding message.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private static function oneFinding(string $code, string $message): array {
+		return [
+			[
+				'code' => $code,
+				'message' => $message,
+			],
+		];
+	}//end oneFinding()
 
 	/**
 	 * Validate `x-openregister-registry.registry`.
@@ -115,27 +140,17 @@ final class RegistryAnnotationValidator implements RegistryAnnotationValidatorIn
 	private function validateIdentity(array $annotation, array $properties): array {
 		$identity = (string)($annotation['identity'] ?? '');
 		if ($identity === '') {
-			return [
-				[
-					'code' => 'registry-identity-missing',
-					'message' => 'x-openregister-registry.identity must be a non-empty string.',
-				],
-			];
+			return self::oneFinding(code: 'registry-identity-missing', message: 'x-openregister-registry.identity must be a non-empty string.');
 		}
 
 		if (array_key_exists($identity, $properties) === true) {
 			return [];
 		}
 
-		return [
-			[
-				'code' => 'registry-identity-undeclared',
-				'message' => sprintf(
-					'x-openregister-registry.identity "%s" is not declared in this schema\'s properties.',
-					$identity
-				),
-			],
-		];
+		return self::oneFinding(
+			code: 'registry-identity-undeclared',
+			message: sprintf('x-openregister-registry.identity "%s" is not declared in this schema\'s properties.', $identity)
+		);
 	}//end validateIdentity()
 
 	/**
@@ -150,35 +165,76 @@ final class RegistryAnnotationValidator implements RegistryAnnotationValidatorIn
 	private function validateOwned(array $annotation, array $properties): array {
 		$owned = $annotation['owned'] ?? null;
 		if (is_array($owned) === false || count($owned) === 0) {
-			return [
-				[
-					'code' => 'registry-owned-missing',
-					'message' => 'x-openregister-registry.owned must be a non-empty array of property names.',
-				],
-			];
+			return [self::ownedMissing()];
 		}
 
+		return self::ownedFindings(owned: $owned, properties: $properties);
+	}//end validateOwned()
+
+	/**
+	 * One finding per `owned` entry that is malformed or not declared, in list order.
+	 *
+	 * @param array<int|string, mixed> $owned      The non-empty `owned` list.
+	 * @param array<string, mixed>     $properties The schema's own properties.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private static function ownedFindings(array $owned, array $properties): array {
 		$errors = [];
 		foreach ($owned as $index => $property) {
 			if (is_string($property) === false || $property === '') {
-				$errors[] = [
-					'code' => 'registry-owned-malformed',
-					'message' => sprintf('x-openregister-registry.owned[%s] must be a non-empty string.', (string)$index),
-				];
+				$errors[] = self::ownedMalformed(index: (string)$index);
 				continue;
 			}
 
 			if (array_key_exists($property, $properties) === false) {
-				$errors[] = [
-					'code' => 'registry-owned-undeclared',
-					'message' => sprintf(
-						'x-openregister-registry.owned property "%s" is not declared in this schema\'s properties.',
-						$property
-					),
-				];
+				$errors[] = self::ownedUndeclared(property: $property);
 			}
 		}
 
 		return $errors;
-	}//end validateOwned()
+	}//end ownedFindings()
+
+	/**
+	 * The finding for a missing or empty `owned` list.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private static function ownedMissing(): array {
+		return [
+			'code' => 'registry-owned-missing',
+			'message' => 'x-openregister-registry.owned must be a non-empty array of property names.',
+		];
+	}//end ownedMissing()
+
+	/**
+	 * The finding for an `owned` entry that is not a non-empty string.
+	 *
+	 * @param string $index The entry's index in the list.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private static function ownedMalformed(string $index): array {
+		return [
+			'code' => 'registry-owned-malformed',
+			'message' => sprintf('x-openregister-registry.owned[%s] must be a non-empty string.', $index),
+		];
+	}//end ownedMalformed()
+
+	/**
+	 * The finding for an `owned` property the schema does not declare.
+	 *
+	 * @param string $property The property name.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private static function ownedUndeclared(string $property): array {
+		return [
+			'code' => 'registry-owned-undeclared',
+			'message' => sprintf(
+				'x-openregister-registry.owned property "%s" is not declared in this schema\'s properties.',
+				$property
+			),
+		];
+	}//end ownedUndeclared()
 }//end class

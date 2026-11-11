@@ -52,13 +52,10 @@ class DashboardControllerTest extends TestCase {
 		$this->groupManager->method('isAdmin')->willReturn(true);
 
 		$this->controller = new DashboardController(
-			'openregister',
 			$this->request,
 			new \OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices(
 				$this->dashboardService,
-				$this->logger,
-				$this->userSession,
-				$this->groupManager
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->logger)
 			)
 		);
 	}
@@ -72,13 +69,10 @@ class DashboardControllerTest extends TestCase {
 		$groupManager->method('isAdmin')->willReturn(false);
 
 		$controller = new DashboardController(
-			'openregister',
 			$this->request,
 			new \OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices(
 				$this->dashboardService,
-				$this->logger,
-				$session,
-				$groupManager
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $groupManager, $this->logger)
 			)
 		);
 
@@ -99,6 +93,8 @@ class DashboardControllerTest extends TestCase {
 	public function testPage(): void {
 		$result = $this->controller->page();
 		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertSame('index', $result->getTemplateName());
+		$this->assertSame('openregister', $result->getApp());
 	}
 
 	/**

@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibilityInterface;
@@ -50,27 +51,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 class ViewPresentationService {
 
 	/**
-	 * Schema mapper, used to resolve enum order for the groupByField.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Object service, used to run the existing paginated/faceted object query.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for enum/property discovery
@@ -83,18 +63,15 @@ class ViewPresentationService {
 	 * @return void
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		ObjectOperationsInterface $objectService,
-		LoggerInterface $logger,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED grouping property is refused, which is the safe
 		// direction.
 		private readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
 	) {
-		$this->schemaMapper = $schemaMapper;
-		$this->objectService = $objectService;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -125,6 +102,34 @@ class ViewPresentationService {
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
 	 */
 	public function getKanbanBoard(View $view, array $requestParams = []): array {
+		$board = new KanbanBoardRun(kanbanConfig: $this->kanbanConfig(view: $view), requestParams: $requestParams);
+		$query = $view->getQuery() ?? [];
+		$enum = $this->openKanbanGrouping(groupByField: $board->groupByField, query: $query);
+		$baseQuery = $this->buildBaseObjectQuery(query: $query);
+
+		$columnValues = $this->declaredColumnValues(columnOrder: $board->columnOrder, enum: $enum)
+			?? $this->discoverDistinctValues(groupByField: $board->groupByField, baseQuery: $baseQuery);
+
+		return [
+			'viewType' => 'kanban',
+			'groupByField' => $board->groupByField,
+			'columns' => $this->kanbanColumns(
+				board: $board,
+				columnQueries: $board->columnQueries(baseQuery: $baseQuery, columnValues: $columnValues)
+			),
+		];
+	}//end getKanbanBoard()
+
+	/**
+	 * Read a kanban view's config, refusing a view that is not a usable kanban board.
+	 *
+	 * @param View $view The view.
+	 *
+	 * @return array<string, mixed> The kanban config, with a non-empty string groupByField.
+	 *
+	 * @throws InvalidArgumentException If the view is not a kanban view or has no groupByField.
+	 */
+	private function kanbanConfig(View $view): array {
 		$presentation = $view->getPresentation();
 		$viewType = $presentation['viewType'] ?? 'table';
 		if ($viewType !== 'kanban') {
@@ -137,7 +142,21 @@ class ViewPresentationService {
 			throw new InvalidArgumentException('Kanban view is missing kanban.groupByField');
 		}
 
-		$query = $view->getQuery() ?? [];
+		return $kanbanConfig;
+	}//end kanbanConfig()
+
+	/**
+	 * Refuse a grouping the caller may not read, then scope the object service
+	 * to the board's register and schema.
+	 *
+	 * @param string               $groupByField The grouping property.
+	 * @param array<string, mixed> $query        The view's stored query.
+	 *
+	 * @return mixed The grouped property's `enum`, if any.
+	 *
+	 * @throws InvalidArgumentException If the query names no register or schema, or the grouping is not readable.
+	 */
+	private function openKanbanGrouping(string $groupByField, array $query): mixed {
 		$registerRef = $query['registers'][0] ?? null;
 		$schemaRef = $query['schemas'][0] ?? null;
 		if ($registerRef === null || $schemaRef === null) {
@@ -145,7 +164,29 @@ class ViewPresentationService {
 		}
 
 		$schema = $this->schemaMapper->find($schemaRef);
+		$this->assertMayGroupOn(schema: $schema, groupByField: $groupByField);
 
+		// Set register/schema context BEFORE any object-query call (including
+		// the enum/columnOrder-less fallback, which discovers distinct values
+		// via the existing facet machinery and therefore needs the same
+		// register/schema scoping as the per-column card queries).
+		$this->objectService->setRegister(register: $registerRef);
+		$this->objectService->setSchema(schema: $schemaRef);
+
+		return $schema->getProperties()[$groupByField]['enum'] ?? null;
+	}//end openKanbanGrouping()
+
+	/**
+	 * Refuse a board that groups on a property the caller may not read.
+	 *
+	 * @param Schema $schema       The board's schema.
+	 * @param string $groupByField The grouping property.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the caller may not see the property's values.
+	 */
+	private function assertMayGroupOn(Schema $schema, string $groupByField): void {
 		// 🔴 A COLUMN HEADING IS A VALUE. This board is one column per DISTINCT
 		// VALUE of `groupByField`, so a governed grouping property becomes a row
 		// of headings naming every value it holds, to anybody who may open the
@@ -160,66 +201,40 @@ class ViewPresentationService {
 				)
 			);
 		}
+	}//end assertMayGroupOn()
 
-		$properties = $schema->getProperties();
-
-		$columnOrder = $kanbanConfig['columnOrder'] ?? null;
-		if (is_array($columnOrder) === false) {
-			$columnOrder = null;
-		}
-
-		// Set register/schema context BEFORE any object-query call (including
-		// the enum/columnOrder-less fallback, which discovers distinct values
-		// via the existing facet machinery and therefore needs the same
-		// register/schema scoping as the per-column card queries below).
-		$this->objectService->setRegister(register: $registerRef);
-		$this->objectService->setSchema(schema: $schemaRef);
-
-		$baseQuery = $this->buildBaseObjectQuery(query: $query);
-
-		$columnValues = $this->deriveColumnValues(
-			properties: $properties,
-			groupByField: $groupByField,
-			columnOrder: $columnOrder,
-			baseQuery: $baseQuery
-		);
-
-		$limit = (int)($requestParams['_limit'] ?? 20);
-		$offset = (int)($requestParams['_offset'] ?? 0);
-
+	/**
+	 * Fetch one page of cards per column.
+	 *
+	 * @param KanbanBoardRun                   $board         The board being built.
+	 * @param array<int, array<string, mixed>> $columnQueries The paginated object query of each column.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function kanbanColumns(KanbanBoardRun $board, array $columnQueries): array {
 		$columns = [];
-		foreach ($columnValues as $columnValue) {
-			$columnQuery = $baseQuery;
-			$columnQuery[$groupByField] = $columnValue;
-			$columnQuery['_limit'] = $limit;
-			$columnQuery['_offset'] = $offset;
-
+		foreach ($columnQueries as $columnQuery) {
 			$result = $this->objectService->searchObjectsPaginated(query: $columnQuery);
 
 			$columns[] = [
-				'value' => $columnValue,
+				'value' => $columnQuery[$board->groupByField],
 				'cards' => $result['results'] ?? [],
 				'total' => $result['total'] ?? count($result['results'] ?? []),
-				'limit' => $limit,
-				'offset' => $offset,
+				'limit' => $board->limit,
+				'offset' => $board->offset,
 			];
-		}//end foreach
+		}
 
-		return [
-			'viewType' => 'kanban',
-			'groupByField' => $groupByField,
-			'columns' => $columns,
-		];
-	}//end getKanbanBoard()
+		return $columns;
+	}//end kanbanColumns()
 
 	/**
 	 * Return objects for a calendar view whose `dateField` falls within the
 	 * visible range, spanning to `endDateField` when configured
 	 * (REQ-VIEW-CAL-04).
 	 *
-	 * @param View $view The calendar view
-	 * @param string $rangeStart Inclusive range start (ISO 8601 date/datetime)
-	 * @param string $rangeEnd Inclusive range end (ISO 8601 date/datetime)
+	 * @param View          $view  The calendar view
+	 * @param CalendarRange $range The visible range, both ends inclusive
 	 *
 	 * @return array{viewType: string, dateField: string, endDateField: string|null,
 	 *     rangeStart: string, rangeEnd: string, objects: array<int, mixed>, total: int}
@@ -228,10 +243,10 @@ class ViewPresentationService {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
 	 */
-	public function getCalendarObjects(View $view, string $rangeStart, string $rangeEnd): array {
+	public function getCalendarObjects(View $view, CalendarRange $range): array {
 		$calendar = $this->calendarSpec(view: $view);
 		$baseQuery = $this->calendarBaseQuery(query: ($view->getQuery() ?? []));
-		$calendar += ['rangeStart' => $rangeStart, 'rangeEnd' => $rangeEnd];
+		$calendar += ['rangeStart' => $range->start, 'rangeEnd' => $range->end];
 
 		$objectsById = $this->mergeByIdentity(queries: $this->calendarQueries(baseQuery: $baseQuery, calendar: $calendar));
 
@@ -345,31 +360,28 @@ class ViewPresentationService {
 	}//end mergeByIdentity()
 
 	/**
-	 * Derive the ordered list of kanban column values.
+	 * The declared column values of a kanban board, or null when none are declared.
 	 *
-	 * Precedence: explicit `columnOrder` > schema enum order > distinct
-	 * observed values (discovered via the existing facet/object-query
-	 * machinery, never by loading the whole table).
+	 * Precedence: explicit `columnOrder` > schema enum order. Without either
+	 * the caller discovers the distinct observed values (via the existing
+	 * facet/object-query machinery, never by loading the whole table).
 	 *
-	 * @param array<string, mixed> $properties The schema's properties
-	 * @param string $groupByField The property grouped on
 	 * @param array|null $columnOrder Explicit column order, if configured
-	 * @param array<string, mixed> $baseQuery Base object query (filters/sort) to scope discovery
+	 * @param mixed      $enum        The grouped property's `enum`, if any
 	 *
-	 * @return array<int, mixed> The ordered column values
+	 * @return array<int, mixed>|null The ordered column values, or null when none are declared
 	 */
-	private function deriveColumnValues(array $properties, string $groupByField, ?array $columnOrder, array $baseQuery): array {
+	private function declaredColumnValues(?array $columnOrder, mixed $enum): ?array {
 		if ($columnOrder !== null && empty($columnOrder) === false) {
 			return array_values($columnOrder);
 		}
 
-		$enumValues = $properties[$groupByField]['enum'] ?? null;
-		if (is_array($enumValues) === true && empty($enumValues) === false) {
-			return array_values($enumValues);
+		if (is_array($enum) === true && empty($enum) === false) {
+			return array_values($enum);
 		}
 
-		return $this->discoverDistinctValues(groupByField: $groupByField, baseQuery: $baseQuery);
-	}//end deriveColumnValues()
+		return null;
+	}//end declaredColumnValues()
 
 	/**
 	 * Discover the distinct observed values of a field via the existing
@@ -474,7 +486,7 @@ class ViewPresentationService {
 			return (string) $id;
 		}
 
-		return md5(serialize($row));
+		return hash(algo: 'xxh128', data: serialize($row));
 	}//end rowIdentity()
 
 	/**

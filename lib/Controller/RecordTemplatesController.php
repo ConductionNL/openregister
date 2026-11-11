@@ -27,9 +27,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\RecordTemplatesControllerServices;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
+use OCA\OpenRegister\Service\RecordTemplate\TemplateListOptions;
+use OCA\OpenRegister\Service\RecordTemplate\TemplateChange;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStoreInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -53,22 +57,40 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 class RecordTemplatesController extends Controller {
 
 	/**
+	 * Decides and stores.
+	 *
+	 * @var RecordTemplateStoreInterface
+	 */
+	private readonly RecordTemplateStoreInterface $templates;
+
+	/**
+	 * Names the caller and their groups.
+	 *
+	 * @var ViewerReachResolverInterface
+	 */
+	private readonly ViewerReachResolverInterface $viewers;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest              $request   The request.
-	 * @param RecordTemplateStoreInterface $templates Decides and stores.
-	 * @param ViewerReachResolverInterface   $viewers   Names the caller and their groups.
-	 * @param LoggerInterface       $logger    Logger.
-	 *
-	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
+	 * @param IRequest                          $request  The request.
+	 * @param RecordTemplatesControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly RecordTemplateStoreInterface $templates,
-		private readonly ViewerReachResolverInterface $viewers,
-		private readonly LoggerInterface $logger,
+		RecordTemplatesControllerServices $services,
 	) {
-		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->templates = $services->templates;
+		$this->viewers = $services->viewers;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -85,8 +107,7 @@ class RecordTemplatesController extends Controller {
 			action: fn (ViewerReach $reach): array => $this->listed(
 				templates: $this->templates->listFor(
 					reach: $reach,
-					register: $this->filter(name: 'register'),
-					schema: $this->filter(name: 'schema')
+					options: new TemplateListOptions(register: $this->filter(name: 'register'), schema: $this->filter(name: 'schema'))
 				)
 			)
 		);
@@ -135,10 +156,8 @@ class RecordTemplatesController extends Controller {
 	public function update(string $id): JSONResponse {
 		return $this->answer(
 			action: fn (ViewerReach $reach): array => $this->templates->change(
-				uuid: $id,
-				data: $this->request->getParams(),
-				reach: $reach,
-				partial: false
+				change: new TemplateChange(uuid: $id, data: $this->request->getParams(), partial: false),
+				reach: $reach
 			)->jsonSerialize()
 		);
 	}//end update()
@@ -156,10 +175,8 @@ class RecordTemplatesController extends Controller {
 	public function patch(string $id): JSONResponse {
 		return $this->answer(
 			action: fn (ViewerReach $reach): array => $this->templates->change(
-				uuid: $id,
-				data: $this->request->getParams(),
-				reach: $reach,
-				partial: true
+				change: new TemplateChange(uuid: $id, data: $this->request->getParams(), partial: true),
+				reach: $reach
 			)->jsonSerialize()
 		);
 	}//end patch()

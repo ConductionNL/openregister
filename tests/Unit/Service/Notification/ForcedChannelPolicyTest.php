@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Notifications\Service\Notification\ForcedChannelPolicy;
+use OCA\OpenRegister\Notifications\Service\Notification\KindPreference;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientAudience;
 use PHPUnit\Framework\TestCase;
 
@@ -74,8 +75,8 @@ class ForcedChannelPolicyTest extends TestCase {
 
 	public function testAForcedChannelSurvivesAUserWhoSwitchedItOff(): void {
 		$decision = $this->policy->decide(
-			$this->resolved([], false),
-			['forcedChannels' => ['channels' => ['nc-notification'], 'reason' => 'Awb 4:3a verlangt een ontvangstbevestiging.']],
+			new KindPreference($this->resolved([], false),
+			['forcedChannels' => ['channels' => ['nc-notification'], 'reason' => 'Awb 4:3a verlangt een ontvangstbevestiging.']]),
 			RecipientAudience::Internal
 		);
 
@@ -88,8 +89,8 @@ class ForcedChannelPolicyTest extends TestCase {
 
 	public function testForcingAddsToThePreferenceRatherThanReplacingIt(): void {
 		$decision = $this->policy->decide(
-			$this->resolved(['email']),
-			['forcedChannels' => ['channels' => ['nc-notification'], 'reason' => 'proces']],
+			new KindPreference($this->resolved(['email']),
+			['forcedChannels' => ['channels' => ['nc-notification'], 'reason' => 'proces']]),
 			RecipientAudience::Internal
 		);
 
@@ -100,7 +101,7 @@ class ForcedChannelPolicyTest extends TestCase {
 	}//end testForcingAddsToThePreferenceRatherThanReplacingIt()
 
 	public function testAKindNobodyForcedIsLeftExactlyAsTheMergeResolvedIt(): void {
-		$decision = $this->policy->decide($this->resolved(['email']), [], RecipientAudience::Internal);
+		$decision = $this->policy->decide(new KindPreference($this->resolved(['email']), []), RecipientAudience::Internal);
 
 		$this->assertSame(['email'], $decision['channels']);
 		$this->assertFalse($decision['forced']);
@@ -116,8 +117,8 @@ class ForcedChannelPolicyTest extends TestCase {
 	 */
 	public function testAnInternalKindRefusedOutsideReturnsTheRefusalNotAnEmptyList(): void {
 		$decision = $this->policy->decide(
-			$this->resolved(['email']),
-			['internalOnly' => true],
+			new KindPreference($this->resolved(['email']),
+			['internalOnly' => true]),
 			RecipientAudience::External
 		);
 
@@ -143,11 +144,11 @@ class ForcedChannelPolicyTest extends TestCase {
 	 */
 	public function testAnAdministratorForcedChannelStillStopsAtTheOrganisationBoundary(): void {
 		$decision = $this->policy->decide(
-			$this->resolved([]),
+			new KindPreference($this->resolved([]),
 			[
 				'internalOnly' => true,
 				'forcedChannels' => ['channels' => ['email'], 'reason' => 'proces'],
-			],
+			]),
 			RecipientAudience::External
 		);
 
@@ -167,7 +168,7 @@ class ForcedChannelPolicyTest extends TestCase {
 	}//end testTheAudienceEnumKnowsWhichSideItIsOn()
 
 	public function testAKindThatSimplyHasNoChannelsCarriesNoRefusal(): void {
-		$decision = $this->policy->decide($this->resolved([]), [], RecipientAudience::Internal);
+		$decision = $this->policy->decide(new KindPreference($this->resolved([]), []), RecipientAudience::Internal);
 
 		// The control for the test above: same empty list, no refusal, and the
 		// two are told apart by the refusal alone.
@@ -178,8 +179,8 @@ class ForcedChannelPolicyTest extends TestCase {
 
 	public function testAnInternalKindNeverGoesOutOnAChannelThatCanLeave(): void {
 		$decision = $this->policy->decide(
-			$this->resolved(['email', 'nc-notification', 'webhook']),
-			['internalOnly' => true],
+			new KindPreference($this->resolved(['email', 'nc-notification', 'webhook']),
+			['internalOnly' => true]),
 			RecipientAudience::Internal
 		);
 
@@ -191,7 +192,7 @@ class ForcedChannelPolicyTest extends TestCase {
 	}//end testAnInternalKindNeverGoesOutOnAChannelThatCanLeave()
 
 	public function testAnInternalKindWithOnlyExternalChannelsSendsNothing(): void {
-		$decision = $this->policy->decide($this->resolved(['email']), ['internalOnly' => true], RecipientAudience::Internal);
+		$decision = $this->policy->decide(new KindPreference($this->resolved(['email']), ['internalOnly' => true]), RecipientAudience::Internal);
 
 		$this->assertSame([], $decision['channels']);
 		$this->assertFalse($decision['enabled']);

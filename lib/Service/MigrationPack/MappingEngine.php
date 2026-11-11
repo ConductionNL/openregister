@@ -82,13 +82,14 @@ class MappingEngine {
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-mapping-engine-must-apply-pack-transforms-per-row-and-never-leak-unresolved-references
 	 */
 	public function mapRow(array $pack, array $sourceRow, int $rowNumber): array {
-		$mapped = ['data' => ($pack['defaults'] ?? []), 'errors' => []];
+		$run = new RowMappingRun(sourceRow: $sourceRow, rowNumber: $rowNumber);
+		$run->mapped['data'] = ($pack['defaults'] ?? []);
 		foreach (($pack['fieldMappings'] ?? []) as $mapping) {
-			$mapped = $this->mergeField(mapped: $mapped, mapping: $mapping, sourceRow: $sourceRow, rowNumber: $rowNumber);
+			$this->mergeField(run: $run, mapping: $mapping);
 		}
 
-		$mapped['data'] = $this->applyIdStrategy(pack: $pack, sourceRow: $sourceRow, data: $mapped['data']);
-		return $mapped;
+		$this->applyIdStrategy(run: $run, pack: $pack);
+		return $run->mapped;
 	}//end mapRow()
 
 	/**
@@ -110,42 +111,39 @@ class MappingEngine {
 	 * Map one field mapping and merge the outcome into the row built so far:
 	 * a value under its target, or an error labelled with the row number.
 	 *
-	 * @param array{data: array<string, mixed>, errors: list<array<string, mixed>>} $mapped    The row so far.
-	 * @param mixed                                                                 $mapping   The field mapping.
-	 * @param array<string, mixed>                                                  $sourceRow The source row.
-	 * @param int                                                                   $rowNumber 1-based row number.
+	 * @param RowMappingRun $run     The row being mapped; its result so far is updated.
+	 * @param mixed         $mapping The field mapping.
 	 *
-	 * @return array{data: array<string, mixed>, errors: list<array<string, mixed>>} The row with the field merged.
+	 * @return void
 	 */
-	private function mergeField(array $mapped, mixed $mapping, array $sourceRow, int $rowNumber): array {
-		$field = $this->mapField(mapping: $mapping, sourceRow: $sourceRow);
+	private function mergeField(RowMappingRun $run, mixed $mapping): void {
+		$field = $this->mapField(run: $run, mapping: $mapping);
 		if (isset($field['message']) === true) {
-			$mapped['errors'][] = (['row' => $rowNumber] + $field);
-			return $mapped;
+			$run->mapped['errors'][] = (['row' => $run->rowNumber] + $field);
+			return;
 		}
 
 		if (array_key_exists('target', $field) === true) {
-			$mapped['data'][$field['target']] = $field['value'];
+			$run->mapped['data'][$field['target']] = $field['value'];
 		}
-
-		return $mapped;
 	}//end mergeField()
 
 	/**
 	 * Map one field mapping.
 	 *
-	 * @param mixed                $mapping   The field mapping.
-	 * @param array<string, mixed> $sourceRow The source row.
+	 * @param RowMappingRun $run     The row being mapped.
+	 * @param mixed         $mapping The field mapping.
 	 *
 	 * @return array<string, mixed> `[target, value]`, an error (`source, target, transform, message`), or `[]` when skipped.
 	 */
-	private function mapField(mixed $mapping, array $sourceRow): array {
-		$value = $this->transformer->resolveSource(row: $sourceRow, pointer: (string)($mapping['source'] ?? ''));
+	private function mapField(RowMappingRun $run, mixed $mapping): array {
+		$value = $this->transformer->resolveSource(row: $run->sourceRow, pointer: (string)($mapping['source'] ?? ''));
 		if ($this->isEmptyValue(value: $value) === true) {
-			return $this->mapEmptyField(mapping: $mapping, value: $value, sourceRow: $sourceRow);
+			return $this->mapEmptyField(run: $run, mapping: $mapping);
 		}
 
-		return $this->transformField(mapping: $mapping, value: $value, sourceRow: $sourceRow);
+		$request = new TransformRequest(value: $value, transform: ($mapping['transform'] ?? null), sourceRow: $run->sourceRow);
+		return $this->transformField(mapping: $mapping, request: $request);
 	}//end mapField()
 
 	/**
@@ -154,15 +152,15 @@ class MappingEngine {
 	 * A required field is an error. A `const` transform always applies,
 	 * regardless of the source value. Every other transform is skipped
 	 * (leaving any seeded default in place): there is nothing to map, and
-	 * nothing to error.
+	 * nothing to error. The `const` transform ignores its source value, so
+	 * the empty value is passed on as null.
 	 *
-	 * @param mixed                $mapping   The field mapping.
-	 * @param mixed                $value     The empty source value (null or '').
-	 * @param array<string, mixed> $sourceRow The source row.
+	 * @param RowMappingRun $run     The row being mapped.
+	 * @param mixed         $mapping The field mapping.
 	 *
 	 * @return array<string, mixed> As mapField().
 	 */
-	private function mapEmptyField(mixed $mapping, mixed $value, array $sourceRow): array {
+	private function mapEmptyField(RowMappingRun $run, mixed $mapping): array {
 		if (($mapping['required'] ?? false) === true) {
 			$source = (string)($mapping['source'] ?? '');
 			return $this->fieldError(mapping: $mapping, message: $this->l10n->t('Required source field "%s" is missing or empty', [$source]));
@@ -172,20 +170,20 @@ class MappingEngine {
 			return [];
 		}
 
-		return $this->transformField(mapping: $mapping, value: $value, sourceRow: $sourceRow);
+		$request = new TransformRequest(value: null, transform: $mapping['transform'], sourceRow: $run->sourceRow);
+		return $this->transformField(mapping: $mapping, request: $request);
 	}//end mapEmptyField()
 
 	/**
 	 * Run a field's transform and return its value or its error.
 	 *
-	 * @param mixed                $mapping   The field mapping.
-	 * @param mixed                $value     The resolved source value.
-	 * @param array<string, mixed> $sourceRow The source row.
+	 * @param mixed            $mapping The field mapping.
+	 * @param TransformRequest $request The value, the field's transform block and the source row.
 	 *
 	 * @return array<string, mixed> As mapField().
 	 */
-	private function transformField(mixed $mapping, mixed $value, array $sourceRow): array {
-		$result = $this->transformer->apply(value: $value, transform: ($mapping['transform'] ?? null), sourceRow: $sourceRow);
+	private function transformField(mixed $mapping, TransformRequest $request): array {
+		$result = $this->transformer->apply(request: $request);
 		if ($result['error'] !== null) {
 			return $this->fieldError(mapping: $mapping, message: $result['error']);
 		}
@@ -233,24 +231,21 @@ class MappingEngine {
 	 * the existing import pipeline treat the row as a create, exactly as it
 	 * already does for CSV/JSON rows with no id column.
 	 *
-	 * @param array<string, mixed> $pack      The pack definition.
-	 * @param array<string, mixed> $sourceRow The source row.
-	 * @param array<string, mixed> $data      The mapped target data so far.
+	 * @param RowMappingRun        $run  The row being mapped; its target data is updated.
+	 * @param array<string, mixed> $pack The pack definition.
 	 *
-	 * @return array<string, mixed> The (possibly id-augmented) target data.
+	 * @return void
 	 */
-	private function applyIdStrategy(array $pack, array $sourceRow, array $data): array {
+	private function applyIdStrategy(RowMappingRun $run, array $pack): void {
 		$pointer = $this->idPointer(pack: $pack);
 		if ($pointer === null) {
-			return $data;
+			return;
 		}
 
-		$idValue = $this->transformer->resolveSource(row: $sourceRow, pointer: $pointer);
+		$idValue = $this->transformer->resolveSource(row: $run->sourceRow, pointer: $pointer);
 		if ($this->isEmptyValue(value: $idValue) === false) {
-			$data['id'] = (string)$idValue;
+			$run->mapped['data']['id'] = (string)$idValue;
 		}
-
-		return $data;
 	}//end applyIdStrategy()
 
 	/**

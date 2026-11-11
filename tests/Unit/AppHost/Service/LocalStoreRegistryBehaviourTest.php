@@ -26,6 +26,7 @@ use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\LocalStoreRegistry;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -63,7 +64,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'results' => []],
-			$registry->read('store', 'item', [], 10)
+			$registry->read(new RegisterSchemaRef(register: 'store', schema: 'item'), ['_limit' => 10])
 		);
 	}//end testAReadWithoutAnObjectServiceIsUnreachable()
 
@@ -80,7 +81,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_OK, 'results' => []],
-			$registry->read('store', 'item', [], 10)
+			$registry->read(new RegisterSchemaRef(register: 'store', schema: 'item'), ['_limit' => 10])
 		);
 	}//end testANonArraySearchAnswerReadsAsEmpty()
 
@@ -97,7 +98,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_OK, 'results' => [['slug' => 'a']]],
-			$registry->read('store', 'item', [], 10)
+			$registry->read(new RegisterSchemaRef(register: 'store', schema: 'item'), ['_limit' => 10])
 		);
 	}//end testAnArraySearchAnswerIsReturned()
 
@@ -112,7 +113,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''],
-			$registry->write('store', 'item', ['slug' => 'demo'])
+			$registry->write(new RegisterSchemaRef(register: 'store', schema: 'item'), ['slug' => 'demo'])
 		);
 	}//end testAWriteWhoseLookupFailsAnswersTheLookupOutcome()
 
@@ -134,7 +135,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''],
-			$registry->write('store', 'item', ['slug' => 'demo'])
+			$registry->write(new RegisterSchemaRef(register: 'store', schema: 'item'), ['slug' => 'demo'])
 		);
 	}//end testAWriteWhoseServiceVanishesIsUnreachable()
 
@@ -160,7 +161,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''],
-			$registry->write('store', 'item', ['slug' => 'demo'])
+			$registry->write(new RegisterSchemaRef(register: 'store', schema: 'item'), ['slug' => 'demo'])
 		);
 	}//end testAFailedSaveIsUnreachable()
 
@@ -180,7 +181,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_OK, 'slug' => 'demo'],
-			$registry->write('store', 'item', ['slug' => 'demo'])
+			$registry->write(new RegisterSchemaRef(register: 'store', schema: 'item'), ['slug' => 'demo'])
 		);
 	}//end testASucceedingSaveIsOk()
 }//end class

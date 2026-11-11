@@ -28,6 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -41,18 +43,31 @@ use UnexpectedValueException;
  */
 abstract class MessagingNodeBase {
 	/**
+	 * Translations for palette text and refusals.
+	 *
+	 * @var IL10N
+	 */
+	protected readonly IL10N $l10n;
+
+	/**
+	 * For the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	protected readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowMessagingService $messaging The shared send pipeline.
-	 * @param IL10N                $l10n      Translations for palette text and refusals.
-	 * @param IURLGenerator        $urls      For the palette icon.
+	 * @param FlowMessagingService $messaging    The shared send pipeline.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 */
 	public function __construct(
 		protected readonly FlowMessagingService $messaging,
-		protected readonly IL10N $l10n,
-		protected readonly IURLGenerator $urls,
+		FlowNodePresentation $presentation,
 	) {
-
+		$this->l10n = $presentation->l10n;
+		$this->urls = $presentation->urls;
 	}//end __construct()
 
 	/**
@@ -76,15 +91,22 @@ abstract class MessagingNodeBase {
 	/**
 	 * Hand the items to FlowMessagingService on this node's channel.
 	 *
-	 * @param array $items   The items to send for.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param MessageSend $step The step configuration, the items to send for, run-level metadata and the step name.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
-	abstract protected function send(array $items, array $config, array $context): void;
+	abstract protected function send(MessageSend $step): void;
+
+	/**
+	 * The node type, which names the step in what it sends.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md
+	 */
+	abstract public function getId(): string;
 
 	/**
 	 * Available in both workflow scopes.
@@ -102,36 +124,49 @@ abstract class MessagingNodeBase {
 	/**
 	 * What a dry run would send, without sending it.
 	 *
-	 * @param array $items   The items a real run would send for.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array{summary: string, messages: array} The preview.
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
-	public function preview(array $items, array $config, array $context): array {
-		$messages = $this->messaging->previewMessages(channel: $this->channel(), config: $config, items: $items, context: $context);
+	public function preview(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+		return $this->previewOf(
+			messages: $this->messaging->preview(channel: $this->channel(), step: new MessageSend(config: $config, items: $items, context: $context))
+		);
+	}//end preview()
 
+	/**
+	 * The dry-run summary of the messages a run would send.
+	 *
+	 * @param array $messages The messages a real run would send.
+	 *
+	 * @return array{summary: string, messages: array} The preview.
+	 */
+	private function previewOf(array $messages): array {
 		return [
 			'summary' => sprintf('%s would send %d message(s)', $this->getDisplayName(), count($messages)),
 			'messages' => $messages,
 		];
-	}//end preview()
+	}//end previewOf()
 
 	/**
 	 * Send, then pass the items through unchanged.
 	 *
-	 * @param array $items   The input items.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The same items.
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		$this->send(items: $items, config: $config, context: $context);
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+		$this->send(step: new MessageSend(config: $config, items: $items, context: $context, stepName: $this->getId()));
 
 		return $items;
 	}//end execute()
@@ -169,33 +204,27 @@ abstract class MessagingNodeBase {
 	/**
 	 * One optional field of the config form.
 	 *
-	 * @param string $key   The config key the field writes.
-	 * @param string $label The translated label.
-	 * @param string $type  The input type: `text` or `textarea`.
-	 * @param string $help  The translated help text.
+	 * @param NodeFormField $field The config key, the translated label and help, and the input type.
 	 *
 	 * @return array{key: string, label: string, type: string, help: string} The field.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
 	 */
-	protected function formField(string $key, string $label, string $type, string $help): array {
-		return ['key' => $key, 'label' => $label, 'type' => $type, 'help' => $help];
+	protected function formField(NodeFormField $field): array {
+		return ['key' => $field->key, 'label' => $field->label, 'type' => $field->type, 'help' => $field->help];
 	}//end formField()
 
 	/**
 	 * One required field of the config form.
 	 *
-	 * @param string $key   The config key the field writes.
-	 * @param string $label The translated label.
-	 * @param string $type  The input type: `text` or `textarea`.
-	 * @param string $help  The translated help text.
+	 * @param NodeFormField $field The config key, the translated label and help, and the input type.
 	 *
 	 * @return array{key: string, label: string, type: string, help: string, required: true} The field.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
 	 */
-	protected function requiredField(string $key, string $label, string $type, string $help): array {
-		return $this->formField(key: $key, label: $label, type: $type, help: $help) + ['required' => true];
+	protected function requiredField(NodeFormField $field): array {
+		return $this->formField(field: $field) + ['required' => true];
 	}//end requiredField()
 
 	/**

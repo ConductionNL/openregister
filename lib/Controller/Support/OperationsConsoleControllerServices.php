@@ -38,11 +38,13 @@ final class OperationsConsoleControllerServices {
 	 * @param OperationsConsoleServiceInterface $console     The read model.
 	 * @param OperationsJobsServiceInterface    $jobsService The run history, run now and the schedule.
 	 * @param JobAlertServiceInterface          $alerts      The administered failure threshold.
+	 * @param ControllerSession                 $session     Names the administrator acting.
 	 */
 	public function __construct(
 		public readonly OperationsConsoleServiceInterface $console,
 		public readonly OperationsJobsServiceInterface $jobsService,
 		public readonly JobAlertServiceInterface $alerts,
+		public readonly ControllerSession $session,
 	) {
 	}//end __construct()
 }//end class

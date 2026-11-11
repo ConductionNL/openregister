@@ -29,7 +29,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -42,6 +44,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode
@@ -107,8 +110,7 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 		$this->node = new ObjectReadNode(
 			sources: new ObjectNodeSources(objects: $this->objects, registers: $this->registers, schemas: $this->schemas),
 			userManager: $users,
-			l10n: $l10n,
-			urls: $this->createMock(IURLGenerator::class)
+			presentation: new FlowNodePresentation(l10n: $l10n, urls: $this->createMock(IURLGenerator::class))
 		);
 	}//end setUp()
 
@@ -171,7 +173,7 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 	public function testAnEmptyBranchReadsNothingAndNeedsNoOwner(): void {
 		$this->objects->expects(self::never())->method('findAll');
 
-		self::assertSame([], $this->node->execute([], ['register' => '', 'schema' => ''], []));
+		self::assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: ['register' => '', 'schema' => ''], context: [])));
 	}//end testAnEmptyBranchReadsNothingAndNeedsNoOwner()
 
 	public function testFanOutEmitsOneItemPerObjectAndNoneForNoMatch(): void {
@@ -181,11 +183,11 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 			[]
 		);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['batch' => 1], binary: ['f' => ['name' => 'x']]), FlowItems::item(json: ['batch' => 2])],
-			$this->config(['fanOut' => true]),
-			['runAs' => 'alice']
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['batch' => 1], options: new FlowItemOptions(binary: ['f' => ['name' => 'x']])), FlowItems::item(json: ['batch' => 2])],
+			config: $this->config(['fanOut' => true]),
+			context: ['runAs' => 'alice']
+		));
 
 		self::assertCount(2, $out, 'one item per object of the first input; the second matched nothing and ends');
 		self::assertSame(['batch' => 1, 'id' => 'u-1', 'status' => 'stale', 'uuid' => 'u-1'], $out[0][FlowItems::JSON]);
@@ -197,9 +199,9 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 		$this->resolvable();
 		$this->finds([$this->entity('u-1', ['a' => 1])]);
 
-		$out = $this->node->execute([FlowItems::item(json: [])], $this->config(['output' => ' ', 'limit' => 0]), ['runAs' => 'alice']);
-		$this->node->execute([FlowItems::item(json: [])], $this->config(['limit' => 5000]), ['runAs' => 'alice']);
-		$this->node->execute([FlowItems::item(json: [])], $this->config(['limit' => 7]), ['runAs' => 'alice']);
+		$out = $this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(['output' => ' ', 'limit' => 0]), context: ['runAs' => 'alice']));
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(['limit' => 5000]), context: ['runAs' => 'alice']));
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(['limit' => 7]), context: ['runAs' => 'alice']));
 
 		self::assertSame([['id' => 'u-1', 'a' => 1, 'uuid' => 'u-1']], $out[0][FlowItems::JSON]['objects']);
 		self::assertSame([100, 1000, 7], array_column($this->queries, 'limit'));
@@ -211,7 +213,7 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 		$this->objects->method('findAll')->willThrowException($cause);
 
 		try {
-			$this->node->execute([FlowItems::item(json: [])], $this->config(), ['runAs' => 'alice']);
+			$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(), context: ['runAs' => 'alice']));
 			self::fail('A failed read must fail the step.');
 		} catch (RuntimeException $e) {
 			self::assertSame('The object-read step could not read from the register: database gone', $e->getMessage());
@@ -226,7 +228,7 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('The register "cases" could not be resolved.');
 
-		$this->node->execute([FlowItems::item(json: [])], $this->config(), ['runAs' => 'alice']);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(), context: ['runAs' => 'alice']));
 	}//end testAnUnresolvableRegisterIsNamed()
 
 	public function testANumericSchemaIsReadById(): void {
@@ -236,7 +238,7 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 		$this->objects->expects(self::once())->method('setSchema')->with($this->schema)->willReturnSelf();
 		$this->finds([]);
 
-		$out = $this->node->execute([FlowItems::item(json: [])], $this->config(['schema' => '2']), ['runAs' => 'alice']);
+		$out = $this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(['schema' => '2']), context: ['runAs' => 'alice']));
 
 		self::assertSame([], $out[0][FlowItems::JSON]['objects']);
 	}//end testANumericSchemaIsReadById()
@@ -249,7 +251,7 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('The schema "9" could not be resolved.');
 
-		$this->node->execute([FlowItems::item(json: [])], $this->config(['schema' => '9']), ['runAs' => 'alice']);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(['schema' => '9']), context: ['runAs' => 'alice']));
 	}//end testAnUnknownNumericSchemaIsNamed()
 	public function testAFilterRenderingToNothingIsRefusedBeforeTheRead(): void {
 		$this->resolvable();
@@ -258,18 +260,18 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage("The object-read step's filter could not be rendered: missing resolved to nothing on this item.");
 
-		$this->node->execute(
-			[FlowItems::item(json: ['status' => 'open'])],
-			$this->config(['filters' => ['status' => '{{ status }}', 'owner' => '{{ missing }}']]),
-			['runAs' => 'alice']
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['status' => 'open'])],
+			config: $this->config(['filters' => ['status' => '{{ status }}', 'owner' => '{{ missing }}']]),
+			context: ['runAs' => 'alice']
+		));
 	}//end testAFilterRenderingToNothingIsRefusedBeforeTheRead()
 
 	public function testRenderedFiltersReachTheQuery(): void {
 		$this->resolvable();
 		$this->finds([]);
 
-		$this->node->execute([FlowItems::item(json: ['status' => 'open'])], $this->config(['filters' => ['status' => '{{ status }}']]), ['runAs' => 'alice']);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: ['status' => 'open'])], config: $this->config(['filters' => ['status' => '{{ status }}']]), context: ['runAs' => 'alice']));
 
 		self::assertSame(['status' => 'open'], $this->queries[0]['filters']);
 	}//end testRenderedFiltersReachTheQuery()
@@ -283,6 +285,6 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 
 		$this->expectException(SchemaNotInRegisterException::class);
 
-		$this->node->execute([FlowItems::item(json: [])], $this->config(['schema' => 'foreign']), ['runAs' => 'alice']);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: $this->config(['schema' => 'foreign']), context: ['runAs' => 'alice']));
 	}//end testASchemaSlugOutsideTheRegisterIsRefusedNotResolvedGlobally()
 }//end class

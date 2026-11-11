@@ -18,7 +18,7 @@ final class FormLinksControllerFactory {
 	/**
 	 * The constructor arguments of FormLinksController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param FormLinkServiceInterface $formLinkService Constructor argument.
 	 * @param ObjectOperationsInterface $objectService Constructor argument.
@@ -36,7 +36,6 @@ final class FormLinksControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\FormLinksControllerServices(
 				formLinkService: $formLinkService,

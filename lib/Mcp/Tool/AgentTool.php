@@ -28,8 +28,6 @@ namespace OCA\OpenRegister\Mcp\Tool;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * AgentTool
@@ -43,26 +41,16 @@ use Psr\Log\LoggerInterface;
 class AgentTool extends AbstractTool implements ToolInterface {
 
 	/**
-	 * Agent mapper for database operations
+	 * Constructor
 	 *
-	 * @var AgentMapper
-	 */
-	private AgentMapper $agentMapper;
-
-	/**
-	 * AgentTool constructor
-	 *
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 * @param AgentMapper $agentMapper Agent mapper instance
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger instance
 	 */
 	public function __construct(
-		AgentMapper $agentMapper,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		ToolCallTrail $trail,
+		private readonly AgentMapper $agentMapper,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->agentMapper = $agentMapper;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**
@@ -219,28 +207,18 @@ class AgentTool extends AbstractTool implements ToolInterface {
 	/**
 	 * Create agent
 	 *
-	 * @param string $name Agent name
-	 * @param string|null $description Agent description
-	 * @param string|null $type Agent type
-	 * @param string|null $systemPrompt Agent system prompt
+	 * @param CreateAgentCommand $command The agent's name and optional description, type and system prompt
 	 *
 	 * @return (bool|mixed|string)[] Response with created agent
 	 *
 	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for agent creation
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createAgent(
-		string $name,
-		?string $description = null,
-		?string $type = null,
-		?string $systemPrompt = null,
-	): array {
+	public function createAgent(CreateAgentCommand $command): array {
 		return $this->insertAgent(
-			name: $name,
-			fields: ['setDescription' => $description, 'setType' => $type, 'setPrompt' => $systemPrompt]
+			name: $command->name,
+			fields: ['setDescription' => $command->description, 'setType' => $command->type, 'setPrompt' => $command->systemPrompt]
 		);
 	}//end createAgent()
 
@@ -311,28 +289,18 @@ class AgentTool extends AbstractTool implements ToolInterface {
 	/**
 	 * Update agent
 	 *
-	 * @param string $uuid Agent UUID
-	 * @param string|null $name New name
-	 * @param string|null $description New description
-	 * @param string|null $systemPrompt New system prompt
+	 * @param UpdateAgentCommand $command The agent's UUID and the fields to change; null keeps one
 	 *
 	 * @return (bool|mixed|string)[] Response with updated agent
 	 *
 	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for partial updates
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function updateAgent(
-		string $uuid,
-		?string $name = null,
-		?string $description = null,
-		?string $systemPrompt = null,
-	): array {
+	public function updateAgent(UpdateAgentCommand $command): array {
 		return $this->patchAgent(
-			uuid: $uuid,
-			fields: ['setName' => $name, 'setDescription' => $description, 'setPrompt' => $systemPrompt]
+			uuid: $command->uuid,
+			fields: ['setName' => $command->name, 'setDescription' => $command->description, 'setPrompt' => $command->systemPrompt]
 		);
 	}//end updateAgent()
 
@@ -348,43 +316,64 @@ class AgentTool extends AbstractTool implements ToolInterface {
 	 */
 	private function patchAgent(string $uuid, array $fields): array {
 		try {
-			$this->logger->info(
-				message: '[AgentTool] Updating agent',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
-			);
-
-			// Find agent (RBAC enforced in mapper).
-			$agent = $this->agentMapper->findByUuid(uuid: $uuid);
-
-			// Update fields.
-			foreach ($fields as $setter => $value) {
-				if ($value !== null) {
-					$agent->$setter($value);
-				}
-			}
-
-			// Save changes (RBAC enforced in mapper).
-			$agent = $this->agentMapper->update($agent);
-
-			return $this->formatSuccess(
-				data: $agent->jsonSerialize(),
-				message: 'Agent updated successfully.'
-			);
+			return $this->saveAgentPatch(uuid: $uuid, fields: $fields);
 		} catch (DoesNotExistException $e) {
 			return $this->formatError(message: "Agent with UUID '{$uuid}' not found.");
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[AgentTool] Failed to update agent',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logUpdateFailure(uuid: $uuid, error: $e);
 			return $this->formatError(message: 'Failed to update agent: ' . $e->getMessage());
 		}//end try
 	}//end patchAgent()
+
+	/**
+	 * Log a failed agent update.
+	 *
+	 * @param string     $uuid  The agent UUID.
+	 * @param \Exception $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logUpdateFailure(string $uuid, \Exception $error): void {
+		$this->logger->error(
+			message: '[AgentTool] Failed to update agent',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUpdateFailure()
+
+	/**
+	 * Load, patch and save one agent.
+	 *
+	 * @param string               $uuid   The agent UUID.
+	 * @param array<string, mixed> $fields Setter name → value; null values are left alone.
+	 *
+	 * @return array The formatted success response.
+	 *
+	 * @throws DoesNotExistException When no agent has that UUID.
+	 * @throws \Exception When loading or saving fails.
+	 */
+	private function saveAgentPatch(string $uuid, array $fields): array {
+		$this->logger->info(
+			message: '[AgentTool] Updating agent',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+		);
+
+		// Find agent (RBAC enforced in mapper).
+		$agent = $this->agentMapper->findByUuid(uuid: $uuid);
+		self::applySetters(entity: $agent, fields: $fields);
+
+		// Save changes (RBAC enforced in mapper).
+		$agent = $this->agentMapper->update($agent);
+
+		return $this->formatSuccess(
+			data: $agent->jsonSerialize(),
+			message: 'Agent updated successfully.'
+		);
+	}//end saveAgentPatch()
 
 	/**
 	 * Delete agent

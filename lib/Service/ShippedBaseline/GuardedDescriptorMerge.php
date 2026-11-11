@@ -112,10 +112,8 @@ class GuardedDescriptorMerge {
 	 * instance did, and one conflict on the block's root path when both did or
 	 * when they moved different keys. A decision names that root path.
 	 *
-	 * @param array<string, mixed> $baseline  The definition the app shipped.
-	 * @param array<string, mixed> $live      The definition the instance runs.
-	 * @param array<string, mixed> $incoming  The definition the app now ships.
-	 * @param array<int, string>   $decisions Paths an administrator has decided to take from upstream.
+	 * @param DescriptorRevisions $revisions What the app shipped, what the instance runs and what the app now ships.
+	 * @param array<int, string>  $decisions Paths an administrator has decided to take from upstream.
 	 *
 	 * @return array{
 	 *     merged: array<string, mixed>,
@@ -126,23 +124,6 @@ class GuardedDescriptorMerge {
 	 *     replacedLocal: array<int, string>
 	 * } The result. `replacedLocal` names the authorization blocks a decision
 	 *   took from upstream over a value the instance had changed.
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
-	 */
-	public function merge(array $baseline, array $live, array $incoming, array $decisions = []): array {
-		return $this->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming), decisions: $decisions);
-	}//end merge()
-
-	/**
-	 * What to write, what was applied, what was preserved and what conflicts.
-	 *
-	 * The merge {@see self::merge()} describes, of three revisions of one descriptor.
-	 *
-	 * @param DescriptorRevisions $revisions What the app shipped, what the instance runs and what the app now ships.
-	 * @param array<int, string>  $decisions Paths an administrator has decided to take from upstream.
-	 *
-	 * @return array<string, mixed> The result, shaped as {@see self::merge()} documents.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md

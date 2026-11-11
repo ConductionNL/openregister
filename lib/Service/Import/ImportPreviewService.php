@@ -13,7 +13,7 @@
  * The decisive steps are the import path's own. A saved column mapping is
  * applied by {@see \OCA\OpenRegister\Service\MigrationPack\MappingEngine},
  * the row becomes an object through
- * {@see \OCA\OpenRegister\Service\ImportService::transformCsvRowToObject()},
+ * {@see \OCA\OpenRegister\Service\ImportService::transformCsvRow()},
  * it is validated by {@see \OCA\OpenRegister\Service\Object\ValidateObject}
  * and written by {@see \OCA\OpenRegister\Service\ObjectService::saveObjects()}.
  * What this service adds is the step that was missing: the decision, taken
@@ -45,7 +45,9 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewRow;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
@@ -276,6 +278,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			return;
 		}
 
+		// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is a copy this app staged in the temp dir; only a staged path is removed.
 		if (is_file((string)$path) === true && unlink((string)$path) === false) {
 			$this->store->logger->warning(
 				message: '[ImportPreviewService] The staged source could not be removed',
@@ -310,8 +313,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 * written (D-1).
 	 *
 	 * @param ImportPreview $preview The previewed preview.
-	 * @param string|null $sourceHash The sha256 of the file being committed.
-	 * @param IUser|null $currentUser The actor.
+	 * @param ImportCommit  $commit  The sha256 of the file being committed, and the actor.
 	 *
 	 * @return ImportPreview The preview, in state committed.
 	 *
@@ -319,17 +321,42 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function commit(ImportPreview $preview, ?string $sourceHash, ?IUser $currentUser = null): ImportPreview {
-		$this->assertCommittable(preview: $preview, sourceHash: $sourceHash);
+	public function commit(ImportPreview $preview, ImportCommit $commit): ImportPreview {
+		$this->assertCommittable(preview: $preview, sourceHash: $commit->sourceHash);
+		return $this->applyDecisions(run: $this->commitRun(preview: $preview, currentUser: $commit->currentUser));
+	}//end commit()
 
+	/**
+	 * The run a commit writes: the preview, its resolved destination and the actor.
+	 *
+	 * @param ImportPreview $preview The previewed preview.
+	 * @param IUser|null $currentUser The actor.
+	 *
+	 * @return ImportRun The run.
+	 *
+	 * @throws InvalidArgumentException When the register or schema no longer resolves.
+	 */
+	private function commitRun(ImportPreview $preview, ?IUser $currentUser): ImportRun {
 		$register = $this->resolveRegister(value: $preview->getRegisterId());
 		$schema = $this->resolveSchema(value: $preview->getSchemaId());
-		$run = new ImportRun(
+		return new ImportRun(
 			preview: $preview,
 			destination: new ImportDestination(register: $register, schema: $schema),
 			currentUser: $currentUser
 		);
+	}//end commitRun()
 
+	/**
+	 * Write every decided row of a committable preview and record the outcome on it.
+	 *
+	 * @param ImportRun $run The preview being committed, its destination and actor.
+	 *
+	 * @return ImportPreview The preview, in state committed.
+	 *
+	 * @throws Throwable When the write fails; the preview is left failed.
+	 */
+	private function applyDecisions(ImportRun $run): ImportPreview {
+		$preview = $run->preview;
 		$preview->setState(ImportPreview::STATE_COMMITTING);
 		$this->store->previewMapper->persist(preview: $preview);
 
@@ -347,7 +374,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 			throw $exception;
 		}//end try
-	}//end commit()
+	}//end applyDecisions()
 
 	/**
 	 * Write every pending row, one batch at a time, flushing the counts after each.
@@ -609,11 +636,9 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	private function decideMappedRow(array $data, ImportRun $run): array {
 		$destination = $run->destination;
 		try {
-			$object = $this->matching->importService->transformCsvRowToObject(
+			$object = $this->matching->importService->transformCsvRow(
 				rowData: $data,
-				register: $destination->register,
-				schema: $destination->schema,
-				currentUser: null
+				target: new RowImportTarget(table: new RegisterSchema(register: $destination->register, schema: $destination->schema))
 			);
 		} catch (Throwable $exception) {
 			return ImportRowPayload::refusal(reason: 'The row could not be mapped onto the schema: '.$exception->getMessage());
@@ -645,11 +670,12 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		$preview = $run->preview;
 		$destination = $run->destination;
 		try {
-			$candidates = $this->matching->matchResolver->resolve(
-				object: $object,
-				matchKey: ($preview->getMatchKey() ?? []),
-				register: $destination->register,
-				schema: $destination->schema
+			$candidates = $this->matching->matchResolver->matchesOf(
+				query: new MatchQuery(
+					object: $object,
+					matchKey: ($preview->getMatchKey() ?? []),
+					table: new RegisterSchema(register: $destination->register, schema: $destination->schema)
+				)
 			);
 		} catch (MatchLookupFailedException $exception) {
 			return ImportRowPayload::refusal(reason: $exception->getMessage(), payload: $object);
@@ -709,7 +735,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 		foreach ($this->store->rowMapper->findByPreview(
 			previewId: (int)$preview->getId(),
-			decision: ImportPreviewRow::DECISION_REFUSE
+			query: ListQuery::unbounded(filters: ['decision' => ImportPreviewRow::DECISION_REFUSE])
 		) as $row) {
 			$refusals[] = [
 				'row' => $row->getSourceRow(),
@@ -752,7 +778,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		}
 
 		try {
-			return $this->targets->registerMapper->find($value);
+			return $this->targets->catalog->registers()->find($value);
 		} catch (DoesNotExistException $exception) {
 			throw new InvalidArgumentException('Register "'.(string)$value.'" was not found.', 0, $exception);
 		}
@@ -777,7 +803,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		}
 
 		try {
-			return $this->targets->schemaMapper->find($value);
+			return $this->targets->catalog->schemas()->find($value);
 		} catch (DoesNotExistException $exception) {
 			throw new InvalidArgumentException('Schema "'.(string)$value.'" was not found.', 0, $exception);
 		}

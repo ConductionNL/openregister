@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -166,7 +168,7 @@ class FilesSourceGoldenTest extends TestCase {
 				$this->log[] = ['log', $level, (string)$message];
 			}
 		};
-		return new FilesObjectSourceProvider($root, $session, $logger);
+		return new FilesObjectSourceProvider(rootFolder: $root, session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $session, logger: $logger));
 	}//end provider()
 
 	/**
@@ -211,20 +213,20 @@ class FilesSourceGoldenTest extends TestCase {
 		);
 
 		$scenarios = [
-			'find no user' => fn () => $this->provider(false, $this->home($tree()))->find($register, $schema, '1'),
-			'find user folder throws' => fn () => $this->provider(true, new RuntimeException('no home'))->find($register, $schema, '1'),
-			'find non-numeric id' => fn () => $this->provider(true, $this->home($tree()))->find($register, $schema, 'abc'),
-			'find getById throws' => fn () => $this->provider(true, $this->home([], new RuntimeException('lookup down')))->find($register, $schema, '7'),
-			'find folder then file' => fn () => $this->provider(true, $this->home([], [$this->folder('x', []), $this->file(3, 'odd.txt'), $this->file(4, 'c.txt')]))->find($register, $schema, '3.0'),
-			'find only folders' => fn () => $this->provider(true, $this->home([], [$this->folder('x', [])]))->find($register, $schema, '3'),
-			'find nothing' => fn () => $this->provider(true, $this->home([], []))->find($register, $schema, '3'),
-			'findAll no user' => fn () => $this->provider(false, $this->home($tree()))->findAll($register, $schema),
-			'findAll user folder throws' => fn () => $this->provider(true, new RuntimeException('no home'))->findAll($register, $schema),
-			'findAll tree' => fn () => $this->provider(true, $this->home($tree()))->findAll($register, $schema),
-			'findAll paged' => fn () => $this->provider(true, $this->home($tree()))->findAll($register, $schema, ['limit' => '2', 'offset' => 1]),
-			'findAll cap reached' => fn () => $this->provider(true, $this->home($capped(9998)))->findAll($register, $schema),
-			'findAll cap not reached' => fn () => $this->provider(true, $this->home($capped(9997)))->findAll($register, $schema),
-			'count' => fn () => $this->provider(true, $this->home($tree()))->count($register, $schema, ['limit' => 3]),
+			'find no user' => fn () => $this->provider(false, $this->home($tree()))->find(new SourcedTable(new RegisterSchema($register, $schema)), '1'),
+			'find user folder throws' => fn () => $this->provider(true, new RuntimeException('no home'))->find(new SourcedTable(new RegisterSchema($register, $schema)), '1'),
+			'find non-numeric id' => fn () => $this->provider(true, $this->home($tree()))->find(new SourcedTable(new RegisterSchema($register, $schema)), 'abc'),
+			'find getById throws' => fn () => $this->provider(true, $this->home([], new RuntimeException('lookup down')))->find(new SourcedTable(new RegisterSchema($register, $schema)), '7'),
+			'find folder then file' => fn () => $this->provider(true, $this->home([], [$this->folder('x', []), $this->file(3, 'odd.txt'), $this->file(4, 'c.txt')]))->find(new SourcedTable(new RegisterSchema($register, $schema)), '3.0'),
+			'find only folders' => fn () => $this->provider(true, $this->home([], [$this->folder('x', [])]))->find(new SourcedTable(new RegisterSchema($register, $schema)), '3'),
+			'find nothing' => fn () => $this->provider(true, $this->home([], []))->find(new SourcedTable(new RegisterSchema($register, $schema)), '3'),
+			'findAll no user' => fn () => $this->provider(false, $this->home($tree()))->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'findAll user folder throws' => fn () => $this->provider(true, new RuntimeException('no home'))->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'findAll tree' => fn () => $this->provider(true, $this->home($tree()))->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'findAll paged' => fn () => $this->provider(true, $this->home($tree()))->findAll(new SourcedTable(new RegisterSchema($register, $schema)), ['limit' => '2', 'offset' => 1]),
+			'findAll cap reached' => fn () => $this->provider(true, $this->home($capped(9998)))->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'findAll cap not reached' => fn () => $this->provider(true, $this->home($capped(9997)))->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'count' => fn () => $this->provider(true, $this->home($tree()))->count(new SourcedTable(new RegisterSchema($register, $schema)), ['limit' => 3]),
 		];
 
 		$recording = [];

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace Unit\Exception;
 
 use Exception;
+use OCA\OpenRegister\Service\Oas\OasIssue;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use PHPUnit\Framework\TestCase;
@@ -69,10 +70,12 @@ class OasValidationExceptionTest extends TestCase
     {
         $report = new OasValidationReport();
         $report->addError(
-            path: 'servers[0].url',
-            message: 'relative URL',
-            code: OasValidationReport::CODE_RELATIVE_SERVER_URL,
-        );
+            issue: new OasIssue(
+            	path: 'servers[0].url',
+            	message: 'relative URL',
+            	code: OasValidationReport::CODE_RELATIVE_SERVER_URL
+            )
+           );
 
         $e = new OasValidationException(message: 'msg', report: $report);
 

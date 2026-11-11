@@ -22,6 +22,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\ObjectAction\ActionElevation;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -353,23 +354,17 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 			'no rbac'      => $this->repeats($world, array_merge($ask, ['rbac' => false])),
 			'system'       => SystemOperationContext::run(fn (): array => $this->repeats($world, $ask)),
 			'no schema id' => $this->repeats($world, array_merge($ask, ['no schema id' => true])),
-			'elevated'     => ObjectActionElevationScope::run('a', 'alice', $entry, fn (): array => $this->repeats($world, $ask)),
+			'elevated'     => ObjectActionElevationScope::run(new ActionElevation('a', 'alice', $entry), fn (): array => $this->repeats($world, $ask)),
 			'elevated by register' => ObjectActionElevationScope::run(
-				'a',
-				'alice',
-				$entry,
+				new ActionElevation('a', 'alice', $entry),
 				fn (): array => $this->repeats($world, array_merge($ask, ['object' => 'none', 'register' => '3']))
 			),
 			'elevated deny' => ObjectActionElevationScope::run(
-				'a',
-				'alice',
-				$entry,
+				new ActionElevation('a', 'alice', $entry),
 				fn (): array => $this->repeats($world, array_merge($ask, ['block' => ['update' => ['editors'], 'deny' => ['update' => ['editors']]]]))
 			),
 			'elevated other register' => ObjectActionElevationScope::run(
-				'a',
-				'alice',
-				$entry,
+				new ActionElevation('a', 'alice', $entry),
 				fn (): array => $this->repeats($world, array_merge($ask, ['object' => 'none', 'register' => '4']))
 			),
 		];

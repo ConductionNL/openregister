@@ -64,6 +64,16 @@ class PackDefinitionValidator {
 	public const ALLOWED_ID_STRATEGY_TYPES = ['sourceField', 'generate'];
 
 	/**
+	 * The allow-listed fields, as named in a "must be one of" finding, and their allowed values.
+	 *
+	 * @var array<string, string[]>
+	 */
+	private const ALLOW_LISTS = [
+		'"sourceFormat"' => self::ALLOWED_SOURCE_FORMATS,
+		'idStrategy.type' => self::ALLOWED_ID_STRATEGY_TYPES,
+	];
+
+	/**
 	 * Validator for the `transform` block of a field mapping.
 	 *
 	 * @var PackTransformValidator
@@ -172,7 +182,7 @@ class PackDefinitionValidator {
 	private function validateSourceFormat(array $definition): array {
 		$format = $definition['sourceFormat'] ?? null;
 		if (in_array($format, self::ALLOWED_SOURCE_FORMATS, true) === false) {
-			return [$this->notOneOf(label: '"sourceFormat"', allowed: self::ALLOWED_SOURCE_FORMATS, got: $format)];
+			return [$this->notOneOf(label: '"sourceFormat"', got: $format)];
 		}
 
 		return [];
@@ -235,29 +245,30 @@ class PackDefinitionValidator {
 		}
 
 		return array_merge(
-			$this->validateMappingString(mapping: $mapping, key: 'source', number: $number),
-			$this->validateMappingString(mapping: $mapping, key: 'target', number: $number),
+			$this->validateMappingStrings(mapping: $mapping, number: $number),
 			$this->validateMappingRequired(mapping: $mapping, number: $number),
 			$this->validateMappingTransform(mapping: $mapping, number: $number)
 		);
 	}//end validateMapping()
 
 	/**
-	 * Validate a required non-empty string field of a mapping.
+	 * Validate the required non-empty string fields of a mapping, `source` then `target`.
 	 *
 	 * @param array<string, mixed> $mapping The mapping entry.
-	 * @param string               $key     The field name (`source` or `target`).
 	 * @param int                  $number  The mapping's position counted from 1.
 	 *
 	 * @return string[]
 	 */
-	private function validateMappingString(array $mapping, string $key, int $number): array {
-		if ($this->isNonEmptyString(value: $mapping[$key] ?? null) === false) {
-			return [$this->l10n->t('Mapping row %1$s: %2$s is required and must be a non-empty string', [$number, $key])];
+	private function validateMappingStrings(array $mapping, int $number): array {
+		$errors = [];
+		foreach (['source', 'target'] as $key) {
+			if ($this->isNonEmptyString(value: $mapping[$key] ?? null) === false) {
+				$errors[] = $this->l10n->t('Mapping row %1$s: %2$s is required and must be a non-empty string', [$number, $key]);
+			}
 		}
 
-		return [];
-	}//end validateMappingString()
+		return $errors;
+	}//end validateMappingStrings()
 
 	/**
 	 * Validate a mapping's optional `required` flag.
@@ -348,7 +359,7 @@ class PackDefinitionValidator {
 
 		$type = $idStrategy['type'] ?? null;
 		if (in_array($type, self::ALLOWED_ID_STRATEGY_TYPES, true) === false) {
-			return [$this->notOneOf(label: 'idStrategy.type', allowed: self::ALLOWED_ID_STRATEGY_TYPES, got: $type)];
+			return [$this->notOneOf(label: 'idStrategy.type', got: $type)];
 		}
 
 		return $this->validateIdStrategyField(idStrategy: $idStrategy);
@@ -372,16 +383,17 @@ class PackDefinitionValidator {
 	/**
 	 * The "must be one of" finding shared by every allow-listed field.
 	 *
-	 * @param string   $label   The field as named in the message.
-	 * @param string[] $allowed The allowed values.
-	 * @param mixed    $got     The value found.
+	 * The allowed values come from {@see self::ALLOW_LISTS} under the same label.
+	 *
+	 * @param string $label The field as named in the message; a key of ALLOW_LISTS.
+	 * @param mixed  $got   The value found.
 	 *
 	 * @return string The translated finding.
 	 */
-	private function notOneOf(string $label, array $allowed, mixed $got): string {
+	private function notOneOf(string $label, mixed $got): string {
 		return $this->l10n->t(
 			'%1$s must be one of: %2$s (got %3$s)',
-			[$label, implode(', ', $allowed), var_export($got, true)]
+			[$label, implode(', ', self::ALLOW_LISTS[$label]), var_export($got, true)]
 		);
 	}//end notOneOf()
 

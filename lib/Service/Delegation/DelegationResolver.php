@@ -80,22 +80,17 @@ class DelegationResolver {
 	}//end __construct()
 
 	/**
-	 * May `$principal` act as `$actingAs` at `$now`?
+	 * May the request's principal act as its `actingAs` at its moment, for its scope?
 	 *
-	 * @param string   $principal The uid that would act.
-	 * @param string   $actingAs  The uid whose rights would be used.
-	 * @param DateTime $now       The moment to judge against.
-	 * @param array    $scope     The scope the work needs.
+	 * @param DelegationRequest $request Who would act as whom, for what scope, at which moment.
 	 *
 	 * @return DelegationVerdict The verdict, carrying its reason.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function resolve(string $principal, string $actingAs, DateTime $now, array $scope = []): DelegationVerdict {
-		$principal = trim($principal);
-		$actingAs = trim($actingAs);
-
-		if ($principal === '' || $actingAs === '') {
+	public function resolve(DelegationRequest $request): DelegationVerdict {
+		$trimmed = $this->trimmed(request: $request);
+		if ($trimmed->principal === '' || $trimmed->actingAs === '') {
 			return DelegationVerdict::refused(
 				reason: DelegationVerdict::REASON_UNNAMED,
 				detail: 'A delegation needs both a principal and an identity to act as.'
@@ -103,12 +98,76 @@ class DelegationResolver {
 		}
 
 		// Self short-circuits BEFORE the store. See the class docblock.
-		if ($principal === $actingAs) {
+		if ($trimmed->principal === $trimmed->actingAs) {
 			return DelegationVerdict::self();
 		}
 
+		return $this->resolveFromStore(request: $trimmed);
+	}//end resolve()
+
+	/**
+	 * The request with both parties trimmed.
+	 *
+	 * @param DelegationRequest $request The request as asked.
+	 *
+	 * @return DelegationRequest The same request, its parties trimmed.
+	 */
+	private function trimmed(DelegationRequest $request): DelegationRequest {
+		return new DelegationRequest(
+			principal: trim($request->principal),
+			actingAs: trim($request->actingAs),
+			scope: $request->scope,
+			now: $request->now
+		);
+	}//end trimmed()
+
+	/**
+	 * Judge a named, non-self request against the grants the store holds for it.
+	 *
+	 * @param DelegationRequest $request The trimmed request.
+	 *
+	 * @return DelegationVerdict The verdict.
+	 */
+	private function resolveFromStore(DelegationRequest $request): DelegationVerdict {
+		$candidates = $this->findCandidates(request: $request);
+		if ($candidates === null) {
+			return DelegationVerdict::refused(
+				reason: DelegationVerdict::REASON_UNREADABLE,
+				detail: 'The delegation store could not be read, so the delegation is refused.'
+			);
+		}
+
+		if ($candidates === []) {
+			return $this->noGrant(request: $request);
+		}
+
+		return $this->judge(candidates: $candidates, request: $request);
+	}//end resolveFromStore()
+
+	/**
+	 * The refusal for parties between whom the store holds no grant at all.
+	 *
+	 * @param DelegationRequest $request The trimmed request.
+	 *
+	 * @return DelegationVerdict The refusal.
+	 */
+	private function noGrant(DelegationRequest $request): DelegationVerdict {
+		return DelegationVerdict::refused(
+			reason: DelegationVerdict::REASON_NONE,
+			detail: sprintf('"%s" holds no grant to act as "%s".', $request->principal, $request->actingAs)
+		);
+	}//end noGrant()
+
+	/**
+	 * The grants stored between the request's parties, or null when the store cannot be read.
+	 *
+	 * @param DelegationRequest $request The trimmed request.
+	 *
+	 * @return array<int, DelegationGrant>|null The candidates, or null.
+	 */
+	private function findCandidates(DelegationRequest $request): ?array {
 		try {
-			$candidates = $this->grants->findFor(principal: $principal, actingAs: $actingAs);
+			return $this->grants->findFor(principal: $request->principal, actingAs: $request->actingAs);
 		} catch (Throwable $e) {
 			// 🔴 Fail CLOSED. A store that cannot be read is not a store that
 			// says yes. The alternative — treating an unreadable grant table as
@@ -117,29 +176,12 @@ class DelegationResolver {
 			// never-injected organisation service), and it fails silently.
 			$this->logger->error(
 				message: '[DelegationResolver] Could not read the grant store; refusing: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'principal' => $principal, 'actingAs' => $actingAs]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'principal' => $request->principal, 'actingAs' => $request->actingAs]
 			);
 
-			return DelegationVerdict::refused(
-				reason: DelegationVerdict::REASON_UNREADABLE,
-				detail: 'The delegation store could not be read, so the delegation is refused.'
-			);
+			return null;
 		}//end try
-
-		if ($candidates === []) {
-			return DelegationVerdict::refused(
-				reason: DelegationVerdict::REASON_NONE,
-				detail: sprintf('"%s" holds no grant to act as "%s".', $principal, $actingAs)
-			);
-		}
-
-		return $this->judge(
-			candidates: $candidates,
-			now: $now,
-			scope: $scope,
-			refusal: sprintf('"%s" holds no live grant to act as "%s".', $principal, $actingAs)
-		);
-	}//end resolve()
+	}//end findCandidates()
 
 	/**
 	 * Pick the verdict the candidate set warrants.
@@ -150,41 +192,57 @@ class DelegationResolver {
 	 * is a different conversation from "you asked and were told no".
 	 *
 	 * @param array<int, DelegationGrant> $candidates The candidate grants.
-	 * @param DateTime                    $now        The moment to judge against.
-	 * @param array                       $scope      The scope needed.
-	 * @param string                      $refusal    The detail a refusal carries.
+	 * @param DelegationRequest           $request    The trimmed request: its parties, moment and scope.
 	 *
 	 * @return DelegationVerdict The verdict.
 	 */
-	private function judge(
-		array $candidates,
-		DateTime $now,
-		array $scope,
-		string $refusal,
-	): DelegationVerdict {
+	private function judge(array $candidates, DelegationRequest $request): DelegationVerdict {
 		$nearest = DelegationVerdict::REASON_NONE;
 
 		foreach ($candidates as $grant) {
-			if ($grant->isLiveAt($now) === true && $this->covers(grant: $grant, scope: $scope) === true) {
+			if ($grant->isLiveAt($request->now) === true && $this->covers(grant: $grant, scope: $request->scope) === true) {
 				return DelegationVerdict::granted($grant);
 			}
 
-			$nearest = $this->nearer(current: $nearest, candidate: $this->missReason(grant: $grant, now: $now, scope: $scope));
+			$nearest = $this->nearer(current: $nearest, candidate: $this->missReason(grant: $grant, request: $request));
 		}
 
-		return DelegationVerdict::refused(reason: $nearest, detail: $refusal);
+		return DelegationVerdict::refused(
+			reason: $nearest,
+			detail: sprintf('"%s" holds no live grant to act as "%s".', $request->principal, $request->actingAs)
+		);
 	}//end judge()
 
 	/**
 	 * Why this particular grant did not permit the work.
 	 *
-	 * @param DelegationGrant $grant The grant.
-	 * @param DateTime        $now   The moment.
-	 * @param array           $scope The scope needed.
+	 * @param DelegationGrant   $grant   The grant.
+	 * @param DelegationRequest $request The request: its moment and the scope needed.
 	 *
 	 * @return string One of DelegationVerdict's reason constants.
 	 */
-	private function missReason(DelegationGrant $grant, DateTime $now, array $scope): string {
+	private function missReason(DelegationGrant $grant, DelegationRequest $request): string {
+		$statusReason = $this->statusMissReason(grant: $grant, now: $request->now);
+		if ($statusReason !== null) {
+			return $statusReason;
+		}
+
+		if ($grant->isLiveAt($request->now) === true && $this->covers(grant: $grant, scope: $request->scope) === false) {
+			return DelegationVerdict::REASON_OUT_OF_SCOPE;
+		}
+
+		return DelegationVerdict::REASON_NONE;
+	}//end missReason()
+
+	/**
+	 * The miss reason a grant's own status gives, or null when its status does not explain the miss.
+	 *
+	 * @param DelegationGrant $grant The grant.
+	 * @param DateTime        $now   The moment judged at.
+	 *
+	 * @return string|null One of DelegationVerdict's reason constants, or null.
+	 */
+	private function statusMissReason(DelegationGrant $grant, DateTime $now): ?string {
 		if ($grant->getStatus() === DelegationGrant::STATUS_DENIED) {
 			return DelegationVerdict::REASON_DENIED;
 		}
@@ -197,21 +255,27 @@ class DelegationResolver {
 			return DelegationVerdict::REASON_EXPIRED;
 		}
 
-		if (in_array(
-			$grant->getStatus(),
-			[DelegationGrant::STATUS_REQUESTED, DelegationGrant::STATUS_PENDING],
-			true
-		) === true
-		) {
+		if ($this->awaitsAnswer(grant: $grant) === true) {
 			return DelegationVerdict::REASON_PENDING;
 		}
 
-		if ($grant->isLiveAt($now) === true && $this->covers(grant: $grant, scope: $scope) === false) {
-			return DelegationVerdict::REASON_OUT_OF_SCOPE;
-		}
+		return null;
+	}//end statusMissReason()
 
-		return DelegationVerdict::REASON_NONE;
-	}//end missReason()
+	/**
+	 * Whether the grant is a request still waiting for its answer.
+	 *
+	 * @param DelegationGrant $grant The grant.
+	 *
+	 * @return boolean Whether it is requested or pending.
+	 */
+	private function awaitsAnswer(DelegationGrant $grant): bool {
+		return in_array(
+			$grant->getStatus(),
+			[DelegationGrant::STATUS_REQUESTED, DelegationGrant::STATUS_PENDING],
+			true
+		);
+	}//end awaitsAnswer()
 
 	/**
 	 * The more informative of two miss reasons.
@@ -268,24 +332,44 @@ class DelegationResolver {
 			return false;
 		}
 
+		return $this->coversEachKey(granted: $granted, scope: $scope);
+	}//end covers()
+
+	/**
+	 * Whether a non-empty granted scope covers every key the work needs.
+	 *
+	 * @param array $granted The grant's scope.
+	 * @param array $scope   The scope needed.
+	 *
+	 * @return boolean Whether every needed key is granted and covered.
+	 */
+	private function coversEachKey(array $granted, array $scope): bool {
 		foreach ($scope as $key => $needed) {
-			if (array_key_exists($key, $granted) === false) {
-				return false;
-			}
-
-			if (is_array($needed) === true && is_array($granted[$key]) === true) {
-				if (array_diff($needed, $granted[$key]) !== []) {
-					return false;
-				}
-
-				continue;
-			}
-
-			if ($granted[$key] !== $needed) {
+			if (array_key_exists($key, $granted) === false
+				|| $this->coversValue(granted: $granted[$key], needed: $needed) === false
+			) {
 				return false;
 			}
 		}
 
 		return true;
-	}//end covers()
+	}//end coversEachKey()
+
+	/**
+	 * Whether one granted scope value covers the value the work needs.
+	 *
+	 * Two lists cover when every needed member is granted; anything else must match exactly.
+	 *
+	 * @param mixed $granted The granted value for a scope key.
+	 * @param mixed $needed  The needed value for that key.
+	 *
+	 * @return boolean Whether it covers.
+	 */
+	private function coversValue(mixed $granted, mixed $needed): bool {
+		if (is_array($needed) === true && is_array($granted) === true) {
+			return array_diff($needed, $granted) === [];
+		}
+
+		return $granted === $needed;
+	}//end coversValue()
 }//end class

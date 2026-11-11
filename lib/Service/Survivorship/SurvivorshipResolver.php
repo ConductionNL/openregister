@@ -100,6 +100,20 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 		SurvivorshipTrustLookup $trust,
 		mixed $overrides = null,
 	): array {
+		return $this->resolve(request: new GoldenRecordRequest(sourceRecords: $sourceRecords, config: $config, trust: $trust, overrides: $overrides));
+	}//end resolveGoldenRecord()
+
+	/**
+	 * Resolve the golden record for one request; what {@see self::resolveGoldenRecord()} describes.
+	 *
+	 * @param GoldenRecordRequest $request The source records, annotation, trust lookup and overrides.
+	 *
+	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
+	 *
+	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
+	 */
+	public function resolve(GoldenRecordRequest $request): array {
+		$config = $request->config;
 		$policy = new SurvivorshipTierPolicy(
 			tierOrder: $this->tierOrder(config: $config),
 			defaultTier: (string)($config['defaultTier'] ?? self::DEFAULT_TIER),
@@ -107,14 +121,14 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 			anchorField: (string)($config['freshnessAnchorField'] ?? '')
 		);
 
-		$run = new SurvivorshipRun(policy: $policy, trust: $trust);
+		$run = new SurvivorshipRun(policy: $policy, trust: $request->trust);
 
-		$candidates  = $this->collectCandidates(sourceRecords: $sourceRecords, run: $run);
-		$overrideMap = $this->normaliseOverrides(overrides: $overrides);
+		$candidates  = $this->collectCandidates(sourceRecords: $request->sourceRecords, run: $run);
+		$overrideMap = $this->normaliseOverrides(overrides: $request->overrides);
 		$result      = $this->tierWinners(candidates: $candidates, run: $run);
 
 		return $this->withOverrides(result: $result, overrideMap: $overrideMap);
-	}//end resolveGoldenRecord()
+	}//end resolve()
 
 	/**
 	 * The golden record and provenance the tier selection alone gives.
@@ -127,29 +141,35 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
 	 */
 	private function tierWinners(array $candidates, SurvivorshipRun $run): array {
-		$goldenRecord = [];
-		$provenance   = [];
-
+		$provenance = [];
 		foreach ($candidates as $attribute => $options) {
 			$winner = $this->pickWinner(options: $options, run: $run);
-			if ($winner === null) {
-				continue;
+			if ($winner !== null) {
+				$provenance[$attribute] = self::provenanceOf(winner: $winner);
 			}
-
-			$goldenRecord[$attribute] = $winner['value'];
-			$provenance[$attribute]   = [
-				'value' => $winner['value'],
-				'sourceSystem' => $winner['sourceSystem'],
-				'trustTier' => $winner['trustTier'],
-				'lastUpdated' => $winner['lastUpdated'],
-			];
 		}
 
 		return [
-			'goldenRecord' => $goldenRecord,
+			'goldenRecord' => array_map(static fn (array $entry): mixed => $entry['value'], $provenance),
 			'attributeProvenance' => $provenance,
 		];
 	}//end tierWinners()
+
+	/**
+	 * The provenance an attribute's winning candidate records.
+	 *
+	 * @param array<string, mixed> $winner The winning candidate.
+	 *
+	 * @return array{value: mixed, sourceSystem: mixed, trustTier: mixed, lastUpdated: mixed} The provenance.
+	 */
+	private static function provenanceOf(array $winner): array {
+		return [
+			'value' => $winner['value'],
+			'sourceSystem' => $winner['sourceSystem'],
+			'trustTier' => $winner['trustTier'],
+			'lastUpdated' => $winner['lastUpdated'],
+		];
+	}//end provenanceOf()
 
 	/**
 	 * The result with every override applied over the tier-selected values.
@@ -344,7 +364,7 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 			}
 
 			$attribute = (string)$attribute;
-			$tier      = $this->effectiveTier(attribute: $attribute, source: $source, run: $run);
+			$tier      = $this->effectiveTier(claim: new AttributeClaim(attribute: $attribute, source: $source), run: $run);
 			if ($tier === $run->policy->discardTier) {
 				continue;
 			}
@@ -397,28 +417,27 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 			$anchorValue = ($record[$anchorField] ?? null);
 		}
 
-		return $this->parseDate(value: $anchorValue);
+		return SurvivorshipDate::parse(value: $anchorValue);
 	}//end recordAnchor()
 
 	/**
 	 * The tier one source's value of one attribute competes at, after freshness decay.
 	 *
-	 * @param string             $attribute The attribute.
-	 * @param SurvivorshipSource $source    The record's source system and freshness anchor.
-	 * @param SurvivorshipRun    $run       The run's tiers and trust lookup.
+	 * @param AttributeClaim  $claim The attribute and the source supplying it.
+	 * @param SurvivorshipRun $run   The run's tiers and trust lookup.
 	 *
 	 * @return string The effective tier.
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
 	 */
-	private function effectiveTier(string $attribute, SurvivorshipSource $source, SurvivorshipRun $run): string {
+	private function effectiveTier(AttributeClaim $claim, SurvivorshipRun $run): string {
 		$trust    = $run->trust;
-		$tuple    = new TrustTuple(entityType: $trust->entityType, attribute: $attribute, sourceSystem: $source->sourceSystem);
+		$source   = $claim->source;
+		$tuple    = new TrustTuple(entityType: $trust->entityType, attribute: $claim->attribute, sourceSystem: $source->sourceSystem);
 		$baseline = $this->baselineTier(tuple: $tuple, run: $run);
 
 		return $trust->trustResolver->applyFreshnessDecay(
-			tier: $baseline['tier'],
-			tierOrder: $run->policy->tierOrder,
+			position: new TierPosition(tier: $baseline['tier'], tierOrder: $run->policy->tierOrder),
 			freshness: new SourceFreshness(decayDays: $baseline['decayDays'], anchor: $source->anchor, asOf: $trust->asOf)
 		);
 	}//end effectiveTier()
@@ -460,9 +479,8 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	private function pickWinner(array $options, SurvivorshipRun $run): ?array {
 		$trustResolver = $run->trust->trustResolver;
 		$tierOrder     = $run->policy->tierOrder;
-		$winner = null;
-		$winnerRank = -1;
-		$winnerDate = null;
+		$winner   = null;
+		$standing = new CandidateStanding(rank: -1, date: null);
 
 		foreach ($options as $option) {
 			$rank = $trustResolver->tierRank(tier: (string)$option['trustTier'], tierOrder: $tierOrder);
@@ -470,11 +488,10 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 				continue;
 			}
 
-			$date = $this->parseDate(value: ($option['lastUpdated'] ?? null));
-			if ($this->displaces(rank: $rank, date: $date, winnerRank: $winnerRank, winnerDate: $winnerDate) === true) {
-				$winner     = $option;
-				$winnerRank = $rank;
-				$winnerDate = $date;
+			$candidate = new CandidateStanding(rank: $rank, date: SurvivorshipDate::parse(value: ($option['lastUpdated'] ?? null)));
+			if ($this->displaces(candidate: $candidate, winner: $standing) === true) {
+				$winner   = $option;
+				$standing = $candidate;
 			}
 		}
 
@@ -486,18 +503,16 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	 * tier rank, or (on a tie) a strictly more recent date. With no winner
 	 * yet the winner rank is -1, which every eligible rank (>= 0) beats.
 	 *
-	 * @param int                    $rank       The candidate's tier rank (>= 0).
-	 * @param DateTimeImmutable|null $date       The candidate's parsed date.
-	 * @param int                    $winnerRank The current winner's tier rank, -1 without a winner.
-	 * @param DateTimeImmutable|null $winnerDate The current winner's parsed date.
+	 * @param CandidateStanding $candidate The candidate's tier rank (>= 0) and parsed date.
+	 * @param CandidateStanding $winner    The current winner's standing, rank -1 without a winner.
 	 *
 	 * @return bool True when the candidate becomes the winner.
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
 	 */
-	private function displaces(int $rank, ?DateTimeImmutable $date, int $winnerRank, ?DateTimeImmutable $winnerDate): bool {
-		return $rank > $winnerRank
-			|| ($rank === $winnerRank && $this->isMoreRecent(candidate: $date, current: $winnerDate) === true);
+	private function displaces(CandidateStanding $candidate, CandidateStanding $winner): bool {
+		return $candidate->rank > $winner->rank
+			|| ($candidate->rank === $winner->rank && $this->isMoreRecent(candidate: $candidate->date, current: $winner->date) === true);
 	}//end displaces()
 
 	/**
@@ -629,24 +644,4 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 
 		return true;
 	}//end isPresent()
-
-	/**
-	 * Parse a date-ish value into a DateTimeImmutable, never throwing.
-	 * Unparseable/absent values return null (sorted as oldest by callers).
-	 *
-	 * @param mixed $value Candidate date value.
-	 *
-	 * @return DateTimeImmutable|null Parsed date, or null when absent/unparseable.
-	 */
-	private function parseDate(mixed $value): ?DateTimeImmutable {
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		try {
-			return new DateTimeImmutable($value);
-		} catch (Throwable) {
-			return null;
-		}
-	}//end parseDate()
 }//end class

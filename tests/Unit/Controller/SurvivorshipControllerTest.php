@@ -69,7 +69,6 @@ class SurvivorshipControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 
 		$this->controller = SurvivorshipControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->objectService,
 			$this->schemaMapper,

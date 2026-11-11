@@ -30,7 +30,6 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetBackgroundRun;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefreshInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -42,20 +41,26 @@ use Throwable;
  */
 class ExampleSetDailyRefreshJob extends TimedJob {
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory           $time   The clock.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param ExampleSetDailyRefreshInterface $daily  The marked sets and their refresh.
-	 * @param LoggerInterface        $logger Logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		private readonly ExampleSetDailyRefreshInterface $daily,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: 86400);
 	}//end __construct()
 

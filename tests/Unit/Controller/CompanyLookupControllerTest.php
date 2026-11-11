@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\CompanyLookupController;
+use OCA\OpenRegister\Controller\Support\CompanyLookupControllerServices;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactory;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
@@ -82,9 +83,11 @@ class CompanyLookupControllerTest extends TestCase {
 
 		$this->controller = new CompanyLookupController(
 			$this->request,
-			$this->kvk,
-			$this->openCorporates,
-			new CompanySearchFactory()
+			new CompanyLookupControllerServices(
+				$this->kvk,
+				$this->openCorporates,
+				new CompanySearchFactory()
+			)
 		);
 	}//end setUp()
 

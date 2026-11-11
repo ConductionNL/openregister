@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -64,6 +65,18 @@ interface RuleRunMapperInterface {
 	): array;
 
 	/**
+	 * One rule's runs, newest first, narrowed by the selection's filter.
+	 *
+	 * @param RuleRunSelection $selection The rule and its filter.
+	 * @param ListQuery        $page      The limit (capped at MAX_LIMIT) and offset; other fields are ignored.
+	 *
+	 * @return array<int, RuleRun> The rows.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function findRuns(RuleRunSelection $selection, ListQuery $page): array;
+
+	/**
 	 * The most recent runs across every rule.
 	 *
 	 * The per-rule listing answers "how is this rule doing"; an operations
@@ -102,6 +115,17 @@ interface RuleRunMapperInterface {
 		?DateTime $since = null,
 		?DateTime $until = null,
 	): int;
+
+	/**
+	 * How many runs one rule has in the log, under the selection's filter.
+	 *
+	 * @param RuleRunSelection $selection The rule and its filter.
+	 *
+	 * @return int The number of matching rows.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function countRuns(RuleRunSelection $selection): int;
 
 	/**
 	 * Delete detail rows older than a cut-off, in bounded batches.

@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\App\IAppManager;
@@ -44,21 +45,45 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	private const MARKER_PREFIX = '[or:';
 
 	/**
+	 * Database connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * App manager for installation checks.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation service.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Construct the provider with required dependencies.
 	 *
-	 * @param IDBConnection $db Database connection.
-	 * @param IAppManager $appManager App manager for installation checks.
-	 * @param IL10N $l10n Localisation service.
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafMarkerScanning $leaf The DB connection, app manager, localisation and marker-scan logger.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
 	 */
-	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private LoggerInterface $logger,
-	) {
+	public function __construct(LeafMarkerScanning $leaf) {
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	/**
@@ -156,17 +181,15 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	 * citizen's side of the counter. A `visibility=public` filter therefore
 	 * empties this source rather than narrowing it.
 	 *
-	 * @param string $register Register slug for the parent object.
-	 * @param string $schema Schema slug for the parent object.
-	 * @param string $objectId UUID of the OR object whose rows we want.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array $filters Optional filters: `type`, `actor`, `after` (Unix ts), `visibility`.
 	 *
 	 * @return array<int,array<string,mixed>> List of registry leaf rows.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->listMarked(objectId: $objectId, filters: $filters);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->listMarked(objectId: $ref->id, filters: $filters);
 	}//end list()
 
 	/**
@@ -182,13 +205,14 @@ class ActivityProvider extends AbstractIntegrationProvider {
 			return [];
 		}
 
-		$rows = $this->findByMarker(
+		$rows = $this->scanMarker(
 			db: $this->db,
-			table: 'activity',
-			markerColumn: 'subject',
-			marker: self::MARKER_PREFIX . $objectId . ']',
-			extraColumns: ['type', 'affecteduser', 'timestamp', 'object_id'],
-			idColumn: 'activity_id',
+			scan: new MarkerScan(
+				table: 'activity',
+				markerColumn: 'subject',
+				marker: self::MARKER_PREFIX . $objectId . ']',
+				columns: ['activity_id', 'type', 'affecteduser', 'timestamp', 'object_id'],
+			),
 		);
 
 		if ($this->wantsPublicOnly(filters: $filters) === true) {

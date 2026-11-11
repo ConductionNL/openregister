@@ -43,28 +43,25 @@ final class ObjectActionShape {
 	/**
 	 * The refusals one declared action earns.
 	 *
-	 * @param string                    $key           The action key.
-	 * @param array<string, mixed>      $definition    The declared entry.
-	 * @param array<string, mixed>      $lifecycle     The schema lifecycle; [] skips the transition check.
-	 * @param array<string, mixed>|null $authorization The authorization block; null skips the elevate grant check.
+	 * @param ObjectActionEntry $action The action key and its declared entry.
+	 * @param SchemaRules       $rules  The schema lifecycle and authorization block it is checked against.
 	 *
 	 * @return list<string> The refusals.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
 	 */
-	public static function refusals(string $key, array $definition, array $lifecycle, ?array $authorization): array {
-		$action = new ObjectActionEntry(key: $key, definition: $definition);
-		$bodies = ObjectActionDefinition::bodiesOf(definition: $definition);
+	public static function refusals(ObjectActionEntry $action, SchemaRules $rules): array {
+		$bodies = ObjectActionDefinition::bodiesOf(definition: $action->definition);
 		if (count($bodies) > 1) {
-			return [sprintf('Action "%s": an action has one body, but this one declares %s.', $key, implode(' and ', $bodies))];
+			return [sprintf('Action "%s": an action has one body, but this one declares %s.', $action->key, implode(' and ', $bodies))];
 		}
 
 		return array_values(array_merge(
-			self::bodyRefusals(action: $action, lifecycle: $lifecycle),
+			self::bodyRefusals(action: $action, lifecycle: $rules->lifecycle),
 			self::inputRefusals(action: $action),
 			self::surfaceRefusals(action: $action),
 			self::modeRefusals(action: $action),
-			ObjectActionElevation::refusals(key: $key, definition: $definition, authorization: $authorization)
+			ObjectActionElevation::refusals(action: $action, authorization: $rules->authorization)
 		));
 	}//end refusals()
 
@@ -176,12 +173,24 @@ final class ObjectActionShape {
 			return $prefix.' must name its node "type".';
 		}
 
+		return self::configRefusal(prefix: $prefix, step: $step);
+	}//end stepRefusal()
+
+	/**
+	 * Why a step's config is malformed, or null.
+	 *
+	 * @param string $prefix The refusal's opening, naming the action and the step's position from 1.
+	 * @param array  $step   The step, which names its type.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private static function configRefusal(string $prefix, array $step): ?string {
 		if (array_key_exists('config', $step) === true && is_array($step['config']) === false) {
 			return $prefix.' has a "config" that is not an object.';
 		}
 
 		return null;
-	}//end stepRefusal()
+	}//end configRefusal()
 
 	/**
 	 * Whether a step names its node type.

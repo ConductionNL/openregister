@@ -29,11 +29,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCP\IUserManager;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\DeletedLens;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeCondition;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
-use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeTable;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -96,7 +98,7 @@ class MagicOrganizationHandlerGoldenTest extends TestCase {
 		$container = $this->container(caller: $caller);
 
 		$handler = $this->getMockBuilder(MagicOrganizationHandler::class)
-			->setConstructorArgs([$session, $groups, $appConfig, $container, $this->createMock(LoggerInterface::class)])
+			->setConstructorArgs([new MagicMapperIdentity($session, $groups, $this->createMock(IUserManager::class)), $appConfig, $container, $this->createMock(LoggerInterface::class)])
 			->onlyMethods(['isCommandLine'])
 			->getMock();
 		$handler->method('isCommandLine')->willReturn($caller['cli']);
@@ -412,9 +414,7 @@ class MagicOrganizationHandlerGoldenTest extends TestCase {
 			$where = [];
 			$this->handler(caller: $caller)->applyOrganizationFilter(
 				$this->queryBuilder($where),
-				new OrganisationScopeTable(null, null),
-				($caller['user'] ?? '') === 'admin',
-				$withOrgless
+				new OrganisationBoundary(null, null, $withOrgless)
 			);
 			$this->assertSame($expected, $where, 'case '.$index);
 		}
@@ -446,8 +446,7 @@ class MagicOrganizationHandlerGoldenTest extends TestCase {
 			$appConfig = $this->createMock(IAppConfig::class);
 			$appConfig->method('getValueString')->willReturn((string) $config);
 			$handler = new MagicOrganizationHandler(
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class),
+				new MagicMapperIdentity($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(IUserManager::class)),
 				$appConfig,
 				$this->createMock(ContainerInterface::class),
 				$this->createMock(LoggerInterface::class)

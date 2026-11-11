@@ -39,11 +39,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
-use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
-use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -83,16 +80,12 @@ class ImportDsarRegisters implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param AppConfigurationImporterInterface $configurationService The OR configuration importer.
-	 * @param IAppManager $appManager Resolves the openregister app path on disk.
-	 * @param LoggerInterface $logger Logger for import diagnostics.
+	 * @param RegisterDescriptorImport $import The importer, the app path on disk and the log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AppConfigurationImporterInterface $configurationService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		private readonly RegisterDescriptorImport $import,
 	) {
 
 	}//end __construct()
@@ -120,38 +113,86 @@ class ImportDsarRegisters implements IRepairStep {
 	 *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
 	 */
 	public function run(IOutput $output): void {
-		foreach (self::REGISTERS as $relativePath => $descriptor) {
-			$version = $descriptor['version'];
-
-			try {
-				$path = $this->appManager->getAppPath('openregister') . $relativePath;
-				if (is_file($path) === false) {
-					$output->warning('DSAR register descriptor not found: ' . $path);
-					continue;
-				}
-
-				// Import the DECODED descriptor via importFromApp() — NOT
-				// importFromFilePath(), which rejects an absolute path (it
-				// expects a Nextcloud-root-relative one) and would fail
-				// closed here. importFromApp() takes the data directly.
-				$data = json_decode((string)file_get_contents($path), true);
-				if (is_array($data) === false) {
-					$output->warning('DSAR register descriptor is not valid JSON: ' . $path);
-					continue;
-				}
-
-				$this->configurationService->importFromApp(
-					appId: $descriptor['appId'],
-					data: $data,
-					version: $version,
-					force: false
-				);
-
-				$output->info('DSAR register imported: ' . basename($relativePath) . ' (v' . $version . ')');
-			} catch (Throwable $e) {
-				$this->logger->warning('[ImportDsarRegisters] import failed for ' . $relativePath . ': ' . $e->getMessage());
-				$output->warning('DSAR register import skipped for ' . basename($relativePath) . ': ' . $e->getMessage());
-			}//end try
-		}//end foreach
+		foreach (array_keys(self::REGISTERS) as $relativePath) {
+			$this->importOne(relativePath: $relativePath, output: $output);
+		}
 	}//end run()
+
+	/**
+	 * Import one DSAR register descriptor, or warn why it was skipped.
+	 *
+	 * @param string  $relativePath The descriptor's path under the openregister app.
+	 * @param IOutput $output       Output interface for status messages.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 */
+	private function importOne(string $relativePath, IOutput $output): void {
+		$descriptor = self::REGISTERS[$relativePath];
+
+		try {
+			$data = $this->readDescriptor(relativePath: $relativePath, output: $output);
+			if ($data === null) {
+				return;
+			}
+
+			$this->importData(data: $data, descriptor: $descriptor);
+
+			$output->info('DSAR register imported: ' . basename($relativePath) . ' (v' . $descriptor['version'] . ')');
+		} catch (Throwable $e) {
+			$this->import->logger->warning('[ImportDsarRegisters] import failed for ' . $relativePath . ': ' . $e->getMessage());
+			$output->warning('DSAR register import skipped for ' . basename($relativePath) . ': ' . $e->getMessage());
+		}//end try
+	}//end importOne()
+
+	/**
+	 * Read and decode one descriptor, or warn why it cannot be imported.
+	 *
+	 * Import the DECODED descriptor via importFromApp() — NOT
+	 * importFromFilePath(), which rejects an absolute path (it
+	 * expects a Nextcloud-root-relative one) and would fail
+	 * closed here. importFromApp() takes the data directly.
+	 *
+	 * @param string  $relativePath The descriptor's path under the openregister app.
+	 * @param IOutput $output       Output interface for status messages.
+	 *
+	 * @return array|null The decoded descriptor, or null after the warning.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 */
+	private function readDescriptor(string $relativePath, IOutput $output): ?array {
+		$path = $this->import->appManager->getAppPath('openregister') . $relativePath;
+		if (is_file($path) === false) {
+			$output->warning('DSAR register descriptor not found: ' . $path);
+			return null;
+		}
+
+		$data = json_decode((string)file_get_contents($path), true);
+		if (is_array($data) === false) {
+			$output->warning('DSAR register descriptor is not valid JSON: ' . $path);
+			return null;
+		}
+
+		return $data;
+	}//end readDescriptor()
+
+	/**
+	 * Import a decoded descriptor for its config app id, idempotently (force: false).
+	 *
+	 * @param array                $data       The decoded descriptor.
+	 * @param array<string, mixed> $descriptor The descriptor's app id and version.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 */
+	private function importData(array $data, array $descriptor): void {
+		$this->import->configurationService->importFromApp(
+			appId: $descriptor['appId'],
+			data: $data,
+			version: $descriptor['version'],
+			force: false
+		);
+	}//end importData()
 }//end class

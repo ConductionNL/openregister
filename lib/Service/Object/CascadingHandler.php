@@ -83,30 +83,31 @@ class CascadingHandler {
 			return [$object, $uuid];
 		}
 
-		$uuid   = $uuid ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-		$parent = new CascadeTarget(parentUuid: $uuid, register: $currentRegister);
+		$uuid    = $uuid ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+		$parent  = new CascadeTarget(parentUuid: $uuid, register: $currentRegister);
+		$targets = array_map(fn (array $definition): CascadeTarget => $parent->with(definition: $definition), $inversedByProperties);
 
-		return [$this->cascadeProperties(object: $object, properties: $inversedByProperties, parent: $parent), $uuid];
+		return [$this->cascadeProperties(object: $object, targets: $targets), $uuid];
 	}//end handlePreValidationCascading()
 
 	/**
 	 * Cascade every filled inversedBy property of an object.
 	 *
-	 * @param array         $object     The object data.
-	 * @param array         $properties The inversedBy property definitions by name.
-	 * @param CascadeTarget $parent     The parent the created objects point back to.
+	 * @param array                        $object  The object data.
+	 * @param array<string, CascadeTarget> $targets By inversedBy property name: the parent the created
+	 *                                              objects point back to, with that property's definition.
 	 *
 	 * @return array The object data with its cascaded values
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	private function cascadeProperties(array $object, array $properties, CascadeTarget $parent): array {
-		foreach ($properties as $propertyName => $definition) {
+	private function cascadeProperties(array $object, array $targets): array {
+		foreach ($targets as $propertyName => $target) {
 			if (isset($object[$propertyName]) === false || empty($object[$propertyName]) === true) {
 				continue;
 			}
 
-			$object[$propertyName] = $this->cascadeValue(value: $object[$propertyName], target: $parent->with(definition: $definition));
+			$object[$propertyName] = $this->cascadeValue(value: $object[$propertyName], target: $target);
 		}
 
 		return $object;
@@ -200,7 +201,7 @@ class CascadingHandler {
 	private function cascadeItem(mixed $item, CascadeTarget $target): array {
 		if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
 			// A failed create keeps the item, so the list does not come out empty.
-			return [$this->createFor(objectData: $item, target: $target) ?? $item];
+			return [$this->createRelatedObject(objectData: $item, target: $target) ?? $item];
 		}
 
 		if (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
@@ -220,30 +221,11 @@ class CascadingHandler {
 	 */
 	private function cascadeNested(mixed $value, CascadeTarget $target): mixed {
 		if (is_array($value) === true && $this->utilityHandler->isUuid($value) === false) {
-			return $this->createFor(objectData: $value, target: $target) ?? $value;
+			return $this->createRelatedObject(objectData: $value, target: $target) ?? $value;
 		}
 
 		return $value;
 	}//end cascadeNested()
-
-	/**
-	 * Create one nested object under the target's parent.
-	 *
-	 * @param array         $objectData The nested object.
-	 * @param CascadeTarget $target     The parent and the property definition.
-	 *
-	 * @return string|null The created uuid, or null when the create failed.
-	 *
-	 * @throws NotAuthorizedException When the caller may not create objects in the target schema.
-	 */
-	private function createFor(array $objectData, CascadeTarget $target): ?string {
-		return $this->createRelatedObject(
-			objectData: $objectData,
-			definition: $target->definition(),
-			parentUuid: $target->parentUuid,
-			currentRegister: $target->register
-		);
-	}//end createFor()
 
 	/**
 	 * Create one nested object under the target; a failure other than a refused right is logged and answers null.
@@ -289,12 +271,7 @@ class CascadingHandler {
 			return null;
 		}
 
-		$register = null;
-		if ($target->register !== null) {
-			$register = (string)$target->register;
-		}
-
-		$this->saveHandler->assertMayCascadeCreate(schema: $schema, register: $register);
+		$this->saveHandler->assertMayCascadeCreate(schema: $schema, register: self::registerKey(target: $target));
 
 		// A new uuid is generated; default RBAC and multitenancy apply to the cascade.
 		$createdObject = $this->saveHandler->saveObject(
@@ -307,6 +284,22 @@ class CascadingHandler {
 
 		return $this->trackCreated(createdObject: $createdObject);
 	}//end cascadeCreate()
+
+	/**
+	 * The register a cascade target names, as a string.
+	 *
+	 * @param CascadeTarget $target The cascade target.
+	 *
+	 * @return string|null Null when the target names no register.
+	 */
+	private static function registerKey(CascadeTarget $target): ?string {
+		$register = null;
+		if ($target->register !== null) {
+			$register = (string)$target->register;
+		}
+
+		return $register;
+	}//end registerKey()
 
 	/**
 	 * The schema a `#/components/schemas/<slug>` reference names, or null.
@@ -368,10 +361,9 @@ class CascadingHandler {
 	 * This method creates a nested object with an inverse relationship to the parent.
 	 * It resolves the schema from the property definition and sets the inversedBy field.
 	 *
-	 * @param array $objectData Object data to create.
-	 * @param array $definition Property definition containing schema reference.
-	 * @param string $parentUuid UUID of the parent object.
-	 * @param int|null $currentRegister Current register ID (nullable for seedData).
+	 * @param array         $objectData Object data to create.
+	 * @param CascadeTarget $target     The parent (its uuid and register, nullable for seedData)
+	 *                                  and the property definition containing the schema reference.
 	 *
 	 * @return string|null UUID of created object or null if creation failed.
 	 *
@@ -379,9 +371,7 @@ class CascadingHandler {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function createRelatedObject(array $objectData, array $definition, string $parentUuid, ?int $currentRegister): ?string {
-		$target = (new CascadeTarget(parentUuid: $parentUuid, register: $currentRegister))->with(definition: $definition);
-
+	public function createRelatedObject(array $objectData, CascadeTarget $target): ?string {
 		return $this->createUnder(objectData: $objectData, target: $target);
 	}//end createRelatedObject()
 

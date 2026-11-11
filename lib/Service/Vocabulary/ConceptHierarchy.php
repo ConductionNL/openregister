@@ -77,19 +77,17 @@ class ConceptHierarchy {
 	 * expanded twice, so a scheme whose `narrower` relations loop terminates
 	 * with the set it reached rather than with a hung request.
 	 *
-	 * @param string $rootUri The branch root's uri.
-	 * @param array<string,array<string,mixed>> $conceptsByUri Every concept of the scheme, keyed by uri.
-	 * @param integer|null $maxDepth How many levels below the root to walk.
+	 * @param ConceptBranch $branch The branch: its root, the scheme's concepts and the depth bound.
 	 *
 	 * @return array<int,string> The branch's uris, root first.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function branchUris(string $rootUri, array $conceptsByUri, ?int $maxDepth = null): array {
-		$relations = new ConceptRelations(conceptsByUri: $conceptsByUri);
-		$limit = ($maxDepth ?? self::DEFAULT_MAX_DEPTH);
-		$ordered = [$rootUri];
-		$frontier = [$rootUri];
+	public function branchUris(ConceptBranch $branch): array {
+		$relations = $branch->relations();
+		$limit = $branch->depthLimit();
+		$ordered = [$branch->rootUri];
+		$frontier = [$branch->rootUri];
 
 		for ($depth = 0; $depth < $limit && $frontier !== []; $depth++) {
 			$frontier = $relations->unseenChildren(frontier: $frontier, known: $ordered);
@@ -126,23 +124,21 @@ class ConceptHierarchy {
 	 * its parent is not. A caller that wants only the offerable values filters
 	 * the flattened list instead.
 	 *
-	 * @param string $rootUri The branch root's uri.
-	 * @param array<string,array<string,mixed>> $conceptsByUri Every concept of the scheme, keyed by uri.
+	 * @param ConceptBranch  $branch  The branch: its root, the scheme's concepts and the depth bound.
 	 * @param ConceptReading $reading The language to read labels in and the instant to judge each window at.
-	 * @param integer|null $maxDepth How many levels below the root to walk.
 	 *
 	 * @return array<string,mixed> The tree node for the root.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function tree(string $rootUri, array $conceptsByUri, ConceptReading $reading, ?int $maxDepth = null): array {
+	public function tree(ConceptBranch $branch, ConceptReading $reading): array {
 		$walk = new ConceptTreeWalk(
-			relations: new ConceptRelations(conceptsByUri: $conceptsByUri),
+			relations: $branch->relations(),
 			reading: $reading,
-			remaining: ($maxDepth ?? self::DEFAULT_MAX_DEPTH)
+			remaining: $branch->depthLimit()
 		);
 
-		return $this->node(uri: $rootUri, walk: $walk);
+		return $this->node(uri: $branch->rootUri, walk: $walk);
 	}//end tree()
 
 	/**

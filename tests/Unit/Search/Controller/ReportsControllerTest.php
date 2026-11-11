@@ -53,7 +53,6 @@ class ReportsControllerTest extends TestCase {
 		$this->objectMapper = $this->createMock(MagicObjectFinderInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->controller = new ReportsController(
-			'openregister',
 			$this->request,
 			new ReportsControllerServices($this->renderService, $this->objectMapper, $this->logger)
 		);

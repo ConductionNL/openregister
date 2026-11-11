@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\ContentSearchHandler;
+use OCA\OpenRegister\Service\Object\ContentSearchWidening;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
@@ -37,6 +38,8 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\QueryHandlers;
+use OCA\OpenRegister\Service\Object\QueryPlatform;
 
 class QueryHandlerContentSearchTest extends TestCase {
 	private MagicMapper&MockObject $objectMapper;
@@ -68,17 +71,22 @@ class QueryHandlerContentSearchTest extends TestCase {
 		$this->contentSearchHandler = $this->createMock(ContentSearchHandler::class);
 
 		$this->handler = new QueryHandler(
-			$this->objectMapper,
-			$this->createMock(RenderObject::class),
-			$this->createMock(SearchQueryHandler::class),
-			$this->createMock(FacetHandler::class),
-			$this->createMock(PerformanceOptimizationHandler::class),
-			$this->contentSearchHandler,
-			$this->createMock(IAppContainer::class));
+			platform: new QueryPlatform(
+				objectMapper: $this->objectMapper,
+				renderHandler: $this->createMock(RenderObject::class),
+				container: $this->createMock(IAppContainer::class)
+			),
+			handlers: new QueryHandlers(
+				searchQueryHandler: $this->createMock(SearchQueryHandler::class),
+				facetHandler: $this->createMock(FacetHandler::class),
+				performanceHandler: $this->createMock(PerformanceOptimizationHandler::class),
+				contentSearchHandler: $this->contentSearchHandler
+			)
+		);
 	}//end setUp()
 
 	public function testContentSearchHandlerIsNeverCalledWhenFlagAbsent(): void {
-		$this->contentSearchHandler->expects($this->never())->method('augmentWithChunkMatches');
+		$this->contentSearchHandler->expects($this->never())->method('widen');
 
 		$result = $this->handler->searchObjectsPaginatedDatabase(
 			query: ['_search' => 'quarterly report'],
@@ -91,7 +99,7 @@ class QueryHandlerContentSearchTest extends TestCase {
 	}//end testContentSearchHandlerIsNeverCalledWhenFlagAbsent()
 
 	public function testContentSearchHandlerIsNeverCalledWhenFlagExplicitlyFalse(): void {
-		$this->contentSearchHandler->expects($this->never())->method('augmentWithChunkMatches');
+		$this->contentSearchHandler->expects($this->never())->method('widen');
 
 		$this->handler->searchObjectsPaginatedDatabase(
 			query: ['_search' => 'quarterly report', '_content_search' => false],
@@ -105,12 +113,14 @@ class QueryHandlerContentSearchTest extends TestCase {
 		$chunkMatch->setId(2);
 
 		$this->contentSearchHandler->expects($this->once())
-			->method('augmentWithChunkMatches')
+			->method('widen')
 			->with(
-				$this->callback(fn (array $query): bool => ($query['_content_search'] ?? null) === true),
-				$this->metadataMatchResults,
-				1,
-				20,
+				$this->callback(
+					fn (ContentSearchWidening $widening): bool => ($widening->query['_content_search'] ?? null) === true
+						&& $widening->page->results === $this->metadataMatchResults
+						&& $widening->page->total === 1
+						&& $widening->page->limit === 20
+				),
 				false,
 				false
 			)
@@ -142,7 +152,7 @@ class QueryHandlerContentSearchTest extends TestCase {
 	 */
 	public function testContentSearchHandlerIsInvokedForTruthyStringForms(mixed $flag): void {
 		$this->contentSearchHandler->expects($this->once())
-			->method('augmentWithChunkMatches')
+			->method('widen')
 			->willReturn(['results' => $this->metadataMatchResults, 'total' => 1]);
 
 		$this->handler->searchObjectsPaginatedDatabase(
@@ -158,7 +168,7 @@ class QueryHandlerContentSearchTest extends TestCase {
 	 * @dataProvider provideFalsyStringForms
 	 */
 	public function testContentSearchHandlerIsNotInvokedForFalsyStringForms(mixed $flag): void {
-		$this->contentSearchHandler->expects($this->never())->method('augmentWithChunkMatches');
+		$this->contentSearchHandler->expects($this->never())->method('widen');
 
 		$this->handler->searchObjectsPaginatedDatabase(
 			query: ['_search' => 'q', '_content_search' => $flag],

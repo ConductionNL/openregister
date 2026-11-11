@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCP\Constants;
@@ -173,10 +174,28 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 		$this->assertSame([], $resolver->grantedObjectUuids(null));
 		$this->assertSame([], $resolver->grantedObjectUuids(''));
 		$this->assertFalse($resolver->hasAnyGrant(null));
-		$this->assertFalse($resolver->isGranted(null, self::UUID_A, 'read'));
-		$this->assertFalse($resolver->grantCarriesVerb(null, self::UUID_A, 'use'));
+		$this->assertFalse($resolver->isGranted(new GrantLookup(null, self::UUID_A), 'read'));
+		$this->assertFalse($resolver->grantCarriesVerb(new GrantLookup(null, self::UUID_A), 'use'));
 		$this->assertSame([], $this->calls);
 	}//end testAnonymousCallersAreRefused()
+
+	/**
+	 * A missing object uuid is refused and never reaches the share manager,
+	 * while the same caller is admitted on a uuid the grant names.
+	 *
+	 * @return void
+	 */
+	public function testAMissingObjectIsRefusedWithoutReadingShares(): void {
+		$resolver = $this->resolver(fn () => [$this->share(self::UUID_A, Constants::PERMISSION_ALL)]);
+
+		$this->assertFalse($resolver->isGranted(new GrantLookup('alice', null), 'read'));
+		$this->assertFalse($resolver->isGranted(new GrantLookup('alice', ''), 'read'));
+		$this->assertFalse($resolver->grantCarriesVerb(new GrantLookup('alice', null), 'use'));
+		$this->assertFalse($resolver->grantCarriesVerb(new GrantLookup('alice', ''), 'use'));
+		$this->assertSame([], $this->calls);
+
+		$this->assertTrue($resolver->isGranted(new GrantLookup('alice', self::UUID_A), 'read'));
+	}//end testAMissingObjectIsRefusedWithoutReadingShares()
 
 	/**
 	 * An unreachable share manager fails closed and logs an error, memoised.
@@ -196,7 +215,7 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 			$resolver = new ObjectGrantResolver($this->logger(), $container);
 			$this->assertSame([], $resolver->grantedObjectUuids('alice'), $mode);
 			$this->assertSame([], $resolver->grantedObjectUuids('alice'), $mode.' memoised');
-			$this->assertFalse($resolver->isGranted('alice', self::UUID_A, 'read'), $mode);
+			$this->assertFalse($resolver->isGranted(new GrantLookup('alice', self::UUID_A), 'read'), $mode);
 			$this->assertSame(
 				['error [ObjectGrantResolver] Share manager unreachable; treating the caller as holding no grants'],
 				$this->logLines,
@@ -261,26 +280,26 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 
 		// Allowed.
 		$this->assertTrue($resolver->hasAnyGrant('alice'));
-		$this->assertTrue($resolver->isGranted('alice', self::UUID_A, 'read'));
-		$this->assertTrue($resolver->isGranted('alice', self::UUID_A, 'update'));
-		$this->assertTrue($resolver->isGranted('alice', self::UUID_B));
-		$this->assertTrue($resolver->grantCarriesVerb('alice', self::UUID_A, 'use'));
-		$this->assertTrue($resolver->grantCarriesVerb('alice', self::UUID_A, 'approve'));
+		$this->assertTrue($resolver->isGranted(new GrantLookup('alice', self::UUID_A), 'read'));
+		$this->assertTrue($resolver->isGranted(new GrantLookup('alice', self::UUID_A), 'update'));
+		$this->assertTrue($resolver->isGranted(new GrantLookup('alice', self::UUID_B)));
+		$this->assertTrue($resolver->grantCarriesVerb(new GrantLookup('alice', self::UUID_A), 'use'));
+		$this->assertTrue($resolver->grantCarriesVerb(new GrantLookup('alice', self::UUID_A), 'approve'));
 		$this->assertSame([self::UUID_A => ($read | $update)], $resolver->grantedObjectUuidsFor('alice', 'update'));
 
 		// Refused.
-		$this->assertFalse($resolver->isGranted('alice', self::UUID_A, 'delete'));
-		$this->assertFalse($resolver->isGranted('alice', self::UUID_B, 'update'));
-		$this->assertFalse($resolver->isGranted('alice', self::UUID_C, 'read'));
-		$this->assertFalse($resolver->isGranted('alice', null, 'read'));
-		$this->assertFalse($resolver->isGranted('alice', '', 'read'));
-		$this->assertFalse($resolver->isGranted('alice', self::UUID_A, 'besluit_nemen'));
+		$this->assertFalse($resolver->isGranted(new GrantLookup('alice', self::UUID_A), 'delete'));
+		$this->assertFalse($resolver->isGranted(new GrantLookup('alice', self::UUID_B), 'update'));
+		$this->assertFalse($resolver->isGranted(new GrantLookup('alice', self::UUID_C), 'read'));
+		$this->assertFalse($resolver->isGranted(new GrantLookup('alice', null), 'read'));
+		$this->assertFalse($resolver->isGranted(new GrantLookup('alice', ''), 'read'));
+		$this->assertFalse($resolver->isGranted(new GrantLookup('alice', self::UUID_A), 'besluit_nemen'));
 		$this->assertSame([], $resolver->grantedObjectUuidsFor('alice', 'besluit_nemen'));
-		$this->assertFalse($resolver->grantCarriesVerb('alice', self::UUID_A, ''));
-		$this->assertFalse($resolver->grantCarriesVerb('alice', self::UUID_A, 'delete'));
-		$this->assertFalse($resolver->grantCarriesVerb('alice', self::UUID_B, 'use'));
-		$this->assertFalse($resolver->grantCarriesVerb('alice', self::UUID_C, 'use'));
-		$this->assertFalse($resolver->grantCarriesVerb('alice', null, 'use'));
+		$this->assertFalse($resolver->grantCarriesVerb(new GrantLookup('alice', self::UUID_A), ''));
+		$this->assertFalse($resolver->grantCarriesVerb(new GrantLookup('alice', self::UUID_A), 'delete'));
+		$this->assertFalse($resolver->grantCarriesVerb(new GrantLookup('alice', self::UUID_B), 'use'));
+		$this->assertFalse($resolver->grantCarriesVerb(new GrantLookup('alice', self::UUID_C), 'use'));
+		$this->assertFalse($resolver->grantCarriesVerb(new GrantLookup('alice', null), 'use'));
 
 		// Inheritability: one local grant holds the object back.
 		$this->assertFalse($resolver->isInheritable(self::UUID_A));
@@ -394,8 +413,8 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 		);
 		$this->assertSame(self::UUID_A, $resolver->inheritedFrom(self::UUID_C));
 		$this->assertNull($resolver->inheritedFrom(self::UUID_A));
-		$this->assertTrue($resolver->isGranted('carol', self::UUID_C, 'read'));
-		$this->assertFalse($resolver->isGranted('carol', self::UUID_C, 'update'));
+		$this->assertTrue($resolver->isGranted(new GrantLookup('carol', self::UUID_C), 'read'));
+		$this->assertFalse($resolver->isGranted(new GrantLookup('carol', self::UUID_C), 'update'));
 		// Memoised: expand() called once.
 		$resolver->grantedObjectUuids('carol');
 	}//end testHierarchySeedsExcludeLocalGrants()

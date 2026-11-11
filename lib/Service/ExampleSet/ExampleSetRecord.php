@@ -287,21 +287,20 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 * and remove leave what they wrote alone, and the report names each under `left`. An entry another part keys
 	 * by an object (`<app>/<key>#references`) is not a declaration of this part and stays.
 	 *
-	 * @param ExampleSetRecordPart $part     The record part, which is also the fragment's list of declarations, and its noun.
-	 * @param array<string, mixed> $fragment The fragment, as gathered for this run.
-	 * @param array<string, mixed> $report   The report; gains a `left` line per entry let go.
-	 * @param array<string, mixed> $record   The record; loses the entries let go.
+	 * @param FragmentPart $declaring The fragment, as gathered for this run, and the record part it declares.
+	 * @param RecordLedger $ledger    The report (gains a `left` line per entry let go) and the record (loses the entries let go).
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
-	public static function letGoUndeclared(ExampleSetRecordPart $part, array $fragment, array &$report, array &$record): bool {
-		$held  = array_keys((array) ($record[$part->part] ?? []));
-		$names = self::undeclared(declared: self::declared(fragment: $fragment, part: $part), held: $held);
+	public static function letGoUndeclared(FragmentPart $declaring, RecordLedger $ledger): bool {
+		$part  = $declaring->part;
+		$held  = array_keys((array) ($ledger->record[$part->part] ?? []));
+		$names = self::undeclared(declared: self::declared(declaring: $declaring), held: $held);
 		foreach ($names as $name) {
-			unset($record[$part->part][$name]);
-			$report['left'][] = $part->noun.' '.$name.': the set no longer declares it';
+			unset($ledger->record[$part->part][$name]);
+			$ledger->report['left'][] = $part->noun.' '.$name.': the set no longer declares it';
 		}
 
 		return $names !== [];
@@ -330,15 +329,14 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	/**
 	 * The app's prefix, `<app>/`, and the record keys of the declarations of one part in a fragment.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param ExampleSetRecordPart $part     The part.
+	 * @param FragmentPart $declaring The fragment and the part.
 	 *
 	 * @return FragmentDeclarations
 	 */
-	private static function declared(array $fragment, ExampleSetRecordPart $part): FragmentDeclarations {
-		$prefix   = $fragment['app'].'/';
+	private static function declared(FragmentPart $declaring): FragmentDeclarations {
+		$prefix   = $declaring->fragment['app'].'/';
 		$declared = [];
-		foreach ((array) ($fragment[$part->part] ?? []) as $entry) {
+		foreach ((array) ($declaring->fragment[$declaring->part->part] ?? []) as $entry) {
 			$declared[$prefix.($entry['key'] ?? '')] = true;
 		}
 
@@ -360,21 +358,18 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	/**
 	 * Hold what following a held change or preference made of its entry, and report a write or a failure.
 	 *
-	 * @param string                  $set      The set id.
 	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
-	 * @param array<string, mixed>    $report   The report so far.
-	 * @param array<string, mixed>    $record   The record; written when the entry changed.
+	 * @param RecordLedger            $ledger   The report, which gains the outcome, and the record, which takes the entry.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
-	public function hold(string $set, ExampleSetFollowedEntry $followed, array $report, array &$record): array {
-		if (self::took(followed: $followed, record: $record) === true) {
-			$this->write(set: $set, record: $record);
-		}
+	public function hold(ExampleSetFollowedEntry $followed, RecordLedger $ledger): bool {
+		$took           = self::took(followed: $followed, record: $ledger->record);
+		$ledger->report = self::reported(followed: $followed, report: $ledger->report);
 
-		return self::reported(followed: $followed, report: $report);
+		return $took;
 	}//end hold()
 
 	/**

@@ -31,6 +31,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 
 /**
  * The search index under administration, from the command line.
@@ -71,28 +72,52 @@ class SearchIndexCommand extends Command {
 			->addArgument(
 				'action',
 				InputArgument::REQUIRED,
-				'rebuild, snapshot, restore or status'
-			)
-			->addOption(
-				'apply',
-				null,
-				InputOption::VALUE_NONE,
-				'Do the work. Without this flag rebuild and restore report what they would do and '
-				. 'change nothing.'
-			)
-			->addOption(
-				'register',
-				null,
-				InputOption::VALUE_REQUIRED,
-				'Limit rebuild and snapshot to one register id.'
-			)
-			->addOption(
-				'file',
-				null,
-				InputOption::VALUE_REQUIRED,
-				'The snapshot file to write or read.'
+					'rebuild, snapshot, restore or status'
 			);
+
+		$this->addMaintenanceOptions();
 	}//end configure()
+
+	/**
+	 * Declare the options: --apply, --register and --file.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/search-index/spec.md
+	 */
+	private function addMaintenanceOptions(): void {
+		$this->addOption(
+			name: 'apply',
+			shortcut: null,
+			mode: InputOption::VALUE_NONE,
+			description: 'Do the work. Without this flag rebuild and restore report what they would do and '
+			. 'change nothing.'
+		);
+
+		$this->addScopeOptions();
+	}//end addMaintenanceOptions()
+
+	/**
+	 * Declare the options that scope the work: --register and --file.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/search-index/spec.md
+	 */
+	private function addScopeOptions(): void {
+		$this->addOption(
+			name: 'register',
+			shortcut: null,
+			mode: InputOption::VALUE_REQUIRED,
+			description: 'Limit rebuild and snapshot to one register id.'
+		)
+			->addOption(
+				name: 'file',
+				shortcut: null,
+				mode: InputOption::VALUE_REQUIRED,
+				description: 'The snapshot file to write or read.'
+			);
+	}//end addScopeOptions()
 
 	/**
 	 * Run the requested action.
@@ -108,18 +133,13 @@ class SearchIndexCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$action = (string)$input->getArgument('action');
-		$apply = (bool)$input->getOption('apply');
-		$registerOption = $input->getOption('register');
-		$registerId = null;
-		if ($registerOption !== null) {
-			$registerId = (int)$registerOption;
-		}
+		$run = new IndexMaintenanceRun(input: $input, output: $output);
 
 		try {
 			return match ($action) {
-				'rebuild' => $this->rebuild(output: $output, registerId: $registerId, apply: $apply),
-				'snapshot' => $this->snapshot(input: $input, output: $output, registerId: $registerId),
-				'restore' => $this->restore(input: $input, output: $output, apply: $apply),
+				'rebuild' => $this->rebuild(run: $run),
+				'snapshot' => $this->snapshot(run: $run),
+				'restore' => $this->restore(run: $run),
 				'status' => $this->status(output: $output),
 				default => $this->unknownAction(output: $output, action: $action),
 			};
@@ -132,19 +152,16 @@ class SearchIndexCommand extends Command {
 	/**
 	 * Rebuild the indexes, reporting each one as it goes.
 	 *
-	 * @param OutputInterface $output     The console output.
-	 * @param int|null        $registerId Limit to one register.
-	 * @param bool            $apply      Whether to actually rebuild.
+	 * @param IndexMaintenanceRun $run The run: output, --register and --apply.
 	 *
 	 * @return int 0 when nothing failed.
 	 */
-	private function rebuild(OutputInterface $output, ?int $registerId, bool $apply): int {
+	private function rebuild(IndexMaintenanceRun $run): int {
+		$output = $run->output;
+		$apply  = $run->apply();
 		$report = $this->maintenance->rebuild(
-			registerId: $registerId,
-			apply: $apply,
-			progress: static function (string $table, string $index, int $position, int $total) use ($output): void {
-				$output->writeln("  [{$position}/{$total}] {$table} · {$index}");
-			}
+			registerId: $run->registerId(),
+			pass: new SearchIndexPass(apply: $apply, progress: $this->progressPrinter(output: $output))
 		);
 
 		if (($report['state'] ?? '') === 'refused') {
@@ -152,19 +169,52 @@ class SearchIndexCommand extends Command {
 			return 1;
 		}
 
-		$output->writeln('');
-		$output->writeln("Tables: {$report['tables']}, indexes: {$report['indexes']}, rebuilt: {$report['rebuilt']}");
+		$this->writeRebuildSummary(output: $output, report: $report);
 
 		if ($apply === false) {
 			$output->writeln('<comment>Dry run. Nothing was rebuilt. Add --apply.</comment>');
 			return 0;
 		}
 
-		foreach (($report['failures'] ?? []) as $failure) {
-			$output->writeln(
-				"<error>{$failure['table']} · {$failure['index']}: {$failure['error']}</error>"
-			);
-		}
+		return $this->rebuildOutcome(output: $output, report: $report);
+	}//end rebuild()
+
+	/**
+	 * The progress callback that prints each index as the rebuild reaches it.
+	 *
+	 * @param OutputInterface $output The console output.
+	 *
+	 * @return callable(string, string, int, int): void
+	 */
+	private function progressPrinter(OutputInterface $output): callable {
+		return static function (string $table, string $index, int $position, int $total) use ($output): void {
+			$output->writeln("  [{$position}/{$total}] {$table} · {$index}");
+		};
+	}//end progressPrinter()
+
+	/**
+	 * Print the rebuild's table, index and rebuilt counts after a blank line.
+	 *
+	 * @param OutputInterface      $output The console output.
+	 * @param array<string, mixed> $report The rebuild report.
+	 *
+	 * @return void
+	 */
+	private function writeRebuildSummary(OutputInterface $output, array $report): void {
+		$output->writeln('');
+		$output->writeln("Tables: {$report['tables']}, indexes: {$report['indexes']}, rebuilt: {$report['rebuilt']}");
+	}//end writeRebuildSummary()
+
+	/**
+	 * Report an applied rebuild's failures: 1 when any index failed, else 0.
+	 *
+	 * @param OutputInterface      $output The console output.
+	 * @param array<string, mixed> $report The rebuild report.
+	 *
+	 * @return int 0 when nothing failed.
+	 */
+	private function rebuildOutcome(OutputInterface $output, array $report): int {
+		$this->writeFailures(output: $output, report: $report);
 
 		if (($report['failed'] ?? 0) > 0) {
 			$output->writeln(
@@ -174,26 +224,38 @@ class SearchIndexCommand extends Command {
 		}
 
 		return 0;
-	}//end rebuild()
+	}//end rebuildOutcome()
+
+	/**
+	 * Print one error line per failed index in a report.
+	 *
+	 * @param OutputInterface      $output The console output.
+	 * @param array<string, mixed> $report The rebuild or restore report.
+	 *
+	 * @return void
+	 */
+	private function writeFailures(OutputInterface $output, array $report): void {
+		foreach (($report['failures'] ?? []) as $failure) {
+			$output->writeln("<error>{$failure['table']} · {$failure['index']}: {$failure['error']}</error>");
+		}
+	}//end writeFailures()
 
 	/**
 	 * Write a snapshot of the index definitions.
 	 *
-	 * @param InputInterface  $input      The console input.
-	 * @param OutputInterface $output     The console output.
-	 * @param int|null        $registerId Limit to one register.
+	 * @param IndexMaintenanceRun $run The run: output, --file and --register.
 	 *
 	 * @return int 0 on success.
 	 */
-	private function snapshot(InputInterface $input, OutputInterface $output, ?int $registerId): int {
-		$path = $input->getOption('file');
+	private function snapshot(IndexMaintenanceRun $run): int {
+		$path = $run->file();
 		if ($path === null) {
-			$output->writeln('<error>snapshot needs --file.</error>');
+			$run->output->writeln('<error>snapshot needs --file.</error>');
 			return 1;
 		}
 
-		$report = $this->maintenance->snapshot(path: (string)$path, registerId: $registerId);
-		$output->writeln(
+		$report = $this->maintenance->snapshot(path: $path, registerId: $run->registerId());
+		$run->output->writeln(
 			"Wrote {$report['indexes']} index definitions over {$report['tables']} tables to {$report['path']}"
 		);
 
@@ -203,41 +265,63 @@ class SearchIndexCommand extends Command {
 	/**
 	 * Recreate from a snapshot whatever the database is missing.
 	 *
-	 * @param InputInterface  $input  The console input.
-	 * @param OutputInterface $output The console output.
-	 * @param bool            $apply  Whether to actually create.
+	 * @param IndexMaintenanceRun $run The run: output, --file and --apply.
 	 *
 	 * @return int 0 when nothing failed.
 	 */
-	private function restore(InputInterface $input, OutputInterface $output, bool $apply): int {
-		$path = $input->getOption('file');
+	private function restore(IndexMaintenanceRun $run): int {
+		$output = $run->output;
+		$path   = $run->file();
 		if ($path === null) {
 			$output->writeln('<error>restore needs --file.</error>');
 			return 1;
 		}
 
-		$report = $this->maintenance->restore(path: (string)$path, apply: $apply);
-		$output->writeln("Missing: {$report['missing']}, created: {$report['created']}");
-
-		foreach (($report['indexes'] ?? []) as $entry) {
-			$output->writeln("  {$entry['table']} · {$entry['index']}");
-		}
+		$apply  = $run->apply();
+		$report = $this->maintenance->restore(path: $path, apply: $apply);
+		$this->writeRestorePlan(output: $output, report: $report);
 
 		if ($apply === false) {
 			$output->writeln('<comment>Dry run. Nothing was created. Add --apply.</comment>');
 			return 0;
 		}
 
-		foreach (($report['failures'] ?? []) as $failure) {
-			$output->writeln("<error>{$failure['table']} · {$failure['index']}: {$failure['error']}</error>");
-		}
+		return $this->restoreOutcome(output: $output, report: $report);
+	}//end restore()
+
+	/**
+	 * Report an applied restore's failures: 1 when any index failed, else 0.
+	 *
+	 * @param OutputInterface      $output The console output.
+	 * @param array<string, mixed> $report The restore report.
+	 *
+	 * @return int 0 when nothing failed.
+	 */
+	private function restoreOutcome(OutputInterface $output, array $report): int {
+		$this->writeFailures(output: $output, report: $report);
 
 		if (($report['failed'] ?? 0) > 0) {
 			return 1;
 		}
 
 		return 0;
-	}//end restore()
+	}//end restoreOutcome()
+
+	/**
+	 * Print what a restore found missing and created, and each missing index.
+	 *
+	 * @param OutputInterface      $output The console output.
+	 * @param array<string, mixed> $report The restore report.
+	 *
+	 * @return void
+	 */
+	private function writeRestorePlan(OutputInterface $output, array $report): void {
+		$output->writeln("Missing: {$report['missing']}, created: {$report['created']}");
+
+		foreach (($report['indexes'] ?? []) as $entry) {
+			$output->writeln("  {$entry['table']} · {$entry['index']}");
+		}
+	}//end writeRestorePlan()
 
 	/**
 	 * Print the report of the last rebuild.
