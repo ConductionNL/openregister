@@ -27,6 +27,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -59,14 +60,12 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 		$calls = [];
 		foreach ([[null, null], [5, null], [null, 9], [5, 9]] as [$reg, $sch]) {
 			$tag = 'reg ' . var_export($reg, true) . ' sch ' . var_export($sch, true);
-			$calls["getStatistics $tag"] = fn (AuditTrailMapper $m) => $m->getStatistics($reg, $sch);
-			$calls["getStatistics exclude $tag"] = fn (AuditTrailMapper $m) => $m->getStatistics(
-				$reg,
-				$sch,
-				[['register' => 1, 'schema' => 2], ['register' => 3], ['schema' => 4]]
+			$calls["getStatistics $tag"] = fn (AuditTrailMapper $m) => $m->statisticsTotals(AuditStatisticsCalls::scope($reg, $sch));
+			$calls["getStatistics exclude $tag"] = fn (AuditTrailMapper $m) => $m->statisticsTotals(
+				AuditStatisticsCalls::scope($reg, $sch, [['register' => 1, 'schema' => 2], ['register' => 3], ['schema' => 4]])
 			);
-			$calls["getActionChartData $tag"] = fn (AuditTrailMapper $m) => $m->getActionChartData(null, null, $reg, $sch);
-			$calls["getActionChartData range $tag"] = fn (AuditTrailMapper $m) => $m->getActionChartData($from, $till, $reg, $sch);
+			$calls["getActionChartData $tag"] = fn (AuditTrailMapper $m) => $m->actionChartData(AuditStatisticsCalls::window(null, null, $reg, $sch));
+			$calls["getActionChartData range $tag"] = fn (AuditTrailMapper $m) => $m->actionChartData(AuditStatisticsCalls::window($from, $till, $reg, $sch));
 			$calls["getDetailedStatistics $tag"] = static function (AuditTrailMapper $m) use ($reg, $sch): array {
 				$s = new AuditStatisticsScope($reg, $sch);
 				$s->hours = 12;
@@ -149,8 +148,8 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 		$actual['most active without limit'] = preg_grep('/setMaxResults/', $this->queryLog);
 
 		$failing = [
-			'getStatistics' => fn (AuditTrailMapper $m) => $m->getStatistics(),
-			'getActionChartData' => fn (AuditTrailMapper $m) => $m->getActionChartData(),
+			'getStatistics' => fn (AuditTrailMapper $m) => $m->statisticsTotals(AuditStatisticsCalls::scope()),
+			'getActionChartData' => fn (AuditTrailMapper $m) => $m->actionChartData(AuditStatisticsCalls::window()),
 			'getDetailedStatistics' => fn (AuditTrailMapper $m) => $m->detailedStatistics(new AuditStatisticsScope()),
 			'getActionCounts' => fn (AuditTrailMapper $m) => $m->getActionCounts(5, 9),
 			'getActionDistribution' => fn (AuditTrailMapper $m) => $m->actionDistribution(new AuditStatisticsScope()),
@@ -181,14 +180,14 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 			['date' => '2026-01-03', 'action' => 'read', 'count' => '1'],
 			['date' => '2026-01-01', 'action' => 'create', 'count' => '2'],
 		]];
-		$this->assertSame(['2026-01-01', '2026-01-03'], $this->mapper()->getActionChartData()['labels']);
+		$this->assertSame(['2026-01-01', '2026-01-03'], $this->mapper()->actionChartData(AuditStatisticsCalls::window())['labels']);
 
 		$this->queryLog = [];
 		$this->mapper()->getStatisticsGroupedBySchema([]);
 		$this->assertSame([], $this->queryLog);
 
 		$this->queuedRows = [[]];
-		$this->mapper()->getStatistics(null, null, [[]]);
+		$this->mapper()->statisticsTotals(AuditStatisticsCalls::scope(null, null, [[]]));
 		$this->assertSame([], preg_grep('/andWhere/', $this->queryLog));
 
 		$calls = 0;

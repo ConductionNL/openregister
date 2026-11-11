@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Command;
 
+use OCA\OpenRegister\Files\Repair\ObjectFileMoveCounts;
 use OCA\OpenRegister\Files\Service\File\ObjectFileMigration;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -79,15 +80,7 @@ class MoveObjectFilesCommand extends Command {
 			$output->writeln('<error>' . ObjectFileMigration::REFUSAL_MESSAGE . '</error>');
 		}
 
-		$output->writeln(
-			sprintf(
-				'%d folders moved, %d files moved, %d published links re-owned, %d left where they are',
-				$tally['foldersMoved'],
-				$tally['filesMoved'],
-				$tally['sharesReowned'],
-				$tally['foldersLeft']
-			)
-		);
+		$output->writeln((new ObjectFileMoveCounts())->sentence(tally: $tally));
 
 		if ($tally['refused'] === true) {
 			return 1;

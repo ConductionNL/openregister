@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -264,7 +265,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		$this->assertSame([$fresh, $existing], $saved);
 		$this->assertCount(
 			2,
-			$this->objectMapper->findAllInRegisterSchemaTable(register: $this->testRegister, schema: $this->testSchema),
+			$this->objectMapper->findAllInRegisterSchemaTable(table: new RegisterSchema(register: $this->testRegister, schema: $this->testSchema)),
 			'the update MUST land on the existing row, not beside it'
 		);
 

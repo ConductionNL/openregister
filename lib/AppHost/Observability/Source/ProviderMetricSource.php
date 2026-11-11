@@ -77,19 +77,7 @@ class ProviderMetricSource implements MetricSourceInterface {
 	 */
 	public function collect(string $appId, MetricDescriptor $descriptor): array {
 		try {
-			$provider = $this->providers->resolve(appId: $appId, interface: IMetricsProvider::class);
-			if ($provider === null) {
-				return [];
-			}
-
-			$samples = [];
-			foreach ($provider->metrics() as $sample) {
-				if ($sample instanceof MetricSample) {
-					$samples[] = $sample;
-				}
-			}
-
-			return $samples;
+			return $this->providerSamples(appId: $appId);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[AppHost\\Metrics] provider for app "%s" threw: %s', $appId, $e->getMessage()),
@@ -98,4 +86,27 @@ class ProviderMetricSource implements MetricSourceInterface {
 			return [];
 		}//end try
 	}//end collect()
+
+	/**
+	 * The samples the app's own IMetricsProvider reports; none when it has no provider.
+	 *
+	 * @param string $appId Calling app id.
+	 *
+	 * @return MetricSample[]
+	 */
+	private function providerSamples(string $appId): array {
+		$provider = $this->providers->resolve(appId: $appId, interface: IMetricsProvider::class);
+		if ($provider === null) {
+			return [];
+		}
+
+		$samples = [];
+		foreach ($provider->metrics() as $sample) {
+			if ($sample instanceof MetricSample) {
+				$samples[] = $sample;
+			}
+		}
+
+		return $samples;
+	}//end providerSamples()
 }//end class

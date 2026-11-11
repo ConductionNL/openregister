@@ -43,7 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -169,8 +169,29 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
 	public function readerEntries(ObjectEntity $located, array $rows): ?array {
-		$uuid = $located->getUuid();
-		if ($uuid === null || $uuid === '') {
+		$object = $this->readAgain(located: $located);
+		if ($object === null) {
+			return null;
+		}
+
+		$readable = $this->readerObject(object: $object);
+		if ($readable === null) {
+			return null;
+		}
+
+		return $this->services->redactor->redact(rows: $rows, readable: $readable);
+	}//end readerEntries()
+
+	/**
+	 * The located object read again through the object GET's read path, by its register, schema and uuid.
+	 *
+	 * @param ObjectEntity $located The object as some lookup found it.
+	 *
+	 * @return ObjectEntity|null The object, or null when it has no uuid, is not readable, or the read answers another object.
+	 */
+	private function readAgain(ObjectEntity $located): ?ObjectEntity {
+		$uuid = self::uuidOf(object: $located);
+		if ($uuid === null) {
 			return null;
 		}
 
@@ -183,13 +204,24 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 			return null;
 		}
 
-		$readable = $this->readerObject(object: $object);
-		if ($readable === null) {
+		return $object;
+	}//end readAgain()
+
+	/**
+	 * An object's uuid, or null when it has none.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return string|null The uuid; null for a missing or empty one.
+	 */
+	private static function uuidOf(ObjectEntity $object): ?string {
+		$uuid = $object->getUuid();
+		if ($uuid === null || $uuid === '') {
 			return null;
 		}
 
-		return $this->services->redactor->redact(rows: $rows, readable: $readable);
-	}//end readerEntries()
+		return $uuid;
+	}//end uuidOf()
 
 	/**
 	 * A readable object with the schema its entries are redacted with, after the doelbinding guard.
@@ -206,9 +238,9 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 	 * @throws PurposeRefusedException When the schema asks for a purpose and none usable was named.
 	 */
 	private function readerObject(ObjectEntity $object): ?ReadableObject {
-		$objectUuid = $object->getUuid();
+		$objectUuid = self::uuidOf(object: $object);
 		$schemaEntity = $this->access->schemaOf(object: $object);
-		if ($objectUuid === null || $objectUuid === '' || $schemaEntity === null) {
+		if ($objectUuid === null || $schemaEntity === null) {
 			return null;
 		}
 

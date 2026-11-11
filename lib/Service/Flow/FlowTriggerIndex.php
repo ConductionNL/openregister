@@ -230,56 +230,89 @@ class FlowTriggerIndex implements FlowTriggerIndexInterface {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-the-cutover-from-trigger-columns-to-trigger-nodes-must-be-proven-per-flow
 	 */
 	public function rebuild(array $flows): array {
-		$indexed = 0;
-		$rows = 0;
+		$written = [];
 		$unconverted = [];
 
 		foreach ($flows as $flow) {
-			$written = $this->reindex(flow: $flow);
-			$rows += $written;
+			$rows = $this->reindex(flow: $flow);
+			$written[] = $rows;
 
-			if ($written > 0) {
-				$indexed++;
-				continue;
+			if ($rows <= 0) {
+				$unconverted[] = $this->unconvertedReport(flow: $flow);
 			}
+		}
 
-			// No rows. Only a flow whose COLUMNS still name a trigger is a
-			// problem: one with no trigger at all is simply unfinished, and
-			// reporting it would bury the flows that matter.
-			$columns = $this->sources->derivation->columnTriggerOf(flow: $flow);
-			if ($columns === null) {
-				continue;
-			}
+		return self::rebuildReport(written: $written, unconverted: array_values(array_filter($unconverted)));
 
-			// Why a flow is unconverted matters, because the two reasons need
-			// different actions. Only an OBJECT trigger is matched by register
-			// and schema at all: a `manual` or `schedule` column carries empty
-			// ones because they are meaningless for it, not because it is
-			// unscoped. Reporting those as "no node can express this" would
-			// name 15 flows as blocked when 11 of them convert by simply being
-			// re-authored with a manual or schedule trigger node.
-			$isObjectTrigger = str_starts_with($columns['event'], 'object.');
+	}//end rebuild()
 
-			$reason = 'not yet re-authored on the canvas: add a trigger node for "' . $columns['event'] . '"';
-			if ($isObjectTrigger === true
-				&& ($columns['register'] === '*' || $columns['schema'] === '*')
-			) {
-				$reason = 'BLOCKED: an object trigger scoped to any register/schema, which a trigger node '
-					. 'deliberately cannot express — it needs one trigger node per register/schema pair';
-			}
-
-			$unconverted[] = [
-				'uuid' => (string)$flow->getUuid(),
-				'reason' => $reason,
-				'columns' => $columns,
-			];
-		}//end foreach
+	/**
+	 * Why a flow that wrote no rows is not on the index, or null when it simply has no trigger.
+	 *
+	 * @param Flow $flow The flow that wrote no rows.
+	 *
+	 * @return array{uuid: string, reason: string, columns: array}|null The report line.
+	 */
+	private function unconvertedReport(Flow $flow): ?array {
+		// No rows. Only a flow whose COLUMNS still name a trigger is a
+		// problem: one with no trigger at all is simply unfinished, and
+		// reporting it would bury the flows that matter.
+		$columns = $this->sources->derivation->columnTriggerOf(flow: $flow);
+		if ($columns === null) {
+			return null;
+		}
 
 		return [
-			'indexed' => $indexed,
-			'rows' => $rows,
+			'uuid' => (string)$flow->getUuid(),
+			'reason' => self::unconvertedReason(columns: $columns),
+			'columns' => $columns,
+		];
+
+	}//end unconvertedReport()
+
+	/**
+	 * The action a flow's column trigger needs before it can be on the index.
+	 *
+	 * @param array<string, mixed> $columns The column trigger: event, register and schema.
+	 *
+	 * @return string The reason.
+	 */
+	private static function unconvertedReason(array $columns): string {
+		// Why a flow is unconverted matters, because the two reasons need
+		// different actions. Only an OBJECT trigger is matched by register
+		// and schema at all: a `manual` or `schedule` column carries empty
+		// ones because they are meaningless for it, not because it is
+		// unscoped. Reporting those as "no node can express this" would
+		// name 15 flows as blocked when 11 of them convert by simply being
+		// re-authored with a manual or schedule trigger node.
+		$isObjectTrigger = str_starts_with($columns['event'], 'object.');
+
+		$reason = 'not yet re-authored on the canvas: add a trigger node for "' . $columns['event'] . '"';
+		if ($isObjectTrigger === true
+			&& ($columns['register'] === '*' || $columns['schema'] === '*')
+		) {
+			$reason = 'BLOCKED: an object trigger scoped to any register/schema, which a trigger node '
+				. 'deliberately cannot express — it needs one trigger node per register/schema pair';
+		}
+
+		return $reason;
+
+	}//end unconvertedReason()
+
+	/**
+	 * The rebuild report: how many flows were indexed, with how many rows, and which were not.
+	 *
+	 * @param array<int, int>                  $written     The rows written per flow.
+	 * @param array<int, array<string, mixed>> $unconverted The flows left unconverted.
+	 *
+	 * @return array{indexed: int, rows: int, unconverted: array<int, array<string, mixed>>} The report.
+	 */
+	private static function rebuildReport(array $written, array $unconverted): array {
+		return [
+			'indexed' => count(array_filter($written, static fn (int $rows): bool => $rows > 0)),
+			'rows' => array_sum($written),
 			'unconverted' => $unconverted,
 		];
 
-	}//end rebuild()
+	}//end rebuildReport()
 }//end class

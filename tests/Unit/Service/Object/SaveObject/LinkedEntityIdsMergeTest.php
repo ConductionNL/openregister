@@ -58,11 +58,8 @@ class LinkedEntityIdsMergeTest extends TestCase {
 			}
 		);
 
-		(new LinkedEntityPropertyHandler($logger))->extractAndPopulate(
-			$object,
-			$schema,
-			['applicant' => 'c-1', 'witnesses' => ['c-2', ['id' => 'c-3']], 'note' => ['id' => 'n-1']]
-		);
+		$object->setObject(['applicant' => 'c-1', 'witnesses' => ['c-2', ['id' => 'c-3']], 'note' => ['id' => 'n-1']]);
+		(new LinkedEntityPropertyHandler($logger))->extractAndPopulate($object, $schema);
 
 		$this->assertSame(['ad-hoc-1', 'c-2', 'c-1', 'c-3'], $object->getContacts());
 		$this->assertSame(['n-1'], $object->getNotes());

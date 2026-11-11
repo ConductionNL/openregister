@@ -32,6 +32,7 @@ namespace Unit\Service\BulkJob;
 
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJob;
@@ -364,8 +365,8 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 			]
 		);
 		$action->method('apply')->willReturnCallback(
-			static function (ObjectEntity $object, array $parameters, bool $commit, ?IUser $user = null) use (&$seen): BulkActionResult {
-				$seen[] = $user?->getUID();
+			static function (BulkStep $step) use (&$seen): BulkActionResult {
+				$seen[] = $step->actor?->getUID();
 
 				return BulkActionResult::applied();
 			}

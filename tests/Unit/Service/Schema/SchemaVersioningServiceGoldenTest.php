@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
 use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use DateTime;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;

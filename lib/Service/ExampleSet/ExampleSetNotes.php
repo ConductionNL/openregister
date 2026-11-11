@@ -119,7 +119,7 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 			return 'a note needs a message';
 		}
 
-		if (isset($data['createdAt']) === true && $this->moment(value: $data['createdAt']) === null) {
+		if (isset($data['createdAt']) === true && ExampleSetDateValue::moment(value: $data['createdAt']) === null) {
 			return 'createdAt is a date and time';
 		}
 
@@ -160,7 +160,7 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 		$comment = $comments->create('users', (string) $data['user'], self::OBJECT_TYPE, (string) $data['objectUuid']);
 		$comment->setMessage((string) $data['message']);
 		$comment->setVerb('comment');
-		$moment = $this->moment(value: ($data['createdAt'] ?? null));
+		$moment = ExampleSetDateValue::moment(value: ($data['createdAt'] ?? null));
 		if ($moment !== null) {
 			$comment->setCreationDateTime($moment);
 		}

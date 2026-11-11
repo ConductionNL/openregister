@@ -15,6 +15,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Pins what ObjectService::saveObjects() forwards to the bulk handler and how it invalidates
@@ -61,7 +62,7 @@ class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 
 		$given = ['saveObjectsHandler' => $bulk, 'cacheHandler' => $cache, 'logger' => $logger];
 		$args = [];
-		foreach ((new ReflectionMethod(ObjectService::class, '__construct'))->getParameters() as $param) {
+		foreach ((new ReflectionMethod(ObjectServiceFactory::class, 'args'))->getParameters() as $param) {
 			$name = $param->getName();
 			if (isset($given[$name]) === true) {
 				$args[$name] = $given[$name];
@@ -69,7 +70,7 @@ class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 				$args[$name] = $this->createMock($param->getType()->getName());
 			}
 		}
-		return new ObjectService(...$args);
+		return new ObjectService(...ObjectServiceFactory::args(...$args));
 	}
 
 	/**

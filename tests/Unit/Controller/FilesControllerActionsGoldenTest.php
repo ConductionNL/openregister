@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -684,7 +686,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 	 * @param FileService&\PHPUnit\Framework\MockObject\MockObject $service The fake.
 	 */
 	private function stubStorage(FileService $service): void {
-		$service->method('addFile')->willReturnCallback(function (ObjectEntity|string $objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []): File {
+		$service->method('addFile')->willReturnCallback(function (FileTarget $target, FileUpload $upload): File {
+			[$fileName, $content, $share, $tags] = [$upload->fileName, $upload->content, $upload->share, $upload->tags];
 			if ($this->action === 'saveChat') {
 				$fileName = (string)preg_replace('/\d/', '#', $fileName);
 				$content = (string)preg_replace('/^Saved by.*$/m', 'Saved by', (string)$content);
@@ -698,8 +701,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 			return $this->file;
 		});
-		$service->method('saveFile')->willReturnCallback(function (ObjectEntity $objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []): File {
-			$this->note(call: 'saveFile', detail: [$fileName, $content, $share, $tags]);
+		$service->method('saveFile')->willReturnCallback(function (ObjectEntity $objectEntity, FileUpload $upload): File {
+			$this->note(call: 'saveFile', detail: [$upload->fileName, $upload->content, $upload->share, $upload->tags]);
 			$this->work(call: 'saveFile');
 			return $this->file;
 		});

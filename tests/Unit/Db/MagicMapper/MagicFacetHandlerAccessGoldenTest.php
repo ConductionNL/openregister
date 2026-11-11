@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -301,10 +302,8 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 	private function single(array $world, array $query, Schema $schema): array {
 		$this->events = [];
 		$facets       = $this->handler(world: $world)->getSimpleFacets(
-			tableName: 'openregister_table_7_1',
-			query: $query,
-			register: $this->register(),
-			schema: $schema
+			target: self::facetTarget('openregister_table_7_1', $this->register(), $schema),
+			query: $query
 		);
 
 		return ['facets' => $this->withoutMetrics(facets: $facets), 'events' => $this->events];
@@ -474,4 +473,15 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 		$related = $this->outcomes()['union, related filter refused first']['events'];
 		$this->assertSame([['refuseRelatedRowFilters', ['_related', '_facets']]], $related);
 	}//end testTheRuleIsAskedBeforeTheQueryAndScopesIt()
+
+	/**
+	 * The facet target of one magic table.
+	 *
+	 * @return MagicTableTarget
+	 */
+	private static function facetTarget(string $tableName, Register $register, Schema $schema): MagicTableTarget {
+		$target            = new MagicTableTarget(register: $register, schema: $schema);
+		$target->tableName = $tableName;
+		return $target;
+	}//end facetTarget()
 }//end class

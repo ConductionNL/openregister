@@ -1376,8 +1376,8 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		// File handling modifies data in-place (simulated).
 		$this->filePropertyHandler->method('handleFileProperty')
-			->willReturnCallback(function ($objectEntity, &$object, $propertyName) {
-				$object[$propertyName] = 42;
+			->willReturnCallback(function ($write, $propertyName) {
+				$write->data[$propertyName] = 42;
 			});
 
 		$this->objectEntityMapper->method('update')

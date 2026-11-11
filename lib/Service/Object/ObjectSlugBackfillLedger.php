@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -87,17 +88,40 @@ class ObjectSlugBackfillLedger {
 				schemaId: (int)$schema->getId()
 			);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: sprintf(
-					'[ObjectSlug] Could not evict the cache after the slug backfill (register %s, schema %s): %s',
-					(string)$register->getId(),
-					(string)$schema->getId(),
-					$e->getMessage()
-				),
-				context: ['app' => 'openregister', 'path' => 'backfill']
-			);
+			$this->logBackfillFailure(message: self::evictionFailure(table: new RegisterSchema(register: $register, schema: $schema), error: $e));
 		}
 	}//end evictCache()
+
+	/**
+	 * The error line of a cache eviction that failed.
+	 *
+	 * @param RegisterSchema $table The register and schema.
+	 * @param Throwable      $error Why it failed.
+	 *
+	 * @return string
+	 */
+	private static function evictionFailure(RegisterSchema $table, Throwable $error): string {
+		return sprintf(
+			'[ObjectSlug] Could not evict the cache after the slug backfill (register %s, schema %s): %s',
+			(string)$table->register->getId(),
+			(string)$table->schema->getId(),
+			$error->getMessage()
+		);
+	}//end evictionFailure()
+
+	/**
+	 * Log a failed step of the backfill at error level, under the backfill path.
+	 *
+	 * @param string $message The message.
+	 *
+	 * @return void
+	 */
+	private function logBackfillFailure(string $message): void {
+		$this->logger->error(
+			message: $message,
+			context: ['app' => 'openregister', 'path' => 'backfill']
+		);
+	}//end logBackfillFailure()
 
 	/**
 	 * One audit-trail entry for the run, with the old to new list (capped, see logLargeRun()),
@@ -113,29 +137,47 @@ class ObjectSlugBackfillLedger {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function record(ObjectSlugChangeSet $applied): void {
-		$register = $applied->register;
-		$schema = $applied->schema;
 		$this->logLargeRun(applied: $applied);
+		$this->writeAuditEntry(applied: $applied);
+
+		$this->evictCache(register: $applied->register, schema: $applied->schema);
+	}//end record()
+
+	/**
+	 * Write the run's audit-trail entry; a failure is logged with the full change list.
+	 *
+	 * @param ObjectSlugChangeSet $applied The writes that were applied, their table and the run's counters.
+	 *
+	 * @return void
+	 */
+	private function writeAuditEntry(ObjectSlugChangeSet $applied): void {
 		try {
-			$target = new AuditedObject(register: (int)$register->getId(), schema: (int)$schema->getId());
+			$target = new AuditedObject(register: (int)$applied->register->getId(), schema: (int)$applied->schema->getId());
 			$this->auditTrail->recordSlugBackfill(
 				backfill: new SlugBackfill(changes: $applied->changes, summary: $applied->summary, target: $target)
 			);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: sprintf(
-					'[ObjectSlug] Could not write the audit entry of the slug backfill (register %s, schema %s): %s; changes: %s',
-					(string)$register->getId(),
-					(string)$schema->getId(),
-					$e->getMessage(),
-					$this->encodeChanges(changes: $applied->changes)
-				),
-				context: ['app' => 'openregister', 'path' => 'backfill']
-			);
+			$this->logBackfillFailure(message: $this->auditFailure(applied: $applied, error: $e));
 		}//end try
+	}//end writeAuditEntry()
 
-		$this->evictCache(register: $register, schema: $schema);
-	}//end record()
+	/**
+	 * The error line of an audit entry that could not be written, with the full change list.
+	 *
+	 * @param ObjectSlugChangeSet $applied The writes that were applied and their table.
+	 * @param Throwable           $error   Why the entry could not be written.
+	 *
+	 * @return string
+	 */
+	private function auditFailure(ObjectSlugChangeSet $applied, Throwable $error): string {
+		return sprintf(
+			'[ObjectSlug] Could not write the audit entry of the slug backfill (register %s, schema %s): %s; changes: %s',
+			(string)$applied->register->getId(),
+			(string)$applied->schema->getId(),
+			$error->getMessage(),
+			$this->encodeChanges(changes: $applied->changes)
+		);
+	}//end auditFailure()
 
 	/**
 	 * A change list as JSON for a log line; invalid UTF-8 in a slug is replaced, not fatal.
@@ -168,23 +210,38 @@ class ObjectSlugBackfillLedger {
 			return;
 		}
 
-		$register = $applied->register;
-		$schema = $applied->schema;
-		$parts = array_chunk($applied->changes, AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES);
-		foreach ($parts as $index => $part) {
+		foreach ($this->changeListParts(applied: $applied) as $message) {
 			// Warning, not info: Nextcloud's default loglevel (2) drops info lines,
 			// and these are the only record of the changes beyond the audit entry.
 			$this->logger->warning(
-				message: sprintf(
-					'[ObjectSlug] Slug backfill changes (register %s, schema %s, part %d of %d): %s',
-					(string)$register->getId(),
-					(string)$schema->getId(),
-					($index + 1),
-					count($parts),
-					$this->encodeChanges(changes: $part)
-				),
+				message: $message,
 				context: ['app' => 'openregister', 'path' => 'backfill']
 			);
 		}
 	}//end logLargeRun()
+
+	/**
+	 * The change list in log lines of at most SLUG_BACKFILL_MAX_CHANGES changes each.
+	 *
+	 * @param ObjectSlugChangeSet $applied The writes that were applied and their table.
+	 *
+	 * @return array<int, string>
+	 */
+	private function changeListParts(ObjectSlugChangeSet $applied): array {
+		$parts = array_chunk($applied->changes, AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES);
+
+		$messages = [];
+		foreach ($parts as $index => $part) {
+			$messages[] = sprintf(
+				'[ObjectSlug] Slug backfill changes (register %s, schema %s, part %d of %d): %s',
+				(string)$applied->register->getId(),
+				(string)$applied->schema->getId(),
+				($index + 1),
+				count($parts),
+				$this->encodeChanges(changes: $part)
+			);
+		}
+
+		return $messages;
+	}//end changeListParts()
 }//end class

@@ -70,6 +70,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
@@ -293,7 +294,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			]);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->recorder(DataManipulationHandler::class, 'dataManip', []),
 			deleteHandler: $this->recorder(DeleteObject::class, 'deleteHandler', []),
 			getHandler: $this->recorder(GetObject::class, 'getHandler', []),
@@ -376,7 +377,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			container: $container,
 			objectSourceRegistry: $this->recorder(ObjectSourceRegistry::class, 'objectSources', []),
 			autoTransitions: $autoTransitions
-		);
+		));
 	}//end service()
 
 	/**

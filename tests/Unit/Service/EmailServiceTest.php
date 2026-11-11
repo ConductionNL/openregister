@@ -15,7 +15,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 class EmailServiceTest extends TestCase {

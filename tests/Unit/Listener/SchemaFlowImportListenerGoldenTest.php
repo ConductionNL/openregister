@@ -10,10 +10,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
@@ -147,7 +148,8 @@ class SchemaFlowImportListenerGoldenTest extends TestCase {
 			$versions->method('publishShippedUpdate')->willThrowException(new RuntimeException('cannot publish'));
 		} else {
 			$versions->method('publish')->willReturnCallback(
-				function (Flow $flow, ?string $publishedBy) {
+				function (Flow $flow, FlowPublishOptions $options) {
+					$publishedBy = $options->publishedBy;
 					$this->trace[] = ['publish', $flow->getName(), $publishedBy];
 
 					return new FlowVersion();

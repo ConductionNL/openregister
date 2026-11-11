@@ -101,18 +101,27 @@ class SweepExpiredExportRunsJob extends TimedJob {
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
 	protected function run($argument): void {
+		$total = $this->sweepPasses();
+
+		if ($total !== null && $total > 0) {
+			$this->logger->info(
+				message: '[SweepExpiredExportRunsJob] Expired export files removed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'swept' => $total]
+			);
+		}
+	}//end run()
+
+	/**
+	 * Sweep up to PASSES_PER_RUN batches, stopping at the first short one.
+	 *
+	 * @return int|null How many runs were swept; null when a sweep failed.
+	 */
+	private function sweepPasses(): ?int {
 		$total = 0;
-
 		for ($pass = 0; $pass < self::PASSES_PER_RUN; $pass++) {
-			try {
-				$swept = $this->runs->sweep();
-			} catch (Throwable $e) {
-				$this->logger->error(
-					message: '[SweepExpiredExportRunsJob] The sweep failed',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-				);
-
-				return;
+			$swept = $this->sweepOnce();
+			if ($swept === null) {
+				return null;
 			}
 
 			$total += $swept;
@@ -124,11 +133,23 @@ class SweepExpiredExportRunsJob extends TimedJob {
 			}
 		}
 
-		if ($total > 0) {
-			$this->logger->info(
-				message: '[SweepExpiredExportRunsJob] Expired export files removed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'swept' => $total]
+		return $total;
+	}//end sweepPasses()
+
+	/**
+	 * One sweep batch; null, logged, when it fails.
+	 *
+	 * @return int|null
+	 */
+	private function sweepOnce(): ?int {
+		try {
+			return $this->runs->sweep();
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[SweepExpiredExportRunsJob] The sweep failed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
+			return null;
 		}
-	}//end run()
+	}//end sweepOnce()
 }//end class

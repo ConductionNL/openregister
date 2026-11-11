@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionStore;
 use OCA\OpenRegister\Service\Flow\FlowDeletionSweep;

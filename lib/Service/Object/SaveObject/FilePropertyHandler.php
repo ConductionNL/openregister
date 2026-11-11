@@ -20,6 +20,8 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\SecurityService;
@@ -434,19 +436,8 @@ class FilePropertyHandler {
 	 * - Storing file IDs in the object data instead of just attaching files
 	 * - Supporting both single files and arrays of files
 	 *
-	 * @param ObjectEntity $objectEntity The object entity being saved.
-	 * @param array $object The object data (passed by reference to update with file IDs).
-	 * @param string $propertyName The name of the file property.
-	 * @param Schema $schema The schema containing property configuration.
-	 *
-	 * @psalm-param   ObjectEntity $objectEntity
-	 * @psalm-param   array<string, mixed> $object
-	 * @psalm-param   string $propertyName
-	 * @psalm-param   Schema $schema
-	 * @phpstan-param ObjectEntity $objectEntity
-	 * @phpstan-param array<string, mixed> $object
-	 * @phpstan-param string $propertyName
-	 * @phpstan-param Schema $schema
+	 * @param ObjectFileWrite $write        The write: its entity and schema, and the data that gets the file ids.
+	 * @param string          $propertyName The name of the file property.
 	 *
 	 * @return void
 	 *
@@ -457,21 +448,16 @@ class FilePropertyHandler {
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	public function handleFileProperty(
-		ObjectEntity $objectEntity,
-		array &$object,
-		string $propertyName,
-		Schema $schema,
-	): void {
-		$fileValue = $object[$propertyName];
+	public function handleFileProperty(ObjectFileWrite $write, string $propertyName): void {
+		$schema = $write->schema;
 		$target = new FilePropertyTarget(
-			objectEntity: $objectEntity,
+			objectEntity: $write->entity,
 			name: $propertyName,
 			isArray: (($schema->getProperties() ?? [])[$propertyName]['type'] ?? '') === 'array',
 			fileConfig: $this->parts->configs->fileConfigOf(schema: $schema, propertyName: $propertyName)
 		);
 
-		$object[$propertyName] = $this->storedValue(target: $target, fileValue: $fileValue);
+		$write->data[$propertyName] = $this->storedValue(target: $target, fileValue: $write->data[$propertyName]);
 	}//end handleFileProperty()
 
 	/**
@@ -629,11 +615,13 @@ class FilePropertyHandler {
 	 */
 	private function addFile(FileStoreRequest $request, array $fileData): int {
 		$file = $this->fileService->addFile(
-			objectEntity: $request->objectEntity,
-			fileName: $this->generateFileName(request: $request, extension: $fileData['extension']),
-			content: $fileData['content'],
-			share: $request->fileConfig['autoShare'] ?? false,
-			tags: $this->prepareAutoTags(fileConfig: $request->fileConfig, propertyName: $request->propertyName)
+			target: new FileTarget(object: $request->objectEntity),
+			upload: new FileUpload(
+				fileName: $this->generateFileName(request: $request, extension: $fileData['extension']),
+				content: $fileData['content'],
+				share: $request->fileConfig['autoShare'] ?? false,
+				tags: $this->prepareAutoTags(fileConfig: $request->fileConfig, propertyName: $request->propertyName)
+			)
 		);
 
 		return $file->getId();

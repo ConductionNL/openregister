@@ -124,24 +124,15 @@ class DecisionTableBulkGuard {
 	 * @return array<int, string>|null The problems, or null.
 	 */
 	private function problemsOf(DecisionTableBatchRun $run, mixed $row): ?array {
-		$self = [];
-		if (is_array($row['@self'] ?? null) === true) {
-			$self = $row['@self'];
-		}
-
-		$run->schema   = ($this->reference(value: ($self['schema'] ?? null)) ?? $run->defaultSchema);
-		$run->register = ($this->reference(value: ($self['register'] ?? null)) ?? $run->defaultRegister);
+		$self = $this->selfOf(row: $row);
+		$this->locate(run: $run, self: $self);
 		if ($this->isTable(run: $run) === false) {
 			return null;
 		}
 
-		$data = $row;
-		unset($data['@self']);
+		$data = $this->withoutSelf(row: $row);
 		$run->uuid = $this->uuidOf(row: $row, self: $self);
-		$problems  = ($this->listener()->problemsOf(
-			row: new ObjectRef(register: (string)$run->register, schema: (string)$run->schema, id: $run->uuid),
-			data: $data
-		) ?? []);
+		$problems  = $this->rowProblems(run: $run, data: $data);
 		$clash     = $this->claim(run: $run, key: trim((string)($data['key'] ?? '')));
 		if ($clash !== null) {
 			$problems[] = $clash;
@@ -149,6 +140,63 @@ class DecisionTableBulkGuard {
 
 		return $problems;
 	}//end problemsOf()
+
+	/**
+	 * The row's `@self` block, or an empty one.
+	 *
+	 * @param mixed $row The submitted row.
+	 *
+	 * @return array<string, mixed> The block.
+	 */
+	private function selfOf(mixed $row): array {
+		if (is_array($row['@self'] ?? null) === true) {
+			return $row['@self'];
+		}
+
+		return [];
+	}//end selfOf()
+
+	/**
+	 * The row's data: the row without its `@self` block.
+	 *
+	 * @param mixed $row The submitted row.
+	 *
+	 * @return mixed The data.
+	 */
+	private function withoutSelf(mixed $row): mixed {
+		$data = $row;
+		unset($data['@self']);
+
+		return $data;
+	}//end withoutSelf()
+
+	/**
+	 * Point the run at the row's schema and register, or the batch defaults.
+	 *
+	 * @param DecisionTableBatchRun $run  The batch in progress.
+	 * @param array<string, mixed>  $self The row's `@self` block.
+	 *
+	 * @return void
+	 */
+	private function locate(DecisionTableBatchRun $run, array $self): void {
+		$run->schema   = ($this->reference(value: ($self['schema'] ?? null)) ?? $run->defaultSchema);
+		$run->register = ($this->reference(value: ($self['register'] ?? null)) ?? $run->defaultRegister);
+	}//end locate()
+
+	/**
+	 * The problems the decision-table save check finds in one row's data.
+	 *
+	 * @param DecisionTableBatchRun $run  The batch in progress, at this row.
+	 * @param array<string, mixed>  $data The row's data without `@self`.
+	 *
+	 * @return array<int, string> The problems.
+	 */
+	private function rowProblems(DecisionTableBatchRun $run, array $data): array {
+		return ($this->listener()->problemsOf(
+			row: new ObjectRef(register: (string)$run->register, schema: (string)$run->schema, id: $run->uuid),
+			data: $data
+		) ?? []);
+	}//end rowProblems()
 
 	/**
 	 * Whether the run's current register/schema pair is a decision table, asked once per pair.

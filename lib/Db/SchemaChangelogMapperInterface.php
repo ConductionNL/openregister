@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+
 /**
  * The methods of SchemaChangelogMapper that callers outside the Db component use.
  *

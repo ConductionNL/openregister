@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -460,8 +461,8 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 		$changeSet = new SchemaChangeSet($changes, 'minor', 'minor');
 
 		$versioning = $this->createMock(SchemaVersioningService::class);
-		$versioning->method('classify')->willReturnCallback(function () use ($changeSet) {
-			$this->record(method: 'versioning.classify', args: func_get_args());
+		$versioning->method('classify')->willReturnCallback(function (Schema $existing, IncomingDefinition $incoming) use ($changeSet) {
+			$this->record(method: 'versioning.classify', args: [$existing, $incoming->definition, $incoming->renames]);
 			return $changeSet;
 		});
 		$versioning->method('gateChange')->willReturnCallback(function ($schemaId, SchemaChangeRecord $change) use ($case) {

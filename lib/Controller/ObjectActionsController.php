@@ -607,7 +607,7 @@ class ObjectActionsController extends Controller {
 	private function findDefinition(Schema $schema, ObjectActionsSelection $selection): ?ObjectActionDefinition {
 		$action = $selection->action;
 		try {
-			return $this->definitions->find(schema: $schema, key: $action, register: $selection->route['register']);
+			return ($this->definitions->forSchema(schema: $schema, register: $selection->route['register'])[$action] ?? null);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'Object action "{action}" of schema {schema} could not be read: {message}',

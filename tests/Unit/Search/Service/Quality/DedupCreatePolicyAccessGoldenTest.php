@@ -54,6 +54,9 @@ class DedupCreatePolicyAccessGoldenTest extends TestCase {
 			'override inside the group allows'      => [$block, 2, true, 'bob', ['dedup-admins'], 'allowed:2'],
 			'block naming no override group refuses' => [['onCreate' => 'block'], 1, true, 'bob', ['dedup-admins'], 'refused'],
 			'blank override groups are skipped'     => [['onCreate' => 'block', 'overrideGroups' => ['', 7]], 1, true, 'bob', [''], 'refused'],
+			'override groups not a list refuses'    => [['onCreate' => 'block', 'overrideGroups' => 'dedup-admins'], 1, true, 'bob', ['dedup-admins'], 'refused'],
+			'empty override groups refuses'         => [['onCreate' => 'block', 'overrideGroups' => []], 1, true, 'bob', ['dedup-admins'], 'refused'],
+			'a later override group allows'         => [['onCreate' => 'block', 'overrideGroups' => ['', 'other', 'dedup-admins']], 1, true, 'bob', ['dedup-admins'], 'allowed:1'],
 		];
 	}//end cases()
 

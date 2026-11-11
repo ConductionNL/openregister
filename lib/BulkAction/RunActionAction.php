@@ -40,7 +40,6 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Http;
-use OCP\IUser;
 
 /**
  * The bulk action that runs a declared object action per member.
@@ -143,29 +142,13 @@ class RunActionAction implements RunActionActionInterface {
 	/**
 	 * Rehearse or run the action on one member.
 	 *
-	 * @param ObjectEntity         $object     The member.
-	 * @param array<string, mixed> $parameters `{action, inputs, register, schema}`.
-	 * @param bool                 $commit     False to rehearse, true to run.
-	 * @param IUser|null           $actor      The person who started the job.
+	 * @param BulkStep $step The member, the action and its inputs, preview or commit, and the actor.
 	 *
 	 * @return BulkActionResult The outcome.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The interface fixes the signature.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		return $this->applyStep(step: new BulkStep(object: $object, parameters: $parameters, commit: $commit, actor: $actor));
-	}//end apply()
-
-	/**
-	 * Preview or run the declared action on the step's object.
-	 *
-	 * @param BulkStep $step The member, the action and its inputs, preview or commit, and the actor.
-	 *
-	 * @return BulkActionResult The member's outcome.
-	 */
-	private function applyStep(BulkStep $step): BulkActionResult {
+	public function apply(BulkStep $step): BulkActionResult {
 		$schema = $this->schemaOf(object: $step->object);
 		if ($schema === null) {
 			return BulkActionResult::refused(rule: 'no-schema');
@@ -176,7 +159,7 @@ class RunActionAction implements RunActionActionInterface {
 		}
 
 		return $this->run(step: $step, schema: $schema);
-	}//end applyStep()
+	}//end apply()
 
 	/**
 	 * Ask the run's checks (action, right, `when`, inputs) and run nothing.

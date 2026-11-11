@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\RecordTemplate;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Db\RecordTemplateMapperInterface;
 use OCA\OpenRegister\Db\Schema;

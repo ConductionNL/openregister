@@ -87,6 +87,17 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	}//end __construct()
 
 	/**
+	 * The action the schema declares or inherits under the call's key, in the register of the call's object.
+	 *
+	 * @param ObjectActionCall $call The schema, the object (for its register) and the key.
+	 *
+	 * @return ObjectActionDefinition|null The action, or null when none answers to the key.
+	 */
+	private function declared(ObjectActionCall $call): ?ObjectActionDefinition {
+		return ($this->checks->definitions->forSchema(schema: $call->schema, register: $call->object->getRegister())[$call->key] ?? null);
+	}//end declared()
+
+	/**
 	 * The action a key names on this schema: declared, inherited, or a lifecycle transition.
 	 *
 	 * @param ObjectActionCall $call The schema, the object (for its register and its available moves) and the key.
@@ -96,7 +107,7 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	public function resolve(ObjectActionCall $call): ?ObjectActionDefinition {
-		$declared = $this->checks->definitions->find(schema: $call->schema, key: $call->key, register: $call->object->getRegister());
+		$declared = $this->declared(call: $call);
 		if ($declared !== null) {
 			if ($declared->isRunnable() === false) {
 				return null;
@@ -213,7 +224,7 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 */
 	private function rightRefusal(ObjectActionCall $call, ObjectActionDefinition $definition): ?array {
 		$right = $call->key;
-		if ($this->checks->definitions->find(schema: $call->schema, key: $call->key, register: $call->object->getRegister()) === null) {
+		if ($this->declared(call: $call) === null) {
 			$right = 'update';
 		}
 

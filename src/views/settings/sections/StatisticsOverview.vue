@@ -214,6 +214,7 @@ import ClearSearchTrailsDialog from '../../../dialogs/settings/ClearSearchTrails
 // eslint-disable-next-line n/no-unpublished-import -- false positive: this bundled dialog (identical in shape to the sibling dialogs imported below, which lint clean) is app source shipped via webpack, not an npm package.
 import RebaseConfirmationDialog from '../../../dialogs/settings/RebaseConfirmationDialog.vue'
 import MassValidateModal from '../../../modals/settings/MassValidateModal.vue'
+import { binarySize } from '../../../services/byteSize.js'
 import { settingsSectionState } from './settingsSectionState.js'
 
 /**
@@ -256,6 +257,51 @@ const TOTAL_ROWS = [
 	{ label: 'Sources', count: 'totalSources' },
 ]
 
+/**
+ * The mass-validation settings a run starts from: serial, all objects, in
+ * batches of a thousand, without collecting errors.
+ *
+ * @return {object} Fresh settings
+ */
+function defaultMassValidateConfig() {
+	return {
+		mode: 'serial',
+		maxObjects: 0,
+		batchSize: 1000,
+		collectErrors: false,
+	}
+}
+
+/**
+ * The memory prediction shown before one is read: safe, sizes unknown.
+ *
+ * @return {object} A fresh prediction
+ */
+function unknownMemoryPrediction() {
+	return {
+		prediction_safe: true,
+		formatted: {
+			total_predicted: 'Unknown',
+			available: 'Unknown',
+		},
+	}
+}
+
+/**
+ * The table of items that need attention.
+ *
+ * @param {Array<object>} rows The warning rows
+ * @return {object} The table
+ */
+function warningTable(rows) {
+	return {
+		className: 'warning-stats',
+		title: '⚠️ Items Requiring Attention',
+		headers: ['Issue', 'Count', 'Size'],
+		rows,
+	}
+}
+
 export default {
 	name: 'StatisticsOverview',
 
@@ -284,20 +330,8 @@ export default {
 				totalObjects: 0,
 			},
 
-			massValidateConfig: {
-				mode: 'serial',
-				maxObjects: 0,
-				batchSize: 1000,
-				collectErrors: false,
-			},
-
-			memoryPrediction: {
-				prediction_safe: true,
-				formatted: {
-					total_predicted: 'Unknown',
-					available: 'Unknown',
-				},
-			},
+			massValidateConfig: defaultMassValidateConfig(),
+			memoryPrediction: unknownMemoryPrediction(),
 
 			memoryPredictionLoading: false,
 		}
@@ -311,20 +345,7 @@ export default {
 		 * @return {Array<object>}
 		 */
 		statsTables() {
-			return [
-				{
-					className: 'warning-stats',
-					title: '⚠️ Items Requiring Attention',
-					headers: ['Issue', 'Count', 'Size'],
-					rows: this.warningRows,
-				},
-				{
-					className: 'general-stats',
-					title: '📊 System Overview',
-					headers: ['Resource', 'Count', 'Size'],
-					rows: TOTAL_ROWS.map((row) => this.totalRow(row)),
-				},
-			]
+			return [warningTable(this.warningRows), this.overviewTable()]
 		},
 
 		/**
@@ -475,6 +496,21 @@ export default {
 
 	methods: {
 		/**
+		 * The system overview table: one row per resource total.
+		 *
+		 * @spec exclude UI plumbing — statistics table layout
+		 * @return {object} The table
+		 */
+		overviewTable() {
+			return {
+				className: 'general-stats',
+				title: '📊 System Overview',
+				headers: ['Resource', 'Count', 'Size'],
+				rows: TOTAL_ROWS.map((row) => this.totalRow(row)),
+			}
+		},
+
+		/**
 		 * One row of the overview table: its count, its size or a dash, and
 		 * for a clearable resource its clearing flag and dialog opener.
 		 *
@@ -508,20 +544,14 @@ export default {
 		},
 
 		/**
-		 * Format bytes to human-readable size.
+		 * Format bytes to human-readable size; a missing size reads as zero.
 		 *
-		 * @param {number} bytes - The size in bytes
+		 * @param {number|null|undefined} bytes - The size in bytes
 		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted size string (e.g., '1.5 MB')
 		 */
 		formatBytes(bytes) {
-			if (bytes === 0 || bytes === null || bytes === undefined) return '0 B'
-
-			const k = 1024
-			const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-			const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+			return binarySize(bytes ?? 0)
 		},
 
 		/**

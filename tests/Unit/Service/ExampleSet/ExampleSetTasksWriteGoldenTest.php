@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -56,7 +57,8 @@ class ExampleSetTasksWriteGoldenTest extends TestCase {
 	 */
 	private function tasks(array $holders=[], bool $terminal=false, bool $fail=false): ExampleSetTasks {
 		$service = $this->createMock(TaskServiceInterface::class);
-		$service->method('import')->willReturnCallback(function (array $data, ?string $actor, ?callable $mayRead=null, ?\DateTime $createdAt=null) use ($terminal, $fail): Task {
+		$service->method('importTask')->willReturnCallback(function (TaskImport $import) use ($terminal, $fail): Task {
+			[$data, $actor, $createdAt] = [$import->data, $import->actor, $import->createdAt];
 			$this->calls[] = 'import as '.$actor.' '.json_encode($data).' created '.($createdAt?->format('Y-m-d\TH:i:sP') ?? 'now');
 			if ($fail === true) {
 				throw new RuntimeException('the engine refused it');

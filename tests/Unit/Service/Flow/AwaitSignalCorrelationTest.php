@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
@@ -72,11 +73,11 @@ class AwaitSignalCorrelationTest extends TestCase {
 		$context = [FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'approval')];
 
 		try {
-			$this->node->execute(
-				$this->items([['id' => 1, 'proposalId' => '42']]),
-				['question' => 'Close the vote?', 'correlationKey' => 'vote:{{ proposalId }}'],
-				$context
-			);
+			$this->node->execute(new FlowNodeCall(
+				items: $this->items([['id' => 1, 'proposalId' => '42']]),
+				config: ['question' => 'Close the vote?', 'correlationKey' => 'vote:{{ proposalId }}'],
+				context: $context
+			));
 			self::fail('the node must suspend');
 		} catch (FlowSuspension $suspension) {
 			// Expected: waiting for the signal.
@@ -90,7 +91,7 @@ class AwaitSignalCorrelationTest extends TestCase {
 		$context = [FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'approval')];
 
 		try {
-			$this->node->execute($this->items([['id' => 1]]), ['question' => 'Publish it?'], $context);
+			$this->node->execute(new FlowNodeCall(items: $this->items([['id' => 1]]), config: ['question' => 'Publish it?'], context: $context));
 			self::fail('the node must suspend');
 		} catch (FlowSuspension $suspension) {
 			// Expected.

@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;

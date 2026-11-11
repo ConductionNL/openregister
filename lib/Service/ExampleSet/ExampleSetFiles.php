@@ -31,6 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -245,10 +247,8 @@ class ExampleSetFiles {
 	 */
 	private function add(FileAttachRun $run, LocalFile $file): array {
 		$added = $this->fileService()->addFile(
-			objectEntity: $run->objectId,
-			fileName: basename($file->path),
-			content: (string) file_get_contents($file->path),
-			share: $file->share
+			target: new FileTarget(object: $run->objectId),
+			upload: new FileUpload(fileName: basename($file->path), content: (string) file_get_contents($file->path), share: $file->share)
 		);
 
 		return ['id' => (string) $added->getId(), 'name' => basename($file->path), 'shared' => $file->share];

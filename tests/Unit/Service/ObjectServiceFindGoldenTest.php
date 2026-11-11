@@ -59,6 +59,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Golden record of find() over every branch: the scope each retrieval runs in, the cross-schema
@@ -400,7 +401,7 @@ class ObjectServiceFindGoldenTest extends TestCase {
 			);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->createMock(DataManipulationHandler::class),
 			deleteHandler: $this->createMock(DeleteObject::class),
 			getHandler: $getHandler,
@@ -439,6 +440,6 @@ class ObjectServiceFindGoldenTest extends TestCase {
 			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
 			container: $container,
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end service()
 }//end class

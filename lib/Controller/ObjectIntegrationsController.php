@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 use OCA\OpenRegister\Service\Integration\PaginatedResults;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -321,7 +322,7 @@ class ObjectIntegrationsController extends Controller {
 			integrationId: $integrationId,
 			callback: fn ($provider) => $this->listed(
 				integrationId: $integrationId,
-				rows: $provider->list($register, $schema, $this->guardedUuid(), $this->collectFilters())
+				rows: $provider->list(new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $this->collectFilters())
 			)
 		);
 	}//end index()
@@ -390,7 +391,7 @@ class ObjectIntegrationsController extends Controller {
 	public function show(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->guardObjectAccess(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatch(
 			integrationId: $integrationId,
-			callback: fn ($provider) => $provider->get($register, $schema, $this->guardedUuid(), $entityId)
+			callback: fn ($provider) => $provider->get(new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $entityId)
 		);
 	}//end show()
 
@@ -413,7 +414,10 @@ class ObjectIntegrationsController extends Controller {
 		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? self::created(
 			response: $this->dispatch(
 				integrationId: $integrationId,
-				callback: fn ($provider) => $provider->create($register, $schema, $this->guardedUuid(), $this->collectPayload())
+				callback: fn ($provider) => $provider->create(
+					new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+					$this->collectPayload()
+				)
 			)
 		);
 	}//end create()
@@ -437,7 +441,11 @@ class ObjectIntegrationsController extends Controller {
 	public function update(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatch(
 			integrationId: $integrationId,
-			callback: fn ($provider) => $provider->update($register, $schema, $this->guardedUuid(), $entityId, $this->collectPayload())
+			callback: fn ($provider) => $provider->update(
+				new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+				$entityId,
+				$this->collectPayload()
+			)
 		);
 	}//end update()
 
@@ -460,7 +468,7 @@ class ObjectIntegrationsController extends Controller {
 	public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatchDelete(
 			integrationId: $integrationId,
-			callback: fn ($provider) => $provider->delete($register, $schema, $this->guardedUuid(), $entityId)
+			callback: fn ($provider) => $provider->delete(new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $entityId)
 		);
 	}//end destroy()
 

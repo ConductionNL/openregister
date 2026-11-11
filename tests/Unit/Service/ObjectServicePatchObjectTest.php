@@ -67,6 +67,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Throwable;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests for ObjectService::patchObject() and its merge rules.
@@ -128,7 +129,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		$this->schema = new Schema();
 		$this->schema->setId(2);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -167,7 +168,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->container,
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 

@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
@@ -64,7 +65,7 @@ final class AwaitSignalAnswerCharacterisationTest extends TestCase {
 		}
 
 		try {
-			return $this->node->execute($items, $config, [FlowRunService::SIGNAL_CONTEXT_KEY => $signal]);
+			return $this->node->execute(new FlowNodeCall(items: $items, config: $config, context: [FlowRunService::SIGNAL_CONTEXT_KEY => $signal]));
 		} catch (FlowStop $stop) {
 			$this->assertTrue($stop->isError());
 

@@ -1018,35 +1018,42 @@ class OasService implements OasServiceInterface {
 	private function addJsonLdContextPaths(object $register, object $schema): void {
 		$registerSlug = $this->slugOf(entity: $register);
 		$schemaSlug   = $this->slugOf(entity: $schema);
-		$operationId  = 'getContext' . $this->propertySanitizer->names->pascalCase(string: $registerSlug);
 
 		// Register-wide context document (idempotent across schemas of a register).
-		$this->oas['paths']['/contexts/' . $registerSlug]['get'] = $this->contextOperation(
-			subject: 'register ' . $registerSlug,
-			operationId: $operationId,
-			scope: 'register-wide'
-		);
+		$this->oas['paths']['/contexts/' . $registerSlug]['get'] = $this->contextOperation(registerSlug: $registerSlug, schemaSlug: null);
 
 		// Per-schema context document.
 		$this->oas['paths']['/contexts/' . $registerSlug . '/' . $schemaSlug]['get'] = $this->contextOperation(
-			subject: $schemaSlug,
-			operationId: $operationId . $this->propertySanitizer->names->pascalCase(string: $schemaSlug),
-			scope: 'per-schema'
+			registerSlug: $registerSlug,
+			schemaSlug: $schemaSlug
 		);
 	}//end addJsonLdContextPaths()
 
 	/**
 	 * The GET operation of one dereferenceable JSON-LD context document.
 	 *
-	 * @param string $subject     What the context is for, as the summary names it.
-	 * @param string $operationId The operationId.
-	 * @param string $scope       The scope the description names (register-wide or per-schema).
+	 * The register-wide document (no schema) is summarised as `register <slug>`
+	 * and named `getContext<Register>`; a per-schema one is summarised by the
+	 * schema slug and named `getContext<Register><Schema>`.
+	 *
+	 * @param string      $registerSlug The register's slug.
+	 * @param string|null $schemaSlug   The schema's slug, or null for the register-wide document.
 	 *
 	 * @return array<string, mixed> The operation.
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
-	private function contextOperation(string $subject, string $operationId, string $scope): array {
+	private function contextOperation(string $registerSlug, ?string $schemaSlug): array {
+		$names       = $this->propertySanitizer->names;
+		$operationId = 'getContext' . $names->pascalCase(string: $registerSlug);
+		$subject     = 'register ' . $registerSlug;
+		$scope       = 'register-wide';
+		if ($schemaSlug !== null) {
+			$operationId .= $names->pascalCase(string: $schemaSlug);
+			$subject      = $schemaSlug;
+			$scope        = 'per-schema';
+		}
+
 		return [
 			'summary' => 'JSON-LD context for ' . $subject,
 			'operationId' => $operationId,

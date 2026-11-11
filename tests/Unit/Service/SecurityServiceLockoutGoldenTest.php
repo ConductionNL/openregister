@@ -153,7 +153,7 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 	 */
 	public function testFiveFailedLoginsLockOutUserAndAddress(): void {
 		for ($i = 1; $i <= 4; $i++) {
-			$this->service->recordFailedLoginAttempt('alice', '10.0.0.1');
+			$this->service->recordFailedLoginAttempt(new FailedAttempt('alice', '10.0.0.1', 'invalid_credentials'));
 		}
 
 		$this->assertSame(['allowed' => true], $this->service->checkLoginRateLimit('alice', '10.0.0.1'));
@@ -163,7 +163,7 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 		);
 
 		$this->events = [];
-		$this->service->recordFailedLoginAttempt('alice', '10.0.0.1', 'bad_password');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('alice', '10.0.0.1', 'bad_password'));
 		$this->assertSame(
 			[
 				['warning', 'user_locked_out', ['username' => 'alice', 'ip_address' => '10.0.0.1', 'attempts' => 5, 'lockout_until' => 'future']],
@@ -205,7 +205,7 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 	 */
 	public function testBlockedAddressAndProgressiveDelay(): void {
 		for ($i = 1; $i <= 5; $i++) {
-			$this->service->recordFailedLoginAttempt('user' . $i, '10.0.0.2');
+			$this->service->recordFailedLoginAttempt(new FailedAttempt('user' . $i, '10.0.0.2', 'invalid_credentials'));
 		}
 
 		$refusal = $this->service->checkLoginRateLimit('bob', '10.0.0.2');
@@ -228,7 +228,7 @@ class SecurityServiceLockoutGoldenTest extends TestCase {
 		$this->assertSame(4, $this->service->checkLoginRateLimit('bob', '10.0.0.2')['delay']);
 
 		// A cache-key-unsafe username is sanitised before it reaches a key.
-		$this->service->recordFailedLoginAttempt('a b/c', '10.0.0.3');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('a b/c', '10.0.0.3', 'invalid_credentials'));
 		$this->assertArrayHasKey('openregister_login_attempts_a_b_c', $this->store);
 	}//end testBlockedAddressAndProgressiveDelay()
 

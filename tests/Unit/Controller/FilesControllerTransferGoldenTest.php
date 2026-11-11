@@ -261,7 +261,7 @@ class FilesControllerTransferGoldenTest extends TestCase {
 			$file->method('getId')->willReturn(99);
 			return $file;
 		};
-		$service->method('copyFile')->willReturnCallback(fn (...$args) => $transfer('copyFile', $args));
+		$service->method('copyAttachedFile')->willReturnCallback(fn (FileTransfer $copy) => $transfer('copyFile', [$copy->source, $copy->fileId, $copy->target]));
 		$service->method('moveAttachedFile')->willReturnCallback(fn (FileTransfer $move) => $transfer('moveFile', [$move->source, $move->fileId, $move->target]));
 		$service->method('formatFile')->willReturnCallback(function (File $file) {
 			$this->calls[] = ['fileService.formatFile' => $file->getId()];

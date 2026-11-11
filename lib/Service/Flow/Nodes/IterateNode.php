@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -307,9 +308,7 @@ class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterfa
 	 * the final page. That is what an author expects from "repeat until done",
 	 * and getting it wrong would silently discard all but the last batch.
 	 *
-	 * @param array $items The input items, passed to the first source call.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array Every item produced across all iterations.
 	 *
@@ -317,7 +316,10 @@ class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterfa
 	 *
 	 * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		return $this->repeat(step: new NodeInvocation(items: $items, config: $config, context: $context));
 	}//end execute()
 

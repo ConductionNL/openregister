@@ -27,6 +27,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -208,9 +209,7 @@ class FileSearchController extends Controller {
 			// entity type (openregister#4097).
 			$keywordResults = $this->readScope->readableResults(
 				results: $this->chunkMapper->searchByKeyword(
-					query: $query,
-					limit: $limit * 2,
-					filters: ['source_type' => 'file']
+					search: new KeywordChunkSearch(query: $query, limit: $limit * 2, filters: ['source_type' => 'file'])
 				)
 			);
 

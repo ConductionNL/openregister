@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Flow\TriggerLookup;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;

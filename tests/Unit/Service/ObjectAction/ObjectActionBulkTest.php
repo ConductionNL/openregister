@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelection;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -115,7 +116,7 @@ class ObjectActionBulkTest extends TestCase {
 
 		$bulk = new ObjectActionBulk(jobs: $this->jobs, registers: $this->registers, gate: $this->gate);
 
-		$this->assertSame($job, $bulk->start(selection: $this->selection(), action: 'close', inputs: ['reason' => 'done']));
+		$this->assertSame($job, $bulk->start(selection: $this->selection(), request: new ObjectActionRequest(key: 'close', given: ['reason' => 'done'])));
 	}//end testStartCreatesAJobAsTheSignedInUser()
 
 	/**
@@ -131,7 +132,7 @@ class ObjectActionBulkTest extends TestCase {
 			->with($this->callback(static fn (BulkJobRequest $request): bool => $request->selection->registerId === null && $request->selection->schemaId === 9))
 			->willReturn(new BulkJob());
 
-		(new ObjectActionBulk(jobs: $this->jobs, registers: $this->registers, gate: $this->gate))->start(selection: $this->selection(), action: 'close', inputs: []);
+		(new ObjectActionBulk(jobs: $this->jobs, registers: $this->registers, gate: $this->gate))->start(selection: $this->selection(), request: new ObjectActionRequest(key: 'close', given: []));
 	}//end testAnUnresolvableRegisterLeavesTheRegisterIdEmpty()
 
 	/**
@@ -145,6 +146,6 @@ class ObjectActionBulkTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('needs a signed-in user');
-		(new ObjectActionBulk(jobs: $this->jobs, registers: $this->registers, gate: $this->gate))->start(selection: $this->selection(), action: 'close', inputs: []);
+		(new ObjectActionBulk(jobs: $this->jobs, registers: $this->registers, gate: $this->gate))->start(selection: $this->selection(), request: new ObjectActionRequest(key: 'close', given: []));
 	}//end testWithoutASignedInUserNoJobIsCreated()
 }//end class

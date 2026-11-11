@@ -32,7 +32,7 @@ use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationDomain;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationMappers;
 use OCA\OpenRegister\Controller\Support\RetentionPlatform;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;

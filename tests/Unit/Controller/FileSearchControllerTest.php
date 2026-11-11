@@ -8,6 +8,7 @@ use OCA\OpenRegister\Files\Controller\FileSearchController;
 use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -242,10 +243,11 @@ class FileSearchControllerTest extends TestCase {
 		$this->chunkMapper->expects($this->once())
 			->method('searchByKeyword')
 			->with(
-				'quarterly report',
-				20,
 				$this->callback(
-					fn (array $filters): bool => ($filters['source_type'] ?? null) === 'file'
+					fn (KeywordChunkSearch $search): bool => $search->query === 'quarterly report'
+						&& $search->limit === 20
+						&& ($search->filters['source_type'] ?? null) === 'file'
+						&& $search->allowUnrankedFallback === false
 				)
 			)
 			->willReturn($keywordResults);

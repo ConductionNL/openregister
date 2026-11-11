@@ -25,6 +25,7 @@ use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCA\OpenRegister\Service\Object\ContentSearchHandler;
 use OCA\OpenRegister\Service\Object\ContentSearchWidening;
 use OCA\OpenRegister\Service\Object\MetadataArmPage;
@@ -650,7 +651,7 @@ class ContentSearchHandlerTest extends TestCase {
 	public function testAlwaysRequestsUnrankedFallbackFromChunkMapper(): void {
 		$this->chunkMapper->expects($this->once())
 			->method('searchByKeyword')
-			->with('quarterly report', $this->anything(), $this->anything(), true)
+			->with($this->callback(static fn (KeywordChunkSearch $search): bool => $search->query === 'quarterly report' && $search->allowUnrankedFallback === true))
 			->willReturn([]);
 
 		$this->handler->widen(

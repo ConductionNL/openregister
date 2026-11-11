@@ -93,16 +93,45 @@ class DeletionWindowService {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function retentionFor(?Schema $schema): array {
-		if ($schema !== null) {
-			$declared = ($schema->getArchive()['deleteRetention'] ?? null);
-			if (is_numeric($declared) === true && (int)$declared > 0) {
-				return [
-					'days' => (int)$declared,
-					'source' => DeletionWindow::SOURCE_SCHEMA,
-				];
-			}
+		$days = self::schemaRetentionDays(schema: $schema);
+		if ($days > 0) {
+			return self::retention(days: $days, source: DeletionWindow::SOURCE_SCHEMA);
 		}
 
+		$days = $this->instanceRetentionDays();
+		if ($days > 0) {
+			return self::retention(days: $days, source: DeletionWindow::SOURCE_INSTANCE);
+		}
+
+		return self::retention(days: self::DEFAULT_RETENTION_DAYS, source: DeletionWindow::SOURCE_DEFAULT);
+	}//end retentionFor()
+
+	/**
+	 * The retention in days a schema declares, or zero when it declares no window.
+	 *
+	 * @param Schema|null $schema The object's schema, when it resolves.
+	 *
+	 * @return int The days, zero when absent, not numeric or not positive.
+	 */
+	private static function schemaRetentionDays(?Schema $schema): int {
+		if ($schema === null) {
+			return 0;
+		}
+
+		$declared = ($schema->getArchive()['deleteRetention'] ?? null);
+		if (is_numeric($declared) === true && (int)$declared > 0) {
+			return (int)$declared;
+		}
+
+		return 0;
+	}//end schemaRetentionDays()
+
+	/**
+	 * The retention in whole days the instance setting configures, or zero when it configures no window.
+	 *
+	 * @return int The days, zero when unset, unreadable, not numeric or under a day.
+	 */
+	private function instanceRetentionDays(): int {
 		$configured = null;
 		try {
 			$configured = ($this->retentionHandler->getRetentionSettingsOnly()['objectDeleteRetention'] ?? null);
@@ -116,20 +145,26 @@ class DeletionWindowService {
 		}
 
 		if (is_numeric($configured) === true && (int)$configured > 0) {
-			$days = (int)floor(((int)$configured / self::MS_PER_DAY));
-			if ($days > 0) {
-				return [
-					'days' => $days,
-					'source' => DeletionWindow::SOURCE_INSTANCE,
-				];
-			}
+			return (int)floor(((int)$configured / self::MS_PER_DAY));
 		}
 
+		return 0;
+	}//end instanceRetentionDays()
+
+	/**
+	 * A retention and the rule that produced it.
+	 *
+	 * @param int    $days   The retention in days.
+	 * @param string $source The rule that produced it.
+	 *
+	 * @return array{days: int, source: string} The retention and its rule.
+	 */
+	private static function retention(int $days, string $source): array {
 		return [
-			'days' => self::DEFAULT_RETENTION_DAYS,
-			'source' => DeletionWindow::SOURCE_DEFAULT,
+			'days' => $days,
+			'source' => $source,
 		];
-	}//end retentionFor()
+	}//end retention()
 
 	/**
 	 * The window keys to merge into an object's deletion metadata when it is

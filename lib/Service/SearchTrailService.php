@@ -30,10 +30,11 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailCriteria;
 use OCA\OpenRegister\Db\SearchTrailMapperInterface;
+use OCA\OpenRegister\Db\SearchTrailOutcome;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -142,8 +143,7 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	public function createSearchTrail(array $query, SearchMeasurement $measured): SearchTrail {
 		try {
 			// Mapper handles filtering of system parameters (starting with _).
-			$outcome = $this->outcome(resultCount: $measured->resultCount, totalResults: $measured->totalResults);
-			$trail   = $this->searchTrailMapper->createSearchTrail($query, $outcome, $measured->responseTime, $measured->executionType);
+			$trail = $this->searchTrailMapper->createSearchTrail(searchQuery: $query, outcome: $this->outcomeOf(measured: $measured));
 			return $this->selfCleared(trail: $trail);
 		} catch (Exception $e) {
 			// Wrap exception with more context for debugging.
@@ -152,19 +152,20 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	}//end createSearchTrail()
 
 	/**
-	 * The unsaved trail carrying what a search returned.
+	 * The outcome the mapper stores for one executed search, its response time rounded to whole milliseconds.
 	 *
-	 * @param int $resultCount  The number of results returned
-	 * @param int $totalResults The total number of matching results
+	 * @param SearchMeasurement $measured The result counts, response time and execution type.
 	 *
-	 * @return SearchTrail
+	 * @return SearchTrailOutcome
 	 */
-	private function outcome(int $resultCount, int $totalResults): SearchTrail {
-		$outcome = new SearchTrail();
-		$outcome->setResultCount($resultCount);
-		$outcome->setTotalResults($totalResults);
-		return $outcome;
-	}//end outcome()
+	private function outcomeOf(SearchMeasurement $measured): SearchTrailOutcome {
+		return new SearchTrailOutcome(
+			resultCount: $measured->resultCount,
+			totalResults: $measured->totalResults,
+			responseTime: (int)round($measured->responseTime),
+			executionType: $measured->executionType
+		);
+	}//end outcomeOf()
 
 	/**
 	 * Run the self-clearing a new trail triggers, and hand the trail back.

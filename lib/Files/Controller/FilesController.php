@@ -59,6 +59,8 @@ use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
 use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -80,6 +82,7 @@ use OCA\OpenRegister\Service\File\FileMetadataChange;
 use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileRename;
 use OCA\OpenRegister\Service\File\FileTransfer as AttachedFileTransfer;
+use OCA\OpenRegister\Support\ContentDisposition;
 
 /**
  * FilesController handles file operations for objects in registers
@@ -573,7 +576,10 @@ class FilesController extends Controller {
 			savedAt: new DateTimeImmutable()
 		));
 
-		$file = $this->fileService->addFile(objectEntity: $object, fileName: $transcript['filename'], content: $transcript['content']);
+		$file = $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $transcript['filename'], content: $transcript['content'], share: false)
+		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end savePostedChat()
@@ -1043,7 +1049,7 @@ class FilesController extends Controller {
 	private function streamInline(File $file, ?ObjectEntity $object): StreamResponse {
 		$response = new StreamResponse($file->fopen('r'));
 		$response->addHeader('Content-Type', $file->getMimeType());
-		$response->addHeader('Content-Disposition', $this->buildContentDisposition(disposition: 'inline', filename: $file->getName()));
+		$response->addHeader('Content-Disposition', (new ContentDisposition(disposition: 'inline', filename: $file->getName()))->headerValue());
 		$response->addHeader('Content-Length', (string)$file->getSize());
 
 		// Record download (counter + audit). Best-effort.
@@ -1183,11 +1189,13 @@ class FilesController extends Controller {
 	private function addPostedFile(ObjectEntity $object): JSONResponse {
 		$data = $this->request->getParams();
 		$file = $this->fileService->addFile(
-			objectEntity: $object,
-			fileName: $this->postedFileName(data: $data),
-			content: (string)$data['content'],
-			share: $this->parseBool(value: $data['share'] ?? false),
-			tags: $this->normalizeTags(tags: $data['tags'] ?? [])
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(
+				fileName: $this->postedFileName(data: $data),
+				content: (string)$data['content'],
+				share: $this->parseBool(value: $data['share'] ?? false),
+				tags: $this->normalizeTags(tags: $data['tags'] ?? [])
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
@@ -1269,10 +1277,12 @@ class FilesController extends Controller {
 		$this->requireNameAndContent(data: $data);
 		$file = $this->fileService->saveFile(
 			objectEntity: $object,
-			fileName: $data['name'],
-			content: (string)$data['content'],
-			share: (($data['share'] ?? false) === true),
-			tags: $this->savedTags(tags: $data['tags'] ?? [])
+			upload: new FileUpload(
+				fileName: $data['name'],
+				content: (string)$data['content'],
+				share: (($data['share'] ?? false) === true),
+				tags: $this->savedTags(tags: $data['tags'] ?? [])
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
@@ -1626,7 +1636,10 @@ class FilesController extends Controller {
 			throw new Exception('Failed to read uploaded file content for: ' . $fileName);
 		}
 
-		return $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags']);
+		return $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags'])
+		);
 	}//end storeUpload()
 
 	/**
@@ -1898,39 +1911,6 @@ class FilesController extends Controller {
 
 		return $this->objectFileAccess->mayRead(object: $object);
 	}//end mayReadObject()
-
-	/**
-	 * Build an RFC 6266 compliant Content-Disposition header value.
-	 *
-	 * SEC-CTRL-9: a raw filename can contain quotes, control chars, or non-ASCII
-	 * bytes that break the header or allow header/response splitting. This emits a
-	 * sanitised ASCII `filename="..."` fallback plus a UTF-8 `filename*` parameter.
-	 *
-	 * @param string $disposition Either 'inline' or 'attachment'.
-	 * @param string $filename The raw file name.
-	 *
-	 * @return string The encoded Content-Disposition header value.
-	 */
-	private function buildContentDisposition(string $disposition, string $filename): string {
-		// Strip control characters (incl. CR/LF) that could split headers.
-		$clean = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
-		if ($clean === null) {
-			$clean = '';
-		}
-
-		// ASCII fallback: replace non-ASCII and quote/backslash with underscore.
-		$ascii = preg_replace('/[^\x20-\x7E]/', '_', $clean);
-		if ($ascii === null) {
-			$ascii = '';
-		}
-
-		$ascii = str_replace(['\\', '"'], '_', $ascii);
-
-		// RFC 5987 / 6266 UTF-8 encoded form for capable clients.
-		$encoded = rawurlencode($clean);
-
-		return $disposition . '; filename="' . $ascii . '"; filename*=UTF-8\'\'' . $encoded;
-	}//end buildContentDisposition()
 
 	/**
 	 * Get a human-readable error message for PHP file upload errors
@@ -2287,7 +2267,9 @@ class FilesController extends Controller {
 			);
 		}
 
-		return $this->fileService->copyFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
+		return $this->fileService->copyAttachedFile(
+			transfer: new AttachedFileTransfer(source: $transfer->source, fileId: $transfer->fileId, target: $transfer->target)
+		);
 	}//end transferredFile()
 
 	/**

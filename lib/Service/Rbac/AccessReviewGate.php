@@ -145,7 +145,7 @@ class AccessReviewGate implements AccessReviewGateInterface {
 		}
 
 		$userId = $this->callerUid();
-		if ($this->grantManage->admittedAs(userId: $userId, userGroups: $this->callerGroups(), object: $object) !== null) {
+		if ($this->grantManage->admittedAs(caller: new GrantCaller(userId: $userId, userGroups: $this->callerGroups()), object: $object) !== null) {
 			return true;
 		}
 

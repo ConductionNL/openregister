@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -128,13 +130,13 @@ final class MagicSearchHandlerAccessPostureGoldenTest extends TestCase {
 		$rbac->method('admitsOrganisationlessRowsThroughCascade')->willReturn($cascade);
 		$rbac->method('publicReadLiftsOrganisationFilter')->willReturn($lifts);
 		$rbac->method('applyRbacFilters')->willReturnCallback(
-			function ($qb, $schema, $action, $tableName = null): void {
-				$this->events[] = 'rbac '.$action.' '.var_export($tableName, true);
+			function (RbacFilterCall $call): void {
+				$this->events[] = 'rbac '.$call->action.' '.var_export($call->tableName, true);
 			}
 		);
 		$rbac->method('buildRbacConditionsSql')->willReturnCallback(
-			function ($schema, $action, $columnPrefix = '', $tableName = null): array {
-				$this->events[] = 'rbac-sql '.$action.' '.var_export($tableName, true);
+			function (RbacAccessCall $call): array {
+				$this->events[] = 'rbac-sql '.$call->action.' '.var_export($call->tableName, true);
 				return ['bypass' => false, 'conditions' => ['RBAC_SQL']];
 			}
 		);

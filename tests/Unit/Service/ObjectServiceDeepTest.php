@@ -68,6 +68,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Deep coverage tests for ObjectService
@@ -160,7 +161,7 @@ class ObjectServiceDeepTest extends TestCase {
 		);
 		$this->container = $this->createMock(IAppContainer::class);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$dataManipHandler,
 			$this->deleteHandler,
 			$this->getHandler,
@@ -199,7 +200,7 @@ class ObjectServiceDeepTest extends TestCase {
 			$dateTimeNormalizer,
 			$this->container,
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 	}//end setUp()
 
