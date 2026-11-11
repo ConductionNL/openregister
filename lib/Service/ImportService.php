@@ -68,8 +68,8 @@ use React\Async\PromiseInterface;
 use React\EventLoop\Loop;
 use React\Promise\Promise;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Service\Object\BulkSaveOptions;
-use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 
 /**
  * Service for importing data from various formats with ReactPHP optimization

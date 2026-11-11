@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
-use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCP\IUser;
 
 /**
