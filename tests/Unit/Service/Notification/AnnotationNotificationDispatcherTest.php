@@ -364,7 +364,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 					'trigger' => ['type' => 'updated'],
 					'channels' => ['webhook'],
 					'webhook' => [
-						'url' => 'https://example.com/hooks/x',
+						'url' => 'https://93.184.215.14/hooks/x',
 					],
 					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
 					'subject' => 'inline',
@@ -380,6 +380,69 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		$dispatcher = $this->makeDispatcher();
 		$dispatcher->dispatch($this->object($schema), 'updated');
 	}//end testInlinePostFiresWhenWebhookNotPersistent()
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function nonPublicWebhookUrls(): array {
+		return [
+			'loopback' => ['http://127.0.0.1:8080/hooks/x'],
+			'mapped loopback' => ['http://[::ffff:127.0.0.1]/hooks/x'],
+			'link-local' => ['http://169.254.169.254/latest/meta-data'],
+			'private' => ['https://10.0.0.5/hooks/x'],
+			'other scheme' => ['ftp://93.184.215.14/hooks/x'],
+		];
+	}//end nonPublicWebhookUrls()
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('nonPublicWebhookUrls')]
+	public function testInlinePostIsNotSentToANonPublicTarget(string $url): void {
+		$schema = $this->schemaWithNotification(
+			[
+				'inline-hook' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => $url],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'inline',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->httpClient->expects($this->never())->method('newClient');
+
+		$dispatcher = $this->makeDispatcher();
+		$dispatcher->dispatch($this->object($schema), 'updated');
+	}//end testInlinePostIsNotSentToANonPublicTarget()
+
+	public function testInlinePostDoesNotFollowRedirects(): void {
+		$schema = $this->schemaWithNotification(
+			[
+				'inline-hook' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'https://93.184.215.14/hooks/x'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'inline',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$options = null;
+		$client = $this->createMock(IClient::class);
+		$client->method('request')->willReturnCallback(
+			function (string $method, string $url, array $opts) use (&$options) {
+				$options = $opts;
+				return $this->createMock(\OCP\Http\Client\IResponse::class);
+			}
+		);
+		$this->httpClient->method('newClient')->willReturn($client);
+
+		$this->makeDispatcher()->dispatch($this->object($schema), 'updated');
+
+		$this->assertFalse($options['allow_redirects'] ?? null);
+	}//end testInlinePostDoesNotFollowRedirects()
 
 	// ====================================================================
 	// NL/EN i18n — Open spec item:
@@ -618,7 +681,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 				'broadcast' => [
 					'trigger' => ['type' => 'updated'],
 					'channels' => ['webhook'],
-					'webhook' => ['url' => 'https://example.com/h'],
+					'webhook' => ['url' => 'https://93.184.215.14/h'],
 					'recipients' => [['kind' => 'users', 'users' => ['nl-user', 'en-user']]],
 					'subject' => [
 						'defaultLocale' => 'en',
