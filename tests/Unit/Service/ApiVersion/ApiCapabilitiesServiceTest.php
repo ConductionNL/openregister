@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -33,6 +33,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
  */
 class ApiCapabilitiesServiceTest extends TestCase {
 

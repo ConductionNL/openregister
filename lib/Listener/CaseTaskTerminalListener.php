@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\TaskTerminalEvent;
-use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -40,17 +40,17 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<TaskTerminalEvent>
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
  */
 class CaseTaskTerminalListener implements IEventListener {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param CasePlanService $plans The case layer.
+	 * @param CasePlanServiceInterface $plans The case layer.
 	 */
 	public function __construct(
-		private readonly CasePlanService $plans,
+		private readonly CasePlanServiceInterface $plans,
 	) {
 
 	}//end __construct()
@@ -62,7 +62,7 @@ class CaseTaskTerminalListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof TaskTerminalEvent === false) {

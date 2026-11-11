@@ -27,10 +27,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Store\Source;
 
+use Generator;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
-use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -85,6 +86,13 @@ class GitHubStoreSource implements StoreSourceInterface {
 	private ?ICache $cache = null;
 
 	/**
+	 * Whether the cache factory was already asked for a cache.
+	 *
+	 * @var boolean
+	 */
+	private bool $cacheResolved = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IClientService  $clientService Nextcloud HTTP client factory.
@@ -93,13 +101,24 @@ class GitHubStoreSource implements StoreSourceInterface {
 	 */
 	public function __construct(
 		private readonly IClientService $clientService,
-		ICacheFactory $cacheFactory,
+		private readonly ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
-		if ($cacheFactory->isAvailable() === true) {
-			$this->cache = $cacheFactory->createDistributed('openregister_store_github');
-		}
 	}//end __construct()
+
+	/**
+	 * The search-answer cache, created on first use.
+	 *
+	 * @return ICache|null The cache, or null when no distributed cache is available.
+	 */
+	private function cache(): ?ICache {
+		if ($this->cacheResolved === false && $this->cacheFactory->isAvailable() === true) {
+			$this->cache = $this->cacheFactory->createDistributed('openregister_store_github');
+		}
+
+		$this->cacheResolved = true;
+		return $this->cache;
+	}//end cache()
 
 	/**
 	 * {@inheritDoc}
@@ -120,15 +139,34 @@ class GitHubStoreSource implements StoreSourceInterface {
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 */
 	public function search(StoreManifest $manifest, string $query, ?string $kind): array {
-		$topics = $this->topicsFor(manifest: $manifest, kind: $kind);
+		return $this->find(manifest: $manifest, search: new StoreSearch(query: $query, kind: $kind));
+	}//end search()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Topic search per configured topic, merged and de-duplicated. Answers
+	 * are cached briefly per app, topics and query, failures included.
+	 *
+	 * @param StoreManifest $manifest The declaring app's store block.
+	 * @param StoreSearch   $search   The free text and the kind filter.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/changes/store-plane-declarative-sources/specs/apphost-store-plane/spec.md#requirement-a-store-must-declare-its-discovery-source-defaulting-to-openregister
+	 */
+	public function find(StoreManifest $manifest, StoreSearch $search): array {
+		$topics = $this->topicsFor(manifest: $manifest, kind: $search->kind);
 		if ($topics === []) {
 			// A kind that maps to no topic found nothing. That is an empty
 			// answer, not a broken one.
 			return ['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => []];
 		}
 
-		$key = $this->cacheKey(appId: $manifest->appId, topics: $topics, query: $query);
-		$hit = ($this->cache?->get($key) ?? null);
+		// Scoped by app id: two apps searching the same topic still get their
+		// own entry, so a change to one app's block cannot serve stale cards.
+		$key = $manifest->appId . ':' . hash(algo: 'xxh128', data: implode(',', $topics) . '|' . $search->query);
+		$hit = ($this->cache()?->get($key) ?? null);
 		if (is_string($hit) === true) {
 			$decoded = json_decode($hit, true);
 			if (is_array($decoded) === true && isset($decoded['outcome'], $decoded['cards']) === true) {
@@ -136,15 +174,15 @@ class GitHubStoreSource implements StoreSourceInterface {
 			}
 		}
 
-		$answer = $this->fetchTopics(topics: $topics, query: $query);
+		$answer = $this->fetchTopics(topics: $topics, query: $search->query);
 
 		// 🔴 CACHE THE FAILURES TOO. A rate-limited answer that is not cached
 		// sends the very next keystroke back at an API that just said stop,
 		// which is how a brief limit becomes a persistent one.
-		$this->cache?->set($key, json_encode($answer), self::SEARCH_TTL);
+		$this->cache()?->set($key, json_encode($answer), self::SEARCH_TTL);
 
 		return $answer;
-	}//end search()
+	}//end find()
 
 	/**
 	 * Which topics to search for a given kind filter.
@@ -181,16 +219,38 @@ class GitHubStoreSource implements StoreSourceInterface {
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 */
 	private function fetchTopics(array $topics, string $query): array {
-		$client = $this->clientService->newClient();
-		$cards = [];
-		$outcome = GenericStoreService::OUTCOME_OK;
+		$run = new GitHubSearchRun(client: $this->clientService->newClient(), query: $query);
 
+		return self::combine(answers: $this->answersFor(run: $run, topics: $topics));
+	}//end fetchTopics()
+
+	/**
+	 * Search each non-empty topic in turn.
+	 *
+	 * @param GitHubSearchRun $run    The client and the free-text query of this search.
+	 * @param string[]        $topics The topics searched.
+	 *
+	 * @return Generator<int, array{outcome: string, cards: array}> One answer per topic.
+	 */
+	private function answersFor(GitHubSearchRun $run, array $topics): Generator {
 		foreach ($topics as $topic) {
-			if ($topic === '') {
-				continue;
+			if ($topic !== '') {
+				yield $this->fetchTopic(run: $run, topic: $topic);
 			}
+		}
+	}//end answersFor()
 
-			$one = $this->fetchTopic(client: $client, topic: $topic, query: $query);
+	/**
+	 * Combine the answers of several topics into one capped answer.
+	 *
+	 * @param iterable<array{outcome: string, cards: array}> $answers One answer per topic.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 */
+	private static function combine(iterable $answers): array {
+		$cards   = [];
+		$outcome = GenericStoreService::OUTCOME_OK;
+		foreach ($answers as $one) {
 			if ($one['outcome'] !== GenericStoreService::OUTCOME_OK) {
 				// Worst outcome wins across topics: one reachable topic does
 				// not make a half-answer look complete.
@@ -198,46 +258,44 @@ class GitHubStoreSource implements StoreSourceInterface {
 				continue;
 			}
 
-			foreach ($one['cards'] as $card) {
-				// De-duplicate by full name: a repository carrying two of the
-				// declared topics is one item, not two.
-				$cards[$card['slug']] = $card;
-			}
+			$cards = self::withCards(cards: $cards, more: $one['cards']);
 		}
 
 		return [
 			'outcome' => $outcome,
 			'cards' => array_slice(array_values($cards), 0, self::MAX_HITS),
 		];
-	}//end fetchTopics()
+	}//end combine()
+
+	/**
+	 * Add cards to those found so far, one per repository.
+	 *
+	 * @param array<string, array<string, mixed>> $cards The cards so far, by slug.
+	 * @param array<int, array<string, mixed>>    $more  The cards of one topic.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	private static function withCards(array $cards, array $more): array {
+		foreach ($more as $card) {
+			// De-duplicate by full name: a repository carrying two of the
+			// declared topics is one item, not two.
+			$cards[$card['slug']] = $card;
+		}
+
+		return $cards;
+	}//end withCards()
 
 	/**
 	 * Search a single topic.
 	 *
-	 * @param IClient $client The HTTP client.
-	 * @param string  $topic  The topic to search.
-	 * @param string  $query  Free-text search.
+	 * @param GitHubSearchRun $run   The search this topic belongs to.
+	 * @param string          $topic The topic to search.
 	 *
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 */
-	private function fetchTopic(IClient $client, string $topic, string $query): array {
-		$search = 'topic:' . $topic;
-		if ($query !== '') {
-			$search .= ' ' . $query;
-		}
-
+	private function fetchTopic(GitHubSearchRun $run, string $topic): array {
 		try {
-			$response = $client->get(
-				self::API_HOST . '/search/repositories',
-				[
-					'query' => ['q' => $search, 'per_page' => self::MAX_HITS],
-					'headers' => ['Accept' => 'application/vnd.github+json'],
-					'timeout' => self::TIMEOUT,
-					'connect_timeout' => self::TIMEOUT,
-					'allow_redirects' => false,
-					'http_errors' => false,
-				]
-			);
+			$response = $this->searchTopic(run: $run, topic: $topic);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[store/github] search failed: ' . $e->getMessage(),
@@ -251,6 +309,42 @@ class GitHubStoreSource implements StoreSourceInterface {
 			return ['outcome' => $outcome, 'cards' => []];
 		}
 
+		return $this->cardsOf(response: $response, topic: $topic);
+	}//end fetchTopic()
+
+	/**
+	 * Ask GitHub's repository search for one topic.
+	 *
+	 * @param GitHubSearchRun $run   The client and the free-text query of this search.
+	 * @param string          $topic The topic searched.
+	 *
+	 * @return IResponse
+	 *
+	 * @throws Throwable When the request cannot be made.
+	 */
+	private function searchTopic(GitHubSearchRun $run, string $topic): IResponse {
+		return $run->client->get(
+			self::API_HOST . '/search/repositories',
+			[
+				'query' => ['q' => $run->termFor(topic: $topic), 'per_page' => self::MAX_HITS],
+				'headers' => ['Accept' => 'application/vnd.github+json'],
+				'timeout' => self::TIMEOUT,
+				'connect_timeout' => self::TIMEOUT,
+				'allow_redirects' => false,
+				'http_errors' => false,
+			]
+		);
+	}//end searchTopic()
+
+	/**
+	 * The cards of a successful search response; invalid when it lists no items.
+	 *
+	 * @param IResponse $response The search response.
+	 * @param string    $topic    The topic searched.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 */
+	private function cardsOf(IResponse $response, string $topic): array {
 		$body = json_decode((string)$response->getBody(), true);
 		if (is_array($body) === false || is_array(($body['items'] ?? null)) === false) {
 			return ['outcome' => GenericStoreService::OUTCOME_INVALID, 'cards' => []];
@@ -264,7 +358,7 @@ class GitHubStoreSource implements StoreSourceInterface {
 		}
 
 		return ['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => $cards];
-	}//end fetchTopic()
+	}//end cardsOf()
 
 	/**
 	 * Map an HTTP status onto a store outcome.
@@ -313,21 +407,4 @@ class GitHubStoreSource implements StoreSourceInterface {
 			'url' => (string)($repo['html_url'] ?? ''),
 		];
 	}//end toCard()
-
-	/**
-	 * Cache key for one search.
-	 *
-	 * Scoped by app id: two apps searching the same topic still get their own
-	 * entry, so a change to one app's block cannot serve stale cards to the
-	 * other.
-	 *
-	 * @param string             $appId  Declaring app.
-	 * @param array<int, string> $topics Topics searched.
-	 * @param string             $query  Free-text search.
-	 *
-	 * @return string
-	 */
-	private function cacheKey(string $appId, array $topics, string $query): string {
-		return $appId . ':' . md5(implode(',', $topics) . '|' . $query);
-	}//end cacheKey()
 }

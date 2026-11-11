@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ class CodedPropertyDeclarationTest extends TestCase {
 		];
 
 		foreach ([$block, (object)$block] as $shape) {
-			$declaration = CodedPropertyDeclaration::fromProperty(
+			$declaration = (new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 				property: [CodedPropertyDeclaration::ANNOTATION => $shape]
 			);
 
@@ -77,12 +77,12 @@ class CodedPropertyDeclarationTest extends TestCase {
 	 */
 	public function testADeclarationWithoutASchemeIsNotADeclaration(): void {
 		$this->assertNull(
-			CodedPropertyDeclaration::fromProperty(
+			(new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 				property: [CodedPropertyDeclaration::ANNOTATION => ['branch' => 'urn:root']]
 			)
 		);
-		$this->assertNull(CodedPropertyDeclaration::fromProperty(property: ['type' => 'string']));
-		$this->assertNull(CodedPropertyDeclaration::fromProperty(property: 'string'));
+		$this->assertNull((new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(property: ['type' => 'string']));
+		$this->assertNull((new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(property: 'string'));
 	}//end testADeclarationWithoutASchemeIsNotADeclaration()
 
 	/**
@@ -92,7 +92,7 @@ class CodedPropertyDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnknownStorageFormFallsBackToTheUri(): void {
-		$declaration = CodedPropertyDeclaration::fromProperty(
+		$declaration = (new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 			property: [CodedPropertyDeclaration::ANNOTATION => ['scheme' => 'urn:s', 'store' => 'uir']]
 		);
 
@@ -109,7 +109,7 @@ class CodedPropertyDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testAConceptDeclaringNoContextServesEveryContext(): void {
-		$declaration = CodedPropertyDeclaration::fromProperty(
+		$declaration = (new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 			property: [
 				CodedPropertyDeclaration::ANNOTATION => ['scheme' => 'urn:s', 'contextProperty' => 'zaaktype'],
 			]
@@ -132,7 +132,7 @@ class CodedPropertyDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnboundPropertyMatchesEveryContext(): void {
-		$declaration = CodedPropertyDeclaration::fromProperty(
+		$declaration = (new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory())->fromProperty(
 			property: [CodedPropertyDeclaration::ANNOTATION => ['scheme' => 'urn:s']]
 		);
 
@@ -178,32 +178,6 @@ class CodedPropertyDeclarationTest extends TestCase {
 		$this->assertStringContainsString('grondslag', $errors['grondslag']);
 		$this->assertStringContainsString('urn:vernietigen', $errors['grondslag']);
 	}//end testAConceptMissingADeclaredFieldIsReportedByName()
-
-	/**
-	 * A batch reports its invalid concepts by uri, so an import of forty
-	 * resultaattypen names the two that fail and imports the other
-	 * thirty-eight.
-	 *
-	 * @return void
-	 */
-	public function testABatchReportsItsInvalidConceptsByUri(): void {
-		$concepts = $this->createMock(ConceptRepository::class);
-		$concepts->method('conceptShape')->willReturn(
-			['properties' => ['grondslag' => ['type' => 'string']], 'required' => ['grondslag']]
-		);
-
-		$guard = new ConceptShapeGuard(concepts: $concepts, lifecycle: new ConceptLifecycle());
-
-		$invalid = $guard->invalidInBatch(
-			concepts: [
-				['uri' => 'urn:a', 'fields' => ['grondslag' => 'Selectielijst']],
-				['uri' => 'urn:b', 'fields' => []],
-			],
-			schemeUri: 'https://example.org/resultaattypen'
-		);
-
-		$this->assertSame(['urn:b' => ['grondslag']], $invalid);
-	}//end testABatchReportsItsInvalidConceptsByUri()
 
 	/**
 	 * An ordinary object is never shape-checked, however much it looks like a

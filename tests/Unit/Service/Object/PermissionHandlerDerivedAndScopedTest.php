@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -31,11 +31,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
@@ -53,6 +55,18 @@ use Psr\Log\NullLogger;
  * Tasks 8.1, 8.2 and 8.4, decided rather than described.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\DerivedGrantResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerDerivedAndScopedTest extends TestCase {
 
@@ -109,7 +123,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturn(false);
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_ENFORCING);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$userManager,
 			$groupManager,
@@ -122,7 +136,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 			null,
 			null,
 			null,
-			new DenyResolver(),
+			new DenyResolver(new DenyEntryMatcher()),
 			new DenyEnforcementMode($appConfig, new NullLogger()),
 			null,
 			new GrantConstraints(),
@@ -152,7 +166,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($registerMapper): mixed {
-				if ($id === RegisterMapper::class) {
+				if ($id === RegisterMapperInterface::class) {
 					return $registerMapper;
 				}
 
@@ -229,7 +243,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$this->assertTrue(
 			$handler->hasPermission(
 				schema: $this->schemaWith(
-					['read' => [['group' => 'waarnemers', 'until' => '2099-01-01T00:00:00+01:00']]]
+					['read' => [['group' => 'waarnemers', 'until' => date('c', strtotime('+10 years'))]]]
 				),
 				action: 'read',
 				userId: 'ana'
@@ -256,7 +270,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$this->assertTrue(
 			$granted->hasPermission(
 				schema: $this->schemaWith(
-					['read' => [['user' => 'ana', 'until' => '2099-01-01T00:00:00+01:00']]]
+					['read' => [['user' => 'ana', 'until' => date('c', strtotime('+10 years'))]]]
 				),
 				action: 'read',
 				userId: 'ana'

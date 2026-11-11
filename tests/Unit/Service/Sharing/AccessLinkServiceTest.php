@@ -40,7 +40,13 @@ use OCA\OpenRegister\Db\AccessLinkMapper;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IURLGenerator;
 use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
@@ -73,7 +79,14 @@ class AccessLinkServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->secureRandom->method('generate')->willReturn('AnchorValueThatIsOpaque');
-		$this->urlGenerator->method('linkToRoute')->willReturn('/index.php/apps/openregister/api/public/links/AnchorValueThatIsOpaque');
+		// Answers per route, so a test can tell the API link from the page link.
+		$this->urlGenerator->method('linkToRoute')->willReturnCallback(
+			fn (string $route, array $parameters = []): string => match ($route) {
+				'openregister.accessLink.open' => '/index.php/apps/openregister/api/public/links/' . ($parameters['anchor'] ?? ''),
+				'openregister.accessLinkPage.show' => '/index.php/apps/openregister/links/' . ($parameters['anchor'] ?? ''),
+				default => '/index.php/unknown-route',
+			}
+		);
 		$this->urlGenerator->method('getAbsoluteURL')->willReturnCallback(
 			static fn (string $path): string => 'https://nc.example.org' . $path
 		);
@@ -82,11 +95,9 @@ class AccessLinkServiceTest extends TestCase {
 
 		$this->service = new AccessLinkService(
 			mapper: $this->mapper,
-			auditTrail: $this->auditTrail,
-			secureRandom: $this->secureRandom,
-			hasher: $this->hasher,
-			urlGenerator: $this->urlGenerator,
-			logger: $this->logger
+			useLog: new AccessLinkUseLog(auditTrail: $this->auditTrail, logger: $this->logger),
+			secrets: new AccessLinkSecrets(secureRandom: $this->secureRandom, hasher: $this->hasher),
+			urlGenerator: $this->urlGenerator
 		);
 	}
 
@@ -113,9 +124,12 @@ class AccessLinkServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/must carry an expiry/');
 
 		$this->service->mint(
-			userId: 'owner',
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid'
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: 'object-uuid',
+				terms: new AccessLinkTerms()
+			)
 		);
 	}
 
@@ -124,10 +138,14 @@ class AccessLinkServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/expire in the future/');
 
 		$this->service->mint(
-			userId: 'owner',
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid',
-			expiresAt: '2001-01-01T00:00:00+00:00'
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: 'object-uuid',
+				terms: new AccessLinkTerms(
+					expiresAt: '2001-01-01T00:00:00+00:00'
+				)
+			)
 		);
 	}
 
@@ -135,10 +153,14 @@ class AccessLinkServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 
 		$this->service->mint(
-			userId: 'owner',
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid',
-			expiresAt: 'whenever'
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: 'object-uuid',
+				terms: new AccessLinkTerms(
+					expiresAt: 'whenever'
+				)
+			)
 		);
 	}
 
@@ -184,10 +206,14 @@ class AccessLinkServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/is not a link subject/');
 
 		$this->service->mint(
-			userId: 'owner',
-			subjectType: 'register',
-			subjectId: 'x',
-			expiresAt: '+1 day'
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: 'register',
+				subjectId: 'x',
+				terms: new AccessLinkTerms(
+					expiresAt: '+1 day'
+				)
+			)
 		);
 	}
 
@@ -195,10 +221,14 @@ class AccessLinkServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 
 		$this->service->mint(
-			userId: '  ',
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid',
-			expiresAt: '+1 day'
+			new LinkMintRequest(
+				minter: '  ',
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: 'object-uuid',
+				terms: new AccessLinkTerms(
+					expiresAt: '+1 day'
+				)
+			)
 		);
 	}
 
@@ -302,12 +332,30 @@ class AccessLinkServiceTest extends TestCase {
 	public function testSwitchingOffALinkSomebodyElseMintedAnswersNothing(): void {
 		$this->mapper->method('findById')->willReturn($this->liveLink());
 
-		$this->assertNull($this->service->setDisabled(id: 1, userId: 'somebody-else', disabled: true));
+		$this->assertNull($this->service->disable(id: 1, userId: 'somebody-else'));
 	}
 
 	public function testSwitchingOffAndBackOnIsReversible(): void {
 		$link = $this->liveLink();
 		$this->mapper->method('findById')->willReturn($link);
+
+		$off = $this->service->disable(id: 1, userId: 'owner');
+		$this->assertIsArray($off);
+		$this->assertTrue($off['disabled']);
+		$this->assertFalse($link->isLive());
+
+		$on = $this->service->enable(id: 1, userId: 'owner');
+		$this->assertIsArray($on);
+		$this->assertFalse($on['disabled']);
+		$this->assertTrue($link->isLive());
+	}
+
+	public function testSetDisabledSwitchesALinkOffAndBackOn(): void {
+		$link = $this->liveLink();
+		$this->mapper->method('findById')->willReturn($link);
+
+		$this->assertNull($this->service->setDisabled(id: 1, userId: 'somebody-else', disabled: true));
+		$this->assertTrue($link->isLive());
 
 		$off = $this->service->setDisabled(id: 1, userId: 'owner', disabled: true);
 		$this->assertIsArray($off);
@@ -331,8 +379,8 @@ class AccessLinkServiceTest extends TestCase {
 		$addresses = [];
 		$actions = [];
 		$this->auditTrail->expects($this->exactly(4))
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (
 					ObjectEntity $audited,
 					string $action,
@@ -348,7 +396,7 @@ class AccessLinkServiceTest extends TestCase {
 
 					return new AuditTrail();
 				}
-			);
+			));
 
 		foreach ([
 			AccessLinkService::ACT_READ,
@@ -358,9 +406,7 @@ class AccessLinkServiceTest extends TestCase {
 		] as $act) {
 			$this->service->recordUse(
 				link: $link,
-				act: $act,
-				object: $object,
-				ipAddress: '198.51.100.7'
+				use: new AccessLinkUse(act: $act, object: $object, ipAddress: '198.51.100.7')
 			);
 		}
 
@@ -385,9 +431,9 @@ class AccessLinkServiceTest extends TestCase {
 
 	public function testAUseWithNoResolvedObjectStillCountsOnTheRow(): void {
 		$link = $this->liveLink();
-		$this->auditTrail->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrail->expects($this->never())->method('recordObjectEvent');
 
-		$this->service->recordUse(link: $link, act: AccessLinkService::ACT_READ, object: null);
+		$this->service->recordUse(link: $link, use: new AccessLinkUse(act: AccessLinkService::ACT_READ, object: null));
 
 		$this->assertSame(1, $link->getUseCount());
 	}
@@ -408,6 +454,21 @@ class AccessLinkServiceTest extends TestCase {
 	}
 
 	/**
+	 * The owner descriptor keeps `url` exactly as it was, the JSON API link that
+	 * dossiq's CaseAccessLinkController and other API callers read, and adds
+	 * `pageUrl`, the page a person without an account can open (#4061).
+	 */
+	public function testTheOwnerDescriptorKeepsTheApiUrlAndAddsThePageUrl(): void {
+		$this->mapper->method('findByCreator')->willReturn([$this->liveLink()]);
+
+		$rows = $this->service->listForUser(userId: 'owner');
+
+		$this->assertStringEndsWith('/index.php/apps/openregister/api/public/links/AnchorValueThatIsOpaque', (string)$rows[0]['url']);
+		$this->assertArrayHasKey('pageUrl', $rows[0]);
+		$this->assertStringEndsWith('/index.php/apps/openregister/links/AnchorValueThatIsOpaque', (string)$rows[0]['pageUrl']);
+	}
+
+	/**
 	 * Mint one link with the awkward arguments already filled in.
 	 *
 	 * @param array<int, string> $capabilities The capabilities to declare.
@@ -417,13 +478,17 @@ class AccessLinkServiceTest extends TestCase {
 	 */
 	private function mintOne(array $capabilities = [], ?string $password = null): array {
 		return $this->service->mint(
-			userId: 'owner',
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid',
-			capabilities: $capabilities,
-			expiresAt: '+7 days',
-			password: $password,
-			label: 'Advice request'
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: 'object-uuid',
+				terms: new AccessLinkTerms(
+					capabilities: $capabilities,
+					expiresAt: '+7 days',
+					password: $password,
+					label: 'Advice request'
+				)
+			)
 		);
 	}
 }

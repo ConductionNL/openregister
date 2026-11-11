@@ -164,7 +164,7 @@ class FlowResumeStateTest extends TestCase {
 	 * wedge: the node asked again, and the original task's completion could
 	 * never address the slot again.
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	public function testSlotsAreStorableWhileTheRunIsLive(): void {
 		$state = new FlowResumeState();
@@ -178,7 +178,7 @@ class FlowResumeStateTest extends TestCase {
 	 * the run never came back to, and keeping it would put a stale cursor in
 	 * front of anyone reading the finished run.
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	public function testATerminalRunDropsItsSlots(): void {
 		$state = new FlowResumeState();

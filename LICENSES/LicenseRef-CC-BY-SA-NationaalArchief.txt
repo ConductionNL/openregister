@@ -1,0 +1,28 @@
+LicenseRef-CC-BY-SA-NationaalArchief
+
+This is not a licence text. It records the only licence statement the
+Nationaal Archief has published for MDTO and its XML Schema Definition
+(lib/Resources/mdto/MDTO-XML1.0.1.xsd in this repository), so that the file can
+be declared honestly under the REUSE specification without claiming a
+Creative Commons version the publisher never named.
+
+The statement, verbatim, from Forum Standaardisatie's intake advice for MDTO
+(FS-20241002.3C, section "Beschikbaarheid documentatie en intellectueel
+eigendomsrecht"):
+
+    "Het Nationaal Archief hanteert de licentie CC BY SA voor al diens
+     kennisproducten en dus ook voor MDTO."
+
+Source: https://www.forumstandaardisatie.nl/sites/default/files/FS/2024/1002/FS-20241002.3C-intakeadvies-MDTO.pdf
+
+The upstream repositories (https://github.com/NationaalArchief/MDTO-XSD and
+https://github.com/NationaalArchief/MDTO-Metagegevensschema) carry no LICENSE
+file, and no version of the Creative Commons Attribution-ShareAlike licence is
+stated anywhere by the publisher. Should the Nationaal Archief name one, replace
+this LicenseRef with that SPDX identifier (for example CC-BY-SA-4.0) in
+REUSE.toml and remove this file.
+
+Attribution, as the licence family requires: MDTO-XML 1.0.1, Nationaal Archief,
+https://www.nationaalarchief.nl/archiveren/mdto. Redistributed unmodified; the
+share-alike term binds adaptations of that file and does not reach the
+OpenRegister code that ships beside it.

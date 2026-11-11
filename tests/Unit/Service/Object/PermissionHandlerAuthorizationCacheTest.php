@@ -50,6 +50,7 @@ use Psr\Log\NullLogger;
  * Per-request memoisation of the inheritFromPublic verdict, and its eviction.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class PermissionHandlerAuthorizationCacheTest extends TestCase {
 
@@ -71,7 +72,7 @@ class PermissionHandlerAuthorizationCacheTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturn(true);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->createMock(IUserSession::class),
 			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),

@@ -103,6 +103,6 @@ class Version1Date20251102150000 extends SimpleMigrationStep {
 
 		$output->info(message: '⚠️  Views table not found!');
 
-		return null;
+		return $schema;
 	}//end changeSchema()
 }//end class

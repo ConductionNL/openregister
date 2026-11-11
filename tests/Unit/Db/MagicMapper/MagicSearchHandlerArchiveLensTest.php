@@ -19,6 +19,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
+use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -34,6 +37,12 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
+ * @uses \OCA\OpenRegister\Service\Object\DraftListLens
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DeletedLens
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  */
 final class MagicSearchHandlerArchiveLensTest extends TestCase {
 
@@ -201,13 +210,23 @@ final class MagicSearchHandlerArchiveLensTest extends TestCase {
 		$rbac = $this->createMock(originalClassName: MagicRbacHandler::class);
 		$rbac->method('buildRbacConditionsSql')->willReturn(['bypass' => true, 'conditions' => []]);
 
+		// Tenancy waved through for the same reason RBAC is: this test is about
+		// the archive condition. An organisation double that answers nothing
+		// makes the renderer fail closed and add `1 = 0`, which is correct
+		// behaviour and irrelevant noise here.
+		$organisation = $this->createMock(originalClassName: MagicOrganizationHandler::class);
+		$organisation->method('resolveOrganizationScope')->willReturn(
+			['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]
+		);
+
 		return new MagicSearchHandler(
 			$db,
 			$this->createMock(originalClassName: LoggerInterface::class),
 			$rbac,
-			$this->createMock(originalClassName: MagicOrganizationHandler::class),
+			$organisation,
 			$this->createMock(originalClassName: SchemaTypeConverter::class),
-			$this->createMock(originalClassName: DateTimeNormalizer::class)
+			$this->createMock(originalClassName: DateTimeNormalizer::class),
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
 		);
 	}//end handlerWithDb()
 
@@ -225,10 +244,7 @@ final class MagicSearchHandlerArchiveLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheUnionPathExcludesArchivedByDefault(): void {
-		$conditions = $this->handlerWithDb()->buildWhereConditionsSql(
-			query: [],
-			schema: new Schema()
-		);
+		$conditions = $this->handlerWithDb()->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: new Schema())));
 
 		$this->assertContains('_archived IS NULL', $conditions);
 	}//end testTheUnionPathExcludesArchivedByDefault()
@@ -239,10 +255,7 @@ final class MagicSearchHandlerArchiveLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheUnionPathCanAskForArchivedOnly(): void {
-		$conditions = $this->handlerWithDb()->buildWhereConditionsSql(
-			query: ['_archived' => 'true'],
-			schema: new Schema()
-		);
+		$conditions = $this->handlerWithDb()->buildWhereClause(request: new WhereClauseRequest(query: ['_archived' => 'true'], table: new MagicReadTable(schema: new Schema())));
 
 		$this->assertContains('_archived IS NOT NULL', $conditions);
 		$this->assertNotContains('_archived IS NULL', $conditions);
@@ -257,10 +270,7 @@ final class MagicSearchHandlerArchiveLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheUnionPathAsksForNothingWhenBothAreWanted(): void {
-		$conditions = $this->handlerWithDb()->buildWhereConditionsSql(
-			query: ['_archived' => 'any'],
-			schema: new Schema()
-		);
+		$conditions = $this->handlerWithDb()->buildWhereClause(request: new WhereClauseRequest(query: ['_archived' => 'any'], table: new MagicReadTable(schema: new Schema())));
 
 		$this->assertNotContains('_archived IS NULL', $conditions);
 		$this->assertNotContains('_archived IS NOT NULL', $conditions);

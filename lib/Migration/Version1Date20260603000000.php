@@ -49,13 +49,13 @@ class Version1Date20260603000000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_entity_relations') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_entity_relations');
 
 		if ($table->hasColumn('bases') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

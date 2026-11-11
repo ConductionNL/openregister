@@ -11,6 +11,7 @@ use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -88,10 +89,12 @@ class ObjectsProviderTest extends TestCase {
 		$formatter = new ObjectPreviewFormatter(
 			$this->urlGenerator,
 			$this->l10n,
-			$objectService ?? $this->objectService,
-			$this->deepLinkRegistry,
-			$schemaMapper,
-			$registerMapper,
+			new ObjectPreviewSources(
+				objectService: $objectService ?? $this->objectService,
+				deepLinkRegistry: $this->deepLinkRegistry,
+				schemaMapper: $schemaMapper,
+				registerMapper: $registerMapper
+			),
 			$this->logger
 		);
 
@@ -102,11 +105,9 @@ class ObjectsProviderTest extends TestCase {
 		);
 
 		return new ObjectsProvider(
-			$this->l10n,
 			$objectService ?? $this->objectService,
-			$this->logger,
-			$schemaMapper,
-			$resultFormatter
+			new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
+			new \OCA\OpenRegister\Search\ObjectsProviderOutput($this->l10n, $resultFormatter, $this->logger)
 		);
 	}
 
@@ -160,9 +161,16 @@ class ObjectsProviderTest extends TestCase {
 
 	public function testGetCustomFilters(): void {
 		$filters = $this->provider->getCustomFilters();
-		$this->assertCount(2, $filters);
-		$this->assertInstanceOf(FilterDefinition::class, $filters[0]);
-		$this->assertInstanceOf(FilterDefinition::class, $filters[1]);
+		// `scopes` joined `register` and `schema` in content-search-index.
+		// Asserted by NAME rather than by count, because a count tells the
+		// next reader nothing about which filter went missing.
+		$this->assertCount(3, $filters);
+		foreach ($filters as $filter) {
+			$this->assertInstanceOf(FilterDefinition::class, $filter);
+		}
+
+		$names = array_map(static fn (FilterDefinition $f): string => $f->name(), $filters);
+		$this->assertSame(['register', 'schema', 'scopes'], $names);
 	}
 
 	// --- Empty / short-circuit --------------------------------------------

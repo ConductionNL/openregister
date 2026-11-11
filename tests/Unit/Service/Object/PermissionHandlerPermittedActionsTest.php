@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -49,6 +51,21 @@ use Psr\Log\NullLogger;
  * Task 7.1: the actions a record carries.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerPermittedActionsTest extends TestCase {
 
@@ -94,7 +111,7 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturn(false);
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_ENFORCING);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$userManager,
 			$groupManager,
@@ -107,7 +124,7 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 			null,
 			null,
 			null,
-			new DenyResolver(),
+			new DenyResolver(new DenyEntryMatcher()),
 			new DenyEnforcementMode($appConfig, new NullLogger())
 		);
 	}//end handlerFor()
@@ -166,14 +183,16 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'ana', groups: ['behandelaars']);
 
 		$actions = $handler->permittedActionsFor(
-			schema: $this->schemaGranting(
-				[
-					'read' => ['behandelaars'],
-					'update' => ['behandelaars'],
-				]
-			),
-			object: $this->row(),
-			userId: 'ana'
+			listing: new VerbListing(
+				schema: $this->schemaGranting(
+					[
+						'read' => ['behandelaars'],
+						'update' => ['behandelaars'],
+					]
+				),
+				object: $this->row(),
+				userId: 'ana'
+			)
 		);
 
 		$this->assertSame(['read', 'update'], $actions);
@@ -188,14 +207,16 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'ana', groups: ['behandelaars']);
 
 		$actions = $handler->permittedActionsFor(
-			schema: $this->schemaGranting(
-				[
-					'read' => ['behandelaars'],
-					'update' => ['behandelaars'],
-				]
-			),
-			object: $this->row(['deny' => ['update' => ['behandelaars']]]),
-			userId: 'ana'
+			listing: new VerbListing(
+				schema: $this->schemaGranting(
+					[
+						'read' => ['behandelaars'],
+						'update' => ['behandelaars'],
+					]
+				),
+				object: $this->row(['deny' => ['update' => ['behandelaars']]]),
+				userId: 'ana'
+			)
 		);
 
 		$this->assertSame(['read'], $actions);
@@ -213,16 +234,18 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'ana', groups: ['behandelaars']);
 
 		$actions = $handler->permittedActionsFor(
-			schema: $this->schemaGranting(
-				[
-					'read' => ['behandelaars'],
-					'create' => ['behandelaars'],
-					'list' => ['behandelaars'],
-					'manage' => ['behandelaars'],
-				]
-			),
-			object: $this->row(),
-			userId: 'ana'
+			listing: new VerbListing(
+				schema: $this->schemaGranting(
+					[
+						'read' => ['behandelaars'],
+						'create' => ['behandelaars'],
+						'list' => ['behandelaars'],
+						'manage' => ['behandelaars'],
+					]
+				),
+				object: $this->row(),
+				userId: 'ana'
+			)
 		);
 
 		$this->assertSame(['read'], $actions);
@@ -242,9 +265,11 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$this->assertSame(
 			[],
 			$handler->permittedActionsFor(
-				schema: $this->schemaGranting([]),
-				object: $this->row(),
-				userId: 'ana'
+				listing: new VerbListing(
+					schema: $this->schemaGranting([]),
+					object: $this->row(),
+					userId: 'ana'
+				)
 			)
 		);
 	}//end testACallerWithNoRightsGetsAnEmptyList()

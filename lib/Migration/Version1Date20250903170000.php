@@ -66,7 +66,7 @@ class Version1Date20250903170000 extends SimpleMigrationStep {
 
 		// Skip if table doesn't exist.
 		if ($schema->hasTable('openregister_objects') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_objects');
@@ -114,7 +114,7 @@ class Version1Date20250903170000 extends SimpleMigrationStep {
 		// Log completion.
 		if ($changed === false) {
 			$output->info(message: '=== All Performance Indexes Already Exist ===');
-			return null;
+			return $schema;
 		}
 
 		$output->info(message: '=== Performance Index Migration Completed Successfully ===');

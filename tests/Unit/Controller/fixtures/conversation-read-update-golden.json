@@ -1,0 +1,843 @@
+{
+    "messages access check failure": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "alice",
+                    "org-1"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConversationController] Failed to get messages",
+                    "conv-1",
+                    "access failed"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to fetch messages",
+            "message": "access failed"
+        }
+    },
+    "messages by another user": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "bob",
+                    "org-1"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Access denied",
+            "message": "You do not have access to this conversation"
+        }
+    },
+    "messages by another user with forged identity": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "bob",
+                    "org-1"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Access denied",
+            "message": "You do not have access to this conversation"
+        }
+    },
+    "messages by the owner": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "alice",
+                    "org-1"
+                ]
+            },
+            {
+                "messageMapper.findByConversation": [
+                    42,
+                    50,
+                    0
+                ]
+            },
+            {
+                "messageMapper.countByConversation": 42
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 7,
+                    "uuid": "msg-7",
+                    "conversationId": null,
+                    "role": "user",
+                    "content": "hi",
+                    "sources": null,
+                    "context": [],
+                    "created": null
+                }
+            ],
+            "total": 3,
+            "limit": 50,
+            "offset": 0
+        }
+    },
+    "messages by the owner without an organisation": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "alice",
+                    null
+                ]
+            },
+            {
+                "messageMapper.findByConversation": [
+                    42,
+                    50,
+                    0
+                ]
+            },
+            {
+                "messageMapper.countByConversation": 42
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 7,
+                    "uuid": "msg-7",
+                    "conversationId": null,
+                    "role": "user",
+                    "content": "hi",
+                    "sources": null,
+                    "context": [],
+                    "created": null
+                }
+            ],
+            "total": 3,
+            "limit": 50,
+            "offset": 0
+        }
+    },
+    "messages not found": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Conversation not found",
+            "message": "The requested conversation does not exist"
+        }
+    },
+    "messages organisation failure": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "logger.error": [
+                    "[ConversationController] Failed to get messages",
+                    "conv-1",
+                    "organisation failed"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to fetch messages",
+            "message": "organisation failed"
+        }
+    },
+    "messages read failure": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "alice",
+                    "org-1"
+                ]
+            },
+            {
+                "messageMapper.findByConversation": [
+                    42,
+                    50,
+                    0
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConversationController] Failed to get messages",
+                    "conv-1",
+                    "messages failed"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to fetch messages",
+            "message": "messages failed"
+        }
+    },
+    "messages with limit and offset": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "alice",
+                    "org-1"
+                ]
+            },
+            {
+                "messageMapper.findByConversation": [
+                    42,
+                    5,
+                    10
+                ]
+            },
+            {
+                "messageMapper.countByConversation": 42
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 7,
+                    "uuid": "msg-7",
+                    "conversationId": null,
+                    "role": "user",
+                    "content": "hi",
+                    "sources": null,
+                    "context": [],
+                    "created": null
+                }
+            ],
+            "total": 3,
+            "limit": 5,
+            "offset": 10
+        }
+    },
+    "messages with underscored paging": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "alice",
+                    "org-1"
+                ]
+            },
+            {
+                "messageMapper.findByConversation": [
+                    42,
+                    7,
+                    2
+                ]
+            },
+            {
+                "messageMapper.countByConversation": 42
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 7,
+                    "uuid": "msg-7",
+                    "conversationId": null,
+                    "role": "user",
+                    "content": "hi",
+                    "sources": null,
+                    "context": [],
+                    "created": null
+                }
+            ],
+            "total": 3,
+            "limit": 7,
+            "offset": 2
+        }
+    },
+    "show access check failure": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "alice",
+                    "org-1"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConversationController] Failed to get conversation",
+                    "conv-1",
+                    "access failed"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to fetch conversation",
+            "message": "access failed"
+        }
+    },
+    "show by another user": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "bob",
+                    "org-1"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Access denied",
+            "message": "You do not have access to this conversation"
+        }
+    },
+    "show by another user with forged identity": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "bob",
+                    "org-1"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Access denied",
+            "message": "You do not have access to this conversation"
+        }
+    },
+    "show by the owner": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "alice",
+                    "org-1"
+                ]
+            },
+            {
+                "messageMapper.countByConversation": 42
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 42,
+            "uuid": "conv-1",
+            "title": "Chat",
+            "userId": "alice",
+            "organisation": "org-1",
+            "agentId": null,
+            "metadata": null,
+            "deletedAt": null,
+            "messageCount": 3
+        }
+    },
+    "show by the owner without an organisation": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "alice",
+                    null
+                ]
+            },
+            {
+                "messageMapper.countByConversation": 42
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 42,
+            "uuid": "conv-1",
+            "title": "Chat",
+            "userId": "alice",
+            "organisation": "org-1",
+            "agentId": null,
+            "metadata": null,
+            "deletedAt": null,
+            "messageCount": 3
+        }
+    },
+    "show count failure": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "conversationMapper.canUserAccessConversation": [
+                    42,
+                    "alice",
+                    "org-1"
+                ]
+            },
+            {
+                "messageMapper.countByConversation": 42
+            },
+            {
+                "logger.error": [
+                    "[ConversationController] Failed to get conversation",
+                    "conv-1",
+                    "count failed"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to fetch conversation",
+            "message": "count failed"
+        }
+    },
+    "show not found": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Conversation not found",
+            "message": "The requested conversation does not exist"
+        }
+    },
+    "show organisation failure": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "organisationService.getActiveOrganisation": true
+            },
+            {
+                "logger.error": [
+                    "[ConversationController] Failed to get conversation",
+                    "conv-1",
+                    "organisation failed"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to fetch conversation",
+            "message": "organisation failed"
+        }
+    },
+    "update access check failure": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "conversationMapper.canUserModifyConversation": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConversationController] Failed to update conversation",
+                    "conv-1",
+                    "access failed"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to update conversation",
+            "message": "access failed"
+        }
+    },
+    "update by another user": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "conversationMapper.canUserModifyConversation": [
+                    42,
+                    "bob"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Access denied",
+            "message": "You do not have permission to modify this conversation"
+        }
+    },
+    "update by another user with forged identity": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "conversationMapper.canUserModifyConversation": [
+                    42,
+                    "bob"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Access denied",
+            "message": "You do not have permission to modify this conversation"
+        }
+    },
+    "update by the owner": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "conversationMapper.canUserModifyConversation": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "conversationMapper.update": [
+                    "Chat",
+                    null,
+                    "alice",
+                    "org-1",
+                    true
+                ]
+            },
+            {
+                "logger.info": [
+                    "[ConversationController] Conversation updated",
+                    "conv-1",
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 42,
+            "uuid": "conv-1",
+            "title": "Chat",
+            "userId": "alice",
+            "organisation": "org-1",
+            "agentId": null,
+            "metadata": null,
+            "deletedAt": null
+        }
+    },
+    "update by the owner without an organisation": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "conversationMapper.canUserModifyConversation": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "conversationMapper.update": [
+                    "Chat",
+                    null,
+                    "alice",
+                    "org-1",
+                    true
+                ]
+            },
+            {
+                "logger.info": [
+                    "[ConversationController] Conversation updated",
+                    "conv-1",
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 42,
+            "uuid": "conv-1",
+            "title": "Chat",
+            "userId": "alice",
+            "organisation": "org-1",
+            "agentId": null,
+            "metadata": null,
+            "deletedAt": null
+        }
+    },
+    "update not found": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Conversation not found",
+            "message": "The requested conversation does not exist"
+        }
+    },
+    "update organisation failure": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "conversationMapper.canUserModifyConversation": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "conversationMapper.update": [
+                    "Chat",
+                    null,
+                    "alice",
+                    "org-1",
+                    true
+                ]
+            },
+            {
+                "logger.info": [
+                    "[ConversationController] Conversation updated",
+                    "conv-1",
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 42,
+            "uuid": "conv-1",
+            "title": "Chat",
+            "userId": "alice",
+            "organisation": "org-1",
+            "agentId": null,
+            "metadata": null,
+            "deletedAt": null
+        }
+    },
+    "update save failure": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "conversationMapper.canUserModifyConversation": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "conversationMapper.update": [
+                    "New",
+                    null,
+                    "alice",
+                    "org-1",
+                    true
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConversationController] Failed to update conversation",
+                    "conv-1",
+                    "update failed"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to update conversation",
+            "message": "update failed"
+        }
+    },
+    "update title and metadata": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "conversationMapper.canUserModifyConversation": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "conversationMapper.update": [
+                    "New",
+                    {
+                        "a": 1
+                    },
+                    "alice",
+                    "org-1",
+                    true
+                ]
+            },
+            {
+                "logger.info": [
+                    "[ConversationController] Conversation updated",
+                    "conv-1",
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 42,
+            "uuid": "conv-1",
+            "title": "New",
+            "userId": "alice",
+            "organisation": "org-1",
+            "agentId": null,
+            "metadata": {
+                "a": 1
+            },
+            "deletedAt": null
+        }
+    },
+    "update with null title": {
+        "calls": [
+            {
+                "conversationMapper.findByUuid": "conv-1"
+            },
+            {
+                "conversationMapper.canUserModifyConversation": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "conversationMapper.update": [
+                    "Chat",
+                    {
+                        "b": 2
+                    },
+                    "alice",
+                    "org-1",
+                    true
+                ]
+            },
+            {
+                "logger.info": [
+                    "[ConversationController] Conversation updated",
+                    "conv-1",
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 42,
+            "uuid": "conv-1",
+            "title": "Chat",
+            "userId": "alice",
+            "organisation": "org-1",
+            "agentId": null,
+            "metadata": {
+                "b": 2
+            },
+            "deletedAt": null
+        }
+    }
+}

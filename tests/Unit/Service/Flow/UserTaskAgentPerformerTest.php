@@ -34,11 +34,15 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\AgentRunRequestedEvent;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Task\TaskForm;
@@ -57,6 +61,14 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers
  * @uses \OCA\OpenRegister\Event\AgentRunRequestedEvent
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Flow\FlowAdvanceBudget
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig
+ * @uses \OCA\OpenRegister\Service\Task\TaskForm
  */
 final class UserTaskAgentPerformerTest extends TestCase {
 
@@ -93,13 +105,9 @@ final class UserTaskAgentPerformerTest extends TestCase {
 		);
 
 		return new UserTaskNode(
-			$bridge,
-			$l10n,
-			$this->createMock(IURLGenerator::class),
-			$forms,
-			$this->createMock(FlowTimerService::class),
-			null,
-			$events
+			new UserTaskServices($bridge, $forms, $this->createMock(FlowTimerService::class)),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)),
+			new UserTaskHooks(null, $events)
 		);
 	}//end node()
 
@@ -117,17 +125,17 @@ final class UserTaskAgentPerformerTest extends TestCase {
 		$state = new FlowResumeState();
 
 		try {
-			$this->node()->execute(
-				[['json' => []]],
-				$config,
-				[
+			$this->node()->execute(new FlowNodeCall(
+				items: [['json' => []]],
+				config: $config,
+				context: [
 					FlowResumeState::CONTEXT_KEY => $state,
 					FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'ask'),
 					FlowRunContext::CONTEXT_RUN => 'run-1',
 					'runUuid' => 'run-1',
 					'flowName' => 'Approve it',
 				]
-			);
+			));
 		} catch (FlowSuspension) {
 			// Expected: the step waits for its answer, agent or person.
 		}
@@ -241,26 +249,23 @@ final class UserTaskAgentPerformerTest extends TestCase {
 		$forms->method('fromConfig')->willReturn(new TaskForm(kind: null));
 
 		$node = new UserTaskNode(
-			$bridge,
-			$l10n,
-			$this->createMock(IURLGenerator::class),
-			$forms,
-			$this->createMock(FlowTimerService::class)
+			new UserTaskServices($bridge, $forms, $this->createMock(FlowTimerService::class)),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 
 		$state = new FlowResumeState();
 
 		try {
-			$node->execute(
-				[['json' => []]],
-				['title' => 'Approve it', 'assignee' => ['type' => 'agent', 'id' => 'scribe']],
-				[
+			$node->execute(new FlowNodeCall(
+				items: [['json' => []]],
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'agent', 'id' => 'scribe']],
+				context: [
 					FlowResumeState::CONTEXT_KEY => $state,
 					FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'ask'),
 					FlowRunContext::CONTEXT_RUN => 'run-1',
 					'runUuid' => 'run-1',
 				]
-			);
+			));
 		} catch (FlowSuspension) {
 			// Expected.
 		}
@@ -280,14 +285,14 @@ final class UserTaskAgentPerformerTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node()->execute(
-			[['json' => []]],
-			['title' => 'Approve it', 'assignee' => 'alice'],
-			[
+		$this->node()->execute(new FlowNodeCall(
+			items: [['json' => []]],
+			config: ['title' => 'Approve it', 'assignee' => 'alice'],
+			context: [
 				FlowResumeState::CONTEXT_KEY => $state,
 				FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'ask'),
 			]
-		);
+		));
 	}//end testAStepOutsideAPersistedRunRefusesToCreateATask()
 
 	/**
@@ -305,16 +310,16 @@ final class UserTaskAgentPerformerTest extends TestCase {
 		$state = new FlowResumeState();
 
 		try {
-			$this->node()->execute(
-				[['json' => []]],
-				['title' => 'Approve it', 'assignee' => 'alice'],
-				[
+			$this->node()->execute(new FlowNodeCall(
+				items: [['json' => []]],
+				config: ['title' => 'Approve it', 'assignee' => 'alice'],
+				context: [
 					FlowResumeState::CONTEXT_KEY => $state,
 					FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'ask'),
 					FlowRunContext::CONTEXT_RUN => 'run-1',
 					'runUuid' => 'run-1',
 				]
-			);
+			));
 		} catch (FlowSuspension) {
 			// Expected: the step waits for its answer.
 		}

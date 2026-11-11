@@ -198,6 +198,6 @@ class Version1Date20251102140000 extends SimpleMigrationStep {
 
 		$output->info(message: 'ℹ️  Views table already exists, skipping...');
 
-		return null;
+		return $schema;
 	}//end changeSchema()
 }//end class

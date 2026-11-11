@@ -1,0 +1,396 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EntitiesIndex.loadEntities asks for the page with every filter 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities",
+        {
+          "params": {
+            "category": "pii",
+            "limit": 20,
+            "offset": 40,
+            "search": "jan",
+            "type": "person",
+          },
+        },
+      ],
+      "error": undefined,
+      "loading": true,
+      "loadingRelations": undefined,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "categoryFilter": "pii",
+    "currentPage": 3,
+    "entitiesList": [
+      {
+        "id": 1,
+      },
+    ],
+    "limit": 20,
+    "loading": false,
+    "searchQuery": "jan",
+    "totalEntities": 41,
+    "typeFilter": "person",
+  },
+  "shown": [],
+}
+`;
+
+exports[`EntitiesIndex.loadEntities asks for the page without filters 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 40,
+          },
+        },
+      ],
+      "error": undefined,
+      "loading": true,
+      "loadingRelations": undefined,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "categoryFilter": null,
+    "currentPage": 3,
+    "entitiesList": [
+      {
+        "id": 1,
+      },
+    ],
+    "limit": 20,
+    "loading": false,
+    "searchQuery": "",
+    "totalEntities": 41,
+    "typeFilter": null,
+  },
+  "shown": [],
+}
+`;
+
+exports[`EntitiesIndex.loadEntities handles a success without a count 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 40,
+          },
+        },
+      ],
+      "error": undefined,
+      "loading": true,
+      "loadingRelations": undefined,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "categoryFilter": null,
+    "currentPage": 3,
+    "entitiesList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "limit": 20,
+    "loading": false,
+    "searchQuery": "",
+    "totalEntities": 2,
+    "typeFilter": null,
+  },
+  "shown": [],
+}
+`;
+
+exports[`EntitiesIndex.loadEntities handles an unsuccessful answer 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 40,
+          },
+        },
+      ],
+      "error": undefined,
+      "loading": true,
+      "loadingRelations": undefined,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "categoryFilter": null,
+    "currentPage": 3,
+    "entitiesList": [
+      "old",
+    ],
+    "limit": 20,
+    "loading": false,
+    "searchQuery": "",
+    "totalEntities": 9,
+    "typeFilter": null,
+  },
+  "shown": [],
+}
+`;
+
+exports[`EntitiesIndex.loadEntities shows and logs a failure 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 40,
+          },
+        },
+      ],
+      "error": undefined,
+      "loading": true,
+      "loadingRelations": undefined,
+    },
+  ],
+  "logged": [
+    "Failed to load entities:",
+  ],
+  "page": {
+    "categoryFilter": null,
+    "currentPage": 3,
+    "entitiesList": [
+      "old",
+    ],
+    "limit": 20,
+    "loading": false,
+    "searchQuery": "",
+    "totalEntities": 9,
+    "typeFilter": null,
+  },
+  "shown": [
+    [
+      "t:Failed to load entities",
+    ],
+  ],
+}
+`;
+
+exports[`EntityDetail.loadEntity handles a refusal with a message 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities/{id}{"id":"e-7"}",
+      ],
+      "error": null,
+      "loading": true,
+      "loadingRelations": true,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "$route": {
+      "params": {
+        "id": "e-7",
+      },
+    },
+    "entity": null,
+    "error": "Not yours",
+    "loading": false,
+    "loadingRelations": false,
+    "relations": [
+      "old",
+    ],
+  },
+  "shown": [],
+}
+`;
+
+exports[`EntityDetail.loadEntity handles a refusal without a message 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities/{id}{"id":"e-7"}",
+      ],
+      "error": null,
+      "loading": true,
+      "loadingRelations": true,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "$route": {
+      "params": {
+        "id": "e-7",
+      },
+    },
+    "entity": null,
+    "error": "t:Failed to load entity",
+    "loading": false,
+    "loadingRelations": false,
+    "relations": [
+      "old",
+    ],
+  },
+  "shown": [],
+}
+`;
+
+exports[`EntityDetail.loadEntity handles an entity with relations 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities/{id}{"id":"e-7"}",
+      ],
+      "error": null,
+      "loading": true,
+      "loadingRelations": true,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "$route": {
+      "params": {
+        "id": "e-7",
+      },
+    },
+    "entity": {
+      "id": "e-7",
+    },
+    "error": null,
+    "loading": false,
+    "loadingRelations": false,
+    "relations": [
+      {
+        "id": "r",
+      },
+    ],
+  },
+  "shown": [],
+}
+`;
+
+exports[`EntityDetail.loadEntity handles an entity without relations 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities/{id}{"id":"e-7"}",
+      ],
+      "error": null,
+      "loading": true,
+      "loadingRelations": true,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "$route": {
+      "params": {
+        "id": "e-7",
+      },
+    },
+    "entity": {
+      "id": "e-7",
+    },
+    "error": null,
+    "loading": false,
+    "loadingRelations": false,
+    "relations": [],
+  },
+  "shown": [],
+}
+`;
+
+exports[`EntityDetail.loadEntity shows and logs a failure with the API message 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities/{id}{"id":"e-7"}",
+      ],
+      "error": null,
+      "loading": true,
+      "loadingRelations": true,
+    },
+  ],
+  "logged": [
+    "Failed to load entity:",
+  ],
+  "page": {
+    "$route": {
+      "params": {
+        "id": "e-7",
+      },
+    },
+    "entity": null,
+    "error": "Gone",
+    "loading": false,
+    "loadingRelations": false,
+    "relations": [
+      "old",
+    ],
+  },
+  "shown": [
+    [
+      "Gone",
+    ],
+  ],
+}
+`;
+
+exports[`EntityDetail.loadEntity shows and logs a failure with the fallback 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/entities/{id}{"id":"e-7"}",
+      ],
+      "error": null,
+      "loading": true,
+      "loadingRelations": true,
+    },
+  ],
+  "logged": [
+    "Failed to load entity:",
+  ],
+  "page": {
+    "$route": {
+      "params": {
+        "id": "e-7",
+      },
+    },
+    "entity": null,
+    "error": "t:Failed to load entity",
+    "loading": false,
+    "loadingRelations": false,
+    "relations": [
+      "old",
+    ],
+  },
+  "shown": [
+    [
+      "t:Failed to load entity",
+    ],
+  ],
+}
+`;

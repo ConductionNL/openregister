@@ -50,7 +50,7 @@ class Version1Date20250831120000 extends SimpleMigrationStep {
 
 		// Check if the search trails table exists.
 		if ($schema->hasTable('openregister_search_trails') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_search_trails');

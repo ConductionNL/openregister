@@ -20,7 +20,7 @@ It exists because the `claude` CLI **cannot** accept a tool schema: `--tools` se
 requirement in `llm-cli-runner-exapp` to dispatch a tool schema to `POST /run` is therefore not implementable
 and is corrected by this change (see Notes).
 
-## ADDED Requirements
+## Requirements
 
 <!--
   RELOCATED SUBSET — the canonical home for this capability is hermiq.

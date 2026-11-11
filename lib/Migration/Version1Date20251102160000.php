@@ -333,6 +333,6 @@ class Version1Date20251102160000 extends SimpleMigrationStep {
 
 		$output->info(message: '⚠️  Agents table already exists!');
 
-		return null;
+		return $schema;
 	}//end changeSchema()
 }//end class

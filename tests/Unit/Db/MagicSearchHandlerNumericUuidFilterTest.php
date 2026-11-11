@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
@@ -38,6 +39,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TypedColumnRef;
 
 /**
  * Locks the 22P02 fix around numeric-column filtering by non-numeric (UUID)
@@ -69,7 +73,8 @@ class MagicSearchHandlerNumericUuidFilterTest extends TestCase {
 			rbacHandler: $this->rbacHandler,
 			organizationHandler: $this->organizationHandler,
 			schemaTypeConverter: new SchemaTypeConverter(),
-			dateTimeNormalizer: new DateTimeNormalizer($this->logger)
+			dateTimeNormalizer: new DateTimeNormalizer($this->logger),
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
 		);
 	}//end setUp()
 
@@ -97,7 +102,7 @@ class MagicSearchHandlerNumericUuidFilterTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$method->setAccessible(true);
-		return $method->invoke($this->handler, $query, $schema, $this->makeConnection(), $isPostgres);
+		return $method->invoke($this->handler, new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $schema), connection: $this->makeConnection(), isPostgres: $isPostgres));
 	}//end invokeObjectFilters()
 
 	/**
@@ -113,7 +118,7 @@ class MagicSearchHandlerNumericUuidFilterTest extends TestCase {
 	private function invokeColumnRef(string $columnRef, string $propertyType, mixed $value, bool $isPostgres): string {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildFilterColumnRef');
 		$method->setAccessible(true);
-		return $method->invoke($this->handler, $columnRef, $propertyType, $value, $isPostgres);
+		return $method->invoke($this->handler, new TypedColumnRef(ref: $columnRef, propertyType: $propertyType, isPostgres: $isPostgres), $value);
 	}//end invokeColumnRef()
 
 	// -------------------------------------------------------------------------

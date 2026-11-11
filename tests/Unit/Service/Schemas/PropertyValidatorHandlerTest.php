@@ -16,7 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schemas;
 
 use Exception;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -49,6 +49,18 @@ class PropertyValidatorHandlerTest extends TestCase {
 		$this->expectExceptionMessage('Invalid type');
 
 		$this->validator->validateProperty(['type' => 'invalid_type']);
+	}
+
+	/**
+	 * A single-valued relation is a `$ref` and carries no `type` of its own:
+	 * JSON Schema resolves its shape from the referenced schema. Requiring a
+	 * `type` here refused every such relation and made a schema that declared
+	 * one un-saveable (400 "must have a 'type' field").
+	 */
+	public function testValidatePropertyAcceptsTopLevelRefWithoutType(): void {
+		$result = $this->validator->validateProperty(['$ref' => 'some-schema', 'title' => 'Owner']);
+
+		$this->assertTrue($result);
 	}
 
 	/**

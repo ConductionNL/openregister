@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Repair\CheckFlowTimerInvariants;
 use OCA\OpenRegister\Repair\SeedFlowTimerRegister;
+use OCA\OpenRegister\Repair\RegisterDescriptorImport;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Tests\Unit\Service\Flow\Timer\InMemoryTimerStore;
 use OCP\App\IAppManager;
@@ -56,14 +57,20 @@ class FlowTimerRepairStepsTest extends TestCase {
 					callback: static fn (array $data): bool => count($data['components']['objects']) === 3
 						&& isset($data['components']['schemas']['working-calendar'])
 				),
-				'1.1.0',
+				// Bumped with the register in #3970: the seed imports with
+				// `force: false`, so the VERSION is the only thing that makes
+				// the new `serviceHours` property land on an instance that
+				// already holds the register, and administrator edits survive.
+				// The commit moved the constant and left this expectation
+				// behind, which is the one test this branch broke.
+				'1.2.0',
 				false
 			)
 			->willReturn([]);
 		$output = $this->createMock(IOutput::class);
 		$output->expects(self::once())->method('info')->with(self::stringContains('Flow-timers register imported'));
 
-		$step = new SeedFlowTimerRegister(configurationService: $configuration, appManager: $appManager, logger: new NullLogger());
+		$step = new SeedFlowTimerRegister(descriptors: new RegisterDescriptorImport(configurationService: $configuration, appManager: $appManager, logger: new NullLogger()));
 		self::assertStringContainsString('flow-timers register', $step->getName());
 		$step->run($output);
 	}//end testTheSeedImportsTheDecodedDescriptorWithoutForce()
@@ -74,7 +81,7 @@ class FlowTimerRepairStepsTest extends TestCase {
 		$appManager->method('getAppPath')->willReturn('/nowhere');
 		$output = $this->createMock(IOutput::class);
 		$output->expects(self::once())->method('warning')->with(self::stringContains('not found'));
-		(new SeedFlowTimerRegister(configurationService: $configuration, appManager: $appManager, logger: new NullLogger()))->run($output);
+		(new SeedFlowTimerRegister(descriptors: new RegisterDescriptorImport(configurationService: $configuration, appManager: $appManager, logger: new NullLogger())))->run($output);
 
 		$failing = $this->createMock(ConfigurationService::class);
 		$failing->method('importFromApp')->willThrowException(new RuntimeException('db down'));
@@ -82,7 +89,7 @@ class FlowTimerRepairStepsTest extends TestCase {
 		$real->method('getAppPath')->willReturn(realpath(__DIR__ . '/../../..'));
 		$output2 = $this->createMock(IOutput::class);
 		$output2->expects(self::once())->method('warning')->with(self::stringContains('db down'));
-		(new SeedFlowTimerRegister(configurationService: $failing, appManager: $real, logger: new NullLogger()))->run($output2);
+		(new SeedFlowTimerRegister(descriptors: new RegisterDescriptorImport(configurationService: $failing, appManager: $real, logger: new NullLogger())))->run($output2);
 	}//end testTheSeedWarnsAndNeverThrows()
 
 	public function testTheInvariantCheckCountsDefectsAndCancelsNothing(): void {

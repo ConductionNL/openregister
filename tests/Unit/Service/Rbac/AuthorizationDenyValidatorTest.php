@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -30,6 +30,7 @@ namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
+use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -37,6 +38,9 @@ use PHPUnit\Framework\TestCase;
  * Pins the save-time refusals.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator
+ * @uses \OCA\OpenRegister\Exception\AuthorizationBlockException
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  */
 class AuthorizationDenyValidatorTest extends TestCase {
 
@@ -54,7 +58,7 @@ class AuthorizationDenyValidatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->validator = new AuthorizationDenyValidator(new DenyResolver());
+		$this->validator = new AuthorizationDenyValidator(new DenyResolver(new DenyEntryMatcher()));
 	}//end setUp()
 
 	/**

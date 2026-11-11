@@ -82,7 +82,7 @@ class DedupAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testValidCreatePolicy(): void {
 		$shape = [
@@ -102,7 +102,7 @@ class DedupAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testMisspelledOnCreateIsRefused(): void {
 		$shape = [
@@ -120,7 +120,7 @@ class DedupAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testOverrideGroupsMustBeGroupIds(): void {
 		$scalar = [
@@ -146,7 +146,7 @@ class DedupAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testOverrideGroupsWithoutBlockIsValid(): void {
 		$shape = [

@@ -274,12 +274,11 @@ routes.push({
 	props: true,
 })
 
-// The run deep link: /flow-runs/:uuid, for the same reason and on the same
-// terms as the task one above. A run has no screen of its own — the flow
-// editor's sidebar already shows the graph replay, the steps, the objects
-// and the log — but it needs an ADDRESS, because "open this run in a new
-// tab" is only middle-clickable, bookmarkable and pasteable when it is a
-// real href. The page resolves the run to its flow and hands over.
+// The run page: /flow-runs/:uuid, registered here for the same reason and
+// on the same terms as the task one above. It used to resolve the run to
+// its flow and hand over to the editor; since flow-and-run-detail-pages it
+// is a page of its own (status, the failed step, steps, objects, tasks,
+// context, raw log), and "Show on the canvas" opens the editor replay.
 //
 // Registered here for the same ranking reason: the manifest's
 // `/:pathMatch(.*)*` fallback would otherwise swallow a cold load.
@@ -287,6 +286,20 @@ routes.push({
 	name: 'flow-run-detail',
 	path: '/flow-runs/:uuid',
 	component: () => import('./views/flows/FlowRunDetail.vue'),
+	props: true,
+})
+
+// The flow overview: /flows/:id/overview (flow-and-run-detail-pages). What a
+// flow does, its health, versions and runs, without the canvas. The `flows`
+// index rows open it through `rowRoute: flow-overview`. The editor keeps
+// /flows/:id, because nextcloud-vue hardcodes /flows/new as the add route
+// and /flows/{id} as the editor's save redirect, and every `?run=` link
+// lands there. A route here, not a manifest page, for the same gate-69
+// reason as the two above.
+routes.push({
+	name: 'flow-overview',
+	path: '/flows/:id/overview',
+	component: () => import('./views/flows/FlowOverview.vue'),
 	props: true,
 })
 

@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+ * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
  */
 
 declare(strict_types=1);
@@ -31,7 +31,8 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Case\CasePlanTrigger;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -40,17 +41,17 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+ * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
  */
 class CaseObjectEventListener implements IEventListener {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param CasePlanService $plans The case layer.
+	 * @param CasePlanServiceInterface $plans The case layer.
 	 */
 	public function __construct(
-		private readonly CasePlanService $plans,
+		private readonly CasePlanServiceInterface $plans,
 	) {
 
 	}//end __construct()
@@ -62,7 +63,7 @@ class CaseObjectEventListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectTransitionedEvent) {
@@ -83,7 +84,7 @@ class CaseObjectEventListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function forward(?ObjectEntity $object, string $trigger): void {
 		$uuid = trim((string)$object?->getUuid());
@@ -91,6 +92,6 @@ class CaseObjectEventListener implements IEventListener {
 			return;
 		}
 
-		$this->plans->onObjectEvent(objectUuid: $uuid, event: $trigger, payload: $object->getObject());
+		$this->plans->onObjectEvent(trigger: new CasePlanTrigger(objectUuid: $uuid, event: $trigger, payload: $object->getObject()));
 	}//end forward()
 }//end class

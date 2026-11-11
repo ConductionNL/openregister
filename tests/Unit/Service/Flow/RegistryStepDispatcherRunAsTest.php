@@ -18,7 +18,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+ * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
  */
 
 declare(strict_types=1);
@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow {
 
 	use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 	use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
 	use OCA\OpenRegister\Service\Flow\FlowRunService;
 	use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -273,7 +274,8 @@ namespace Unit\Service\Flow {
 		public function validateConfig(array $config): void {
 		}//end validateConfig()
 
-		public function execute(array $items, array $config, array $context): array {
+		public function execute(FlowNodeCall $call): array {
+			$items = $call->items;
 			$this->executedInsideScope = true;
 
 			return array_map(

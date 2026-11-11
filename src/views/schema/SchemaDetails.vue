@@ -33,13 +33,20 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton
-							closeAfterClick
-							@click="navigationStore.setModal('editSchema')">
+						<NcActionButton closeAfterClick @click="openEditor(false)">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
+						</NcActionButton>
+						<NcActionButton
+							closeAfterClick
+							data-testid="edit-schema-as-draft"
+							@click="openEditor(true)">
+							<template #icon>
+								<FileDocumentEditOutline :size="20" />
+							</template>
+							{{ t('openregister', 'Edit as draft') }}
 						</NcActionButton>
 						<NcActionButton
 							closeAfterClick
@@ -84,6 +91,11 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 					</NcActions>
 				</div>
 			</span>
+
+			<!-- A pending draft: records use the published schema until it is published. -->
+			<SchemaDraftBar
+				:schema="schemaStore.schemaItem"
+				@editDraft="openEditor(true)" />
 
 			<!-- Tab navigation -->
 			<div class="schemaTabNav">
@@ -198,54 +210,13 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 					</table>
 				</div>
 
-				<div class="chartGrid">
-					<!-- Audit Trail Actions Chart -->
-					<div class="chartCard">
-						<h3>Audit Trail Actions</h3>
-						<Apexchart
-							type="line"
-							height="350"
-							:options="auditTrailChartOptions"
-							:series="
-								dashboardStore.chartData?.auditTrailActions?.series
-								|| []
-							" />
-					</div>
-
-					<!-- Objects by Register Chart -->
-					<div class="chartCard">
-						<h3>Objects by Register</h3>
-						<Apexchart
-							type="pie"
-							height="350"
-							:options="registerChartOptions"
-							:series="
-								dashboardStore.chartData?.objectsByRegister?.series
-								|| []
-							"
-							:labels="
-								dashboardStore.chartData?.objectsByRegister?.labels
-								|| []
-							" />
-					</div>
-
-					<!-- Objects by Size Chart -->
-					<div class="chartCard">
-						<h3>Objects by Size Distribution</h3>
-						<Apexchart
-							type="bar"
-							height="350"
-							:options="sizeChartOptions"
-							:series="[
-								{
-									name: 'Objects',
-									data:
-										dashboardStore.chartData?.objectsBySize
-											?.series || [],
-								},
-							]" />
-					</div>
-				</div>
+				<DetailChartGrid
+					:chartData="dashboardStore.chartData"
+					distributionKey="objectsByRegister"
+					distributionTitle="Objects by Register"
+					:auditOptions="auditTrailChartOptions"
+					:distributionOptions="registerChartOptions"
+					:sizeOptions="sizeChartOptions" />
 			</div>
 		</div>
 	</NcAppContent>
@@ -259,21 +230,28 @@ import {
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
-import VueApexCharts from 'vue3-apexcharts'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import CalendarMonth from 'vue-material-design-icons/CalendarMonth.vue'
 import ChartBox from 'vue-material-design-icons/ChartBox.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
+import FileDocumentEditOutline from 'vue-material-design-icons/FileDocumentEditOutline.vue'
 import Gavel from 'vue-material-design-icons/Gavel.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import SchemaDraftBar from '../../components/schema/SchemaDraftBar.vue'
+import DetailChartGrid from '../register/DetailChartGrid.vue'
 import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
 import CalendarProviderTab from './CalendarProviderTab.vue'
 import SchemaRulesTab from './SchemaRulesTab.vue'
+import {
+	auditTrailChartOptions,
+	distributionChartOptions,
+	sizeChartOptions,
+} from '../register/detailChartOptions.js'
 
 export default {
 	name: 'SchemaDetails',
@@ -283,12 +261,13 @@ export default {
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
-		Apexchart: VueApexCharts,
+		DetailChartGrid,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
 		PlusCircleOutline,
 		Download,
+		FileDocumentEditOutline,
 		Upload,
 		AlertCircle,
 		CalendarMonth,
@@ -298,6 +277,7 @@ export default {
 		CalendarProviderTab,
 		SchemaWorkflowTab,
 		SchemaRulesTab,
+		SchemaDraftBar,
 	},
 
 	data() {
@@ -317,26 +297,10 @@ export default {
 		 * @return {object}
 		 */
 		auditTrailChartOptions() {
-			return {
-				chart: {
-					type: 'line',
-					toolbar: { show: true },
-					zoom: { enabled: true },
-				},
-
-				xaxis: {
-					categories:
-						dashboardStore.chartData?.auditTrailActions?.labels || [],
-
-					title: { text: 'Date' },
-				},
-
-				yaxis: { title: { text: 'Number of Actions' } },
-				colors: ['#41B883', '#E46651', '#00D8FF'],
-				stroke: { curve: 'smooth', width: 2 },
-				legend: { position: 'top' },
-				theme: { mode: 'light' },
-			}
+			return auditTrailChartOptions(
+				dashboardStore.chartData?.auditTrailActions?.labels || [],
+				'light',
+			)
 		},
 
 		/**
@@ -346,20 +310,9 @@ export default {
 		 * @return {object}
 		 */
 		registerChartOptions() {
-			return {
-				chart: { type: 'pie' },
-				labels: dashboardStore.chartData?.objectsByRegister?.labels || [],
-				legend: { position: 'bottom' },
-				responsive: [
-					{
-						breakpoint: 480,
-						options: {
-							chart: { width: 200 },
-							legend: { position: 'bottom' },
-						},
-					},
-				],
-			}
+			return distributionChartOptions(
+				dashboardStore.chartData?.objectsByRegister?.labels || [],
+			)
 		},
 
 		/**
@@ -369,26 +322,9 @@ export default {
 		 * @return {object}
 		 */
 		sizeChartOptions() {
-			return {
-				chart: { type: 'bar' },
-				plotOptions: {
-					bar: {
-						horizontal: false,
-						columnWidth: '55%',
-						endingShape: 'rounded',
-					},
-				},
-
-				xaxis: {
-					categories:
-						dashboardStore.chartData?.objectsBySize?.labels || [],
-
-					title: { text: 'Size Range' },
-				},
-
-				yaxis: { title: { text: 'Number of Objects' } },
-				fill: { opacity: 1 },
-			}
+			return sizeChartOptions(
+				dashboardStore.chartData?.objectsBySize?.labels || [],
+			)
 		},
 	},
 
@@ -414,6 +350,17 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Open the schema editor, publishing directly or saving to the draft.
+		 *
+		 * @param {boolean} asDraft - True to save the edit as the schema's draft
+		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 */
+		openEditor(asDraft) {
+			schemaStore.setDraftMode(asDraft)
+			navigationStore.setModal('editSchema')
+		},
+
 		/**
 		 * Load schema statistics from the dedicated stats endpoint
 		 *
@@ -461,6 +408,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/views.scss' as *;
+
 .pageHeaderContainer {
 	display: flex;
 	align-items: center;
@@ -482,25 +431,7 @@ export default {
 	padding: 20px;
 }
 
-.chartCard {
-	background: var(--color-main-background);
-	border-radius: 8px;
-	padding: 20px;
-	box-shadow: 0 2px 8px var(--color-box-shadow);
-	border: 1px solid var(--color-border);
-
-	h3 {
-		margin: 0 0 20px 0;
-		font-size: 1.2em;
-		color: var(--color-main-text);
-	}
-}
-
-@media screen and (max-width: 1024px) {
-	.chartGrid {
-		grid-template-columns: 1fr;
-	}
-}
+@include media-screen-and-max-width-1024px;
 
 .statsContainer {
 	margin-bottom: 30px;

@@ -22,11 +22,10 @@ namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -56,11 +55,10 @@ class SearchQueryHandlerFilterSpellingTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		return new SearchQueryHandler(
-			$this->createMock(ViewMapper::class),
+			$this->createMock(ViewScopeApplier::class),
 			$schemaMapper,
 			$this->createMock(SettingsService::class),
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class),
 			$this->createMock(SearchTrailService::class)
 		);
 	}//end makeHandler()

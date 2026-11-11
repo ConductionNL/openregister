@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Sync\SyncScheduleService
+ * @uses \OCA\OpenRegister\Db\Source
  */
 class SyncScheduleServiceTest extends TestCase {
 

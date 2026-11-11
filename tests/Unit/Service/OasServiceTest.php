@@ -6,7 +6,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Oas\OasNames;
+use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\OasSources;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -23,9 +26,7 @@ class OasServiceTest extends TestCase {
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 
 		$this->service = new OasService(
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->urlGenerator
+			new OasSources($this->registerMapper, $this->schemaMapper, $this->urlGenerator)
 		);
 	}
 
@@ -84,6 +85,77 @@ class OasServiceTest extends TestCase {
 	}
 
 	/**
+	 * The RBAC annotator the service builds, for the questions that moved to it.
+	 *
+	 * Reached through the service rather than constructed here on purpose: the
+	 * tests below are about what the GENERATED DOCUMENT says, so they have to
+	 * exercise the annotator the generator actually uses.
+	 *
+	 * @return \OCA\OpenRegister\Service\Oas\OasRbacAnnotator The annotator.
+	 */
+	private function annotator(): \OCA\OpenRegister\Service\Oas\OasRbacAnnotator {
+		$ref = new \ReflectionClass($this->service);
+		$prop = $ref->getProperty('rbacAnnotator');
+		$prop->setAccessible(true);
+		return $prop->getValue($this->service);
+	}
+
+	/**
+	 * The slug of a title.
+	 *
+	 * @param array{0: string} $args The title
+	 *
+	 * @return string The slug
+	 */
+	private function slug(array $args): string {
+		return (new OasNames())->slug(string: $args[0]);
+	}
+
+	/**
+	 * A title in PascalCase.
+	 *
+	 * @param array{0: string} $args The title
+	 *
+	 * @return string The PascalCase string
+	 */
+	private function pascal(array $args): string {
+		return (new OasNames())->pascalCase(string: $args[0]);
+	}
+
+	/**
+	 * The component name of a title.
+	 *
+	 * @param array{0: string|null} $args The title
+	 *
+	 * @return string The component name
+	 */
+	private function schemaName(array $args): string {
+		return (new OasNames())->schemaName(title: $args[0]);
+	}
+
+	/**
+	 * A sanitised property definition.
+	 *
+	 * @param array{0: mixed} $args The definition
+	 *
+	 * @return array<string, mixed> The definition
+	 */
+	private function sanitized(array $args): array {
+		return (new OasPropertySanitizer())->sanitize(definition: $args[0]);
+	}
+
+	/**
+	 * The type of a property definition.
+	 *
+	 * @param array{0: mixed} $args The definition
+	 *
+	 * @return string The type
+	 */
+	private function typeOf(array $args): string {
+		return (new OasPropertySanitizer())->typeOf(definition: $args[0]);
+	}
+
+	/**
 	 * Helper to invoke a private method on the OasService via reflection.
 	 */
 	private function invokePrivateMethod(string $methodName, array $args = []) {
@@ -91,6 +163,22 @@ class OasServiceTest extends TestCase {
 		$method = $ref->getMethod($methodName);
 		$method->setAccessible(true);
 		return $method->invokeArgs($this->service, $args);
+	}
+
+	/**
+	 * Repair a schema against the components of the service's current document.
+	 *
+	 * @param array $schema The schema, changed in place.
+	 *
+	 * @return void
+	 */
+	private function repairReferences(array &$schema): void {
+		$oas = (new \ReflectionProperty($this->service, 'oas'))->getValue($this->service);
+		$repair = new \OCA\OpenRegister\Service\Oas\OasReferenceRepair(
+			componentNames: array_map('strval', array_keys($oas['components']['schemas'] ?? [])),
+			report: new \OCA\OpenRegister\Service\Oas\OasValidationReport()
+		);
+		$repair->repair(schema: $schema, context: 'test');
 	}
 
 	/**
@@ -459,27 +547,27 @@ class OasServiceTest extends TestCase {
 	// ========================================================================
 
 	public function testSlugifySimpleString(): void {
-		$result = $this->invokePrivateMethod('slugify', ['Hello World']);
+		$result = $this->slug(['Hello World']);
 		$this->assertSame('hello-world', $result);
 	}
 
 	public function testSlugifySpecialCharacters(): void {
-		$result = $this->invokePrivateMethod('slugify', ['My Schema! @#$%']);
+		$result = $this->slug(['My Schema! @#$%']);
 		$this->assertSame('my-schema', $result);
 	}
 
 	public function testSlugifyAlreadySlugified(): void {
-		$result = $this->invokePrivateMethod('slugify', ['already-slugified']);
+		$result = $this->slug(['already-slugified']);
 		$this->assertSame('already-slugified', $result);
 	}
 
 	public function testSlugifyUpperCase(): void {
-		$result = $this->invokePrivateMethod('slugify', ['UPPERCASE']);
+		$result = $this->slug(['UPPERCASE']);
 		$this->assertSame('uppercase', $result);
 	}
 
 	public function testSlugifyTrimsHyphens(): void {
-		$result = $this->invokePrivateMethod('slugify', ['--trimmed--']);
+		$result = $this->slug(['--trimmed--']);
 		$this->assertSame('trimmed', $result);
 	}
 
@@ -488,22 +576,22 @@ class OasServiceTest extends TestCase {
 	// ========================================================================
 
 	public function testPascalCaseSimple(): void {
-		$result = $this->invokePrivateMethod('pascalCase', ['hello world']);
+		$result = $this->pascal(['hello world']);
 		$this->assertSame('HelloWorld', $result);
 	}
 
 	public function testPascalCaseSingleWord(): void {
-		$result = $this->invokePrivateMethod('pascalCase', ['person']);
+		$result = $this->pascal(['person']);
 		$this->assertSame('Person', $result);
 	}
 
 	public function testPascalCaseWithHyphens(): void {
-		$result = $this->invokePrivateMethod('pascalCase', ['my-schema-name']);
+		$result = $this->pascal(['my-schema-name']);
 		$this->assertSame('MySchemaName', $result);
 	}
 
 	public function testPascalCaseWithSpecialChars(): void {
-		$result = $this->invokePrivateMethod('pascalCase', ['hello!world@test']);
+		$result = $this->pascal(['hello!world@test']);
 		$this->assertSame('HelloWorldTest', $result);
 	}
 
@@ -512,45 +600,42 @@ class OasServiceTest extends TestCase {
 	// ========================================================================
 
 	public function testSanitizeSchemaNameSimple(): void {
-		$result = $this->invokePrivateMethod('sanitizeSchemaName', ['Person']);
+		$result = $this->schemaName(['Person']);
 		$this->assertSame('Person', $result);
 	}
 
 	public function testSanitizeSchemaNameWithSpaces(): void {
-		$result = $this->invokePrivateMethod('sanitizeSchemaName', ['My Schema']);
+		$result = $this->schemaName(['My Schema']);
 		$this->assertSame('My_Schema', $result);
 	}
 
 	public function testSanitizeSchemaNameNull(): void {
-		$result = $this->invokePrivateMethod('sanitizeSchemaName', [null]);
+		$result = $this->schemaName([null]);
 		$this->assertSame('UnknownSchema', $result);
 	}
 
 	public function testSanitizeSchemaNameEmpty(): void {
-		$result = $this->invokePrivateMethod('sanitizeSchemaName', ['']);
+		$result = $this->schemaName(['']);
 		$this->assertSame('UnknownSchema', $result);
 	}
 
 	public function testSanitizeSchemaNameWithSpecialChars(): void {
-		$result = $this->invokePrivateMethod('sanitizeSchemaName', ['Hello!@#$World']);
+		$result = $this->schemaName(['Hello!@#$World']);
 		$this->assertSame('Hello_World', $result);
 	}
 
 	public function testSanitizeSchemaNameStartingWithNumber(): void {
-		$result = $this->invokePrivateMethod('sanitizeSchemaName', ['123Schema']);
-		// preg_match returns 1 (int), which is truthy but === true test is different
-		// The method checks `=== true` which actually evaluates `1 === true` to false
-		// So the prefix is NOT added. Let's verify the actual behavior:
-		$this->assertMatchesRegularExpression('/^[a-zA-Z0-9._-]+$/', $result);
+		$result = $this->schemaName(['123Schema']);
+		$this->assertSame('Schema_123Schema', $result);
 	}
 
 	public function testSanitizeSchemaNameWithDotsAndDashes(): void {
-		$result = $this->invokePrivateMethod('sanitizeSchemaName', ['my.schema-name']);
+		$result = $this->schemaName(['my.schema-name']);
 		$this->assertSame('my.schema-name', $result);
 	}
 
 	public function testSanitizeSchemaNameAllSpecialChars(): void {
-		$result = $this->invokePrivateMethod('sanitizeSchemaName', ['!@#$%^&*()']);
+		$result = $this->schemaName(['!@#$%^&*()']);
 		$this->assertSame('UnknownSchema', $result);
 	}
 
@@ -559,24 +644,24 @@ class OasServiceTest extends TestCase {
 	// ========================================================================
 
 	public function testSanitizePropertyDefinitionNonArray(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', ['just a string']);
+		$result = $this->sanitized(['just a string']);
 		$this->assertSame('string', $result['type']);
 		$this->assertSame('Property value', $result['description']);
 	}
 
 	public function testSanitizePropertyDefinitionInteger(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [42]);
+		$result = $this->sanitized([42]);
 		$this->assertSame('string', $result['type']);
 		$this->assertSame('Property value', $result['description']);
 	}
 
 	public function testSanitizePropertyDefinitionBoolean(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [true]);
+		$result = $this->sanitized([true]);
 		$this->assertSame('string', $result['type']);
 	}
 
 	public function testSanitizePropertyDefinitionStripsInternalFields(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'description' => 'Name',
 			'objectConfiguration' => ['some' => 'config'],
@@ -608,7 +693,7 @@ class OasServiceTest extends TestCase {
 			'title' => 'Email',
 		];
 
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [$input]);
+		$result = $this->sanitized([$input]);
 
 		$this->assertSame('string', $result['type']);
 		$this->assertSame('email', $result['format']);
@@ -621,7 +706,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionInvalidType(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'foobar',
 			'description' => 'Unknown type',
 		]]);
@@ -631,7 +716,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionArrayTypeGetsItemsDefault(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'array',
 		]]);
 
@@ -641,7 +726,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionNestedItems(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'array',
 			'items' => [
 				'type' => 'object',
@@ -659,7 +744,7 @@ class OasServiceTest extends TestCase {
 
 	public function testSanitizePropertyDefinitionItemsAsList(): void {
 		// items as a sequential array (invalid OAS) should be fixed to first element
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'array',
 			'items' => [
 				['type' => 'string'],
@@ -674,7 +759,7 @@ class OasServiceTest extends TestCase {
 
 	public function testSanitizePropertyDefinitionEmptyItemsList(): void {
 		// Empty sequential array for items should default to string
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'array',
 			'items' => [],
 		]]);
@@ -685,7 +770,7 @@ class OasServiceTest extends TestCase {
 
 	public function testSanitizePropertyDefinitionBooleanRequired(): void {
 		// Boolean required should be stripped (only arrays are valid in OAS)
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'required' => true,
 		]]);
@@ -695,7 +780,7 @@ class OasServiceTest extends TestCase {
 
 	public function testSanitizePropertyDefinitionArrayRequired(): void {
 		// Array required should be kept
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'object',
 			'required' => ['name', 'email'],
 		]]);
@@ -704,7 +789,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionEmptyOneOf(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'oneOf' => [],
 		]]);
@@ -713,7 +798,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionValidOneOf(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'oneOf' => [
 				['type' => 'string'],
 				['type' => 'integer'],
@@ -724,7 +809,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionEmptyAnyOf(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'anyOf' => [],
 		]]);
@@ -733,7 +818,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionEmptyAllOf(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'allOf' => [],
 		]]);
@@ -742,7 +827,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionAllOfNonArray(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'allOf' => 'not an array',
 		]]);
@@ -751,7 +836,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionAllOfWithEmptyItems(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'allOf' => [[], []],
 		]]);
@@ -764,7 +849,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionAllOfWithValidItems(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'allOf' => [
 				['type' => 'object', 'properties' => ['name' => ['type' => 'string']]],
 				['$ref' => '#/components/schemas/Base'],
@@ -775,7 +860,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionEmptyRef(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'$ref' => '',
 		]]);
 
@@ -785,7 +870,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionRefNotString(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'$ref' => 123,
 		]]);
 
@@ -794,7 +879,7 @@ class OasServiceTest extends TestCase {
 
 	public function testSanitizePropertyDefinitionBareRefNormalized(): void {
 		// Bare ref (no #/) should be normalized to #/components/schemas/...
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'$ref' => 'vestiging',
 		]]);
 
@@ -802,7 +887,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionFullRefKept(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'$ref' => '#/components/schemas/Person',
 		]]);
 
@@ -810,7 +895,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionEmptyEnum(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'enum' => [],
 		]]);
@@ -819,7 +904,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionEnumNotArray(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'enum' => 'not-array',
 		]]);
@@ -828,7 +913,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionValidEnum(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'enum' => ['active', 'inactive', 'pending'],
 		]]);
@@ -838,7 +923,7 @@ class OasServiceTest extends TestCase {
 
 	public function testSanitizePropertyDefinitionNoTypeOrRef(): void {
 		// When neither type nor $ref, should default to string
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'description' => 'Just a description',
 		]]);
 
@@ -847,7 +932,7 @@ class OasServiceTest extends TestCase {
 
 	public function testSanitizePropertyDefinitionNoDescription(): void {
 		// When no description and no $ref, should add default
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'integer',
 		]]);
 
@@ -856,7 +941,7 @@ class OasServiceTest extends TestCase {
 
 	public function testSanitizePropertyDefinitionRefNoDefaultDescription(): void {
 		// When $ref present, should NOT add default description
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'$ref' => '#/components/schemas/Person',
 		]]);
 
@@ -864,7 +949,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionNestedProperties(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'object',
 			'properties' => [
 				'name' => ['type' => 'string', 'objectConfiguration' => ['internal' => true]],
@@ -879,7 +964,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionCompositionRecursive(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'oneOf' => [
 				['type' => 'string', 'objectConfiguration' => ['strip' => 'this']],
 				['type' => 'integer'],
@@ -891,7 +976,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionNullableProperty(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'nullable' => true,
 		]]);
@@ -900,7 +985,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionWriteOnlyProperty(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'writeOnly' => true,
 		]]);
@@ -909,7 +994,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionMinMaxValidation(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'integer',
 			'minimum' => 0,
 			'maximum' => 100,
@@ -926,7 +1011,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionConstKeyword(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'const' => 'fixed-value',
 		]]);
@@ -935,7 +1020,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionExamplesKeyword(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'examples' => ['foo', 'bar'],
 		]]);
@@ -944,7 +1029,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionUniqueItems(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'array',
 			'items' => ['type' => 'string'],
 			'uniqueItems' => true,
@@ -958,7 +1043,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionMaxMinProperties(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'object',
 			'minProperties' => 1,
 			'maxProperties' => 5,
@@ -969,7 +1054,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionAdditionalProperties(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'object',
 			'additionalProperties' => true,
 		]]);
@@ -978,7 +1063,7 @@ class OasServiceTest extends TestCase {
 	}
 
 	public function testSanitizePropertyDefinitionNotKeyword(): void {
-		$result = $this->invokePrivateMethod('sanitizePropertyDefinition', [[
+		$result = $this->sanitized([[
 			'type' => 'string',
 			'not' => ['type' => 'integer'],
 		]]);
@@ -991,77 +1076,77 @@ class OasServiceTest extends TestCase {
 	// ========================================================================
 
 	public function testGetPropertyTypeFromArray(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', [['type' => 'integer']]);
+		$result = $this->typeOf([['type' => 'integer']]);
 		$this->assertSame('integer', $result);
 	}
 
 	public function testGetPropertyTypeFromArrayInvalid(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', [['type' => 'unknown']]);
+		$result = $this->typeOf([['type' => 'unknown']]);
 		$this->assertSame('string', $result);
 	}
 
 	public function testGetPropertyTypeFromArrayNoType(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', [['description' => 'no type']]);
+		$result = $this->typeOf([['description' => 'no type']]);
 		$this->assertSame('string', $result);
 	}
 
 	public function testGetPropertyTypeFromStringInt(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', ['int']);
+		$result = $this->typeOf(['int']);
 		$this->assertSame('integer', $result);
 	}
 
 	public function testGetPropertyTypeFromStringFloat(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', ['float']);
+		$result = $this->typeOf(['float']);
 		$this->assertSame('number', $result);
 	}
 
 	public function testGetPropertyTypeFromStringBool(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', ['bool']);
+		$result = $this->typeOf(['bool']);
 		$this->assertSame('boolean', $result);
 	}
 
 	public function testGetPropertyTypeFromStringString(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', ['string']);
+		$result = $this->typeOf(['string']);
 		$this->assertSame('string', $result);
 	}
 
 	public function testGetPropertyTypeFromStringArray(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', ['array']);
+		$result = $this->typeOf(['array']);
 		$this->assertSame('array', $result);
 	}
 
 	public function testGetPropertyTypeFromStringObject(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', ['object']);
+		$result = $this->typeOf(['object']);
 		$this->assertSame('object', $result);
 	}
 
 	public function testGetPropertyTypeFromStringUnknown(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', ['custom']);
+		$result = $this->typeOf(['custom']);
 		$this->assertSame('string', $result);
 	}
 
 	public function testGetPropertyTypeFromNull(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', [null]);
+		$result = $this->typeOf([null]);
 		$this->assertSame('string', $result);
 	}
 
 	public function testGetPropertyTypeFromInteger(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', [42]);
+		$result = $this->typeOf([42]);
 		$this->assertSame('string', $result);
 	}
 
 	public function testGetPropertyTypeBoolean(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', [['type' => 'boolean']]);
+		$result = $this->typeOf([['type' => 'boolean']]);
 		$this->assertSame('boolean', $result);
 	}
 
 	public function testGetPropertyTypeNumber(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', [['type' => 'number']]);
+		$result = $this->typeOf([['type' => 'number']]);
 		$this->assertSame('number', $result);
 	}
 
 	public function testGetPropertyTypeNull(): void {
-		$result = $this->invokePrivateMethod('getPropertyType', [['type' => 'null']]);
+		$result = $this->typeOf([['type' => 'null']]);
 		$this->assertSame('null', $result);
 	}
 
@@ -1070,27 +1155,27 @@ class OasServiceTest extends TestCase {
 	// ========================================================================
 
 	public function testExtractGroupFromRuleString(): void {
-		$result = $this->invokePrivateMethod('extractGroupFromRule', ['admin']);
+		$result = $this->annotator()->extractGroupFromRule('admin');
 		$this->assertSame('admin', $result);
 	}
 
 	public function testExtractGroupFromRuleArrayWithGroup(): void {
-		$result = $this->invokePrivateMethod('extractGroupFromRule', [['group' => 'editors']]);
+		$result = $this->annotator()->extractGroupFromRule(['group' => 'editors']);
 		$this->assertSame('editors', $result);
 	}
 
 	public function testExtractGroupFromRuleArrayWithoutGroup(): void {
-		$result = $this->invokePrivateMethod('extractGroupFromRule', [['role' => 'manager']]);
+		$result = $this->annotator()->extractGroupFromRule(['role' => 'manager']);
 		$this->assertNull($result);
 	}
 
 	public function testExtractGroupFromRuleNull(): void {
-		$result = $this->invokePrivateMethod('extractGroupFromRule', [null]);
+		$result = $this->annotator()->extractGroupFromRule(null);
 		$this->assertNull($result);
 	}
 
 	public function testExtractGroupFromRuleInteger(): void {
-		$result = $this->invokePrivateMethod('extractGroupFromRule', [42]);
+		$result = $this->annotator()->extractGroupFromRule(42);
 		$this->assertNull($result);
 	}
 
@@ -1099,17 +1184,17 @@ class OasServiceTest extends TestCase {
 	// ========================================================================
 
 	public function testGetScopeDescriptionAdmin(): void {
-		$result = $this->invokePrivateMethod('getScopeDescription', ['admin']);
+		$result = $this->annotator()->getScopeDescription('admin');
 		$this->assertSame('Full administrative access', $result);
 	}
 
 	public function testGetScopeDescriptionPublic(): void {
-		$result = $this->invokePrivateMethod('getScopeDescription', ['public']);
+		$result = $this->annotator()->getScopeDescription('public');
 		$this->assertSame('Public (unauthenticated) access', $result);
 	}
 
 	public function testGetScopeDescriptionCustomGroup(): void {
-		$result = $this->invokePrivateMethod('getScopeDescription', ['editors']);
+		$result = $this->annotator()->getScopeDescription('editors');
 		$this->assertSame('Access for editors group', $result);
 	}
 
@@ -1172,7 +1257,7 @@ class OasServiceTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		$this->assertSame([], $result['createGroups']);
 		$this->assertSame([], $result['readGroups']);
@@ -1188,7 +1273,7 @@ class OasServiceTest extends TestCase {
 			'delete' => ['admin'],
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		$this->assertContains('admin', $result['createGroups']);
 		$this->assertContains('editors', $result['createGroups']);
@@ -1212,7 +1297,7 @@ class OasServiceTest extends TestCase {
 			],
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		$this->assertContains('admin', $result['createGroups']);
 		$this->assertContains('managers', $result['readGroups']);
@@ -1231,7 +1316,7 @@ class OasServiceTest extends TestCase {
 			],
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		$this->assertContains('editors', $result['createGroups']);
 		$this->assertContains('viewers', $result['readGroups']);
@@ -1260,7 +1345,7 @@ class OasServiceTest extends TestCase {
 			],
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		// admin and editors should appear only once each
 		$this->assertCount(2, $result['readGroups']);
@@ -1274,7 +1359,7 @@ class OasServiceTest extends TestCase {
 			'invalid' => 'not-an-array',
 		]);
 
-		$result = $this->invokePrivateMethod('extractSchemaGroups', [$schema]);
+		$result = $this->annotator()->extractSchemaGroups($schema);
 
 		// Should not crash, should return empty groups
 		$this->assertSame([], $result['createGroups']);
@@ -1290,7 +1375,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['editors', 'viewers']]);
+		$this->annotator()->applyRbacToOperation($operation, ['editors', 'viewers']);
 
 		$this->assertStringContainsString('Required scopes', $operation['description']);
 		$this->assertStringContainsString('`admin`', $operation['description']);
@@ -1305,7 +1390,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['viewers']]);
+		$this->annotator()->applyRbacToOperation($operation, ['viewers']);
 
 		$this->assertStringContainsString('`admin`', $operation['description']);
 	}
@@ -1316,7 +1401,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['admin', 'viewers']]);
+		$this->annotator()->applyRbacToOperation($operation, ['admin', 'viewers']);
 
 		// admin should not be duplicated
 		$this->assertSame(1, substr_count($operation['description'], '`admin`'));
@@ -1328,7 +1413,7 @@ class OasServiceTest extends TestCase {
 			'responses' => ['200' => ['description' => 'OK']],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, []]);
+		$this->annotator()->applyRbacToOperation($operation, []);
 
 		$this->assertArrayHasKey('403', $operation['responses']);
 		$this->assertStringContainsString('Forbidden', $operation['responses']['403']['description']);
@@ -1340,7 +1425,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, []]);
+		$this->annotator()->applyRbacToOperation($operation, []);
 
 		// Should still include admin
 		$this->assertStringContainsString('`admin`', $operation['description']);
@@ -2027,7 +2112,22 @@ class OasServiceTest extends TestCase {
 		$this->schemaMapper->method('findMultiple')->willReturn([$schema]);
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://localhost/api');
 
-		$oas = $this->service->createOas('1');
+		// This test is about STRIPPING INTERNAL KEYS from a property
+		// definition, and it happens to use `authorization` as one of them.
+		// Since schema-shape-exposure, a property carrying an authorization
+		// block is described only to a caller who may read it, so the service
+		// needs a read rule to ask; without one it fails closed and the property
+		// is absent, which is correct behaviour and not what this test is
+		// about. A permissive rule keeps the subject of the test intact.
+		$rbac = $this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class);
+		$rbac->method('canReadProperty')->willReturn(true);
+		$service = new \OCA\OpenRegister\Service\OasService(
+			new OasSources($this->registerMapper, $this->schemaMapper, $this->urlGenerator, null),
+			null,
+			$rbac
+		);
+
+		$oas = $service->createOas('1');
 
 		$nameProp = $oas['components']['schemas']['Clean']['properties']['name'];
 		$this->assertSame('string', $nameProp['type']);
@@ -2416,7 +2516,9 @@ class OasServiceTest extends TestCase {
 			'deleteGroups' => ['admin'],
 		];
 
-		$this->invokePrivateMethod('addCrudPaths', [$register, $schema, $rbac, '']);
+		$this->setPrivateProperty('pathRbac', $rbac);
+		$this->setPrivateProperty('operationIdPrefix', '');
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema]);
 
 		$oas = $this->getPrivateProperty('oas');
 
@@ -2448,7 +2550,9 @@ class OasServiceTest extends TestCase {
 			],
 		]);
 
-		$this->invokePrivateMethod('addCrudPaths', [$register, $schema, [], 'MyPrefix']);
+		$this->setPrivateProperty('pathRbac', []);
+		$this->setPrivateProperty('operationIdPrefix', 'MyPrefix');
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema]);
 
 		$oas = $this->getPrivateProperty('oas');
 
@@ -2471,11 +2575,25 @@ class OasServiceTest extends TestCase {
 			],
 		]);
 
-		$this->invokePrivateMethod('addCrudPaths', [$register, $schema, [], '']);
+		$this->setPrivateProperty('pathRbac', []);
+		$this->setPrivateProperty('operationIdPrefix', '');
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema]);
 
 		$oas = $this->getPrivateProperty('oas');
 
 		$this->assertArrayHasKey('/objects/my-register/my-schema', $oas['paths']);
+	}
+
+	public function testAddCrudPathsTreatsAnEmptySlugAsNone(): void {
+		$register = $this->createRegister(1, 'My Register', [], null, '1.0', '');
+		$schema = $this->createSchema(1, 'My Schema', ['name' => ['type' => 'string']], '');
+		$this->setPrivateProperty('oas', ['paths' => [], 'components' => ['schemas' => []]]);
+
+		$this->setPrivateProperty('pathRbac', []);
+		$this->setPrivateProperty('operationIdPrefix', '');
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema]);
+
+		$this->assertArrayHasKey('/objects/my-register/my-schema', $this->getPrivateProperty('oas')['paths']);
 	}
 
 	// ========================================================================
@@ -2491,7 +2609,7 @@ class OasServiceTest extends TestCase {
 			'allOf' => [],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		$this->assertArrayNotHasKey('allOf', $schema);
 	}
@@ -2505,7 +2623,7 @@ class OasServiceTest extends TestCase {
 			'$ref' => '',
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		$this->assertArrayNotHasKey('$ref', $schema);
 	}
@@ -2519,7 +2637,7 @@ class OasServiceTest extends TestCase {
 			'$ref' => 123,
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		$this->assertArrayNotHasKey('$ref', $schema);
 	}
@@ -2533,7 +2651,7 @@ class OasServiceTest extends TestCase {
 			'$ref' => '#/components/schemas/person',
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// Should resolve to the correctly-cased schema name
 		$this->assertSame('#/components/schemas/Person', $schema['$ref']);
@@ -2548,7 +2666,7 @@ class OasServiceTest extends TestCase {
 			'$ref' => '#/components/schemas/NonExistent',
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// Broken ref should be removed and type set to string
 		$this->assertArrayNotHasKey('$ref', $schema);
@@ -2565,7 +2683,7 @@ class OasServiceTest extends TestCase {
 			'$ref' => '#/components/schemas/Person',
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		$this->assertSame('#/components/schemas/Person', $schema['$ref']);
 	}
@@ -2584,7 +2702,7 @@ class OasServiceTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// Nested broken ref should be fixed
 		$this->assertArrayNotHasKey('$ref', $schema['properties']['address']);
@@ -2603,7 +2721,7 @@ class OasServiceTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// Should case-insensitively match Widget
 		$this->assertSame('#/components/schemas/Widget', $schema['items']['$ref']);
@@ -2623,7 +2741,7 @@ class OasServiceTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// Should keep valid items and remove invalid ones
 		$this->assertArrayHasKey('allOf', $schema);
@@ -2642,7 +2760,7 @@ class OasServiceTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		$this->assertArrayNotHasKey('allOf', $schema);
 	}
@@ -2661,7 +2779,7 @@ class OasServiceTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// oneOf item should be case-fixed
 		$this->assertSame('#/components/schemas/Item', $schema['oneOf'][0]['$ref']);
@@ -2729,7 +2847,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['behandelaars', 'redacteuren']]);
+		$this->annotator()->applyRbacToOperation($operation, ['behandelaars', 'redacteuren']);
 
 		$this->assertArrayHasKey('security', $operation);
 		$this->assertCount(
@@ -2754,7 +2872,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, []]);
+		$this->annotator()->applyRbacToOperation($operation, []);
 
 		$this->assertSame(['admin'], $operation['security'][0]['oauth2']);
 		$this->assertSame([], $operation['security'][1]['basicAuth']);
@@ -2766,7 +2884,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['admin', 'admin', 'redacteuren']]);
+		$this->annotator()->applyRbacToOperation($operation, ['admin', 'admin', 'redacteuren']);
 
 		$oauth2Scopes = $operation['security'][0]['oauth2'];
 		$adminCount = count(array_filter($oauth2Scopes, static fn (string $g): bool => $g === 'admin'));
@@ -2781,7 +2899,7 @@ class OasServiceTest extends TestCase {
 			'responses' => [],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['behandelaars']]);
+		$this->annotator()->applyRbacToOperation($operation, ['behandelaars']);
 
 		$this->assertSame(
 			'admin',
@@ -2799,7 +2917,7 @@ class OasServiceTest extends TestCase {
 			'tags' => ['Items'],
 		];
 
-		$this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['viewers']]);
+		$this->annotator()->applyRbacToOperation($operation, ['viewers']);
 
 		// Existing 200 response is preserved.
 		$this->assertArrayHasKey('200', $operation['responses']);
@@ -2811,5 +2929,69 @@ class OasServiceTest extends TestCase {
 
 		// security freshly added.
 		$this->assertArrayHasKey('security', $operation);
+	}
+
+	// ========================================================================
+	// PATCH in the document and the NLGov method rule (#4059)
+	// ========================================================================
+
+	public function testAddCrudPathsDocumentsPatchOnTheObjectPath(): void {
+		$register = $this->createRegister(1, 'People', [10], null, '1.0', 'people');
+		$schema = $this->createSchema(10, 'Person', ['name' => ['type' => 'string']], 'person');
+		$this->setPrivateProperty('oas', ['paths' => [], 'components' => ['schemas' => []]]);
+
+		$this->setPrivateProperty('pathRbac', ['updateGroups' => []]);
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema]);
+
+		$paths = $this->getPrivateProperty('oas')['paths'];
+		$this->assertArrayHasKey('/objects/people/person/{id}', $paths);
+		$item = $paths['/objects/people/person/{id}'];
+		$this->assertArrayHasKey('patch', $item, 'objects#patch is served, so the document must list it.');
+		$this->assertSame('patchPerson', $item['patch']['operationId']);
+		$this->assertArrayHasKey('application/merge-patch+json', $item['patch']['requestBody']['content']);
+		$this->assertArrayNotHasKey('required', $item['patch']['requestBody']['content']['application/merge-patch+json']['schema']);
+		$this->assertSame('updatePerson', $item['put']['operationId']);
+	}
+
+	public function testNlGovRulesAcceptPatchHeadAndOptions(): void {
+		$report = new \OCA\OpenRegister\Service\Oas\OasValidationReport();
+		$this->setPrivateProperty('report', $report);
+		$this->setPrivateProperty('oas', [
+			'paths' => [
+				'/objects/a/b/{id}' => [
+					'summary' => 'One object',
+					'parameters' => [],
+					'get' => ['responses' => ['200' => []]],
+					'put' => ['responses' => ['200' => []]],
+					'patch' => ['responses' => ['200' => []]],
+					'delete' => ['responses' => ['204' => []]],
+					'head' => ['responses' => ['200' => []]],
+					'options' => ['responses' => ['204' => []]],
+				],
+			],
+		]);
+
+		$this->invokePrivateMethod('validateNlGovRules');
+
+		$this->assertSame([], $report->getErrors());
+	}
+
+	public function testNlGovRulesStillRefuseANonStandardMethodUnderTheRightRule(): void {
+		$report = new \OCA\OpenRegister\Service\Oas\OasValidationReport();
+		$this->setPrivateProperty('report', $report);
+		$this->setPrivateProperty('oas', [
+			'paths' => [
+				'/x' => [
+					'trace' => ['responses' => ['200' => []]],
+				],
+			],
+		]);
+
+		$this->invokePrivateMethod('validateNlGovRules');
+
+		$errors = $report->getErrors();
+		$this->assertCount(1, $errors);
+		$this->assertStringContainsString('/core/http-methods', json_encode($errors, JSON_UNESCAPED_SLASHES));
+		$this->assertStringNotContainsString('API-01', json_encode($errors));
 	}
 }

@@ -81,103 +81,147 @@ class ConfigurationValueStore {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function read(string $layer, ?string $layerRef, string $configKey): ConfigurationSnapshot {
-		$row = $this->values->findAtAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey);
-
-		if ($layer !== ConfigurationLayer::INSTANCE) {
-			if ($row === null) {
-				return ConfigurationSnapshot::absent(
-					layer: $layer,
-					layerRef: $layerRef,
-					configKey: $configKey
-				);
-			}
-
-			return new ConfigurationSnapshot(
-				layer: $layer,
-				layerRef: $layerRef,
-				configKey: $configKey,
-				value: $row->readValue(),
-				present: true,
-				deploymentUuid: $row->getDeploymentUuid(),
-				updatedBy: $row->getUpdatedBy()
-			);
-		}//end if
-
-		// The instance layer: app config is the authority, the row is the
-		// provenance. A key app config does not hold is absent even when a
-		// provenance row survives, because the reader would see nothing.
-		if ($this->appConfig->hasKey($this->appName, $configKey) === false) {
-			return ConfigurationSnapshot::absent(
-				layer: $layer,
-				layerRef: null,
-				configKey: $configKey
-			);
-		}
-
-		return new ConfigurationSnapshot(
-			layer: $layer,
-			layerRef: null,
-			configKey: $configKey,
-			value: $this->decode(raw: $this->appConfig->getValueString($this->appName, $configKey, '')),
-			present: true,
-			deploymentUuid: $row?->getDeploymentUuid(),
-			updatedBy: $row?->getUpdatedBy()
-		);
+		return $this->readAt(address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey));
 
 	}//end read()
 
 	/**
+	 * Read one address.
+	 *
+	 * @param ConfigurationAddress $address The layer, layer reference and key.
+	 *
+	 * @return ConfigurationSnapshot What the address holds, and where it came from.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function readAt(ConfigurationAddress $address): ConfigurationSnapshot {
+		$row = $this->rowAt(address: $address);
+
+		if ($address->layer !== ConfigurationLayer::INSTANCE) {
+			return $this->rowSnapshot(address: $address, row: $row);
+		}
+
+		// The instance layer: app config is the authority, the row is the
+		// provenance. A key app config does not hold is absent even when a
+		// provenance row survives, because the reader would see nothing.
+		if ($this->appConfig->hasKey($this->appName, $address->configKey) === false) {
+			return ConfigurationSnapshot::absent(address: new ConfigurationAddress(layer: $address->layer, layerRef: null, configKey: $address->configKey));
+		}
+
+		return new ConfigurationSnapshot(
+			address: new ConfigurationAddress(layer: $address->layer, layerRef: null, configKey: $address->configKey),
+			value: $this->decode(raw: $this->appConfig->getValueString($this->appName, $address->configKey, '')),
+			present: true,
+			provenance: new ConfigurationProvenance(deploymentUuid: $row?->getDeploymentUuid(), updatedBy: $row?->getUpdatedBy())
+		);
+
+	}//end readAt()
+
+	/**
+	 * Below the instance layer the row is the value.
+	 *
+	 * @param ConfigurationAddress    $address The layer, layer reference and key.
+	 * @param ConfigurationValue|null $row     The row at the address, when there is one.
+	 *
+	 * @return ConfigurationSnapshot What the row holds, or absent.
+	 */
+	private function rowSnapshot(ConfigurationAddress $address, ?ConfigurationValue $row): ConfigurationSnapshot {
+		if ($row === null) {
+			return ConfigurationSnapshot::absent(address: $address);
+		}
+
+		return new ConfigurationSnapshot(
+			address: $address,
+			value: $row->readValue(),
+			present: true,
+			provenance: new ConfigurationProvenance(deploymentUuid: $row->getDeploymentUuid(), updatedBy: $row->getUpdatedBy())
+		);
+
+	}//end rowSnapshot()
+
+	/**
 	 * Write one address, returning what it takes to put it back.
 	 *
-	 * @param string      $layer          The layer.
-	 * @param string|null $layerRef       The layer reference.
-	 * @param string      $configKey      The configuration key.
-	 * @param mixed       $value          The value to make live.
-	 * @param string|null $deploymentUuid The deployment doing the writing.
-	 * @param string|null $actor          Who is doing the writing.
+	 * @param ConfigurationAddress $address The layer, layer reference and key.
+	 * @param ConfigurationWrite   $write   The value to make live, the deployment doing the writing and who is doing it.
 	 *
 	 * @return array<string, mixed> The undo entry for this write.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function write(
-		string $layer,
-		?string $layerRef,
-		string $configKey,
-		mixed $value,
-		?string $deploymentUuid,
-		?string $actor
-	): array {
-		$undo = $this->undoEntryFor(layer: $layer, configKey: $configKey);
+	public function write(ConfigurationAddress $address, ConfigurationWrite $write): array {
+		$undo = $this->undoEntryFor(layer: $address->layer, configKey: $address->configKey);
 
-		$row = $this->values->findAtAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey);
+		$row = $this->rowAt(address: $address);
 		if ($row !== null) {
-			$row->setConfigValue(['value' => $value]);
-			$row->setDeploymentUuid($deploymentUuid);
-			$row->setUpdatedBy($actor);
-			$this->values->save($row);
+			$this->overwriteRow(row: $row, write: $write);
 		}
 
 		if ($row === null) {
-			$this->values->createFromArray(
-				[
-					'layer' => $layer,
-					'layerRef' => $layerRef,
-					'configKey' => $configKey,
-					'configValue' => ['value' => $value],
-					'deploymentUuid' => $deploymentUuid,
-					'updatedBy' => $actor,
-				]
-			);
+			$this->createRow(address: $address, write: $write);
 		}
 
-		if ($layer === ConfigurationLayer::INSTANCE) {
-			$this->appConfig->setValueString($this->appName, $configKey, $this->encode(value: $value));
+		if ($address->layer === ConfigurationLayer::INSTANCE) {
+			$this->appConfig->setValueString($this->appName, $address->configKey, $this->encode(value: $write->value));
 		}
 
 		return $undo;
 
 	}//end write()
+
+	/**
+	 * Point an existing row at a new value, deployment and author, and save it.
+	 *
+	 * @param ConfigurationValue $row   The row at the address.
+	 * @param ConfigurationWrite $write The value to make live, the deployment doing the writing and who is doing it.
+	 *
+	 * @return void
+	 */
+	private function overwriteRow(ConfigurationValue $row, ConfigurationWrite $write): void {
+		$row->setConfigValue(['value' => $write->value]);
+		$row->setDeploymentUuid($write->deploymentUuid);
+		$row->setUpdatedBy($write->actor);
+		$this->values->save($row);
+
+	}//end overwriteRow()
+
+	/**
+	 * Create the row of an address that has none.
+	 *
+	 * @param ConfigurationAddress $address The layer, layer reference and key.
+	 * @param ConfigurationWrite   $write   The value to make live, the deployment doing the writing and who is doing it.
+	 *
+	 * @return void
+	 */
+	private function createRow(ConfigurationAddress $address, ConfigurationWrite $write): void {
+		$this->values->createFromArray(
+			[
+				'layer' => $address->layer,
+				'layerRef' => $address->layerRef,
+				'configKey' => $address->configKey,
+				'configValue' => ['value' => $write->value],
+				'deploymentUuid' => $write->deploymentUuid,
+				'updatedBy' => $write->actor,
+			]
+		);
+
+	}//end createRow()
+
+	/**
+	 * The stored row of an address, if any.
+	 *
+	 * @param ConfigurationAddress $address The layer, layer reference and key.
+	 *
+	 * @return ConfigurationValue|null The row, or null.
+	 */
+	private function rowAt(ConfigurationAddress $address): ?ConfigurationValue {
+		return $this->values->findAtAddress(
+			layer: $address->layer,
+			layerRef: $address->layerRef,
+			configKey: $address->configKey
+		);
+
+	}//end rowAt()
 
 	/**
 	 * Remove one address, returning what it takes to put it back.
@@ -191,20 +235,34 @@ class ConfigurationValueStore {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function remove(string $layer, ?string $layerRef, string $configKey): array {
-		$undo = $this->undoEntryFor(layer: $layer, configKey: $configKey);
+		return $this->removeAt(address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey));
 
-		$row = $this->values->findAtAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey);
+	}//end remove()
+
+	/**
+	 * Remove one address, returning what it takes to put it back.
+	 *
+	 * @param ConfigurationAddress $address The layer, layer reference and key.
+	 *
+	 * @return array<string, mixed> The undo entry for this removal.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function removeAt(ConfigurationAddress $address): array {
+		$undo = $this->undoEntryFor(layer: $address->layer, configKey: $address->configKey);
+
+		$row = $this->rowAt(address: $address);
 		if ($row !== null) {
 			$this->values->remove($row);
 		}
 
-		if ($layer === ConfigurationLayer::INSTANCE) {
-			$this->appConfig->deleteKey($this->appName, $configKey);
+		if ($address->layer === ConfigurationLayer::INSTANCE) {
+			$this->appConfig->deleteKey($this->appName, $address->configKey);
 		}
 
 		return $undo;
 
-	}//end remove()
+	}//end removeAt()
 
 	/**
 	 * Put the app-config side of a run of writes back.
@@ -222,31 +280,58 @@ class ConfigurationValueStore {
 		$restored = 0;
 
 		foreach (array_reverse($undoEntries) as $entry) {
-			if (($entry['layer'] ?? '') !== ConfigurationLayer::INSTANCE) {
-				continue;
-			}
-
-			$configKey = (string)($entry['key'] ?? '');
-			if ($configKey === '') {
-				continue;
-			}
-
-			// A key that was not there before this deployment is put back by
-			// being deleted again, not by writing an empty string over it: an
-			// empty string is a value, and absence is not.
-			if (($entry['present'] ?? false) === false) {
-				$this->appConfig->deleteKey($this->appName, $configKey);
+			if ($this->restoreEntry(entry: $entry) === true) {
 				$restored++;
-				continue;
 			}
-
-			$this->appConfig->setValueString($this->appName, $configKey, (string)($entry['raw'] ?? ''));
-			$restored++;
-		}//end foreach
+		}
 
 		return $restored;
 
 	}//end restore()
+
+	/**
+	 * Put one instance-layer undo entry back; other layers and keyless entries are skipped.
+	 *
+	 * @param array<string, mixed> $entry The undo entry.
+	 *
+	 * @return bool True when the entry was restored.
+	 */
+	private function restoreEntry(array $entry): bool {
+		if (($entry['layer'] ?? '') !== ConfigurationLayer::INSTANCE) {
+			return false;
+		}
+
+		$configKey = (string)($entry['key'] ?? '');
+		if ($configKey === '') {
+			return false;
+		}
+
+		$this->restoreKey(configKey: $configKey, entry: $entry);
+
+		return true;
+
+	}//end restoreEntry()
+
+	/**
+	 * Put an app-config key back as it was: deleted when it was absent, else its earlier string.
+	 *
+	 * @param string               $configKey The key.
+	 * @param array<string, mixed> $entry     The undo entry.
+	 *
+	 * @return void
+	 */
+	private function restoreKey(string $configKey, array $entry): void {
+		// A key that was not there before this deployment is put back by
+		// being deleted again, not by writing an empty string over it: an
+		// empty string is a value, and absence is not.
+		if (($entry['present'] ?? false) === false) {
+			$this->appConfig->deleteKey($this->appName, $configKey);
+			return;
+		}
+
+		$this->appConfig->setValueString($this->appName, $configKey, (string)($entry['raw'] ?? ''));
+
+	}//end restoreKey()
 
 	/**
 	 * The app-config state of one address, before it is written.

@@ -129,3 +129,49 @@ attributed.
 - **GIVEN** a principal who has written three notes and is then barred
 - **WHEN** the object is read
 - **THEN** the three notes are present and attributed, and no further write by that principal is accepted
+
+### Requirement: The instance reports every control against a declared floor, and refuses a change that weakens one (REQ-IHC-006)
+
+The instance SHALL publish a hardening report naming every security control it
+knows: the password policy and the session policy as Nextcloud enforces them,
+the rate limit on each authenticated surface, the brute-force state, the
+origins a browser may read a public answer from, and the largest file somebody
+may push in. Each control SHALL carry the value in force, who enforces it, the
+floor declared for it, and whether the two agree. A control whose value cannot
+be read SHALL be reported as unknown and SHALL fail its floor. A change that
+would take a control below its declared floor SHALL be refused, and a floor
+SHALL NOT be declared weaker than the shipped baseline. Every change and every
+refusal SHALL be written to the audit trail.
+
+#### Scenario: an administrator reads what is on and what is not
+
+- **GIVEN** an instance running without the password policy app
+- **WHEN** an administrator reads the hardening report
+- **THEN** the password controls read `unknown`, they are listed as failing their floor, and the session, rate-limit, brute-force, origin and upload controls each carry a value and a floor
+
+#### Scenario: a weakening is refused and recorded
+
+- **GIVEN** a declared floor of at least 900 seconds on the inbound lockout
+- **WHEN** an administrator sets the lockout to 60 seconds
+- **THEN** the change is refused naming the control and the floor, the lockout stays at its old value, and the audit trail holds the refused attempt
+
+#### Scenario: the floor cannot be lowered to make a control pass
+
+- **GIVEN** a shipped baseline of at most 20 failed attempts per identity
+- **WHEN** an administrator declares a floor of 200 for that control
+- **THEN** the declaration is refused, naming the baseline
+- @e2e exclude {floor arithmetic, covered by unit tests on HardeningFloorGuard}
+
+#### Scenario: the published number is the enforced number
+
+- **GIVEN** an administered inbound lockout of 1800 seconds
+- **WHEN** the capabilities endpoint and the hardening report are both read
+- **THEN** both name 1800, and a client locked out is locked out for 1800 seconds
+- @e2e exclude {lockout over time, covered by unit tests on SecurityService with a stubbed policy}
+
+#### Scenario: an origin off the allowlist reads nothing
+
+- **GIVEN** an allowlist holding one origin
+- **WHEN** a browser on another origin reads a public answer
+- **THEN** the response carries no allow-origin header, and it names neither the allowlist nor anything on it
+- @e2e exclude {browser origin policy, covered by unit tests on PublicApiCorsMiddleware}

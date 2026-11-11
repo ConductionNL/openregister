@@ -2,17 +2,21 @@
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RelationsControllerFactory;
 use OCA\OpenRegister\Controller\RelationsController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
-use OCA\OpenRegister\Service\EmailService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Notifications\Service\EmailService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TalkLinkService;
+use OCA\OpenRegister\Service\TalkLinkServiceInterface;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -45,7 +49,7 @@ class RelationsControllerTest extends TestCase {
 		$this->deckCardService = $this->createMock(DeckCardService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new RelationsController(
+		$this->controller = RelationsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,
@@ -138,6 +142,24 @@ class RelationsControllerTest extends TestCase {
 	}
 
 	/**
+	 * A slug two objects of the register and schema hold answers 409 like the other
+	 * identifier routes (#4037), not a 500 with the exception text, and gathers nothing.
+	 */
+	public function testIndexReturns409ForAnAmbiguousIdentifier(): void {
+		$this->objectService->method('getObject')->willThrowException(
+			new MultipleObjectsReturnedException('Identifier "dubbel" matches more than one object')
+		);
+		$this->request->method('getParams')->willReturn([]);
+		$this->noteService->expects($this->never())->method('getNotesForObject');
+
+		$response = $this->controller->index('28', '68', 'dubbel');
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame('ambiguous-identifier', $response->getData()['error']);
+		$this->assertSame('Identifier "dubbel" matches more than one object in this register and schema', $response->getData()['message'], 'the body names no uuid');
+	}
+
+	/**
 	 * A per-type failure must be logged via the injected logger AND surfaced
 	 * in the response under the `_errors` metadata key — the previous
 	 * behavior was to silently swallow the exception (no log, no error key).
@@ -185,6 +207,28 @@ class RelationsControllerTest extends TestCase {
 	 * `_errors` key — backwards compatibility with consumers that walk
 	 * the envelope's top-level keys.
 	 */
+	/**
+	 * A user without a VTODO calendar has no tasks; that is a normal state,
+	 * not a failure (openregister#4165). Before, every object card such a
+	 * user opened logged a level-3 error and put `tasks` under `_errors`.
+	 */
+	public function testMissingVtodoCalendarIsNoTasksNotAnError(): void {
+		$this->setupObject();
+		$this->request->method('getParams')->willReturn(['types' => 'notes,tasks']);
+
+		$this->noteService->method('getNotesForObject')->willReturn([]);
+		$this->taskService->method('getTasksForObject')
+			->willThrowException(new NoVtodoCalendarException(userId: 'colleague'));
+
+		$this->logger->expects($this->never())->method('error');
+		$this->logger->expects($this->never())->method('warning');
+
+		$data = $this->controller->index('1', '2', 'abc-123')->getData();
+
+		$this->assertSame(['results' => [], 'total' => 0], ($data['tasks'] ?? null));
+		$this->assertArrayNotHasKey('_errors', $data, 'unexpected partial failures: ' . json_encode(($data['_errors'] ?? [])));
+	}
+
 	public function testSuccessfulAggregationOmitsErrorsKey(): void {
 		$this->setupObject();
 
@@ -239,7 +283,7 @@ class RelationsControllerTest extends TestCase {
 			->method('getLinkedRooms')
 			->with('abc-123')
 			->willReturn([['token' => 'room-1', 'name' => 'Case room']]);
-		$this->registerService(TalkLinkService::class, fn () => $talk);
+		$this->registerService(TalkLinkServiceInterface::class, fn () => $talk);
 
 		$response = $this->controller->index('1', '2', 'abc-123');
 		$data = $response->getData();
@@ -259,7 +303,7 @@ class RelationsControllerTest extends TestCase {
 		$talk = $this->createMock(TalkLinkService::class);
 		$talk->method('isTalkAvailable')->willReturn(false);
 		$talk->expects($this->never())->method('getLinkedRooms');
-		$this->registerService(TalkLinkService::class, fn () => $talk);
+		$this->registerService(TalkLinkServiceInterface::class, fn () => $talk);
 
 		$data = $this->controller->index('1', '2', 'abc-123')->getData();
 

@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+ * @spec openspec/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
  */
 
 declare(strict_types=1);

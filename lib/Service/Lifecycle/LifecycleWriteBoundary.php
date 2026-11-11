@@ -57,7 +57,7 @@ final class LifecycleWriteBoundary {
 	 *                          it without wiring the pass; the container resolves the real, shared
 	 *                          instance by type.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly LifecycleActionContext $actions,
@@ -86,7 +86,7 @@ final class LifecycleWriteBoundary {
 	 * @return ObjectEntity The object in its final state: the write's own
 	 *                      result, or an automatic move that followed from it.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function around(callable $write): ObjectEntity {
 		$this->pass?->enter();
@@ -119,7 +119,7 @@ final class LifecycleWriteBoundary {
 	 *
 	 * @return ObjectEntity Whatever $write returned.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaringAction(string $uuid, string $action, callable $write): ObjectEntity {
 		$this->actions->declare(uuid: $uuid, action: $action);
@@ -131,6 +131,33 @@ final class LifecycleWriteBoundary {
 	}//end declaringAction()
 
 	/**
+	 * Mark a write as a transition run as the system for an app, and release the mark afterwards.
+	 *
+	 * The audit trail reads the mark so the row records that OpenRegister's
+	 * own read and update checks were skipped and which app approved the
+	 * caller instead. Release happens in a `finally`, for the same reason
+	 * {@see declaringAction()} releases there.
+	 *
+	 * @param string $uuid The object's uuid.
+	 * @param string $app The app id that approved the caller itself.
+	 * @param callable(): ObjectEntity $write Performs the write; called exactly once.
+	 *
+	 * @return ObjectEntity Whatever $write returned.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function runningAsSystem(string $uuid, string $app, callable $write): ObjectEntity {
+		$this->actions->enterSystem(uuid: $uuid, app: $app);
+		try {
+			return $write();
+		} finally {
+			// Released even when the write is refused, so a later ordinary
+			// save of the same object is never recorded as a system move.
+			$this->actions->leaveSystem(uuid: $uuid);
+		}
+	}//end runningAsSystem()
+
+	/**
 	 * The automatic transition being applied right now, if any.
 	 *
 	 * Read from the pass's ambient frame, never from a parameter a caller
@@ -140,7 +167,7 @@ final class LifecycleWriteBoundary {
 	 * @return string|null The transition's name, or null for a manual move
 	 *                      or when no pass is wired.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function applyingAction(): ?string {
 		return $this->pass?->applyingAction();
@@ -157,7 +184,7 @@ final class LifecycleWriteBoundary {
 	 *
 	 * @return ObjectEntity The object in its final state.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function preferAutomatic(ObjectEntity $saved, array $applied): ObjectEntity {
 		if ($this->pass === null) {

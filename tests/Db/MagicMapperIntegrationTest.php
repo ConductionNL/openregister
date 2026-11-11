@@ -13,10 +13,13 @@
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicIdentifierFind;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -117,6 +120,11 @@ class MagicMapperIntegrationTest extends TestCase {
 				'active' => [
 					'type' => 'boolean',
 					'title' => 'Active',
+				],
+				'occurredAt' => [
+					'type' => 'string',
+					'format' => 'date-time',
+					'title' => 'Occurred at',
 				],
 			],
 		]);
@@ -333,7 +341,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
 		// findAll delegates to searchObjects which applies RBAC/multitenancy
-		$results = $this->mapper->findAllInRegisterSchemaTable($register, $schema);
+		$results = $this->mapper->findAllInRegisterSchemaTable(new RegisterSchema($register, $schema));
 		$this->assertIsArray($results);
 	}
 
@@ -635,6 +643,45 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->assertIsArray($results);
 	}
 
+	/**
+	 * An empty date property sorts as if it held the object's creation date.
+	 *
+	 * Three objects: one dated 2000, one dated 2999, and one with no date
+	 * (created now). Ascending must read 2000, now, 2999 on every database.
+	 * Before the fallback PostgreSQL put the undated object last (NULL is
+	 * largest) and MySQL/MariaDB put it first (NULL is smallest).
+	 */
+	public function testSearchSortsEmptyDateByCreatedDate(): void {
+		$register = $this->createTestRegister();
+		$schema = $this->createTestSchema();
+
+		$this->mapper->ensureTableForRegisterSchema($register, $schema);
+		$this->trackTable($register, $schema);
+
+		$objects = [
+			['name' => 'Future', 'occurredAt' => '2999-01-01T00:00:00+00:00'],
+			['name' => 'Undated'],
+			['name' => 'Past', 'occurredAt' => '2000-01-01T00:00:00+00:00'],
+		];
+		foreach ($objects as $object) {
+			$entity = new ObjectEntity();
+			$entity->setUuid(Uuid::v4()->toRfc4122());
+			$entity->setRegister((string)$register->getId());
+			$entity->setSchema((string)$schema->getId());
+			$entity->setObject($object);
+			$this->mapper->insertObjectEntity($entity, $register, $schema, false);
+		}
+
+		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
+			['_order' => ['occurredAt' => 'ASC']],
+			$register,
+			$schema
+		);
+
+		$names = array_map(static fn (ObjectEntity $o): ?string => ($o->getObject()['name'] ?? null), $results);
+		$this->assertSame(['Past', 'Undated', 'Future'], $names);
+	}
+
 	public function testCountObjectsInTable(): void {
 		$register = $this->createTestRegister();
 		$schema = $this->createTestSchema();
@@ -884,7 +931,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		$entity->setObject(['name' => 'CrossTableFind', 'age' => 44]);
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
-		$result = $this->mapper->findAcrossAllMagicTables($uuid);
+		$result = $this->mapper->findAcross(find: new MagicIdentifierFind(identifier: $uuid));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('object', $result);
 		$this->assertArrayHasKey('register', $result);
@@ -895,7 +942,7 @@ class MagicMapperIntegrationTest extends TestCase {
 
 	public function testFindAcrossAllMagicTablesNotFound(): void {
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-		$this->mapper->findAcrossAllMagicTables('nonexistent-uuid-' . uniqid());
+		$this->mapper->findAcross(find: new MagicIdentifierFind(identifier: 'nonexistent-uuid-' . uniqid()));
 	}
 
 	// =========================================================================
@@ -986,10 +1033,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		}
 
 		$results = $this->mapper->findAllInRegisterSchemaTable(
-			$register,
-			$schema,
-			2,
-			1
+			new RegisterSchema($register, $schema),
+			new ListQuery(2, 1)
 		);
 		$this->assertIsArray($results);
 	}
@@ -1011,12 +1056,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		}
 
 		$results = $this->mapper->findAllInRegisterSchemaTable(
-			$register,
-			$schema,
-			null,
-			null,
-			null,
-			['age' => 'ASC']
+			new RegisterSchema($register, $schema),
+			new ListQuery(ListQuery::UNBOUNDED, null, [], ['age' => 'ASC'])
 		);
 		$this->assertIsArray($results);
 	}
@@ -1036,11 +1077,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
 		$results = $this->mapper->findAllInRegisterSchemaTable(
-			$register,
-			$schema,
-			null,
-			null,
-			['name' => 'FilterAll']
+			new RegisterSchema($register, $schema),
+			ListQuery::unbounded(['name' => 'FilterAll'])
 		);
 		$this->assertIsArray($results);
 	}
@@ -2697,7 +2735,7 @@ class MagicMapperIntegrationTest extends TestCase {
 
 		// Exercises the findAllInRegisterSchemaTable with all parameters
 		$results = $this->mapper->findAllInRegisterSchemaTable(
-			$register, $schema, 1, 0, ['name' => 'Alpha'], ['name' => 'ASC']
+			new RegisterSchema($register, $schema), new ListQuery(1, 0, ['name' => 'Alpha'], ['name' => 'ASC'])
 		);
 		$this->assertIsArray($results);
 	}
@@ -2727,7 +2765,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		// search handler doesn't support "IS NOT NULL" as parameter perfectly
 		try {
 			$results = $this->mapper->findAllInRegisterSchemaTable(
-				$register, $schema, 10, 0, null, [], true
+				new RegisterSchema($register, $schema), new ListQuery(10, 0)
 			);
 			$this->assertIsArray($results);
 		} catch (\Exception $e) {
@@ -3082,7 +3120,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		], $register, $schema);
 
-		$result = $this->mapper->findAcrossAllMagicTables($testSlug);
+		$result = $this->mapper->findAcross(find: new MagicIdentifierFind(identifier: $testSlug));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('object', $result);
 		$this->assertInstanceOf(ObjectEntity::class, $result['object']);
@@ -3112,7 +3150,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
 
 		// Should find with includeDeleted=true even though _deleted is set
-		$result = $this->mapper->findAcrossAllMagicTables($testUuid, true);
+		$result = $this->mapper->findAcross(find: new MagicIdentifierFind(identifier: $testUuid, includeDeleted: true));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('object', $result);
 	}

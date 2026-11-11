@@ -26,7 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
+use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheckInterface;
+use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltCheckInterface;
 use OCA\OpenRegister\Service\Flow\RegisterFlowOversightEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -42,10 +43,12 @@ class FlowOversightRegistrationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param KillSwitchCheck $killSwitch The instance-wide flow kill switch.
+	 * @param KillSwitchCheckInterface       $killSwitch       The instance-wide flow kill switch.
+	 * @param OrganisationHaltCheckInterface $organisationHalt The per-organisation halt (organisation-capability-halt).
 	 */
 	public function __construct(
-		private readonly KillSwitchCheck $killSwitch,
+		private readonly KillSwitchCheckInterface $killSwitch,
+		private readonly OrganisationHaltCheckInterface $organisationHalt,
 	) {
 
 	}//end __construct()
@@ -65,6 +68,7 @@ class FlowOversightRegistrationListener implements IEventListener {
 		}
 
 		$event->registerCheck(check: $this->killSwitch);
+		$event->registerCheck(check: $this->organisationHalt);
 
 	}//end handle()
 }//end class

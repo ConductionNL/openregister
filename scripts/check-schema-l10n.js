@@ -52,10 +52,12 @@
 
 const fs = require('fs')
 const path = require('path')
+const { loadJsTranslations } = require('./l10n/lib.js')
 
 const REPO_ROOT = path.resolve(__dirname, '..')
 const SCHEMA_DIR = path.join(REPO_ROOT, 'lib', 'Settings')
-const CATALOGUE = path.join(REPO_ROOT, 'l10n', 'en.json')
+// The browser catalogue: schema strings are translated by `t()` in the frontend.
+const CATALOGUE = path.join(REPO_ROOT, 'l10n', 'en.js')
 const BASELINE = path.join(REPO_ROOT, 'l10n', '.schema-l10n-baseline.json')
 
 /**
@@ -133,11 +135,7 @@ function main() {
 
 	let covered = new Set()
 	try {
-		covered = new Set(
-			Object.keys(
-				JSON.parse(fs.readFileSync(CATALOGUE, 'utf8')).translations || {},
-			),
-		)
+		covered = new Set(Object.keys(loadJsTranslations(CATALOGUE).translations))
 	} catch {
 		// no catalogue yet — then everything is uncovered, which the baseline records
 	}
@@ -180,9 +178,9 @@ function main() {
 		console.error('in English inside an otherwise translated form.')
 		console.error('')
 		console.error(
-			'Add them to l10n/en.json (identity) and l10n/nl.json (translated), then',
+			'Add them to l10n/en.js with `node scripts/l10n-ai.js add`, and translate',
 		)
-		console.error('run `npm run l10n:build`. See what is uncovered with:')
+		console.error('them per locale. See what is uncovered with:')
 		console.error('  node scripts/check-schema-l10n.js --list')
 		process.exit(1)
 	}

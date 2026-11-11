@@ -37,12 +37,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\LeafAvailability;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Service\Integration\LeafIdentity;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRendering;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
@@ -95,13 +99,13 @@ class _AppLocalNotesProvider extends AbstractIntegrationProvider {
 		return $this->enabled;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return ($this->store[$objectId] ?? []);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return ($this->store[$ref->id] ?? []);
 	}//end list()
 
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$note = ['id' => (string)(count(($this->store[$objectId] ?? [])) + 1), 'body' => ($payload['body'] ?? '')];
-		$this->store[$objectId][] = $note;
+	public function create(ObjectRef $ref, array $payload): array {
+		$note = ['id' => (string)(count(($this->store[$ref->id] ?? [])) + 1), 'body' => ($payload['body'] ?? '')];
+		$this->store[$ref->id][] = $note;
 		return $note;
 	}//end create()
 }//end class
@@ -136,7 +140,7 @@ class _ReadOnlyAppLocalProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [['id' => '1', 'body' => 'read-only item']];
 	}//end list()
 }//end class
@@ -171,7 +175,7 @@ class _BuiltinShapedProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 }//end class
@@ -191,6 +195,222 @@ class LeafRegistryTest extends TestCase {
 	 *
 	 * @return LeafRegistry
 	 */
+	/**
+	 * 🔴 A RENDER SURFACE WITH NO CONVENTIONAL BUNDLE IS REPORTED, NOT REFUSED.
+	 *
+	 * This test asserted the opposite one commit ago, and it was WRONG.
+	 * openregister#3954 skipped the registration, and hermiq is the proof that
+	 * it could not: hermiq ships no `hermiq-leaves.js` and its leaf is not dark.
+	 * It loads its own bundle on EVERY Nextcloud page with
+	 * `Util::addInitScript`, exactly so it runs wherever another app renders the
+	 * integration registry. The skip would have taken down a working feature.
+	 *
+	 * 🔑 WHAT THIS CLASS CAN KNOW IS THE POINT. Whether a bundle reaches the
+	 * page is a fact about the page; the registry sees only the filesystem. The
+	 * absence of one conventional filename is not proof of absence, because it
+	 * is one convention out of at least three and the app chooses.
+	 *
+	 * So the leaf registers, and the error is still logged, because that error
+	 * is what turned hermiq's invisibly-named bundle into a one-line fix.
+	 *
+	 * @return void
+	 */
+	public function testARenderSurfaceWithNoBundleIsReportedNotRefused(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							availability: new LeafAvailability(requiredApp: 'acme'),
+						)
+					);
+				},
+			],
+			null,
+			$appManager
+		);
+
+		$this->assertNotSame(
+			[],
+			$registry->getDescriptors(),
+			'The registry cannot prove a leaf is dark, so it must not refuse one.'
+		);
+	}//end testARenderSurfaceWithNoBundleIsReportedNotRefused()
+
+	/**
+	 * 🔴 A LEAF THAT CLAIMS THE SHARED ENTRY AND HAS NO BUNDLE IS REFUSED.
+	 *
+	 * This is the sound refusal. The platform does the loading for that
+	 * convention, so a missing file is proof the surface cannot render, not an
+	 * inference from one filename out of three.
+	 *
+	 * @return void
+	 */
+	public function testALeafClaimingTheSharedEntryWithNoBundleIsRefused(): void {
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							availability: new LeafAvailability(requiredApp: 'acme'),
+							rendering: new LeafRendering(loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY),
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath()
+		);
+
+		$this->assertSame([], $registry->getDescriptors());
+	}//end testALeafClaimingTheSharedEntryWithNoBundleIsRefused()
+
+	/**
+	 * 🔑 A LEAF THAT LOADS ITS OWN SCRIPT IS NOT REFUSED FOR LACKING A BUNDLE.
+	 *
+	 * hermiq and decidiq are this case, and openregister#3954 nearly took both
+	 * of them down. They ship no `<app>-leaves.js` because they do not need one:
+	 * each loads its own registration bundle on every page.
+	 *
+	 * @return void
+	 */
+	public function testALeafThatLoadsItsOwnScriptIsNotRefused(): void {
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							availability: new LeafAvailability(requiredApp: 'acme'),
+							rendering: new LeafRendering(loadStrategy: LeafDescriptor::LOADS_VIA_OWN_SCRIPT),
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath()
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testALeafThatLoadsItsOwnScriptIsNotRefused()
+
+	/**
+	 * 🔑 SILENCE IS NOT A CLAIM, so an undeclared leaf still registers.
+	 *
+	 * Every descriptor written before this declaration existed says nothing.
+	 * Refusing them would re-create the #3954 failure wholesale.
+	 *
+	 * @return void
+	 */
+	public function testALeafThatHasNotSaidHowItLoadsIsNotRefused(): void {
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							availability: new LeafAvailability(requiredApp: 'acme'),
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath()
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testALeafThatHasNotSaidHowItLoadsIsNotRefused()
+
+	/**
+	 * An app manager that resolves a path with no leaf bundle in it.
+	 *
+	 * @return IAppManager The double.
+	 */
+	private function appManagerWithPath(): IAppManager {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		return $appManager;
+	}//end appManagerWithPath()
+
+	/**
+	 * A data provider needs no bundle, so it is not refused for lacking one.
+	 *
+	 * The control that keeps the refusal narrow. Refusing every leaf from an
+	 * app without a bundle would take out every data-only integration on the
+	 * instance, none of which has a client half.
+	 *
+	 * @return void
+	 */
+	public function testADataProviderIsNotRefusedForHavingNoBundle(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							identity: new LeafIdentity(id: 'acme-data', label: 'Data', icon: 'Cube'),
+							kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
+							availability: new LeafAvailability(requiredApp: 'acme'),
+						),
+						new _AppLocalNotesProvider()
+					);
+				},
+			],
+			null,
+			$appManager
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testADataProviderIsNotRefusedForHavingNoBundle()
+
+	/**
+	 * 🔑 A BUILT-IN LEAF IS NOT REFUSED: it rides OpenRegister's own bundle.
+	 *
+	 * `requiredApp` of null means the leaf belongs to OpenRegister itself,
+	 * whose bundle is already on the page. Refusing those would remove every
+	 * built-in surface on the instance.
+	 *
+	 * @return void
+	 */
+	public function testABuiltInLeafIsNotRefused(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							identity: new LeafIdentity(id: 'builtin-tab', label: 'Tab', icon: 'Cube'),
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							availability: new LeafAvailability(requiredApp: null),
+						)
+					);
+				},
+			],
+			null,
+			$appManager
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testABuiltInLeafIsNotRefused()
+
 	private function makeRegistry(
 		array $listeners,
 		?IntegrationRegistry $integrationRegistry = null,
@@ -229,7 +449,7 @@ class LeafRegistryTest extends TestCase {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'acme-tab', label: 'Tab', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
+					new LeafDescriptor(identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
 				);
 			},
 		]);
@@ -255,11 +475,9 @@ class LeafRegistryTest extends TestCase {
 				function (RegisterLeafProvidersEvent $event) use ($provider) {
 					$event->registerLeaf(
 						new LeafDescriptor(
-							id: 'acme-notes',
-							label: 'Notes',
-							icon: 'NoteText',
+							identity: new LeafIdentity(id: 'acme-notes', label: 'Notes', icon: 'NoteText'),
 							kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
-							requiredApp: 'acme'
+							availability: new LeafAvailability(requiredApp: 'acme'),
 						),
 						$provider
 					);
@@ -269,7 +487,7 @@ class LeafRegistryTest extends TestCase {
 		);
 
 		// Wire the lazy loader: reading the IntegrationRegistry now triggers
-		// leaf collection, exactly as Application::bootLeafRegistry() sets up.
+		// leaf collection, exactly as IntegrationRegistrar::bootLeafRegistry() sets up.
 		$integrationRegistry->setLeafLoader(fn () => $leafReg->getDescriptors());
 
 		// Built-in present alongside the announced leaf's provider.
@@ -288,7 +506,7 @@ class LeafRegistryTest extends TestCase {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'good-leaf', label: 'Good', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
+					new LeafDescriptor(identity: new LeafIdentity(id: 'good-leaf', label: 'Good', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
 				);
 			},
 			function (RegisterLeafProvidersEvent $event) {
@@ -308,8 +526,8 @@ class LeafRegistryTest extends TestCase {
 	public function testEmptyKindsIsRejected(): void {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
-				$event->registerLeaf(new LeafDescriptor(id: 'no-kinds', label: 'X', icon: 'Cube', kinds: []));
-				$event->registerLeaf(new LeafDescriptor(id: 'ok', label: 'Ok', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'no-kinds', label: 'X', icon: 'Cube'), kinds: []));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'ok', label: 'Ok', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
 			},
 		]);
 
@@ -325,7 +543,7 @@ class LeafRegistryTest extends TestCase {
 	public function testUnknownKindIsRejected(): void {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
-				$event->registerLeaf(new LeafDescriptor(id: 'weird', label: 'X', icon: 'Cube', kinds: ['teleporter']));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'weird', label: 'X', icon: 'Cube'), kinds: ['teleporter']));
 			},
 		]);
 
@@ -344,12 +562,12 @@ class LeafRegistryTest extends TestCase {
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
 					new LeafDescriptor(
-						id: 'hermiq-agent',
-						label: 'Agent',
-						icon: 'Robot',
+						identity: new LeafIdentity(id: 'hermiq-agent', label: 'Agent', icon: 'Robot'),
 						kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-						surfaces: ['single-entity'],
-						renderMode: LeafDescriptor::RENDER_MODE_MOUNT
+						rendering: new LeafRendering(
+							surfaces: ['single-entity'],
+							renderMode: LeafDescriptor::RENDER_MODE_MOUNT,
+						),
 					)
 				);
 			},
@@ -371,15 +589,13 @@ class LeafRegistryTest extends TestCase {
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
 					new LeafDescriptor(
-						id: 'bad-mode',
-						label: 'X',
-						icon: 'Cube',
+						identity: new LeafIdentity(id: 'bad-mode', label: 'X', icon: 'Cube'),
 						kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-						renderMode: 'teleport'
+						rendering: new LeafRendering(renderMode: 'teleport'),
 					)
 				);
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'ok', label: 'Ok', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
+					new LeafDescriptor(identity: new LeafIdentity(id: 'ok', label: 'Ok', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
 				);
 			},
 		]);
@@ -397,7 +613,7 @@ class LeafRegistryTest extends TestCase {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'acme-notes', label: 'Notes', icon: 'NoteText', kinds: [LeafDescriptor::KIND_DATA_PROVIDER])
+					new LeafDescriptor(identity: new LeafIdentity(id: 'acme-notes', label: 'Notes', icon: 'NoteText'), kinds: [LeafDescriptor::KIND_DATA_PROVIDER])
 					// No provider supplied.
 				);
 			},
@@ -415,7 +631,7 @@ class LeafRegistryTest extends TestCase {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'acme-tab', label: 'Tab', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
+					new LeafDescriptor(identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
 				);
 			},
 		]);
@@ -431,8 +647,8 @@ class LeafRegistryTest extends TestCase {
 	public function testDuplicateIdFirstWins(): void {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
-				$event->registerLeaf(new LeafDescriptor(id: 'dupe', label: 'First', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
-				$event->registerLeaf(new LeafDescriptor(id: 'dupe', label: 'Second', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'dupe', label: 'First', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'dupe', label: 'Second', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
 			},
 		]);
 
@@ -449,8 +665,8 @@ class LeafRegistryTest extends TestCase {
 	public function testNamespacedIdsDoNotCollide(): void {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
-				$event->registerLeaf(new LeafDescriptor(id: 'acme-agent', label: 'A', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
-				$event->registerLeaf(new LeafDescriptor(id: 'globex-agent', label: 'B', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'acme-agent', label: 'A', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'globex-agent', label: 'B', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
 			},
 		]);
 
@@ -468,7 +684,7 @@ class LeafRegistryTest extends TestCase {
 		$provider = new _AppLocalNotesProvider();
 		$provider->store['obj-1'] = [['id' => '1', 'body' => 'first note']];
 
-		$items = $provider->list('reg', 'schema', 'obj-1');
+		$items = $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'));
 
 		$this->assertSame([['id' => '1', 'body' => 'first note']], $items);
 		// OpenRegister holds nothing: the only copy is the provider's own store.
@@ -482,7 +698,7 @@ class LeafRegistryTest extends TestCase {
 	 */
 	public function testAppLocalListEmptyWhenNoItems(): void {
 		$provider = new _AppLocalNotesProvider();
-		$this->assertSame([], $provider->list('reg', 'schema', 'obj-empty'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-empty')));
 	}//end testAppLocalListEmptyWhenNoItems()
 
 	/**
@@ -493,10 +709,10 @@ class LeafRegistryTest extends TestCase {
 	 */
 	public function testAppLocalCreatePersistsNoteInSiblingStore(): void {
 		$provider = new _AppLocalNotesProvider();
-		$created = $provider->create('reg', 'schema', 'obj-1', ['body' => 'hello']);
+		$created = $provider->create(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'), ['body' => 'hello']);
 
 		$this->assertSame('hello', $created['body']);
-		$list = $provider->list('reg', 'schema', 'obj-1');
+		$list = $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'));
 		$this->assertCount(1, $list);
 		$this->assertSame('hello', $list[0]['body']);
 	}//end testAppLocalCreatePersistsNoteInSiblingStore()
@@ -510,11 +726,11 @@ class LeafRegistryTest extends TestCase {
 		$provider = new _ReadOnlyAppLocalProvider();
 
 		// The read path is usable.
-		$this->assertCount(1, $provider->list('reg', 'schema', 'obj-1'));
+		$this->assertCount(1, $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1')));
 
 		// The write path throws the exact not-implemented shape query-time uses.
 		$this->expectException(NotImplementedException::class);
-		$provider->create('reg', 'schema', 'obj-1', ['body' => 'nope']);
+		$provider->create(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'), ['body' => 'nope']);
 	}//end testReadOnlyAppLocalLeafRefusesWritesCleanly()
 
 	/**
@@ -531,12 +747,10 @@ class LeafRegistryTest extends TestCase {
 				function (RegisterLeafProvidersEvent $event) {
 					$event->registerLeaf(
 						new LeafDescriptor(
-							id: 'acme-notes',
-							label: 'Notes',
-							icon: 'NoteText',
+							identity: new LeafIdentity(id: 'acme-notes', label: 'Notes', icon: 'NoteText'),
 							kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
-							requiredApp: 'acme',
-							surfaces: ['detail-page']
+							availability: new LeafAvailability(requiredApp: 'acme'),
+							rendering: new LeafRendering(surfaces: ['detail-page']),
 						),
 						new _AppLocalNotesProvider()
 					);
@@ -567,12 +781,12 @@ class LeafRegistryTest extends TestCase {
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
 					new LeafDescriptor(
-						id: 'hermiq-agent',
-						label: 'Agent',
-						icon: 'Robot',
+						identity: new LeafIdentity(id: 'hermiq-agent', label: 'Agent', icon: 'Robot'),
 						kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-						surfaces: ['single-entity'],
-						renderMode: LeafDescriptor::RENDER_MODE_MOUNT
+						rendering: new LeafRendering(
+							surfaces: ['single-entity'],
+							renderMode: LeafDescriptor::RENDER_MODE_MOUNT,
+						),
 					)
 				);
 			},
@@ -597,7 +811,7 @@ class LeafRegistryTest extends TestCase {
 			[
 				function (RegisterLeafProvidersEvent $event) {
 					$event->registerLeaf(
-						new LeafDescriptor(id: 'acme-tab', label: 'Tab', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE], requiredApp: 'acme')
+						new LeafDescriptor(identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE], availability: new LeafAvailability(requiredApp: 'acme'))
 					);
 				},
 			],
@@ -617,7 +831,7 @@ class LeafRegistryTest extends TestCase {
 	public function testLeafWithoutRequiredAppIsAlwaysUsable(): void {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
-				$event->registerLeaf(new LeafDescriptor(id: 'core-leaf', label: 'Core', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'core-leaf', label: 'Core', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
 			},
 		]);
 

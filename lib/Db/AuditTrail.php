@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailFieldTypes;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -87,6 +89,10 @@ use OCP\AppFramework\Db\Entity;
  * @method array|null getResultSummary()
  * @method void setResultSummary(?array $resultSummary)
  * @method string|null getFlowRun()
+ * @method string|null getCause()
+ * @method void setCause(?string $cause)
+ * @method string|null getCauseRun()
+ * @method void setCauseRun(?string $causeRun)
  * @method void setFlowRun(?string $flowRun)
  * @method string|null getFlowNode()
  * @method void setFlowNode(?string $flowNode)
@@ -94,6 +100,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setFlowStep(?int $flowStep)
  * @method string|null getPurpose()
  * @method void setPurpose(?string $purpose)
+ * @method string|null getConsumer()
+ * @method void setConsumer(?string $consumer)
  * @method string|null getProcessingActivityId()
  * @method void setProcessingActivityId(?string $processingActivityId)
  * @method string|null getVersion()
@@ -106,6 +114,8 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class AuditTrail extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
 
 	/**
 	 * Unique identifier for the audit trail entry
@@ -397,6 +407,33 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 *
 	 * @var string|null Uuid of the attributing flow run.
 	 */
+	/**
+	 * Why this write happened, from the closed vocabulary in {@see WriteCause}.
+	 *
+	 * NULLABLE and not back-filled: an entry written before the cause existed
+	 * has none, and `person` would be a guess. A reader must tell "nobody
+	 * recorded a cause" from "a person did this".
+	 *
+	 * @var string|null
+	 */
+	protected ?string $cause = null;
+
+	/**
+	 * The run this write belonged to, when the cause is one.
+	 *
+	 * Without it the cause is nearly useless: "an import did this" does not say
+	 * WHICH import, and the eight hundred entries of one load are not reachable
+	 * as a set.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $causeRun = null;
+
+	/**
+	 * The flow run this write belonged to, when a flow caused it.
+	 *
+	 * @var string|null Run id of the attributing flow run.
+	 */
 	protected ?string $flowRun = null;
 
 	/**
@@ -434,47 +471,35 @@ class AuditTrail extends Entity implements JsonSerializable {
 	protected ?string $purpose = null;
 
 	/**
+	 * The registered consumer whose token made this write.
+	 *
+	 * ⚠️ DELIBERATELY OUTSIDE the canonical JSON, for the same reason `purpose`
+	 * is and with the same consequence if that is forgotten: a key added to
+	 * jsonSerialize() changes the canonical form of every row ever written and
+	 * invalidates the whole chain (ADR-003 Rule 4). This column is the INDEXED
+	 * projection that makes "everything this koppeling wrote last month" a
+	 * lookup rather than a scan of the largest table in the app. The SEALED
+	 * copy, with the token and its owner beside it, lives in
+	 * `resultSummary['token']`, inside the canonical JSON. Both are written in
+	 * one place ({@see \OCA\OpenRegister\Service\Audit\TokenAttribution}), and
+	 * a disagreement between them is detectable rather than invisible.
+	 *
+	 * Null means no token made this write, which is the ordinary case for a
+	 * person clicking in the interface. It never means the token was unknown.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $consumer = null;
+
+	/**
 	 * Constructor for the AuditTrail class
 	 *
 	 * Sets up field types for all properties
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'schema', type: 'integer');
-		$this->addType(fieldName: 'register', type: 'integer');
-		$this->addType(fieldName: 'object', type: 'integer');
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerUuid', type: 'string');
-		$this->addType(fieldName: 'schemaUuid', type: 'string');
-		$this->addType(fieldName: 'action', type: 'string');
-		$this->addType(fieldName: 'changed', type: 'json');
-		$this->addType(fieldName: 'user', type: 'string');
-		$this->addType(fieldName: 'userName', type: 'string');
-		$this->addType(fieldName: 'session', type: 'string');
-		$this->addType(fieldName: 'request', type: 'string');
-		$this->addType(fieldName: 'ipAddress', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'organisationId', type: 'string');
-		$this->addType(fieldName: 'organisationIdType', type: 'string');
-		$this->addType(fieldName: 'processingActivityId', type: 'string');
-		$this->addType(fieldName: 'processingActivityUrl', type: 'string');
-		$this->addType(fieldName: 'processingId', type: 'string');
-		$this->addType(fieldName: 'confidentiality', type: 'string');
-		$this->addType(fieldName: 'retentionPeriod', type: 'string');
-		$this->addType(fieldName: 'size', type: 'integer');
-		$this->addType(fieldName: 'expires', type: 'datetime');
-		$this->addType(fieldName: 'hash', type: 'string');
-		$this->addType(fieldName: 'previousHash', type: 'string');
-		$this->addType(fieldName: 'importJobId', type: 'string');
-		$this->addType(fieldName: 'toolId', type: 'string');
-		$this->addType(fieldName: 'paramsDigest', type: 'string');
-		$this->addType(fieldName: 'resultSummary', type: 'json');
-		$this->addType(fieldName: 'purgedAt', type: 'datetime');
-		$this->addType(fieldName: 'flowRun', type: 'string');
-		$this->addType(fieldName: 'flowNode', type: 'string');
-		$this->addType(fieldName: 'flowStep', type: 'integer');
-		$this->addType(fieldName: 'purpose', type: 'string');
+		foreach (AuditTrailFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -494,55 +519,6 @@ class AuditTrail extends Entity implements JsonSerializable {
 	public function getChanged(): array {
 		return ($this->changed ?? []);
 	}//end getChanged()
-
-	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Hydrate the entity with data from an array
-	 *
-	 * Sets entity properties based on input array values
-	 *
-	 * @param array $object The data array to hydrate from
-	 *
-	 * @return static Returns $this for method chaining
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * Convert entity to JSON serializable array
@@ -583,67 +559,15 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 *     toolId: null|string,
 	 *     paramsDigest: null|string,
 	 *     resultSummary: array|null,
-	 *     flowRun: null|string,
+	 *     cause: null|string,
+ *     causeRun: null|string,
+ *     flowRun: null|string,
 	 *     flowNode: null|string,
 	 *     flowStep: int|null
 	 * }
 	 */
 	public function jsonSerialize(): array {
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
-
-		$expires = null;
-		if ($this->expires !== null) {
-			$expires = $this->expires->format('c');
-		}
-
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'schema' => $this->schema,
-			'register' => $this->register,
-			'object' => $this->object,
-			'objectUuid' => $this->objectUuid,
-			'registerUuid' => $this->registerUuid,
-			'schemaUuid' => $this->schemaUuid,
-			'action' => $this->action,
-			'changed' => $this->changed,
-			'user' => $this->user,
-			'userName' => $this->userName,
-			'session' => $this->session,
-			'request' => $this->request,
-			'ipAddress' => $this->ipAddress,
-			'version' => $this->version,
-			'created' => $created,
-			'organisationId' => $this->organisationId,
-			'organisationIdType' => $this->organisationIdType,
-			'processingActivityId' => $this->processingActivityId,
-			'processingActivityUrl' => $this->processingActivityUrl,
-			'processingId' => $this->processingId,
-			'confidentiality' => $this->confidentiality,
-			'retentionPeriod' => $this->retentionPeriod,
-			'size' => $this->size,
-			'expires' => $expires,
-			'hash' => $this->hash,
-			'previousHash' => $this->previousHash,
-			'toolId' => $this->toolId,
-			'paramsDigest' => $this->paramsDigest,
-			'resultSummary' => $this->resultSummary,
-			// ⚠️ These three are COVERED BY THE HASH CHAIN. They are part of the
-			// canonical JSON that AuditHashService seals, which is what makes
-			// re-pointing a row at a different run detectable rather than
-			// merely unlikely. That coverage is also why adding them was a
-			// genesis-seed migration (v1 → v2, ADR-003 Rule 4) rather than a
-			// column addition: any key added here changes the canonical form of
-			// every row ever written. Do not add a key to this array without
-			// reading that ADR — and note that `purgedAt` is deliberately
-			// ABSENT for exactly this reason.
-			'flowRun' => $this->flowRun,
-			'flowNode' => $this->flowNode,
-			'flowStep' => $this->flowStep,
-		];
+		return (new AuditTrailSealedForm())->serialise(values: get_object_vars($this));
 	}//end jsonSerialize()
 
 	/**
@@ -655,22 +579,29 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 * @return string String representation of the audit trail
 	 */
 	public function __toString(): string {
-		// Return the UUID if available, otherwise return a descriptive string.
-		if ($this->uuid !== null && $this->uuid !== '') {
+		if ($this->isFilled(value: $this->uuid) === true) {
 			return $this->uuid;
 		}
 
-		// Fallback to action if available.
-		if ($this->action !== null && $this->action !== '') {
+		if ($this->isFilled(value: $this->action) === true) {
 			return 'Audit: ' . $this->action;
 		}
 
-		// Fallback to ID if available.
 		if ($this->id !== null) {
 			return 'AuditTrail #' . $this->id;
 		}
 
-		// Final fallback.
 		return 'Audit Trail';
 	}//end __toString()
+
+	/**
+	 * Whether a string field holds a non-empty value.
+	 *
+	 * @param string|null $value The value.
+	 *
+	 * @return bool
+	 */
+	private function isFilled(string|null $value): bool {
+		return $value !== null && $value !== '';
+	}//end isFilled()
 }//end class

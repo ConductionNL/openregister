@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
  * @package OCA\OpenRegister\Tests\Unit\Service\Configuration
  *
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubGuards
+ * @uses \OCA\OpenRegister\Service\Configuration\RateLimiterService
  *
  * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-11
  * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-14

@@ -60,7 +60,7 @@ class CredentialRelinkRequiredEvent extends Event {
 	 *
 	 * @return string The credential UUID.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
 	public function getCredentialId(): string {
 		return $this->credentialId;
@@ -71,7 +71,7 @@ class CredentialRelinkRequiredEvent extends Event {
 	 *
 	 * @return string The provider identifier.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
 	public function getProvider(): string {
 		return $this->provider;
@@ -82,7 +82,7 @@ class CredentialRelinkRequiredEvent extends Event {
 	 *
 	 * @return string The owning user id.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
 	public function getOwner(): string {
 		return $this->owner;
@@ -93,7 +93,7 @@ class CredentialRelinkRequiredEvent extends Event {
 	 *
 	 * @return string The provider's OAuth2 error code.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
 	public function getReason(): string {
 		return $this->reason;

@@ -1,0 +1,469 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`bulk dialogs DOM golden purge: busy 1`] = `
+"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+        <!--v-if-->
+      </slot-icon>
+      <slot-default> Purge</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="delete-step">
+      <h3 class="step-title">Confirm Permanent Object Deletion</h3>
+      <x-ncnotecard type="warning">
+        <slot-default>Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone.</slot-default>
+      </x-ncnotecard>
+      <div class="selected-objects-container">
+        <h4>Selected Objects ({count}) {"count":4}</h4>
+        <div class="selected-objects-list">
+          <div class="selected-object-item">
+            <div class="object-info"><strong>First</strong>
+              <p class="object-id">ID: {id} {"id":"a"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;First&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>two.pdf</strong>
+              <p class="object-id">ID: {id} {"id":"b"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;two.pdf&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>Nested</strong>
+              <p class="object-id">ID: {id} {"id":"c"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;Nested&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>d</strong>
+              <p class="object-id">ID: {id} {"id":"d"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;d&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`bulk dialogs DOM golden purge: closed 1`] = `"<!--v-if-->"`;
+
+exports[`bulk dialogs DOM golden purge: failed 1`] = `
+"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close</slot-default>
+    </x-ncbutton>
+    <!--v-if-->
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <!--v-if-->
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>It broke</p>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`bulk dialogs DOM golden purge: finished 1`] = `
+"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close</slot-default>
+    </x-ncbutton>
+    <!--v-if-->
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>All done</p>
+      </slot-default>
+    </x-ncnotecard>
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`bulk dialogs DOM golden purge: nothingSelected 1`] = `
+"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:0}" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error" data-on="onClick">
+      <slot-icon>
+        <!--v-if-->
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+      <slot-default> Purge</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="delete-step">
+      <h3 class="step-title">Confirm Permanent Object Deletion</h3>
+      <x-ncnotecard type="warning">
+        <slot-default>Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone.</slot-default>
+      </x-ncnotecard>
+      <div class="selected-objects-container">
+        <h4>Selected Objects ({count}) {"count":0}</h4>
+        <x-ncemptycontent name="No objects selected">
+          <slot-description>No objects are currently selected for permanent deletion.</slot-description>
+        </x-ncemptycontent>
+      </div>
+    </div>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`bulk dialogs DOM golden purge: review 1`] = `
+"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error" data-on="onClick">
+      <slot-icon>
+        <!--v-if-->
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+      <slot-default> Purge</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="delete-step">
+      <h3 class="step-title">Confirm Permanent Object Deletion</h3>
+      <x-ncnotecard type="warning">
+        <slot-default>Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone.</slot-default>
+      </x-ncnotecard>
+      <div class="selected-objects-container">
+        <h4>Selected Objects ({count}) {"count":4}</h4>
+        <div class="selected-objects-list">
+          <div class="selected-object-item">
+            <div class="object-info"><strong>First</strong>
+              <p class="object-id">ID: {id} {"id":"a"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;First&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>two.pdf</strong>
+              <p class="object-id">ID: {id} {"id":"b"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;two.pdf&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>Nested</strong>
+              <p class="object-id">ID: {id} {"id":"c"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;Nested&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>d</strong>
+              <p class="object-id">ID: {id} {"id":"d"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;d&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`bulk dialogs DOM golden restore: busy 1`] = `
+"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+        <!--v-if-->
+      </slot-icon>
+      <slot-default> Restore</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="restore-step">
+      <h3 class="step-title">Confirm Object Restoration</h3>
+      <x-ncnotecard type="info">
+        <slot-default>Review the selected objects below. You can remove any objects you don't want to restore by clicking the remove button. Objects will be restored to their original location.</slot-default>
+      </x-ncnotecard>
+      <div class="selected-objects-container">
+        <h4>Selected Objects ({count}) {"count":4}</h4>
+        <div class="selected-objects-list">
+          <div class="selected-object-item">
+            <div class="object-info"><strong>First</strong>
+              <p class="object-id">ID: {id} {"id":"a"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;First&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>two.pdf</strong>
+              <p class="object-id">ID: {id} {"id":"b"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;two.pdf&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>Nested</strong>
+              <p class="object-id">ID: {id} {"id":"c"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;Nested&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>d</strong>
+              <p class="object-id">ID: {id} {"id":"d"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;d&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`bulk dialogs DOM golden restore: closed 1`] = `"<!--v-if-->"`;
+
+exports[`bulk dialogs DOM golden restore: failed 1`] = `
+"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close</slot-default>
+    </x-ncbutton>
+    <!--v-if-->
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <!--v-if-->
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>It broke</p>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`bulk dialogs DOM golden restore: finished 1`] = `
+"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close</slot-default>
+    </x-ncbutton>
+    <!--v-if-->
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>All done</p>
+      </slot-default>
+    </x-ncnotecard>
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`bulk dialogs DOM golden restore: nothingSelected 1`] = `
+"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:0}" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary" data-on="onClick">
+      <slot-icon>
+        <!--v-if-->
+        <x-restore size="20"></x-restore>
+      </slot-icon>
+      <slot-default> Restore</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="restore-step">
+      <h3 class="step-title">Confirm Object Restoration</h3>
+      <x-ncnotecard type="info">
+        <slot-default>Review the selected objects below. You can remove any objects you don't want to restore by clicking the remove button. Objects will be restored to their original location.</slot-default>
+      </x-ncnotecard>
+      <div class="selected-objects-container">
+        <h4>Selected Objects ({count}) {"count":0}</h4>
+        <x-ncemptycontent name="No objects selected">
+          <slot-description>No objects are currently selected for restoration.</slot-description>
+        </x-ncemptycontent>
+      </div>
+    </div>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`bulk dialogs DOM golden restore: review 1`] = `
+"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <!--v-if-->
+        <x-restore size="20"></x-restore>
+      </slot-icon>
+      <slot-default> Restore</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="restore-step">
+      <h3 class="step-title">Confirm Object Restoration</h3>
+      <x-ncnotecard type="info">
+        <slot-default>Review the selected objects below. You can remove any objects you don't want to restore by clicking the remove button. Objects will be restored to their original location.</slot-default>
+      </x-ncnotecard>
+      <div class="selected-objects-container">
+        <h4>Selected Objects ({count}) {"count":4}</h4>
+        <div class="selected-objects-list">
+          <div class="selected-object-item">
+            <div class="object-info"><strong>First</strong>
+              <p class="object-id">ID: {id} {"id":"a"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;First&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>two.pdf</strong>
+              <p class="object-id">ID: {id} {"id":"b"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;two.pdf&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>Nested</strong>
+              <p class="object-id">ID: {id} {"id":"c"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;Nested&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+          <div class="selected-object-item">
+            <div class="object-info"><strong>d</strong>
+              <p class="object-id">ID: {id} {"id":"d"}</p>
+            </div>
+            <x-ncbutton variant="tertiary" aria-label="Remove {title} {&quot;title&quot;:&quot;d&quot;}" data-on="onClick">
+              <slot-icon>
+                <x-close size="20"></x-close>
+              </slot-icon>
+            </x-ncbutton>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;

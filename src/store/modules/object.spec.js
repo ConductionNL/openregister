@@ -2,6 +2,17 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mockObject, ObjectEntity } from '../../entities/index.js'
 import { useObjectStore } from './object.js'
 
+// object.js imports the schema store, whose draft actions use @nextcloud/axios,
+// which jest cannot parse unmocked (ESM); these tests make no requests.
+jest.mock('@nextcloud/axios', () => ({
+	__esModule: true,
+	default: { get: jest.fn(), put: jest.fn(), post: jest.fn(), delete: jest.fn() },
+}))
+jest.mock('@nextcloud/router', () => ({
+	__esModule: true,
+	generateUrl: jest.fn((path) => `/index.php${path}`),
+}))
+
 describe('Object Store', () => {
 	beforeEach(() => {
 		setActivePinia(createPinia())

@@ -23,7 +23,6 @@
  *
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
  * @spec openspec/specs/zoeken-filteren/spec.md
- * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -31,14 +30,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Service\SearchMeasurement;
 use OCA\OpenRegister\Service\SearchTrailService;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
 use OCA\OpenRegister\Support\FilterParams;
-use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -58,17 +57,35 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex search query building and optimization logic
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Query building reads views, schemas, watchers and references
  */
 class SearchQueryHandler {
 
 	/**
-	 * The id a `_watching=true` query falls back to when the caller follows
-	 * nothing. It is deliberately not a uuid, so no object can ever carry it and
-	 * the lens cannot accidentally widen to the whole register.
+	 * The id a `_watching=true` query falls back to when there is no caller.
+	 * It is deliberately not a uuid, so no object can ever carry it and the
+	 * lens cannot accidentally widen to the whole register.
 	 *
 	 * @var string
 	 */
 	private const NO_WATCHED_OBJECTS = '__no-watched-objects__';
+
+	/**
+	 * The parameters that filter on an object's metadata, moved into `@self`.
+	 *
+	 * @var array<int, string>
+	 */
+	private const METADATA_FIELDS = [
+		'register',
+		'schema',
+		'uuid',
+		'organisation',
+		'owner',
+		'application',
+		'created',
+		'updated',
+		'deleted',
+	];
 
 	/**
 	 * The id an `_unread=true` query falls back to when there is no caller.
@@ -131,31 +148,40 @@ class SearchQueryHandler {
 	/**
 	 * SearchQueryHandler constructor.
 	 *
-	 * @param ViewMapper $viewMapper Mapper for view operations.
-	 * @param SchemaMapper $schemaMapper Mapper for schema operations.
-	 * @param SettingsService $settingsService Service for settings operations.
+	 * @param ViewScopeApplier $viewScope Merges a view's stored query into a search.
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations.
+	 * @param SettingsServiceInterface $settingsService Service for settings operations.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
-	 * @param IRequest $request Request object.
 	 * @param SearchTrailService $searchTrailService Service for recording search trails.
-	 * @param WatcherMapper|null $watcherMapper Subscriptions, for the `_watching=true` lens.
 	 * @param IUserSession|null $userSession Resolves the caller for that lens.
 	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
+	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid to its id.
+	 * @param ReadHistoryService|null $readHistory The read history behind the `_recent` lens.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly ViewMapper $viewMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly SettingsService $settingsService,
+		private readonly ViewScopeApplier $viewScope,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SettingsServiceInterface $settingsService,
 		private readonly LoggerInterface $logger,
-		private readonly IRequest $request,
 		private readonly SearchTrailService $searchTrailService,
-		private readonly ?WatcherMapper $watcherMapper = null,
 		private readonly ?IUserSession $userSession = null,
 		// The branch-filter expander. Nullable with a null default so the many
 		// unit tests that build this handler positionally keep working; the
 		// container resolves the real instance by type in production.
 		private readonly ?CodedFilterExpander $codedFilters = null,
+		// The register/schema reference resolver. Nullable and last for the same
+		// reason as the expander above. Absent, buildSearchQuery() still refuses
+		// a reference it cannot read rather than int-casting it into an empty
+		// page; present, it resolves a slug or uuid the way the write path does.
+		private readonly ?SearchReferenceResolver $referenceResolver = null,
+		// The read history behind the `_recent` lens. Nullable and last for the
+		// same reason; absent, the lens answers an empty page that says the
+		// history could not be read, never the whole register.
+		private readonly ?ReadHistoryService $readHistory = null,
 	) {
 	}//end __construct()
 
@@ -163,83 +189,57 @@ class SearchQueryHandler {
 	 * Narrow a query to the objects the calling user follows.
 	 *
 	 * `_watching=true` is a LENS, not a filter: it does not ask the object a
-	 * question, it restricts the id set to this user's subscriptions and lets
-	 * every other filter, the RBAC gate and the paging run over what is left.
-	 * That is why it lands on `_ids` and not in the filter grammar.
+	 * question, it restricts the result to this user's follows and lets every
+	 * other filter, the RBAC gate and the paging run over what is left.
 	 *
-	 * Combining it with an explicit `_ids` intersects rather than replaces, so
-	 * "these five cases, of which I follow two" answers two. When the
-	 * intersection is empty — or the caller follows nothing, or is anonymous —
-	 * the id set becomes a literal no schema can match, so the answer is an
-	 * honest empty page rather than the whole register.
+	 * It is resolved INSIDE the query (`merge-follow-and-favourites` D-4): the
+	 * caller's uid lands on `_watchingFor`, which the mapper turns into a
+	 * correlated `EXISTS` against `openregister_watchers`, like the unread
+	 * lens. It used to load every followed uuid onto `_ids`, a list that grew
+	 * with every follow and, once favourites moved in, with every star too.
+	 * An explicit `_ids` therefore composes by AND, so "these five cases, of
+	 * which I follow two" still answers two.
 	 *
-	 * The mapper is read directly rather than through WatcherService: the lens
-	 * needs one question ("what does this user follow"), the service would drag
-	 * the permission evaluator into the query builder's construction, and the
-	 * mapper is already the single definition of that query.
+	 * `_favourite=true` is the deprecated alias of this lens for one release:
+	 * a favourite IS a follow now, so both flags ask the same question and
+	 * either one turns the lens on.
+	 *
+	 * Anonymous callers get a literal id no object carries, so the answer is
+	 * an honest empty page rather than the whole register.
 	 *
 	 * @param array<string, mixed> $query The query built so far.
 	 *
 	 * @return array<string, mixed> The query, narrowed when the lens was asked for.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	private function applyWatchingLens(array $query): array {
-		if (array_key_exists('_watching', $query) === false) {
-			return $query;
+		// Never trust a resolved key from the outside: a caller must not hand
+		// in somebody else's uid.
+		unset($query['_watchingFor']);
+
+		$asked = false;
+		foreach (['_watching', '_favourite'] as $flag) {
+			if (array_key_exists($flag, $query) === true) {
+				$asked = ($asked || filter_var($query[$flag], FILTER_VALIDATE_BOOLEAN));
+				unset($query[$flag]);
+			}
 		}
 
-		$asked = filter_var($query['_watching'], FILTER_VALIDATE_BOOLEAN);
-		unset($query['_watching']);
 		if ($asked === false) {
 			return $query;
 		}
 
-		$watched = $this->subscriptionsOfCaller();
-
-		if (isset($query['_ids']) === true && is_array($query['_ids']) === true) {
-			$watched = array_values(array_intersect($query['_ids'], $watched));
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($uid === null || $uid === '') {
+			$query['_ids'] = [self::NO_WATCHED_OBJECTS];
+			return $query;
 		}
 
-		if ($watched === []) {
-			// A literal no object can carry, so an empty subscription set reads
-			// as "nothing", never as "no restriction".
-			$watched = [self::NO_WATCHED_OBJECTS];
-		}
-
-		$query['_ids'] = $watched;
+		$query['_watchingFor'] = $uid;
 
 		return $query;
 	}//end applyWatchingLens()
-
-	/**
-	 * The uuids the calling user follows, or an empty list.
-	 *
-	 * Empty covers three different situations on purpose — anonymous, no
-	 * subscriptions, and a failed lookup — because the caller treats all three
-	 * the same way: a lens over nothing answers nothing. Keeping them apart
-	 * here would only let one of them accidentally mean "no restriction".
-	 *
-	 * @return array<int, string> The followed object uuids.
-	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
-	 */
-	private function subscriptionsOfCaller(): array {
-		$uid = $this->userSession?->getUser()?->getUID();
-		if ($this->watcherMapper === null || $uid === null || $uid === '') {
-			return [];
-		}
-
-		try {
-			return $this->watcherMapper->uuidsForUser(userId: $uid);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[SearchQueryHandler] watching lens lookup failed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-			return [];
-		}
-	}//end subscriptionsOfCaller()
 
 	/**
 	 * Resolve `_unread=true` into the uid whose read state the query reads.
@@ -259,9 +259,13 @@ class SearchQueryHandler {
 	 *
 	 * @return array<string, mixed> The query, carrying the resolved reader.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function applyUnreadLens(array $query): array {
+		// Never trust a resolved key from the outside: a caller must not hand
+		// in somebody else's uid.
+		unset($query['_unreadFor']);
+
 		if (array_key_exists('_unread', $query) === false) {
 			return $query;
 		}
@@ -286,60 +290,84 @@ class SearchQueryHandler {
 	}//end applyUnreadLens()
 
 	/**
-	 * Resolve `_favourite=true` and `_recent=true` into the uid they read.
+	 * Resolve the personal lenses still handled here: `_recent=true`.
 	 *
-	 * Both are resolved INSIDE the query rather than applied to a fetched page,
-	 * for the reason spelled out on the unread lens above: a post-filter gives a
-	 * first page of 25 against a total of 120 and a second page that skips rows,
-	 * which reads as a paging bug and is not one. The mapper turns `_favouriteFor`
-	 * into a correlated `EXISTS` and `_recentFor` into the same plus the ordering
-	 * by last view, so the page, the total and the facets see one restriction.
+	 * `_favourite=true` used to be resolved here too. Since
+	 * `merge-follow-and-favourites` it is an alias of `_watching=true` and is
+	 * consumed by applyWatchingLens(), which runs first.
 	 *
-	 * Both are handled in ONE method, and the two names are a loop rather than
-	 * two copies of the same eight lines, because the difference between them is
-	 * entirely in the mapper: here they are the same question, "which user".
-	 *
-	 * Identity is resolved HERE, at the edge, never in the query builder:
-	 * ADR-005 wants the principal named where the request arrives, and it also
-	 * means the mapper can be tested with a uid rather than a session.
+	 * Resolved INSIDE the query, never on a fetched page, so the page, the
+	 * total and the facets see one restriction. Identity is resolved here, at
+	 * the edge (ADR-005), never in the query builder.
 	 *
 	 * @param array<string, mixed> $query The query built so far.
 	 *
 	 * @return array<string, mixed> The query, carrying the resolved user.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 */
 	private function applyPersonalLenses(array $query): array {
-		// Asked-for flag to the key the mapper reads.
-		$lenses = [
-			'_favourite' => '_favouriteFor',
-			'_recent' => '_recentFor',
+		return $this->applyRecentLens(query: $query);
+	}//end applyPersonalLenses()
+
+	/**
+	 * Resolve `_recent=true` from the caller's read history on the audit trail.
+	 *
+	 * The history lands on `_ids` (intersected, history order kept), so every
+	 * search path honours it and RBAC still decides. `_recentViews` (uuid =>
+	 * ISO 8601) drives the order and `@self.viewedAt`; `_recentLens` is the
+	 * response report. Audit trail off: empty, with a reason, no shadow log.
+	 * Caller-supplied copies of the internal keys are stripped first.
+	 *
+	 * @param array<string, mixed> $query The query built so far.
+	 *
+	 * @return array<string, mixed> The query, narrowed when the lens was asked for.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-the-recent-lens-says-why-it-is-empty
+	 */
+	private function applyRecentLens(array $query): array {
+		unset($query['_recentFor'], $query['_recentViews'], $query['_recentLens']);
+
+		if (array_key_exists('_recent', $query) === false) {
+			return $query;
+		}
+
+		$asked = filter_var($query['_recent'], FILTER_VALIDATE_BOOLEAN);
+		unset($query['_recent']);
+		if ($asked === false) {
+			return $query;
+		}
+
+		$uid = $this->userSession?->getUser()?->getUID();
+		$lens = [
+			'available' => false,
+			'reason' => ReadHistoryService::REASON_UNAVAILABLE,
+			'views' => [],
 		];
+		if ($this->readHistory !== null) {
+			$lens = $this->readHistory->resolveRecentLens(userId: $uid);
+		}
 
-		foreach ($lenses as $flag => $resolved) {
-			if (array_key_exists($flag, $query) === false) {
-				continue;
-			}
+		$query['_recentLens'] = ['available' => $lens['available'], 'reason' => $lens['reason']];
 
-			$asked = filter_var($query[$flag], FILTER_VALIDATE_BOOLEAN);
-			unset($query[$flag]);
-			if ($asked === false) {
-				continue;
-			}
+		$views = $lens['views'];
+		$existing = ($query['_ids'] ?? null);
+		if (is_array($existing) === true && $existing !== []) {
+			// Intersect, keeping the history's order.
+			$views = array_intersect_key($views, array_flip(array_map('strval', $existing)));
+		}
 
-			$uid = $this->userSession?->getUser()?->getUID();
-			if ($uid === null || $uid === '') {
-				// No user, so nothing can be theirs. An honest empty page,
-				// never the whole register.
-				$query['_ids'] = [self::NO_PERSONAL_LENS_USER];
-				continue;
-			}
+		if ($views === []) {
+			// Nothing to show: an honest empty page, never the whole register.
+			$query['_ids'] = [self::NO_PERSONAL_LENS_USER];
+			return $query;
+		}
 
-			$query[$resolved] = $uid;
-		}//end foreach
+		$query['_ids'] = array_keys($views);
+		$query['_recentViews'] = $views;
 
 		return $query;
-	}//end applyPersonalLenses()
+	}//end applyRecentLens()
 
 	/**
 	 * Whether the target schema is served by an external object-source (DBAL
@@ -370,14 +398,23 @@ class SearchQueryHandler {
 			return false;
 		}
 
-		try {
-			$entity = $this->schemaMapper->find(id: $schema, _rbac: false, _multitenancy: false);
-		} catch (\Throwable $e) {
-			return false;
-		}
-
-		return ($entity->getObjectSource() !== null);
+		return ($this->schemaOrNull(reference: $schema)?->getObjectSource() !== null);
 	}//end schemaHasObjectSource()
+
+	/**
+	 * Read one schema, answering null when it cannot be read.
+	 *
+	 * @param mixed $reference The schema reference, as a schema list may hold it.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaOrNull(mixed $reference): ?Schema {
+		try {
+			return $this->schemaMapper->find(id: $reference, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end schemaOrNull()
 
 	/**
 	 * Whether the target schema declares a property literally named `filter`.
@@ -398,23 +435,9 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
 	private function schemaDeclaresFilterProperty(int|string|array|null $schema): bool {
-		if ($schema === null) {
-			return false;
-		}
-
-		$schemaRefs = [$schema];
-		if (is_array($schema) === true) {
-			$schemaRefs = $schema;
-		}
-
-		foreach ($schemaRefs as $schemaRef) {
-			try {
-				$entity = $this->schemaMapper->find(id: $schemaRef, _rbac: false, _multitenancy: false);
-			} catch (\Throwable $e) {
-				continue;
-			}
-
-			if (array_key_exists(FilterParams::FILTER_KEY, ($entity->getProperties() ?? [])) === true) {
+		foreach ((array)$schema as $schemaRef) {
+			$properties = ($this->schemaOrNull(reference: $schemaRef)?->getProperties() ?? []);
+			if (array_key_exists(FilterParams::FILTER_KEY, $properties) === true) {
 				return true;
 			}
 		}
@@ -438,11 +461,6 @@ class SearchQueryHandler {
 	 *
 	 * @psalm-return array{'@self': array<string, array<int>|int|mixed>|mixed, _ids?: array|mixed,...}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex query building with parameter reconstruction
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many paths for handling different parameter formats
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handles extensive parameter processing for query building
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function buildSearchQuery(
@@ -451,409 +469,235 @@ class SearchQueryHandler {
 		int|string|array|null $schema = null,
 		?array $ids = null,
 	): array {
-		// A schema served from an external object-source (DBAL virtual register)
-		// has FLAT, snake_case columns — `product_line`, `app_slug`,
-		// `competitor_id`. The dot-un-mangling in STEP 1 (which rebuilds
-		// `@self.register` from PHP's mangled `@self_register`) would wrongly
-		// split those column names into nested arrays
-		// (`product_line` → ['product' => ['line' => …]]), silently dropping the
-		// filter. Detect object-source schemas so their snake_case object-field
-		// keys stay literal; `@self.*` metadata keys still un-mangle. Magic-table
-		// schemas are unaffected.
-		$isObjectSourceSchema = $this->schemaHasObjectSource(schema: $schema);
+		$params = $this->searchableParams(requestParams: $requestParams, schema: $schema);
+		$scope = (new SearchScopeFilters(resolver: $this->referenceResolver))->forScope(register: $register, schema: $schema);
+		$parts = $this->splitSearchParams(params: $params, self: $scope);
+		$query = array_merge(['@self' => $parts->self], $this->expandedFilters(filters: $parts->objectFilters, schema: $schema));
 
-		// STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names.
-		// PHP converts dots to underscores in parameter names, e.g.:.
-		// @self.register → @self_register.
-		// Person.address.street → person_address_street.
-		// We need to reconstruct nested arrays from underscore-separated paths.
-		$fixedParams = [];
+		if ($ids !== null) {
+			$query['_ids'] = $ids;
+		}
+
+		return $this->applyLenses(query: $this->mergeSpecialParams(query: $query, special: $parts->special));
+	}//end buildSearchQuery()
+
+	/**
+	 * The request parameters a search can filter on, under their real names.
+	 *
+	 * @param array                 $requestParams The request parameters.
+	 * @param int|string|array|null $schema        The schema, or schemas, searched.
+	 *
+	 * @return array The parameters.
+	 */
+	private function searchableParams(array $requestParams, int|string|array|null $schema): array {
+		return $this->filterableParams(
+			params: $this->liftBracketFilterUnlessDeclared(
+				params: $this->restoreDottedParams(requestParams: $requestParams, schema: $schema),
+				schema: $schema
+			)
+		);
+	}//end searchableParams()
+
+	/**
+	 * Expand a branch filter into the concepts it stands for.
+	 *
+	 * `?categorie[branch]=<uri>` becomes `categorie` IN (the branch root plus
+	 * every narrower concept under it), walked at query time and bounded by
+	 * depth, so moving a concept in the scheme changes what the filter matches
+	 * with no reindex anywhere.
+	 *
+	 * @param array                 $filters The object filters.
+	 * @param int|string|array|null $schema  The schema, or schemas, searched.
+	 *
+	 * @return array The filters.
+	 */
+	private function expandedFilters(array $filters, int|string|array|null $schema): array {
+		if ($this->codedFilters === null) {
+			return $filters;
+		}
+
+		return $this->codedFilters->expand(filters: $filters, schemaRef: $schema);
+	}//end expandedFilters()
+
+	/**
+	 * Apply the lenses, in the order that lets them narrow each other.
+	 *
+	 * The watching lens comes after `_ids` is normalised to an array, so the
+	 * two intersect. The unread lens comes next, so "unread among what I follow"
+	 * narrows twice. The personal lenses come last, so they compose with every
+	 * earlier narrowing of `_ids` rather than replacing it.
+	 *
+	 * @param array $query The query.
+	 *
+	 * @return array The query.
+	 */
+	private function applyLenses(array $query): array {
+		return $this->applyPersonalLenses(query: $this->applyUnreadLens(query: $this->applyWatchingLens(query: $query)));
+	}//end applyLenses()
+
+	/**
+	 * Undo PHP's dot-to-underscore mangling of parameter names (`@self_register` back to `@self.register`).
+	 *
+	 * Underscore-prefixed system parameters (`_limit`, `_offset`) stay as they are. A schema served
+	 * from an external object source has FLAT, snake_case columns (`product_line`), so for it only
+	 * `@…` metadata keys are un-mangled; splitting its column names would silently drop the filter.
+	 *
+	 * @param array                 $requestParams The request parameters.
+	 * @param int|string|array|null $schema        The schema reference of the search.
+	 *
+	 * @return array<string, mixed> The parameters with nested paths rebuilt.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function restoreDottedParams(array $requestParams, int|string|array|null $schema): array {
+		$keepsUnderscores = $this->schemaHasObjectSource(schema: $schema);
+
+		$tree = new DottedParamTree();
 		foreach ($requestParams as $key => $value) {
-			// Skip parameters that start with underscore (system parameters like _limit, _offset).
-			if (str_starts_with(haystack: $key, needle: '_') === true) {
-				$fixedParams[$key] = $value;
+			if ($this->nestsAtUnderscores(key: $key, keepsUnderscores: $keepsUnderscores) === true) {
+				$tree->nest(key: $key, value: $value);
 				continue;
 			}
 
-			// Check if key contains underscores (indicating PHP mangled dots).
-			// For object-source schemas, only un-mangle `@…` metadata keys and
-			// keep snake_case object-field keys (real DBAL columns) literal.
-			if (str_contains($key, '_') === true
-				&& ($isObjectSourceSchema === false || str_starts_with(haystack: $key, needle: '@') === true)
-			) {
-				// Split by underscore to reconstruct nested structure.
-				$parts = explode('_', $key);
-
-				// Build nested array structure.
-				$current = &$fixedParams;
-				$lastIndex = count($parts) - 1;
-
-				foreach ($parts as $index => $part) {
-					if ($index === $lastIndex) {
-						// Last part: assign the value.
-						$current[$part] = $value;
-						continue;
-					}
-
-					// Intermediate part: create nested array if needed.
-					if (isset($current[$part]) === false) {
-						$current[$part] = [];
-					}
-
-					if (isset($current[$part]) === true) {
-						/*
-						 * Ensure it's an array, reset if not.
-						 * @psalm-suppress TypeDoesNotContainType - $current[$part] may have been set to non-array earlier
-						 */
-
-						if (is_array($current[$part]) === false) {
-							$current[$part] = [];
-						}
-					}
-
-					$current = &$current[$part];
-				}//end foreach
-
-				continue;
-			}//end if
-
-			// No underscores: use as-is.
-			$fixedParams[$key] = $value;
-		}//end foreach
-
-		// STEP 1b: the bracket spelling. `filter[x]=v` means `x=v` here, as it
-		// does on the aggregation endpoints (openregister#3611). Before this,
-		// `filter` was read as a property filter on a property literally named
-		// `filter`, which no schema has, so every such query returned the empty
-		// set. The one schema this must not touch is one that really declares a
-		// `filter` property: there the old meaning is the right one.
-		if (is_array($fixedParams[FilterParams::FILTER_KEY] ?? null) === true
-			&& $this->schemaDeclaresFilterProperty(schema: $schema) === false
-		) {
-			$fixedParams = FilterParams::liftBracketFilter(params: $fixedParams);
+			$tree->set(key: $key, value: $value);
 		}
 
-		// STEP 2: Remove system parameters that shouldn't be used as filters.
-		$params = $fixedParams;
+		return $tree->params;
+	}//end restoreDottedParams()
+
+	/**
+	 * Whether the underscores in a parameter name stand for dots PHP mangled.
+	 *
+	 * @param string $key              The parameter name.
+	 * @param bool   $keepsUnderscores Whether the schema's columns are flat snake_case.
+	 *
+	 * @return bool True when the name nests.
+	 */
+	private function nestsAtUnderscores(string $key, bool $keepsUnderscores): bool {
+		if (str_starts_with(haystack: $key, needle: '_') === true || str_contains($key, '_') === false) {
+			return false;
+		}
+
+		return ($keepsUnderscores === false || str_starts_with(haystack: $key, needle: '@') === true);
+	}//end nestsAtUnderscores()
+
+	/**
+	 * Read the bracket spelling `filter[x]=v` as `x=v`, as the aggregation endpoints do (openregister#3611).
+	 *
+	 * Not for a schema that really declares a `filter` property: there the property filter is meant.
+	 *
+	 * @param array<string, mixed>  $params The parameters.
+	 * @param int|string|array|null $schema The schema reference of the search.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function liftBracketFilterUnlessDeclared(array $params, int|string|array|null $schema): array {
+		if (is_array($params[FilterParams::FILTER_KEY] ?? null) === true
+			&& $this->schemaDeclaresFilterProperty(schema: $schema) === false
+		) {
+			return FilterParams::liftBracketFilter(params: $params);
+		}
+
+		return $params;
+	}//end liftBracketFilterUnlessDeclared()
+
+	/**
+	 * The parameters without the route and the system parameters that are never filters.
+	 *
+	 * @param array<string, mixed> $params The parameters.
+	 *
+	 * @return array<string, mixed> The remaining parameters.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function filterableParams(array $params): array {
 		unset($params['_route']);
 		foreach (FilterParams::OBJECT_SYSTEM_PARAMS as $systemParam) {
 			unset($params[$systemParam]);
 		}
 
-		// Build the query structure for searchObjectsPaginated.
-		$query = [];
+		return $params;
+	}//end filterableParams()
 
-		// Extract metadata filters into @self.
-		$metadataFields = [
-			'register',
-			'schema',
-			'uuid',
-			'organisation',
-			'owner',
-			'application',
-			'created',
-			'updated',
-			'deleted',
-		];
-		$query['@self'] = [];
+	/**
+	 * Sort the parameters into `@self` metadata filters, underscore parameters and object field filters.
+	 *
+	 * A metadata parameter never overrides the call's own register or schema. An underscore
+	 * parameter is kept both as a special parameter and among the object field filters.
+	 *
+	 * @param array<string, mixed> $params The parameters.
+	 * @param array<string, mixed> $self   The call's `@self` filters.
+	 *
+	 * @return SearchQueryParts The sorted parameters.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function splitSearchParams(array $params, array $self): SearchQueryParts {
+		$metadata = array_flip(self::METADATA_FIELDS);
 
-		// Add register and schema to @self if provided.
-		// Support both single values and arrays for multi-register/schema filtering.
-		if ($register !== null) {
-			/*
-			 * @var int|string|array $registerValue
-			 */
+		return new SearchQueryParts(
+			self: ($self + array_intersect_key($params, $metadata)),
+			special: array_filter($params, static fn (string $key): bool => str_starts_with($key, '_'), ARRAY_FILTER_USE_KEY),
+			objectFilters: array_diff_key($params, $metadata)
+		);
+	}//end splitSearchParams()
 
-			$registerValue = $register;
-			$query['@self']['register'] = (int)$registerValue;
-			if (is_array($registerValue) === true) {
-				// Convert array values to integers.
-				$query['@self']['register'] = array_map('intval', $registerValue);
-			}
+	/**
+	 * Add the underscore parameters to the query, with `_ids` normalised to an array.
+	 *
+	 * URL parameters like `_ids=uuid1,uuid2` arrive as one string, but MagicMapper expects an array.
+	 *
+	 * @param array<string, mixed> $query   The query.
+	 * @param array<string, mixed> $special The underscore parameters.
+	 *
+	 * @return array<string, mixed> The query.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function mergeSpecialParams(array $query, array $special): array {
+		if (isset($special['ids']) === true) {
+			$query['_ids'] = $special['ids'];
+			unset($special['ids']);
 		}
 
-		if ($schema !== null) {
-			/*
-			 * @var int|string|array $schemaValue
-			 */
+		$query = array_merge($query, $special);
 
-			$schemaValue = $schema;
-			$query['@self']['schema'] = (int)$schemaValue;
-			if (is_array($schemaValue) === true) {
-				// Convert array values to integers.
-				$query['@self']['schema'] = array_map('intval', $schemaValue);
-			}
-		}
-
-		// Query structure built successfully.
-		// Extract special underscore parameters.
-		$specialParams = [];
-		$objectFilters = [];
-
-		foreach ($params as $key => $value) {
-			if (str_starts_with(haystack: $key, needle: '_') === true) {
-				$specialParams[$key] = $value;
-			} elseif (in_array(needle: $key, haystack: $metadataFields) === true) {
-				// Only add to @self if not already set from function parameters.
-				if (isset($query['@self'][$key]) === false) {
-					$query['@self'][$key] = $value;
-				}
-
-				continue;
-			}
-
-			// This is an object field filter.
-			$objectFilters[$key] = $value;
-		}
-
-		// STEP 2b: expand a branch filter into the concepts it stands for.
-		// `?categorie[branch]=<uri>` becomes `categorie` IN (the branch root
-		// plus every narrower concept under it), walked at query time and
-		// bounded by depth, so moving a concept in the scheme changes what the
-		// filter matches with no reindex anywhere.
-		if ($this->codedFilters !== null) {
-			$objectFilters = $this->codedFilters->expand(filters: $objectFilters, schemaRef: $schema);
-		}
-
-		// Add object field filters directly to query.
-		$query = array_merge($query, $objectFilters);
-
-		// Add IDs if provided.
-		if ($ids !== null) {
-			$query['_ids'] = $ids;
-		}
-
-		// Support both 'ids' and '_ids' parameters for flexibility.
-		if (isset($specialParams['ids']) === true) {
-			$query['_ids'] = $specialParams['ids'];
-			// Remove to avoid duplication.
-			unset($specialParams['ids']);
-		}
-
-		// Add all special parameters (they'll be handled by searchObjectsPaginated).
-		$query = array_merge($query, $specialParams);
-
-		// Normalize _ids from comma-separated string to array.
-		// URL query parameters like _ids=uuid1,uuid2 arrive as a single string,
-		// but downstream code (MagicMapper) expects an array.
 		if (isset($query['_ids']) === true && is_string($query['_ids']) === true) {
 			$query['_ids'] = array_filter(array_map('trim', explode(',', $query['_ids'])));
 		}
 
-		// The `_watching=true` lens, applied AFTER `_ids` is normalised to an
-		// array so the two can intersect rather than fight.
-		$query = $this->applyWatchingLens(query: $query);
-
-		// The `_unread=true` lens, after the watching lens so that "unread among
-		// what I follow" narrows twice rather than one overwriting the other.
-		$query = $this->applyUnreadLens(query: $query);
-
-		// The `_favourite=true` and `_recent=true` lenses, last, so that every
-		// earlier lens has already narrowed `_ids` and these two compose with it
-		// rather than replacing it.
-		$query = $this->applyPersonalLenses(query: $query);
-
 		return $query;
-	}//end buildSearchQuery()
+	}//end mergeSpecialParams()
 
 	/**
-	 * Apply view filters to a query
+	 * Apply view filters to a query.
 	 *
-	 * Converts view definitions into query parameters by merging view->query into the base query.
-	 * Supports multiple views - their filters are combined (OR logic for same field, AND for different fields).
+	 * The merge itself lives in {@see ViewScopeApplier}, which owns the
+	 * ViewMapper and the fail-closed contract around `$_viewScopeRequired`.
+	 * This handler keeps the entry point its callers already use.
 	 *
 	 * @param array<string, mixed> $query Base query parameters.
 	 * @param array<int|string> $viewIds View IDs to apply (can be int or string IDs).
+	 * @param bool $_viewScopeRequired Whether the view filter is load-bearing for this
+	 *                                 caller, making any failure to apply it fatal.
 	 *
 	 * @return array<string, mixed> Query with view filters applied
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex view merging with multiple filter types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple view filter paths for registers, schemas, and search terms
+	 * @throws Exception When `$_viewScopeRequired` is true and a view cannot be applied.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the fail-closed contract, not a mode switch
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function applyViewsToQuery(array $query, array $viewIds): array {
-		if (empty($viewIds) === true) {
-			return $query;
+	public function applyViewsToQuery(array $query, array $viewIds, bool $_viewScopeRequired = false): array {
+		if ($_viewScopeRequired === true) {
+			return $this->viewScope->applyRequired(query: $query, viewIds: $viewIds);
 		}
 
-		$this->logger->debug(
-			message: '[SearchQueryHandler] Applying views to query',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'viewIds' => $viewIds,
-				'originalQuery' => array_keys($query),
-			]
-		);
-
-		foreach ($viewIds as $viewId) {
-			try {
-				$view = $this->viewMapper->find($viewId);
-				$viewQuery = $view->getQuery();
-
-				// Apply registers filter using @self metadata (format MagicMapper understands).
-				if (empty($viewQuery['registers']) === false) {
-					if (isset($query['@self']) === false) {
-						$query['@self'] = [];
-					}
-
-					$registerValue = $query['@self']['register'] ?? null;
-					$registerArray = [];
-					if (is_array($registerValue) === true) {
-						$registerArray = $registerValue;
-					} elseif ($registerValue !== null && $registerValue !== false) {
-						$registerArray = [$registerValue];
-					}
-
-					$query['@self']['register'] = array_unique(
-						array_merge(
-							$registerArray,
-							$viewQuery['registers']
-						)
-					);
-				}//end if
-
-				// Apply schemas filter using @self metadata (format MagicMapper understands).
-				if (empty($viewQuery['schemas']) === false) {
-					if (isset($query['@self']) === false) {
-						$query['@self'] = [];
-					}
-
-					$schemaValue = $query['@self']['schema'] ?? null;
-					$schemaArray = [];
-					if (is_array($schemaValue) === true) {
-						$schemaArray = $schemaValue;
-					} elseif ($schemaValue !== null && $schemaValue !== false) {
-						$schemaArray = [$schemaValue];
-					}
-
-					$query['@self']['schema'] = array_unique(
-						array_merge(
-							$schemaArray,
-							$viewQuery['schemas']
-						)
-					);
-				}//end if
-
-				// Apply search terms.
-				if (empty($viewQuery['searchTerms']) === false) {
-					$searchTerms = $viewQuery['searchTerms'];
-					if (is_array($viewQuery['searchTerms']) === true) {
-						$searchTerms = implode(' ', $viewQuery['searchTerms']);
-					}
-
-					// Merge with existing search if present.
-					//
-					// This previously assigned $query['_search'] FIRST and then
-					// appended $searchTerms to it, so the isset() guard could only
-					// ever see the value just written. Two things went wrong: the
-					// caller's own `_search` was discarded (the merge this comment
-					// describes never happened), and the view's terms were appended
-					// to themselves, producing "foo foo". Mirrors the `schemas`
-					// merge above: read what is there, then combine.
-					$existingSearch = ($query['_search'] ?? '');
-					$searchPrefix = '';
-					if (is_string($existingSearch) === true && $existingSearch !== '') {
-						$searchPrefix = $existingSearch . ' ';
-					}
-
-					$query['_search'] = $searchPrefix . $searchTerms;
-				}//end if
-
-				$this->logger->debug(
-					message: '[SearchQueryHandler] Applied view to query',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'viewId' => $viewId,
-						'registers' => $viewQuery['registers'] ?? [],
-						'schemas' => $viewQuery['schemas'] ?? [],
-						'hasSearchTerms' => empty($viewQuery['searchTerms']) === false,
-					]
-				);
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[SearchQueryHandler] Failed to apply view',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'viewId' => $viewId,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
-
-		return $query;
+		return $this->viewScope->apply(query: $query, viewIds: $viewIds);
 	}//end applyViewsToQuery()
-
-	/**
-	 * Add pagination URLs to search results
-	 *
-	 * Generates next and previous page URLs based on current page and total pages.
-	 * Only adds URLs when pagination is needed (pages > 1).
-	 *
-	 * @param array<string, mixed> $paginatedResults Search results array (passed by reference).
-	 * @param int $page Current page number.
-	 * @param int $pages Total number of pages.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	public function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void {
-		// **PERFORMANCE OPTIMIZATION**: Only generate URLs if pagination is needed.
-		if ($pages <= 1) {
-			return;
-		}
-
-		$currentUrl = $this->request->getRequestUri();
-
-		// Add next page link if there are more pages.
-		if ($page < $pages) {
-			$nextPage = ($page + 1);
-			$nextUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
-			if (strpos($nextUrl, 'page=') === false) {
-				$nextUrl .= $this->getUrlSeparator(url: $nextUrl) . 'page=' . $nextPage;
-			}
-
-			$paginatedResults['next'] = $nextUrl;
-		}
-
-		// Add previous page link if not on first page.
-		if ($page > 1) {
-			$prevPage = ($page - 1);
-			$prevUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
-			if (strpos($prevUrl, 'page=') === false) {
-				$prevUrl .= $this->getUrlSeparator(url: $prevUrl) . 'page=' . $prevPage;
-			}
-
-			$paginatedResults['prev'] = $prevUrl;
-		}
-	}//end addPaginationUrls()
-
-	/**
-	 * Get URL separator character (? or &)
-	 *
-	 * Determines whether to use '?' or '&' when adding query parameters to a URL.
-	 *
-	 * @param string $url URL to check.
-	 *
-	 * @return string '?' if URL has no query string, '&' otherwise
-	 *
-	 * @psalm-return '&'|'?'
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	private function getUrlSeparator(string $url): string {
-		if (strpos($url, '?') === false) {
-			return '?';
-		}
-
-		return '&';
-	}//end getUrlSeparator()
 
 	/**
 	 * Buffer a search trail entry for deferred persistence
@@ -937,10 +781,12 @@ class SearchQueryHandler {
 				// the search_term column that the popular-terms stats aggregate.
 				$this->searchTrailService->createSearchTrail(
 					query: $entry['query'],
-					resultCount: $entry['resultCount'],
-					totalResults: $entry['totalResults'],
-					responseTime: $entry['responseTime'],
-					executionType: $entry['executionType']
+					measured: new SearchMeasurement(
+						resultCount: $entry['resultCount'],
+						totalResults: $entry['totalResults'],
+						responseTime: $entry['responseTime'],
+						executionType: $entry['executionType']
+					)
 				);
 				$persisted++;
 			} catch (\Throwable $e) {

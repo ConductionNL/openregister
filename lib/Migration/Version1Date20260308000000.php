@@ -46,13 +46,13 @@ class Version1Date20260308000000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_configurations') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_configurations');
 
 		if ($table->hasColumn('mappings') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

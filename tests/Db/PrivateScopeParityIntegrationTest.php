@@ -50,6 +50,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
+use OCA\OpenRegister\Service\Rbac\ScopeChange;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -318,12 +325,9 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 					objectOwner: $entity->getOwner(),
 					object: $entity
 				),
-				'hasPermission' => $this->rbacHandler->hasPermission(
-					schema: $schema,
-					action: 'read',
-					objectOwner: $entity->getOwner(),
-					objectData: ($entity->getObject() ?? []),
-					objectAuthorization: $entity->getAuthorization()
+				'hasPermission' => $this->rbacHandler->hasRowPermission(
+					ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
+					row: $entity
 				),
 				'list (QueryBuilder)' => in_array($key, $queryBuilderVisible, true),
 				'list (raw SQL UNION)' => in_array($key, $unionVisible, true),
@@ -503,7 +507,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * (task 9.1). The flow engine never runs in the caller's authority: it runs a
 	 * flow AS ITS OWNER, and triggers, scheduled runs and background jobs have no
 	 * session at all to evaluate against. So all four OpenRegisterFlowResolver
-	 * paths — resolveFlow(), resolveSubject(), scheduledFlows() and
+	 * paths — resolveFlow(), resolveObject(), scheduledFlows() and
 	 * buildTriggerIndex() — load with `_rbac: false` on purpose.
 	 *
 	 * If the scope predicate were applied OUTSIDE that gate, making flows private
@@ -634,13 +638,9 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		);
 
 		$this->assertTrue(
-			$this->rbacHandler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: $entities['granted']->getOwner(),
-				objectData: ($entities['granted']->getObject() ?? []),
-				objectAuthorization: $entities['granted']->getAuthorization(),
-				objectUuid: $entities['granted']->getUuid()
+			$this->rbacHandler->hasRowPermission(
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
+				row: $entities['granted']
 			),
 			'the relation-path verdict must honour the grant'
 		);
@@ -885,12 +885,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->asOwner(
 			function () use ($register, $schema, $entity): void {
-				$this->sharingService()->setScope(
-					register: $register,
-					schema: $schema,
-					object: $entity,
-					scope: 'private'
-				);
+				$this->sharingService()->setScope(table: new RegisterSchema(register: $register, schema: $schema), change: new ScopeChange(object: $entity, scope: 'private'));
 			}
 		);
 
@@ -924,12 +919,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		$this->assertContains('notyours', $this->visibleKeys($register, $schema));
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->sharingService()->setScope(
-			register: $register,
-			schema: $schema,
-			object: $entity,
-			scope: 'private'
-		);
+		$this->sharingService()->setScope(table: new RegisterSchema(register: $register, schema: $schema), change: new ScopeChange(object: $entity, scope: 'private'));
 	}//end testANonOwnerCannotChangeTheScope()
 
 	/**
@@ -955,12 +945,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->asOwner(
 			function () use ($register, $schema, $entity): void {
-				$this->sharingService()->setScope(
-					register: $register,
-					schema: $schema,
-					object: $entity,
-					scope: 'private'
-				);
+				$this->sharingService()->setScope(table: new RegisterSchema(register: $register, schema: $schema), change: new ScopeChange(object: $entity, scope: 'private'));
 			}
 		);
 
@@ -988,12 +973,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		$this->assertNotContains('viaservice', $this->visibleKeys($register, $schema), 'private first');
 
 		$grant = $this->asOwner(
-			fn () => $this->sharingService()->grant(
-				object: $entity,
-				type: 'user',
-				shareWith: $this->testUid,
-				permissions: 1
-			)
+			fn () => $this->sharingService()->grantWithTerms(object: $entity, request: new GrantRequest(type: 'user', shareWith: $this->testUid, terms: new GrantTerms(permissions: 1)))
 		);
 
 		$this->grantResolver()->forget();
@@ -1038,12 +1018,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		// The owner invites this caller, so they are a genuine recipient.
 		$this->asOwner(
-			fn () => $this->sharingService()->grant(
-				object: $entity,
-				type: 'user',
-				shareWith: $this->testUid,
-				permissions: 1
-			)
+			fn () => $this->sharingService()->grantWithTerms(object: $entity, request: new GrantRequest(type: 'user', shareWith: $this->testUid, terms: new GrantTerms(permissions: 1)))
 		);
 		$this->grantResolver()->forget();
 
@@ -1056,12 +1031,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		// And still cannot pass it on.
 		$this->expectException(NotAuthorizedException::class);
-		$this->sharingService()->grant(
-			object: $entity,
-			type: 'user',
-			shareWith: 'somebody-else',
-			permissions: 1
-		);
+		$this->sharingService()->grantWithTerms(object: $entity, request: new GrantRequest(type: 'user', shareWith: 'somebody-else', terms: new GrantTerms(permissions: 1)));
 	}//end testARecipientCannotAddAnotherPrincipal()
 
 	/**
@@ -1092,12 +1062,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		$requested = (Constants::PERMISSION_READ | Constants::PERMISSION_UPDATE | Constants::PERMISSION_SHARE);
 
 		$grant = $this->asOwner(
-			fn () => $this->sharingService()->grant(
-				object: $entity,
-				type: 'user',
-				shareWith: $this->testUid,
-				permissions: $requested
-			)
+			fn () => $this->sharingService()->grantWithTerms(object: $entity, request: new GrantRequest(type: 'user', shareWith: $this->testUid, terms: new GrantTerms(permissions: $requested)))
 		);
 
 		$granted = (int)$grant['permissions'];
@@ -1195,7 +1160,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 			'a custom verb must map to no core permission bit'
 		);
 		$this->assertFalse(
-			$this->grantResolver()->isGranted($this->testUid, $entity->getUuid(), 'besluit_nemen'),
+			$this->grantResolver()->isGranted(new GrantLookup($this->testUid, $entity->getUuid()), 'besluit_nemen'),
 			'a grant must not admit a verb it cannot carry'
 		);
 	}//end testAGrantCannotAdmitACustomVerb()
@@ -1533,17 +1498,22 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * the scope-and-grant half of that TODO IS stale, because the union emitter
 	 * does now carry the predicate.
 	 *
-	 * The test asserts what is TRUE today so the answer is recorded and any
-	 * change to it is deliberate. If the union path does filter, the assertion
-	 * documents the guarantee; if it does not, it documents the gap and fails the
-	 * moment somebody fixes it — at which point the expectation flips and 6.3
-	 * becomes safe to build on.
+	 * The test asserted what was TRUE in August, so the answer was recorded and
+	 * any change to it was deliberate. It measured a GAP: the union path returned
+	 * the other organisation's row.
+	 *
+	 * 🔑 FLIPPED 2026-09-18, which is what the characterisation was for. The
+	 * organisation boundary is now rendered for the string-built arms too
+	 * (`MagicSearchHandler::buildWhereConditionsSql()`, step 1c), taking the same
+	 * decision as the QueryBuilder path rather than a second copy of it. So this
+	 * is no longer a characterisation of a gap but an assertion of the guarantee,
+	 * and the cross-register reads that were blocked on it are unblocked.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
 	 */
-	public function testUnionPathTenantEdgeIsCharacterised(): void {
+	public function testUnionPathDoesNotCrossTheTenantEdge(): void {
 		[$register, $schema] = $this->createFixtureTable(readRule: $this->tenantGroup);
 
 		$activeOrg = $this->activeOrganisationUuid();
@@ -1574,25 +1544,24 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 			'control: the in-tenant granted row must be visible, or this test proves nothing'
 		);
 
-		// MEASURED, 2026-08-03: the union path returns the other organisation's
-		// row. The scope-and-grant predicate IS applied there (the tests above
-		// prove that), but the ORGANISATION filter is not — so
-		// `TODO(SEC-CTRL-1)` in ObjectsController is accurate for multitenancy
-		// and stale for RBAC.
+		// MEASURED 2026-08-03 as a LEAK, closed 2026-09-18: the union path used
+		// to return the other organisation's row. The scope-and-grant predicate
+		// was applied there (the tests above prove that) and the ORGANISATION
+		// filter was not, so a grant crossed the tenant edge on this path and on
+		// no other.
 		//
-		// This asserts the CURRENT behaviour on purpose. It is a characterisation,
-		// not an endorsement: the moment somebody wires tenancy into
-		// `searchAcrossMultipleTables()` this test FAILS, which is the signal to
-		// flip the expectation to `assertNotContains` and to revisit the
-		// cross-register reads that were blocked on it — a `shared-with-me` list
-		// (task 6.3) above all, which must not be built over this path until then.
-		$this->assertContains(
+		// The row is still there, still granted to the caller, and still in
+		// another organisation. Only the boundary changed. A grant does not widen
+		// the tenant edge (design D3c), so the answer must be the same one the
+		// single-table path gives in `testAGrantDoesNotCrossTheTenantEdge`.
+		$this->assertNotContains(
 			'union-other',
 			$visible,
-			'If this now FAILS, tenancy has been wired into the union path — flip this assertion to '
-			. 'assertNotContains and unblock the cross-register reads that were waiting on it (task 6.3).'
+			'the union path returned a row from ANOTHER organisation: a per-object grant must never '
+			. 'widen the tenant edge, and the organisation filter is rendered for the union arms in '
+			. 'MagicSearchHandler::buildWhereConditionsSql()'
 		);
-	}//end testUnionPathTenantEdgeIsCharacterised()
+	}//end testUnionPathDoesNotCrossTheTenantEdge()
 
 	private function visibleKeysViaUnion(Register $register, Schema $schema): array {
 		if ($this->unionPartner === null) {
@@ -1625,7 +1594,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	private function assertRawEmitterCarriesTheScopePredicate(Schema $schema): void {
-		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$joined = implode(' ', $result['conditions']);
 
 		$this->assertStringContainsString(

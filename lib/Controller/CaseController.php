@@ -32,20 +32,33 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+ * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ActionParameters;
+use OCA\OpenRegister\Controller\Support\CaseControllerServices;
+use OCA\OpenRegister\Controller\Support\CasePlanRequest;
+use OCA\OpenRegister\Controller\Support\CaseTransitionCommand;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Exception\ActionParameterTypeException;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
-use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
-use OCA\OpenRegister\Service\Case\CasePlanService;
-use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
+use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
+use OCA\OpenRegister\Service\Case\CaseAnchor;
+use OCA\OpenRegister\Service\Case\CaseCompletion;
+use OCA\OpenRegister\Service\Case\CaseItemTransition;
+use OCA\OpenRegister\Service\Case\CasePlanAuthorizationServiceInterface;
+use OCA\OpenRegister\Service\Case\CasePlanCreation;
+use OCA\OpenRegister\Service\Case\CasePlanProvenance;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -67,31 +80,55 @@ use Throwable;
  * between HTTP, the service, the mapper and four exception shapes; that is
  * the whole of its job.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+ * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 class CaseController extends Controller {
 
 	/**
+	 * The authorized case layer.
+	 *
+	 * @var CasePlanServiceInterface
+	 */
+	private readonly CasePlanServiceInterface $plans;
+
+	/**
+	 * The pure zaaktype mapping.
+	 *
+	 * @var ZaaktypeCaseSkeletonMapperInterface
+	 */
+	private readonly ZaaktypeCaseSkeletonMapperInterface $zaaktypes;
+
+	/**
+	 * Identity checks for the anchorless route.
+	 *
+	 * @var CasePlanAuthorizationServiceInterface
+	 */
+	private readonly CasePlanAuthorizationServiceInterface $authorization;
+
+	/**
+	 * Names the acting identity.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param CasePlanService $plans The authorized case layer.
-	 * @param ZaaktypeCaseSkeletonMapper $zaaktypes The pure zaaktype mapping.
-	 * @param CasePlanAuthorizationService $authorization Identity checks for the anchorless route.
-	 * @param IUserSession $userSession Names the acting identity.
+	 * @param CaseControllerServices $services The case controller services.
 	 * @param LoggerInterface|null $logger Where an unexpected failure's detail goes, INSTEAD of the response.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly CasePlanService $plans,
-		private readonly ZaaktypeCaseSkeletonMapper $zaaktypes,
-		private readonly CasePlanAuthorizationService $authorization,
-		private readonly IUserSession $userSession,
+		CaseControllerServices $services,
 		private readonly ?LoggerInterface $logger = null,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->plans = $services->plans;
+		$this->zaaktypes = $services->zaaktypes;
+		$this->authorization = $services->authorization;
+		$this->userSession = $services->userSession;
 
 	}//end __construct()
 
@@ -105,12 +142,14 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse results, total, limit, offset.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function items(?string $type = null, ?string $state = null, int $limit = 25, int $offset = 0): JSONResponse {
-		return $this->guard(action: fn (): array => $this->plans->findStuck(type: $type, state: $state, limit: $limit, offset: $offset, uid: $this->uid()));
+		$query = new ListQuery(limit: $limit, offset: $offset, filters: ['type' => $type, 'state' => $state]);
+
+		return $this->guard(action: fn (): array => $this->plans->findStuck(query: $query, uid: $this->uid()));
 	}//end items()
 
 	/**
@@ -120,7 +159,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse draft, definition, report.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -144,7 +183,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The plan; 404 when absent OR invisible.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -164,7 +203,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The plan, 201.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -176,19 +215,29 @@ class CaseController extends Controller {
 		?string $flowUuid = null,
 		?int $flowVersion = null,
 	): JSONResponse {
+		$anchor = new CaseAnchor(objectUuid: $objectUuid, registerId: $register, schemaId: $schema);
+		$provenance = new CasePlanProvenance(flowUuid: $flowUuid, flowVersion: $flowVersion);
+
+		return $this->createPlan(request: new CasePlanRequest(anchor: $anchor, definition: ($definition ?? []), provenance: $provenance));
+	}//end create()
+
+	/**
+	 * Create the requested plan for the acting user.
+	 *
+	 * @param CasePlanRequest $request The anchor, definition and provenance.
+	 *
+	 * @return JSONResponse The plan, 201.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 */
+	private function createPlan(CasePlanRequest $request): JSONResponse {
 		return $this->guard(
 			action: fn (): array => $this->plans->createPlan(
-				objectUuid: $objectUuid,
-				registerId: $register,
-				schemaId: $schema,
-				definition: ($definition ?? []),
-				uid: $this->uid(),
-				flowUuid: $flowUuid,
-				flowVersion: $flowVersion
+				creation: new CasePlanCreation(anchor: $request->anchor, definition: $request->definition, actor: $this->uid(), provenance: $request->provenance)
 			),
 			status: Http::STATUS_CREATED
 		);
-	}//end create()
+	}//end createPlan()
 
 	/**
 	 * Re-evaluate a plan.
@@ -197,7 +246,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse passes, transitions.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -212,7 +261,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse results.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -223,79 +272,88 @@ class CaseController extends Controller {
 	/**
 	 * Attach an ad-hoc item.
 	 *
+	 * Reads the item fields from the request body: the strings `key`, `type`,
+	 * `name`, `description`, `parent` (a stage uuid or key, absent for the
+	 * root), `candidateRole`, `dueAt` (advisory deadline) and `expiresAt`
+	 * (enforcing deadline), the lists `entryCriteria`, `exitCriteria`,
+	 * `candidateUsers` and `candidateGroups`, and the boolean `required`
+	 * (whether the parent waits for it, default true). Absent fields are
+	 * not sent on.
+	 *
 	 * @param string $objectUuid The anchoring object.
-	 * @param string|null $key The item key.
-	 * @param string|null $type The plan-item type.
-	 * @param string|null $name Human name.
-	 * @param string|null $description Description.
-	 * @param string|null $parent Parent stage uuid or key, or null for the root.
-	 * @param array<int, mixed>|null $entryCriteria Entry sentries.
-	 * @param array<int, mixed>|null $exitCriteria Exit sentries.
-	 * @param array<int, string>|null $candidateUsers Candidate uids.
-	 * @param array<int, string>|null $candidateGroups Candidate group ids.
-	 * @param string|null $candidateRole Candidate role.
-	 * @param string|null $dueAt Advisory deadline.
-	 * @param string|null $expiresAt Enforcing deadline.
-	 * @param bool $required Whether the parent waits for it.
 	 *
-	 * @return JSONResponse The item, 201.
+	 * @return JSONResponse The item, 201; 400 for a field of the wrong type.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One parameter per
-	 * field the route accepts; Nextcloud binds them by name from the body.
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `required` is a stored
-	 * boolean field of the item, bound from the body like the others, not a
-	 * behaviour switch of this method.
-	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function attach(
-		string $objectUuid,
-		?string $key = null,
-		?string $type = null,
-		?string $name = null,
-		?string $description = null,
-		?string $parent = null,
-		?array $entryCriteria = null,
-		?array $exitCriteria = null,
-		?array $candidateUsers = null,
-		?array $candidateGroups = null,
-		?string $candidateRole = null,
-		?string $dueAt = null,
-		?string $expiresAt = null,
-		bool $required = true,
-	): JSONResponse {
-		$data = array_filter(
-			[
-				'key' => $key,
-				'type' => $type,
-				'name' => $name,
-				'description' => $description,
-				'parent' => $parent,
-				'entryCriteria' => $entryCriteria,
-				'exitCriteria' => $exitCriteria,
-				'candidateUsers' => $candidateUsers,
-				'candidateGroups' => $candidateGroups,
-				'candidateRole' => $candidateRole,
-				'dueAt' => $dueAt,
-				'expiresAt' => $expiresAt,
-			],
-			static fn (mixed $value): bool => $value !== null
-		);
-		$data['required'] = $required;
-		// An ad-hoc item may not declare its own authorization; the body key,
-		// if sent, is refused inside the service, so it is forwarded as-is.
+	public function attach(string $objectUuid): JSONResponse {
+		try {
+			$data = $this->adHocFields(read: new ActionParameters(params: $this->request->getParams()));
+		} catch (ActionParameterTypeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->attachItem(objectUuid: $objectUuid, data: $data);
+	}//end attach()
+
+	/**
+	 * The fields of an ad-hoc item that were sent, with `required` last.
+	 *
+	 * @param ActionParameters $read The request parameters.
+	 *
+	 * @return array<string, mixed> The fields that are not null, then `required`.
+	 *
+	 * @throws ActionParameterTypeException When a field has the wrong type.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function adHocFields(ActionParameters $read): array {
+		$fields = [];
+		foreach (['key', 'type', 'name', 'description', 'parent'] as $key) {
+			$fields[$key] = $read->string(key: $key);
+		}
+
+		foreach (['entryCriteria', 'exitCriteria', 'candidateUsers', 'candidateGroups'] as $key) {
+			$fields[$key] = $read->list(key: $key);
+		}
+
+		foreach (['candidateRole', 'dueAt', 'expiresAt'] as $key) {
+			$fields[$key] = $read->string(key: $key);
+		}
+
+		$data = array_filter($fields, static fn (mixed $value): bool => $value !== null);
+
+		return $data + ['required' => $read->bool(key: 'required', default: true)];
+	}//end adHocFields()
+
+	/**
+	 * Attach an ad-hoc item with the given fields to the plan of an object.
+	 *
+	 * An ad-hoc item may not declare its own authorization; the body key,
+	 * if sent, is refused inside the service, so it is forwarded as-is.
+	 *
+	 * @param string $objectUuid The anchoring object.
+	 * @param array<string, mixed> $data The item fields that were sent, with `required`.
+	 *
+	 * @return JSONResponse The item, 201.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function attachItem(string $objectUuid, array $data): JSONResponse {
 		$body = $this->request->getParams();
 		if (array_key_exists('authorization', $body) === true) {
 			$data['authorization'] = $body['authorization'];
 		}
 
+		$request = new CaseAdHocRequest(objectUuid: $objectUuid, data: $data, actor: $this->uid());
+
 		return $this->guard(
-			action: fn (): array => $this->plans->attachAdHoc(objectUuid: $objectUuid, data: $data, uid: $this->uid())->jsonSerialize(),
+			action: fn (): array => $this->plans->attachAdHoc(request: $request)->jsonSerialize(),
 			status: Http::STATUS_CREATED
 		);
-	}//end attach()
+	}//end attachItem()
 
 	/**
 	 * Finish the case with a result.
@@ -305,7 +363,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The plan plus `result`.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -316,7 +374,7 @@ class CaseController extends Controller {
 					throw new CaseValidationException(message: 'A `result` is required to finish a case.');
 				}
 
-				return $this->plans->completeCase(objectUuid: $objectUuid, result: $result, uid: $this->uid());
+				return $this->plans->completeCase(completion: new CaseCompletion(objectUuid: $objectUuid, result: $result, actor: $this->uid()));
 			}
 		);
 	}//end complete()
@@ -328,7 +386,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse deleted.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -345,21 +403,37 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The item.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function transition(string $uuid, ?string $to = null, ?string $reason = null): JSONResponse {
-		return $this->guard(
-			action: function () use ($uuid, $to, $reason): array {
-				if ($to === null || trim($to) === '') {
-					throw new CaseValidationException(message: 'A target state `to` is required.');
-				}
+		$command = new CaseTransitionCommand(itemUuid: $uuid, to: $to, reason: $reason);
 
-				return $this->plans->transition(itemUuid: $uuid, to: $to, uid: $this->uid(), reason: $reason)->jsonSerialize();
-			}
-		);
+		return $this->guard(action: fn (): array => $this->transitioned(command: $command));
 	}//end transition()
+
+	/**
+	 * Transition one item by hand; a missing target state is refused first.
+	 *
+	 * @param CaseTransitionCommand $command The item, target state and reason.
+	 *
+	 * @return array<string, mixed> The item.
+	 *
+	 * @throws CaseValidationException Without a target state.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 */
+	private function transitioned(CaseTransitionCommand $command): array {
+		$to = $command->to;
+		if ($to === null || trim($to) === '') {
+			throw new CaseValidationException(message: 'A target state `to` is required.');
+		}
+
+		$transition = new CaseItemTransition(itemUuid: $command->itemUuid, to: $to, actor: $this->uid(), reason: $command->reason);
+
+		return $this->plans->transition(transition: $transition)->jsonSerialize();
+	}//end transitioned()
 
 	/**
 	 * Enable a discretionary item.
@@ -368,7 +442,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The item.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -381,7 +455,7 @@ class CaseController extends Controller {
 	 *
 	 * @return string|null The uid.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function uid(): ?string {
 		return $this->userSession->getUser()?->getUID();
@@ -401,7 +475,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The response.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function guard(callable $action, int $status = Http::STATUS_OK): JSONResponse {
 		try {

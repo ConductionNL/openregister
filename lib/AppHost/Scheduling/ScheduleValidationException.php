@@ -5,8 +5,7 @@
  *
  * Thrown when a single manifest `schedules[]` entry is structurally invalid
  * (missing id/action, or not carrying exactly one of interval/cron). Collected
- * as a diagnostic by {@see ScheduleManifest}; never bubbles out of the
- * reconciler.
+ * as a diagnostic by {@see ScheduleManifest}.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -32,7 +31,7 @@ use Exception;
 /**
  * Raised for a structurally-invalid single schedule entry.
  *
- * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleValidationException extends Exception {
 }//end class

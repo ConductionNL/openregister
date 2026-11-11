@@ -22,13 +22,14 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-daily-job-refreshes-active-token-sets-before-they-expire
+ * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-daily-job-refreshes-active-token-sets-before-they-expire
  */
 
 declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
@@ -40,9 +41,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\BackgroundJob\Support\OAuth2TokenRefreshServices;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class OAuth2TokenRefreshJobTest extends TestCase {
 	/** @var array<int, string> Credential ids the sweep actually asked to refresh. */
@@ -180,11 +183,8 @@ class OAuth2TokenRefreshJobTest extends TestCase {
 		$this->relinkOn = $relinkOn;
 
 		return new OAuth2TokenRefreshJob(
-			$this->createMock(ITimeFactory::class),
-			$objectService,
-			$catalogue,
-			$refresh,
-			$this->createMock(LoggerInterface::class)
+			new JobRuntime($this->createMock(ITimeFactory::class), $this->createMock(LoggerInterface::class)),
+			new OAuth2TokenRefreshServices($objectService, $catalogue, $refresh)
 		);
 	}
 }

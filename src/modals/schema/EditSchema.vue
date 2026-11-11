@@ -8,11 +8,13 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 	<div class="edit-schema">
 		<CnSchemaFormDialog
 			ref="schemaFormDialog"
-			:item="schemaStore.schemaItem"
+			:item="schemaStore.editorSchemaItem"
 			:dialogTitle="
-				schemaStore.schemaItem?.id
-					? t('openregister', 'Edit Schema')
-					: t('openregister', 'Add Schema')
+				schemaStore.draftMode
+					? t('openregister', 'Edit draft')
+					: schemaStore.schemaItem?.id
+						? t('openregister', 'Edit Schema')
+						: t('openregister', 'Add Schema')
 			"
 			:availableSchemas="computedAvailableSchemas"
 			:availableRegisters="computedAvailableRegisters"
@@ -29,14 +31,21 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 			:cancelLabel="t('openregister', 'Cancel')"
 			:closeLabel="t('openregister', 'Close')"
 			:confirmLabel="
-				schemaStore.schemaItem?.id
-					? t('openregister', 'Save')
-					: t('openregister', 'Create')
+				schemaStore.draftMode
+					? t('openregister', 'Save draft')
+					: schemaStore.schemaItem?.id
+						? t('openregister', 'Save')
+						: t('openregister', 'Create')
 			"
 			:successText="
-				schemaStore.schemaItem?.id
-					? t('openregister', 'Schema successfully updated')
-					: t('openregister', 'Schema successfully created')
+				schemaStore.draftMode
+					? t(
+							'openregister',
+							'Draft saved. Records are still checked against the published schema.',
+						)
+					: schemaStore.schemaItem?.id
+						? t('openregister', 'Schema successfully updated')
+						: t('openregister', 'Schema successfully created')
 			"
 			:extendSchemaLabel="t('openregister', 'Extend Schema')"
 			:analyzePropertiesLabel="t('openregister', 'Analyze Properties')"
@@ -115,6 +124,77 @@ import {
 } from '@conduction/nextcloud-vue'
 import { NcButton, NcDialog } from '@nextcloud/vue'
 
+/**
+ * The schema an `allOf` entry names, by id, uuid or slug.
+ *
+ * @param {object|string} ref The entry: a reference object or the identifier
+ * @return {object|undefined} The schema, when the list holds it
+ */
+function findParentSchema(ref) {
+	const schemaId = typeof ref === 'object' ? ref.id : ref
+	return schemaStore.schemaList.find(
+		(s) => s.id === schemaId || s.uuid === schemaId || s.slug === schemaId,
+	)
+}
+
+/**
+ * The ids of the Nextcloud groups, read through the OCS API.
+ *
+ * @return {Promise<Array<string>|null>} The ids, or null when the answer has none
+ */
+async function fetchGroupIds() {
+	const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
+		headers: { 'OCS-APIRequest': 'true' },
+	})
+	if (!response.ok) {
+		return null
+	}
+	const data = await response.json()
+	return data.ocs?.data?.groups || null
+}
+
+/**
+ * The group picker's options: each group id as its own display name.
+ *
+ * @param {Array<string>} ids The group ids
+ * @return {Array<object>} The options
+ */
+function groupOptions(ids) {
+	return ids.map((groupId) => ({
+		id: groupId,
+		displayname: groupId,
+	}))
+}
+
+/**
+ * The groups offered when the Nextcloud groups cannot be read.
+ *
+ * @return {Array<object>} The options
+ */
+function fallbackGroups() {
+	return [
+		{ id: 'users', displayname: 'All Users' },
+		{ id: 'editors', displayname: 'Editors' },
+		{ id: 'managers', displayname: 'Managers' },
+		{ id: 'viewers', displayname: 'Viewers' },
+	]
+}
+
+/**
+ * Why a draft save failed: the API's error, the request's message, or the
+ * default.
+ *
+ * @param {object} error The failure
+ * @return {string} The message
+ */
+function draftSaveError(error) {
+	return (
+		error?.response?.data?.error
+		|| error.message
+		|| 'An error occurred while saving the draft'
+	)
+}
+
 export default {
 	name: 'EditSchema',
 	components: {
@@ -181,13 +261,7 @@ export default {
 
 			const merged = {}
 			for (const ref of allOf) {
-				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(
-					(s) =>
-						s.id === schemaId
-						|| s.uuid === schemaId
-						|| s.slug === schemaId,
-				)
+				const parentSchema = findParentSchema(ref)
 				if (parentSchema?.properties) {
 					Object.assign(merged, parentSchema.properties)
 				}
@@ -228,26 +302,8 @@ export default {
 		async loadUserGroups() {
 			this.loadingGroups = true
 			try {
-				const response = await fetch(
-					'/ocs/v1.php/cloud/groups?format=json',
-					{
-						headers: { 'OCS-APIRequest': 'true' },
-					},
-				)
-
-				if (response.ok) {
-					const data = await response.json()
-					if (data.ocs?.data?.groups) {
-						this.userGroups = data.ocs.data.groups.map((groupId) => ({
-							id: groupId,
-							displayname: groupId,
-						}))
-					} else {
-						this.setFallbackGroups()
-					}
-				} else {
-					this.setFallbackGroups()
-				}
+				const groups = await fetchGroupIds()
+				this.userGroups = groups ? groupOptions(groups) : fallbackGroups()
 			} catch (error) {
 				console.error('Error loading user groups:', error)
 				this.setFallbackGroups()
@@ -260,12 +316,7 @@ export default {
 		 * @spec exclude form-state fallback group defaults
 		 */
 		setFallbackGroups() {
-			this.userGroups = [
-				{ id: 'users', displayname: 'All Users' },
-				{ id: 'editors', displayname: 'Editors' },
-				{ id: 'managers', displayname: 'Managers' },
-				{ id: 'viewers', displayname: 'Viewers' },
-			]
+			this.userGroups = fallbackGroups()
 		},
 
 		/**
@@ -296,34 +347,86 @@ export default {
 		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
 		 */
 		async onConfirm(schemaData, acknowledgeBreaking = false) {
+			// Draft mode holds the edit beside the published schema: no version
+			// bump and no breaking-change question until it is published.
+			if (schemaStore.draftMode) {
+				await this.saveDraft(schemaData)
+				return
+			}
 			try {
 				const { response } = await schemaStore.saveSchema(schemaData, {
 					acknowledgeBreaking,
 				})
-				this.pendingBreaking = null
-				this.$refs.schemaFormDialog.setResult({
-					success: response.ok,
-					error: response.ok ? undefined : 'Failed to save schema',
-				})
+				this.showSaveResult(response)
 			} catch (error) {
-				// A breaking change is a QUESTION, not a failure: show what the server
-				// objected to and let the user decide. Never acknowledge on their behalf —
-				// the first save always goes without the flag.
-				//
-				// The shared contract only raises this when the attempt was NOT already
-				// acknowledged, so an acknowledged save that is still refused falls through
-				// to the error branch instead of re-opening this prompt forever.
-				if (error instanceof SchemaBreakingChangeError) {
-					this.pendingBreaking = {
-						schema: schemaData,
-						changes: error.changes,
-					}
-					return
+				this.showSaveRefusal(schemaData, error)
+			}
+		},
+
+		/**
+		 * Close any breaking-change question and tell the dialog whether the
+		 * server accepted the save.
+		 *
+		 * @param {Response} response - The save's response.
+		 * @return {void}
+		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
+		 */
+		showSaveResult(response) {
+			this.pendingBreaking = null
+			this.$refs.schemaFormDialog.setResult({
+				success: response.ok,
+				error: response.ok ? undefined : 'Failed to save schema',
+			})
+		},
+
+		/**
+		 * Show why a save did not go through: a breaking change becomes a
+		 * question, anything else the dialog's error.
+		 *
+		 * @param {object} schemaData - The schema payload that was saved.
+		 * @param {Error} error - Why the save failed.
+		 * @return {void}
+		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
+		 */
+		showSaveRefusal(schemaData, error) {
+			// A breaking change is a QUESTION, not a failure: show what the server
+			// objected to and let the user decide. Never acknowledge on their behalf —
+			// the first save always goes without the flag.
+			//
+			// The shared contract only raises this when the attempt was NOT already
+			// acknowledged, so an acknowledged save that is still refused falls through
+			// to the error branch instead of re-opening this prompt forever.
+			if (error instanceof SchemaBreakingChangeError) {
+				this.pendingBreaking = {
+					schema: schemaData,
+					changes: error.changes,
 				}
-				this.pendingBreaking = null
+				return
+			}
+			this.pendingBreaking = null
+			this.$refs.schemaFormDialog.setResult({
+				error:
+					error.message || 'An error occurred while saving the schema',
+			})
+		},
+
+		/**
+		 * Save the edit as the schema's draft.
+		 *
+		 * @param {object} schemaData - The schema payload from the editor.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 */
+		async saveDraft(schemaData) {
+			try {
+				await schemaStore.saveSchemaDraft({
+					...schemaData,
+					id: schemaStore.schemaItem?.id,
+				})
+				this.$refs.schemaFormDialog.setResult({ success: true })
+			} catch (error) {
 				this.$refs.schemaFormDialog.setResult({
-					error:
-						error.message || 'An error occurred while saving the schema',
+					error: draftSaveError(error),
 				})
 			}
 		},
@@ -369,6 +472,7 @@ export default {
 		 * @spec exclude modal close UI handler
 		 */
 		closeModal() {
+			schemaStore.setDraftMode(false)
 			navigationStore.setModal(false)
 			navigationStore.setDialog(false)
 		},

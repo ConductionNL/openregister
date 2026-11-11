@@ -53,9 +53,15 @@ class Version1Date20260903150000Test extends TestCase {
 		$dropped = [];
 		$schema = $this->createMock(ISchemaWrapper::class);
 		$schema->method('hasTable')->willReturn(true);
+		// The callback RETURNS the wrapper. From NC 35 ISchemaWrapper declares
+		// `dropTable(): self`, so a callback that recorded the name and fell off
+		// the end handed back null and tripped the return type; up to NC 34 the
+		// method is untyped and returning the wrapper is equally valid.
 		$schema->method('dropTable')->willReturnCallback(
-			function (string $table) use (&$dropped) {
+			function (string $table) use (&$dropped, $schema) {
 				$dropped[] = $table;
+
+				return $schema;
 			}
 		);
 
@@ -80,7 +86,7 @@ class Version1Date20260903150000Test extends TestCase {
 
 		$step = new Version1Date20260903150000($this->createMock(IDBConnection::class));
 
-		$this->assertNull($step->changeSchema($this->createMock(IOutput::class), fn() => $schema, []));
+		$this->assertSame($schema, $step->changeSchema($this->createMock(IOutput::class), fn() => $schema, []));
 
 	}//end testAnAlreadyDroppedTableIsLeftAlone()
 
@@ -96,9 +102,15 @@ class Version1Date20260903150000Test extends TestCase {
 		$schema->method('hasTable')->willReturnCallback(
 			static fn (string $table) => ($table === 'openregister_actions')
 		);
+		// The callback RETURNS the wrapper. From NC 35 ISchemaWrapper declares
+		// `dropTable(): self`, so a callback that recorded the name and fell off
+		// the end handed back null and tripped the return type; up to NC 34 the
+		// method is untyped and returning the wrapper is equally valid.
 		$schema->method('dropTable')->willReturnCallback(
-			function (string $table) use (&$dropped) {
+			function (string $table) use (&$dropped, $schema) {
 				$dropped[] = $table;
+
+				return $schema;
 			}
 		);
 

@@ -19,6 +19,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://conduction.nl
@@ -38,6 +39,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Exception\SchemaNotInRegisterException
  */
 class RegisterScopedSchemaResolverTest extends TestCase {
 

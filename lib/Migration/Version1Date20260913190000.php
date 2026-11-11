@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Creates the object watchers table.
  *
- * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 class Version1Date20260913190000 extends SimpleMigrationStep {
 
@@ -61,13 +61,13 @@ class Version1Date20260913190000 extends SimpleMigrationStep {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::TABLE) === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable(self::TABLE);

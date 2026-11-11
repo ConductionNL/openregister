@@ -61,6 +61,10 @@ final class RecordingRegistrationContext implements IRegistrationContext {
 	}
 	public function registerSearchProvider(string $class): void {
 	}
+	// Nextcloud 35+ (IRegistrationContext, @since 36.0.0, backported): without
+	// it PHP refuses to load this fake and every NC35 PHPUnit cell fatals.
+	public function registerAccountScopedSearchProvider(string $class): void {
+	}
 	public function registerAlternativeLogin(string $class): void {
 	}
 	public function registerAlternativeLoginProvider(string $class): void {
@@ -106,6 +110,8 @@ final class RecordingRegistrationContext implements IRegistrationContext {
 	public function registerPublicShareTemplateProvider(string $class): void {
 	}
 	public function registerSetupCheck(string $setupCheckClass): void {
+	}
+	public function registerSystemReportSection(string $sectionClass): void {
 	}
 	public function registerDeclarativeSettings(string $declarativeSettingsClass): void {
 	}

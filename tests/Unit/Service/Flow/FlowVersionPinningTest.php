@@ -12,7 +12,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -110,7 +110,7 @@ class FlowVersionPinningTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($versionMapper, $pin): object {
-				if ($id === FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versionMapper;
 				}
 
@@ -147,7 +147,7 @@ class FlowVersionPinningTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper): object {
-				if ($id === FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $mapper;
 				}
 

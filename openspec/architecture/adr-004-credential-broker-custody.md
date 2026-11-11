@@ -99,5 +99,5 @@ allow-rules, and by the host lock.
   handling, JWT algorithm pinning) are tracked in
   `openspec/changes/fix-jwt-algorithm-confusion` and
   `openspec/changes/harden-credential-token-binding`. The canonical spec still
-  lives under `openspec/changes/credential-broker/`; promote it to
+  lives under `openspec/changes/archive/2026-10-05-credential-broker/`; promote it to
   `openspec/specs/credential-broker/` via `/opsx-sync`.

@@ -55,7 +55,7 @@ class Version1Date20260502120000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: 'openregister_audit_trails') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(tableName: 'openregister_audit_trails');

@@ -52,7 +52,7 @@ class Version1Date20260502190000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: 'openregister_notification_readstate') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable(tableName: 'openregister_notification_readstate');

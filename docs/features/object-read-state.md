@@ -112,5 +112,5 @@ Each is scoped to your own notices inside the service, never by the route.
 
 ## Specification
 
-`openspec/changes/object-read-state/`, requirements REQ-ORS-001 through
+`openspec/changes/archive/2026-10-05-object-read-state/`, requirements REQ-ORS-001 through
 REQ-ORS-004.

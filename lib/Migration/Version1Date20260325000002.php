@@ -48,7 +48,7 @@ class Version1Date20260325000002 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_scheduled_workflows') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable('openregister_scheduled_workflows');

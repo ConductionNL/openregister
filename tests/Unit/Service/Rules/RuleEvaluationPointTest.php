@@ -35,7 +35,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class RuleEvaluationPointTest extends TestCase {
 
@@ -94,8 +94,32 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
+	/**
+	 * Files allowed to suppress the lifecycle events, and why.
+	 *
+	 * 🔑 NOT A LIST OF EXCEPTIONS, A LIST OF JUSTIFICATIONS. The guard's value
+	 * is that suppressing an event costs somebody a sentence here; a silent
+	 * `dispatchEvents: false` is the shape of a path that quietly skips the
+	 * rules, and it is found when a rule stops firing rather than when it is
+	 * written.
+	 *
+	 * @var array<string, string>
+	 */
+	private const SUPPRESSION_REASONS = [
+		// The source row of a MOVE. The object was not deleted: it is readable
+		// at its new address with the same uuid, and every side table still
+		// points at it. Dispatching a delete event would tell eight listening
+		// apps that an object they can still read is gone, and the rules would
+		// act on a deletion that did not happen.
+		'MoveObject.php' => 'a move removes the source ROW, not the object; the object still exists',
+		// The permanent delete. The flag only skips the mapper's ObjectDeletingEvent:
+		// DeleteObject::delete() has dispatched that same event through
+		// assertDeletable() before the folder goes, so the guards answer once.
+		'DeleteObject.php' => 'delete() already asked the guards; the mapper must not ask a second time',
+	];
+
 	public function testBothWriteMethodsDispatchTheSaveEvent(): void {
 		$mapper = (string)file_get_contents($this->lib() . '/Db/MagicMapper.php');
 
@@ -121,12 +145,14 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testNoWritePathAsksToSkipTheRules(): void {
 		$offenders = [];
 		foreach ($this->sources() as $path => $source) {
-			if (preg_match('/dispatchEvents\s*:\s*false/', $source) === 1) {
+			if (preg_match('/dispatchEvents\s*:\s*false/', $source) === 1
+				&& array_key_exists(basename($path), self::SUPPRESSION_REASONS) === false
+			) {
 				$offenders[] = basename($path);
 			}
 		}
@@ -138,6 +164,27 @@ class RuleEvaluationPointTest extends TestCase {
 				. 'never see them: ' . implode(', ', $offenders)
 		);
 
+		// 🔴 THE ALLOWLIST IS A RATCHET AND HAS TO FAIL ON THE WAY DOWN TOO. An
+		// entry left here after its suppression is gone makes the next reader
+		// believe a path skips the rules when it does not, and the day somebody
+		// re-adds one nothing would say so. So every named file must still
+		// carry the suppression it was excused for.
+		foreach (self::SUPPRESSION_REASONS as $file => $reason) {
+			$found = false;
+			foreach ($this->sources() as $path => $source) {
+				if (basename($path) === $file && preg_match('/dispatchEvents\s*:\s*false/', $source) === 1) {
+					$found = true;
+					break;
+				}
+			}
+
+			$this->assertTrue(
+				$found,
+				sprintf('%s no longer suppresses events; remove it from SUPPRESSION_REASONS.', $file)
+			);
+			$this->assertNotSame('', trim($reason), sprintf('%s must say WHY.', $file));
+		}
+
 	}//end testNoWritePathAsksToSkipTheRules()
 
 	/**
@@ -148,10 +195,10 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheRuleListenersAreSubscribedToThoseEvents(): void {
-		$application = (string)file_get_contents($this->lib() . '/AppInfo/Application.php');
+		$application = (string)file_get_contents($this->lib() . '/Listener/ListenerRegistrar.php');
 
 		$this->assertStringContainsString(
 			needle: 'registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class)',
@@ -169,6 +216,75 @@ class RuleEvaluationPointTest extends TestCase {
 	}//end testTheRuleListenersAreSubscribedToThoseEvents()
 
 	/**
+	 * 🔴 The administered validations are subscribed to the SAME two events.
+	 *
+	 * REQ-RCT-005 asks that a validation an administrator wrote be reached by
+	 * every write path — the object API, an import, a flow node write, a bulk
+	 * job. That is not a claim any test of today's paths can keep: it rests on
+	 * the validations hanging off the same two events every write dispatches.
+	 * A path added later that bypasses the pipeline fails the test above and is
+	 * named there; a validation quietly unsubscribed fails here.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
+	 */
+	public function testTheAdministeredValidationsAreSubscribedToThoseEvents(): void {
+		$application = (string)file_get_contents($this->lib() . '/Listener/ListenerRegistrar.php');
+
+		foreach (['ObjectCreatingEvent', 'ObjectUpdatingEvent'] as $event) {
+			$this->assertStringContainsString(
+				needle: sprintf(
+					'registerEventListener(%s::class, AdministeredValidationListener::class)',
+					$event
+				),
+				haystack: $application,
+				message: sprintf(
+					'An administered validation no longer reaches %s, so a write on that path skips every check an administrator wrote.',
+					$event
+				)
+			);
+		}
+
+	}//end testTheAdministeredValidationsAreSubscribedToThoseEvents()
+
+	/**
+	 * The administered validations record their verdict too.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
+	 */
+	public function testTheAdministeredValidationsRecordTheirVerdict(): void {
+		// The decision moved out of the listener into the enforcer, and the
+		// writing into AdministeredValidationRunLog. The property this pins is
+		// unchanged: both verdicts still reach the run log, and BOTH ends are
+		// asserted so a recorder nobody calls reads as red rather than green.
+		$enforcer = (string)file_get_contents($this->lib() . '/Service/Rules/AdministeredValidationEnforcer.php');
+
+		$this->assertStringContainsString(
+			needle: 'recordWarning(',
+			haystack: $enforcer,
+			message: 'AdministeredValidationEnforcer no longer records a warning; the run log has a blind spot.'
+		);
+		$this->assertStringContainsString(
+			needle: 'recordRefusal(',
+			haystack: $enforcer,
+			message: 'AdministeredValidationEnforcer no longer records a refusal; the run log has a blind spot.'
+		);
+
+		$runLog = (string)file_get_contents($this->lib() . '/Service/Rules/AdministeredValidationRunLog.php');
+
+		$this->assertStringContainsString(
+			needle: 'RuleRunRecorder',
+			haystack: $runLog,
+			message: 'AdministeredValidationRunLog no longer writes to the rule run log.'
+		);
+		$this->assertStringContainsString(needle: '->record(', haystack: $runLog);
+
+	}//end testTheAdministeredValidationsRecordTheirVerdict()
+
+	/**
 	 * Both listeners record what they decided.
 	 *
 	 * The run log is only as complete as the paths that write to it, so a
@@ -177,7 +293,7 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testBothListenersRecordTheirVerdict(): void {
 		foreach (['CalculationOnSaveListener', 'LifecycleValidationListener'] as $listener) {
@@ -201,7 +317,7 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testBothEnginesHonourTheSwitch(): void {
 		$calculation = (string)file_get_contents($this->lib() . '/Listener/CalculationOnSaveListener.php');

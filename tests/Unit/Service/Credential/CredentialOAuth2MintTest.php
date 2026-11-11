@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+ * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
  */
 
 declare(strict_types=1);
@@ -34,6 +34,9 @@ namespace Unit\Service\Credential;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
@@ -46,6 +49,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
  */
 class CredentialOAuth2MintTest extends TestCase {
 	/** @var array<string, mixed>|null The property bag that reached saveObject(). */
@@ -61,14 +67,12 @@ class CredentialOAuth2MintTest extends TestCase {
 
 	public function testAnOAuth2MintWritesConnectionMetadataAndNoToken(): void {
 		$broker = $this->makeBroker();
-		$tokenSet = OAuth2TokenSet::fromTokenResponse(
-			response: [
+		$tokenSet = OAuth2TokenSet::fromResponse(response: [
 				'access_token' => 'ACCESS_TOKEN_HERE',
 				'refresh_token' => 'REFRESH_TOKEN_HERE',
 				'expires_in' => 3600,
 				'scope' => 'read:accounts write:statuses',
-			]
-		)->withAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example');
+			])->withAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example');
 
 		$broker->mint(
 			name: 'Mastodon company account',
@@ -171,13 +175,19 @@ class CredentialOAuth2MintTest extends TestCase {
 		);
 
 		return new CredentialBrokerService(
-			$objectService,
-			$store,
-			$this->createMock(ProviderCatalogue::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IClientService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(OrganisationService::class)
+			sources: new CredentialSources(
+				objectService: $objectService,
+				credentialStore: $store,
+				catalogue: $this->createMock(ProviderCatalogue::class)
+			),
+			principals: new CredentialPrincipals(
+				userSession: $this->createMock(IUserSession::class),
+				organisationService: $this->createMock(OrganisationService::class)
+			),
+			outbound: new CredentialOutbound(
+				clientService: $this->createMock(IClientService::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}
 }

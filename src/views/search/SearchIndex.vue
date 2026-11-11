@@ -9,9 +9,15 @@ import {
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
+import Merge from 'vue-material-design-icons/Merge.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import EditableCell from '../../components/tables/EditableCell.vue'
+import { copyRows } from '../../services/objectCopy.js'
+import { isInlineEditable } from '../../services/propertyEditor.js'
 import {
 	navigationStore,
 	objectStore,
@@ -43,9 +49,13 @@ export default {
 		CnIndexPage,
 		CnObjectKanban,
 		CnObjectCalendar,
-		Pencil,
+		CheckCircle,
 		ContentCopy,
+		DatabaseExport,
+		Merge,
+		Pencil,
 		TrashCanOutline,
+		EditableCell,
 	},
 
 	data() {
@@ -72,6 +82,21 @@ export default {
 
 	computed: {
 		/**
+		 * The columns a reader with update rights may edit in their cell:
+		 * scalar text, numbers and choice lists of the searched schema.
+		 *
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @return {Array<string>}
+		 */
+		inlineEditableColumns() {
+			const properties = this.normalizedSchema?.properties
+			if (!properties) return []
+			return Object.keys(properties).filter((key) =>
+				isInlineEditable(properties[key]),
+			)
+		},
+
+		/**
 		 * Normalized search result objects for table display.
 		 *
 		 * @spec exclude UI plumbing — derived view state from the store
@@ -85,11 +110,20 @@ export default {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-across-registers-global-search
 		 */
 		hasSelectedRegisters() {
-			return objectStore.searchParams.register != null
+			return (
+				objectStore.searchParams.register !== null
+				&& objectStore.searchParams.register !== undefined
+			)
 		},
 
+		/**
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-across-registers-global-search
+		 */
 		hasSelectedSchemas() {
-			return objectStore.searchParams.schema != null
+			return (
+				objectStore.searchParams.schema !== null
+				&& objectStore.searchParams.schema !== undefined
+			)
 		},
 
 		/**
@@ -273,7 +307,7 @@ export default {
 		 * from CnObjectCalendar's own `range-change` on (re)mount — the `:key`
 		 * binding on the component forces that remount.
 		 *
-		 * @param newVal
+		 * @param {string|number|null} newVal
 		 * @spec openspec/specs/saved-search-views/spec.md#requirement-presentation-components-are-shared-and-wired-not-owned-by-or-req-view-pres-05
 		 */
 		activeViewId(newVal) {
@@ -290,12 +324,52 @@ export default {
 	 * @spec exclude UI plumbing — fetch the kanban board on initial mount when a kanban view is already active (e.g. restored from route params)
 	 */
 	mounted() {
+		this.requestUpdateRights()
 		if (this.activeViewId && this.presentationType === 'kanban') {
 			this.fetchKanbanBoard()
 		}
 	},
 
 	methods: {
+		t,
+
+		/**
+		 * Ask the list for the reader's update right on each row
+		 * (`_extend[]=@self.can`), which decides where a cell is editable.
+		 *
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @return {void}
+		 */
+		requestUpdateRights() {
+			const current = objectStore.searchParams?._extend
+			let extend = []
+			if (Array.isArray(current)) {
+				extend = current
+			} else if (current) {
+				extend = [current]
+			}
+			if (extend.includes('@self.can')) return
+			objectStore.updateSearchParams({ _extend: [...extend, '@self.can'] })
+		},
+
+		/**
+		 * A cell saved in place: show the new value in its row.
+		 *
+		 * @param {object} payload The saved cell.
+		 * @param {object} payload.row The row.
+		 * @param {string} payload.field The field.
+		 * @param {*} payload.value The stored value.
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @return {void}
+		 */
+		handleCellSaved({ row, field, value }) {
+			const id = row?.['@self']?.id ?? row?.id
+			const item = (objectStore.searchCollection || []).find(
+				(candidate) => (candidate?.['@self']?.id ?? candidate?.id) === id,
+			)
+			if (item) item[field] = value
+		},
+
 		/**
 		 * Open the new-object dialog for the selected register and schema.
 		 *
@@ -387,6 +461,18 @@ export default {
 		},
 
 		/**
+		 * Open the merge dialog with a row as the source.
+		 *
+		 * @param {object} row The object row to merge into another.
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 * @return {void}
+		 */
+		handleMergeRow(row) {
+			objectStore.setObjectItem(row)
+			navigationStore.setModal('mergeObject')
+		},
+
+		/**
 		 * Open the copy-object dialog for a row.
 		 *
 		 * @param {object} row The object row to copy.
@@ -411,6 +497,20 @@ export default {
 		},
 
 		/**
+		 * Stage the selected rows in the store for a bulk dialog.
+		 *
+		 * @param {Array} ids The selected row ids.
+		 * @spec exclude UI plumbing: selection state delegates to the store
+		 * @return {void}
+		 */
+		stageSelection(ids) {
+			const rows = this.normalizedObjects.filter((r) =>
+				ids.includes(String(r.id)),
+			)
+			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
+		},
+
+		/**
 		 * Open the mass-delete dialog for the selected ids.
 		 *
 		 * @param {Array} ids The selected row ids.
@@ -418,27 +518,56 @@ export default {
 		 * @return {void}
 		 */
 		handleMassDelete(ids) {
-			const rows = this.normalizedObjects.filter((r) =>
-				ids.includes(String(r.id)),
-			)
-			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
+			this.stageSelection(ids)
 			navigationStore.setDialog('massDeleteObject')
 		},
 
 		/**
-		 * Open the mass-copy dialog for the selected ids.
+		 * Save a copy of each selected row and give the dialog its result.
 		 *
-		 * @param {object} payload The mass-copy event payload.
-		 * @spec exclude UI plumbing — opens the mass-copy dialog
+		 * @param {object} payload The mass-copy event payload: ids, getName.
+		 * @spec exclude UI plumbing: the page holds the rows, the dialog shows the outcome
+		 * @return {Promise<void>}
+		 */
+		async handleMassCopy(payload) {
+			const type = this.computedObjectType
+			const outcome = await copyRows({
+				rows: this.normalizedObjects,
+				ids: payload?.ids || [],
+				nameOf: payload?.getName,
+				save: (copy) => objectStore.saveObject(type, copy),
+			})
+			if (outcome.failedIds.length > 0) {
+				outcome.error =
+					objectStore.errors?.[type]?.message
+					|| t('openregister', 'Some objects could not be copied.')
+			}
+			this.$refs.indexPage?.setMassCopyResult(outcome)
+			objectStore.refetchSearchCollection()
+		},
+
+		/**
+		 * Open the mass-validate dialog for the selected ids.
+		 *
+		 * @param {Array} ids The selected row ids.
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 * @return {void}
 		 */
-		handleMassCopy(payload) {
-			const ids = payload?.ids || []
-			const rows = this.normalizedObjects.filter((r) =>
-				ids.includes(String(r.id)),
-			)
-			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
-			navigationStore.setDialog('massCopyObjects')
+		handleMassValidate(ids) {
+			this.stageSelection(ids)
+			navigationStore.setDialog('massValidateObjects')
+		},
+
+		/**
+		 * Open the migration dialog for the selected ids.
+		 *
+		 * @param {Array} ids The selected row ids.
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 * @return {void}
+		 */
+		handleMassMigrate(ids) {
+			this.stageSelection(ids)
+			navigationStore.setModal('migrationObject')
 		},
 
 		/**
@@ -635,25 +764,63 @@ export default {
 			@pageChanged="handlePageChanged"
 			@pageSizeChanged="handlePageSizeChanged"
 			@select="handleSelect">
+			<template
+				v-for="column in inlineEditableColumns"
+				:key="column"
+				#[`column-${column}`]="{ row, value }">
+				<EditableCell
+					:row="row"
+					:field="column"
+					:value="value"
+					:property="normalizedSchema.properties[column]"
+					@open="handleRowClick"
+					@saved="handleCellSaved" />
+			</template>
+			<template #mass-actions="{ count, selectedIds }">
+				<NcActionButton
+					:disabled="count === 0"
+					closeAfterClick
+					@click="handleMassMigrate(selectedIds)">
+					<template #icon>
+						<DatabaseExport :size="20" />
+					</template>
+					{{ t('openregister', 'Migrate') }}
+				</NcActionButton>
+				<NcActionButton
+					:disabled="count === 0"
+					closeAfterClick
+					@click="handleMassValidate(selectedIds)">
+					<template #icon>
+						<CheckCircle :size="20" />
+					</template>
+					{{ t('openregister', 'Validate') }}
+				</NcActionButton>
+			</template>
 			<template #row-actions="{ row }">
 				<NcActions>
 					<NcActionButton closeAfterClick @click="handleRowClick(row)">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
-						Edit
+						{{ t('openregister', 'Edit') }}
+					</NcActionButton>
+					<NcActionButton closeAfterClick @click="handleMergeRow(row)">
+						<template #icon>
+							<Merge :size="20" />
+						</template>
+						{{ t('openregister', 'Merge') }}
 					</NcActionButton>
 					<NcActionButton closeAfterClick @click="handleCopyRow(row)">
 						<template #icon>
 							<ContentCopy :size="20" />
 						</template>
-						Copy
+						{{ t('openregister', 'Copy') }}
 					</NcActionButton>
 					<NcActionButton closeAfterClick @click="handleDeleteRow(row)">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
-						Delete
+						{{ t('openregister', 'Delete') }}
 					</NcActionButton>
 				</NcActions>
 			</template>

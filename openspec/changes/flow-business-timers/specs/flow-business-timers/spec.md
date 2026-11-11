@@ -268,8 +268,8 @@ ladder SHALL be data that an administrator can edit, not a compiled-in constant.
 ### Requirement: An escalation rule is validated against its SLA in commensurable units
 
 An escalation rule SHALL take the shape `{trigger, offset, offsetUnit,
-notifyRole, escalateToRole, openIncident}` where `trigger` is `preBreach` or
-`slaBreached` and `offsetUnit` is one of `hours`, `businessDays` or
+notifyRole, escalateToRole, openIncident, consequence}` where `trigger` is
+`preBreach`, `slaBreached` or `postBreach` and `offsetUnit` is one of `hours`, `businessDays` or
 `calendarDays` — the SAME unit set the SLA accepts, so that any SLA can carry a
 warning expressed in its own terms.
 
@@ -283,6 +283,20 @@ duration against the resolved working calendar. Comparing the two `value`
 integers directly SHALL be treated as not meeting this requirement, because it
 both rejects valid configurations and admits invalid ones whenever the units
 differ.
+
+A `postBreach` rung SHALL fall `offset` after the deadline, at the same
+instant a `slaBreached` rung with that offset would, and SHALL be addressed to
+the party rather than escalated inward. Its optional `consequence` is a short
+line in the case type's words, carried on the fired event.
+
+#### Scenario: A postBreach rung falls after the deadline with its consequence
+
+- **GIVEN** an SLA of `{value: 14, unit: calendarDays}` and a rule
+  `{trigger: postBreach, offset: 2, offsetUnit: calendarDays, consequence: "we decide on what we have"}`
+- **WHEN** the rule is normalised and placed on the timeline
+- **THEN** its key MUST be `postBreach:2:calendarDays`, its instant two
+  calendar days after the deadline, and its consequence kept
+- @e2e exclude covered by EscalationLadderServiceTest (#4166)
 
 #### Scenario: A short warning on a longer SLA is accepted across units
 

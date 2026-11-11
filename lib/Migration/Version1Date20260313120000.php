@@ -75,7 +75,7 @@ class Version1Date20260313120000 extends SimpleMigrationStep {
 				message: '[BlobTableDrop] Table openregister_objects does not exist, nothing to drop',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return null;
+			return $schema;
 		}
 
 		// Check 2: Migration must be marked complete.
@@ -95,7 +95,7 @@ class Version1Date20260313120000 extends SimpleMigrationStep {
 				]
 			);
 			$output->warning('Blob migration not complete — skipping openregister_objects table drop');
-			return null;
+			return $schema;
 		}
 
 		// Check 3: Table must have zero rows.
@@ -117,7 +117,7 @@ class Version1Date20260313120000 extends SimpleMigrationStep {
 				]
 			);
 			$output->warning('Could not verify blob table is empty — skipping drop');
-			return null;
+			return $schema;
 		}
 
 		if ($rowCount > 0) {
@@ -130,7 +130,7 @@ class Version1Date20260313120000 extends SimpleMigrationStep {
 				]
 			);
 			$output->warning("Blob table still has {$rowCount} rows — skipping drop");
-			return null;
+			return $schema;
 		}
 
 		// All checks passed — drop the table.

@@ -2,36 +2,19 @@
 	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeader">
-				<div class="viewHeaderTitle">
-					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'Templates') }}
-					</h1>
-					<NcButton
-						variant="tertiary"
-						:aria-label="t('openregister', 'Toggle search sidebar')"
-						@click="toggleSidebar">
-						<template #icon>
-							<FilterVariant :size="20" />
-						</template>
-						{{
-							sidebarOpen
-								? t('openregister', 'Hide Filters')
-								: t('openregister', 'Show Filters')
-						}}
-					</NcButton>
-				</div>
-				<p>
-					{{ t('openregister', 'Manage document templates and themes') }}
-				</p>
-			</div>
+			<FilterToggleHeader
+				:title="t('openregister', 'Templates')"
+				:description="
+					t('openregister', 'Manage document templates and themes')
+				"
+				:sidebarOpen="sidebarOpen"
+				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span v-if="templatesList.length" class="viewTotalCount">
-						{{
-							t(
+			<ListActionsBar
+				:summary="
+					templatesList.length
+						? t(
 								'openregister',
 								'Showing {showing} of {total} templates',
 								{
@@ -39,20 +22,9 @@
 									total: totalTemplates,
 								},
 							)
-						}}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcActions :forceName="true" :inline="1" menuName="Actions">
-						<NcActionButton closeAfterClick @click="refreshTemplates">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						: ''
+				"
+				:actions="[refreshAction(refreshTemplates)]" />
 
 			<!-- Templates Table -->
 			<div class="tableContainer">
@@ -72,98 +44,56 @@
 					</template>
 				</NcEmptyContent>
 
-				<table v-else class="templatesTable">
-					<thead>
-						<tr>
-							<th scope="col" class="column-name">
-								{{ t('openregister', 'Name') }}
-							</th>
-							<th scope="col" class="column-type">
-								{{ t('openregister', 'Type') }}
-							</th>
-							<th scope="col" class="column-description">
-								{{ t('openregister', 'Description') }}
-							</th>
-							<th scope="col" class="column-updated">
-								{{ t('openregister', 'Updated At') }}
-							</th>
-							<th scope="col" class="column-actions">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="template in templatesList" :key="template.id">
-							<td class="column-name">
-								<span class="template-name">{{
-									template.name
-								}}</span>
-							</td>
-							<td class="column-type">
-								<span class="badge badge-type">{{
-									template.type
-								}}</span>
-							</td>
-							<td class="column-description">
-								{{ template.description || '-' }}
-							</td>
-							<td class="column-updated">
-								{{ formatDate(template.updatedAt) }}
-							</td>
-							<td class="column-actions">
-								<NcActions>
-									<NcActionButton
-										closeAfterClick
-										@click="viewTemplate(template)">
-										<template #icon>
-											<EyeOutline :size="20" />
-										</template>
-										{{ t('openregister', 'View Details') }}
-									</NcActionButton>
-								</NcActions>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+				<CnDataTable
+					v-else
+					class="templatesTable"
+					:columns="columns"
+					:rows="templatesList">
+					<template #column-name="{ value }">
+						<span class="template-name">{{ value }}</span>
+					</template>
+					<template #column-type="{ value }">
+						<span class="badge badge-type">{{ value }}</span>
+					</template>
+					<template #column-description="{ value }">
+						{{ value || '-' }}
+					</template>
+					<template #column-updatedAt="{ value }">
+						{{ formatDate(value) }}
+					</template>
+					<template #actions-header>
+						{{ t('openregister', 'Actions') }}
+					</template>
+					<template #row-actions="{ row: template }">
+						<ActionMenu :actions="templateActions(template)" />
+					</template>
+				</CnDataTable>
 
 				<!-- Pagination -->
-				<div v-if="totalTemplates > limit" class="pagination">
-					<NcButton :disabled="offset === 0" @click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="pagination-info">
-						{{
-							t('openregister', 'Page {current} of {total}', {
-								current: currentPage,
-								total: totalPages,
-							})
-						}}
-					</span>
-					<NcButton
-						:disabled="offset + limit >= totalTemplates"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
+				<OffsetPager
+					:offset="offset"
+					:limit="limit"
+					:total="totalTemplates"
+					@previous="previousPage"
+					@next="nextPage" />
 			</div>
 		</div>
 	</NcAppContent>
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { t } from '@nextcloud/l10n'
-import {
-	NcActionButton,
-	NcActions,
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import OffsetPager from '../../components/shared/OffsetPager.vue'
+import { displayDateTime } from '../../services/displayDateTime.js'
+import { refreshAction } from '../../services/menuActions.js'
+import { offsetPaging } from '../offsetPaging.js'
 
 /**
  * Main view for managing templates
@@ -171,17 +101,18 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 export default {
 	name: 'TemplatesIndex',
 	components: {
+		ActionMenu,
+		CnDataTable,
+		ListActionsBar,
+		OffsetPager,
+		FilterToggleHeader,
 		NcAppContent,
-		NcActions,
-		NcActionButton,
-		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		FileOutline,
-		Refresh,
-		FilterVariant,
-		EyeOutline,
 	},
+
+	mixins: [offsetPaging('totalTemplates', 'loadTemplates')],
 
 	data() {
 		return {
@@ -196,23 +127,18 @@ export default {
 
 	computed: {
 		/**
-		 * Get current page number
+		 * The templates table columns; the row menu adds the "Actions" column.
 		 *
-		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
-		 * @return {number} Current page
+		 * @spec exclude list-view table layout
+		 * @return {Array<object>} The CnDataTable columns
 		 */
-		currentPage() {
-			return Math.floor(this.offset / this.limit) + 1
-		},
-
-		/**
-		 * Get total number of pages
-		 *
-		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
-		 * @return {number} Total pages
-		 */
-		totalPages() {
-			return Math.ceil(this.totalTemplates / this.limit)
+		columns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Name'), cellClass: 'cn-cell--wrap' },
+				{ key: 'type', label: t('openregister', 'Type') },
+				{ key: 'description', label: t('openregister', 'Description'), cellClass: 'cn-cell--wrap' },
+				{ key: 'updatedAt', label: t('openregister', 'Updated At') },
+			]
 		},
 	},
 
@@ -221,6 +147,25 @@ export default {
 	},
 
 	methods: {
+		refreshAction,
+
+		/**
+		 * The row menu of a template.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} template The template
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		templateActions(template) {
+			return [
+				{
+					label: t('openregister', 'View Details'),
+					icon: EyeOutline,
+					run: () => this.viewTemplate(template),
+				},
+			]
+		},
+
 		t,
 
 		/**
@@ -262,7 +207,7 @@ export default {
 				//     this.templatesList = response.data.data
 				//     this.totalTemplates = response.data.count || this.templatesList.length
 				// }
-			} catch (error) {
+			} catch {
 				// TODO: Uncomment when API is implemented
 				// console.error('Failed to load templates:', error)
 				// showError(t('openregister', 'Failed to load templates'))
@@ -282,32 +227,6 @@ export default {
 		},
 
 		/**
-		 * Go to previous page
-		 *
-		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
-		 * @return {void}
-		 */
-		previousPage() {
-			if (this.offset > 0) {
-				this.offset = Math.max(0, this.offset - this.limit)
-				this.loadTemplates()
-			}
-		},
-
-		/**
-		 * Go to next page
-		 *
-		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
-		 * @return {void}
-		 */
-		nextPage() {
-			if (this.offset + this.limit < this.totalTemplates) {
-				this.offset += this.limit
-				this.loadTemplates()
-			}
-		},
-
-		/**
 		 * View template details
 		 *
 		 * @spec exclude UI plumbing — unimplemented navigation stub, no observable contract.
@@ -318,155 +237,21 @@ export default {
 			// TODO: Navigate to template details page when available
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader {
-	margin-bottom: 20px;
-}
+@include view-container-2;
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
-
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
-
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
-
-.tableContainer {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	overflow: hidden;
-}
-
-.templatesTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.templatesTable thead {
-	background: var(--color-background-hover);
-	border-bottom: 2px solid var(--color-border);
-}
-
-.templatesTable th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: 600;
-	white-space: nowrap;
-}
-
-.templatesTable td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.templatesTable tbody tr:hover {
-	background: var(--color-background-hover);
-}
+@include table-container;
 
 .template-name {
 	font-weight: 500;
 }
 
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badge-type {
-	background: var(--color-primary-light);
-	color: var(--color-primary-element);
-}
-
-.column-name {
-	min-width: 200px;
-}
-
-.column-type {
-	width: 120px;
-}
-
-.column-description {
-	min-width: 300px;
-}
-
-.column-updated {
-	width: 180px;
-}
-
-.column-actions {
-	width: 50px;
-}
-
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 16px;
-	padding: 20px;
-	border-top: 1px solid var(--color-border);
-}
-
-.pagination-info {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-}
+@include badge-rules;
 </style>

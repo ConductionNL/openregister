@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -50,16 +50,12 @@ class FlowDefinitionPinTest extends TestCase {
 		$mapper = $this->createMock(FlowDefinitionMapper::class);
 
 		$mapper->method('store')->willReturnCallback(
-			function (string $hash, string $definition, ?string $flowUuid = null) use ($storeFails): ?FlowDefinition {
+			function (FlowDefinition $e) use ($storeFails): ?FlowDefinition {
 				if ($storeFails === true) {
 					throw new RuntimeException('write failed');
 				}
 
-				$e = new FlowDefinition();
-				$e->setHash($hash);
-				$e->setDefinition($definition);
-				$e->setFlowUuid($flowUuid);
-				$this->store[$hash] = $e;
+				$this->store[$e->getHash()] = $e;
 
 				return $e;
 			}

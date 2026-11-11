@@ -22,13 +22,14 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  */
 
 declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -39,15 +40,15 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
-use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\StateFieldRulePlatform;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\StateFieldRuleListener
@@ -100,11 +101,9 @@ class StateFieldRuleListenerTest extends TestCase {
 		$resolver = new StateFieldRuleResolver($this->userSession, $this->groupManager, $dialect);
 
 		return new StateFieldRuleListener(
-			$this->schemaMapper,
+			new StateFieldRulePlatform($this->schemaMapper, $this->ruleRuns, $this->createMock(LoggerInterface::class)),
 			$resolver,
-			new StateConditionEvaluator($resolver, $dialect, new ConditionTracer($dialect)),
-			$this->ruleRuns,
-			$this->createMock(LoggerInterface::class)
+			new StateConditionEvaluator($resolver, $dialect)
 		);
 	}
 
@@ -321,6 +320,51 @@ class StateFieldRuleListenerTest extends TestCase {
 	}
 
 	/**
+	 * A required field recorded as not supplied lets the move through.
+	 *
+	 * The union between this rule and recorded incompleteness: the rule asks
+	 * whether somebody answered, and a not-supplied marker with an administered
+	 * reason is an answer. Without this, a state rule is the one place left
+	 * where "onbekend" has to be typed into the field.
+	 *
+	 * @return void
+	 */
+	public function testNotSuppliedSatisfiesAFieldRequiredByState(): void {
+		$listener = $this->listenerFor($this->annotation());
+		$event = new ObjectUpdatingEvent(
+			$this->entity(
+				[
+					'status' => 'closed',
+					'@notSupplied' => ['outcome' => 'onbekend_bij_aanvrager'],
+				]
+			),
+			$this->entity(['status' => 'open'])
+		);
+
+		$listener->handle($event);
+
+		$this->assertFalse($event->isPropagationStopped());
+		$this->assertSame([], $event->getErrors());
+	}
+
+	/**
+	 * An empty marker is not a marker.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyNotSuppliedReasonDoesNotSatisfyARequiredField(): void {
+		$listener = $this->listenerFor($this->annotation());
+		$event = new ObjectUpdatingEvent(
+			$this->entity(['status' => 'closed', '@notSupplied' => ['outcome' => '']]),
+			$this->entity(['status' => 'open'])
+		);
+
+		$listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+	}
+
+	/**
 	 * @return void
 	 */
 	public function testAFalseValueSatisfiesARequiredField(): void {
@@ -364,9 +408,9 @@ class StateFieldRuleListenerTest extends TestCase {
 		$this->ruleRuns->expects($this->once())
 			->method('record')
 			->with(
-				$this->stringContains('stateFieldRule'),
-				'zaak',
-				$this->anything(),
+				$this->callback(
+					fn (RuleRunSubject $subject): bool => str_contains($subject->ruleId, 'stateFieldRule') && $subject->schemaSlug === 'zaak'
+				),
 				$this->anything(),
 				$this->anything()
 			);

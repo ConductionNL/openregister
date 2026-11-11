@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\FailedAttempt;
+use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IRequest;
@@ -25,7 +28,40 @@ class SecurityServiceTest extends TestCase {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn($this->cache);
 
-		$this->service = new SecurityService($cacheFactory, $this->logger);
+		$this->service = new SecurityService($cacheFactory, $this->logger, $this->policy());
+	}
+
+	/**
+	 * A hardening policy over an app configuration that stores the values given.
+	 *
+	 * @param array<string, int> $stored The administered overrides.
+	 *
+	 * @return HardeningPolicy The policy.
+	 */
+	private function policy(array $stored = []): HardeningPolicy {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueInt')->willReturnCallback(
+			static fn (string $app, string $key, int $default): int => ($stored[$key] ?? $default)
+		);
+		$appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default): string => $default
+		);
+
+		return new HardeningPolicy($appConfig);
+	}
+
+	/**
+	 * A service whose inbound ceiling has been administered.
+	 *
+	 * @param array<string, int> $stored The administered overrides.
+	 *
+	 * @return SecurityService The service.
+	 */
+	private function serviceWith(array $stored): SecurityService {
+		$cacheFactory = $this->createMock(ICacheFactory::class);
+		$cacheFactory->method('createDistributed')->willReturn($this->cache);
+
+		return new SecurityService($cacheFactory, $this->logger, $this->policy($stored));
 	}
 
 	// ── checkLoginRateLimit ──
@@ -103,7 +139,7 @@ class SecurityServiceTest extends TestCase {
 		$this->cache->method('get')->willReturn(0);
 		$this->cache->expects($this->atLeastOnce())->method('set');
 
-		$this->service->recordFailedLoginAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('user1', '1.2.3.4', 'invalid_credentials'));
 	}
 
 	public function testRecordFailedLoginAttemptLocksOutAfterThreshold(): void {
@@ -115,7 +151,7 @@ class SecurityServiceTest extends TestCase {
 			$setCalls[] = $key;
 		});
 
-		$this->service->recordFailedLoginAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('user1', '1.2.3.4', 'invalid_credentials'));
 
 		// Should set both user lockout and ip lockout.
 		$lockoutKeys = array_filter($setCalls, fn ($k) => str_contains($k, 'lockout'));
@@ -380,7 +416,7 @@ class SecurityServiceTest extends TestCase {
 			$setCalls[] = $key;
 		});
 
-		$this->service->recordFailedAuthAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('user1', '1.2.3.4', 'inbound_auth_failed'));
 
 		// Both the composite and per-IP counters are written.
 		$this->assertNotEmpty(array_filter($setCalls, fn ($k) => str_contains($k, 'auth_attempts')));
@@ -401,7 +437,7 @@ class SecurityServiceTest extends TestCase {
 			$setCalls[] = $key;
 		});
 
-		$this->service->recordFailedAuthAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('user1', '1.2.3.4', 'inbound_auth_failed'));
 
 		$this->assertNotEmpty(array_filter($setCalls, fn ($k) => str_contains($k, 'auth_lockout')));
 	}
@@ -414,7 +450,7 @@ class SecurityServiceTest extends TestCase {
 			$setCalls[] = $key;
 		});
 
-		$this->service->recordFailedAuthAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('user1', '1.2.3.4', 'inbound_auth_failed'));
 
 		$this->assertEmpty(array_filter($setCalls, fn ($k) => str_contains($k, 'auth_lockout')));
 	}
@@ -434,5 +470,104 @@ class SecurityServiceTest extends TestCase {
 		$this->assertCount(2, $removedKeys);
 		$this->assertNotEmpty(array_filter($removedKeys, fn ($k) => str_contains($k, 'auth_attempts')));
 		$this->assertNotEmpty(array_filter($removedKeys, fn ($k) => str_contains($k, 'auth_lockout')));
+	}
+
+	// -- the published ceiling is the enforced ceiling --
+
+	public function testDescribeAuthRateLimitNamesTheShippedDefaults(): void {
+		$described = $this->service->describeAuthRateLimit();
+
+		$this->assertSame(20, $described['attemptsPerIdentity']);
+		$this->assertSame(100, $described['attemptsPerAddress']);
+		$this->assertSame(900, $described['windowSeconds']);
+		$this->assertSame(900, $described['lockoutSeconds']);
+	}
+
+	public function testAnAdministeredCeilingIsBothPublishedAndEnforced(): void {
+		$service = $this->serviceWith(
+			[
+				'hardening_auth_attempts_identity' => 3,
+				'hardening_auth_lockout_seconds' => 1800,
+			]
+		);
+
+		// Published.
+		$this->assertSame(3, $service->describeAuthRateLimit()['attemptsPerIdentity']);
+		$this->assertSame(1800, $service->describeAuthRateLimit()['lockoutSeconds']);
+
+		// Enforced: the third failure crosses the administered ceiling of 3,
+		// which the shipped default of 20 would have let through.
+		$this->cache->method('get')->willReturnCallback(function (string $key) {
+			if (str_contains($key, 'auth_attempts') && str_contains($key, 'auth_ip_attempts') === false) {
+				return 2;
+			}
+			return 0;
+		});
+
+		$ttls = [];
+		$this->cache->method('set')->willReturnCallback(function ($key, $value, $ttl = 0) use (&$ttls) {
+			$ttls[$key] = $ttl;
+		});
+
+		$service->recordFailedAuthAttempt(new FailedAttempt('user1', '1.2.3.4', 'inbound_auth_failed'));
+
+		$lockoutKeys = array_filter(array_keys($ttls), fn ($k) => str_contains($k, 'auth_lockout'));
+		$this->assertNotEmpty($lockoutKeys, 'The administered ceiling of 3 did not lock the identity out.');
+		$this->assertSame(1800, $ttls[array_values($lockoutKeys)[0]]);
+	}
+
+	/**
+	 * Internal addresses in forms the fetch guard must refuse.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function internalFetchUrls(): array {
+		return [
+			'ipv4-mapped loopback'     => ['http://[::ffff:127.0.0.1]/data.json'],
+			'ipv4-mapped metadata hex' => ['http://[::ffff:a9fe:a9fe]/latest/'],
+			'ipv4-compatible private'  => ['http://[::10.0.0.1]/data.json'],
+			'shared address space'     => ['http://100.64.0.1/data.json'],
+			'benchmarking range'       => ['http://198.18.0.1/data.json'],
+			'ietf protocol range'      => ['http://192.0.0.1/data.json'],
+		];
+	}
+
+	/**
+	 * The fetch guard refuses an internal address in any notation.
+	 *
+	 * @dataProvider internalFetchUrls
+	 *
+	 * @param string $url The URL to check.
+	 *
+	 * @return void
+	 */
+	public function testAssertSafeFetchUrlRefusesInternalAddressInAnyForm(string $url): void {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('non-public address');
+
+		SecurityService::assertSafeFetchUrl($url);
+	}
+
+	/**
+	 * A host that does not resolve is refused.
+	 *
+	 * @return void
+	 */
+	public function testAssertSafeFetchUrlRefusesAnUnresolvableHost(): void {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('could not be resolved');
+
+		SecurityService::assertSafeFetchUrl('https://no-such-host.invalid/data.json');
+	}
+
+	/**
+	 * A public address literal passes.
+	 *
+	 * @return void
+	 */
+	public function testAssertSafeFetchUrlAcceptsAPublicAddress(): void {
+		SecurityService::assertSafeFetchUrl('https://203.0.113.10/data.json');
+		SecurityService::assertSafeFetchUrl('https://[2606:4700::1]/data.json');
+		$this->addToAssertionCount(1);
 	}
 }

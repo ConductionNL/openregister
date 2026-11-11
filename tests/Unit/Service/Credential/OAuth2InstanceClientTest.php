@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+ * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
  */
 
 declare(strict_types=1);
@@ -35,6 +35,7 @@ namespace Unit\Service\Credential;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
+use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -44,6 +45,9 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2InstanceClient
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class OAuth2InstanceClientTest extends TestCase {
 	/** @var array<int, string> Every URL the service POSTed to. */
@@ -58,23 +62,24 @@ class OAuth2InstanceClientTest extends TestCase {
 	}
 
 	public function testAMastodonConnectRegistersAnApplicationAtTheAccountsOwnServer(): void {
-		$claims = $this->makeClient()->ensure(
+		$claims = $this->makeClient()->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 			provider: $this->mastodon(),
 			claims: $this->claims(),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		));
 
 		$this->assertSame(['https://mastodon.example/api/v1/apps'], $this->posts);
 		$this->assertSame('REGISTERED_CLIENT_ID', $claims['cl']);
 		$this->assertSame('minted-uuid', $claims['cr']);
+		$this->assertSame('minted-uuid', $claims[OAuth2InstanceClient::MINTED_KEY], 'a fresh client is named so a failed start can remove it');
 	}
 
 	public function testTheIssuedClientSecretBecomesItsOwnBrokeredCredential(): void {
-		$this->makeClient()->ensure(
+		$this->makeClient()->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 			provider: $this->mastodon(),
 			claims: $this->claims(),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		));
 
 		// The secret goes to the broker and nowhere else: the connection object gets
 		// the client id, which is not a secret, and a reference to the rest.
@@ -84,14 +89,15 @@ class OAuth2InstanceClientTest extends TestCase {
 	}
 
 	public function testATenantThatBroughtItsOwnApplicationIsLeftAlone(): void {
-		$claims = $this->makeClient()->ensure(
+		$claims = $this->makeClient()->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 			provider: $this->mastodon(),
 			claims: array_merge($this->claims(), ['cl' => 'TENANT_CLIENT_ID', 'cr' => 'tenant-ref']),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		));
 
 		$this->assertSame([], $this->posts);
 		$this->assertSame('TENANT_CLIENT_ID', $claims['cl']);
+		$this->assertArrayNotHasKey(OAuth2InstanceClient::MINTED_KEY, $claims, 'a client this call did not mint must never be removed');
 	}
 
 	public function testAReconnectReusesTheApplicationAlreadyPinnedToTheCredential(): void {
@@ -103,23 +109,24 @@ class OAuth2InstanceClientTest extends TestCase {
 			]
 		);
 
-		$claims = $client->ensure(
+		$claims = $client->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 			provider: $this->mastodon(),
 			claims: array_merge($this->claims(), ['cid' => 'existing-uuid']),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		));
 
 		$this->assertSame([], $this->posts, 'a reconnect must not leave a second live application behind');
 		$this->assertSame('EXISTING_CLIENT_ID', $claims['cl']);
 		$this->assertSame('existing-ref', $claims['cr']);
+		$this->assertArrayNotHasKey(OAuth2InstanceClient::MINTED_KEY, $claims, 'a reused client must never be removed');
 	}
 
 	public function testAProviderWithACentralRegistryRegistersNothing(): void {
-		$claims = $this->makeClient()->ensure(
+		$claims = $this->makeClient()->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 			provider: ['identifier' => 'x', 'oauth2' => ['tokenEndpoint' => 'https://api.x.com/2/oauth2/token']],
 			claims: $this->claims(),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		));
 
 		$this->assertSame([], $this->posts);
 		$this->assertSame('', $claims['cl']);
@@ -128,14 +135,15 @@ class OAuth2InstanceClientTest extends TestCase {
 	public function testAServerThatIssuesNoClientIdIsRefusedRatherThanHalfConnected(): void {
 		$client = $this->makeClient(registration: ['error' => 'unauthorized']);
 
-		$this->expectException(RuntimeException::class);
+		// The narrow type is what lets the connect start answer 502 rather than 500.
+		$this->expectException(OAuth2RegistrationFailedException::class);
 		$this->expectExceptionMessage('no client id');
 
-		$client->ensure(
+		$client->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 			provider: $this->mastodon(),
 			claims: $this->claims(),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		));
 	}
 
 	public function testAnUnreachableServerIsReportedWithoutQuotingItsAnswer(): void {
@@ -143,15 +151,15 @@ class OAuth2InstanceClientTest extends TestCase {
 		// contain the request that was made. Only the class name travels.
 		$client = $this->makeClient(postThrows: new RuntimeException('Connection refused to https://mastodon.example/api/v1/apps'));
 
-		$this->expectException(RuntimeException::class);
+		$this->expectException(OAuth2RegistrationFailedException::class);
 		$this->expectExceptionMessage('application registration failed');
 
 		try {
-			$client->ensure(
+			$client->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 				provider: $this->mastodon(),
 				claims: $this->claims(),
 				redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-			);
+			));
 		} catch (RuntimeException $refused) {
 			$this->assertStringNotContainsString('Connection refused', $refused->getMessage());
 			throw $refused;

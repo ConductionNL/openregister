@@ -48,10 +48,10 @@
 
 ## JS (coordinated @conduction/nextcloud-vue change — reference only)
 
-- [ ] Formalise `registerIntegration()` as the render-surface half of the leaf
+- [ ] Formalise `registerIntegration()` as the render-surface half of the leaf (not run: a nextcloud-vue change)
       contract; require the JS id to equal the server descriptor id.
       (Coordinated @conduction/nextcloud-vue change — out of scope for this repo.)
-- [ ] Extend the `integration-parity` gate to correlate the server descriptor
+- [ ] Extend the `integration-parity` gate to correlate the server descriptor (not run: lives in hydra and nextcloud-vue)
       with the JS registration cross-app. (The canonical gate-24 lives in
       hydra `scripts/run-hydra-gates.sh` + the JS check in nextcloud-vue; the
       openregister wrapper only delegates to it. Follow-up in those repos —

@@ -57,14 +57,14 @@ class Version1Date20260511110000 extends SimpleMigrationStep {
 
 		if ($schema->hasTable('openregister_schemas') === false) {
 			$output->info('openregister_schemas table not found — skipping appendOnly migration');
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_schemas');
 
 		if ($table->hasColumn('append_only') === true) {
 			$output->info('append_only column already exists — skipping');
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

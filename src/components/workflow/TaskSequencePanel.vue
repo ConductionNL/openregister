@@ -97,7 +97,7 @@ import CheckDecagramOutline from 'vue-material-design-icons/CheckDecagramOutline
  * 4.2). There is no CRUD here on purpose: the declaration on the schema is
  * the one authoring surface, and deciding happens in the task inbox.
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-006
+ * @spec openspec/specs/approval-workflow/spec.md#req-006
  */
 export default {
 	name: 'TaskSequencePanel',
@@ -115,7 +115,7 @@ export default {
 		 * The declared chains, normalised for the template.
 		 *
 		 * @return {Array} One entry per declared chain key.
-		 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-006
+		 * @spec openspec/specs/approval-workflow/spec.md#req-006
 		 */
 		chainEntries() {
 			const chains =

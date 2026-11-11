@@ -66,7 +66,7 @@ class Version1Date20260502130000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: 'openregister_files') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable(tableName: 'openregister_files');

@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -34,9 +34,9 @@ use RuntimeException;
 /**
  * A refusal carrying the reason a lifecycle rule rejected the request.
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowLifecycleRefused extends RuntimeException {
+class FlowLifecycleRefused extends RuntimeException implements FlowLifecycleRefusedInterface {
 	/**
 	 * The definition of a published or deprecated version may not be changed.
 	 *
@@ -80,6 +80,25 @@ class FlowLifecycleRefused extends RuntimeException {
 	public const REASON_VERSION_IN_USE = 'version-in-use';
 
 	/**
+	 * The sentence each reason reads as.
+	 *
+	 * @var array<string, string>
+	 */
+	private const MESSAGES = [
+		self::REASON_IMMUTABLE => 'This version of the flow is published and cannot be edited. '
+			. 'Create a draft version to make changes; the published version keeps serving until '
+			. 'you publish the draft.',
+		self::REASON_NOT_A_DRAFT => 'Only a draft version can be published.',
+		self::REASON_NOT_PUBLISHED => 'Only a published version can be deprecated.',
+		self::REASON_NO_PUBLISHED_VERSION => 'This flow has no published version, so it cannot back '
+			. 'a run. Publish a version first.',
+		self::REASON_DEAD_END => 'This version cannot be published while it has a node a token '
+			. 'cannot leave.',
+		self::REASON_VERSION_IN_USE => 'This version cannot be removed while a run is still pinned '
+			. 'to it.',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string      $reason  One of the REASON_* constants.
@@ -87,7 +106,7 @@ class FlowLifecycleRefused extends RuntimeException {
 	 * @param string|null $state   The lifecycle state that caused it, when there is one.
 	 * @param string|null $detail  Extra human detail appended to the message.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function __construct(
 		private readonly string $reason,
@@ -95,28 +114,8 @@ class FlowLifecycleRefused extends RuntimeException {
 		private readonly ?string $state = null,
 		?string $detail = null,
 	) {
-		$messages = [
-			self::REASON_IMMUTABLE => 'This version of the flow is published and cannot be edited. '
-				. 'Create a draft version to make changes; the published version keeps serving until '
-				. 'you publish the draft.',
-			self::REASON_NOT_A_DRAFT => 'Only a draft version can be published.',
-			self::REASON_NOT_PUBLISHED => 'Only a published version can be deprecated.',
-			self::REASON_NO_PUBLISHED_VERSION => 'This flow has no published version, so it cannot back '
-				. 'a run. Publish a version first.',
-			self::REASON_DEAD_END => 'This version cannot be published while it has a node a token '
-				. 'cannot leave.',
-			self::REASON_VERSION_IN_USE => 'This version cannot be removed while a run is still pinned '
-				. 'to it.',
-		];
-
-		$where = ' (flow ' . $flowId;
-		if ($state !== null) {
-			$where .= ', state ' . $state;
-		}
-
-		$where .= ')';
-
-		$message = ($messages[$reason] ?? 'This flow lifecycle transition was refused.') . $where;
+		$message = (self::MESSAGES[$reason] ?? 'This flow lifecycle transition was refused.')
+			. self::where(flowId: $flowId, state: $state);
 
 		if ($detail !== null && trim($detail) !== '') {
 			$message .= ' ' . $detail;
@@ -127,11 +126,28 @@ class FlowLifecycleRefused extends RuntimeException {
 	}//end __construct()
 
 	/**
+	 * Where the refusal happened: the flow, and the state when there is one.
+	 *
+	 * @param string      $flowId The flow the refusal is about.
+	 * @param string|null $state  The lifecycle state that caused it, or null.
+	 *
+	 * @return string The parenthesised location.
+	 */
+	private static function where(string $flowId, ?string $state): string {
+		$where = ' (flow ' . $flowId;
+		if ($state !== null) {
+			$where .= ', state ' . $state;
+		}
+
+		return $where . ')';
+	}//end where()
+
+	/**
 	 * The machine-readable reason.
 	 *
 	 * @return string One of the REASON_* constants.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function getReason(): string {
 		return $this->reason;
@@ -143,7 +159,7 @@ class FlowLifecycleRefused extends RuntimeException {
 	 *
 	 * @return string The flow uuid.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function getFlowId(): string {
 		return $this->flowId;
@@ -155,7 +171,7 @@ class FlowLifecycleRefused extends RuntimeException {
 	 *
 	 * @return string|null The state, or null when the refusal is not about one.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function getState(): ?string {
 		return $this->state;

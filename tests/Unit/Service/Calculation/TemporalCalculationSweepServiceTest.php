@@ -41,8 +41,14 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\CalculationRecomputer;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\LifecycleTerminals;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\TemporalCalculations;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\TemporalObjectRefresher;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\TemporalSchemaScan;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\TemporalSchemaSweeper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -82,24 +88,18 @@ class TemporalCalculationSweepServiceTest extends TestCase {
 
 		// The pack reference resolves to the seeded default tiers (-7 / -2 / 0).
 		$references = $this->createMock(ReferenceResolver::class);
-		$references->method('resolveAll')->willReturn(
+		$references->method('resolveReferences')->willReturn(
 			[
-				'pack' => [
-					'escalationTiers' => [
-						[
-							'tier' => 'reminder',
-							'offsetDays' => -7,
-						],
-						[
-							'tier' => 'escalation',
-							'offsetDays' => -2,
-						],
-						[
-							'tier' => 'breach',
-							'offsetDays' => 0,
+				'refs' => [
+					'pack' => [
+						'escalationTiers' => [
+							['tier' => 'reminder', 'offsetDays' => -7],
+							['tier' => 'escalation', 'offsetDays' => -2],
+							['tier' => 'breach', 'offsetDays' => 0],
 						],
 					],
 				],
+				'unresolved' => [],
 			]
 		);
 
@@ -108,14 +108,20 @@ class TemporalCalculationSweepServiceTest extends TestCase {
 			aggregates: $this->createMock(AggregateReferenceResolver::class),
 		);
 
+		$logger = $this->createMock(LoggerInterface::class);
 		$this->service = new TemporalCalculationSweepService(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
+			scan: new TemporalSchemaScan(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), logger: $logger),
+			calculations: new TemporalCalculations(),
+			sweeper: new TemporalSchemaSweeper(
+				terminals: new LifecycleTerminals(),
+				refresher: new TemporalObjectRefresher(
+					recomputer: new CalculationRecomputer(evaluator: $this->evaluator, payloadBuilder: $this->payloadBuilder, logger: $logger),
+					objectService: $this->objectService,
+					logger: $logger
+				),
+				logger: $logger
+			),
 			objectMapper: $this->objectMapper,
-			evaluator: $this->evaluator,
-			payloadBuilder: $this->payloadBuilder,
-			objectService: $this->objectService,
-			logger: $this->createMock(LoggerInterface::class),
 		);
 
 	}//end setUp()
@@ -228,6 +234,36 @@ class TemporalCalculationSweepServiceTest extends TestCase {
 		$this->assertSame(0, $summary['errors']);
 
 	}//end testSweepRewritesOnlyChangedNonTerminalObjects()
+
+	/**
+	 * The sweep re-saves a row whose `type: string` property the read decoded
+	 * with the stored JSON string, so validation does not refuse it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	public function testTheSweepRestoresDecodedStringTypedValues(): void {
+		$schema = $this->dsarSchema();
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->registerMapper->method('findAll')->willReturn([$this->register()]);
+
+		$crossing = $this->caseObject(uuid: 'case-crossing', status: 'in-progress', dueInDays: 5, storedTier: 'on-track', storedDaysRemaining: 12);
+		$crossing->setObject([...$crossing->getObject(), 'subjectId' => ['bsn' => '999994001']]);
+		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturn([$crossing]);
+
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			static function ($object) use (&$saved) {
+				$saved[] = $object;
+				return new ObjectEntity();
+			}
+		);
+
+		$this->service->runSweep();
+
+		$this->assertSame('{"bsn":"999994001"}', $saved[0]['subjectId']);
+	}//end testTheSweepRestoresDecodedStringTypedValues()
 
 	/**
 	 * The recompute produces the tier the write path will persist — including

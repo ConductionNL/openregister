@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-token-set/specs/credential-broker/spec.md#requirement-injection-is-selected-by-kind
+ * @spec openspec/specs/credential-broker/spec.md#requirement-injection-is-selected-by-kind
  */
 
 declare(strict_types=1);
@@ -33,6 +33,9 @@ namespace Unit\Service\Credential;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
@@ -48,6 +51,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class CredentialBrokerOAuth2Test extends TestCase {
 	/** @var array<string, mixed>|null The options the outbound client was called with. */
@@ -360,17 +366,23 @@ class CredentialBrokerOAuth2Test extends TestCase {
 		}
 
 		return new CredentialBrokerService(
-			$objectService,
-			$store,
-			$catalogue,
-			$session,
-			$clientService,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(OrganisationService::class),
-			null,
-			null,
-			null,
-			$refresh
+			sources: new CredentialSources(
+				objectService: $objectService,
+				credentialStore: $store,
+				catalogue: $catalogue
+			),
+			principals: new CredentialPrincipals(
+				userSession: $session,
+				organisationService: $this->createMock(OrganisationService::class),
+				groupManager: null,
+				userManager: null
+			),
+			outbound: new CredentialOutbound(
+				clientService: $clientService,
+				logger: $this->createMock(LoggerInterface::class),
+				oauth2Refresh: $refresh
+			),
+			objectGrants: null
 		);
 	}
 }

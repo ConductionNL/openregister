@@ -1,5 +1,36 @@
 import { defineStore } from 'pinia'
 import { Application } from '../../entities/index.js'
+import { loadNextcloudGroupsInto } from '../../services/groupSearch.js'
+import { okJson, sendJson } from '../../services/listPage.js'
+import { itemRequest } from './itemRequest.js'
+import { listStateActions } from './listState.js'
+
+/**
+ * The applications list URL, with the search term when there is one.
+ *
+ * @param {string|null} search The search term.
+ * @return {string} The URL.
+ * @spec exclude Client-side URL of the applications API passthrough.
+ */
+function applicationsUrl(search) {
+	const endpoint = '/index.php/apps/openregister/api/applications'
+	return search !== null && search !== ''
+		? endpoint + '?_search=' + encodeURIComponent(search)
+		: endpoint
+}
+
+/**
+ * The URL of one application, or of the list for a new one.
+ *
+ * @param {object} applicationItem The application.
+ * @return {string} The URL.
+ * @spec exclude Client-side URL of the applications API passthrough.
+ */
+function applicationUrl(applicationItem) {
+	return applicationItem.id
+		? `/index.php/apps/openregister/api/applications/${applicationItem.id}`
+		: '/index.php/apps/openregister/api/applications'
+}
 
 export const useApplicationStore = defineStore('application', {
 	state: () => ({
@@ -56,27 +87,7 @@ export const useApplicationStore = defineStore('application', {
 				(applicationItem) => new Application(applicationItem),
 			)
 		},
-		/**
-		 * Set pagination details
-		 *
-		 * @param {number} page - The current page number for pagination
-		 * @param {number} limit - The number of items to display per page
-		 *
-		 * @spec exclude Pure client UI-state setter — list pagination cursor. No backend contract.
-		 */
-		setPagination(page, limit = 20) {
-			this.pagination = { page, limit }
-		},
-		/**
-		 * Set query filters for application list
-		 *
-		 * @param {object} filters - The filter criteria to apply to the application list
-		 *
-		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
-		 */
-		setFilters(filters) {
-			this.filters = { ...this.filters, ...filters }
-		},
+		...listStateActions(20),
 		/**
 		 * Refresh the application list from the API
 		 *
@@ -88,68 +99,39 @@ export const useApplicationStore = defineStore('application', {
 		 */
 		/* istanbul ignore next */
 		async refreshApplicationList(search = null, soft = false) {
-			// Only set loading state for hard reloads
-			if (!soft) {
-				this.loading = true
-			}
-			this.error = null
-
-			try {
-				let endpoint = '/index.php/apps/openregister/api/applications'
-				if (search !== null && search !== '') {
-					endpoint = endpoint + '?_search=' + encodeURIComponent(search)
-				}
-
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = (await response.json()).results
-
-				this.setApplicationList(data)
-
-				return { response, data }
-			} catch (error) {
-				console.error('Error fetching applications:', error)
-				this.error = error.message
-				throw error
-			} finally {
-				if (!soft) {
-					this.loading = false
-				}
-			}
+			return itemRequest(this, {
+				clearsError: true,
+				soft,
+				log: (error) => console.error('Error fetching applications:', error),
+				run: async () => {
+					const response = await fetch(applicationsUrl(search), {
+						method: 'GET',
+					})
+					const data = (await okJson(response)).results
+					this.setApplicationList(data)
+					return { response, data }
+				},
+			})
 		},
+
 		/**
 		 * @param id
 		 * @spec exclude Thin API passthrough — GET /api/applications/{id}; observable contract owned by the applications backend capability.
 		 */
 		async getApplication(id) {
-			const endpoint = `/index.php/apps/openregister/api/applications/${id}`
-			try {
-				this.loading = true
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
-				this.setApplicationItem(data)
-				return data
-			} catch (err) {
-				console.error(err)
-				this.error = err.message
-				throw err
-			} finally {
-				this.loading = false
-			}
+			return itemRequest(this, {
+				log: (err) => console.error(err),
+				run: async () => {
+					const response = await fetch(applicationUrl({ id }), {
+						method: 'GET',
+					})
+					const data = await okJson(response)
+					this.setApplicationItem(data)
+					return data
+				},
+			})
 		},
+
 		/**
 		 * @param applicationItem
 		 * @spec exclude Thin API passthrough — DELETE /api/applications/{id}; observable contract owned by the applications backend capability.
@@ -158,34 +140,23 @@ export const useApplicationStore = defineStore('application', {
 			if (!applicationItem.id) {
 				throw new Error('No application to delete')
 			}
-
-			this.loading = true
-
-			const endpoint = `/index.php/apps/openregister/api/applications/${applicationItem.id}`
-
-			try {
-				const response = await fetch(endpoint, {
-					method: 'DELETE',
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				await this.refreshApplicationList()
-				this.setApplicationItem(null)
-
-				return { response }
-			} catch (error) {
-				console.error('Error deleting application:', error)
-				this.error = error.message
-				throw new Error(`Failed to delete application: ${error.message}`, {
-					cause: error,
-				})
-			} finally {
-				this.loading = false
-			}
+			return itemRequest(this, {
+				failure: 'Failed to delete application',
+				log: (error) => console.error('Error deleting application:', error),
+				run: async () => {
+					const response = await fetch(applicationUrl(applicationItem), {
+						method: 'DELETE',
+					})
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`)
+					}
+					await this.refreshApplicationList()
+					this.setApplicationItem(null)
+					return { response }
+				},
+			})
 		},
+
 		/**
 		 * @param applicationItem
 		 * @spec exclude Thin API passthrough — POST/PUT /api/applications; observable contract owned by the applications backend capability.
@@ -194,48 +165,25 @@ export const useApplicationStore = defineStore('application', {
 			if (!applicationItem) {
 				throw new Error('No application to save')
 			}
-
-			this.loading = true
-
-			const isNewApplication = !applicationItem.id
-			const endpoint = isNewApplication
-				? '/index.php/apps/openregister/api/applications'
-				: `/index.php/apps/openregister/api/applications/${applicationItem.id}`
-			const method = isNewApplication ? 'POST' : 'PUT'
-
-			// Clean the data before sending - remove read-only fields
-			const cleanedData = this.cleanApplicationForSave(applicationItem)
-
-			try {
-				const response = await fetch(endpoint, {
-					method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(cleanedData),
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-				const data = new Application(responseData)
-
-				this.setApplicationItem(data)
-				await this.refreshApplicationList()
-
-				return { response, data }
-			} catch (error) {
-				console.error('Error saving application:', error)
-				this.error = error.message
-				throw new Error(`Failed to save application: ${error.message}`, {
-					cause: error,
-				})
-			} finally {
-				this.loading = false
-			}
+			return itemRequest(this, {
+				failure: 'Failed to save application',
+				log: (error) => console.error('Error saving application:', error),
+				run: async () => {
+					const response = await sendJson(
+						applicationUrl(applicationItem),
+						{
+							method: applicationItem.id ? 'PUT' : 'POST',
+							body: this.cleanApplicationForSave(applicationItem),
+						},
+					)
+					const data = new Application(await okJson(response))
+					this.setApplicationItem(data)
+					await this.refreshApplicationList()
+					return { response, data }
+				},
+			})
 		},
+
 		// Clean application data for saving - remove read-only fields
 		/**
 		 * @param applicationItem
@@ -269,33 +217,7 @@ export const useApplicationStore = defineStore('application', {
 		 * @spec exclude Thin passthrough to the Nextcloud OCS groups API; observable contract owned by Nextcloud core, not OpenRegister.
 		 */
 		async loadNextcloudGroups() {
-			try {
-				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
-				const response = await fetch(
-					'/ocs/v1.php/cloud/groups?format=json',
-					{
-						headers: {
-							'OCS-APIRequest': 'true',
-						},
-					},
-				)
-
-				if (response.ok) {
-					const data = await response.json()
-					if (data.ocs?.data?.groups) {
-						// Transform group IDs into objects with additional info
-						this.nextcloudGroups = data.ocs.data.groups.map(
-							(groupId) => ({
-								id: groupId,
-								name: groupId,
-								userCount: 0, // Could be fetched separately if needed
-							}),
-						)
-					}
-				}
-			} catch (error) {
-				console.error('Error loading Nextcloud groups:', error)
-			}
+			return loadNextcloudGroupsInto(this)
 		},
 	},
 })

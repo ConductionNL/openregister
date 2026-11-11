@@ -40,6 +40,15 @@ namespace OCA\OpenRegister\Service\Gdpr\Regulator;
  * A registerable regulator-escalation provider for a DSAR case.
  */
 interface RegulatorEscalateProvider {
+
+	/**
+	 * The stable id of the fail-closed default provider, which the default policy pack binds.
+	 *
+	 * Callers outside lib/Service compare a registry's ids against it without naming that provider class.
+	 *
+	 * @var string
+	 */
+	public const NULL_PROVIDER_ID = 'or.default.regulator-escalate.null';
 	/**
 	 * Stable provider id addressed by a `dsarPolicyPack.regulatorEscalateProvider`
 	 * selector. MUST be unique across the registry; collisions are rejected
@@ -47,7 +56,7 @@ interface RegulatorEscalateProvider {
 	 *
 	 * @return string The provider id (e.g. `or.default.regulator-escalate.null`).
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function getProviderId(): string;
 
@@ -66,7 +75,7 @@ interface RegulatorEscalateProvider {
 	 *
 	 * @return RegulatorEscalateResult The escalation outcome (reference + status).
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function escalate(string $caseUuid, array $case): RegulatorEscalateResult;
 }//end interface

@@ -115,3 +115,15 @@ has to reach every derived copy.
   whole-object soft delete. That is the execution primitive this change
   declares an archival outcome on top of, which is why it is reused rather
   than rebuilt.
+
+## Added by the owner moves pass (28 Sep 2026)
+
+pipelinq's merged change `platform-client-retention` (pipelinq `development`
+9a5e95c, design D6) asks that the profile can also be declared beside the
+`archive` block, because the `x-openregister-archival` block requires a
+`retention` object that a schema archiving through `archive` does not have:
+"OpenRegister reads that profile only from `x-openregister-archival`, which D1
+rules out. So pipelinq asks OpenRegister to read the profile beside the
+`archive` block too, and declares it once that lands." Design D-6 and task
+2.2a carry it.
+

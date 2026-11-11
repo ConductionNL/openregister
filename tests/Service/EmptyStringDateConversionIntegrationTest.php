@@ -22,8 +22,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -31,6 +33,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * @group DB
@@ -62,7 +65,7 @@ class EmptyStringDateConversionIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Throwable $e) {
 				// best effort
 			}
@@ -186,7 +189,7 @@ class EmptyStringDateConversionIntegrationTest extends TestCase {
 			],
 		];
 
-		$result = $bulkHandler->bulkUpsert($objects, $this->testRegister, $this->testSchema, $tableName);
+		$result = $bulkHandler->upsert(new BulkUpsertCommand($objects, new RegisterSchema($this->testRegister, $this->testSchema), $tableName));
 		$uuid = $objects[0]['@self']['id'];
 		$this->createdObjectUuids[] = $uuid;
 
@@ -241,7 +244,6 @@ class EmptyStringDateConversionIntegrationTest extends TestCase {
 			$this->testRegister,
 			$this->testSchema,
 			$data,
-			null,
 			null,
 			false, // _rbac
 			false  // _multitenancy

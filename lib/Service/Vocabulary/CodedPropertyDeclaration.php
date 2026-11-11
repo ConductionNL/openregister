@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -49,151 +49,117 @@ class CodedPropertyDeclaration {
 	public const ANNOTATION = 'x-openregister-concepts';
 
 	/**
+	 * The simple spelling of the same binding: a scheme slug, nothing else.
+	 *
+	 * Published as a vocabulary modifier in openregister#3883, because that is
+	 * what an app forwards through an extending form and what a case-type
+	 * editor writes. `CodedPropertyDeclarationFactory` reads both into this one
+	 * declaration, so the validator, the option builder and the filter expander
+	 * cannot disagree about which properties are coded.
+	 *
+	 * Unprefixed on purpose. `assertKeysAreInTheVocabulary()` SKIPS every `x-`
+	 * key rather than checking it, so a prefixed spelling is accepted by the
+	 * save path without ever being published or validated; this one is both.
+	 */
+	public const SIMPLE_ANNOTATION = 'conceptScheme';
+
+	/**
+	 * The concept scheme's uri.
+	 *
+	 * @var string
+	 */
+	public readonly string $scheme;
+
+	/**
+	 * Whether values are stored as `uri` or as `notation`.
+	 *
+	 * @var string
+	 */
+	public readonly string $store;
+
+	/**
+	 * Whether a deprecated concept may still be written.
+	 *
+	 * @var boolean
+	 */
+	public readonly bool $allowDeprecated;
+
+	/**
+	 * The branch root's uri, when the property is bound to one.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $branch;
+
+	/**
+	 * Whether only leaf concepts may be written.
+	 *
+	 * @var boolean
+	 */
+	public readonly bool $leafOnly;
+
+	/**
+	 * How deep the branch walk goes.
+	 *
+	 * @var integer|null
+	 */
+	public readonly ?int $maxDepth;
+
+	/**
+	 * The property whose value narrows the option set.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $contextProperty;
+
+	/**
+	 * The declared context key that narrows the option set.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $contextKey;
+
+	/**
+	 * The property a rolled-up score is written to.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $scoreProperty;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $scheme The concept scheme's uri.
-	 * @param string $store Whether values are stored as `uri` or as `notation`.
-	 * @param boolean $allowDeprecated Whether a deprecated concept may still be written.
-	 * @param string|null $branch The branch root's uri, when the property is bound to one.
-	 * @param boolean $leafOnly Whether only leaf concepts may be written.
-	 * @param integer|null $maxDepth How deep the branch walk goes.
-	 * @param string|null $contextProperty The property whose value narrows the option set.
-	 * @param string|null $contextKey The declared context key that narrows the option set.
-	 * @param string|null $scoreProperty The property a rolled-up score is written to.
+	 * The grouped inputs are flattened onto this declaration's own properties,
+	 * so every reader keeps reading `$declaration->branch` and friends.
+	 *
+	 * @param string          $scheme        The concept scheme's uri.
+	 * @param CodedValueRules $rules         Storage form, deprecated and leaf rules.
+	 * @param CodedNarrowing  $narrowing     Branch, depth and context narrowing.
+	 * @param string|null     $scoreProperty The property a rolled-up score is written to.
 	 */
 	public function __construct(
-		public readonly string $scheme,
-		public readonly string $store = 'uri',
-		public readonly bool $allowDeprecated = false,
-		public readonly ?string $branch = null,
-		public readonly bool $leafOnly = false,
-		public readonly ?int $maxDepth = null,
-		public readonly ?string $contextProperty = null,
-		public readonly ?string $contextKey = null,
-		public readonly ?string $scoreProperty = null,
+		string $scheme,
+		CodedValueRules $rules = new CodedValueRules(),
+		CodedNarrowing $narrowing = new CodedNarrowing(),
+		?string $scoreProperty = null,
 	) {
-
+		$this->scheme = $scheme;
+		$this->store = $rules->store;
+		$this->allowDeprecated = $rules->allowDeprecated;
+		$this->leafOnly = $rules->leafOnly;
+		$this->branch = $narrowing->branch;
+		$this->maxDepth = $narrowing->maxDepth;
+		$this->contextProperty = $narrowing->contextProperty;
+		$this->contextKey = $narrowing->contextKey;
+		$this->scoreProperty = $scoreProperty;
 	}//end __construct()
-
-	/**
-	 * Read a declaration off a schema property, or null when it carries none.
-	 *
-	 * A declaration without a `scheme` is not a declaration: it is a typo, and
-	 * returning null makes the property behave as an ordinary string rather
-	 * than as a code list bound to nothing.
-	 *
-	 * @param mixed $property The schema property definition.
-	 *
-	 * @return self|null The declaration, or null.
-	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
-	 */
-	public static function fromProperty(mixed $property): ?self {
-		$raw = null;
-		if (is_array($property) === true) {
-			$raw = ($property[self::ANNOTATION] ?? null);
-		} elseif (is_object($property) === true) {
-			$raw = ($property->{self::ANNOTATION} ?? null);
-		}
-
-		if (is_object($raw) === true) {
-			$raw = (array)$raw;
-		}
-
-		if (is_array($raw) === false) {
-			return null;
-		}
-
-		$scheme = trim((string)($raw['scheme'] ?? ''));
-		if ($scheme === '') {
-			return null;
-		}
-
-		$store = trim((string)($raw['store'] ?? 'uri'));
-		if ($store !== 'notation') {
-			$store = 'uri';
-		}
-
-		$branch = trim((string)($raw['branch'] ?? ''));
-		$contextProperty = trim((string)($raw['contextProperty'] ?? ''));
-		$contextKey = trim((string)($raw['contextKey'] ?? ''));
-
-		$score = ($raw['score'] ?? null);
-		if (is_object($score) === true) {
-			$score = (array)$score;
-		}
-
-		$scoreProperty = '';
-		if (is_array($score) === true) {
-			$scoreProperty = trim((string)($score['property'] ?? ''));
-		} elseif (is_string($score) === true) {
-			$scoreProperty = trim($score);
-		}
-
-		$maxDepth = null;
-		if (isset($raw['maxDepth']) === true && is_numeric($raw['maxDepth']) === true) {
-			$maxDepth = (int)$raw['maxDepth'];
-		}
-
-		// An absent part reads as an empty string above and as null on the
-		// declaration, so the four optional parts are normalised once here
-		// rather than each carrying its own check at the call.
-		if ($branch === '') {
-			$branch = null;
-		}
-
-		if ($contextProperty === '') {
-			$contextProperty = null;
-		}
-
-		if ($contextKey === '') {
-			$contextKey = null;
-		}
-
-		if ($scoreProperty === '') {
-			$scoreProperty = null;
-		}
-
-		return new self(
-			scheme: $scheme,
-			store: $store,
-			allowDeprecated: (($raw['allowDeprecated'] ?? false) === true),
-			branch: $branch,
-			leafOnly: (($raw['leafOnly'] ?? false) === true),
-			maxDepth: $maxDepth,
-			contextProperty: $contextProperty,
-			contextKey: $contextKey,
-			scoreProperty: $scoreProperty
-		);
-	}//end fromProperty()
-
-	/**
-	 * Every coded declaration on a schema's properties, keyed by property name.
-	 *
-	 * @param array<string,mixed> $properties The schema's property map.
-	 *
-	 * @return array<string,self> The declarations.
-	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
-	 */
-	public static function fromProperties(array $properties): array {
-		$declarations = [];
-		foreach ($properties as $name => $property) {
-			$declaration = self::fromProperty(property: $property);
-			if ($declaration !== null) {
-				$declarations[(string)$name] = $declaration;
-			}
-		}
-
-		return $declarations;
-	}//end fromProperties()
 
 	/**
 	 * Whether the option set is narrowed by something outside the scheme.
 	 *
 	 * @return boolean True when a context property or key is declared.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isContextBound(): bool {
 		return ($this->contextProperty !== null || $this->contextKey !== null);
@@ -212,13 +178,28 @@ class CodedPropertyDeclaration {
 	 *
 	 * @return boolean True when the concept is in the subset.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function matchesContext(array $concept, ?string $context): bool {
 		if ($this->isContextBound() === false || $context === null || $context === '') {
 			return true;
 		}
 
+		return $this->declaresContext(concept: $concept, context: $context);
+	}//end matchesContext()
+
+	/**
+	 * Whether the concept names this context among the ones it serves.
+	 *
+	 * A concept that declares no contexts (absent, empty, or not a list) serves
+	 * every context, so it matches. Otherwise the context must be named.
+	 *
+	 * @param array<string,mixed> $concept The concept's decoded object data.
+	 * @param string $context The context value in play.
+	 *
+	 * @return boolean True when the concept serves this context.
+	 */
+	private function declaresContext(array $concept, string $context): bool {
 		$declared = ($concept['contexts'] ?? null);
 		if (is_string($declared) === true) {
 			$declared = [$declared];
@@ -228,12 +209,6 @@ class CodedPropertyDeclaration {
 			return true;
 		}
 
-		foreach ($declared as $candidate) {
-			if (is_string($candidate) === true && $candidate === $context) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end matchesContext()
+		return in_array(needle: $context, haystack: $declared, strict: true);
+	}//end declaresContext()
 }//end class

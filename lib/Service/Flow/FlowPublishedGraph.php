@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -30,15 +30,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use Psr\Container\ContainerInterface;
 
 /**
  * Resolves a flow's published graph and keeps its trigger rows in step with it.
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowPublishedGraph {
+class FlowPublishedGraph implements FlowPublishedGraphInterface {
 	/**
 	 * Constructor.
 	 *
@@ -57,10 +57,10 @@ class FlowPublishedGraph {
 	 *
 	 * @return array<string, mixed>|null The published graph, or null.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function graphOf(string $flowId): ?array {
-		$published = $this->container->get(FlowVersionMapper::class)->findPublished(flowUuid: $flowId);
+		$published = $this->container->get(FlowVersionMapperInterface::class)->findPublished(flowUuid: $flowId);
 		if ($published === null) {
 			return null;
 		}
@@ -83,7 +83,7 @@ class FlowPublishedGraph {
 	 * @return array<string, mixed>|null The pinned graph, or null when the run
 	 *                                   carries no version or it is unresolvable.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function ofRun(FlowRun $run): ?array {
 		$version = $run->getFlowVersion();
@@ -91,7 +91,7 @@ class FlowPublishedGraph {
 			return null;
 		}
 
-		$row = $this->container->get(FlowVersionMapper::class)
+		$row = $this->container->get(FlowVersionMapperInterface::class)
 			->find(flowUuid: (string)$run->getFlowId(), version: (int)$version);
 
 		if ($row === null) {
@@ -117,7 +117,7 @@ class FlowPublishedGraph {
 	 * @return array<string, mixed>|null The document to walk, or null when the
 	 *                                   run is pinned to a version that is gone.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function overlayOnto(FlowRun $run, array $live): ?array {
 		// An unpinned run is the interactive draft test run — the one
@@ -132,6 +132,19 @@ class FlowPublishedGraph {
 			return null;
 		}
 
+		return self::withPinnedDefinition(live: $live, pinned: $pinned);
+
+	}//end overlayOnto()
+
+	/**
+	 * The live flow with the definition keys the pinned graph carries laid over it.
+	 *
+	 * @param array<string, mixed> $live   The live flow.
+	 * @param array<string, mixed> $pinned The pinned graph.
+	 *
+	 * @return array<string, mixed> The flow to walk.
+	 */
+	private static function withPinnedDefinition(array $live, array $pinned): array {
 		foreach (['nodes', 'edges', 'limits', 'executionMode'] as $key) {
 			if (array_key_exists($key, $pinned) === true) {
 				$live[$key] = $pinned[$key];
@@ -139,7 +152,6 @@ class FlowPublishedGraph {
 		}
 
 		return $live;
-
-	}//end overlayOnto()
+	}//end withPinnedDefinition()
 
 }//end class

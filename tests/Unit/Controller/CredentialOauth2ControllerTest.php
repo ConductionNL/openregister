@@ -23,18 +23,24 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
+ * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
  */
 
 declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialOauth2ControllerFactory;
 use OCA\OpenRegister\Controller\CredentialOauth2Controller;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
+use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
+use OCA\OpenRegister\Service\Credential\OAuth2AuthorizationRequest;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
+use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
+use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
 use OCA\OpenRegister\Service\Credential\OAuth2RelayGuard;
 use OCA\OpenRegister\Service\Credential\OAuth2StateService;
 use OCP\AppFramework\Http;
@@ -47,9 +53,17 @@ use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration;
+use OCA\OpenRegister\Service\Credential\OAuth2Revocation;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialOauth2Controller
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2Mappers
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2Domain
+ * @uses \OCA\OpenRegister\Controller\Support\AccessLinkPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Endpoints
  */
 class CredentialOauth2ControllerTest extends TestCase {
 	/** @var string This instance's own callback URL. */
@@ -64,10 +78,30 @@ class CredentialOauth2ControllerTest extends TestCase {
 	/** @var array<int, array<string, mixed>> Every local disable performed. */
 	private array $disables = [];
 
+	/** @var array<int, string|null> The credential each upstream revoke was asked for. */
+	private array $revokedFor = [];
+
+	/** @var array<int, array{0: string, 1: string}> Every minted client credential a failed start removed, with its scope. */
+	private array $discards = [];
+
+	/** @var array<int, array<string, mixed>> The claims every issued state was signed over. */
+	private array $issuedClaims = [];
+
+	/** @var array<int, string> The nonce of every pending state a failed start withdrew. */
+	private array $withdrawals = [];
+
+	/** @var array<int, string> Every warning the controller logged. */
+	private array $warnings = [];
+
 	protected function setUp(): void {
 		$this->attempts = 0;
 		$this->completions = 0;
 		$this->disables = [];
+		$this->revokedFor = [];
+		$this->discards = [];
+		$this->issuedClaims = [];
+		$this->withdrawals = [];
+		$this->warnings = [];
 	}
 
 	public function testARelayForwardsToAnAllowListedTenantAndExchangesNothing(): void {
@@ -150,7 +184,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$response = $controller->callback();
 
 		$this->assertInstanceOf(RedirectResponse::class, $response);
-		$this->assertStringEndsWith('?connected=ok', $response->getRedirectURL());
+		$this->assertStringEndsWith('?connected=ok#user-settings', $response->getRedirectURL());
 		$this->assertSame(1, $this->completions);
 	}
 
@@ -165,12 +199,12 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$response = $controller->callback();
 
 		$this->assertInstanceOf(RedirectResponse::class, $response);
-		$this->assertStringEndsWith('?connected=failed', $response->getRedirectURL());
+		$this->assertStringEndsWith('?connected=failed#user-settings', $response->getRedirectURL());
 		$this->assertStringNotContainsString('invalid_client', $response->getRedirectURL());
 		$this->assertStringNotContainsString('CLIENT_ID_HERE', $response->getRedirectURL());
 	}
 
-	public function testAnOffInstanceReturnUrlFallsBackToPersonalSettings(): void {
+	public function testAnOffInstanceReturnUrlFallsBackToTheAppPage(): void {
 		$controller = $this->makeController(
 			params: ['state' => 'STATE_VALUE_HERE', 'code' => 'AUTH_CODE_HERE'],
 			unverifiedClaims: ['cb' => self::OWN_CALLBACK],
@@ -180,7 +214,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$response = $controller->callback();
 
 		$this->assertInstanceOf(RedirectResponse::class, $response);
-		$this->assertStringStartsWith('https://home.example/settings/user/additional', $response->getRedirectURL());
+		$this->assertStringStartsWith('https://home.example/apps/openregister/', $response->getRedirectURL());
 	}
 
 	public function testTheClientMetadataIdentifiesItselfByItsOwnUrl(): void {
@@ -200,6 +234,177 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->start()->getStatus());
 	}
 
+	public function testStartReturnsTheAuthorizationUrl(): void {
+		$response = $this->makeController(params: ['provider' => 'linkedin'])->start();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('https://provider.example/authorize?state=STATE', $response->getData()['authorizationUrl']);
+	}
+
+	public function testStartAnswers409WhenTheProviderHasNoClientConfigured(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['authorizationUrl' => new OAuth2ClientNotConfiguredException('no OAuth2 client id is configured for provider linkedin')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertSame(['n'], $this->withdrawals, 'a 409 leaves no pending state behind');
+	}
+
+	public function testStartAnswers502WhenTheProviderServerWillNotRegisterAClient(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'mastodon'],
+			startThrows: ['ensureInstanceClient' => new OAuth2RegistrationFailedException('application registration failed')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
+		$this->assertSame([], $this->issuedClaims, 'a 502 comes before any state is stored');
+	}
+
+	public function testStartAnswers403WhenAGuardRefusesTheCaller(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'linkedin', 'scope' => 'organisation'],
+			startThrows: ['gatedOrganisation' => new CredentialAccessDeniedException('only an organisation administrator may connect a shared account')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertCount(1, $this->warnings, 'a refusal reaches a default install\'s log');
+		$this->assertStringContainsString('only an organisation administrator', $this->warnings[0]);
+	}
+
+	public function testStartAnswers403ForACredentialTheCallerMayNotReauthorise(): void {
+		$response = $this->makeController(params: ['provider' => 'linkedin', 'credentialId' => 'someone-elses'])->start();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}
+
+	public function testStartAnswers500OnlyForAGenuineFault(): void {
+		$afterClaims = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['issue' => new RuntimeException('the vault insert failed')],
+		)->start();
+		$beforeClaims = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['gatedOrganisation' => new RuntimeException('the organisation store is down')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $afterClaims->getStatus());
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $beforeClaims->getStatus());
+	}
+
+	public function testStartAnswers400ForAProviderThatIsNotAnOAuth2Connection(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'github'],
+			startThrows: ['oauth2Provider' => new \InvalidArgumentException('provider "github" is not an OAuth2 connection')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}
+
+	public function testAGuardRefusalAfterTheClaimsIsTheServersFaultNotTheCallers(): void {
+		// An admin-configured client the broker cannot resolve (it is unavailable, or
+		// the client credential is not shared) is this server's setup, not the caller.
+		$response = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['authorizationUrl' => new CredentialAccessDeniedException('credential broker is unavailable to resolve the OAuth2 client secret')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+	}
+
+	public function testTheMintedMarkerNeverReachesTheSignedState(): void {
+		$response = $this->makeController(params: ['provider' => 'mastodon'], mintsClient: 'minted-client')->start();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertArrayNotHasKey(OAuth2InstanceClient::MINTED_KEY, $this->issuedClaims[0]);
+		$this->assertSame('minted-client', $this->issuedClaims[0]['cr']);
+		$this->assertSame([], $this->discards, 'a start that succeeds keeps the client it minted');
+		$this->assertSame([], $this->withdrawals, 'a start that succeeds keeps its pending state');
+	}
+
+	public function testAStartThatFailsAfterMintingAClientRemovesIt(): void {
+		$vaultDown = $this->makeController(
+			params: ['provider' => 'mastodon'],
+			startThrows: ['issue' => new RuntimeException('the vault insert failed')],
+			mintsClient: 'minted-client',
+		)->start();
+		$notConfigured = $this->makeController(
+			params: ['provider' => 'mastodon'],
+			startThrows: ['authorizationUrl' => new OAuth2ClientNotConfiguredException('no OAuth2 client id is configured for provider mastodon')],
+			mintsClient: 'second-client',
+		)->start();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $vaultDown->getStatus());
+		$this->assertSame(Http::STATUS_CONFLICT, $notConfigured->getStatus());
+		$this->assertSame([['minted-client', 'personal'], ['second-client', 'personal']], $this->discards);
+	}
+
+	public function testAnOrganisationStartRemovesTheClientFromTheOrganisationScope(): void {
+		// The secret was minted under the organisation's vault owner; removing it from
+		// the user's vault instead would leave it with nothing pointing at it.
+		$response = $this->makeController(
+			params: ['provider' => 'mastodon', 'scope' => 'organisation'],
+			startThrows: ['authorizationUrl' => new RuntimeException('the catalogue entry is broken')],
+			mintsClient: 'org-client',
+		)->start();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame([['org-client', 'organisation']], $this->discards);
+	}
+
+	public function testAFailedCleanupKeepsTheRefusalAndIsLogged(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'mastodon'],
+			startThrows: ['authorizationUrl' => new OAuth2ClientNotConfiguredException('no OAuth2 client id is configured for provider mastodon')],
+			mintsClient: 'minted-client',
+			discardFails: true,
+		)->start();
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertCount(1, $this->warnings);
+		$this->assertStringContainsString('could not remove the client credential', $this->warnings[0]);
+	}
+
+	public function testAStartThatFailsAfterStoringItsStateWithdrawsIt(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['authorizationUrl' => new RuntimeException('the catalogue entry is broken')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['n'], $this->withdrawals);
+	}
+
+	public function testAStartWhoseStateWasNeverStoredHasNothingToWithdraw(): void {
+		$this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['issue' => new RuntimeException('the vault insert failed')],
+		)->start();
+
+		$this->assertSame([], $this->withdrawals);
+	}
+
+	public function testAFailedWithdrawalKeepsTheRefusalAndIsLogged(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['authorizationUrl' => new OAuth2ClientNotConfiguredException('no OAuth2 client id is configured for provider linkedin')],
+			withdrawFails: true,
+		)->start();
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertCount(1, $this->warnings);
+		$this->assertStringContainsString('could not remove the pending state', $this->warnings[0]);
+	}
+
+	public function testAFailedStartLeavesAClientItDidNotMintAlone(): void {
+		$this->makeController(
+			params: ['provider' => 'mastodon'],
+			startThrows: ['issue' => new RuntimeException('the vault insert failed')],
+		)->start();
+
+		$this->assertSame([], $this->discards);
+	}
+
 	public function testDisconnectRevokesUpstreamThenDisablesLocally(): void {
 		$controller = $this->makeController(
 			params: [],
@@ -210,6 +415,31 @@ class CredentialOauth2ControllerTest extends TestCase {
 
 		$this->assertSame(['status' => 'disabled', 'revoked' => true], $response->getData());
 		$this->assertSame('', $this->disables[0]['lastError']);
+	}
+
+	public function testDisconnectWritesTheGuardedRowByItsUuid(): void {
+		$controller = $this->makeController(
+			params: [],
+			manageable: ['provider' => 'mastodon', 'scope' => 'personal', 'owner' => 'alice'],
+			storedUuid: 'cred-uuid'
+		);
+
+		$controller->disconnect(id: 'cred-slug');
+
+		$this->assertSame('cred-uuid', $this->disables[0]['credentialId']);
+		$this->assertSame(['cred-uuid'], $this->revokedFor);
+	}
+
+	public function testDisconnectRefusesARowWithoutUuid(): void {
+		$controller = $this->makeController(
+			params: [],
+			manageable: ['provider' => 'mastodon', 'scope' => 'personal', 'owner' => 'alice'],
+			storedUuid: ''
+		);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->disconnect(id: 'cred-1')->getStatus());
+		$this->assertSame([], $this->disables);
+		$this->assertSame([], $this->revokedFor);
 	}
 
 	public function testAnUnreachableProviderStillDisconnectsLocally(): void {
@@ -269,6 +499,10 @@ class CredentialOauth2ControllerTest extends TestCase {
 	 * @param array<string, mixed>|null $manageable The stored connection a disconnect targets, or null when there is none.
 	 * @param string|null $revokeResult What the upstream revoke reports, or null to have it throw.
 	 * @param boolean $disableFails Whether the local disable fails.
+	 * @param array<string, \Throwable> $startThrows A failure per start collaborator method, by method name.
+	 * @param string|null $mintsClient The client credential a per-instance start mints, or null when it mints none.
+	 * @param boolean $discardFails Whether removing a minted client fails.
+	 * @param boolean $withdrawFails Whether withdrawing a pending state fails.
 	 *
 	 * @return CredentialOauth2Controller The controller under test.
 	 */
@@ -282,6 +516,11 @@ class CredentialOauth2ControllerTest extends TestCase {
 		?array $manageable = null,
 		?string $revokeResult = '',
 		bool $disableFails = false,
+		array $startThrows = [],
+		?string $mintsClient = null,
+		bool $discardFails = false,
+		bool $withdrawFails = false,
+		string $storedUuid = 'cred-1',
 	): CredentialOauth2Controller {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
@@ -292,6 +531,25 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$states = $this->createMock(OAuth2StateService::class);
 		$states->method('parseUnverified')->willReturn($unverifiedClaims);
 		$states->method('consume')->willReturn($consumed);
+		$states->method('issue')->willReturnCallback(
+			function (array $claims) use ($startThrows): array {
+				$this->issuedClaims[] = $claims;
+				if (isset($startThrows['issue']) === true) {
+					throw $startThrows['issue'];
+				}
+
+				return ['state' => 'STATE', 'nonce' => 'n', 'verifier' => 'v', 'challenge' => 'CHALLENGE'];
+			}
+		);
+		$states->method('withdraw')->willReturnCallback(
+			function (string $nonce) use ($withdrawFails): void {
+				if ($withdrawFails === true) {
+					throw new RuntimeException('the vault is down');
+				}
+
+				$this->withdrawals[] = $nonce;
+			}
+		);
 
 		$relayGuard = $this->createMock(OAuth2RelayGuard::class);
 		$relayGuard->method('permits')->willReturn($relayPermits);
@@ -334,7 +592,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 					return 'https://home.example/apps/openregister/oauth2/client-metadata.json';
 				}
 
-				return 'https://home.example/settings/user/additional';
+				return 'https://home.example/apps/openregister/';
 			}
 		);
 		$urlGenerator->method('getAbsoluteURL')->willReturnCallback(
@@ -347,29 +605,79 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$connections->method('findManageable')->willReturn(null);
 		} else {
 			$entity = new ObjectEntity();
-			$entity->setUuid('cred-1');
+			$entity->setUuid($storedUuid);
 			$entity->setObject($manageable);
 			$connections->method('findManageable')->willReturn($entity);
 		}
 
 		$connections->method('disable')->willReturnCallback(
-			function (string $credentialId, array $data, string $lastError) use ($disableFails): void {
+			function (\OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord $connection, string $lastError) use ($disableFails): void {
 				if ($disableFails === true) {
 					throw new RuntimeException('the object store is down');
 				}
 
-				$this->disables[] = ['credentialId' => $credentialId, 'lastError' => $lastError];
+				$this->disables[] = ['credentialId' => $connection->credentialId, 'lastError' => $lastError];
 			}
 		);
 
-		$connect->method('oauth2Provider')->willReturn(['identifier' => 'mastodon', 'kind' => 'oauth2-token-set']);
+		if (isset($startThrows['oauth2Provider']) === true) {
+			$connect->method('oauth2Provider')->willThrowException($startThrows['oauth2Provider']);
+		} else {
+			$connect->method('oauth2Provider')->willReturn(['identifier' => 'mastodon', 'kind' => 'oauth2-token-set']);
+		}
+
+		if (isset($startThrows['ensureInstanceClient']) === true) {
+			$connect->method('ensureInstanceClient')->willThrowException($startThrows['ensureInstanceClient']);
+		} else {
+			$connect->method('ensureInstanceClient')->willReturnCallback(
+				static function (OAuth2ClientRegistration $registration) use ($mintsClient): array {
+					$claims = $registration->claims;
+					if ($mintsClient === null) {
+						return $claims;
+					}
+
+					return array_merge($claims, ['cr' => $mintsClient, OAuth2InstanceClient::MINTED_KEY => $mintsClient]);
+				}
+			);
+		}
+
+		$connections->method('discard')->willReturnCallback(
+			function (string $credentialId, string $scope) use ($discardFails): void {
+				if ($discardFails === true) {
+					throw new RuntimeException('the object store is down');
+				}
+
+				$this->discards[] = [$credentialId, $scope];
+			}
+		);
+
+		$connect->method('authorizationRequest')->willReturnCallback(
+			static fn (string $redirectUri, array $issued): OAuth2AuthorizationRequest => new OAuth2AuthorizationRequest($redirectUri, $issued['state'], $issued['challenge'])
+		);
+		if (isset($startThrows['authorizationUrl']) === true) {
+			$connect->method('authorizationUrl')->willThrowException($startThrows['authorizationUrl']);
+		} else {
+			$connect->method('authorizationUrl')->willReturn('https://provider.example/authorize?state=STATE');
+		}
+
+		if (isset($startThrows['gatedOrganisation']) === true) {
+			$connections->method('gatedOrganisation')->willThrowException($startThrows['gatedOrganisation']);
+		}
 		$connect->method('revokeUpstream')->willReturnCallback(
-			function () use ($revokeResult): string {
+			function (OAuth2Revocation $revocation) use ($revokeResult): string {
+				$this->revokedFor[] = $revocation->address->credentialId;
 				if ($revokeResult === null) {
 					throw new RuntimeException('the provider is unreachable');
 				}
 
 				return $revokeResult;
+			}
+		);
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message): void {
+				$this->warnings[] = $message;
 			}
 		);
 
@@ -382,7 +690,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$session->method('getUser')->willReturn(null);
 		}
 
-		return new CredentialOauth2Controller(
+		return CredentialOauth2ControllerFactory::create(
 			'openregister',
 			$request,
 			$connect,
@@ -392,7 +700,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$endpoints,
 			$session,
 			$throttler,
-			$this->createMock(LoggerInterface::class)
+			$logger
 		);
 	}
 }

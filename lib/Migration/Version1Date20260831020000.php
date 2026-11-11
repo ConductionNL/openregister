@@ -108,7 +108,7 @@ class Version1Date20260831020000 extends SimpleMigrationStep {
 		if ($schema->hasTable(self::TABLE) === false) {
 			$output->warning(message: 'openregister_organisations is absent; skipping the counterparty columns');
 
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
@@ -124,7 +124,7 @@ class Version1Date20260831020000 extends SimpleMigrationStep {
 		}
 
 		if ($added === []) {
-			return null;
+			return $schema;
 		}
 
 		$output->info(message: 'openregister_organisations: added ' . implode(', ', $added));

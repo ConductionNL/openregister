@@ -1,0 +1,48 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`file configuration selects draws every select and its option the same way 1`] = `
+[
+  "<x-ncselect modelvalue="{&quot;id&quot;:&quot;objects&quot;,&quot;label&quot;:&quot;Files Attached to Objects&quot;}" inputid="extraction-scope" inputlabel="[Extraction Scope]" options="[{&quot;id&quot;:&quot;none&quot;,&quot;label&quot;:&quot;None (Disabled)&quot;,&quot;description&quot;:&quot;Do not extract text automatically&quot;},{&quot;id&quot;:&quot;all&quot;,&quot;label&quot;:&quot;All Files&quot;,&quot;description&quot;:&quot;Extract text from all uploaded files in Nextcloud&quot;},{&quot;id&quot;:&quot;folders&quot;,&quot;label&quot;:&quot;Files in Specific Folders&quot;,&quot;description&quot;:&quot;Extract text from files in designated folders only&quot;},{&quot;id&quot;:&quot;objects&quot;,&quot;label&quot;:&quot;Files Attached to Objects&quot;,&quot;description&quot;:&quot;Extract text only from files attached to OpenRegister objects (recommended)&quot;}]">
+<slot-option>
+<div class="option-item">
+<span class="option-label">[label]</span>
+<span class="option-description">[description]</span>
+</div>
+</slot-option>
+</x-ncselect>",
+  "<x-ncselect modelvalue="{&quot;id&quot;:&quot;llphant&quot;,&quot;label&quot;:&quot;LLPhant&quot;}" inputid="text-extractor" inputlabel="[Text Extraction Engine]" disabled="false" options="[{&quot;id&quot;:&quot;llphant&quot;,&quot;label&quot;:&quot;LLPhant&quot;,&quot;icon&quot;:&quot;🐘&quot;,&quot;description&quot;:&quot;Local PHP library - Best for: TXT, MD, HTML, JSON, XML, CSV, simple PDFs&quot;},{&quot;id&quot;:&quot;dolphin&quot;,&quot;label&quot;:&quot;Dolphin&quot;,&quot;icon&quot;:&quot;🐬&quot;,&quot;description&quot;:&quot;ByteDance AI - Best for: Complex PDFs, tables, formulas, DOCX, XLSX, PPT&quot;}]">
+<slot-option>
+<div class="option-item">
+<span class="option-icon">[icon]</span>
+<span class="option-label">[label]</span>
+<span class="option-description">[description]</span>
+</div>
+</slot-option>
+</x-ncselect>",
+  "<x-ncselect modelvalue="{&quot;id&quot;:&quot;background&quot;,&quot;label&quot;:&quot;Background Job&quot;}" inputid="extraction-mode" inputlabel="[Extraction Mode]" disabled="false" options="[{&quot;id&quot;:&quot;immediate&quot;,&quot;label&quot;:&quot;Immediate&quot;,&quot;description&quot;:&quot;Process during upload - direct link between file upload and parsing logic&quot;},{&quot;id&quot;:&quot;background&quot;,&quot;label&quot;:&quot;Background Job&quot;,&quot;description&quot;:&quot;Delayed extraction action on the job stack - process files asynchronously after upload&quot;},{&quot;id&quot;:&quot;cron&quot;,&quot;label&quot;:&quot;Cron Job&quot;,&quot;description&quot;:&quot;Repeating action handling files - periodic batch processing via scheduled jobs&quot;},{&quot;id&quot;:&quot;manual&quot;,&quot;label&quot;:&quot;Manual Only&quot;,&quot;description&quot;:&quot;Only extract when manually triggered via Actions menu&quot;}]">
+<slot-option>
+<div class="option-item">
+<span class="option-label">[label]</span>
+<span class="option-description">[description]</span>
+</div>
+</slot-option>
+</x-ncselect>",
+  "<x-ncselect modelvalue="{&quot;id&quot;:&quot;background&quot;,&quot;label&quot;:&quot;Background Job&quot;}" inputid="object-extraction-mode" inputlabel="[Object Extraction Mode]" options="[{&quot;id&quot;:&quot;immediate&quot;,&quot;label&quot;:&quot;Immediate&quot;,&quot;description&quot;:&quot;Process during upload - direct link between file upload and parsing logic&quot;},{&quot;id&quot;:&quot;background&quot;,&quot;label&quot;:&quot;Background Job&quot;,&quot;description&quot;:&quot;Delayed extraction action on the job stack - process files asynchronously after upload&quot;},{&quot;id&quot;:&quot;cron&quot;,&quot;label&quot;:&quot;Cron Job&quot;,&quot;description&quot;:&quot;Repeating action handling files - periodic batch processing via scheduled jobs&quot;},{&quot;id&quot;:&quot;manual&quot;,&quot;label&quot;:&quot;Manual Only&quot;,&quot;description&quot;:&quot;Only extract when manually triggered via Actions menu&quot;}]">
+<slot-option>
+<div class="option-item">
+<span class="option-label">[label]</span>
+<span class="option-description">[description]</span>
+</div>
+</slot-option>
+</x-ncselect>",
+  "<x-ncselect modelvalue="{&quot;id&quot;:&quot;regex&quot;,&quot;label&quot;:&quot;Regex&quot;}" inputid="entity-recognition-method" inputlabel="[Entity Recognition Method]" options="[{&quot;id&quot;:&quot;regex&quot;,&quot;label&quot;:&quot;Regex&quot;,&quot;icon&quot;:&quot;🔤&quot;,&quot;description&quot;:&quot;Local pattern matching - Fast, privacy-friendly, detects emails, phones, IBANs&quot;},{&quot;id&quot;:&quot;presidio&quot;,&quot;label&quot;:&quot;Presidio&quot;,&quot;icon&quot;:&quot;🛡️&quot;,&quot;description&quot;:&quot;Microsoft Presidio - Accurate NER for names, organizations, locations (English)&quot;},{&quot;id&quot;:&quot;openanonymiser&quot;,&quot;label&quot;:&quot;OpenAnonymiser&quot;,&quot;icon&quot;:&quot;🇳🇱&quot;,&quot;description&quot;:&quot;Dutch-focused PII detection - Best for Dutch names, BSN, addresses&quot;},{&quot;id&quot;:&quot;hybrid&quot;,&quot;label&quot;:&quot;Hybrid&quot;,&quot;icon&quot;:&quot;⚡&quot;,&quot;description&quot;:&quot;Combines regex with external services for maximum coverage&quot;}]">
+<slot-option>
+<div class="option-item">
+<span class="option-icon">[icon]</span>
+<span class="option-label">[label]</span>
+<span class="option-description">[description]</span>
+</div>
+</slot-option>
+</x-ncselect>",
+]
+`;

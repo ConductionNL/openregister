@@ -17,7 +17,7 @@ use UnexpectedValueException;
 /**
  * The three spellings of the advance budget, and everything that is refused.
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
  */
 class FlowAdvanceBudgetTest extends TestCase {
 

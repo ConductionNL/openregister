@@ -58,14 +58,14 @@ class Version1Date20260511130000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: 'openregister_messages') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(tableName: 'openregister_messages');
 
 		if ($table->hasColumn(name: 'context') === true) {
 			// Column already exists — idempotent.
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

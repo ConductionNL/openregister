@@ -33,10 +33,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use Doctrine\DBAL\Platforms\PostgreSQL120Platform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\SearchLeafScope;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -50,6 +52,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Locks the boolean grammar of `_search` on both search paths.
@@ -81,7 +85,8 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 			rbacHandler: $this->createMock(MagicRbacHandler::class),
 			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
 			schemaTypeConverter: new SchemaTypeConverter(),
-			dateTimeNormalizer: new DateTimeNormalizer($this->logger)
+			dateTimeNormalizer: new DateTimeNormalizer($this->logger),
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
 		);
 
 		$this->captured = [];
@@ -122,15 +127,10 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildSearchConditionSql');
 		$method->setAccessible(true);
 
-		return (string)$method->invoke(
-			$this->handler,
-			$search,
-			$this->makeSchema(properties: $properties),
-			[],
-			$this->makeConnection(),
-			true,
-			null
-		);
+		$scope = new SearchLeafScope(schema: $this->makeSchema(properties: $properties), isPostgres: true);
+		$scope->connection = $this->makeConnection();
+
+		return (string)$method->invoke($this->handler, $search, $scope);
 	}//end unionSql()
 
 	/**
@@ -200,13 +200,7 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 	private function queryBuilderSql(string $search, ?array $properties = null): string {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyFullTextSearch');
 		$method->setAccessible(true);
-		$method->invoke(
-			$this->handler,
-			$this->makeQueryBuilder(),
-			$search,
-			$this->makeSchema(properties: $properties),
-			false
-		);
+		$method->invoke($this->handler, new TableFilterRun(qb: $this->makeQueryBuilder(), query: ['_search' => $search], table: new MagicReadTable(schema: $this->makeSchema(properties: $properties))), false);
 
 		return implode(' ', $this->captured);
 	}//end queryBuilderSql()
@@ -348,7 +342,7 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $nested, $schema);
+		$method->invoke($this->handler, new TableFilterRun(qb: $this->makeQueryBuilder(), query: [], table: new MagicReadTable(schema: $schema)), $nested);
 
 		$this->assertContains(
 			'isNull(t.result_type)',

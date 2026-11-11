@@ -70,7 +70,7 @@ class Version1Date20260915204500 extends SimpleMigrationStep {
 
 		if ($schema->hasTable(self::LINKS_TABLE) === true) {
 			$output->info('access links: table already present, nothing to do');
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable(self::LINKS_TABLE);

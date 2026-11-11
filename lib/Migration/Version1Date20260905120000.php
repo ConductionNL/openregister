@@ -62,7 +62,7 @@ class Version1Date20260905120000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::LOCKS) === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable(self::LOCKS);

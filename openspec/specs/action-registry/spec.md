@@ -139,7 +139,7 @@ Actions MUST not be limited to object lifecycle events. They MUST support bindin
 - **AND** when an `ObjectDeletedEvent` fires, the action MUST NOT match
 
 ### Requirement: ActionListener MUST replace/augment HookListener for action-based event handling
-A new `ActionListener` MUST be registered in `Application::registerEventListeners()` for all event types. When an event is dispatched, `ActionListener` MUST query `ActionMapper` for all enabled, active actions matching the event type, filter by schema/register scope, apply filter conditions, sort by `execution_order`, and delegate execution to the existing `HookExecutor` infrastructure (or a new `ActionExecutor` that wraps it).
+A new `ActionListener` MUST be registered in `ListenerRegistrar::register()` for all event types. When an event is dispatched, `ActionListener` MUST query `ActionMapper` for all enabled, active actions matching the event type, filter by schema/register scope, apply filter conditions, sort by `execution_order`, and delegate execution to the existing `HookExecutor` infrastructure (or a new `ActionExecutor` that wraps it).
 
 #### Scenario: ActionListener resolves matching actions for ObjectCreatingEvent
 - **GIVEN** three actions exist:

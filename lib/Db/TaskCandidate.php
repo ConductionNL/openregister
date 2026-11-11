@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 
 declare(strict_types=1);
@@ -43,9 +43,10 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 class TaskCandidate extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * A candidate uid.
@@ -92,20 +93,4 @@ class TaskCandidate extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'ref', type: 'string');
 
 	}//end __construct()
-
-	/**
-	 * Serialise for the API.
-	 *
-	 * @return array<string, mixed> The candidate row as plain data.
-	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'taskId' => $this->taskId,
-			'kind' => $this->kind,
-			'ref' => $this->ref,
-		];
-	}//end jsonSerialize()
 }//end class

@@ -29,59 +29,22 @@ namespace OCA\OpenRegister\Service\Object;
 /**
  * DataManipulationHandler class
  *
- * Handles data manipulation operations including:
- * - Nested value extraction via path notation
- * - Slug generation for URLs and identifiers
- * - Property mapping between data structures
+ * Maps properties between data structures.
  *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  */
 class DataManipulationHandler {
-	/**
-	 * Get a value from nested array using dot notation path
-	 *
-	 * Traverses a nested array structure using a dot-separated path string.
-	 * Returns null if the path doesn't exist at any level.
-	 *
-	 * Example:
-	 * ```php
-	 * $data = ['user' => ['profile' => ['name' => 'John']]];
-	 * getValueFromPath($data, 'user.profile.name'); // Returns 'John'
-	 * ```
-	 *
-	 * @param array<string, mixed> $data The data array to search.
-	 * @param string $path The dot-separated path (e.g., 'user.profile.name').
-	 *
-	 * @return mixed The value at the path, or null if path doesn't exist
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function getValueFromPath(array $data, string $path): mixed {
-		$keys = explode('.', $path);
-		$current = $data;
-
-		foreach ($keys as $key) {
-			if (is_array($current) === false || array_key_exists($key, $current) === false) {
-				return null;
-			}
-
-			$current = $current[$key];
-		}
-
-		return $current;
-	}//end getValueFromPath()
 
 	/*
 	 * SLUG GENERATION DOES NOT LIVE HERE.
 	 *
 	 * `generateSlugFromValue()` + `createSlugHelper()` were removed: they had
 	 * no callers, and a byte-identical copy of the same pair sat on
-	 * `MetadataHandler`. Object slugs are produced by
-	 * `SaveObject\MetadataHydrationHandler::generateSlug(array $data, Schema
-	 * $schema)` (invoked from that class and from
-	 * `SaveObject::generateSlug()`), which is schema-aware — it reads the
-	 * schema's configured slug source instead of slugifying whatever string
+	 * `MetadataHandler`. Object slugs are decided by
+	 * `SaveObject\ObjectSlugHandler` (#4037), which is schema-aware — it reads
+	 * the schema's configured slug source, keeps a slug unique per register
+	 * and schema and frozen once set — instead of slugifying whatever string
 	 * a caller happened to pass. Nothing should reintroduce a
 	 * schema-unaware slug helper here.
 	 */

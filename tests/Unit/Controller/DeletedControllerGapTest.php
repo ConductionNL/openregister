@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DeletedControllerFactory;
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
+use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
+use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
@@ -47,21 +52,29 @@ class DeletedControllerGapTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 
-		$this->controller = new DeletedController(
+		$deletion = new DeletionServiceBundle(
+			$this->createMock(originalClassName: DeletionWindowService::class),
+			$this->createMock(originalClassName: DestroyRightService::class),
+			$this->createMock(originalClassName: RetentionClockService::class),
+			new DestructionServices($this->createMock(originalClassName: DestructionScopeService::class), $this->createMock(originalClassName: DestructionRecorder::class)),
+		);
+
+		$authorizer = new DeletedObjectAuthorizer(
+			$this->schemaMapper,
+			new CallerContext($this->userSession, $this->groupManager),
+			$this->permissionHandler,
+		);
+
+		$this->controller = DeletedControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectMapper,
 			$this->registerMapper,
-			$this->schemaMapper,
 			$this->userSession,
-			$this->groupManager,
-			$this->permissionHandler,
-			$this->createMock(originalClassName: DeletionWindowService::class),
-			$this->createMock(originalClassName: DestroyRightService::class),
-			$this->createMock(originalClassName: DestructionScopeService::class),
-			$this->createMock(originalClassName: DestructionRecorder::class),
-			$this->createMock(originalClassName: RetentionClockService::class),
-			$this->createMock(originalClassName: AuditTrailMapper::class)
+			$this->createMock(originalClassName: AuditTrailMapper::class),
+			$deletion,
+			$authorizer,
+			$this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class)
 		);
 
 		// index()/statistics() now scan magic tables directly (BUG-1 fix).
@@ -273,7 +286,10 @@ class DeletedControllerGapTest extends TestCase {
 			]);
 
 		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
-			->willReturn([$deletedObject, $notDeletedObject]);
+			->willReturn([$this->slim(full: $deletedObject), $this->slim(full: $notDeletedObject)]);
+		$this->objectMapper->method('find')->willReturnCallback(
+			static fn (...$args): ObjectEntity => ['uuid-1' => $deletedObject, 'uuid-2' => $notDeletedObject][$args[0]]
+		);
 		$this->objectMapper->method('restoreObject')
 			->willReturn($deletedObject);
 
@@ -310,7 +326,10 @@ class DeletedControllerGapTest extends TestCase {
 			]);
 
 		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
-			->willReturn([$deletedObject, $notDeletedObject]);
+			->willReturn([$this->slim(full: $deletedObject), $this->slim(full: $notDeletedObject)]);
+		$this->objectMapper->method('find')->willReturnCallback(
+			static fn (...$args): ObjectEntity => ['uuid-1' => $deletedObject, 'uuid-2' => $notDeletedObject][$args[0]]
+		);
 
 		$result = $this->controller->destroyMultiple();
 
@@ -446,5 +465,20 @@ class DeletedControllerGapTest extends TestCase {
 		$this->assertEquals(200, $result->getStatus());
 		$data = $result->getData();
 		$this->assertStringNotContainsString('not found', $data['message']);
+	}
+
+	/**
+	 * The row as the cross-table lookup answers it: uuid and schema, no deleted stamp.
+	 *
+	 * @param ObjectEntity $full The stored row.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function slim(ObjectEntity $full): ObjectEntity {
+		$slim = new ObjectEntity();
+		$slim->setUuid($full->getUuid());
+		$slim->setSchema($full->getSchema());
+
+		return $slim;
 	}
 }

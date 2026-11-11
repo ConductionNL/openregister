@@ -58,6 +58,58 @@
 - [ ] 6.2 Sweep orphaned run locks from `FlowRunWorker`.
   **files**: `lib/BackgroundJob/FlowRunWorker.php`
 
+## 8 · The HTTP surface a client releases through
+
+🔴 SECTIONS 1 TO 7 ARE ALREADY BUILT ON `parity/round2` AND ON `development`,
+and the unchecked boxes above are stale. Verified 2026-09-18 by reading the
+code rather than the checkboxes: `ObjectEntity::isLockedBySomeoneElse()` and
+`getLockedByRun()` exist, `SaveObject::findAndValidateExistingObject()` and
+`RevertHandler` both call the predicate, `RunObjectLock`, its mapper, the
+migration, both nodes and `FlowRunLockReleaseListener` are all present.
+Reading the boxes is what produced a wrong "unshipped" claim in dossiq#2924.
+
+What was NOT there is the surface a browser client reaches the lock through,
+which is the half `@conduction/nextcloud-vue` and every app on it consume.
+
+- [x] 8.1 Declare `DELETE /api/objects/{register}/{schema}/{id}/lock`,
+  pointing at the same `objects#unlock` method as `POST /unlock`.
+  **files**: `appinfo/routes.php`
+
+  The library sent exactly this verb until nextcloud-vue#1202, and this app
+  declared no DELETE, so every release 404ed AT THE ROUTER. `release()` reads
+  404 as "already released; idempotent" and returns without a word, so every
+  release in every app on that library freed nothing, silently. Two verbs, one
+  method, because two implementations of "release this lock" is how one grows
+  a check the other lacks.
+
+- [x] 8.2 A release reports whether there WAS a lock: `LockHandler::unlock()`
+  answers false on the no-op path, and the endpoint answers 404 naming it.
+  **files**: `lib/Service/Object/LockHandler.php`, `lib/Controller/ObjectsController.php`
+
+  Both cases used to answer 200, so a client could not tell "I handed mine
+  back" from "somebody had already taken it away". The 404 is a fact about the
+  object and NOT an error: nothing is refused and nothing throws, idempotence
+  is unchanged, and `locked: false` is true in both answers so a client reading
+  only that keeps working.
+
+  It also makes the library's 404 branch right on purpose rather than by
+  accident. It was being fed a router 404 on a verb that did not exist, and it
+  would have gone on looking correct if the lock had never worked at all.
+
+- [x] 8.3 Tests, including the two answers being DIFFERENT.
+  **files**: `tests/Unit/Controller/ObjectsControllerUnlockTest.php` (4),
+  `tests/Unit/Controller/LockRoutesTest.php` (3),
+  `tests/Unit/Service/Object/LockHandlerReleaseReportTest.php` (3)
+
+  Each of "a release answers 200" and "a no-op answers 404" passes on an
+  implementation that answers its own status for both, so a third test compares
+  them. Mutation-checked: putting `return true` back on the no-op path reddened
+  the false assertion and the not-the-same-answer assertion, and nothing else.
+
+  The lock in the handler fixture is written by the PRODUCTION writer rather
+  than hand-built, which is the lesson the original guard defect left: its unit
+  test hand-wrote a `_locked` shape `lock()` has never produced, and passed.
+
 ## 7 · Tests that can fail
 
 - [ ] 7.1 Two runs under one user conflict, proven red against the old

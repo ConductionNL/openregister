@@ -17,7 +17,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
  */
 
 declare(strict_types=1);
@@ -26,11 +26,13 @@ namespace Unit\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Quality\DismissedPairStore;
+use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
+use OCA\OpenRegister\Search\Service\Quality\ReviewedPair;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Quality\PairDismissal;
 
 class DismissedPairStoreTest extends TestCase {
 
@@ -82,7 +84,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testTheKeyIsTheSameWhicheverWayRound(): void {
 		$this->assertSame(
@@ -98,7 +100,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testActiveDismissalsAreKeyedByPair(): void {
 		$this->objectService->method('findAll')->willReturn(
@@ -122,7 +124,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testAFailedLookupOffersEveryPair(): void {
 		$this->objectService->method('findAll')->willThrowException(new RuntimeException('down'));
@@ -136,7 +138,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testDismissalNamesWhoWhyAndWhen(): void {
 		$this->objectService->method('findAll')->willReturn([]);
@@ -152,19 +154,17 @@ class DismissedPairStoreTest extends TestCase {
 			);
 
 		$stored = $this->store->dismiss(
-			first: 'bbb',
-			second: 'aaa',
-			registerSlug: 'reg',
-			schemaSlug: 'party',
-			fingerprint: 'fp1',
-			reason: 'different people, same street',
-			dismissedBy: 'reviewer'
+			pair: new ReviewedPair('bbb', 'aaa', 'reg', 'party'),
+			dismissal: new PairDismissal(fingerprint: 'fp1', reason: 'different people, same street', dismissedBy: 'reviewer')
 		);
 
 		$this->assertSame('aaa', $written['objectA']);
 		$this->assertSame('bbb', $written['objectB']);
 		$this->assertSame('reviewer', $written['dismissedBy']);
 		$this->assertSame('different people, same street', $written['reason']);
+		$this->assertSame('reg', $written['registerSlug']);
+		$this->assertSame('party', $written['schemaSlug']);
+		$this->assertSame('fp1', $written['fingerprint']);
 		$this->assertTrue($written['active']);
 		$this->assertNotEmpty($written['dismissedAt']);
 		$this->assertSame('new-row', $stored['id']);
@@ -176,7 +176,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testRedismissingReplacesTheRow(): void {
 		$this->objectService->method('findAll')->willReturn(
@@ -194,13 +194,8 @@ class DismissedPairStoreTest extends TestCase {
 		);
 
 		$this->store->dismiss(
-			first: 'aaa',
-			second: 'bbb',
-			registerSlug: 'reg',
-			schemaSlug: 'party',
-			fingerprint: 'fp2',
-			reason: 'still different',
-			dismissedBy: 'reviewer'
+			pair: new ReviewedPair('aaa', 'bbb', 'reg', 'party'),
+			dismissal: new PairDismissal(fingerprint: 'fp2', reason: 'still different', dismissedBy: 'reviewer')
 		);
 
 		$this->assertSame('existing-row', $uuidPassed);
@@ -212,7 +207,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testReversalKeepsTheRow(): void {
 		$this->objectService->method('findAll')->willReturn(
@@ -228,10 +223,7 @@ class DismissedPairStoreTest extends TestCase {
 		);
 
 		$this->store->undismiss(
-			first: 'aaa',
-			second: 'bbb',
-			registerSlug: 'reg',
-			schemaSlug: 'party',
+			pair: new ReviewedPair('aaa', 'bbb', 'reg', 'party'),
 			reversedBy: 'supervisor'
 		);
 
@@ -246,7 +238,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testUndismissingAnUnknownPairWritesNothing(): void {
 		$this->objectService->method('findAll')->willReturn([]);
@@ -254,10 +246,7 @@ class DismissedPairStoreTest extends TestCase {
 
 		$this->assertNull(
 			$this->store->undismiss(
-				first: 'aaa',
-				second: 'bbb',
-				registerSlug: 'reg',
-				schemaSlug: 'party',
+				pair: new ReviewedPair('aaa', 'bbb', 'reg', 'party'),
 				reversedBy: 'supervisor'
 			)
 		);

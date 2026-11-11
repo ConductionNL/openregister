@@ -43,7 +43,7 @@ interface EvidenceSourceProvider {
 	 *
 	 * @return string The provider id (e.g. `openconnector-crm`).
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function getSourceId(): string;
 
@@ -54,7 +54,7 @@ interface EvidenceSourceProvider {
 	 *
 	 * @return bool True when the provider is usable.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function isEnabled(): bool;
 
@@ -72,7 +72,7 @@ interface EvidenceSourceProvider {
 	 *
 	 * @return EvidenceItem[] The harvested items (possibly empty).
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function harvest(string $caseUuid, array $case): array;
 }//end interface

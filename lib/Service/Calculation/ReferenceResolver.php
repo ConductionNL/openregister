@@ -10,11 +10,19 @@
  * calculations can read it via `{ "prop": "@ref.<name>.<field>" }` — exactly
  * mirroring `@self`.
  *
- * Resolution uses ObjectService READ paths (find / findAll) under the saver's
- * existing RBAC + multitenancy scope. Read paths do not dispatch
+ * Resolution uses ObjectService READ paths (find / findAll) WITHOUT the
+ * saver's RBAC and multitenancy scope: a calculation must give the same
+ * answer whoever saves, and a portal write made by an anonymous resident
+ * would otherwise see no referenced rows at all. The organisation boundary is
+ * kept by ReferenceTenantGuard instead: a referenced object outside the saving
+ * object's tenant scope resolves empty. Read paths do not dispatch
  * Creating/Updating events, so resolving a reference never recursively
  * re-triggers the resolved object's own calculations. Any failure injects
  * null and is logged; the save is never failed.
+ *
+ * A reference that HAD something to resolve (a filled foreign key, or a lookup
+ * that matched rows) and still came back empty is reported as unresolved, so
+ * the save-time listener can keep a stored value instead of writing null.
  *
  * The CalculationEvaluator stays pure: all I/O lives here.
  *
@@ -37,10 +45,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Calculation\Reference\ReferenceQuery;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -51,19 +60,24 @@ use Throwable;
  *
  * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-1
  */
-class ReferenceResolver {
+class ReferenceResolver implements ReferenceResolverInterface {
+
+	use PayloadTokenReading;
 	/**
 	 * Wire the object service used to read referenced objects and the logger.
 	 *
-	 * @param ObjectService $objectService Read-side object service (RBAC + tenant scoped).
+	 * @param ObjectOperationsInterface $objectService Read-side object service.
+	 * @param ReferenceTenantGuard $tenantGuard Keeps references inside the saving object's tenant.
 	 * @param LoggerInterface $logger PSR logger for unresolved-reference warnings.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-1
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly ReferenceTenantGuard $tenantGuard,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -78,94 +92,177 @@ class ReferenceResolver {
 	 * @param array<string, mixed> $payload Object data WITH `@self` already injected.
 	 * @param array<string, mixed> $references The `x-openregister-references` map.
 	 * @param Register|string|int|null $register Saving object's register context.
+	 * @param string|null $organisation Saving object's organisation UUID (the tenant boundary).
 	 *
 	 * @return array<string, mixed> Map of reference name to resolved data (or null).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
-	public function resolveAll(array $payload, array $references, mixed $register = null): array {
-		$refs = [];
-		foreach ($references as $name => $spec) {
-			if ((string)$name === '' || is_array($spec) === false) {
-				continue;
-			}
+	public function resolveAll(array $payload, array $references, mixed $register, ?string $organisation): array {
+		$referrer = new ReferringObject(payload: $payload, register: $register, organisation: $organisation);
+		return $this->resolveReferences(referrer: $referrer, references: $references)['refs'];
+	}//end resolveAll()
 
-			$refs[$name] = $this->resolveOne(payload: $payload, spec: $spec, register: $register);
+	/**
+	 * Build the `@ref` map and name the references that could not be resolved.
+	 *
+	 * `unresolved` lists every reference that had something to resolve (a
+	 * filled foreign key, or a lookup that matched rows) and still resolved
+	 * empty: the target is missing, outside the saving object's tenant, or the
+	 * read failed. An empty foreign key, or a lookup that matched nothing, is a
+	 * real answer (null) and is not listed.
+	 *
+	 * @param ReferringObject      $referrer   The saving object: payload, register and organisation.
+	 * @param array<string, mixed> $references The `x-openregister-references` map.
+	 *
+	 * @return array{refs: array<string, mixed>, unresolved: list<string>} The map and the unresolved names.
+	 *
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
+	 */
+	public function resolveReferences(ReferringObject $referrer, array $references): array {
+		$refs = [];
+		$unresolved = [];
+		foreach ($this->usableDeclarations(declarations: $references) as $name => $spec) {
+			$outcome = $this->resolveOne(referrer: $referrer, spec: $spec);
+			$refs[$name] = $outcome['data'];
+			if ($outcome['unresolved'] === true) {
+				$unresolved[] = (string)$name;
+			}
 		}
 
-		return $refs;
-	}//end resolveAll()
+		return ['refs' => $refs, 'unresolved' => $unresolved];
+	}//end resolveReferences()
 
 	/**
 	 * Resolve a single reference spec to a data array, or null.
 	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param array<string, mixed> $spec Single reference declaration.
-	 * @param Register|string|int|null $register Saving object's register context.
+	 * @param ReferringObject      $referrer The saving object: payload, register and organisation.
+	 * @param array<string, mixed> $spec     Single reference declaration.
 	 *
-	 * @return array<string, mixed>|null Resolved object data, or null.
+	 * @return array{data: array<string, mixed>|null, unresolved: bool} Resolved data, and whether it failed to resolve.
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
 	 */
-	private function resolveOne(array $payload, array $spec, mixed $register): ?array {
+	private function resolveOne(ReferringObject $referrer, array $spec): array {
+		$query = $this->queryFor(referrer: $referrer, spec: $spec);
+		if ($query === null) {
+			return ['data' => null, 'unresolved' => false];
+		}
+
+		try {
+			$outcome = $this->resolveByMode(query: $query, spec: $spec);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				sprintf('Reference resolution failed for schema "%s": %s', $query->schema, $e->getMessage())
+			);
+			return ['data' => null, 'unresolved' => true];
+		}
+
+		return $this->toOutcome(outcome: $outcome);
+	}//end resolveOne()
+
+	/**
+	 * The read a reference spec makes, or null when it names no schema or no known mode.
+	 *
+	 * @param ReferringObject      $referrer The saving object: payload, register and organisation.
+	 * @param array<string, mixed> $spec     Single reference declaration.
+	 *
+	 * @return ReferenceQuery|null The read, or null.
+	 */
+	private function queryFor(ReferringObject $referrer, array $spec): ?ReferenceQuery {
 		$schema = (string)($spec['schema'] ?? '');
 		$mode = (string)($spec['mode'] ?? '');
-		if ($schema === '' || ($mode !== 'relatedObject' && $mode !== 'lookup')) {
+		if ($schema === '' || in_array($mode, ['relatedObject', 'lookup'], true) === false) {
 			return null;
 		}
 
 		// Allow the reference to override the register; default to the saving
 		// object's register so the lookup stays within the same dataset.
-		$refRegister = ($spec['register'] ?? $register);
-		$entity = null;
+		return new ReferenceQuery(
+			payload: $referrer->payload,
+			schema: $schema,
+			register: ($spec['register'] ?? $referrer->register),
+			organisation: $referrer->organisation
+		);
+	}//end queryFor()
 
-		try {
-			if ($mode === 'relatedObject') {
-				$entity = $this->resolveRelatedObject(
-					payload: $payload,
-					field: (string)($spec['field'] ?? ''),
-					schema: $schema,
-					register: $refRegister
-				);
+	/**
+	 * Resolve a reference by its mode, `relatedObject` or `lookup` (queryFor() admits no other).
+	 *
+	 * @param ReferenceQuery       $query The read's inputs.
+	 * @param array<string, mixed> $spec  Single reference declaration.
+	 *
+	 * @return array{entity: ObjectEntity|null, attempted: bool} The admitted object, and whether there was something to resolve.
+	 */
+	private function resolveByMode(ReferenceQuery $query, array $spec): array {
+		if ((string)$spec['mode'] === 'relatedObject') {
+			$id = $this->foreignKey(payload: $query->payload, field: (string)($spec['field'] ?? ''));
+			if ($id === null) {
+				return ['entity' => null, 'attempted' => false];
 			}
 
-			if ($mode === 'lookup') {
-				$entity = $this->resolveLookup(
-					payload: $payload,
-					spec: $spec,
-					schema: $schema,
-					register: $refRegister
-				);
-			}
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				sprintf('Reference resolution failed for schema "%s": %s', $schema, $e->getMessage())
-			);
-			return null;
-		}//end try
-
-		if ($entity === null) {
-			return null;
+			return $this->resolveRelatedObject(query: $query, id: $id);
 		}
 
-		return $this->entityToPayload(entity: $entity);
-	}//end resolveOne()
+		return $this->resolveLookup(query: $query, spec: $spec);
+	}//end resolveByMode()
+
+	/**
+	 * Shape a resolution into the resolved data and the unresolved flag.
+	 *
+	 * @param array{entity: ObjectEntity|null, attempted: bool} $outcome The resolution.
+	 *
+	 * @return array{data: array<string, mixed>|null, unresolved: bool} Resolved data, and whether it failed to resolve.
+	 */
+	private function toOutcome(array $outcome): array {
+		if ($outcome['entity'] === null) {
+			return ['data' => null, 'unresolved' => $outcome['attempted']];
+		}
+
+		return ['data' => $this->entityToPayload(entity: $outcome['entity']), 'unresolved' => false];
+	}//end toOutcome()
 
 	/**
 	 * Resolve a `relatedObject` (FK) reference via ObjectService::find().
 	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param string $field Local field holding the referenced uuid/id.
-	 * @param string $schema Target schema reference.
-	 * @param Register|string|int|null $register Register context.
+	 * @param ReferenceQuery $query The read's inputs.
+	 * @param string|int $id The filled foreign key.
 	 *
-	 * @return ObjectEntity|null The referenced object, or null.
+	 * @return array{entity: ObjectEntity|null, attempted: bool} The admitted object; attempted, since a key was set.
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function resolveRelatedObject(array $payload, string $field, string $schema, mixed $register): ?ObjectEntity {
+	private function resolveRelatedObject(ReferenceQuery $query, string|int $id): array {
+		// Read as the system, not as the saver: an anonymous portal write and
+		// an administrator's write must compute the same value. The tenant
+		// boundary is enforced by the guard below instead of by the session.
+		$entity = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $id,
+			register: $query->register,
+			schema: $query->schema,
+			_rbac: false,
+			_multitenancy: false
+		));
+
+		return [
+			'entity' => $this->tenantGuard->firstAdmitted(savingOrganisation: $query->organisation, candidates: [$entity]),
+			'attempted' => true,
+		];
+	}//end resolveRelatedObject()
+
+	/**
+	 * The filled foreign key a `relatedObject` reference reads, or null.
+	 *
+	 * @param array<string, mixed> $payload Object data with `@self` injected.
+	 * @param string $field Local field holding the referenced uuid/id.
+	 *
+	 * @return string|int|null The key, or null when the field is unnamed, empty or not a key.
+	 */
+	private function foreignKey(array $payload, string $field): string|int|null {
 		if ($field === '') {
 			return null;
 		}
@@ -179,16 +276,8 @@ class ReferenceResolver {
 			return null;
 		}
 
-		// RBAC + multitenancy stay at their default `true` — the lookup runs
-		// under the saving user's scope and can never leak cross-tenant data.
-		return $this->objectService->find(
-			id: $id,
-			register: $register,
-			schema: $schema,
-			_rbac: true,
-			_multitenancy: true
-		);
-	}//end resolveRelatedObject()
+		return $id;
+	}//end foreignKey()
 
 	/**
 	 * Resolve a `lookup` (criteria) reference via ObjectService::findAll().
@@ -198,169 +287,105 @@ class ReferenceResolver {
 	 * present, rows are constrained to those valid as-of the object's date and
 	 * the most-recent row is taken.
 	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
+	 * @param ReferenceQuery $query The read's inputs.
 	 * @param array<string, mixed> $spec Reference declaration.
-	 * @param string $schema Target schema reference.
-	 * @param Register|string|int|null $register Register context.
 	 *
-	 * @return ObjectEntity|null The most-relevant matching object, or null.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @return array{entity: ObjectEntity|null, attempted: bool} The most-relevant admitted row, and whether rows matched.
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
-	private function resolveLookup(array $payload, array $spec, string $schema, mixed $register): ?ObjectEntity {
+	private function resolveLookup(ReferenceQuery $query, array $spec): array {
 		$criteria = ($spec['filters'] ?? []);
 		if (is_array($criteria) === false) {
-			return null;
+			return ['entity' => null, 'attempted' => false];
 		}
 
-		$filters = [
-			'schema' => $schema,
-		];
-		if ($register !== null) {
-			$filters['register'] = $register;
-		}
+		$config = $this->lookupConfig(query: $query, criteria: $criteria);
+		$config = $this->withEffectiveSort(config: $config, effective: ($spec['effectiveDate'] ?? null));
 
-		foreach ($criteria as $target => $criterion) {
-			$filters[(string)$target] = $this->resolveToken(payload: $payload, token: $criterion);
-		}
-
-		$sort = [];
-
-		// Effective-dating: keep only rows whose effective field is <= (or per
-		// op) the object's date, newest first.
-		$effective = ($spec['effectiveDate'] ?? null);
-		if (is_array($effective) === true && isset($effective['field']) === true) {
-			$effField = (string)$effective['field'];
-			$sort[$effField] = 'DESC';
-			// The op/value pair is advisory; the DESC sort + first-row pick
-			// selects the most-recent applicable rate even without a range op,
-			// and avoids depending on findAll range-filter dialect support.
-		}
-
-		$config = [
-			'filters' => $filters,
-			'limit' => 50,
-		];
-		if (count($sort) > 0) {
-			$config['sort'] = $sort;
-		}
-
-		$results = $this->objectService->findAll($config, _rbac: true, _multitenancy: true);
-		if (count($results) === 0) {
-			return null;
-		}
-
-		$first = $results[array_key_first($results)];
-		if ($first instanceof ObjectEntity) {
-			return $first;
-		}
-
-		return null;
+		// Read as the system (see resolveRelatedObject()); rows outside the
+		// saving object's tenant are dropped by the guard, keeping the sort
+		// order so the most-relevant ADMITTED row wins.
+		$results = $this->objectService->findAll($config, _rbac: false, _multitenancy: false);
+		return $this->lookupOutcome(query: $query, results: $results);
 	}//end resolveLookup()
 
 	/**
-	 * Resolve a criterion token to a concrete value.
+	 * The lookup's outcome: the first row the saving object's tenant admits, or nothing when no row matched.
 	 *
-	 * Supported tokens (kept deliberately small to avoid coupling to the pure
-	 * CalculationEvaluator):
-	 * - A literal scalar (passed through unchanged).
-	 * - A `@self.<field>` / `@ref`-prefixed dotted-path string, resolved against the payload.
-	 * - A single-key AST node `{ "year": <token> }` — only `year` is supported
-	 *   here, mirroring the lookup criteria used by rate tables.
+	 * @param ReferenceQuery      $query   The saving object's organisation.
+	 * @param array<int, mixed> $results The matching rows, most relevant first.
 	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param mixed $token The criterion token.
-	 *
-	 * @return mixed The resolved value.
-	 *
-	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+	 * @return array{entity: ObjectEntity|null, attempted: bool} The admitted row (or null), and whether any row matched.
 	 */
-	private function resolveToken(array $payload, mixed $token): mixed {
-		if (is_string($token) === true) {
-			if (str_starts_with($token, '@self.') === true || str_starts_with($token, '@ref.') === true) {
-				return $this->readPath(payload: $payload, path: $token);
-			}
-
-			return $token;
+	private function lookupOutcome(ReferenceQuery $query, array $results): array {
+		if (count($results) === 0) {
+			return ['entity' => null, 'attempted' => false];
 		}
 
-		if (is_array($token) === true && count($token) === 1) {
-			$op = (string)array_key_first($token);
-			if ($op === 'year') {
-				return $this->yearToken(payload: $payload, arg: $token[$op]);
-			}
-		}
-
-		return $token;
-	}//end resolveToken()
+		return [
+			'entity' => $this->tenantGuard->firstAdmitted(savingOrganisation: $query->organisation, candidates: $results),
+			'attempted' => true,
+		];
+	}//end lookupOutcome()
 
 	/**
-	 * Resolve a `{ "year": <token> }` criterion to a four-digit year integer.
+	 * The findAll() configuration of a lookup.
 	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param mixed $arg The inner token (typically a `@self.<date>` reference).
+	 * The sort is added by withEffectiveSort().
 	 *
-	 * @return int|null The year, or null when the inner token is not a parseable date.
+	 * @param ReferenceQuery           $query    The read's inputs.
+	 * @param array<int|string, mixed> $criteria The declared filter criteria.
 	 *
-	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+	 * @return array<string, mixed> The configuration.
 	 */
-	private function yearToken(array $payload, mixed $arg): ?int {
-		$raw = $this->resolveToken(payload: $payload, token: $arg);
-		if (is_string($raw) === false || $raw === '') {
-			return null;
+	private function lookupConfig(ReferenceQuery $query, array $criteria): array {
+		$filters = ['schema' => $query->schema];
+		if ($query->register !== null) {
+			$filters['register'] = $query->register;
 		}
 
-		try {
-			return (int)(new DateTimeImmutable($raw))->format('Y');
-		} catch (Throwable) {
-			return null;
-		}
-	}//end yearToken()
+		$filters = array_replace($filters, $this->resolveTokens(payload: $query->payload, criteria: $criteria));
+		return ['filters' => $filters, 'limit' => 50];
+	}//end lookupConfig()
 
 	/**
-	 * Read a dotted path (e.g. `@self.journeyDate`) from the payload.
+	 * Add the effective-dating sort to a lookup configuration, when the selector names a field.
 	 *
-	 * @param array<string, mixed> $payload Object data.
-	 * @param string $path Dotted path.
+	 * @param array<string, mixed> $config    The findAll() configuration.
+	 * @param mixed                $effective The `effectiveDate` selector, or null.
 	 *
-	 * @return mixed The resolved value, or null when the path is missing.
-	 *
-	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+	 * @return array<string, mixed> The configuration, with `sort` when there is one.
 	 */
-	private function readPath(array $payload, string $path): mixed {
-		$parts = explode('.', $path);
-
-		// `@self.<field>` may address either the injected `@self` system
-		// metadata (id/created/…) OR — the common case for lookup criteria —
-		// one of the object's OWN data fields (e.g. `@self.journeyDate`). The
-		// listener injects user data at the top level of the payload, not under
-		// `@self`, so when `@self.<field>` is not a system field fall back to
-		// the top-level field. This makes the lookup parameterisable by the
-		// saving object exactly as the schema author expects.
-		if ($parts[0] === '@self' && count($parts) === 2) {
-			$field = $parts[1];
-			$self = ($payload['@self'] ?? []);
-			if (is_array($self) === true && array_key_exists($field, $self) === true) {
-				return $self[$field];
-			}
-
-			return ($payload[$field] ?? null);
+	private function withEffectiveSort(array $config, mixed $effective): array {
+		$sort = $this->effectiveSort(effective: $effective);
+		if ($sort !== []) {
+			$config['sort'] = $sort;
 		}
 
-		$current = $payload;
-		foreach ($parts as $part) {
-			if (is_array($current) === false || array_key_exists($part, $current) === false) {
-				return null;
-			}
+		return $config;
+	}//end withEffectiveSort()
 
-			$current = $current[$part];
+	/**
+	 * Effective-dating: keep only rows whose effective field is <= (or per
+	 * op) the object's date, newest first.
+	 *
+	 * The op/value pair is advisory; the DESC sort + first-row pick selects
+	 * the most-recent applicable rate even without a range op, and avoids
+	 * depending on findAll range-filter dialect support.
+	 *
+	 * @param mixed $effective The `effectiveDate` selector, or null.
+	 *
+	 * @return array<string, string> The sort, empty without a selector field.
+	 */
+	private function effectiveSort(mixed $effective): array {
+		if (is_array($effective) === true && isset($effective['field']) === true) {
+			return [(string)$effective['field'] => 'DESC'];
 		}
 
-		return $current;
-	}//end readPath()
+		return [];
+	}//end effectiveSort()
 
 	/**
 	 * Flatten a resolved entity into a data array (with `@self` sub-key).
@@ -374,13 +399,7 @@ class ReferenceResolver {
 	private function entityToPayload(ObjectEntity $entity): array {
 		$data = $entity->getObject();
 
-		$data['@self'] = [
-			'id' => $entity->getUuid(),
-			'uuid' => $entity->getUuid(),
-			'register' => $entity->getRegister(),
-			'schema' => $entity->getSchema(),
-			'owner' => $entity->getOwner(),
-		];
+		$data['@self'] = (new CalculationPayload())->identity(entity: $entity);
 
 		return $data;
 	}//end entityToPayload()

@@ -1,0 +1,217 @@
+<?php
+
+/**
+ * What one contact is involved in, grouped the way a reader asks the question.
+ *
+ * 🔑 THE QUESTION IS "WHAT IS THIS PERSON INVOLVED IN", AND THE ANSWER IS NOT
+ * A FLAT LIST. A contact linked to nine objects across three schemas reads as
+ * nine rows a reader has to sort themselves; grouped by schema it reads as
+ * three answers. The grouping is here, apart from the fetching, so the rule
+ * can be driven without an address book or a database.
+ *
+ * 🔴 AN OBJECT THE READER MAY NOT SEE IS COUNTED, NEVER NAMED, AND NEVER
+ * SILENTLY DROPPED. Dropping it under-reports: the panel would say a contact
+ * is involved in two cases when they are involved in five, and nothing on
+ * screen would say so. Naming it leaks a title. So it is counted apart, and
+ * the count is deliberately NOT broken down by schema — a per-schema count of
+ * things you may not read is an oracle that tells you which register somebody
+ * appears in.
+ *
+ * 🔴 THE LINKS THAT REACH THIS CLASS ARE ALREADY SCOPED. `ContactService`
+ * resolves them only for contacts in the caller's OWN address books, which is
+ * the IDOR guard that stops an enumerable CardDAV uid from answering about
+ * other people's contacts. This class narrows further and widens never.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Integration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/changes/contacts-leaf-cases-panel/specs/integration-contacts/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Integration;
+
+/**
+ * Groups a contact's linked objects by schema, for the cases panel.
+ *
+ * @spec openspec/changes/contacts-leaf-cases-panel/specs/integration-contacts/spec.md
+ */
+class ContactCasesPanel {
+
+	/**
+	 * How many rows one group shows before it says "and more".
+	 *
+	 * A panel beside a contact card is a summary. A contact linked to four
+	 * hundred objects must not render four hundred rows into a sidebar, and
+	 * the count above the group is what tells the reader there are more.
+	 *
+	 * @var int
+	 */
+	public const ROWS_PER_GROUP = 10;
+
+	/**
+	 * A contact's links, grouped by the schema they point at.
+	 *
+	 * @param array<int,array<string,mixed>> $rows Resolved rows: `schema`, `schemaLabel`, `objectUuid`, `title`, `status`, `url`, `readable`.
+	 *
+	 * @return array{groups:array<int,array<string,mixed>>,unreadable:int,total:int}
+	 *         The groups newest schema-label first, how many rows the reader may not see, and the total.
+	 *
+	 * @spec openspec/changes/contacts-leaf-cases-panel/specs/integration-contacts/spec.md
+	 */
+	public function group(array $rows): array {
+		$rows = array_values(array_filter($rows, is_array(...)));
+
+		$groups = array_values(self::groupedBySchema(rows: $rows));
+		usort($groups, [self::class, 'compareGroups']);
+
+		return ['groups' => $groups, 'unreadable' => self::unreadableCount(rows: $rows), 'total' => count($rows)];
+	}//end group()
+
+	/**
+	 * The readable rows, grouped by their schema in the order the schemas first appear.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The rows.
+	 *
+	 * @return array<string, array<string, mixed>> The groups by schema.
+	 */
+	private static function groupedBySchema(array $rows): array {
+		$groups = [];
+		foreach ($rows as $row) {
+			$schema = self::readableSchema(row: $row);
+			if ($schema !== null) {
+				$groups[$schema] = self::withRow(group: ($groups[$schema] ?? self::newGroup(schema: $schema, row: $row)), row: $row);
+			}
+		}
+
+		return $groups;
+	}//end groupedBySchema()
+
+	/**
+	 * How many rows cannot be read.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The rows.
+	 *
+	 * @return int
+	 */
+	private static function unreadableCount(array $rows): int {
+		$unreadable = 0;
+		foreach ($rows as $row) {
+			if (self::readableSchema(row: $row) === null) {
+				$unreadable++;
+			}
+		}
+
+		return $unreadable;
+	}//end unreadableCount()
+
+	/**
+	 * The schema a row is grouped under, or null when the reader may not see it.
+	 *
+	 * An unreadable row is counted apart and not broken down by schema: a
+	 * per-schema count of things you may not read tells you which register
+	 * somebody appears in, which is most of what you were not allowed to know.
+	 * A link with no schema cannot be grouped and must not be invented into
+	 * one: it is counted as unreadable, which is what it is to a reader.
+	 *
+	 * @param array<string,mixed> $row One resolved row.
+	 *
+	 * @return string|null The trimmed schema, or null for an unreadable or schema-less row.
+	 */
+	private static function readableSchema(array $row): ?string {
+		if (($row['readable'] ?? true) === false) {
+			return null;
+		}
+
+		$schema = trim((string)($row['schema'] ?? ''));
+		if ($schema === '') {
+			return null;
+		}
+
+		return $schema;
+	}//end readableSchema()
+
+	/**
+	 * An empty group for a schema, labelled from its first row.
+	 *
+	 * @param string              $schema The schema the group collects.
+	 * @param array<string,mixed> $row    The group's first row.
+	 *
+	 * @return array<string,mixed> The group, without rows.
+	 */
+	private static function newGroup(string $schema, array $row): array {
+		return [
+			'schema' => $schema,
+			'label' => trim((string)($row['schemaLabel'] ?? $schema)),
+			'count' => 0,
+			'rows' => [],
+		];
+	}//end newGroup()
+
+	/**
+	 * The group with one more row counted, and kept while the group has room.
+	 *
+	 * @param array<string,mixed> $group The group so far.
+	 * @param array<string,mixed> $row    The row.
+	 *
+	 * @return array<string,mixed> The group.
+	 */
+	private static function withRow(array $group, array $row): array {
+		$group['count']++;
+		if (count($group['rows']) < self::ROWS_PER_GROUP) {
+			$group['rows'][] = [
+				'objectUuid' => (string)($row['objectUuid'] ?? ''),
+				'title' => trim((string)($row['title'] ?? '')),
+				'status' => trim((string)($row['status'] ?? '')),
+				'url' => (string)($row['url'] ?? ''),
+				'role' => trim((string)($row['role'] ?? '')),
+			];
+		}
+
+		return $group;
+	}//end withRow()
+
+	/**
+	 * Group order: the biggest group first, ties by label.
+	 *
+	 * @param array<string,mixed> $left  One group.
+	 * @param array<string,mixed> $right The other group.
+	 *
+	 * @return int The comparison.
+	 */
+	private static function compareGroups(array $left, array $right): int {
+		// The biggest group first, because that is where a reader
+		// looks; ties by label so the order is a fact rather than
+		// whatever the map happened to hold.
+		$byCount = ($right['count'] <=> $left['count']);
+
+		if ($byCount !== 0) {
+			return $byCount;
+		}
+
+		return strcasecmp($left['label'], $right['label']);
+	}//end compareGroups()
+
+	/**
+	 * Whether a group is showing everything it counted.
+	 *
+	 * @param array<string,mixed> $group One group.
+	 *
+	 * @return bool True when rows were held back.
+	 *
+	 * @spec openspec/changes/contacts-leaf-cases-panel/specs/integration-contacts/spec.md
+	 */
+	public function hasMore(array $group): bool {
+		return ((int)($group['count'] ?? 0) > count($group['rows'] ?? []));
+	}//end hasMore()
+}//end class

@@ -4,25 +4,44 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\ViewsController;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Service\ViewPresentationService;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Controller\ViewsController;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 
 class ViewsControllerTest extends TestCase {
 	private ViewsController $controller;
 	private IRequest&MockObject $request;
 	private ViewService&MockObject $viewService;
 	private ViewPresentationService&MockObject $viewPresentationService;
-	private IUserSession&MockObject $userSession;
 	private LoggerInterface&MockObject $logger;
+	private IUserSession&MockObject $userSession;
+	private IGroupManager&MockObject $groupManager;
+
+	/**
+	 * The REAL reach resolver, over mocked Nextcloud collaborators.
+	 *
+	 * Not a double. The field guard `update()` and `patch()` lean on lives
+	 * inside it now, and a double would answer "nothing refused" to every
+	 * call, which is what a stranger rewriting somebody else's public view
+	 * looks like from the outside.
+	 *
+	 * @var ViewerReachResolver
+	 */
+	private ViewerReachResolver $viewers;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -30,16 +49,22 @@ class ViewsControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->viewService = $this->createMock(ViewService::class);
 		$this->viewPresentationService = $this->createMock(ViewPresentationService::class);
-		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->viewers = new ViewerReachResolver(
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->userSession, $this->groupManager),
+			logger: $this->logger
+		);
 
 		$this->controller = new ViewsController(
-			'openregister',
 			$this->request,
-			$this->viewService,
-			$this->viewPresentationService,
-			$this->userSession,
-			$this->logger
+			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
+				$this->viewService,
+				$this->viewPresentationService,
+				$this->logger,
+				$this->viewers
+			)
 		);
 	}
 
@@ -49,8 +74,8 @@ class ViewsControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 	}
 
-	private function createViewEntity(): \OCA\OpenRegister\Db\View {
-		$view = new \OCA\OpenRegister\Db\View();
+	private function createViewEntity(): \OCA\OpenRegister\Search\Db\View {
+		$view = new \OCA\OpenRegister\Search\Db\View();
 		$ref = new \ReflectionClass($view);
 		$prop = $ref->getProperty('id');
 		$prop->setAccessible(true);
@@ -60,6 +85,11 @@ class ViewsControllerTest extends TestCase {
 		$view->setIsPublic(false);
 		$view->setIsDefault(false);
 		$view->setQuery(['registers' => []]);
+		// The caller owns it. Without an owner the field guard on update()
+		// and patch() reads the caller as a stranger and refuses everything,
+		// which is correct behaviour and was hiding behind a guard that had
+		// no call site.
+		$view->setOwner('testuser');
 		return $view;
 	}
 
@@ -76,7 +106,7 @@ class ViewsControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 
 		$view = $this->createViewEntity();
-		$this->viewService->method('findAll')->willReturn([$view]);
+		$this->viewService->method('findAllFor')->willReturn([$view]);
 
 		$result = $this->controller->index();
 
@@ -85,6 +115,41 @@ class ViewsControllerTest extends TestCase {
 		$this->assertCount(1, $data['results']);
 		$this->assertEquals(1, $data['total']);
 	}
+
+	/**
+	 * The list is answered for the caller the controller actually read.
+	 *
+	 * `findAllFor()` used to take `(userId, userGroups, bool $isAdmin = false)`
+	 * and the controller passed an untyped `['groups' => ..., 'isAdmin' => ...]`
+	 * array into it. Either half could be dropped and the call still compiled;
+	 * it just answered the narrow list. The reach now arrives as one
+	 * {@see ViewerReach} with no defaults, so this pins that what
+	 * {@see ViewerReachResolver::reachOf()} answered is what the list was
+	 * asked for.
+	 *
+	 * @return void
+	 */
+	public function testTheListIsAskedForWithTheCallersFullReach(): void {
+		$this->mockAuthenticatedUser();
+		$this->groupManager->method('isAdmin')->with('testuser')->willReturn(true);
+		$this->groupManager->method('getUserGroupIds')->willReturn(['staff', 'archive']);
+		$this->request->method('getParams')->willReturn([]);
+
+		$seen = null;
+		$this->viewService->expects($this->once())
+			->method('findAllFor')
+			->willReturnCallback(function (ViewerReach $reach) use (&$seen): array {
+				$seen = $reach;
+				return [];
+			});
+
+		$this->controller->index();
+
+		$this->assertInstanceOf(ViewerReach::class, $seen);
+		$this->assertSame('testuser', $seen->userId);
+		$this->assertSame(['staff', 'archive'], $seen->groups);
+		$this->assertTrue($seen->isAdmin, 'an administrator must not be narrowed to their own views');
+	}//end testTheListIsAskedForWithTheCallersFullReach()
 
 	public function testShowNotAuthenticated(): void {
 		$this->userSession->method('getUser')->willReturn(null);
@@ -98,6 +163,7 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$result = $this->controller->show('1');
 
@@ -156,13 +222,16 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateSuccess(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated',
 			'query' => ['registers' => [1]],
 		]);
 
 		$view = $this->createViewEntity();
-		$this->viewService->method('update')->willReturn($view);
+		$this->viewService->method('revise')->willReturn($view);
 
 		$result = $this->controller->update('1');
 
@@ -171,11 +240,14 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateNotFound(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated',
 			'query' => ['registers' => [1]],
 		]);
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new DoesNotExistException('not found'));
 
 		$result = $this->controller->update('999');
@@ -189,7 +261,8 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
-		$this->viewService->method('update')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewService->method('revise')->willReturn($view);
 
 		$result = $this->controller->patch('1');
 
@@ -227,7 +300,7 @@ class ViewsControllerTest extends TestCase {
 
 		$views = [];
 		for ($i = 0; $i < 5; $i++) {
-			$v = new \OCA\OpenRegister\Db\View();
+			$v = new \OCA\OpenRegister\Search\Db\View();
 			$ref = new \ReflectionClass($v);
 			$prop = $ref->getProperty('id');
 			$prop->setAccessible(true);
@@ -237,7 +310,7 @@ class ViewsControllerTest extends TestCase {
 			$views[] = $v;
 		}
 
-		$this->viewService->method('findAll')->willReturn($views);
+		$this->viewService->method('findAllFor')->willReturn($views);
 
 		$result = $this->controller->index();
 
@@ -256,7 +329,7 @@ class ViewsControllerTest extends TestCase {
 
 		$views = [];
 		for ($i = 0; $i < 5; $i++) {
-			$v = new \OCA\OpenRegister\Db\View();
+			$v = new \OCA\OpenRegister\Search\Db\View();
 			$ref = new \ReflectionClass($v);
 			$prop = $ref->getProperty('id');
 			$prop->setAccessible(true);
@@ -266,7 +339,7 @@ class ViewsControllerTest extends TestCase {
 			$views[] = $v;
 		}
 
-		$this->viewService->method('findAll')->willReturn($views);
+		$this->viewService->method('findAllFor')->willReturn($views);
 
 		$result = $this->controller->index();
 
@@ -285,7 +358,7 @@ class ViewsControllerTest extends TestCase {
 
 		$views = [];
 		for ($i = 0; $i < 5; $i++) {
-			$v = new \OCA\OpenRegister\Db\View();
+			$v = new \OCA\OpenRegister\Search\Db\View();
 			$ref = new \ReflectionClass($v);
 			$prop = $ref->getProperty('id');
 			$prop->setAccessible(true);
@@ -295,7 +368,7 @@ class ViewsControllerTest extends TestCase {
 			$views[] = $v;
 		}
 
-		$this->viewService->method('findAll')->willReturn($views);
+		$this->viewService->method('findAllFor')->willReturn($views);
 
 		$result = $this->controller->index();
 
@@ -306,10 +379,62 @@ class ViewsControllerTest extends TestCase {
 		$this->assertEquals(5, $data['total']);
 	}
 
+	/**
+	 * Five views with ids 1..5, for the pagination cases.
+	 *
+	 * @return array<int, \OCA\OpenRegister\Search\Db\View>
+	 */
+	private function fiveViews(): array {
+		$views = [];
+		for ($i = 0; $i < 5; $i++) {
+			$v = new \OCA\OpenRegister\Search\Db\View();
+			$prop = (new \ReflectionClass($v))->getProperty('id');
+			$prop->setAccessible(true);
+			$prop->setValue($v, $i + 1);
+			$v->setName("View $i");
+			$v->setQuery([]);
+			$views[] = $v;
+		}
+
+		return $views;
+	}
+
+	public function testIndexWithLimitAndOffsetSlicesFromTheOffset(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['_limit' => '2', '_offset' => '3']);
+		$this->viewService->method('findAllFor')->willReturn($this->fiveViews());
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame([4, 5], array_column($data['results'], 'id'));
+		$this->assertSame(5, $data['total']);
+	}
+
+	public function testIndexPageWinsOverOffsetWhenALimitIsGiven(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['_limit' => '2', '_offset' => '0', '_page' => '3']);
+		$this->viewService->method('findAllFor')->willReturn($this->fiveViews());
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame([5], array_column($data['results'], 'id'));
+	}
+
+	public function testIndexWithoutALimitIgnoresOffsetAndPage(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['_offset' => '3', '_page' => '2']);
+		$this->viewService->method('findAllFor')->willReturn($this->fiveViews());
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame([1, 2, 3, 4, 5], array_column($data['results'], 'id'));
+		$this->assertSame(5, $data['total']);
+	}
+
 	public function testIndexException(): void {
 		$this->mockAuthenticatedUser();
 		$this->request->method('getParams')->willReturn([]);
-		$this->viewService->method('findAll')
+		$this->viewService->method('findAllFor')
 			->willThrowException(new \Exception('DB error'));
 
 		$this->logger->expects($this->once())->method('error');
@@ -375,20 +500,17 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				'Config View',
-				'From configuration',
-				'testuser',
-				true,
-				true,
-				[
-					'registers' => [1, 2],
-					'schemas' => [3],
-					'source' => 'manual',
-					'searchTerms' => ['test'],
-					'facetFilters' => ['status' => 'active'],
-					'enabledFacets' => ['status'],
-				],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition('Config View', 'From configuration', [
+						'registers' => [1, 2],
+						'schemas' => [3],
+						'source' => 'manual',
+						'searchTerms' => ['test'],
+						'facetFilters' => ['status' => 'active'],
+						'enabledFacets' => ['status'],
+					], null),
+					audience: new ViewAudience('testuser', true, true, null)
+				)
 			)
 			->willReturn($view);
 
@@ -411,20 +533,17 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				'Minimal Config View',
-				'',
-				'testuser',
-				false,
-				false,
-				[
-					'registers' => [],
-					'schemas' => [],
-					'source' => 'auto',
-					'searchTerms' => [],
-					'facetFilters' => [],
-					'enabledFacets' => [],
-				],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition('Minimal Config View', '', [
+						'registers' => [],
+						'schemas' => [],
+						'source' => 'auto',
+						'searchTerms' => [],
+						'facetFilters' => [],
+						'enabledFacets' => [],
+					], null),
+					audience: new ViewAudience('testuser', false, false, null)
+				)
 			)
 			->willReturn($view);
 
@@ -481,6 +600,9 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateMissingName(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'query' => ['registers' => [1]],
 		]);
@@ -493,6 +615,9 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateMissingQuery(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated View',
 		]);
@@ -505,6 +630,9 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateWithConfiguration(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated Config View',
 			'description' => 'Updated desc',
@@ -522,24 +650,30 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Updated Config View',
-				'Updated desc',
-				'testuser',
-				true,
-				false,
-				[
-					'registers' => [10],
-					'schemas' => [20],
-					'source' => 'elasticsearch',
-					'searchTerms' => ['foo'],
-					'facetFilters' => ['type' => 'bar'],
-					'enabledFacets' => ['type'],
-				],
-				null,
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Updated Config View',
+						description: 'Updated desc',
+						query: [
+							'registers' => [10],
+							'schemas' => [20],
+							'source' => 'elasticsearch',
+							'searchTerms' => ['foo'],
+							'facetFilters' => ['type' => 'bar'],
+							'enabledFacets' => ['type'],
+						],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: true,
+						isDefault: false
+					),
+					favoredBy: null
+				)
 			)
 			->willReturn($view);
 
@@ -551,11 +685,14 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateException(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Fail Update',
 			'query' => ['registers' => [1]],
 		]);
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new \Exception('Update failed'));
 
 		$this->logger->expects($this->once())->method('error');
@@ -570,6 +707,9 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateWithEmptyName(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => '',
 			'query' => ['registers' => [1]],
@@ -612,7 +752,8 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
-		$this->viewService->method('update')
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewService->method('revise')
 			->willThrowException(new \Exception('Patch failed'));
 
 		$this->logger->expects($this->once())->method('error');
@@ -640,27 +781,34 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				[
-					'registers' => [5],
-					'schemas' => [6],
-					'source' => 'solr',
-					'searchTerms' => ['hello'],
-					'facetFilters' => ['cat' => 'dog'],
-					'enabledFacets' => ['cat'],
-				],
-				[],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: [
+							'registers' => [5],
+							'schemas' => [6],
+							'source' => 'solr',
+							'searchTerms' => ['hello'],
+							'facetFilters' => ['cat' => 'dog'],
+							'enabledFacets' => ['cat'],
+						],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -677,20 +825,27 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				['registers' => [99], 'schemas' => [88]],
-				[],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: ['registers' => [99], 'schemas' => [88]],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -708,20 +863,27 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				true,
-				true,
-				['registers' => []],
-				[],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: ['registers' => []],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: true,
+						isDefault: true
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -738,20 +900,27 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				['registers' => []],
-				['user1', 'user2'],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: ['registers' => []],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: ['user1', 'user2']
+				)
 			)
 			->willReturn($updatedView);
 
@@ -771,20 +940,27 @@ class ViewsControllerTest extends TestCase {
 		$view->setQuery(['registers' => [42]]);
 		$view->setFavoredBy(['userX']);
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Original Desc',
-				'testuser',
-				true,
-				true,
-				['registers' => [42]],
-				['userX'],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Original Desc',
+						query: ['registers' => [42]],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: true,
+						isDefault: true
+					),
+					favoredBy: ['userX']
+				)
 			)
 			->willReturn($updatedView);
 
@@ -838,13 +1014,10 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				'Kanban View',
-				'',
-				'testuser',
-				false,
-				false,
-				['registers' => [1], 'schemas' => [2]],
-				$presentation
+				new ViewEdit(
+					definition: new ViewDefinition('Kanban View', '', ['registers' => [1], 'schemas' => [2]], $presentation),
+					audience: new ViewAudience('testuser', false, false, null)
+				)
 			)
 			->willReturn($view);
 
@@ -872,13 +1045,16 @@ class ViewsControllerTest extends TestCase {
 
 	public function testUpdateWithInvalidPresentationReturns400(): void {
 		$this->mockAuthenticatedUser();
+		// The guard on update() resolves the view first; it is the caller's own.
+		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Kanban View',
 			'query' => ['registers' => [1], 'schemas' => [2]],
 			'presentation' => ['viewType' => 'calendar', 'calendar' => ['dateField' => 'missing']],
 		]);
 
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new \InvalidArgumentException('Presentation calendar.dateField "missing" is not a property of the view\'s schema'));
 
 		$result = $this->controller->update('1');
@@ -895,20 +1071,27 @@ class ViewsControllerTest extends TestCase {
 		$view = $this->createViewEntity();
 		$view->setPresentation($existingPresentation);
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Renamed',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				['registers' => []],
-				[],
-				$existingPresentation
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Renamed',
+						description: 'Desc',
+						query: ['registers' => []],
+						presentation: $existingPresentation
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -945,6 +1128,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$board = [
 			'viewType' => 'kanban',
@@ -967,6 +1151,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 		$this->viewPresentationService->method('getKanbanBoard')
 			->willThrowException(new \InvalidArgumentException('View is not a kanban view (viewType is "table")'));
 
@@ -1005,6 +1190,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$calendarResult = [
 			'viewType' => 'calendar',
@@ -1021,6 +1207,61 @@ class ViewsControllerTest extends TestCase {
 
 		$this->assertEquals(200, $result->getStatus());
 		$this->assertEquals($calendarResult, $result->getData());
+	}
+
+	public function testCalendarAcceptsTheRangeStartAndRangeEndAliases(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['rangeStart' => '2026-07-01', 'rangeEnd' => '2026-07-31']);
+		$view = $this->createViewEntity();
+		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewPresentationService->expects($this->once())->method('getCalendarObjects')
+			->with($view, $this->callback(fn ($range) => $range->start === '2026-07-01' && $range->end === '2026-07-31'))
+			->willReturn(['objects' => []]);
+
+		$this->assertSame(200, $this->controller->calendar('1')->getStatus());
+	}
+
+	public function testCalendarWithOnlyAStartIsABadRequest(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['start' => '2026-07-01']);
+		$this->viewService->expects($this->never())->method('find');
+
+		$result = $this->controller->calendar('1');
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'Both start and end (the visible date range) are required'], $result->getData());
+	}
+
+	public function testCalendarAnInvalidRangeIsRefusedWithItsMessage(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['start' => '2026-07-31', 'end' => '2026-07-01']);
+		$view = $this->createViewEntity();
+		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewPresentationService->method('getCalendarObjects')
+			->willThrowException(new \InvalidArgumentException('The range ends before it starts'));
+
+		$result = $this->controller->calendar('1');
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'The range ends before it starts'], $result->getData());
+	}
+
+	public function testCalendarAnUnexpectedFailureIsLoggedAndA500(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['start' => '2026-07-01', 'end' => '2026-07-31']);
+		$view = $this->createViewEntity();
+		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewPresentationService->method('getCalendarObjects')->willThrowException(new \RuntimeException('db down'));
+		$this->logger->expects($this->once())->method('error')
+			->with('[ViewsController] Error querying calendar range', $this->callback(fn ($c) => $c['id'] === '1' && $c['exception'] === 'db down'));
+
+		$result = $this->controller->calendar('1');
+
+		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Failed to query calendar range', 'message' => 'db down'], $result->getData());
 	}
 
 	public function testCalendarNotFound(): void {
@@ -1076,5 +1317,97 @@ class ViewsControllerTest extends TestCase {
 			$contents
 		);
 		$this->assertDoesNotMatchRegularExpression("/'views#(moveCard|dragCard|move|drag)'/i", $contents);
+	}
+
+	/**
+	 * A view someone else published is not a view anyone may rewrite.
+	 *
+	 * `ViewService::update()` resolves through `find($id, $owner)`, which
+	 * admits the owner OR any caller when `isPublic` is true. So before the
+	 * field guard was wired, any authenticated account could rename another
+	 * user's shared view, rewrite its query or un-publish it, and the write
+	 * succeeded with a 200.
+	 *
+	 * @return void
+	 */
+	public function testAStrangerMayNotRewriteSomeoneElsesPublicView(): void {
+		$this->mockAuthenticatedUser('intruder');
+
+		$published = $this->createViewEntity();
+		$published->setOwner('someone-else');
+		$published->setIsPublic(true);
+		$this->viewService->method('find')->willReturn($published);
+		$this->viewService->method('findById')->willReturn($published);
+		$this->viewService->method('revise')->willReturn($published);
+
+		$this->request->method('getParams')->willReturn(
+			[
+				'name' => 'Renamed by a stranger',
+				'isPublic' => false,
+				'query' => ['registers' => [1]],
+			]
+		);
+
+		$result = $this->controller->update('1');
+
+		$this->assertEquals(403, $result->getStatus());
+		$this->assertSame(
+			['name', 'isPublic', 'query'],
+			$result->getData()['fields'],
+			'the refusal must name the fields, so the member is told which one was refused'
+		);
+	}
+
+	/**
+	 * The same view, the same stranger, the other verb.
+	 *
+	 * `patch()` carries `@NoCSRFRequired` as well, so guarding only `update()`
+	 * would have left the hole open behind a verb that is easier to reach.
+	 *
+	 * @return void
+	 */
+	public function testAStrangerMayNotPatchSomeoneElsesPublicView(): void {
+		$this->mockAuthenticatedUser('intruder');
+
+		$published = $this->createViewEntity();
+		$published->setOwner('someone-else');
+		$published->setIsPublic(true);
+		$this->viewService->method('find')->willReturn($published);
+		$this->viewService->method('findById')->willReturn($published);
+		$this->viewService->method('revise')->willReturn($published);
+
+		$this->request->method('getParams')->willReturn(['name' => 'Renamed by a stranger']);
+
+		$result = $this->controller->patch('1');
+
+		$this->assertEquals(403, $result->getStatus());
+		$this->assertSame(['name'], $result->getData()['fields']);
+	}
+
+	/**
+	 * The control: the owner still writes their own view.
+	 *
+	 * Without it the two tests above would pass on a guard that refused
+	 * everybody, which is the failure mode a field guard invites.
+	 *
+	 * @return void
+	 */
+	public function testTheOwnerStillWritesTheirOwnPublicView(): void {
+		$this->mockAuthenticatedUser();
+
+		$own = $this->createViewEntity();
+		$own->setIsPublic(true);
+		$this->viewService->method('find')->willReturn($own);
+		$this->viewService->method('findById')->willReturn($own);
+		$this->viewService->method('revise')->willReturn($own);
+
+		$this->request->method('getParams')->willReturn(
+			[
+				'name' => 'Renamed by its owner',
+				'query' => ['registers' => [1]],
+			]
+		);
+
+		$this->assertEquals(200, $this->controller->update('1')->getStatus());
 	}
 }

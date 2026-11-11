@@ -1,0 +1,463 @@
+{
+    "find no config": {
+        "result": null,
+        "observed": [
+            [
+                "log",
+                "warning",
+                "[ObjectSource:federated] missing remoteUrl/shareToken in source config"
+            ]
+        ]
+    },
+    "find no token": {
+        "result": null,
+        "observed": [
+            [
+                "log",
+                "warning",
+                "[ObjectSource:federated] missing remoteUrl/shareToken in source config"
+            ]
+        ]
+    },
+    "find record": {
+        "result": [
+            "self-id",
+            "5",
+            "50",
+            {
+                "id": "plain",
+                "name": "Full"
+            },
+            "https://remote.example/o/1"
+        ],
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects/id%2Fwith%20space",
+                {
+                    "timeout": 15
+                }
+            ]
+        ]
+    },
+    "find error body": {
+        "result": null,
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects/x",
+                {
+                    "timeout": 15
+                }
+            ]
+        ]
+    },
+    "find scalar body": {
+        "result": null,
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects/x",
+                {
+                    "timeout": 15
+                }
+            ]
+        ]
+    },
+    "find invalid json": {
+        "result": null,
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects/x",
+                {
+                    "timeout": 15
+                }
+            ]
+        ]
+    },
+    "find client throws": {
+        "result": null,
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects/x",
+                {
+                    "timeout": 15
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:federated] find failed: timeout"
+            ]
+        ]
+    },
+    "findAll no config": {
+        "result": [],
+        "observed": [
+            [
+                "log",
+                "warning",
+                "[ObjectSource:federated] missing remoteUrl/shareToken in source config"
+            ]
+        ]
+    },
+    "findAll defaults": {
+        "result": [
+            [
+                "a",
+                "5",
+                "50",
+                {
+                    "id": "a",
+                    "name": "A"
+                },
+                null
+            ],
+            [
+                "b",
+                "5",
+                "50",
+                {
+                    "id": "b",
+                    "uuid": "ignored"
+                },
+                null
+            ],
+            [
+                "c",
+                "5",
+                "50",
+                {
+                    "id": "c",
+                    "uuid": "c"
+                },
+                "7"
+            ],
+            [
+                "",
+                "5",
+                "50",
+                {
+                    "id": "",
+                    "name": "nameless"
+                },
+                null
+            ]
+        ],
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects",
+                {
+                    "timeout": 15,
+                    "query": {
+                        "_limit": "50",
+                        "_offset": "0"
+                    }
+                }
+            ]
+        ]
+    },
+    "findAll paging and filters.search": {
+        "result": [
+            [
+                "a",
+                "5",
+                "50",
+                {
+                    "id": "a",
+                    "name": "A"
+                },
+                null
+            ],
+            [
+                "b",
+                "5",
+                "50",
+                {
+                    "id": "b",
+                    "uuid": "ignored"
+                },
+                null
+            ],
+            [
+                "c",
+                "5",
+                "50",
+                {
+                    "id": "c",
+                    "uuid": "c"
+                },
+                "7"
+            ],
+            [
+                "",
+                "5",
+                "50",
+                {
+                    "id": "",
+                    "name": "nameless"
+                },
+                null
+            ]
+        ],
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects",
+                {
+                    "timeout": 15,
+                    "query": {
+                        "_limit": "3",
+                        "_offset": "6",
+                        "_search": "one"
+                    }
+                }
+            ]
+        ]
+    },
+    "findAll _search": {
+        "result": [
+            [
+                "a",
+                "5",
+                "50",
+                {
+                    "id": "a",
+                    "name": "A"
+                },
+                null
+            ],
+            [
+                "b",
+                "5",
+                "50",
+                {
+                    "id": "b",
+                    "uuid": "ignored"
+                },
+                null
+            ],
+            [
+                "c",
+                "5",
+                "50",
+                {
+                    "id": "c",
+                    "uuid": "c"
+                },
+                "7"
+            ],
+            [
+                "",
+                "5",
+                "50",
+                {
+                    "id": "",
+                    "name": "nameless"
+                },
+                null
+            ]
+        ],
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects",
+                {
+                    "timeout": 15,
+                    "query": {
+                        "_limit": "50",
+                        "_offset": "0",
+                        "_search": "7"
+                    }
+                }
+            ]
+        ]
+    },
+    "findAll search": {
+        "result": [
+            [
+                "a",
+                "5",
+                "50",
+                {
+                    "id": "a",
+                    "name": "A"
+                },
+                null
+            ],
+            [
+                "b",
+                "5",
+                "50",
+                {
+                    "id": "b",
+                    "uuid": "ignored"
+                },
+                null
+            ],
+            [
+                "c",
+                "5",
+                "50",
+                {
+                    "id": "c",
+                    "uuid": "c"
+                },
+                "7"
+            ],
+            [
+                "",
+                "5",
+                "50",
+                {
+                    "id": "",
+                    "name": "nameless"
+                },
+                null
+            ]
+        ],
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects",
+                {
+                    "timeout": 15,
+                    "query": {
+                        "_limit": "50",
+                        "_offset": "0",
+                        "_search": "three"
+                    }
+                }
+            ]
+        ]
+    },
+    "findAll empty search": {
+        "result": [
+            [
+                "a",
+                "5",
+                "50",
+                {
+                    "id": "a",
+                    "name": "A"
+                },
+                null
+            ],
+            [
+                "b",
+                "5",
+                "50",
+                {
+                    "id": "b",
+                    "uuid": "ignored"
+                },
+                null
+            ],
+            [
+                "c",
+                "5",
+                "50",
+                {
+                    "id": "c",
+                    "uuid": "c"
+                },
+                "7"
+            ],
+            [
+                "",
+                "5",
+                "50",
+                {
+                    "id": "",
+                    "name": "nameless"
+                },
+                null
+            ]
+        ],
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects",
+                {
+                    "timeout": 15,
+                    "query": {
+                        "_limit": "50",
+                        "_offset": "0"
+                    }
+                }
+            ]
+        ]
+    },
+    "findAll body without results": {
+        "result": [],
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects",
+                {
+                    "timeout": 15,
+                    "query": {
+                        "_limit": "50",
+                        "_offset": "0"
+                    }
+                }
+            ]
+        ]
+    },
+    "findAll scalar body": {
+        "result": [],
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects",
+                {
+                    "timeout": 15,
+                    "query": {
+                        "_limit": "50",
+                        "_offset": "0"
+                    }
+                }
+            ]
+        ]
+    },
+    "findAll client throws": {
+        "result": [],
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects",
+                {
+                    "timeout": 15,
+                    "query": {
+                        "_limit": "50",
+                        "_offset": "0"
+                    }
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:federated] findAll failed: refused"
+            ]
+        ]
+    },
+    "count": {
+        "result": 4,
+        "observed": [
+            [
+                "get",
+                "https://remote.example/apps/openregister/api/federation/tok%20en%2F1/objects",
+                {
+                    "timeout": 15,
+                    "query": {
+                        "_limit": "10",
+                        "_offset": "0"
+                    }
+                }
+            ]
+        ]
+    }
+}

@@ -75,7 +75,7 @@ class Version1Date20260614110000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_sync_records') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable('openregister_sync_records');

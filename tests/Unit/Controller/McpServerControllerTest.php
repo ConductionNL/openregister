@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\McpServerController;
-use OCA\OpenRegister\Service\Mcp\McpProtocolService;
-use OCA\OpenRegister\Service\Mcp\McpResourcesService;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\McpServerControllerFactory;
+use OCA\OpenRegister\Mcp\Controller\McpServerController;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpProtocolService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -80,6 +83,7 @@ class McpServerControllerTest extends TestCase {
 	private McpToolsService&MockObject $toolsService;
 	private McpResourcesService&MockObject $resourcesService;
 	private LoggerInterface&MockObject $logger;
+	private \OCA\OpenRegister\Service\Mcp\McpAgentScope&MockObject $agentScope;
 
 	/**
 	 * Whether the php stream wrapper was overridden.
@@ -95,15 +99,34 @@ class McpServerControllerTest extends TestCase {
 		$this->resourcesService = $this->createMock(McpResourcesService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new McpServerController(
-			'openregister',
+		// A session without an agent: the scope passes every listing through.
+		$this->agentScope = $this->createMock(\OCA\OpenRegister\Service\Mcp\McpAgentScope::class);
+		$this->agentScope->method('filterListing')->willReturnArgument(1);
+
+		$this->controller = McpServerControllerFactory::create(
 			$this->request,
 			$this->protocolService,
 			$this->toolsService,
 			$this->resourcesService,
 			$this->logger,
-			'admin'
+			$this->sessionFor('admin'),
+			$this->agentScope
 		);
+	}
+
+	/**
+	 * A user session whose current user is $uid, or nobody when $uid is null.
+	 */
+	private function sessionFor(?string $uid): IUserSession&MockObject {
+		$session = $this->createMock(IUserSession::class);
+		$user = null;
+		if ($uid !== null) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($uid);
+		}
+		$session->method('getUser')->willReturn($user);
+
+		return $session;
 	}
 
 	protected function tearDown(): void {
@@ -137,8 +160,112 @@ class McpServerControllerTest extends TestCase {
 	// Instantiation
 	// ---------------------------------------------------------------
 
-	public function testControllerInstantiation(): void {
-		$this->assertInstanceOf(McpServerController::class, $this->controller);
+	// ---------------------------------------------------------------
+	// handle() — Unauthenticated requests (#4284)
+	// ---------------------------------------------------------------
+
+	/**
+	 * Build the controller as it stands when Nextcloud did not recognise the
+	 * caller: the user session holds no user.
+	 */
+	private function unauthenticatedController(): McpServerController {
+		return McpServerControllerFactory::create(
+			$this->request,
+			$this->protocolService,
+			$this->toolsService,
+			$this->resourcesService,
+			$this->logger,
+			$this->sessionFor(null),
+			$this->agentScope
+		);
+	}
+
+	public function testHandleWithoutUserAnswers401WithJsonRpcError(): void {
+		$this->protocolService->expects($this->never())->method('initialize');
+
+		$this->mockPhpInput(json_encode([
+			'jsonrpc' => '2.0',
+			'method' => 'initialize',
+			'params' => ['clientInfo' => ['name' => 'test']],
+			'id' => 7,
+		]));
+
+		$result = $this->unauthenticatedController()->handle();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $result->getStatus());
+		$data = $result->getData();
+		$this->assertSame('2.0', $data['jsonrpc']);
+		$this->assertSame(7, $data['id']);
+		$this->assertSame(-32001, $data['error']['code']);
+		$this->assertStringContainsString('Authentication required', $data['error']['message']);
+		$this->assertArrayHasKey('WWW-Authenticate', $result->getHeaders());
+	}
+
+	public function testHandleWithoutUserRefusesASessionBoundCall(): void {
+		$this->request->method('getHeader')->willReturnMap([['Mcp-Session-Id', 'valid-session']]);
+		$this->protocolService->method('validateSession')->willReturn('admin');
+		$this->toolsService->expects($this->never())->method('callTool');
+
+		$this->mockPhpInput(json_encode([
+			'jsonrpc' => '2.0',
+			'method' => 'tools/call',
+			'params' => ['name' => 'anything'],
+			'id' => 'abc',
+		]));
+
+		$result = $this->unauthenticatedController()->handle();
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $result->getStatus());
+		$this->assertSame('abc', $result->getData()['id']);
+		$this->assertSame(-32001, $result->getData()['error']['code']);
+	}
+
+	/**
+	 * The CORS middleware logs the caller out and back in after the controller
+	 * exists, so the caller must be read when handle() runs, not when the
+	 * controller is built (#4284).
+	 */
+	public function testHandleReadsTheCallerAtRequestTimeNotAtConstruction(): void {
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturnOnConsecutiveCalls(null, $bob);
+
+		// Built while nobody is logged in: must not throw.
+		$controller = McpServerControllerFactory::create(
+			$this->request,
+			$this->protocolService,
+			$this->toolsService,
+			$this->resourcesService,
+			$this->logger,
+			$session,
+			$this->agentScope
+		);
+		// The first read is the logged-out window.
+		$this->assertNull($session->getUser());
+
+		$this->protocolService->expects($this->once())
+			->method('initialize')
+			->with([], 'bob')
+			->willReturn(['result' => ['protocolVersion' => '2025-03-26'], 'sessionId' => 's-1']);
+
+		$this->mockPhpInput(json_encode(['jsonrpc' => '2.0', 'method' => 'initialize', 'params' => [], 'id' => 1]));
+
+		$result = $controller->handle();
+
+		$this->assertSame(Http::STATUS_OK, $result->getStatus());
+		$this->assertSame('2025-03-26', $result->getData()['result']['protocolVersion']);
+	}
+
+	public function testHandleWithoutUserAndUnparseableBodyStillAnswers401(): void {
+		$this->mockPhpInput('{not json');
+
+		$result = $this->unauthenticatedController()->handle();
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $result->getStatus());
+		$this->assertNull($result->getData()['id']);
+		$this->assertSame(-32001, $result->getData()['error']['code']);
 	}
 
 	// ---------------------------------------------------------------
@@ -927,9 +1054,15 @@ class McpServerControllerTest extends TestCase {
 	// ---------------------------------------------------------------
 
 	public function testHandleInitializeDoesNotRequireSession(): void {
-		// Ensure getHeader is never called for 'initialize'.
-		$this->request->expects($this->never())
-			->method('getHeader');
+		// Ensure the session header is never read for 'initialize' (the
+		// optional X-OpenRegister-Agent header may be).
+		$read = [];
+		$this->request->method('getHeader')->willReturnCallback(
+			static function (string $name) use (&$read): string {
+				$read[] = $name;
+				return '';
+			}
+		);
 
 		$initResult = [
 			'result' => ['protocolVersion' => '2025-03-26'],
@@ -951,6 +1084,7 @@ class McpServerControllerTest extends TestCase {
 
 		$data = $result->getData();
 		$this->assertArrayHasKey('result', $data);
+		$this->assertNotContains('Mcp-Session-Id', $read);
 	}
 
 	// ---------------------------------------------------------------

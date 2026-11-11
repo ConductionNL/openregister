@@ -19,7 +19,10 @@ declare(strict_types=1);
 
 namespace Unit\Support;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Support\AggregationFilterRequest;
 use OCA\OpenRegister\Support\FilterParams;
+use OCA\OpenRegister\Support\UnknownFilterKeys;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -105,15 +108,19 @@ class FilterParamsTest extends TestCase {
 		$properties = ['origin' => ['type' => 'string']];
 
 		$bare = FilterParams::forAggregation(
-			bracket: [],
-			params: ['register' => 'humaniq', 'schema' => 'TimeEntry', 'metric' => 'count', 'origin' => 'manual'],
-			controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value'],
+			request: new AggregationFilterRequest(
+				bracket: [],
+				params: ['register' => 'humaniq', 'schema' => 'TimeEntry', 'metric' => 'count', 'origin' => 'manual'],
+				controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value']
+			),
 			properties: $properties
 		);
 		$bracketed = FilterParams::forAggregation(
-			bracket: ['origin' => 'manual'],
-			params: ['register' => 'humaniq', 'schema' => 'TimeEntry', 'metric' => 'count'],
-			controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value'],
+			request: new AggregationFilterRequest(
+				bracket: ['origin' => 'manual'],
+				params: ['register' => 'humaniq', 'schema' => 'TimeEntry', 'metric' => 'count'],
+				controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value']
+			),
 			properties: $properties
 		);
 
@@ -134,8 +141,8 @@ class FilterParamsTest extends TestCase {
 		$properties = ['origin' => ['type' => 'string']];
 		$controlParams = FilterParams::AGGREGATION_CONTROL_PARAMS['value'];
 
-		$manual = FilterParams::forAggregation(bracket: [], params: ['origin' => 'manual'], controlParams: $controlParams, properties: $properties);
-		$migration = FilterParams::forAggregation(bracket: [], params: ['origin' => 'migration'], controlParams: $controlParams, properties: $properties);
+		$manual = FilterParams::forAggregation(request: new AggregationFilterRequest(bracket: [], params: ['origin' => 'manual'], controlParams: $controlParams), properties: $properties);
+		$migration = FilterParams::forAggregation(request: new AggregationFilterRequest(bracket: [], params: ['origin' => 'migration'], controlParams: $controlParams), properties: $properties);
 
 		$this->assertNotSame($manual['filter'], $migration['filter']);
 	}//end testDifferentValuesProduceDifferentFilterMaps()
@@ -155,17 +162,19 @@ class FilterParamsTest extends TestCase {
 		];
 
 		$normalised = FilterParams::forAggregation(
-			bracket: [],
-			params: [
-				'register' => 'reg',
-				'schema' => 'sch',
-				'groupBy' => 'status',
-				'metric' => 'count',
-				'sort' => 'desc',
-				'limit' => '5',
-				'_route' => 'openregister.aggregation.grouped',
-			],
-			controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['grouped'],
+			request: new AggregationFilterRequest(
+				bracket: [],
+				params: [
+					'register' => 'reg',
+					'schema' => 'sch',
+					'groupBy' => 'status',
+					'metric' => 'count',
+					'sort' => 'desc',
+					'limit' => '5',
+					'_route' => 'openregister.aggregation.grouped',
+				],
+				controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['grouped']
+			),
 			properties: $properties
 		);
 
@@ -184,15 +193,19 @@ class FilterParamsTest extends TestCase {
 		$properties = ['name' => ['type' => 'string']];
 
 		$onAggregate = FilterParams::forAggregation(
-			bracket: [],
-			params: ['name' => 'totalOpen'],
-			controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['aggregate'],
+			request: new AggregationFilterRequest(
+				bracket: [],
+				params: ['name' => 'totalOpen'],
+				controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['aggregate']
+			),
 			properties: $properties
 		);
 		$onValue = FilterParams::forAggregation(
-			bracket: [],
-			params: ['name' => 'totalOpen'],
-			controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value'],
+			request: new AggregationFilterRequest(
+				bracket: [],
+				params: ['name' => 'totalOpen'],
+				controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value']
+			),
 			properties: $properties
 		);
 
@@ -209,9 +222,11 @@ class FilterParamsTest extends TestCase {
 	 */
 	public function testAnUnknownBareKeyIsReportedAndNotFiltered(): void {
 		$normalised = FilterParams::forAggregation(
-			bracket: [],
-			params: ['origni' => 'manual', 'v' => '2'],
-			controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value'],
+			request: new AggregationFilterRequest(
+				bracket: [],
+				params: ['origni' => 'manual', 'v' => '2'],
+				controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value']
+			),
 			properties: ['origin' => ['type' => 'string']]
 		);
 
@@ -227,15 +242,61 @@ class FilterParamsTest extends TestCase {
 	 */
 	public function testAnUnknownBracketKeyKeepsItsOldEffectAndIsReported(): void {
 		$normalised = FilterParams::forAggregation(
-			bracket: ['origni' => 'manual'],
-			params: [],
-			controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value'],
+			request: new AggregationFilterRequest(
+				bracket: ['origni' => 'manual'],
+				params: [],
+				controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value']
+			),
 			properties: ['origin' => ['type' => 'string']]
 		);
 
 		$this->assertSame(['origni' => 'manual'], $normalised['filter']);
 		$this->assertSame(['origni'], $normalised['unknown']);
 	}//end testAnUnknownBracketKeyKeepsItsOldEffectAndIsReported()
+
+	/**
+	 * `filter[id]` filters on the object's own id (openregister#4165): every
+	 * aggregation row carries `id` (the object uuid) next to its properties,
+	 * so the key matches, and calling it "no property" was a false warning
+	 * that is announced to become an HTTP 400.
+	 *
+	 * @return void
+	 */
+	public function testTheObjectIdBracketKeyIsNotReportedAsUnknown(): void {
+		$normalised = FilterParams::forAggregation(
+			request: new AggregationFilterRequest(
+				bracket: ['id' => '0b5e1c9a-4d0e-4a3b-9d55-1f0c7a2f9e11'],
+				params: [],
+				controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value']
+			),
+			properties: ['value' => ['type' => 'number']]
+		);
+
+		$this->assertSame(['id' => '0b5e1c9a-4d0e-4a3b-9d55-1f0c7a2f9e11'], $normalised['filter']);
+		$this->assertSame([], $normalised['unknown']);
+	}//end testTheObjectIdBracketKeyIsNotReportedAsUnknown()
+
+	/**
+	 * Only `id` is exempt. `uuid` and `@self.*` are not row keys on any
+	 * aggregation backend, so they still match no rows and the warning about
+	 * them is true. A bare `id` is a system parameter that never filters, so
+	 * it keeps being reported as well.
+	 *
+	 * @return void
+	 */
+	public function testOtherSystemKeysAndABareIdAreStillReported(): void {
+		$normalised = FilterParams::forAggregation(
+			request: new AggregationFilterRequest(
+				bracket: ['uuid' => 'u-1', '@self.id' => 'u-1'],
+				params: ['id' => 'u-1'],
+				controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value']
+			),
+			properties: ['value' => ['type' => 'number']]
+		);
+
+		$this->assertSame(['id', 'uuid', '@self.id'], $normalised['unknown']);
+		$this->assertArrayNotHasKey('id', $normalised['filter'], 'a bare id must not start filtering');
+	}//end testOtherSystemKeysAndABareIdAreStillReported()
 
 	/**
 	 * The object-search side of "names no property": `@self`, every
@@ -285,10 +346,7 @@ class FilterParamsTest extends TestCase {
 
 		FilterParams::warnUnknownKeys(
 			logger: $logger,
-			keys: ['origni', 'hoursx'],
-			endpoint: 'objects#index',
-			register: 'humaniq',
-			schema: 'TimeEntry'
+			unknown: new UnknownFilterKeys(keys: ['origni', 'hoursx'], endpoint: 'objects#index', table: new RegisterSchemaRef(register: 'humaniq', schema: 'TimeEntry'))
 		);
 	}//end testWarnUnknownKeysLogsOnceNamingKeyEndpointAndSchema()
 
@@ -302,7 +360,7 @@ class FilterParamsTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->never())->method('warning');
 
-		FilterParams::warnUnknownKeys(logger: $logger, keys: [], endpoint: 'objects#index', register: 'humaniq', schema: 'TimeEntry');
+		FilterParams::warnUnknownKeys(logger: $logger, unknown: new UnknownFilterKeys(keys: [], endpoint: 'objects#index', table: new RegisterSchemaRef(register: 'humaniq', schema: 'TimeEntry')));
 	}//end testWarnUnknownKeysIsSilentWithoutFindings()
 
 	/**

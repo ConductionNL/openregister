@@ -25,7 +25,7 @@ import type { SeededRegister, SeededSchema } from '../_fixtures.ts'
  * re-reads the object precisely so a refusal that returns the right status and
  * writes anyway cannot pass.
  *
- * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 import { expect, test } from '@playwright/test'
 import * as fs from 'fs'

@@ -22,12 +22,12 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\AggregationController;
+use OCA\OpenRegister\Search\Controller\AggregationController;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -37,7 +37,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Controller\AggregationController
+ * @coversDefaultClass \OCA\OpenRegister\Search\Controller\AggregationController
  */
 class AggregationControllerFilterSpellingTest extends TestCase {
 
@@ -110,11 +110,12 @@ class AggregationControllerFilterSpellingTest extends TestCase {
 	 */
 	private function makeController(array $params, AggregationRunner $runner, ?LoggerInterface $logger = null): AggregationController {
 		return new AggregationController(
-			'openregister',
 			$this->makeRequest($params),
-			$runner,
-			$this->createMock(TimeseriesRequestValidator::class),
-			($logger ?? $this->createMock(LoggerInterface::class))
+			new \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices(
+				$runner,
+				$this->createMock(TimeseriesRequestValidator::class),
+				($logger ?? $this->createMock(LoggerInterface::class))
+			)
 		);
 	}//end makeController()
 
@@ -261,6 +262,25 @@ class AggregationControllerFilterSpellingTest extends TestCase {
 	}//end testAKnownKeyLogsNothing()
 
 	/**
+	 * `filter[id]=<uuid>` scopes a value aggregation to one object, as
+	 * Pipelinq's lead stat block asks, and logs no unknown-key warning
+	 * (openregister#4165).
+	 *
+	 * @return void
+	 */
+	public function testTheObjectIdBracketFilterLogsNothingAndReachesTheQuery(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+
+		$query = $this->captureValueQuery(
+			['metric' => 'sum', 'field' => 'hours', 'filter' => ['id' => '0b5e1c9a-4d0e-4a3b-9d55-1f0c7a2f9e11']],
+			$logger
+		);
+
+		$this->assertSame(['id' => '0b5e1c9a-4d0e-4a3b-9d55-1f0c7a2f9e11'], $query?->filter);
+	}//end testTheObjectIdBracketFilterLogsNothingAndReachesTheQuery()
+
+	/**
 	 * The declared-aggregation route narrows on both spellings too, and its
 	 * `{name}` placeholder is never read as a filter.
 	 *
@@ -275,7 +295,7 @@ class AggregationControllerFilterSpellingTest extends TestCase {
 		$captured = null;
 		$runner->method('run')->willReturnCallback(
 			function (...$args) use (&$captured) {
-				$captured = ($args[5] ?? null);
+				$captured = $args[1]?->extraFilter;
 				return ['value' => 1, 'backend' => 'postgres'];
 			}
 		);

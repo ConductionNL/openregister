@@ -53,6 +53,11 @@ final class StoreDescriptor {
 	 *                                  is a configuration set, a flow or a schema that marked
 	 *                                  itself shareable. An empty list keeps the remote objects
 	 *                                  API, so an app that has not moved is untouched.
+	 * @param array<int, string> $publishFields Remote object properties a publish may send, next to
+	 *                                          the slug. Empty means this descriptor cannot publish.
+	 * @param array<int, string> $publishGroups Nextcloud groups whose members may publish, usually
+	 *                                          the groups the app's own ADR-023 matrix holds for its
+	 *                                          publish action. Empty means nobody may publish.
 	 *
 	 * @return void
 	 */
@@ -68,8 +73,47 @@ final class StoreDescriptor {
 			'version' => 'version',
 		],
 		public readonly array $types = [],
+		public readonly array $publishFields = [],
+		public readonly array $publishGroups = [],
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether this descriptor opted in to publishing.
+	 *
+	 * Both lists must hold something: the fields say WHAT may leave this
+	 * server, the groups say WHO the app decided may send it. A descriptor
+	 * written before publishing existed has neither, and stays read-only.
+	 *
+	 * @return bool True when at least one field and one non-empty group are named.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-descriptor-must-opt-in-to-publishing-by-naming-its-fields-and-its-groups
+	 */
+	public function isPublishable(): bool {
+		return $this->publishFields !== [] && $this->namedPublishGroups() !== [];
+	}//end isPublishable()
+
+	/**
+	 * The publish groups with blank entries removed.
+	 *
+	 * A list holding only an empty string names nobody, and must not count as
+	 * a decision the app made.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-only-a-user-the-apps-named-groups-admit-may-publish
+	 */
+	public function namedPublishGroups(): array {
+		$named = [];
+		foreach ($this->publishGroups as $group) {
+			$group = trim((string)$group);
+			if ($group !== '') {
+				$named[] = $group;
+			}
+		}
+
+		return array_values(array_unique($named));
+	}//end namedPublishGroups()
 
 	/**
 	 * Whether this descriptor selects federated configuration discovery.

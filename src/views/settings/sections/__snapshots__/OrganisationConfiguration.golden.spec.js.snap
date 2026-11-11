@@ -1,0 +1,547 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`OrganisationConfiguration keeps the settings when they cannot be read 1`] = `
+{
+  "data": {
+    "autoCreateDefault": "kept",
+    "loadingOrganisations": false,
+    "organisations": [
+      {
+        "name": "One",
+        "uuid": "o1",
+      },
+      {
+        "name": "Two",
+        "uuid": "o2",
+      },
+    ],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": null,
+    "saveError": null,
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": null,
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+  "logged": [
+    "Error loading settings:",
+  ],
+}
+`;
+
+exports[`OrganisationConfiguration loads a failure 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/organisations/statistics",
+    ],
+  ],
+  "logged": [
+    "Error loading statistics:",
+  ],
+  "stats": {
+    "kept": true,
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads empty statistics 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/organisations/statistics",
+    ],
+  ],
+  "logged": [],
+  "stats": {
+    "activeOrganisations": 0,
+    "averageMembersPerOrg": 0,
+    "totalMembers": 0,
+    "totalOrganisations": 0,
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads full statistics 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/organisations/statistics",
+    ],
+  ],
+  "logged": [],
+  "stats": {
+    "activeOrganisations": 3,
+    "averageMembersPerOrg": 2.25,
+    "totalMembers": 9,
+    "totalOrganisations": 4,
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads no answer body 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/organisations/statistics",
+    ],
+  ],
+  "logged": [],
+  "stats": {
+    "kept": true,
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads the organisations from a failure 1`] = `
+{
+  "data": {
+    "autoCreateDefault": true,
+    "loadingOrganisations": false,
+    "organisations": [
+      "old",
+    ],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": null,
+    "saveError": "t:Failed to load organisations",
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": null,
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+  "logged": [
+    "Error loading organisations:",
+  ],
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/organisations",
+      ],
+      true,
+    ],
+  ],
+}
+`;
+
+exports[`OrganisationConfiguration loads the organisations from a list 1`] = `
+{
+  "data": {
+    "autoCreateDefault": true,
+    "loadingOrganisations": false,
+    "organisations": [
+      {
+        "name": "One",
+        "uuid": "o1",
+      },
+      {
+        "name": "Two",
+        "uuid": "o2",
+      },
+    ],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": null,
+    "saveError": null,
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": null,
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+  "logged": [],
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/organisations",
+      ],
+      true,
+    ],
+  ],
+}
+`;
+
+exports[`OrganisationConfiguration loads the organisations from an answer without results 1`] = `
+{
+  "data": {
+    "autoCreateDefault": true,
+    "loadingOrganisations": false,
+    "organisations": [
+      "old",
+    ],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": null,
+    "saveError": null,
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": null,
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+  "logged": [],
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/organisations",
+      ],
+      true,
+    ],
+  ],
+}
+`;
+
+exports[`OrganisationConfiguration loads the settings with a default before any organisation is listed 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/settings/organisation",
+    ],
+  ],
+  "data": {
+    "autoCreateDefault": true,
+    "loadingOrganisations": false,
+    "organisations": [],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": null,
+    "saveError": null,
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": null,
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads the settings with a default that is listed 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/settings/organisation",
+    ],
+  ],
+  "data": {
+    "autoCreateDefault": false,
+    "loadingOrganisations": false,
+    "organisations": [
+      {
+        "name": "One",
+        "uuid": "o1",
+      },
+      {
+        "name": "Two",
+        "uuid": "o2",
+      },
+    ],
+    "originalAutoCreateDefault": false,
+    "originalDefaultOrganisation": {
+      "id": "o2",
+      "label": "Two",
+      "name": "Two",
+      "uuid": "o2",
+    },
+    "saveError": null,
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": {
+      "id": "o2",
+      "label": "Two",
+      "name": "Two",
+      "uuid": "o2",
+    },
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads the settings with a default that is not listed 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/settings/organisation",
+    ],
+  ],
+  "data": {
+    "autoCreateDefault": true,
+    "loadingOrganisations": false,
+    "organisations": [
+      {
+        "name": "One",
+        "uuid": "o1",
+      },
+      {
+        "name": "Two",
+        "uuid": "o2",
+      },
+    ],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": null,
+    "saveError": null,
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": null,
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads the settings with no default 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/settings/organisation",
+    ],
+  ],
+  "data": {
+    "autoCreateDefault": true,
+    "loadingOrganisations": false,
+    "organisations": [
+      {
+        "name": "One",
+        "uuid": "o1",
+      },
+      {
+        "name": "Two",
+        "uuid": "o2",
+      },
+    ],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": null,
+    "saveError": null,
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": null,
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads the settings with no settings at all 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/settings/organisation",
+    ],
+  ],
+  "data": {
+    "autoCreateDefault": true,
+    "loadingOrganisations": false,
+    "organisations": [
+      {
+        "name": "One",
+        "uuid": "o1",
+      },
+      {
+        "name": "Two",
+        "uuid": "o2",
+      },
+    ],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": null,
+    "saveError": null,
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": null,
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+}
+`;
+
+exports[`OrganisationConfiguration reports a failed save with the fallback 1`] = `
+{
+  "data": {
+    "autoCreateDefault": true,
+    "loadingOrganisations": false,
+    "organisations": [],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": null,
+    "saveError": "t:Failed to save settings",
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": {
+      "uuid": "o1",
+    },
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+  "logged": [
+    "Error saving settings:",
+  ],
+}
+`;
+
+exports[`OrganisationConfiguration reports a failed save with the server message 1`] = `
+{
+  "data": {
+    "autoCreateDefault": true,
+    "loadingOrganisations": false,
+    "organisations": [],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": null,
+    "saveError": "Not allowed",
+    "saveSuccess": false,
+    "saving": false,
+    "selectedDefaultOrganisation": {
+      "uuid": "o1",
+    },
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+  "logged": [
+    "Error saving settings:",
+  ],
+}
+`;
+
+exports[`OrganisationConfiguration saves a selected default and hides the success after three seconds 1`] = `
+{
+  "afterSave": {
+    "autoCreateDefault": false,
+    "loadingOrganisations": false,
+    "organisations": [],
+    "originalAutoCreateDefault": false,
+    "originalDefaultOrganisation": {
+      "id": "o1",
+      "label": "One",
+      "uuid": "o1",
+    },
+    "saveError": null,
+    "saveSuccess": true,
+    "saving": false,
+    "selectedDefaultOrganisation": {
+      "id": "o1",
+      "label": "One",
+      "uuid": "o1",
+    },
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+  "afterThreeSeconds": false,
+  "beforeThreeSeconds": true,
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/settings/organisation",
+        {
+          "auto_create_default_organisation": false,
+          "default_organisation": "o1",
+        },
+      ],
+      true,
+      false,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`OrganisationConfiguration saves no default and hides the success after three seconds 1`] = `
+{
+  "afterSave": {
+    "autoCreateDefault": true,
+    "loadingOrganisations": false,
+    "organisations": [],
+    "originalAutoCreateDefault": true,
+    "originalDefaultOrganisation": {},
+    "saveError": null,
+    "saveSuccess": true,
+    "saving": false,
+    "selectedDefaultOrganisation": null,
+    "stats": {
+      "activeOrganisations": 0,
+      "averageMembersPerOrg": 0,
+      "totalMembers": 0,
+      "totalOrganisations": 0,
+    },
+  },
+  "afterThreeSeconds": false,
+  "beforeThreeSeconds": true,
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/settings/organisation",
+        {
+          "auto_create_default_organisation": true,
+          "default_organisation": null,
+        },
+      ],
+      true,
+      false,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`OrganisationConfiguration starts from these values 1`] = `
+{
+  "autoCreateDefault": true,
+  "loadingOrganisations": false,
+  "organisations": [],
+  "originalAutoCreateDefault": true,
+  "originalDefaultOrganisation": null,
+  "saveError": null,
+  "saveSuccess": false,
+  "saveSuccessTimeout": null,
+  "saving": false,
+  "selectedDefaultOrganisation": null,
+  "stats": {
+    "activeOrganisations": 0,
+    "averageMembersPerOrg": 0,
+    "totalMembers": 0,
+    "totalOrganisations": 0,
+  },
+}
+`;

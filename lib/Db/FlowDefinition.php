@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime|null getCreated()
  * @method void          setCreated(?DateTime $created)
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class FlowDefinition extends Entity implements \JsonSerializable {
 	/**
@@ -94,7 +94,7 @@ class FlowDefinition extends Entity implements \JsonSerializable {
 	 *
 	 * @return array<string, mixed> The definition as an array.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [
@@ -117,7 +117,7 @@ class FlowDefinition extends Entity implements \JsonSerializable {
 	 *
 	 * @return array<string, mixed> The decoded definition.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function decoded(): array {
 		if ($this->definition === null || trim($this->definition) === '') {

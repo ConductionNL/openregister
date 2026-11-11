@@ -30,7 +30,7 @@
  *
  * @template-extends QBMapper<CaseItem>
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
 
 declare(strict_types=1);
@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -54,9 +55,10 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<CaseItem>
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
-class CaseItemMapper extends QBMapper {
+class CaseItemMapper extends QBMapper implements CaseItemMapperInterface {
+	use DeleteByObjectTrait;
 
 	/**
 	 * Constructor.
@@ -75,7 +77,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return CaseItem The inserted item, with its id.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function insert(Entity $entity): CaseItem {
 		if ($entity instanceof CaseItem === false) {
@@ -100,7 +102,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return CaseItem The updated item.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function update(Entity $entity): CaseItem {
 		if ($entity instanceof CaseItem === false) {
@@ -124,7 +126,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return boolean True when the row moved; false when somebody else moved it first.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function updateIfState(CaseItem $item, string $expectedState): bool {
 		$id = $item->getId();
@@ -133,11 +135,29 @@ class CaseItemMapper extends QBMapper {
 		}
 
 		$item->setUpdated(new DateTime());
-		$properties = $item->getUpdatedFields();
-		unset($properties['id']);
 
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName());
+		$this->setChangedFields(qb: $qb, item: $item);
+
+		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($expectedState)));
+
+		return $qb->executeStatement() === 1;
+	}//end updateIfState()
+
+	/**
+	 * Set every changed field of an item, except its id, on an update.
+	 *
+	 * @param IQueryBuilder $qb   The update.
+	 * @param CaseItem      $item The item.
+	 *
+	 * @return void
+	 */
+	private function setChangedFields(IQueryBuilder $qb, CaseItem $item): void {
+		$properties = $item->getUpdatedFields();
+		unset($properties['id']);
+
 		foreach (array_keys($properties) as $property) {
 			$getter = 'get' . ucfirst($property);
 			$qb->set(
@@ -145,12 +165,7 @@ class CaseItemMapper extends QBMapper {
 				$qb->createNamedParameter($item->$getter(), $this->getParameterTypeForProperty(entity: $item, property: $property))
 			);
 		}
-
-		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($expectedState)));
-
-		return $qb->executeStatement() === 1;
-	}//end updateIfState()
+	}//end setChangedFields()
 
 	/**
 	 * Find a plan item by its public uuid.
@@ -161,7 +176,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such item exists.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function findByUuid(string $uuid): CaseItem {
 		$qb = $this->db->getQueryBuilder();
@@ -182,7 +197,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return array<int, CaseItem> The rows, parents before children by id.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function findByObject(string $objectUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -203,7 +218,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return int The open row count.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function countOpenByObject(string $objectUuid): int {
 		$qb = $this->db->getQueryBuilder();
@@ -226,7 +241,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return array<int, CaseItem> The rows (normally one).
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
 	public function findByRealisation(string $realisationUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -245,23 +260,22 @@ class CaseItemMapper extends QBMapper {
 	 * `(plan_item_type, state)` index. The total is {@see countByTypeAndState()}
 	 * over the same predicate, so page and total cannot disagree.
 	 *
-	 * @param string|null $type Restrict to one plan-item type, or null for all.
-	 * @param string|null $state Restrict to one state, or null for all.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param ListQuery $query The page (limit, offset), and the `type` and `state` filters: each
+	 *                         restricts to one plan-item type or state, or is null for all.
 	 *
 	 * @return array<int, CaseItem> The page, oldest first.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	public function findByTypeAndState(?string $type, ?string $state, int $limit = 25, int $offset = 0): array {
+	public function findByTypeAndState(ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName());
-		$this->applyTypeAndState(qb: $qb, type: $type, state: $state);
+		$filters = ['plan_item_type' => ($query->filters['type'] ?? null), 'state' => ($query->filters['state'] ?? null)];
+		$this->applyTypeAndState(qb: $qb, filters: $filters);
 		$qb->orderBy('id', 'ASC')
-			->setMaxResults(max(1, $limit))
-			->setFirstResult(max(0, $offset));
+			->setMaxResults(max(1, $query->limit))
+			->setFirstResult(max(0, (int)$query->offset));
 
 		return $this->findEntities(query: $qb);
 	}//end findByTypeAndState()
@@ -274,13 +288,13 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return int The count, computed in the datastore.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function countByTypeAndState(?string $type, ?string $state): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))
 			->from($this->getTableName());
-		$this->applyTypeAndState(qb: $qb, type: $type, state: $state);
+		$this->applyTypeAndState(qb: $qb, filters: ['plan_item_type' => $type, 'state' => $state]);
 
 		$result = $qb->executeQuery();
 		$total = (int)$result->fetchOne();
@@ -290,41 +304,18 @@ class CaseItemMapper extends QBMapper {
 	}//end countByTypeAndState()
 
 	/**
-	 * Delete every plan item of one object. The audit is NOT touched: it is
-	 * append-only and outlives the rows it describes.
-	 *
-	 * @param string $objectUuid The anchoring object's uuid.
-	 *
-	 * @return int How many rows were deleted.
-	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
-	 */
-	public function deleteByObject(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObject()
-
-	/**
 	 * The shared predicate of the stuck-where page and its total.
 	 *
-	 * @param IQueryBuilder $qb The query under construction.
-	 * @param string|null $type The type filter, or null.
-	 * @param string|null $state The state filter, or null.
+	 * @param IQueryBuilder              $qb      The query under construction.
+	 * @param array<string, string|null> $filters The type and state columns and their filters; null or blank filters nothing.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	private function applyTypeAndState(IQueryBuilder $qb, ?string $type, ?string $state): void {
-		if ($type !== null && trim($type) !== '') {
-			$qb->andWhere($qb->expr()->eq('plan_item_type', $qb->createNamedParameter($type)));
-		}
-
-		if ($state !== null && trim($state) !== '') {
-			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
+	private function applyTypeAndState(IQueryBuilder $qb, array $filters): void {
+		foreach ($filters as $column => $value) {
+			if ($value !== null && trim($value) !== '') {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+			}
 		}
 	}//end applyTypeAndState()
 }//end class

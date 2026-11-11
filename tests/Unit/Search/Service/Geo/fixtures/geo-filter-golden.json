@@ -1,0 +1,310 @@
+{
+    "bbox \"4.1,52.0,5.2,53.3\"": {
+        "type": "bbox",
+        "payload": {
+            "west": 4.1,
+            "south": 52.0,
+            "east": 5.2,
+            "north": 53.3
+        },
+        "property": "locatie"
+    },
+    "bbox \" 4 , 52 , 5 , 53 \"": {
+        "type": "bbox",
+        "payload": {
+            "west": 4.0,
+            "south": 52.0,
+            "east": 5.0,
+            "north": 53.0
+        },
+        "property": "locatie"
+    },
+    "bbox \"5,52,5,52\"": {
+        "type": "bbox",
+        "payload": {
+            "west": 5.0,
+            "south": 52.0,
+            "east": 5.0,
+            "north": 52.0
+        },
+        "property": "locatie"
+    },
+    "bbox \"-180,-90,180,90\"": {
+        "type": "bbox",
+        "payload": {
+            "west": -180.0,
+            "south": -90.0,
+            "east": 180.0,
+            "north": 90.0
+        },
+        "property": "locatie"
+    },
+    "bbox \"1e1,2,3e1,4\"": {
+        "type": "bbox",
+        "payload": {
+            "west": 10.0,
+            "south": 2.0,
+            "east": 30.0,
+            "north": 4.0
+        },
+        "property": "locatie"
+    },
+    "bbox \"0x1A,1,2,3\"": {
+        "error": "bbox values MUST be numeric"
+    },
+    "bbox \"5,52,4,53\"": {
+        "error": "bbox west MUST be less than or equal to east"
+    },
+    "bbox \"4,53,5,52\"": {
+        "error": "bbox south MUST be less than or equal to north"
+    },
+    "bbox \"6,54,5,53\"": {
+        "error": "bbox west MUST be less than or equal to east"
+    },
+    "bbox \"4,52,5\"": {
+        "error": "bbox MUST be exactly 4 comma-separated decimal values"
+    },
+    "bbox \"4,52,5,53,6\"": {
+        "error": "bbox MUST be exactly 4 comma-separated decimal values"
+    },
+    "bbox \"\"": {
+        "error": "bbox MUST be exactly 4 comma-separated decimal values"
+    },
+    "bbox \"a,b,c,d\"": {
+        "error": "bbox values MUST be numeric"
+    },
+    "bbox \"4,52,,53\"": {
+        "error": "bbox values MUST be numeric"
+    },
+    "bbox \"4,52,5,53x\"": {
+        "error": "bbox values MUST be numeric"
+    },
+    "bbox no property": {
+        "type": "bbox",
+        "payload": {
+            "west": 1.0,
+            "south": 2.0,
+            "east": 3.0,
+            "north": 4.0
+        },
+        "property": null
+    },
+    "near floats": {
+        "type": "near",
+        "payload": {
+            "lon": 4.9,
+            "lat": 52.37,
+            "radius": 500.0
+        },
+        "property": "punt"
+    },
+    "near strings": {
+        "type": "near",
+        "payload": {
+            "lon": 4.9,
+            "lat": 52.37,
+            "radius": 1000.0
+        },
+        "property": "punt"
+    },
+    "near zero radius": {
+        "error": "radius MUST be greater than 0 meters"
+    },
+    "near negative radius": {
+        "error": "radius MUST be greater than 0 meters"
+    },
+    "near bad lon": {
+        "error": "near coordinates and radius MUST be numeric"
+    },
+    "near bad radius": {
+        "error": "near coordinates and radius MUST be numeric"
+    },
+    "within polygon": {
+        "type": "within",
+        "payload": {
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            4.0,
+                            52.0
+                        ],
+                        [
+                            5.0,
+                            52.0
+                        ],
+                        [
+                            5.0,
+                            53.0
+                        ],
+                        [
+                            4.0,
+                            52.0
+                        ]
+                    ]
+                ]
+            }
+        },
+        "property": "vlak"
+    },
+    "intersects polygon": {
+        "type": "intersects",
+        "payload": {
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            4.0,
+                            52.0
+                        ],
+                        [
+                            5.0,
+                            52.0
+                        ],
+                        [
+                            5.0,
+                            53.0
+                        ],
+                        [
+                            4.0,
+                            52.0
+                        ]
+                    ]
+                ]
+            }
+        },
+        "property": null
+    },
+    "within multipolygon": {
+        "type": "within",
+        "payload": {
+            "geometry": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [
+                                4.0,
+                                52.0
+                            ],
+                            [
+                                5.0,
+                                52.0
+                            ],
+                            [
+                                5.0,
+                                53.0
+                            ],
+                            [
+                                4.0,
+                                52.0
+                            ]
+                        ]
+                    ]
+                ]
+            }
+        },
+        "property": "vlak"
+    },
+    "intersects multipolygon": {
+        "type": "intersects",
+        "payload": {
+            "geometry": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [
+                                4.0,
+                                52.0
+                            ],
+                            [
+                                5.0,
+                                52.0
+                            ],
+                            [
+                                5.0,
+                                53.0
+                            ],
+                            [
+                                4.0,
+                                52.0
+                            ]
+                        ]
+                    ]
+                ]
+            }
+        },
+        "property": null
+    },
+    "within point": {
+        "error": "within geometry type MUST be Polygon or MultiPolygon (got: 'Point')"
+    },
+    "intersects point": {
+        "error": "intersects geometry type MUST be Polygon or MultiPolygon (got: 'Point')"
+    },
+    "within lower-case type": {
+        "error": "within geometry type MUST be Polygon or MultiPolygon (got: 'polygon')"
+    },
+    "intersects lower-case type": {
+        "error": "intersects geometry type MUST be Polygon or MultiPolygon (got: 'polygon')"
+    },
+    "within no type": {
+        "error": "within geometry type MUST be Polygon or MultiPolygon (got: NULL)"
+    },
+    "intersects no type": {
+        "error": "intersects geometry type MUST be Polygon or MultiPolygon (got: NULL)"
+    },
+    "within type array": {
+        "error": "within geometry type MUST be Polygon or MultiPolygon (got: array (\n  0 => 'Polygon',\n))"
+    },
+    "intersects type array": {
+        "error": "intersects geometry type MUST be Polygon or MultiPolygon (got: array (\n  0 => 'Polygon',\n))"
+    },
+    "within no coordinates": {
+        "error": "within geometry MUST have a coordinates array"
+    },
+    "intersects no coordinates": {
+        "error": "intersects geometry MUST have a coordinates array"
+    },
+    "within null coordinates": {
+        "error": "within geometry MUST have a coordinates array"
+    },
+    "intersects null coordinates": {
+        "error": "intersects geometry MUST have a coordinates array"
+    },
+    "within string coordinates": {
+        "error": "within geometry MUST have a coordinates array"
+    },
+    "intersects string coordinates": {
+        "error": "intersects geometry MUST have a coordinates array"
+    },
+    "within empty coordinates": {
+        "type": "within",
+        "payload": {
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": []
+            }
+        },
+        "property": "vlak"
+    },
+    "intersects empty coordinates": {
+        "type": "intersects",
+        "payload": {
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": []
+            }
+        },
+        "property": null
+    },
+    "within empty": {
+        "error": "within geometry type MUST be Polygon or MultiPolygon (got: NULL)"
+    },
+    "intersects empty": {
+        "error": "intersects geometry type MUST be Polygon or MultiPolygon (got: NULL)"
+    }
+}

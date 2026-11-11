@@ -18,7 +18,7 @@
  * the worker with `occ background-job:execute` through the dev container
  * and SKIP, loudly, where occ is not reachable.
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
+ * @spec openspec/specs/flow-user-task-node/spec.md
  */
 import type { APIRequestContext } from '@playwright/test'
 

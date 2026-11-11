@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -34,6 +34,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\BackgroundJob\Support\BulkJobServices;
 
 final class BulkJobRunnerTest extends TestCase {
 
@@ -85,8 +86,7 @@ final class BulkJobRunnerTest extends TestCase {
 	private function runner(): BulkJobRunner {
 		return new BulkJobRunner(
 			$this->createMock(ITimeFactory::class),
-			$this->jobMapper,
-			$this->service,
+			new BulkJobServices($this->jobMapper, $this->service),
 			$this->jobList,
 			new NullLogger()
 		);
@@ -109,6 +109,28 @@ final class BulkJobRunnerTest extends TestCase {
 
 	public function testACancelledJobIsNotWalkedAndNotRequeued(): void {
 		$this->jobMapper->method('find')->willReturn($this->job(BulkJob::STATE_CANCELLED));
+		$this->service->expects($this->never())->method('processBatch');
+
+		$this->invoke($this->runner(), ['job_id' => 3]);
+
+		$this->assertSame([], $this->queued);
+	}
+
+	/**
+	 * A pause is only a pause if the queue stops.
+	 *
+	 * Writing `paused` on the row is the easy half; the half that decides
+	 * whether an administrator's pause means anything is here, where the
+	 * runner either re-enqueues itself or does not. Without this assertion a
+	 * paused job would keep walking its members and the console would show a
+	 * state nothing honours.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 *
+	 * @return void
+	 */
+	public function testAPausedJobIsNotWalkedAndNotRequeued(): void {
+		$this->jobMapper->method('find')->willReturn($this->job(BulkJob::STATE_PAUSED));
 		$this->service->expects($this->never())->method('processBatch');
 
 		$this->invoke($this->runner(), ['job_id' => 3]);

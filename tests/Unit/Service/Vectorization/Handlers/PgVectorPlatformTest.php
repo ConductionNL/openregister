@@ -14,14 +14,14 @@ declare(strict_types=1);
  * @author   Conduction Development Team <dev@conduction.nl>
  * @license  EUPL-1.2
  *
- * @spec openspec/changes/hybrid-document-search/tasks.md#3.1
+ * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.1
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization\Handlers;
 
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;

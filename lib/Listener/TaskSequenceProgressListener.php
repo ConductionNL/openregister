@@ -4,7 +4,7 @@
  * Progresses an approval sequence when one of its tasks reaches terminality.
  *
  * Listens for {@see TaskTerminalEvent} and hands every task that carries a
- * `sequence_uuid` to {@see TaskSequenceService::onTaskTerminal()}. Runs on
+ * `sequence_uuid` to {@see TaskSequenceServiceInterface::onTaskTerminal()}. Runs on
  * the COMMITTED dispatch only, in the same request as the completing
  * decision: the next approver is enabled before the deciding call returns,
  * which is the in-request advance the retired engine performed at
@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\TaskTerminalEvent;
-use OCA\OpenRegister\Service\Task\TaskSequenceService;
+use OCA\OpenRegister\Service\Task\TaskSequenceServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -45,18 +45,18 @@ use Throwable;
  *
  * @template-implements IEventListener<TaskTerminalEvent>
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
  */
 class TaskSequenceProgressListener implements IEventListener {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskSequenceService $sequences The sequence progression.
-	 * @param LoggerInterface $logger Diagnostics.
+	 * @param TaskSequenceServiceInterface $sequences The sequence progression.
+	 * @param LoggerInterface              $logger    Diagnostics.
 	 */
 	public function __construct(
-		private readonly TaskSequenceService $sequences,
+		private readonly TaskSequenceServiceInterface $sequences,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -69,7 +69,7 @@ class TaskSequenceProgressListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof TaskTerminalEvent === false || $event->isCommitted() === false) {

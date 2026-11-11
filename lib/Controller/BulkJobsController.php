@@ -5,7 +5,8 @@
  *
  * The HTTP surface of a bulk action job: the action catalogue, creating a
  * job (which rehearses it), reading its progress and its per-object
- * outcomes, downloading the outcome, committing, cancelling and retrying.
+ * outcomes, downloading the outcome, committing, cancelling, retrying and
+ * undoing.
  *
  * Every route is owner-scoped. A user reads their own jobs; an administrator
  * may read any.
@@ -24,7 +25,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -32,12 +33,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\BulkJobsControllerServices;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
-use OCA\OpenRegister\Service\BulkActionRegistry;
-use OCA\OpenRegister\Service\BulkJob\BulkJobService;
+use OCA\OpenRegister\Service\BulkActionRegistryInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
+use OCA\OpenRegister\Service\BulkJob\ReversalRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -47,18 +54,23 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Db\OutcomeFilter;
+use OCA\OpenRegister\Db\QueryPage;
 
 /**
  * BulkJobsController.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A REST surface over the
  * job record, the action catalogue and the lifecycle service.
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Nine endpoints over one
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Ten endpoints over one
  * resource. Splitting them across controllers to move the number under the
  * threshold would put the same ownership check in two places, which is the
  * failure the threshold exists to prevent.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) The same ten endpoints. Every
+ * public method here is one route, and the count is the size of the resource
+ * rather than a sign the class does two things.
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 class BulkJobsController extends Controller {
 
@@ -70,26 +82,66 @@ class BulkJobsController extends Controller {
 	private const MAX_PAGE = 500;
 
 	/**
+	 * The lifecycle service.
+	 *
+	 * @var BulkJobServiceInterface
+	 */
+	private readonly BulkJobServiceInterface $service;
+
+	/**
+	 * The inverse of a reversible job.
+	 *
+	 * @var BulkJobReversalInterface
+	 */
+	private readonly BulkJobReversalInterface $reversal;
+
+	/**
+	 * Job persistence.
+	 *
+	 * @var BulkJobMapperInterface
+	 */
+	private readonly BulkJobMapperInterface $jobMapper;
+
+	/**
+	 * The action catalogue.
+	 *
+	 * @var BulkActionRegistryInterface
+	 */
+	private readonly BulkActionRegistryInterface $registry;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager (admin check).
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param BulkJobService $service The lifecycle service.
-	 * @param BulkJobMapper $jobMapper Job persistence.
-	 * @param BulkActionRegistry $registry The action catalogue.
-	 * @param IUserSession $userSession Current-user session.
-	 * @param IGroupManager $groupManager Group manager (admin check).
+	 * @param BulkJobsControllerServices $services The bulk jobs controller services.
+	 *
+	 * Each is a collaborator this REST surface genuinely uses.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly BulkJobService $service,
-		private readonly BulkJobMapper $jobMapper,
-		private readonly BulkActionRegistry $registry,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		BulkJobsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->service = $services->domain->service;
+		$this->reversal = $services->domain->reversal;
+		$this->jobMapper = $services->domain->jobMapper;
+		$this->registry = $services->domain->registry;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
 	}//end __construct()
 
 	/**
@@ -97,7 +149,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The catalogue.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -110,6 +162,7 @@ class BulkJobsController extends Controller {
 			data: [
 				'results' => $this->registry->describe(),
 				'ceiling' => $this->service->getCeiling(),
+				'undoCeiling' => $this->service->getUndoCeiling(),
 			]
 		);
 	}//end actions()
@@ -119,7 +172,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The jobs.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -139,7 +192,7 @@ class BulkJobsController extends Controller {
 		// rather than an else so neither arm can fall into the other.
 		if ($wantsAll === true && $this->isAdmin() === true) {
 			return $this->jobList(
-				jobs: $this->jobMapper->findAllJobs(state: $state, limit: $limit, offset: $offset)
+				jobs: $this->jobMapper->findJobs(query: new ListQuery(limit: $limit, offset: $offset, filters: ['state' => $state]))
 			);
 		}
 
@@ -168,7 +221,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -187,7 +240,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The previewed job with its counts.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
@@ -204,14 +257,13 @@ class BulkJobsController extends Controller {
 		$schema = $this->nullableInt(value: $this->request->getParam('schema'));
 
 		try {
-			$job = $this->service->create(
-				actionId: $action,
-				parameters: $parameters,
-				selection: $selection,
-				justification: $justification,
-				actorUid: $uid,
-				registerId: $register,
-				schemaId: $schema
+			$job = $this->service->createFromRequest(
+				request: new BulkJobRequest(
+					call: $this->service->actionCall(actionId: $action, parameters: $parameters),
+					selection: $this->service->selection(criteria: $selection, registerId: $register, schemaId: $schema),
+					actorUid: $uid,
+					justification: $justification
+				)
 			);
 		} catch (BulkJobRefusedException $exception) {
 			return $this->refusal(exception: $exception);
@@ -229,7 +281,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The running job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function commit(int $id): JSONResponse {
@@ -267,7 +319,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function cancel(int $id): JSONResponse {
@@ -281,13 +333,69 @@ class BulkJobsController extends Controller {
 	}//end cancel()
 
 	/**
+	 * Hold a running job where it stands.
+	 *
+	 * Owner-scoped like every other verb on this resource: the operations
+	 * console calls it as an administrator over anybody's job, and the owner
+	 * calls it over their own. `readable()` is the one place that decides.
+	 *
+	 * @param int $id The job id.
+	 *
+	 * @return JSONResponse The paused job, or the refusal.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	#[NoAdminRequired]
+	public function pause(int $id): JSONResponse {
+		$job = $this->readable(id: $id);
+
+		if ($job instanceof JSONResponse) {
+			return $job;
+		}
+
+		try {
+			$paused = $this->service->pause(job: $job);
+		} catch (BulkJobRefusedException $exception) {
+			return $this->refusal(exception: $exception);
+		}
+
+		return new JSONResponse(data: $paused->jsonSerialize());
+	}//end pause()
+
+	/**
+	 * Set a paused job running again from where it stopped.
+	 *
+	 * @param int $id The job id.
+	 *
+	 * @return JSONResponse The running job, or the refusal.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	#[NoAdminRequired]
+	public function resume(int $id): JSONResponse {
+		$job = $this->readable(id: $id);
+
+		if ($job instanceof JSONResponse) {
+			return $job;
+		}
+
+		try {
+			$resumed = $this->service->resume(job: $job);
+		} catch (BulkJobRefusedException $exception) {
+			return $this->refusal(exception: $exception);
+		}
+
+		return new JSONResponse(data: $resumed->jsonSerialize(), statusCode: 202);
+	}//end resume()
+
+	/**
 	 * Retry a job that stopped part way.
 	 *
 	 * @param int $id The job id.
 	 *
 	 * @return JSONResponse The running job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function retry(int $id): JSONResponse {
@@ -307,13 +415,54 @@ class BulkJobsController extends Controller {
 	}//end retry()
 
 	/**
+	 * Undo a job: create the reversal that writes its prior values back.
+	 *
+	 * The reversal is returned PREVIEWED, like any other job. The caller reads
+	 * which members it would restore and which it would leave alone, then
+	 * commits it. A reversal that committed itself would be a bulk write with
+	 * no preview, which is the shape this whole capability exists to replace.
+	 *
+	 * @param int $id The id of the job to undo.
+	 *
+	 * @return JSONResponse The previewed reversal, or the refusal.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	#[NoAdminRequired]
+	public function reverse(int $id): JSONResponse {
+		$job = $this->readable(id: $id);
+
+		if ($job instanceof JSONResponse) {
+			return $job;
+		}
+
+		$uid = $this->currentUid();
+
+		if ($uid === null) {
+			return $this->authRequired();
+		}
+
+		$justification = $this->nullableString(value: $this->request->getParam('justification'));
+
+		try {
+			$created = $this->reversal->reverse(request: new ReversalRequest(original: $job, actorUid: $uid, justification: $justification));
+		} catch (BulkJobRefusedException $exception) {
+			return $this->refusal(exception: $exception);
+		} catch (InvalidArgumentException $exception) {
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
+		}
+
+		return new JSONResponse(data: $created->jsonSerialize(), statusCode: 201);
+	}//end reverse()
+
+	/**
 	 * A page of the job's per-object outcomes.
 	 *
 	 * @param int $id The job id.
 	 *
 	 * @return JSONResponse The members.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -330,9 +479,7 @@ class BulkJobsController extends Controller {
 
 		$members = $this->service->members(
 			job: $job,
-			outcome: $outcome,
-			limit: $limit,
-			offset: $offset
+			filter: new OutcomeFilter(outcome: $outcome, page: new QueryPage(limit: $limit, offset: $offset))
 		);
 
 		return new JSONResponse(
@@ -350,7 +497,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return DataDownloadResponse|JSONResponse The outcome report.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -366,7 +513,7 @@ class BulkJobsController extends Controller {
 		$more = true;
 
 		while ($more === true) {
-			$page = $this->service->members(job: $job, limit: self::MAX_PAGE, offset: $offset);
+			$page = $this->service->members(job: $job, filter: new OutcomeFilter(outcome: null, page: new QueryPage(limit: self::MAX_PAGE, offset: $offset)));
 
 			// A short page is the last page, so the next request is not made.
 			$more = (count($page) === self::MAX_PAGE);

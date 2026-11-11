@@ -50,7 +50,7 @@ class Version1Date20250831130000 extends SimpleMigrationStep {
 
 		// Check if the objects table exists.
 		if ($schema->hasTable('openregister_objects') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_objects');

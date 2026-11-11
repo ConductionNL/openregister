@@ -57,7 +57,7 @@ class Version1Date20260712130000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(tableName: 'openregister_audit_trails') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(tableName: 'openregister_audit_trails');
@@ -105,7 +105,7 @@ class Version1Date20260712130000 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		$output->info('Added tool_id/params_digest/result_summary to openregister_audit_trails');

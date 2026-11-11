@@ -1,0 +1,351 @@
+<?php
+
+/**
+ * The inverse of a bulk job: a new job that writes its prior values back.
+ *
+ * It lives beside {@see BulkJobService} rather than inside it because
+ * undoing is its own lifecycle. It reuses the create path whole, so the
+ * reversal is previewed, bounded by the same ceilings, walked by the same
+ * executor and authorised for the person asking, and it adds only the five
+ * questions that are peculiar to going back: has the job stopped, was its
+ * action ever reversible, is the window still open, is somebody already
+ * undoing it, and did it write anything at all (D-1).
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\BulkJob
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/specs/bulk-action-jobs/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\BulkJob;
+
+use DateTime;
+use InvalidArgumentException;
+use OCA\OpenRegister\BulkAction\RestorePriorValuesActionInterface;
+use OCA\OpenRegister\Db\BulkJob;
+use OCA\OpenRegister\Exception\BulkJobRefusedException;
+
+/**
+ * Class BulkJobReversal
+ */
+class BulkJobReversal implements BulkJobReversalInterface {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param BulkJobService $service The lifecycle the reversal reuses.
+	 * @param BulkJobStore   $store   The job and member tables.
+	 */
+	public function __construct(
+		private readonly BulkJobService $service,
+		private readonly BulkJobStore $store,
+	) {
+	}//end __construct()
+
+	/**
+	 * Undo a job: a new job, over the same members, writing the prior values.
+	 *
+	 * Deliberately NOT a rollback. The inverse is an ordinary bulk job whose
+	 * selection is the members the original actually wrote and whose
+	 * per-member write is the recorded prior value, so there is one execution
+	 * path, one ceiling, one preview, one audit shape, and the reversal is
+	 * itself reversible (D-1).
+	 *
+	 * It is created, not committed. The caller previews it like any other job
+	 * and commits it, which is what makes the members it will skip readable
+	 * before anything is written.
+	 *
+	 * @param ReversalRequest $request The job to undo, who undoes it and the reason they typed.
+	 *
+	 * @return BulkJob The previewed reversal.
+	 *
+	 * @throws BulkJobRefusedException When the job cannot be undone, naming the reason.
+	 * @throws InvalidArgumentException When the job names no register or schema, which the create path refuses.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function reverse(ReversalRequest $request): BulkJob {
+		$original = $request->original;
+		$this->assertReversible(job: $original);
+		$uuids    = $this->writtenUuids(job: $original);
+		$reversal = $this->createReversal(request: $request, uuids: $uuids);
+		$reverses = $this->reversesEntry(job: $original, written: count($uuids));
+
+		return $this->link(original: $original, reversal: $this->nameOriginal(reversal: $reversal, reverses: $reverses));
+	}//end reverse()
+
+	/**
+	 * Queue the job that writes the original's objects back, under the requester's name and reason.
+	 *
+	 * @param ReversalRequest    $request The job to undo, who asks, and why.
+	 * @param array<int, string> $uuids   The objects the original wrote.
+	 *
+	 * @return BulkJob The queued reversal.
+	 */
+	private function createReversal(ReversalRequest $request, array $uuids): BulkJob {
+		$original = $request->original;
+		$call     = $this->restoreCall(job: $original);
+
+		return $this->service->createFromRequest(
+			request: new BulkJobRequest(
+				call: $call,
+				selection: self::selectionOf(job: $original, uuids: $uuids),
+				actorUid: $request->actorUid,
+				justification: $request->justification
+			)
+		);
+	}//end createReversal()
+
+	/**
+	 * The selection of a reversal: the written objects, in the original's register and schema.
+	 *
+	 * @param BulkJob            $job   The job to undo.
+	 * @param array<int, string> $uuids The uuids it wrote.
+	 *
+	 * @return BulkJobSelection The selection.
+	 */
+	private static function selectionOf(BulkJob $job, array $uuids): BulkJobSelection {
+		return new BulkJobSelection(criteria: ['ids' => $uuids], registerId: $job->getRegisterId(), schemaId: $job->getSchemaId());
+	}//end selectionOf()
+
+	/**
+	 * The uuids the original job wrote, refusing a job that wrote nothing.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return array<int, string> The written uuids.
+	 *
+	 * @throws BulkJobRefusedException When the job wrote nothing.
+	 */
+	private function writtenUuids(BulkJob $job): array {
+		$uuids = $this->store->memberMapper->findWrittenUuidsByJob(jobId: (int)$job->getId());
+
+		if ($uuids === []) {
+			throw new BulkJobRefusedException(
+				message: 'This job wrote nothing, so there is nothing to undo.',
+				reason: 'nothing-to-reverse',
+				details: ['jobId' => $job->getId()]
+			);
+		}
+
+		return $uuids;
+	}//end writtenUuids()
+
+	/**
+	 * The restore-prior-values call that undoes one job.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return BulkJobActionCall The call.
+	 */
+	private function restoreCall(BulkJob $job): BulkJobActionCall {
+		return new BulkJobActionCall(
+			actionId: RestorePriorValuesActionInterface::ID,
+			parameters: [RestorePriorValuesActionInterface::PARAM_JOB => (int)$job->getId()]
+		);
+	}//end restoreCall()
+
+	/**
+	 * The report entry a reversal carries about the job it undoes.
+	 *
+	 * @param BulkJob $job     The job being undone.
+	 * @param int     $written How many objects it wrote.
+	 *
+	 * @return array<string, mixed> The entry.
+	 */
+	private function reversesEntry(BulkJob $job, int $written): array {
+		return [
+			'jobId' => $job->getId(),
+			'jobUuid' => $job->getUuid(),
+			'action' => $job->getAction(),
+			'written' => $written,
+		];
+	}//end reversesEntry()
+
+	/**
+	 * Stamp the reversal with the job it undoes, in its row and its report.
+	 *
+	 * @param BulkJob              $reversal The new reversal job.
+	 * @param array<string, mixed> $reverses The report entry naming the original.
+	 *
+	 * @return BulkJob The stamped reversal, not yet saved.
+	 */
+	private function nameOriginal(BulkJob $reversal, array $reverses): BulkJob {
+		$report = ($reversal->getReport() ?? []);
+		$report['reverses'] = $reverses;
+
+		$reversal->setReversesJobId((int)$reverses['jobId']);
+		$reversal->setReport($report);
+
+		return $reversal;
+	}//end nameOriginal()
+
+	/**
+	 * Save the reversal, then have the original name it, so a job that has
+	 * already been undone says so rather than accepting a second one.
+	 *
+	 * @param BulkJob $original The job being undone.
+	 * @param BulkJob $reversal The stamped reversal.
+	 *
+	 * @return BulkJob The saved reversal.
+	 */
+	private function link(BulkJob $original, BulkJob $reversal): BulkJob {
+		$reversal = $this->store->jobMapper->save($reversal);
+
+		$original->setReversedByJobId((int)$reversal->getId());
+		$this->store->jobMapper->save($original);
+
+		return $reversal;
+	}//end link()
+
+	/**
+	 * Refuse a job that cannot be undone, naming which of the reasons it is.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return void
+	 *
+	 * @throws BulkJobRefusedException When the job cannot be undone.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	private function assertReversible(BulkJob $job): void {
+		$this->assertFinished(job: $job);
+		$this->assertReversibleAction(job: $job);
+		$this->assertInsideWindow(job: $job);
+		$this->assertNotAlreadyReversed(job: $job);
+	}//end assertReversible()
+
+	/**
+	 * Refuse a job that has not stopped: only what a stopped job wrote can be undone.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return void
+	 *
+	 * @throws BulkJobRefusedException When the job is still queued or running.
+	 */
+	private function assertFinished(BulkJob $job): void {
+		$finished = [BulkJob::STATE_COMPLETED, BulkJob::STATE_CANCELLED, BulkJob::STATE_FAILED];
+
+		if (in_array($job->getState(), $finished, true) === false) {
+			throw new BulkJobRefusedException(
+				message: 'Only a job that has stopped can be undone. This one is '.$job->getState().'. '
+					.'Cancel it first, then undo what it managed to write.',
+				reason: 'not-finished',
+				details: ['state' => $job->getState()]
+			);
+		}
+	}//end assertFinished()
+
+	/**
+	 * Refuse a job whose action was never reversible: it recorded nothing to go back to.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return void
+	 *
+	 * @throws BulkJobRefusedException When the action is not reversible.
+	 */
+	private function assertReversibleAction(BulkJob $job): void {
+		if ($job->isReversible() === false) {
+			throw new BulkJobRefusedException(
+				message: 'The action '.$job->getAction().' is not reversible, so this job recorded nothing to go '
+					.'back to. Nothing was undone.',
+				reason: 'not-reversible',
+				details: ['action' => $job->getAction()]
+			);
+		}
+	}//end assertReversibleAction()
+
+	/**
+	 * Refuse a reversal asked for after the window closed.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return void
+	 *
+	 * @throws BulkJobRefusedException When the window has passed.
+	 */
+	private function assertInsideWindow(BulkJob $job): void {
+		$until = $job->getReversibleUntil();
+
+		if ($until === null || $until >= new DateTime()) {
+			return;
+		}
+
+		throw new BulkJobRefusedException(
+			message: 'The action '.$job->getAction().' can be undone for '.(int)$job->getReversalWindow()
+				.' seconds after it runs, and that window closed on '.$until->format(DateTime::ATOM).'.',
+			reason: 'window-expired',
+			details: ['reversibleUntil' => $until->format(DateTime::ATOM), 'window' => $job->getReversalWindow()]
+		);
+	}//end assertInsideWindow()
+
+	/**
+	 * Refuse a second reversal of a job that already has a live one.
+	 *
+	 * A cancelled reversal does not count: it wrote nothing, and refusing
+	 * because of it would strand the job it was meant to undo.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return void
+	 *
+	 * @throws BulkJobRefusedException When a live reversal already exists.
+	 */
+	private function assertNotAlreadyReversed(BulkJob $job): void {
+		$existing = $this->activeReversal(job: $job);
+		if ($existing === null) {
+			return;
+		}
+
+		$reversalId = $job->getReversedByJobId();
+
+		throw new BulkJobRefusedException(
+			message: 'This job is already being undone by job '.$reversalId.'. Read that one rather than starting a '
+				.'second reversal over the same objects.',
+			reason: 'already-reversed',
+			details: ['reversalJobId' => $reversalId, 'state' => $existing->getState()]
+		);
+	}//end assertNotAlreadyReversed()
+
+	/**
+	 * The reversal already under way for a job: one that exists and was not cancelled.
+	 *
+	 * @param BulkJob $job The job to undo.
+	 *
+	 * @return BulkJob|null The reversal, or null when there is none to wait for.
+	 */
+	private function activeReversal(BulkJob $job): ?BulkJob {
+		$reversalId = $job->getReversedByJobId();
+		if ($reversalId === null) {
+			return null;
+		}
+
+		try {
+			$existing = $this->store->jobMapper->find($reversalId);
+		} catch (\Throwable $exception) {
+			return null;
+		}
+
+		if ($existing->getState() === BulkJob::STATE_CANCELLED) {
+			return null;
+		}
+
+		return $existing;
+	}//end activeReversal()
+}//end class

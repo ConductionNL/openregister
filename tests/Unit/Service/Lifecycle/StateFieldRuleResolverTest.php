@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ namespace Unit\Service\Lifecycle;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;

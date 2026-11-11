@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Flow\FlowRunGuard;
+use OCA\OpenRegister\Service\Flow\FlowRunGuardClock;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -51,9 +52,7 @@ class FlowRunGuardTest extends TestCase {
 		$guard = new FlowRunGuard(
 			mapper: $mapper,
 			logger: $this->createMock(LoggerInterface::class),
-			runUuid: 'run-1',
-			startedAt: microtime(true),
-			budget: 3600
+			clock: new FlowRunGuardClock(runUuid: 'run-1', startedAt: microtime(true), budget: 3600)
 		);
 
 		$guard->checkpoint('openregister.object-write');
@@ -72,10 +71,7 @@ class FlowRunGuardTest extends TestCase {
 		$guard = new FlowRunGuard(
 			mapper: $mapper,
 			logger: $this->createMock(LoggerInterface::class),
-			runUuid: 'run-1',
-			startedAt: microtime(true),
-			budget: 3600,
-			minInterval: 30
+			clock: new FlowRunGuardClock(runUuid: 'run-1', startedAt: microtime(true), budget: 3600, minInterval: 30)
 		);
 
 		for ($i = 0; $i < 50; $i++) {
@@ -97,9 +93,7 @@ class FlowRunGuardTest extends TestCase {
 		$guard = new FlowRunGuard(
 			mapper: $this->createMock(FlowRunMapper::class),
 			logger: $this->createMock(LoggerInterface::class),
-			runUuid: 'run-1',
-			startedAt: (microtime(true) - 120.0),
-			budget: 60
+			clock: new FlowRunGuardClock(runUuid: 'run-1', startedAt: (microtime(true) - 120.0), budget: 60)
 		);
 
 		$this->assertTrue($guard->expired());
@@ -122,9 +116,7 @@ class FlowRunGuardTest extends TestCase {
 		$guard = new FlowRunGuard(
 			mapper: $this->createMock(FlowRunMapper::class),
 			logger: $this->createMock(LoggerInterface::class),
-			runUuid: 'run-1',
-			startedAt: (microtime(true) - 120.0),
-			budget: 60
+			clock: new FlowRunGuardClock(runUuid: 'run-1', startedAt: (microtime(true) - 120.0), budget: 60)
 		);
 
 		try {
@@ -145,9 +137,7 @@ class FlowRunGuardTest extends TestCase {
 		$guard = new FlowRunGuard(
 			mapper: $this->createMock(FlowRunMapper::class),
 			logger: $this->createMock(LoggerInterface::class),
-			runUuid: 'run-1',
-			startedAt: (microtime(true) - 86400.0),
-			budget: 0
+			clock: new FlowRunGuardClock(runUuid: 'run-1', startedAt: (microtime(true) - 86400.0), budget: 0)
 		);
 
 		$this->assertFalse($guard->expired());
@@ -171,9 +161,7 @@ class FlowRunGuardTest extends TestCase {
 		$guard = new FlowRunGuard(
 			mapper: $mapper,
 			logger: $this->createMock(LoggerInterface::class),
-			runUuid: 'run-1',
-			startedAt: (microtime(true) - 120.0),
-			budget: 60
+			clock: new FlowRunGuardClock(runUuid: 'run-1', startedAt: (microtime(true) - 120.0), budget: 60)
 		);
 
 		$this->expectException(FlowRunExpired::class);
@@ -200,9 +188,7 @@ class FlowRunGuardTest extends TestCase {
 		$guard = new FlowRunGuard(
 			mapper: $mapper,
 			logger: $logger,
-			runUuid: 'run-1',
-			startedAt: microtime(true),
-			budget: 3600
+			clock: new FlowRunGuardClock(runUuid: 'run-1', startedAt: microtime(true), budget: 3600)
 		);
 
 		$guard->checkpoint();

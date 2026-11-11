@@ -26,11 +26,10 @@ use Exception;
 /**
  * Exception thrown when a PDF export's row count exceeds the configured cap.
  *
- * PDF rendering builds a full in-memory box-tree per row (Dompdf), unlike the
- * streaming CSV writer or PhpSpreadsheet's XLSX writer, making it meaningfully
- * more memory-heavy per row. `ExportService::exportToPdf()` throws this
- * exception before any HTML construction or Dompdf rendering begins, so no
- * wasted render work happens once the cap is exceeded.
+ * A PDF is laid out from one document holding every row, unlike the
+ * streaming CSV writer, so its cost grows with the row count.
+ * `ExportService::exportToPdf()` throws this exception before any document is
+ * built, so no wasted work happens once the cap is exceeded.
  *
  * Controllers exposing PDF export MUST catch this exception specifically and
  * map it to HTTP 400 with a structured body identifying the actual row count
@@ -58,38 +57,21 @@ class ExportTooLargeException extends Exception {
 	public const HTTP_STATUS = 400;
 
 	/**
-	 * The actual number of objects the export attempted to render.
-	 *
-	 * @var integer
-	 */
-	private int $rowCount;
-
-	/**
-	 * The configured row-count limit that was exceeded.
-	 *
-	 * @var integer
-	 */
-	private int $maxRows;
-
-	/**
 	 * ExportTooLargeException constructor.
 	 *
 	 * @param int $rowCount The actual number of objects the export attempted to render.
-	 * @param int $maxRows The configured row-count limit that was exceeded.
-	 * @param Exception|null $previous The previous exception that caused this one, if any.
+	 * @param int $maxRows  The configured row-count limit that was exceeded.
 	 */
-	public function __construct(int $rowCount, int $maxRows, ?Exception $previous = null) {
-		$this->rowCount = $rowCount;
-		$this->maxRows = $maxRows;
-
-		$message = sprintf(
-			'PDF export row count (%d) exceeds the maximum allowed (%d). '
-			. 'Narrow the export with filters or use CSV/Excel export instead.',
-			$rowCount,
-			$maxRows
+	public function __construct(private readonly int $rowCount, private readonly int $maxRows) {
+		parent::__construct(
+			message: sprintf(
+				'PDF export row count (%d) exceeds the maximum allowed (%d). '
+				. 'Narrow the export with filters or use CSV/Excel export instead.',
+				$rowCount,
+				$maxRows
+			),
+			code: 0
 		);
-		parent::__construct(message: $message, code: 0, previous: $previous);
-
 	}//end __construct()
 
 	/**

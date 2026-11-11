@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  * Task 7.2: the access set of one object.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  */
 class ObjectPermissionsResolverTest extends TestCase {
 

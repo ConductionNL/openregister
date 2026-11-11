@@ -42,6 +42,14 @@ profile naming a property the schema does not declare SHALL be refused at
 schema save, and anonymising a record whose schema declares no profile SHALL
 be refused naming the schema.
 
+#### Scenario: a schema that archives through the archive block declares its profile there
+
+- **GIVEN** pipelinq's schema `client`, which archives through its `archive` block and declares `archive.anonymisation` removing the name and the emails
+- **WHEN** a client whose destruction list entry is answered with anonymise is processed
+- **THEN** the name and the emails are removed and the client record remains
+- **AND** a schema declaring a profile in both `archive` and `x-openregister-archival` is refused at save naming both
+- @e2e exclude {specified only; covered by AnonymisationPlannerTest in task 2.2a}
+
 #### Scenario: the statistics survive the person leaving
 
 - **GIVEN** a profile generalising `birthDate` to a year and `postcode` to its district, and removing the name

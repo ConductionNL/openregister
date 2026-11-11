@@ -22,9 +22,13 @@
  * nothing; it is a client that sent the field without meaning to, and honouring it
  * would break every call on the credential.
  *
+ * DOES IT FIT THE SCHEMA. The secret is written before the metadata is saved, and the
+ * save is where the schema validates. Its length bounds are checked here first, so a
+ * request refused for its input never rotates the secret.
+ *
  * It lives beside the controller rather than inside it because these are decisions
  * about a request, each with a stated reason, and a controller method that inlined
- * all three read as a list of ifs whose reasons had nowhere to live.
+ * all of them read as a list of ifs whose reasons had nowhere to live.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
@@ -46,9 +50,19 @@ namespace OCA\OpenRegister\Service\Credential;
 use OCP\IRequest;
 
 /**
- * Reads the three decisions an update request carries.
+ * Reads the decisions an update request carries.
  */
-class CredentialUpdateRequest {
+class CredentialUpdateRequest implements CredentialUpdateRequestInterface {
+	/**
+	 * The `brokeredcredential` schema's maxLength for `name`.
+	 */
+	public const NAME_MAX_LENGTH = 255;
+
+	/**
+	 * The `brokeredcredential` schema's maxLength for each `allowedApps` entry.
+	 */
+	public const APP_ID_MAX_LENGTH = 64;
+
 	/**
 	 * Constructor.
 	 *
@@ -88,7 +102,7 @@ class CredentialUpdateRequest {
 	 *
 	 * @return boolean True when the request proposes a different host.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	public function wouldRepointHost(array $data): bool {
 		$proposed = $this->request->getParam('instanceBaseUrl');
@@ -98,6 +112,26 @@ class CredentialUpdateRequest {
 
 		return trim($proposed) !== (string)($data['instanceBaseUrl'] ?? '');
 	}//end wouldRepointHost()
+
+	/**
+	 * Whether the updated property bag breaks a length bound of the schema.
+	 *
+	 * Counted in characters, as JSON Schema's maxLength is, not in bytes.
+	 *
+	 * @param array<string, mixed> $data The property bag with the request's edits applied.
+	 *
+	 * @return boolean True when the name or an allowed app id is too long.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	public function exceedsBounds(array $data): bool {
+		$name = $data['name'] ?? '';
+		if (is_string($name) === true && mb_strlen($name) > self::NAME_MAX_LENGTH) {
+			return true;
+		}
+
+		return $this->anyLongerThan(values: ($data['allowedApps'] ?? []), max: self::APP_ID_MAX_LENGTH);
+	}//end exceedsBounds()
 
 	/**
 	 * The rotated secret this request carries, or null when it carries none.
@@ -114,16 +148,11 @@ class CredentialUpdateRequest {
 	 */
 	public function rotatedSecret(): ?string {
 		$secret = $this->request->getParam('secret');
-		if (is_string($secret) === false) {
+		if (is_string($secret) === false || trim($secret) === '') {
 			return null;
 		}
 
-		$secret = trim($secret);
-		if ($secret === '') {
-			return null;
-		}
-
-		return $secret;
+		return trim($secret);
 	}//end rotatedSecret()
 
 	/**
@@ -139,13 +168,30 @@ class CredentialUpdateRequest {
 			return [];
 		}
 
-		$apps = [];
-		foreach ($value as $entry) {
-			if (is_string($entry) === true && $entry !== '') {
-				$apps[] = $entry;
+		return array_values(array_filter($value, static fn (mixed $entry): bool => is_string($entry) === true && $entry !== ''));
+	}//end allowedApps()
+
+	/**
+	 * Whether any string in a list is longer than the bound, in characters.
+	 *
+	 * @param mixed $values The candidate list; anything else is within bounds.
+	 * @param integer $max The maximum length.
+	 *
+	 * @return boolean True when a string entry exceeds the bound.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function anyLongerThan(mixed $values, int $max): bool {
+		if (is_array($values) === false) {
+			return false;
+		}
+
+		foreach ($values as $value) {
+			if (is_string($value) === true && mb_strlen($value) > $max) {
+				return true;
 			}
 		}
 
-		return $apps;
-	}//end allowedApps()
+		return false;
+	}//end anyLongerThan()
 }//end class

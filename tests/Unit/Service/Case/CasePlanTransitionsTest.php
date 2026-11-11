@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Case\CasePlanTransitions
  * @covers \OCA\OpenRegister\Exception\CaseTransitionException
+ * @uses \OCA\OpenRegister\Db\CaseItem
  */
 class CasePlanTransitionsTest extends TestCase {
 
@@ -42,7 +43,7 @@ class CasePlanTransitionsTest extends TestCase {
 	 */
 	public static function legalEdges(): array {
 		$cases = [];
-		foreach ([CaseItem::TYPE_STAGE, CaseItem::TYPE_HUMAN_TASK] as $type) {
+		foreach ([CaseItem::TYPE_STAGE, CaseItem::TYPE_HUMAN_TASK, CaseItem::TYPE_PROCESS_TASK] as $type) {
 			foreach ([
 				[CaseItem::STATE_AVAILABLE, CaseItem::STATE_ENABLED],
 				[CaseItem::STATE_AVAILABLE, CaseItem::STATE_ACTIVE],
@@ -77,7 +78,7 @@ class CasePlanTransitionsTest extends TestCase {
 	 */
 	public function testLegalEdgesPass(string $type, string $from, string $to): void {
 		$table = new CasePlanTransitions();
-		$this->assertTrue($table->isLegal(type: $type, from: $from, to: $to));
+		$this->assertContains($to, $table->targetsFor(type: $type, from: $from));
 
 		$item = $this->item(type: $type, state: $from);
 		$table->assertLegal(item: $item, to: $to);
@@ -104,14 +105,14 @@ class CasePlanTransitionsTest extends TestCase {
 						continue;
 					}
 
-					$this->assertFalse($table->isLegal(type: $type, from: $from, to: $to), "$type $from -> $to must be illegal");
+					$this->assertNotContains($to, $table->targetsFor(type: $type, from: $from), "$type $from -> $to must be illegal");
 					$refused++;
 				}
 			}
 		}
 
-		// 3 types x 36 pairs = 108 triples, 20 legal.
-		$this->assertSame(88, $refused);
+		// 4 types x 36 pairs = 144 triples, 29 legal.
+		$this->assertSame(115, $refused);
 	}//end testEveryEdgeOutsideTheTableIsRefused()
 
 	/**
@@ -171,10 +172,10 @@ class CasePlanTransitionsTest extends TestCase {
 	public function testSelfLoopsAndUnknownTypesHaveNoEdges(): void {
 		$table = new CasePlanTransitions();
 		foreach (CaseItem::STATES as $state) {
-			$this->assertFalse($table->isLegal(type: CaseItem::TYPE_STAGE, from: $state, to: $state));
+			$this->assertNotContains($state, $table->targetsFor(type: CaseItem::TYPE_STAGE, from: $state));
 		}
 
-		$this->assertSame([], $table->targetsFor(type: 'processTask', from: CaseItem::STATE_AVAILABLE));
+		$this->assertSame([], $table->targetsFor(type: 'eventListener', from: CaseItem::STATE_AVAILABLE));
 	}//end testSelfLoopsAndUnknownTypesHaveNoEdges()
 
 	/**

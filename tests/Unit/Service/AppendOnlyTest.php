@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -70,6 +70,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests for the appendOnly schema flag enforcement in ObjectService.
@@ -152,7 +155,7 @@ class AppendOnlyTest extends TestCase {
 			}
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -191,7 +194,7 @@ class AppendOnlyTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}//end setUp()
@@ -321,7 +324,7 @@ class AppendOnlyTest extends TestCase {
 		$this->expectException(AppendOnlyException::class);
 		$this->expectExceptionCode(405);
 
-		$this->service->deleteObject(uuid: 'some-uuid-xyz');
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'some-uuid-xyz'));
 	}//end testDeleteObjectRejectedOnAppendOnlySchema()
 
 	// =========================================================================
@@ -386,7 +389,7 @@ class AppendOnlyTest extends TestCase {
 			->method('deleteObject')
 			->willReturn(true);
 
-		$result = $this->service->deleteObject(uuid: 'del-uuid-789');
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'del-uuid-789'));
 
 		$this->assertTrue($result);
 	}//end testDeleteObjectAllowedOnOrdinarySchema()
@@ -436,4 +439,217 @@ class AppendOnlyTest extends TestCase {
 		$schema->setAppendOnly(false);
 		$this->assertFalse($schema->isAppendOnly());
 	}//end testSchemaIsAppendOnlyGetter()
+
+	// =========================================================================
+	// 8. A caller-chosen uuid is not an update (openregister append-only insert)
+	// =========================================================================
+
+	/**
+	 * A MagicMapper::find() double that answers "exists" only for the named uuid.
+	 *
+	 * The lookup that decides create vs update runs with RBAC and multitenancy
+	 * OFF, so the double records the flags it was asked with; a test can then
+	 * prove the guard asked the unfiltered question.
+	 *
+	 * @param string|null $existingUuid The uuid that exists, or null for none
+	 * @param bool        $onlyUnfiltered Report the object only to an unfiltered lookup,
+	 *                                    the way a row in another tenant behaves
+	 *
+	 * @return void
+	 */
+	private function stubFind(?string $existingUuid, bool $onlyUnfiltered = false): void {
+		$this->objectMapper->method('find')->willReturnCallback(
+			static function (
+				string|int $identifier,
+				mixed $register = null,
+				mixed $schema = null,
+				bool $includeDeleted = false,
+				bool $_rbac = true,
+				bool $_multitenancy = true
+			) use ($existingUuid, $onlyUnfiltered): ObjectEntity {
+				$visible = ($onlyUnfiltered === false || ($_rbac === false && $_multitenancy === false));
+				if ($existingUuid !== null && $identifier === $existingUuid && $visible === true) {
+					$entity = new ObjectEntity();
+					$entity->setUuid($existingUuid);
+					$entity->setRetention([]);
+					$entity->setObject(['name' => 'stored']);
+					return $entity;
+				}
+
+				throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
+			}
+		);
+	}//end stubFind()
+
+	/**
+	 * An insert carrying a fresh caller-chosen uuid is allowed on an append-only
+	 * schema, and goes down as insert-only so a racing insert of the same uuid
+	 * is refused rather than turned into an update.
+	 *
+	 * This is the xAPI case: a statement id is required to be the stored id.
+	 *
+	 * @return void
+	 */
+	public function testInsertWithFreshUuidAllowedOnAppendOnlySchema(): void {
+		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: true, slug: 'xapi-statement'));
+		$this->setProperty('currentRegister', null);
+		$this->stubFind(existingUuid: null);
+
+		$savedEntity = new ObjectEntity();
+		$savedEntity->setUuid('3f2c6a3e-1111-4222-8333-444455556666');
+		$this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
+		$this->saveHandler->expects($this->once())
+			->method('saveObject')
+			->willReturnCallback(
+				function (mixed ...$args) use ($savedEntity): ObjectEntity {
+					$this->assertSame('3f2c6a3e-1111-4222-8333-444455556666', ($args[3] ?? null));
+					$this->assertTrue(($args[11] ?? false), 'an append-only insert must be insert-only down to the mapper');
+					return $savedEntity;
+				}
+			);
+
+		$result = $this->service->saveObject(
+			object: ['id' => '3f2c6a3e-1111-4222-8333-444455556666', 'verb' => 'completed'],
+		);
+
+		$this->assertSame($savedEntity, $result);
+	}//end testInsertWithFreshUuidAllowedOnAppendOnlySchema()
+
+	/**
+	 * An insert whose uuid already exists on an append-only schema is an update
+	 * in disguise and stays refused; nothing reaches the save handler.
+	 *
+	 * @return void
+	 */
+	public function testInsertWithExistingUuidRefusedOnAppendOnlySchema(): void {
+		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: true, slug: 'xapi-statement'));
+		$this->setProperty('currentRegister', null);
+		$this->stubFind(existingUuid: 'taken-uuid');
+		$this->saveHandler->expects($this->never())->method('saveObject');
+
+		$this->expectException(AppendOnlyException::class);
+
+		$this->service->saveObject(object: ['id' => 'taken-uuid', 'verb' => 'completed']);
+	}//end testInsertWithExistingUuidRefusedOnAppendOnlySchema()
+
+	/**
+	 * A uuid held by a row the caller cannot see inside their own organisations
+	 * is refused exactly like a visible one: the existence question is asked
+	 * unfiltered, so the invisible row can never be overwritten, and the
+	 * refusal carries the same message either way.
+	 *
+	 * @return void
+	 */
+	public function testInsertWithUuidHeldByAHiddenRowOfTheSameTenantIsRefused(): void {
+		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: true, slug: 'xapi-statement'));
+		$this->setProperty('currentRegister', null);
+		$this->stubFind(existingUuid: 'hidden-uuid', onlyUnfiltered: true);
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
+		$this->saveHandler->expects($this->never())->method('saveObject');
+
+		$this->expectException(AppendOnlyException::class);
+		$this->expectExceptionMessage('SCHEMA_APPEND_ONLY: Schema "xapi-statement" is append-only; update operations are not permitted.');
+
+		$this->service->saveObject(object: ['id' => 'hidden-uuid']);
+	}//end testInsertWithUuidHeldByAHiddenRowOfTheSameTenantIsRefused()
+
+	/**
+	 * A uuid held by a row in another tenant gets the same refusal as any other
+	 * stored row, so the answer does not tell another tenant's rows apart.
+	 *
+	 * @return void
+	 */
+	public function testInsertWithUuidHeldInAnotherTenantIsRefused(): void {
+		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: true, slug: 'xapi-statement'));
+		$this->setProperty('currentRegister', null);
+		$this->stubFind(existingUuid: 'other-tenant-uuid', onlyUnfiltered: true);
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(false);
+		$this->saveHandler->expects($this->never())->method('saveObject');
+
+		$this->expectException(AppendOnlyException::class);
+		$this->expectExceptionMessage('SCHEMA_APPEND_ONLY: Schema "xapi-statement" is append-only; update operations are not permitted.');
+
+		$this->service->saveObject(object: ['id' => 'other-tenant-uuid']);
+	}//end testInsertWithUuidHeldInAnotherTenantIsRefused()
+
+	/**
+	 * A PATCH of an existing object on an append-only schema is still refused.
+	 *
+	 * @return void
+	 */
+	public function testPatchOfExistingObjectRefusedOnAppendOnlySchema(): void {
+		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: true, slug: 'xapi-statement'));
+		$this->setProperty('currentRegister', null);
+		$this->stubFind(existingUuid: 'stored-uuid');
+		$this->saveHandler->expects($this->never())->method('saveObject');
+
+		$this->expectException(AppendOnlyException::class);
+
+		$this->service->patchObject(patch: new ObjectPatch(objectId: 'stored-uuid', data: ['name' => 'changed']));
+	}//end testPatchOfExistingObjectRefusedOnAppendOnlySchema()
+
+	/**
+	 * A DELETE of an existing object on an append-only schema is still refused.
+	 *
+	 * @return void
+	 */
+	public function testDeleteOfExistingObjectRefusedOnAppendOnlySchema(): void {
+		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: true, slug: 'xapi-statement'));
+		$this->stubFind(existingUuid: 'stored-uuid');
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$this->expectException(AppendOnlyException::class);
+		$this->expectExceptionCode(405);
+
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'stored-uuid'));
+	}//end testDeleteOfExistingObjectRefusedOnAppendOnlySchema()
+
+	/**
+	 * On an ordinary schema, a caller-chosen uuid that nothing the caller may see
+	 * answers to is written insert-only: a stored row of that identifier the
+	 * caller cannot see is refused, not updated.
+	 *
+	 * @return void
+	 */
+	public function testOrdinarySchemaInsertWithAFreshUuidIsInsertOnly(): void {
+		$this->assertSame(true, $this->ordinaryInsertFailIfExists(rbac: true));
+	}//end testOrdinarySchemaInsertWithAFreshUuidIsInsertOnly()
+
+	/**
+	 * With RBAC off (an administrator, a job) the same insert keeps its upsert semantics.
+	 *
+	 * @return void
+	 */
+	public function testOrdinarySchemaInsertWithUuidKeepsUpsertSemanticsWithRbacOff(): void {
+		$this->assertSame(false, $this->ordinaryInsertFailIfExists(rbac: false));
+	}//end testOrdinarySchemaInsertWithUuidKeepsUpsertSemanticsWithRbacOff()
+
+	/**
+	 * The failIfExists flag the save handler gets for an insert by a fresh uuid on an ordinary schema.
+	 *
+	 * @param bool $rbac Whether the save is judged for the signed-in caller.
+	 *
+	 * @return bool|null
+	 */
+	private function ordinaryInsertFailIfExists(bool $rbac): ?bool {
+		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: false, slug: 'ordinary'));
+		$this->setProperty('currentRegister', null);
+		$this->stubFind(existingUuid: null);
+
+		$savedEntity = new ObjectEntity();
+		$failIfExists = null;
+		$this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
+		$this->saveHandler->expects($this->once())
+			->method('saveObject')
+			->willReturnCallback(
+				function (mixed ...$args) use ($savedEntity, &$failIfExists): ObjectEntity {
+					$failIfExists = ($args[11] ?? null);
+					return $savedEntity;
+				}
+			);
+
+		$this->assertSame($savedEntity, $this->service->saveObject(object: ['id' => 'fresh-uuid'], _rbac: $rbac));
+
+		return $failIfExists;
+	}//end ordinaryInsertFailIfExists()
 }//end class

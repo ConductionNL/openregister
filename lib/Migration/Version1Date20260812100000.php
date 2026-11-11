@@ -156,13 +156,13 @@ class Version1Date20260812100000 extends SimpleMigrationStep
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_flows') === false) {
-            return null;
+            return $schema;
         }
 
         $table = $schema->getTable('openregister_flows');
 
         if ($table->hasColumn('comment') === true) {
-            return null;
+            return $schema;
         }
 
         $table->addColumn('comment', Types::TEXT, ['notnull' => false, 'default' => null]);

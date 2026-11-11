@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);

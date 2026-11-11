@@ -32,6 +32,10 @@ namespace Unit\Service\Import;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Service\Import\ImportCommit;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\ImportPreviewRow;
@@ -42,7 +46,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Import\ConflictPolicy;
 use OCA\OpenRegister\Service\Import\ImportPreviewRefusedException;
+use OCA\OpenRegister\Service\Import\ImportPreviewMatching;
 use OCA\OpenRegister\Service\Import\ImportPreviewService;
+use OCA\OpenRegister\Service\Import\ImportPreviewStore;
+use OCA\OpenRegister\Service\Import\ImportPreviewTargets;
+use OCA\OpenRegister\Service\Import\MatchQuery;
 use OCA\OpenRegister\Service\Import\MatchResolver;
 use OCA\OpenRegister\Service\Import\SourceRowReader;
 use OCA\OpenRegister\Service\ImportService;
@@ -145,7 +153,8 @@ final class ImportPreviewServiceTest extends TestCase {
 			}
 		);
 		$rowMapper->method('findByPreview')->willReturnCallback(
-			function (int $previewId, ?string $decision = null): array {
+			function (int $previewId, ListQuery $query): array {
+				$decision = ($query->filters['decision'] ?? null);
 				if ($decision === null) {
 					return $this->rows;
 				}
@@ -186,7 +195,7 @@ final class ImportPreviewServiceTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		$importService = $this->createMock(ImportService::class);
-		$importService->method('transformCsvRowToObject')->willReturnCallback(
+		$importService->method('transformCsvRow')->willReturnCallback(
 			static function (array $rowData) use ($register, $schema): array {
 				$object = $rowData;
 				$object['@self'] = ['register' => $register->getId(), 'schema' => $schema->getId()];
@@ -202,18 +211,18 @@ final class ImportPreviewServiceTest extends TestCase {
 		$this->matchResolver = $this->createMock(MatchResolver::class);
 
 		$this->service = new ImportPreviewService(
-			$previewMapper,
-			$rowMapper,
-			new SourceRowReader(),
-			$this->matchResolver,
-			$this->createMock(MappingEngine::class),
-			$this->createMock(MigrationPackService::class),
-			$importService,
-			$this->objectService,
-			$validateObject,
-			$registerMapper,
-			$schemaMapper,
-			new NullLogger()
+			new ImportPreviewStore($previewMapper, $rowMapper, new SourceRowReader(), new NullLogger()),
+			new ImportPreviewMatching(
+				$this->matchResolver,
+				$this->createMock(MappingEngine::class),
+				$this->createMock(MigrationPackService::class),
+				$importService
+			),
+			new ImportPreviewTargets(
+				new SchemaCatalog($registerMapper, $schemaMapper, $this->createMock(MagicMapperInterface::class)),
+				$validateObject,
+				$this->objectService
+			)
 		);
 	}
 
@@ -271,7 +280,7 @@ final class ImportPreviewServiceTest extends TestCase {
 	 */
 	private function decisionFor(int $rowNumber): ImportPreviewRow {
 		foreach ($this->rows as $row) {
-			if ($row->getRowNumber() === $rowNumber) {
+			if ($row->getSourceRow() === $rowNumber) {
 				return $row;
 			}
 		}
@@ -281,8 +290,9 @@ final class ImportPreviewServiceTest extends TestCase {
 
 	public function testAMigrationIsInspectedBeforeItLands(): void {
 		// Two of the three rows already exist; the third does not.
-		$this->matchResolver->method('resolve')->willReturnCallback(
-			static function (array $object): array {
+		$this->matchResolver->method('matchesOf')->willReturnCallback(
+			static function (MatchQuery $query): array {
+				$object = $query->object;
 				// A spreadsheet hands a numeric column back as an int, which
 				// is exactly why MatchResolver stringifies before it filters.
 				return match ((string)($object['bsn'] ?? '')) {
@@ -311,8 +321,9 @@ final class ImportPreviewServiceTest extends TestCase {
 	}
 
 	public function testAFirstMigrationRefusesAnUnexpectedMatch(): void {
-		$this->matchResolver->method('resolve')->willReturnCallback(
-			static function (array $object): array {
+		$this->matchResolver->method('matchesOf')->willReturnCallback(
+			static function (MatchQuery $query): array {
+				$object = $query->object;
 				if ((string)($object['bsn'] ?? '') === '111') {
 					return ['object-111'];
 				}
@@ -336,7 +347,7 @@ final class ImportPreviewServiceTest extends TestCase {
 	}
 
 	public function testAnAmbiguousRowIsRefusedNamingBothObjects(): void {
-		$this->matchResolver->method('resolve')->willReturn(['object-a', 'object-b']);
+		$this->matchResolver->method('matchesOf')->willReturn(['object-a', 'object-b']);
 
 		$path = $this->csv("bsn,naam\n111,Jansen\n");
 
@@ -353,7 +364,7 @@ final class ImportPreviewServiceTest extends TestCase {
 	}
 
 	public function testTheReportNamesEveryRefusalAndItsReason(): void {
-		$this->matchResolver->method('resolve')->willReturn(['object-a', 'object-b']);
+		$this->matchResolver->method('matchesOf')->willReturn(['object-a', 'object-b']);
 
 		$path = $this->csv("bsn,naam\n111,Jansen\n");
 
@@ -366,8 +377,9 @@ final class ImportPreviewServiceTest extends TestCase {
 	}
 
 	public function testTheWriteAppliesTheDecisionsThePreviewMade(): void {
-		$this->matchResolver->method('resolve')->willReturnCallback(
-			static function (array $object): array {
+		$this->matchResolver->method('matchesOf')->willReturnCallback(
+			static function (MatchQuery $query): array {
+				$object = $query->object;
 				if ((string)($object['bsn'] ?? '') === '111') {
 					return ['object-111'];
 				}
@@ -392,7 +404,7 @@ final class ImportPreviewServiceTest extends TestCase {
 
 		$committed = $this->service->commit(
 			$preview,
-			hash_file('sha256', $path)
+			new ImportCommit(hash_file('sha256', $path))
 		);
 
 		$this->assertSame(ImportPreview::STATE_COMMITTED, $committed->getState());
@@ -402,11 +414,19 @@ final class ImportPreviewServiceTest extends TestCase {
 		// The update carries the object the preview matched, so the write
 		// updates that one and not whatever a second lookup would have found.
 		$this->assertSame('object-111', $written[0]['@self']['id']);
-		$this->assertArrayNotHasKey('id', $written[1]['@self']);
+
+		// The create now carries a uuid of its OWN, minted at decision time so
+		// the row-by-row retry in writeBatch() cannot duplicate a row an earlier
+		// committed chunk already wrote. This used to assert the create carried
+		// NO id, which is what made that retry mint a fresh uuid every time.
+		// What the assertion was really guarding — that a create does not target
+		// the object the preview matched — is asserted directly instead.
+		$this->assertArrayHasKey('id', $written[1]['@self']);
+		$this->assertNotSame('object-111', $written[1]['@self']['id']);
 	}
 
 	public function testAChangedFileIsRefusedAndNothingIsWritten(): void {
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 
 		$path = $this->csv("bsn,naam\n111,Jansen\n");
 		$preview = $this->service->preview($this->params($path, ConflictPolicy::UPSERT));
@@ -419,7 +439,7 @@ final class ImportPreviewServiceTest extends TestCase {
 		$this->expectException(ImportPreviewRefusedException::class);
 		$this->expectExceptionMessageMatches('/changed since it was previewed/');
 
-		$this->service->commit($preview, hash_file('sha256', $changed));
+		$this->service->commit($preview, new ImportCommit(hash_file('sha256', $changed)));
 	}
 
 	/**
@@ -430,7 +450,7 @@ final class ImportPreviewServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testACommitThatNamesNoFileIsRefused(): void {
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 
 		$path = $this->csv("bsn,naam\n111,Jansen\n");
 		$preview = $this->service->preview($this->params($path, ConflictPolicy::UPSERT));
@@ -439,7 +459,7 @@ final class ImportPreviewServiceTest extends TestCase {
 
 		$this->expectException(ImportPreviewRefusedException::class);
 
-		$this->service->commit($preview, null);
+		$this->service->commit($preview, new ImportCommit(null));
 	}
 
 	/**
@@ -449,7 +469,7 @@ final class ImportPreviewServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testARecommitDoesNotWriteTwice(): void {
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 
 		$path = $this->csv("bsn,naam\n111,Jansen\n");
 		$preview = $this->service->preview($this->params($path, ConflictPolicy::UPSERT));
@@ -459,7 +479,7 @@ final class ImportPreviewServiceTest extends TestCase {
 			->willReturn(['saved' => [], 'updated' => []]);
 
 		$hash = hash_file('sha256', $path);
-		$this->service->commit($preview, $hash);
+		$this->service->commit($preview, new ImportCommit($hash));
 
 		// The preview is committed now, so a second commit is refused on state
 		// before it reaches the rows; and the rows are stamped, so even a
@@ -470,11 +490,92 @@ final class ImportPreviewServiceTest extends TestCase {
 		));
 
 		$this->expectException(ImportPreviewRefusedException::class);
-		$this->service->commit($preview, $hash);
+		$this->service->commit($preview, new ImportCommit($hash));
 	}
 
+	public function testARowTheBulkSaveRefusedIsReportedAndNotStampedAsWritten(): void {
+		$this->matchResolver->method('matchesOf')->willReturn([]);
+
+		$path = $this->csv("bsn,naam\n111,Jansen\n222,Pietersen\n");
+		$preview = $this->service->preview($this->params($path, ConflictPolicy::UPSERT));
+		$kept = $this->decisionFor(2);
+
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->willReturn(['invalid' => [['object' => ['@self' => ['id' => $kept->getPayload()['@self']['id']]], 'error' => 'Object is locked by bob']]]);
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$this->service->commit($preview, new ImportCommit(hash_file('sha256', $path)));
+
+		$this->assertSame(1, $preview->getApplied());
+		$this->assertSame(1, $preview->getFailed());
+		$this->assertSame('The write failed: Object is locked by bob', $kept->getReason());
+	}
+
+	public function testARefusalMatchingNoRowCountsAsFailedAndIsNotStampedAsWritten(): void {
+		$this->matchResolver->method('matchesOf')->willReturn([]);
+
+		$path = $this->csv("bsn,naam\n111,Jansen\n222,Pietersen\n");
+		$preview = $this->service->preview($this->params($path, ConflictPolicy::UPSERT));
+		$kept = $this->decisionFor(2);
+		$keptId = $kept->getPayload()['@self']['id'];
+
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->willReturn(['invalid' => [['object' => ['name' => 'no id'], 'error' => 'Object is locked by bob']]]);
+		$this->objectService->expects($this->exactly(2))
+			->method('saveObject')
+			->willReturnCallback(
+				function (array $object) use ($keptId): \OCA\OpenRegister\Db\ObjectEntity {
+					if ($object['@self']['id'] === $keptId) {
+						throw new \RuntimeException('Object is locked by bob');
+					}
+
+					return new \OCA\OpenRegister\Db\ObjectEntity();
+				}
+			);
+
+		$this->service->commit($preview, new ImportCommit(hash_file('sha256', $path)));
+
+		$this->assertSame(1, $preview->getApplied());
+		$this->assertSame(1, $preview->getFailed());
+		$this->assertSame('The write failed: Object is locked by bob', $kept->getReason());
+	}
+
+	public function testACreateRowCarriesAStableUuidSoARetryCannotDuplicateIt(): void {
+		// writeBatch() hands the batch to saveObjects() and, on a throw, walks
+		// the batch row by row on the stated assumption that a throw means
+		// nothing was written. Underneath, MagicBulkHandler::bulkUpsert() commits
+		// each CHUNK in its own transaction and rolls back only the failing one,
+		// so when a later chunk fails the earlier ones are already durable.
+		//
+		// A CREATE payload carried no id, so saveObject() minted a fresh uuid and
+		// the retry re-created every committed row as a duplicate — reported as
+		// succeeded, because for those rows the retry genuinely worked. UPDATE
+		// rows were never affected: their targetUuid makes the retry idempotent.
+		// Stamping the uuid at decision time gives CREATE rows the same property,
+		// and it is stored on the payload, so a later commit() re-run of an
+		// unstamped row upserts rather than duplicating too.
+		$this->matchResolver->method('matchesOf')->willReturn([]);
+
+		$path = $this->csv("bsn,naam\n111,Jansen\n");
+
+		$this->service->preview($this->params($path, ConflictPolicy::CREATE_ONLY));
+
+		$row = $this->decisionFor(2);
+		$this->assertSame(ImportPreviewRow::DECISION_CREATE, $row->getDecision());
+
+		$payload = ($row->getPayload() ?? []);
+		$this->assertArrayHasKey('@self', $payload, 'a create payload must carry @self');
+		$this->assertArrayHasKey('id', $payload['@self'], 'a create payload must carry a stable uuid');
+		$this->assertMatchesRegularExpression(
+			'/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/',
+			(string)$payload['@self']['id']
+		);
+	}//end testACreateRowCarriesAStableUuidSoARetryCannotDuplicateIt()
+
 	public function testUpdateOnlySkipsRowsThatMatchNothing(): void {
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 
 		$path = $this->csv("bsn,naam\n111,Jansen\n333,Yilmaz\n");
 

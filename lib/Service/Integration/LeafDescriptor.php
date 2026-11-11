@@ -115,51 +115,118 @@ final class LeafDescriptor {
 	 *
 	 * @var array<int,string>
 	 */
+	/**
+	 * How a render surface's bundle reaches the page: the shared `leaves` entry.
+	 *
+	 * The app builds `js/<app>-leaves.js` and OpenRegister's `LeafScriptListener`
+	 * puts it on the pages that need it. THIS IS THE ONLY CONVENTION THE
+	 * PLATFORM CAN VERIFY, because it is the only one where the platform does
+	 * the loading, so it is the only one whose absence is provable.
+	 */
+	public const LOADS_VIA_SHARED_ENTRY = 'shared-entry';
+
+	/**
+	 * How a render surface's bundle reaches the page: the app loads it itself.
+	 *
+	 * Typically `Util::addInitScript()` in the app's own `Application::boot()`,
+	 * putting a small registration bundle on EVERY page so the leaf registers
+	 * wherever another app renders the integration registry. hermiq and decidiq
+	 * both do this, and openregister#3954 nearly refused both of them for
+	 * shipping no `<app>-leaves.js`, which they do not need.
+	 */
+	public const LOADS_VIA_OWN_SCRIPT = 'own-script';
+
+	/**
+	 * How a render surface's bundle reaches the page: it is already there.
+	 *
+	 * A built-in leaf rides OpenRegister's own bundle. There is nothing to load
+	 * and nothing to check.
+	 */
+	public const LOADS_ALREADY_PRESENT = 'already-present';
+
+	/**
+	 * The conventions are named, not inferred, and that is the whole point. 🔴
+	 *
+	 * Issue openregister#3954 tried to infer this from the filesystem and was wrong
+	 * twice in one measurement: it read hermiq and decidiq as dark because they
+	 * ship no `<app>-leaves.js`, when both load their own bundle on every page.
+	 * Whether a bundle reaches the page is a fact about the PAGE; the registry
+	 * sees only the filesystem.
+	 *
+	 * 🔑 IF A FOURTH CONVENTION APPEARS, ADD IT HERE RATHER THAN FOLDING IT
+	 * INTO ONE OF THESE. `own-script` means "the app guarantees it"; a genuinely
+	 * different mechanism that the platform could verify deserves its own name,
+	 * because the whole value of this list is that `shared-entry` is checkable
+	 * and the others are taken on the app's word.
+	 *
+	 * @var array<int, string>
+	 */
+	public const VALID_LOAD_STRATEGIES = [
+		self::LOADS_VIA_SHARED_ENTRY,
+		self::LOADS_VIA_OWN_SCRIPT,
+		self::LOADS_ALREADY_PRESENT,
+	];
+
 	public const VALID_RENDER_MODES = [
 		self::RENDER_MODE_COMPONENT,
 		self::RENDER_MODE_MOUNT,
 	];
 
 	/**
+	 * The leaf's availability; always available when none was given.
+	 *
+	 * @var LeafAvailability
+	 */
+	private readonly LeafAvailability $availability;
+
+	/**
+	 * The leaf's render-surface face; the defaults when none was given.
+	 *
+	 * @var LeafRendering
+	 */
+	private readonly LeafRendering $rendering;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $id Stable kebab-case id, unique across the registry and
-	 *                   equal to the JS registration id.
-	 * @param string $label Human-readable label (already translated by the app).
-	 * @param string $icon Material Design Icons name (no `mdi-` prefix).
-	 * @param array<int,string> $kinds Non-empty subset of VALID_KINDS.
-	 * @param string|null $requiredApp NC app id that must be installed/enabled, or null when
-	 *                                 always-available.
-	 * @param string|null $group Optional group used to cluster leaves in admin UI.
-	 * @param array<int,string> $surfaces Render surfaces the leaf targets (subset of VALID_SURFACES);
-	 *                                    empty when the leaf offers no render surface.
-	 * @param string|null $referenceType Optional marker so a schema reference property can target
-	 *                                   this leaf's single-entity widget (ADR-019 / AD-18).
-	 * @param string|null $requiresPermission Optional permission string gating visibility.
-	 * @param string $renderMode How a render-surface leaf renders: `component` (default —
-	 *                           an SFC tab/widget interpreted by the host's Vue runtime)
-	 *                           or `mount` (a `mount`/`unmount` pair the host invokes
-	 *                           against a bare DOM element, crossing a Vue major). One of
-	 *                           VALID_RENDER_MODES; validated at registration.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A flat immutable value object: each parameter is one
-	 * independent, optional piece of leaf discovery metadata, not a collaborator to bundle into an object.
+	 * @param LeafIdentity          $identity     The id, label, icon and group of the leaf.
+	 * @param array<int,string>     $kinds        Non-empty subset of VALID_KINDS.
+	 * @param LeafAvailability|null $availability The app and permission the leaf depends on, or null
+	 *                                            when always available.
+	 * @param LeafRendering|null    $rendering    Surfaces, reference type, render mode and load strategy of
+	 *                                            the render surface, or null for the defaults.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private string $id,
-		private string $label,
-		private string $icon,
-		private array $kinds,
-		private ?string $requiredApp = null,
-		private ?string $group = null,
-		private array $surfaces = [],
-		private ?string $referenceType = null,
-		private ?string $requiresPermission = null,
-		private string $renderMode = self::RENDER_MODE_COMPONENT,
+		private readonly LeafIdentity $identity,
+		private readonly array $kinds,
+		?LeafAvailability $availability = null,
+		?LeafRendering $rendering = null,
 	) {
+		$this->availability = $availability ?? new LeafAvailability();
+		$this->rendering = $rendering ?? new LeafRendering();
 	}//end __construct()
+
+	/**
+	 * How this leaf's render bundle reaches the page, if it has said.
+	 *
+	 * @return string|null One of VALID_LOAD_STRATEGIES, or null when unstated.
+	 */
+	public function getLoadStrategy(): ?string {
+		return $this->rendering->loadStrategy;
+	}//end getLoadStrategy()
+
+	/**
+	 * Whether this leaf claims the one convention the platform can verify.
+	 *
+	 * @return bool Whether it declares the shared entry.
+	 *
+	 * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
+	 */
+	public function claimsSharedEntry(): bool {
+		return ($this->rendering->loadStrategy === self::LOADS_VIA_SHARED_ENTRY);
+	}//end claimsSharedEntry()
 
 	/**
 	 * Stable kebab-case identifier, equal to the JS registration id.
@@ -167,7 +234,7 @@ final class LeafDescriptor {
 	 * @return string The leaf id.
 	 */
 	public function getId(): string {
-		return $this->id;
+		return $this->identity->id;
 	}//end getId()
 
 	/**
@@ -176,7 +243,7 @@ final class LeafDescriptor {
 	 * @return string The label.
 	 */
 	public function getLabel(): string {
-		return $this->label;
+		return $this->identity->label;
 	}//end getLabel()
 
 	/**
@@ -185,7 +252,7 @@ final class LeafDescriptor {
 	 * @return string The icon name.
 	 */
 	public function getIcon(): string {
-		return $this->icon;
+		return $this->identity->icon;
 	}//end getIcon()
 
 	/**
@@ -214,7 +281,7 @@ final class LeafDescriptor {
 	 * @return string|null The required app id.
 	 */
 	public function getRequiredApp(): ?string {
-		return $this->requiredApp;
+		return $this->availability->requiredApp;
 	}//end getRequiredApp()
 
 	/**
@@ -223,7 +290,7 @@ final class LeafDescriptor {
 	 * @return string|null The group, or null.
 	 */
 	public function getGroup(): ?string {
-		return $this->group;
+		return $this->identity->group;
 	}//end getGroup()
 
 	/**
@@ -232,7 +299,7 @@ final class LeafDescriptor {
 	 * @return array<int,string> A subset of VALID_SURFACES.
 	 */
 	public function getSurfaces(): array {
-		return $this->surfaces;
+		return $this->rendering->surfaces;
 	}//end getSurfaces()
 
 	/**
@@ -241,7 +308,7 @@ final class LeafDescriptor {
 	 * @return string|null The reference type, or null.
 	 */
 	public function getReferenceType(): ?string {
-		return $this->referenceType;
+		return $this->rendering->referenceType;
 	}//end getReferenceType()
 
 	/**
@@ -250,7 +317,7 @@ final class LeafDescriptor {
 	 * @return string|null The permission, or null.
 	 */
 	public function requiresPermission(): ?string {
-		return $this->requiresPermission;
+		return $this->availability->requiresPermission;
 	}//end requiresPermission()
 
 	/**
@@ -264,7 +331,7 @@ final class LeafDescriptor {
 	 * @return string One of the RENDER_MODE_* constants.
 	 */
 	public function getRenderMode(): string {
-		return $this->renderMode;
+		return $this->rendering->renderMode;
 	}//end getRenderMode()
 
 	/**
@@ -280,14 +347,14 @@ final class LeafDescriptor {
 	 */
 	public function toArray(): array {
 		return [
-			'id' => $this->id,
-			'label' => $this->label,
-			'icon' => $this->icon,
-			'requiredApp' => $this->requiredApp,
-			'group' => $this->group,
-			'surfaces' => $this->surfaces,
+			'id' => $this->identity->id,
+			'label' => $this->identity->label,
+			'icon' => $this->identity->icon,
+			'requiredApp' => $this->availability->requiredApp,
+			'group' => $this->identity->group,
+			'surfaces' => $this->rendering->surfaces,
 			'kinds' => $this->kinds,
-			'renderMode' => $this->renderMode,
+			'renderMode' => $this->rendering->renderMode,
 		];
 
 	}//end toArray()

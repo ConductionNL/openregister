@@ -173,7 +173,7 @@ class ActionAuthEveryoneTest extends TestCase {
 
 		[$service, $user] = $this->serviceWith($seed['actions']);
 
-		foreach (['flow.create', 'flow.update', 'flow.delete', 'flow.run'] as $action) {
+		foreach (['flow.create', 'flow.update', 'flow.delete', 'flow.run', 'flow.read'] as $action) {
 			$this->assertTrue(
 				$service->can(user: $user, action: $action),
 				sprintf('seeding "%s" locked out a non-admin who could do it before', $action)

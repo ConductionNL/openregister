@@ -31,9 +31,11 @@ use OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
+use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
+use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -48,6 +50,11 @@ use RuntimeException;
  * Unit tests for the seam report job.
  *
  * @covers \OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob
+ * @uses \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry
+ * @uses \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider
+ * @uses \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider
+ * @uses \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry
+ * @uses \OCA\OpenRegister\Service\Translation\IdentityTranslationProvider
  */
 class ConnectionSeamReportJobTest extends TestCase {
 
@@ -75,8 +82,8 @@ class ConnectionSeamReportJobTest extends TestCase {
 		$this->reports = [];
 		$this->services = [
 			TranslationProviderInterface::class => new IdentityTranslationProvider(),
-			IdentityVerifyRegistry::class => new IdentityVerifyRegistry(logger: $logger, default: new NullIdentityVerifyProvider()),
-			RegulatorEscalateRegistry::class => new RegulatorEscalateRegistry(logger: $logger, default: new NullRegulatorEscalateProvider()),
+			IdentityVerifyRegistryInterface::class => new IdentityVerifyRegistry(logger: $logger, default: new NullIdentityVerifyProvider()),
+			RegulatorEscalateRegistryInterface::class => new RegulatorEscalateRegistry(logger: $logger, default: new NullRegulatorEscalateProvider()),
 		];
 	}//end setUp()
 
@@ -168,7 +175,7 @@ class ConnectionSeamReportJobTest extends TestCase {
 	public function testARegisteredIdentityProviderReadsConfigured(): void {
 		$provider = $this->createMock(originalClassName: IdentityVerifyProvider::class);
 		$provider->method('getProviderId')->willReturn('pipelinq.digid');
-		$this->services[IdentityVerifyRegistry::class]->addProvider($provider);
+		$this->services[IdentityVerifyRegistryInterface::class]->addProvider($provider);
 
 		$this->runJob();
 
@@ -200,7 +207,7 @@ class ConnectionSeamReportJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testABrokenBindingReportsOnlyItself(): void {
-		$this->services[RegulatorEscalateRegistry::class] = new RuntimeException('factory closure failed');
+		$this->services[RegulatorEscalateRegistryInterface::class] = new RuntimeException('factory closure failed');
 
 		$this->runJob();
 

@@ -17,7 +17,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
  */
 
 declare(strict_types=1);
@@ -30,12 +30,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Quality\DismissedPairStore;
-use OCA\OpenRegister\Service\Quality\DuplicateDetectionService;
-use OCA\OpenRegister\Service\Quality\SimilarityCalculator;
+use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
+use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
+use OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Quality\DedupRun;
 
 class DuplicateDismissalExclusionTest extends TestCase {
 
@@ -104,9 +105,7 @@ class DuplicateDismissalExclusionTest extends TestCase {
 
 		$this->service = new DuplicateDetectionService(
 			$this->objectService,
-			$schemaMapper,
-			$registerMapper,
-			new SimilarityCalculator(),
+			new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), new SimilarityCalculator()),
 			$this->dismissals,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -148,13 +147,13 @@ class DuplicateDismissalExclusionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testWithoutADismissalThePairIsOffered(): void {
 		$this->objectService->method('findAll')->willReturn($this->pair());
 		$this->dismissals->method('activeFor')->willReturn([]);
 
-		$pairs = $this->service->findDuplicates(1, 1);
+		$pairs = $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1));
 
 		$this->assertCount(1, $pairs);
 	}//end testWithoutADismissalThePairIsOffered()
@@ -164,15 +163,14 @@ class DuplicateDismissalExclusionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testADismissedPairIsNotOffered(): void {
 		$objects = $this->pair();
 		$this->objectService->method('findAll')->willReturn($objects);
 
 		$fingerprint = $this->service->pairFingerprint(
-			dataA: $objects[0]->getObject(),
-			dataB: $objects[1]->getObject(),
+			payloads: [$objects[0]->getObject(), $objects[1]->getObject()],
 			rules: $this->rules
 		);
 
@@ -180,7 +178,7 @@ class DuplicateDismissalExclusionTest extends TestCase {
 			[DismissedPairStore::key('aaa', 'bbb') => ['fingerprint' => $fingerprint]]
 		);
 
-		$this->assertSame([], $this->service->findDuplicates(1, 1));
+		$this->assertSame([], $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1)));
 	}//end testADismissedPairIsNotOffered()
 
 	/**
@@ -192,13 +190,12 @@ class DuplicateDismissalExclusionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testAChangedRecordIsOfferedAgain(): void {
 		$original = $this->pair();
 		$staleFingerprint = $this->service->pairFingerprint(
-			dataA: $original[0]->getObject(),
-			dataB: $original[1]->getObject(),
+			payloads: [$original[0]->getObject(), $original[1]->getObject()],
 			rules: $this->rules
 		);
 
@@ -211,7 +208,7 @@ class DuplicateDismissalExclusionTest extends TestCase {
 			[DismissedPairStore::key('aaa', 'bbb') => ['fingerprint' => $staleFingerprint]]
 		);
 
-		$this->assertCount(1, $this->service->findDuplicates(1, 1));
+		$this->assertCount(1, $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1)));
 	}//end testAChangedRecordIsOfferedAgain()
 
 	/**
@@ -219,7 +216,7 @@ class DuplicateDismissalExclusionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testADismissalOfAnotherPairDoesNotHideThisOne(): void {
 		$this->objectService->method('findAll')->willReturn($this->pair());
@@ -227,7 +224,7 @@ class DuplicateDismissalExclusionTest extends TestCase {
 			[DismissedPairStore::key('ccc', 'ddd') => ['fingerprint' => 'whatever']]
 		);
 
-		$this->assertCount(1, $this->service->findDuplicates(1, 1));
+		$this->assertCount(1, $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1)));
 	}//end testADismissalOfAnotherPairDoesNotHideThisOne()
 
 	/**
@@ -235,7 +232,7 @@ class DuplicateDismissalExclusionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testTheFingerprintIsOrderIndependent(): void {
 		$objects = $this->pair();
@@ -243,8 +240,8 @@ class DuplicateDismissalExclusionTest extends TestCase {
 		$b = $objects[1]->getObject();
 
 		$this->assertSame(
-			$this->service->pairFingerprint(dataA: $a, dataB: $b, rules: $this->rules),
-			$this->service->pairFingerprint(dataA: $b, dataB: $a, rules: $this->rules)
+			$this->service->pairFingerprint(payloads: [$a, $b], rules: $this->rules),
+			$this->service->pairFingerprint(payloads: [$b, $a], rules: $this->rules)
 		);
 	}//end testTheFingerprintIsOrderIndependent()
 
@@ -254,20 +251,18 @@ class DuplicateDismissalExclusionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testTheFingerprintIgnoresCasingAndSpacing(): void {
 		$rules = $this->rules;
 
 		$this->assertSame(
 			$this->service->pairFingerprint(
-				dataA: ['name' => 'Acme BV', 'email' => 'info@acme.test'],
-				dataB: ['name' => 'Globex', 'email' => 'hi@globex.test'],
+				payloads: [['name' => 'Acme BV', 'email' => 'info@acme.test'], ['name' => 'Globex', 'email' => 'hi@globex.test']],
 				rules: $rules
 			),
 			$this->service->pairFingerprint(
-				dataA: ['name' => '  acme   bv ', 'email' => 'info@acme.test'],
-				dataB: ['name' => 'globex', 'email' => 'hi@globex.test'],
+				payloads: [['name' => '  acme   bv ', 'email' => 'info@acme.test'], ['name' => 'globex', 'email' => 'hi@globex.test']],
 				rules: $rules
 			)
 		);
@@ -279,7 +274,7 @@ class DuplicateDismissalExclusionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testEffectiveRulesAreTheSchemasRules(): void {
 		$this->assertSame(

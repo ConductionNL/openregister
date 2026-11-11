@@ -56,7 +56,7 @@ class Version1Date20251107000000 extends SimpleMigrationStep {
 			// Check if roles column still exists.
 			if ($table->hasColumn('roles') === false) {
 				$output->info(message: '   ℹ️  Roles column already removed');
-				return null;
+				return $schema;
 			}
 
 			$output->info(message: '🗑️  Removing deprecated roles column from organisations table...');
@@ -69,6 +69,6 @@ class Version1Date20251107000000 extends SimpleMigrationStep {
 			return $schema;
 		}
 
-		return null;
+		return $schema;
 	}//end changeSchema()
 }//end class

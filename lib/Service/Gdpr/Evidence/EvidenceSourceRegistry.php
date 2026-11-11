@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr\Evidence;
 
+use OCA\OpenRegister\Service\Gdpr\Seam\ProviderSet;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -41,9 +42,9 @@ class EvidenceSourceRegistry {
 	/**
 	 * Registered providers, keyed by source id.
 	 *
-	 * @var array<string, EvidenceSourceProvider>
+	 * @var ProviderSet<EvidenceSourceProvider>
 	 */
-	private array $providers = [];
+	private ProviderSet $providers;
 
 	/**
 	 * Constructor.
@@ -53,8 +54,12 @@ class EvidenceSourceRegistry {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly LoggerInterface $logger,
+		LoggerInterface $logger,
 	) {
+		$this->providers = new ProviderSet(
+			logger: $logger,
+			duplicateWarning: '[EvidenceSourceRegistry] duplicate source id "%s" — keeping first registration'
+		);
 	}//end __construct()
 
 	/**
@@ -66,22 +71,10 @@ class EvidenceSourceRegistry {
 	 *
 	 * @return bool True when accepted, false when rejected (duplicate id).
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function addProvider(EvidenceSourceProvider $provider): bool {
-		$id = $provider->getSourceId();
-		if (isset($this->providers[$id]) === true) {
-			$this->logger->warning(
-				sprintf(
-					'[EvidenceSourceRegistry] duplicate source id "%s" — keeping first registration',
-					$id
-				)
-			);
-			return false;
-		}
-
-		$this->providers[$id] = $provider;
-		return true;
+		return $this->providers->add(id: $provider->getSourceId(), provider: $provider);
 	}//end addProvider()
 
 	/**
@@ -91,10 +84,10 @@ class EvidenceSourceRegistry {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function withProviders(array $providers): void {
-		$this->providers = [];
+		$this->providers->clear();
 		foreach ($providers as $provider) {
 			$this->addProvider(provider: $provider);
 		}
@@ -107,10 +100,10 @@ class EvidenceSourceRegistry {
 	 *
 	 * @return EvidenceSourceProvider|null Provider, or null when unregistered.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function get(string $id): ?EvidenceSourceProvider {
-		return $this->providers[$id] ?? null;
+		return $this->providers->get(id: $id);
 	}//end get()
 
 	/**
@@ -118,10 +111,10 @@ class EvidenceSourceRegistry {
 	 *
 	 * @return array<int, EvidenceSourceProvider>
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function list(): array {
-		return array_values($this->providers);
+		return $this->providers->all();
 	}//end list()
 
 	/**
@@ -129,9 +122,9 @@ class EvidenceSourceRegistry {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function listIds(): array {
-		return array_keys($this->providers);
+		return $this->providers->ids();
 	}//end listIds()
 }//end class

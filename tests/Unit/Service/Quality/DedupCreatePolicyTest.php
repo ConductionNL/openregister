@@ -17,7 +17,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
  */
 
 declare(strict_types=1);
@@ -28,14 +28,16 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
-use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
-use OCA\OpenRegister\Service\Quality\DuplicateDetectionService;
+use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
+use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 
 class DedupCreatePolicyTest extends TestCase {
 
@@ -89,8 +91,10 @@ class DedupCreatePolicyTest extends TestCase {
 			$this->duplicates,
 			$this->userSession,
 			$this->groupManager,
-			$this->auditTrailMapper,
-			$this->createMock(LoggerInterface::class)
+			new \OCA\OpenRegister\Search\Service\Quality\DedupOverrideAudit(
+				$this->auditTrailMapper,
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 
@@ -133,13 +137,13 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testWarnIsTheDefaultAndDoesNotScore(): void {
 		$this->duplicates->method('dedupAnnotation')->willReturn(['matchRules' => []]);
 		$this->duplicates->expects($this->never())->method('checkCandidate');
 
-		$this->assertSame([], $this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], false));
+		$this->assertSame([], $this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: false)));
 	}//end testWarnIsTheDefaultAndDoesNotScore()
 
 	/**
@@ -147,13 +151,13 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testDeclaredWarnDoesNotRefuse(): void {
 		$this->duplicates->method('dedupAnnotation')->willReturn(['onCreate' => 'warn']);
 		$this->duplicates->expects($this->never())->method('checkCandidate');
 
-		$this->assertSame([], $this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], false));
+		$this->assertSame([], $this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: false)));
 	}//end testDeclaredWarnDoesNotRefuse()
 
 	/**
@@ -161,7 +165,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testBlockRefusesAndNamesTheMatch(): void {
 		$this->signIn('handler', ['case-handlers']);
@@ -171,7 +175,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('checkCandidate')->willReturn($this->oneMatch());
 
 		try {
-			$this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], false);
+			$this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: false));
 			$this->fail('a blocking match should have been refused');
 		} catch (DuplicateBlockedException $e) {
 			$this->assertSame(409, $e->getCode());
@@ -184,13 +188,13 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testBlockWithoutAMatchAllowsTheCreate(): void {
 		$this->duplicates->method('dedupAnnotation')->willReturn(['onCreate' => 'block']);
 		$this->duplicates->method('checkCandidate')->willReturn([]);
 
-		$this->assertSame([], $this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], false));
+		$this->assertSame([], $this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: false)));
 	}//end testBlockWithoutAMatchAllowsTheCreate()
 
 	/**
@@ -199,7 +203,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testOverrideOutsideTheGroupIsStillRefused(): void {
 		$this->signIn('handler', ['case-handlers']);
@@ -209,7 +213,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('checkCandidate')->willReturn($this->oneMatch());
 
 		$this->expectException(DuplicateBlockedException::class);
-		$this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], true);
+		$this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: true));
 	}//end testOverrideOutsideTheGroupIsStillRefused()
 
 	/**
@@ -218,7 +222,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testOverrideInsideTheGroupPassesAndReturnsTheMatches(): void {
 		$this->signIn('supervisor', ['case-supervisors']);
@@ -227,7 +231,7 @@ class DedupCreatePolicyTest extends TestCase {
 		);
 		$this->duplicates->method('checkCandidate')->willReturn($this->oneMatch());
 
-		$overridden = $this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], true);
+		$overridden = $this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: true));
 
 		$this->assertSame(['stored-1'], array_column($overridden, 'uuid'));
 	}//end testOverrideInsideTheGroupPassesAndReturnsTheMatches()
@@ -238,7 +242,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testMembershipWithoutTheFlagIsStillRefused(): void {
 		$this->signIn('supervisor', ['case-supervisors']);
@@ -248,7 +252,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('checkCandidate')->willReturn($this->oneMatch());
 
 		$this->expectException(DuplicateBlockedException::class);
-		$this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], false);
+		$this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: false));
 	}//end testMembershipWithoutTheFlagIsStillRefused()
 
 	/**
@@ -258,7 +262,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testBlockWithoutOverrideGroupsAdmitsNobody(): void {
 		$this->signIn('admin', ['admin']);
@@ -266,7 +270,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('checkCandidate')->willReturn($this->oneMatch());
 
 		$this->expectException(DuplicateBlockedException::class);
-		$this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], true);
+		$this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: true));
 	}//end testBlockWithoutOverrideGroupsAdmitsNobody()
 
 	/**
@@ -286,7 +290,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testTheOverrideHasAParameterOnEverySaveHopNotOnlyTheBody(): void {
 		foreach (
@@ -315,7 +319,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testOverrideIsOnTheAuditTrail(): void {
 		$object = new ObjectEntity();
@@ -323,13 +327,13 @@ class DedupCreatePolicyTest extends TestCase {
 
 		$captured = [];
 		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $subject, string $action, array $context) use (&$captured): AuditTrail {
 					$captured = ['uuid' => $subject->getUuid(), 'action' => $action, 'context' => $context];
 					return new AuditTrail();
 				}
-			);
+			));
 
 		$this->policy->recordOverride($object, $this->oneMatch());
 
@@ -344,10 +348,10 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testNoOverrideWritesNoAuditEntry(): void {
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->policy->recordOverride(new ObjectEntity(), []);
 	}//end testNoOverrideWritesNoAuditEntry()

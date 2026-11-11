@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ArchivalControllerFactory;
 use OCA\OpenRegister\Controller\ArchivalController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -81,7 +82,7 @@ class ArchivalControllerReviewTest extends TestCase {
 			->getMock();
 		$this->nominations = $this->createMock(ArchivalNominationService::class);
 
-		$this->controller = new ArchivalController(
+		$this->controller = ArchivalControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(DestructionService::class),
@@ -95,7 +96,8 @@ class ArchivalControllerReviewTest extends TestCase {
 			$this->outcomes,
 			$this->createMock(AuditTrailMapper::class),
 			$this->nominations,
-			$this->schemaMapper
+			$this->schemaMapper,
+			$this->createMock(\OCA\OpenRegister\Service\Archival\DestructionListCreator::class)
 		);
 	}
 
@@ -320,7 +322,7 @@ class ArchivalControllerReviewTest extends TestCase {
 		$this->signIn('archivaris');
 		$this->withParams([]);
 
-		$this->nominations->expects($this->never())->method('nominate');
+		$this->nominations->expects($this->never())->method('recompute');
 
 		$this->assertSame(
 			Http::STATUS_BAD_REQUEST,
@@ -333,7 +335,7 @@ class ArchivalControllerReviewTest extends TestCase {
 		$this->withParams(['reason' => 'Selectielijst 2026 replaced the 2020 list']);
 		$this->recordUnderNomination();
 
-		$this->nominations->method('nominate')->willReturn(
+		$this->nominations->method('recompute')->willReturn(
 			[
 				'status' => ArchivalNominationService::STATUS_NOMINATED,
 				'trigger' => 'recompute',
@@ -353,7 +355,7 @@ class ArchivalControllerReviewTest extends TestCase {
 		$this->withParams(['reason' => 'Trying anyway']);
 		$this->recordUnderNomination();
 
-		$this->nominations->method('nominate')->willReturn(
+		$this->nominations->method('recompute')->willReturn(
 			['status' => ArchivalNominationService::STATUS_NOT_APPLICABLE]
 		);
 		$this->objectMapper->expects($this->never())->method('update');

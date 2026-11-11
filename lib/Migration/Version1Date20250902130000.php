@@ -49,7 +49,7 @@ class Version1Date20250902130000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_objects') === false) {
-			return null;
+			return $schema;
 		}
 
 		// Skip name index creation for now to avoid MySQL key length issues.

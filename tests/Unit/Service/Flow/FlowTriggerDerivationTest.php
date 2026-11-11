@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerDerivation
+ * @uses \OCA\OpenRegister\Db\Flow
  */
 class FlowTriggerDerivationTest extends TestCase {
 

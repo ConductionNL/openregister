@@ -62,7 +62,7 @@ final class EvidenceItem {
 	 * @param string $status Per-item collection status.
 	 * @param array<string, mixed> $payload Optional item payload for dossier assembly.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function __construct(
 		private readonly string $sourceId,
@@ -77,7 +77,7 @@ final class EvidenceItem {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function getSourceId(): string {
 		return $this->sourceId;
@@ -88,7 +88,7 @@ final class EvidenceItem {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function getContentHash(): string {
 		return $this->contentHash;
@@ -99,7 +99,7 @@ final class EvidenceItem {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function getStatus(): string {
 		return $this->status;
@@ -110,7 +110,7 @@ final class EvidenceItem {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function getPayload(): array {
 		return $this->payload;
@@ -121,7 +121,7 @@ final class EvidenceItem {
 	 *
 	 * @return array{sourceId: string, contentHash: string, status: string}
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function toEvidenceRecord(): array {
 		return [

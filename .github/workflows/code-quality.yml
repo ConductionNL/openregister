@@ -41,8 +41,7 @@ on:
     # none of which run on a pull_request event.
     branches:
       - main
-      - beta
-      - development
+      - 'stable*'
   pull_request:
     # `synchronize` — a push to an open PR — is what was missing. Without it the
     # quality suite runs ONCE, when the PR is opened, and every commit after
@@ -64,7 +63,7 @@ on:
     # hermiq's copy of this workflow omits `types:` entirely, which defaults to
     # [opened, synchronize, reopened]. This repo is the outlier.
     types: [opened, reopened, synchronize]
-    branches: [main, beta, development]
+    branches: [main, 'stable*']
   workflow_dispatch:
 
 # Deduplicating a `push` run against the `pull_request` run for the SAME head
@@ -172,45 +171,33 @@ permissions:
 
 jobs:
   quality:
-    # SECOND CLAUSE: skip the run a STANDING release PR triggers.
-    #
-    # `Release: merge development into beta` is permanently open with
-    # `head_ref: development`, so every push to development fires this
-    # workflow TWICE on the SAME sha — once for `push`, once for that PR's
-    # `pull_request` event. The concurrency block above deliberately gives
-    # them separate lanes so the push run is not cancelled, which is right,
-    # and the consequence is that both run to completion.
-    #
-    # The PR run is the redundant one, not the push run: its head sha IS
-    # development's, which the push run already decided, and the push run
-    # carries jobs the PR run does not (Coverage Baseline Check, SBOM,
-    # Features Extract). Measured 2026-09-03: runs 33747123932 (push) and
-    # 33747129312 (pull_request), same sha b8eb72e2, four seconds apart.
-    #
-    # 20 of the fleet's 21 apps carry `beta` in `pull_request.branches` and
-    # so pay this on every development push. Removing `beta` from that list
-    # would also work and is worse: the `release/v*` and `sync/main-to-beta`
-    # PRs genuinely need their run, and they target `beta` too.
-    #
-    # A `development -> main` promotion PR is skipped by the same clause, for
-    # the same reason and just as correctly.
     if: >-
-      (github.event_name != 'push' || github.event.created != true)
-      && (github.event_name != 'pull_request' || github.head_ref != 'development')
+      github.event_name != 'push' || github.event.created != true
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: openregister
       php-version: "8.3"
       php-test-versions: '["8.3", "8.4"]'
-      # THE LIST IS THE WHOLE DECLARED RANGE. appinfo/info.xml declares
-      # <nextcloud min-version="32" max-version="34"/>, so 32, 33 and 34 each get
-      # a leg. Adopting NC 34 by REPLACING the list left 32 and 33 advertised to
-      # the App Store with no job touching them — the declared floor became the
-      # untested end, which is the same drift as never testing 34, reversed.
-      # stable34 leads because newman, playwright and journeydoc-capture all read
-      # `fromJSON(inputs.nextcloud-test-refs)[0]` as their single server, and 34
-      # is the major this app had never been exercised on.
-      nextcloud-test-refs: '["stable34", "stable32", "stable33"]'
+      # NO `nextcloud-test-refs` HERE, DELIBERATELY. Unset, the shared workflow
+      # derives the matrix from appinfo/info.xml, so the tested range and the
+      # declared range cannot disagree.
+      #
+      # THIS BUMP IS WHY IT HAD TO GO. The list read
+      # `["stable34", "stable32", "stable33"]` while info.xml above now declares
+      # NC 32-35, which is gate-65 rule 11 — NC 35 advertised to the App Store
+      # and exercised by nothing. Appending "stable35" would have cleared the
+      # gate for this PR and left the same trap armed for NC 36; more to the
+      # point, it would have armed it on `development` rather than here, because
+      # the gate fires on the manifest/matrix disagreement for EVERY later PR,
+      # not just the one that introduced it.
+      #
+      # The ordering the old list encoded is inert now. newman, playwright and
+      # journeydoc-capture used to read `fromJSON(nextcloud-test-refs)[0]`, so
+      # stable34 had to lead; they now consume the workflow's `single-server`
+      # output — the numerically highest stable branch in the resolved set —
+      # which for the derived path is the matrix action's own `branches-max`.
+      # That output is what keeps those jobs on the newest declared major
+      # without a list order having to mean anything.
       enable-psalm: true
       enable-phpstan: true
       enable-phpmetrics: true
@@ -218,6 +205,10 @@ jobs:
       enable-eslint: true
       enable-phpunit: true
       enable-newman: true
+      # An LLM stub plus integriq and hermiq, which chat-streaming and the flow
+      # engine collection need on a fresh instance. A script for the same eval
+      # reason as playwright-seed-command below; the path is relative to server/.
+      newman-seed-command: bash apps/openregister/tests/integration/ci/seed.sh
       # Playwright starts from a deliberately SMALL spec set rather than the
       # whole of tests/e2e (58 files, several of which write fixtures or shell
       # out to occ). A gate that is red on arrival is a gate nobody turns on —
@@ -249,6 +240,61 @@ jobs:
       # mis-parse it. Path is relative to `server/`, which the step cd's into.
       playwright-seed-command: bash apps/openregister/tests/e2e/ci/seed.sh
       enable-coverage-guard: true
+      # ── Licensing ────────────────────────────────────────────────────────
+      # REUSE findings fail the build. The shared workflow defaults this OFF
+      # because most fleet apps ship no REUSE.toml or LICENSES/ directory. This
+      # repo ships both since WOO-579 (2026-09-17): a repo-wide `path = "**"` /
+      # `precedence = "closest"` floor in REUSE.toml makes every new file
+      # compliant on arrival whatever its type, and every piece of third-party
+      # material the repo bundles is annotated to what its publisher says, in
+      # `override` blocks that name the source. No enumeration of them here on
+      # purpose: the list written here first went stale inside the very pull
+      # request that wrote it, when review found five more clusters. REUSE.toml
+      # is the list, one commented block each. Measured before flipping:
+      # `reuse lint` compliant, 0 missing licences, 0 unused.
+      #
+      # Before this the REUSE row in the Quality Report was ❌ on every PR while
+      # the job itself reported success (`continue-on-error`), so nobody was
+      # blocked and nobody looked. Remko Huisman asked on portaliq (WOO-575) for
+      # the fleet to stop shipping that shape; this is the same change here.
+      #
+      # REUSE-IgnoreStart
+      # TWO regression modes remain. Measured on this branch, against the exact
+      # image the action runs (fsfe/reuse-action@v5 is FROM fsfe/reuse:5), and
+      # against fsfe/reuse:6 to see what the next bump brings.
+      #
+      # 1. Vendoring a file whose own SPDX header names a licence with no text
+      #    under LICENSES/. Red build on reuse 5 and 6 alike. The fix is
+      #    `reuse download <id>`, never removing the header.
+      #
+      # 2. A tracked TEXT file that MENTIONS an SPDX licence tag in prose —
+      #    reuse parses the rest of the line as the licence expression. This PR
+      #    tripped over it on an archived tasks.md that quoted a tag while
+      #    describing the work. What it costs depends on the reuse major:
+      #      reuse 5 (what CI runs today): a stderr ERROR, the file is skipped,
+      #        the blanket then supplies its licensing info, lint still exits 0.
+      #        Latent, not blocking. Verified by reproducing it on this branch.
+      #      reuse 6 (fsfe/reuse-action@v6 exists; the day the shared workflow
+      #        bumps): first-class non-compliance, "Invalid SPDX License
+      #        Expressions: N", red build. Verified the same way.
+      #    Both majors NAME the offending file in the error, so this is
+      #    diagnosable; run `docker run --rm -v "$PWD":/data fsfe/reuse:6 lint`
+      #    locally to see it before CI does.
+      #    Fix: reuse's own ignore markers around the quoted tag — which is
+      #    why this comment block sits between a pair of them. Their two names
+      #    are deliberately not written out again anywhere inside the block:
+      #    reuse matches the literal strings non-greedily, so a prose mention
+      #    of the closing one ENDS the region at that line and leaves the rest
+      #    of the block unprotected. That is a real trap — the first draft of
+      #    this comment had exactly that shape.
+      #    For openspec/changes/archive/**, which the repo treats as immutable
+      #    history, REUSE.toml carries a `precedence = "override"` block
+      #    instead, so nothing there is read for tags at all.
+      #
+      # This branch is compliant under BOTH majors, so the v6 bump will not
+      # land as a surprise red build here.
+      # REUSE-IgnoreEnd
+      reuse-blocking: true
       # Run the Hydra mechanical quality gates against this PR's diff.
       #
       # This tier has never executed in this repository. `enable-hydra-gates`
@@ -265,6 +311,11 @@ jobs:
       # reconcile against and goes stale silently.
       # See https://github.com/ConductionNL/.github/tree/main/hydra-gates
       enable-hydra-gates: true
+      # Gate 122 (SIG unit ratchet) blocks: a unit this change adds or makes
+      # worse must stay at NLOC 60, McCabe 10 and at most 4 parameters, and a
+      # new duplicated fragment of 6+ lines fails. Units the change does not
+      # touch, or touches without making worse, are inherited and do not count.
+      hydra-gates-sig-blocking: true
       # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
       # to @main, and this workflow is itself consumed at @main, so the two
       # sides move together and a gate fix reaches this repo without a commit
@@ -396,10 +447,9 @@ jobs:
       # call in src/, while `test:l10n:parity` asks whether every locale matches
       # en.js key-for-key. One passing tells you nothing about the other.
       #
-      # `check:l10n-js` is a THIRD question again: whether the generated browser
-      # catalogues (l10n/*.js) are in step with their .json sources. Both sides
-      # of this merge added one of these; neither replaces the other.
-      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "check:l10n-js"]'
+      # There is no .js/.json parity leg: l10n/*.js is the browser catalogue and
+      # l10n/*.json the PHP one, separate sets with separate consumers.
+      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "test:coverage-ratchet", "test:newman-route-ratchet"]'
       # ── Cost controls (see ConductionNL/.github#596, #599) ───────────────
       #
       # The fleet's CI was not slow, it was QUEUED. A Code Quality run does

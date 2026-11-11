@@ -18,6 +18,7 @@
  *   • Connection, AbstractPlatform, ExpressionBuilder, Schema, Type, SQLLogger
  *     – empty stubs sufficient for interface/method signatures in the OCP shims
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  */
 

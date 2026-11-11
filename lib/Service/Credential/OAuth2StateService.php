@@ -45,13 +45,27 @@ use OCP\Security\ISecureRandom;
 /**
  * Signs, stores and redeems the state of an in-flight OAuth2 connect.
  */
-class OAuth2StateService {
+class OAuth2StateService implements OAuth2StateServiceInterface {
 	/**
 	 * Vault key prefix for a pending connect flow.
 	 *
 	 * @var string
 	 */
 	private const PENDING_PREFIX = 'openregister/oauth2-pending/';
+
+	/**
+	 * Length of the nonce that names a pending flow.
+	 *
+	 * The vault key is PENDING_PREFIX plus the nonce, and Nextcloud's credential
+	 * vault keeps it in `oc_storages_credentials.identifier`, a 64-character
+	 * column: 28 + 32 fits. A longer nonce fails the insert, and with it every
+	 * connect start, wherever the length is enforced (PostgreSQL, MySQL in strict
+	 * mode); non-strict MySQL truncates the key instead. 32 alphanumeric
+	 * characters is about 190 bits.
+	 *
+	 * @var integer
+	 */
+	private const NONCE_LENGTH = 32;
 
 	/**
 	 * The reserved Nextcloud system-credential identity (empty-string user).
@@ -63,16 +77,6 @@ class OAuth2StateService {
 	 * @var string
 	 */
 	private const SYSTEM_IDENTITY = '';
-
-	/**
-	 * How long a start stays redeemable, in seconds.
-	 *
-	 * Ten minutes: long enough for a person to read a provider's consent screen and
-	 * log in first, short enough that an abandoned flow is not a standing invitation.
-	 *
-	 * @var integer
-	 */
-	public const STATE_TTL_SECONDS = 600;
 
 	/**
 	 * Constructor.
@@ -97,21 +101,17 @@ class OAuth2StateService {
 	 *
 	 * @return array{state: string, nonce: string, verifier: string, challenge: string} The signed state and its PKCE pair.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
 	 */
 	public function issue(array $claims): array {
-		$nonce = $this->random->generate(43, ISecureRandom::CHAR_ALPHANUMERIC);
+		$nonce    = $this->random->generate(self::NONCE_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC);
 		$verifier = $this->random->generate(64, ISecureRandom::CHAR_ALPHANUMERIC);
 
-		$payload = array_merge($claims, ['v' => 1, 'n' => $nonce, 'exp' => (time() + self::STATE_TTL_SECONDS)]);
-		$encoded = $this->base64UrlEncode(value: (string)json_encode($payload));
+		$payload   = array_merge($claims, ['v' => 1, 'n' => $nonce, 'exp' => (time() + self::STATE_TTL_SECONDS)]);
+		$encoded   = $this->base64UrlEncode(value: (string)json_encode($payload));
 		$signature = $this->base64UrlEncode(value: $this->crypto->calculateHMAC($encoded));
 
-		$this->vault->store(
-			self::SYSTEM_IDENTITY,
-			self::PENDING_PREFIX . $nonce,
-			(string)json_encode(['verifier' => $verifier, 'exp' => $payload['exp']])
-		);
+		$this->storePending(nonce: $nonce, record: ['verifier' => $verifier, 'exp' => $payload['exp']]);
 
 		return [
 			'state' => $encoded . '.' . $signature,
@@ -120,6 +120,38 @@ class OAuth2StateService {
 			'challenge' => $this->challengeFor(verifier: $verifier),
 		];
 	}//end issue()
+
+	/**
+	 * Keep a state's pending record (its verifier and expiry) in the vault under its nonce.
+	 *
+	 * @param string               $nonce  The state's nonce.
+	 * @param array<string, mixed> $record The pending record.
+	 *
+	 * @return void
+	 */
+	private function storePending(string $nonce, array $record): void {
+		$this->vault->store(
+			self::SYSTEM_IDENTITY,
+			self::PENDING_PREFIX . $nonce,
+			(string)json_encode($record)
+		);
+	}//end storePending()
+
+	/**
+	 * Withdraw a flow that will never be redeemed: delete its pending record.
+	 *
+	 * For a start that failed after issue(): its state never reached the person,
+	 * so no callback will consume the record, and nothing else would remove it.
+	 *
+	 * @param string $nonce The nonce issue() returned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 */
+	public function withdraw(string $nonce): void {
+		$this->vault->delete(self::SYSTEM_IDENTITY, self::PENDING_PREFIX . $nonce);
+	}//end withdraw()
 
 	/**
 	 * Read a state's claims WITHOUT verifying its signature.
@@ -134,7 +166,7 @@ class OAuth2StateService {
 	 *
 	 * @return array<string, mixed>|null The claims, or null when the value is not a state at all.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
 	 */
 	public function parseUnverified(string $state): ?array {
 		$parts = explode('.', $state);
@@ -161,7 +193,7 @@ class OAuth2StateService {
 	 *
 	 * @return array{claims: array<string, mixed>, verifier: string}|null The claims and verifier, or null when invalid.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
 	 */
 	public function consume(string $state): ?array {
 		$claims = $this->verifiedClaims(state: $state);
@@ -174,6 +206,22 @@ class OAuth2StateService {
 			return null;
 		}
 
+		$verifier = $this->takePendingVerifier(nonce: $nonce);
+		if ($verifier === null) {
+			return null;
+		}
+
+		return ['claims' => $claims, 'verifier' => $verifier];
+	}//end consume()
+
+	/**
+	 * Take a nonce's pending record out of the vault and read its PKCE verifier.
+	 *
+	 * @param string $nonce The state's nonce.
+	 *
+	 * @return string|null The verifier, or null when there is no readable pending record.
+	 */
+	private function takePendingVerifier(string $nonce): ?string {
 		$pending = $this->vault->retrieve(self::SYSTEM_IDENTITY, self::PENDING_PREFIX . $nonce);
 		if (is_string($pending) === false || $pending === '') {
 			return null;
@@ -189,8 +237,8 @@ class OAuth2StateService {
 			return null;
 		}
 
-		return ['claims' => $claims, 'verifier' => (string)$record['verifier']];
-	}//end consume()
+		return (string)$record['verifier'];
+	}//end takePendingVerifier()
 
 	/**
 	 * Verify a state's signature and expiry and return its claims.
@@ -203,7 +251,7 @@ class OAuth2StateService {
 	 *
 	 * @return array<string, mixed>|null The claims, or null when the state is forged or stale.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
 	 */
 	private function verifiedClaims(string $state): ?array {
 		$parts = explode('.', $state);
@@ -231,7 +279,7 @@ class OAuth2StateService {
 	 *
 	 * @return string The base64url-encoded SHA-256 challenge.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
 	 */
 	public function challengeFor(string $verifier): string {
 		return $this->base64UrlEncode(value: hash('sha256', $verifier, true));

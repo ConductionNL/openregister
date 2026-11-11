@@ -1,0 +1,49 @@
+{
+    "type": "object",
+    "properties": {
+        "website": {
+            "type": "boolean",
+            "nullable": true,
+            "default": null,
+            "title": "Website",
+            "description": "Whether a guardian has consented to beeldmateriaal for the website purpose, or null while undecided. The combined record across all of this child’s guardians — when a guardian refuses a purpose already granted, staff update it here (portal-contribution-guardian-audiences PA-new-2: a human-resolved record, not a computed verdict)."
+        },
+        "socialMedia": {
+            "type": "boolean",
+            "nullable": true,
+            "default": null,
+            "title": "Social Media",
+            "description": "Whether a guardian has consented to beeldmateriaal for the social media purpose, or null while undecided. The combined record across all of this child’s guardians — when a guardian refuses a purpose already granted, staff update it here (portal-contribution-guardian-audiences PA-new-2: a human-resolved record, not a computed verdict)."
+        },
+        "schoolgids": {
+            "type": "boolean",
+            "nullable": true,
+            "default": null,
+            "title": "Schoolgids",
+            "description": "Whether a guardian has consented to beeldmateriaal for the schoolgids purpose, or null while undecided. The combined record across all of this child’s guardians — when a guardian refuses a purpose already granted, staff update it here (portal-contribution-guardian-audiences PA-new-2: a human-resolved record, not a computed verdict)."
+        },
+        "classPhoto": {
+            "type": "boolean",
+            "nullable": true,
+            "default": null,
+            "title": "Class Photo",
+            "description": "Whether a guardian has consented to beeldmateriaal for the class photo purpose, or null while undecided. The combined record across all of this child’s guardians — when a guardian refuses a purpose already granted, staff update it here (portal-contribution-guardian-audiences PA-new-2: a human-resolved record, not a computed verdict)."
+        },
+        "video": {
+            "type": "boolean",
+            "nullable": true,
+            "default": null,
+            "title": "Video",
+            "description": "Whether a guardian has consented to beeldmateriaal for the video purpose, or null while undecided. The combined record across all of this child’s guardians — when a guardian refuses a purpose already granted, staff update it here (portal-contribution-guardian-audiences PA-new-2: a human-resolved record, not a computed verdict)."
+        }
+    },
+    "default": {
+        "website": null,
+        "socialMedia": null,
+        "schoolgids": null,
+        "classPhoto": null,
+        "video": null
+    },
+    "title": "Beeldmateriaal Consent",
+    "description": "Per-purpose beeldmateriaal (image/video) consent (finding 2.8): website, social media, schoolgids, class photo, video. See each sub-field for the multi-guardian resolution rule."
+}

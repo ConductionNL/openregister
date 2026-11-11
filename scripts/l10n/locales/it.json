@@ -61,6 +61,7 @@
 		"sk-...": "Literal example of an API-key prefix; not prose.",
 		"{count} email": "'email' is invariant in Italian, so the plural form is spelled the same; the rest is a placeholder.",
 		"{property} - {other}": "Two placeholders and a separating dash; nothing translatable.",
-		"{title} in {register} / {schema}": "Only 'in' is translatable and it is the same preposition in Italian."
+		"{title} in {register} / {schema}": "Only 'in' is translatable and it is the same preposition in Italian.",
+		"Token": "Established loan; Italian security and API language uses 'il token' unchanged, and this bundle already writes 'Crea nuovo token'."
 	}
 }

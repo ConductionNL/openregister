@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 
 declare(strict_types=1);
@@ -31,13 +31,15 @@ namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCP\IGroup;
 use OCP\IGroupManager;
+use OCP\IUser;
 use Throwable;
 
 /**
  * The five routing strategies, and the pool expansion under them.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 class TaskPerformerResolver {
 
@@ -72,43 +74,11 @@ class TaskPerformerResolver {
 	 *         Null is a first-class answer, not a failure: the pool members
 	 *         can still claim.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function resolveAssignee(Task $task): ?string {
 		$pool = $this->expandPool(task: $task);
-		$strategy = trim((string)$task->getRoutingStrategy());
-
-		$chosen = null;
-		switch ($strategy) {
-			case 'single-role':
-				// A role that resolves to exactly one person IS an
-				// assignment; any other size is a pool.
-				if (count($pool) === 1) {
-					$chosen = $pool[0];
-				}
-				break;
-			case 'or-set':
-				// The whole point of an or-set is that ANY member answers:
-				// nobody is picked, everybody may claim.
-				$chosen = null;
-				break;
-			case 'hierarchical':
-				// The pool is ordered (users first, in declared order): the
-				// first tier answers, the next only when it is empty.
-				$chosen = ($pool[0] ?? null);
-				break;
-			case 'round-robin':
-				$chosen = $this->pickLeastRecentlyAssigned(pool: $pool);
-				break;
-			case 'least-loaded':
-				$chosen = $this->pickLeastLoaded(pool: $pool);
-				break;
-			default:
-				// No strategy: nothing to resolve, the pool stands.
-				$chosen = null;
-				break;
-		}//end switch
-
+		$chosen = $this->choose(strategy: trim((string)$task->getRoutingStrategy()), pool: $pool);
 		if ($chosen !== null) {
 			return $chosen;
 		}
@@ -123,6 +93,45 @@ class TaskPerformerResolver {
 	}//end resolveAssignee()
 
 	/**
+	 * Pick a member of the pool under one routing strategy.
+	 *
+	 * `or-set` picks nobody on purpose: ANY member answers, everybody may
+	 * claim. No strategy, or an unknown one, has nothing to resolve: the pool
+	 * stands.
+	 *
+	 * @param string             $strategy The trimmed routing strategy.
+	 * @param array<int, string> $pool     The expanded candidate uids.
+	 *
+	 * @return string|null The chosen uid, or null to leave the task pooled.
+	 */
+	private function choose(string $strategy, array $pool): ?string {
+		return match ($strategy) {
+			'single-role' => $this->pickSoleMember(pool: $pool),
+			// The pool is ordered (users first, in declared order): the first
+			// tier answers, the next only when it is empty.
+			'hierarchical' => ($pool[0] ?? null),
+			'round-robin' => $this->pickLeastRecentlyAssigned(pool: $pool),
+			'least-loaded' => $this->pickLeastLoaded(pool: $pool),
+			default => null,
+		};
+	}//end choose()
+
+	/**
+	 * `single-role`: a role that resolves to exactly one person IS an assignment.
+	 *
+	 * @param array<int, string> $pool The candidate uids.
+	 *
+	 * @return string|null The sole member, or null for any other pool size.
+	 */
+	private function pickSoleMember(array $pool): ?string {
+		if (count($pool) === 1) {
+			return $pool[0];
+		}
+
+		return null;
+	}//end pickSoleMember()
+
+	/**
 	 * Expand the candidate pool to uids, in declared order.
 	 *
 	 * Order matters to `hierarchical`; the other strategies treat the result
@@ -133,25 +142,21 @@ class TaskPerformerResolver {
 	 *
 	 * @return array<int, string> The candidate uids, deduplicated, in order.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function expandPool(Task $task): array {
-		$pool = [];
-		foreach (($task->getCandidateUsers() ?? []) as $uid) {
-			$pool[] = (string)$uid;
-		}
+		$pool = array_map('strval', array_values($task->getCandidateUsers() ?? []));
 
-		foreach (($task->getCandidateGroups() ?? []) as $groupId) {
-			foreach ($this->groupMembers(groupId: (string)$groupId) as $uid) {
-				$pool[] = $uid;
-			}
-		}
-
-		$role = trim((string)$task->getCandidateRole());
-		if ($role !== '') {
-			foreach ($this->groupMembers(groupId: $role) as $uid) {
-				$pool[] = $uid;
-			}
+		// The role group comes last; a blank role expands to nobody.
+		// A typed `{type, id}` entry is never a bare group name.
+		$groupNames = array_filter(
+			($task->getCandidateGroups() ?? []),
+			static fn ($groupId): bool => is_array($groupId) === false
+		);
+		$groupIds   = array_map('strval', array_values($groupNames));
+		$groupIds[] = trim((string)$task->getCandidateRole());
+		foreach ($groupIds as $groupId) {
+			array_push($pool, ...$this->groupMembers(groupId: $groupId));
 		}
 
 		return array_values(array_unique($pool));
@@ -164,7 +169,7 @@ class TaskPerformerResolver {
 	 *
 	 * @return array<int, string> The member uids.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	private function groupMembers(string $groupId): array {
 		if ($this->groupManager === null || $groupId === '') {
@@ -172,21 +177,26 @@ class TaskPerformerResolver {
 		}
 
 		try {
-			$group = $this->groupManager->get($groupId);
-			if ($group === null) {
-				return [];
-			}
-
-			$members = [];
-			foreach ($group->getUsers() as $user) {
-				$members[] = $user->getUID();
-			}
-
-			return $members;
+			return $this->uidsIn(group: $this->groupManager->get($groupId));
 		} catch (Throwable) {
 			return [];
 		}
 	}//end groupMembers()
+
+	/**
+	 * The member uids of a group, or nobody for a group that does not exist.
+	 *
+	 * @param IGroup|null $group The group the backend returned.
+	 *
+	 * @return array<int, string> The member uids.
+	 */
+	private function uidsIn(?IGroup $group): array {
+		if ($group === null) {
+			return [];
+		}
+
+		return array_values(array_map(static fn (IUser $user): string => $user->getUID(), $group->getUsers()));
+	}//end uidsIn()
 
 	/**
 	 * `round-robin`: the member handed a task least recently goes next.
@@ -198,7 +208,7 @@ class TaskPerformerResolver {
 	 *
 	 * @return string|null The chosen uid, or null for an empty pool.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	private function pickLeastRecentlyAssigned(array $pool): ?string {
 		if ($pool === []) {
@@ -206,20 +216,10 @@ class TaskPerformerResolver {
 		}
 
 		$latest = $this->tasks->latestAssignedAt(uids: $pool);
-		usort(
-			$pool,
-			static function (string $a, string $b) use ($latest): int {
-				$atA = ($latest[$a] ?? '');
-				$atB = ($latest[$b] ?? '');
-				if ($atA !== $atB) {
-					return strcmp($atA, $atB);
-				}
-
-				return strcmp($a, $b);
-			}
+		return $this->firstRanked(
+			pool: $pool,
+			compare: static fn (string $a, string $b): int => strcmp(($latest[$a] ?? ''), ($latest[$b] ?? ''))
 		);
-
-		return $pool[0];
 	}//end pickLeastRecentlyAssigned()
 
 	/**
@@ -229,7 +229,7 @@ class TaskPerformerResolver {
 	 *
 	 * @return string|null The chosen uid, or null for an empty pool.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	private function pickLeastLoaded(array $pool): ?string {
 		if ($pool === []) {
@@ -237,13 +237,27 @@ class TaskPerformerResolver {
 		}
 
 		$counts = $this->tasks->countOpenAssigned(uids: $pool);
+		return $this->firstRanked(
+			pool: $pool,
+			compare: static fn (string $a, string $b): int => (($counts[$a] ?? 0) <=> ($counts[$b] ?? 0))
+		);
+	}//end pickLeastLoaded()
+
+	/**
+	 * The first uid of a non-empty pool sorted by a ranking, ties broken on uid.
+	 *
+	 * @param array<int, string> $pool    The candidate uids, not empty.
+	 * @param callable           $compare Orders two uids by their ranking.
+	 *
+	 * @return string The first uid.
+	 */
+	private function firstRanked(array $pool, callable $compare): string {
 		usort(
 			$pool,
-			static function (string $a, string $b) use ($counts): int {
-				$countA = ($counts[$a] ?? 0);
-				$countB = ($counts[$b] ?? 0);
-				if ($countA !== $countB) {
-					return ($countA <=> $countB);
+			static function (string $a, string $b) use ($compare): int {
+				$order = $compare($a, $b);
+				if ($order !== 0) {
+					return $order;
 				}
 
 				return strcmp($a, $b);
@@ -251,5 +265,5 @@ class TaskPerformerResolver {
 		);
 
 		return $pool[0];
-	}//end pickLeastLoaded()
+	}//end firstRanked()
 }//end class

@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -60,11 +61,9 @@ class MagicBulkHandlerRawAppendTest extends TestCase {
 
 		// A REAL normaliser: the point of the expiry test is the stored format.
 		$this->handler = new MagicBulkHandler(
-			$this->db,
-			$logger,
+			new MagicTableSql($this->db, $this->createMock(IConfig::class), $logger),
 			$this->createMock(IEventDispatcher::class),
-			new DateTimeNormalizer($logger),
-			$this->createMock(IConfig::class)
+			new DateTimeNormalizer($logger)
 		);
 
 		$this->register = new Register();
@@ -153,5 +152,34 @@ class MagicBulkHandlerRawAppendTest extends TestCase {
 
 		$this->assertSame(4, $purged);
 		$this->assertSame(['_schema = :p22', '_expires IS NOT NULL', '_expires < NOW()'], $andWheres);
+	}
+
+	public function testADeclaredPropertyNamedLikeAMetadataColumnNeverReplacesTheStampedValue(): void {
+		$this->schema->setProperties(
+			[
+				'_authorization' => ['type' => 'object'],
+				'_owner' => ['type' => 'string'],
+				'_organisation' => ['type' => 'string'],
+				'_status' => ['type' => 'string'],
+				'_meta' => ['type' => 'string'],
+			]
+		);
+
+		$row = $this->prepare([
+			'@self' => ['uuid' => 'u-3', 'owner' => 'alice', 'organisation' => 'org-1'],
+			'object' => [
+				'_authorization' => ['read' => ['everyone']],
+				'_owner' => 'mallory',
+				'_organisation' => 'org-2',
+				'_status' => 'published',
+				'_meta' => 'kept',
+			],
+		]);
+
+		$this->assertSame('alice', $row['_owner']);
+		$this->assertSame('org-1', $row['_organisation']);
+		$this->assertArrayNotHasKey('_authorization', $row);
+		$this->assertArrayNotHasKey('_status', $row);
+		$this->assertSame('kept', $row['_meta']);
 	}
 }

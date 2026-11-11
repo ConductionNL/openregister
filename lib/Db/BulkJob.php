@@ -31,6 +31,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\BulkJob\BulkJobFieldTypes;
+use OCA\OpenRegister\Db\BulkJob\BulkJobJson;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -72,6 +74,14 @@ use OCP\AppFramework\Db\Entity;
  * @method void setReport(?array $report)
  * @method string|null getStartedBy()
  * @method void setStartedBy(?string $startedBy)
+ * @method int|null getReversalWindow()
+ * @method void setReversalWindow(?int $reversalWindow)
+ * @method DateTime|null getReversibleUntil()
+ * @method void setReversibleUntil(?DateTime $reversibleUntil)
+ * @method int|null getReversesJobId()
+ * @method void setReversesJobId(?int $reversesJobId)
+ * @method int|null getReversedByJobId()
+ * @method void setReversedByJobId(?int $reversedByJobId)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
@@ -84,6 +94,8 @@ use OCP\AppFramework\Db\Entity;
  * the threshold would cost a join on every progress poll.
  */
 class BulkJob extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
 
 	/**
 	 * The selection is an explicit list of object uuids.
@@ -106,6 +118,7 @@ class BulkJob extends Entity implements JsonSerializable {
 	 */
 	public const STATE_PREVIEWED = 'previewed';
 	public const STATE_RUNNING = 'running';
+	public const STATE_PAUSED = 'paused';
 	public const STATE_CANCELLING = 'cancelling';
 	public const STATE_CANCELLED = 'cancelled';
 	public const STATE_COMPLETED = 'completed';
@@ -114,11 +127,16 @@ class BulkJob extends Entity implements JsonSerializable {
 	/**
 	 * The states in which a job still has work ahead of it.
 	 *
+	 * A paused job belongs here: its members are unwalked and its cursor is
+	 * kept, so it has work ahead in exactly the sense a cancelled one does
+	 * not. Only `running` re-enqueues, which is what makes the pause hold.
+	 *
 	 * @var array<int, string>
 	 */
 	public const ACTIVE_STATES = [
 		self::STATE_PREVIEWED,
 		self::STATE_RUNNING,
+		self::STATE_PAUSED,
 		self::STATE_CANCELLING,
 	];
 
@@ -249,6 +267,42 @@ class BulkJob extends Entity implements JsonSerializable {
 	protected ?string $startedBy = null;
 
 	/**
+	 * How long this job stays undoable, in seconds.
+	 *
+	 * Null means the action did not declare itself reversible: no prior value
+	 * was recorded and the reversal route refuses rather than appearing to
+	 * work (D-4).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $reversalWindow = null;
+
+	/**
+	 * The deadline the reversal window ends at.
+	 *
+	 * Stamped provisionally at creation so the preview can name it, and again
+	 * when the job reaches a terminal state, because the window runs from when
+	 * the job actually wrote rather than from when somebody opened the dialog.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $reversibleUntil = null;
+
+	/**
+	 * The job this one undoes, when this job is a reversal (D-1).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $reversesJobId = null;
+
+	/**
+	 * The reversal of this job, once one has been created.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $reversedByJobId = null;
+
+	/**
 	 * Creation timestamp.
 	 *
 	 * @var DateTime|null
@@ -266,73 +320,10 @@ class BulkJob extends Entity implements JsonSerializable {
 	 * Constructor — registers field types for hydration.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'action', type: 'string');
-		$this->addType(fieldName: 'parameters', type: 'json');
-		$this->addType(fieldName: 'selectionType', type: 'string');
-		$this->addType(fieldName: 'selection', type: 'json');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'justification', type: 'string');
-		$this->addType(fieldName: 'state', type: 'string');
-		$this->addType(fieldName: 'total', type: 'integer');
-		$this->addType(fieldName: 'processed', type: 'integer');
-		$this->addType(fieldName: 'applied', type: 'integer');
-		$this->addType(fieldName: 'skipped', type: 'integer');
-		$this->addType(fieldName: 'refused', type: 'integer');
-		$this->addType(fieldName: 'failed', type: 'integer');
-		$this->addType(fieldName: 'cursor', type: 'integer');
-		$this->addType(fieldName: 'report', type: 'json');
-		$this->addType(fieldName: 'startedBy', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-
-	}//end __construct()
-
-	/**
-	 * The field names registered with the 'json' type.
-	 *
-	 * @return array<int, string> The json-typed field names.
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				static function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields, true) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set'.ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
+		foreach (BulkJobFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
 		}
-
-		return $this;
-	}//end hydrate()
+	}//end __construct()
 
 	/**
 	 * Whether the job still has work ahead of it.
@@ -344,36 +335,30 @@ class BulkJob extends Entity implements JsonSerializable {
 	}//end isActive()
 
 	/**
+	 * Whether this job recorded what it would take to go back.
+	 *
+	 * Reversibility is a property of the ACTION, declared beside it, and this
+	 * column is where the job froze that declaration at creation. Asking the
+	 * registry again at reversal time would let an action that stopped being
+	 * reversible strand jobs that did record their prior values.
+	 *
+	 * @return bool True when the job is undoable in principle.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function isReversible(): bool {
+		return ($this->reversalWindow !== null && $this->reversalWindow > 0);
+	}//end isReversible()
+
+	/**
 	 * JSON serialisation.
 	 *
 	 * @return array<string, mixed> The serialised job.
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'action' => $this->action,
-			'parameters' => ($this->parameters ?? []),
-			'selectionType' => $this->selectionType,
-			'selection' => ($this->selection ?? []),
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'justification' => $this->justification,
-			'state' => $this->state,
-			'total' => $this->total,
-			'processed' => $this->processed,
-			'counts' => [
-				'applied' => $this->applied,
-				'skipped' => $this->skipped,
-				'refused' => $this->refused,
-				'failed' => $this->failed,
-			],
-			'cursor' => $this->cursor,
-			'report' => ($this->report ?? []),
-			'startedBy' => $this->startedBy,
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
+		$values = get_object_vars($this);
+		$values['fieldTypes'] = $this->getFieldTypes();
 
+		return (new BulkJobJson())->serialise(values: $values, reversible: $this->isReversible());
 	}//end jsonSerialize()
 }//end class

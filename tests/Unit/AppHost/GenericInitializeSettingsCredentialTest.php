@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+ * @spec openspec/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
  */
 
 declare(strict_types=1);

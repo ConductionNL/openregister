@@ -17,14 +17,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use DateTime;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -41,9 +41,9 @@ use OCP\IDBConnection;
  *
  * @psalm-suppress PossiblyUnusedMethod
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
-class RuleRunSummaryMapper extends QBMapper {
+class RuleRunSummaryMapper extends QBMapper implements RuleRunSummaryMapperInterface {
 
 	/**
 	 * How long a repeat of the same verdict may go unwritten.
@@ -73,7 +73,7 @@ class RuleRunSummaryMapper extends QBMapper {
 	 *
 	 * @return RuleRunSummary|null The summary, or null when the rule has never run.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findByRule(string $ruleId): ?RuleRunSummary {
 		$qb = $this->db->getQueryBuilder();
@@ -100,7 +100,7 @@ class RuleRunSummaryMapper extends QBMapper {
 	 *
 	 * @return array<string, RuleRunSummary> Summaries keyed by rule id.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findBySchema(string $schemaSlug): array {
 		$qb = $this->db->getQueryBuilder();
@@ -116,6 +116,39 @@ class RuleRunSummaryMapper extends QBMapper {
 		return $keyed;
 
 	}//end findBySchema()
+
+	/**
+	 * The rules whose last evaluation left an error, most recent first.
+	 *
+	 * NARROWED IN SQL RATHER THAN IN THE READER, and the reason is not
+	 * tidiness. Ordering every rule by `last_error_at DESC` and filtering
+	 * afterwards is wrong on Postgres, where a descending sort puts NULLs
+	 * FIRST: the rules that have never errored would fill the page and push
+	 * the ones an administrator has to act on off the end, silently, while
+	 * MySQL put them last and the same code looked correct. A `WHERE` that
+	 * removes them is the same answer on both.
+	 *
+	 * One row per rule, so this table is as long as the instance has rules
+	 * rather than as long as it has evaluations.
+	 *
+	 * @param int $limit How many summaries to return.
+	 *
+	 * @return array<int, RuleRunSummary> The summaries.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function findHoldingAnError(int $limit = 50): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('last_error'))
+			->orderBy('last_error_at', 'DESC')
+			->addOrderBy('id', 'DESC')
+			->setMaxResults(max(1, $limit));
+
+		return $this->findEntities(query: $qb);
+
+	}//end findHoldingAnError()
 
 	/**
 	 * Record one evaluation against a rule's summary.
@@ -135,23 +168,53 @@ class RuleRunSummaryMapper extends QBMapper {
 	 * an error are always written, because those are the two things an
 	 * administrator is reading the summary for.
 	 *
-	 * @param string $ruleId The derived rule id.
-	 * @param string $schemaSlug The schema the rule is declared on.
-	 * @param string $verdict The verdict reached.
-	 * @param DateTime $moment When the evaluation happened.
-	 * @param string|null $error The message, when the verdict was an error.
+	 * @param RuleRun        $run        The run: its derived rule id and the schema the rule is declared on.
+	 * @param RuleEvaluation $evaluation The verdict reached, when, and the message of an error.
 	 *
 	 * @return RuleRunSummary The stored summary, written or not.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function record(
-		string $ruleId,
-		string $schemaSlug,
-		string $verdict,
-		DateTime $moment,
-		?string $error = null,
-	): RuleRunSummary {
+	public function record(RuleRun $run, RuleEvaluation $evaluation): RuleRunSummary {
+		$summary = $this->findOrStart(ruleId: $run->getRuleId(), schemaSlug: $run->getSchemaSlug());
+		if ($this->worthWriting(summary: $summary, evaluation: $evaluation) === false) {
+			return $summary;
+		}
+
+		$summary->setSchemaSlug($run->getSchemaSlug());
+		return $this->persist(summary: $this->applyEvaluation(summary: $summary, evaluation: $evaluation));
+
+	}//end record()
+
+	/**
+	 * Write an evaluation onto a summary; an error also sets the error pair.
+	 *
+	 * @param RuleRunSummary $summary    The summary.
+	 * @param RuleEvaluation $evaluation The evaluation.
+	 *
+	 * @return RuleRunSummary The same summary.
+	 */
+	private function applyEvaluation(RuleRunSummary $summary, RuleEvaluation $evaluation): RuleRunSummary {
+		$summary->setLastRun($evaluation->moment);
+		$summary->setLastVerdict($evaluation->verdict);
+
+		if ($evaluation->isError() === true) {
+			$summary->setLastError($evaluation->error);
+			$summary->setLastErrorAt($evaluation->moment);
+		}
+
+		return $summary;
+	}//end applyEvaluation()
+
+	/**
+	 * The stored summary of a rule, or a new unsaved one for its first run.
+	 *
+	 * @param string $ruleId     The rule id.
+	 * @param string $schemaSlug The schema slug a new summary starts with.
+	 *
+	 * @return RuleRunSummary
+	 */
+	private function findOrStart(string $ruleId, string $schemaSlug): RuleRunSummary {
 		$summary = $this->findByRule(ruleId: $ruleId);
 		if ($summary === null) {
 			$summary = new RuleRunSummary();
@@ -159,35 +222,29 @@ class RuleRunSummaryMapper extends QBMapper {
 			$summary->setSchemaSlug($schemaSlug);
 		}
 
-		$isError = ($error !== null && $error !== '');
-		if ($this->worthWriting(summary: $summary, verdict: $verdict, moment: $moment, isError: $isError) === false) {
-			return $summary;
-		}
+		return $summary;
+	}//end findOrStart()
 
-		$summary->setSchemaSlug($schemaSlug);
-		$summary->setLastRun($moment);
-		$summary->setLastVerdict($verdict);
-
-		if ($isError === true) {
-			$summary->setLastError($error);
-			$summary->setLastErrorAt($moment);
-		}
-
+	/**
+	 * Insert a summary that has no id yet, update one that has.
+	 *
+	 * @param RuleRunSummary $summary The summary.
+	 *
+	 * @return RuleRunSummary The stored summary.
+	 */
+	private function persist(RuleRunSummary $summary): RuleRunSummary {
 		if ($summary->getId() === null) {
 			return $this->insert(entity: $summary);
 		}
 
 		return $this->update(entity: $summary);
-
-	}//end record()
+	}//end persist()
 
 	/**
 	 * Whether this evaluation changes anything an administrator reads.
 	 *
-	 * @param RuleRunSummary $summary The summary as it stands.
-	 * @param string $verdict The verdict reached.
-	 * @param DateTime $moment When the evaluation happened.
-	 * @param bool $isError Whether the verdict carries an error message.
+	 * @param RuleRunSummary $summary    The summary as it stands.
+	 * @param RuleEvaluation $evaluation The evaluation.
 	 *
 	 * @return bool True when the row should be written.
 	 *
@@ -195,18 +252,14 @@ class RuleRunSummaryMapper extends QBMapper {
 	 * writes may be dropped, and a rule about dropping writes that can only be
 	 * exercised through a live database is a rule nobody checks.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag distinguishes the one case
-	 *   that always writes from the one that may be throttled; splitting it would be two
-	 *   methods with the same body and one line different.
-	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function worthWriting(RuleRunSummary $summary, string $verdict, DateTime $moment, bool $isError): bool {
-		if ($summary->getId() === null || $isError === true) {
+	public function worthWriting(RuleRunSummary $summary, RuleEvaluation $evaluation): bool {
+		if ($summary->getId() === null || $evaluation->isError() === true) {
 			return true;
 		}
 
-		if ((string)$summary->getLastVerdict() !== $verdict) {
+		if ((string)$summary->getLastVerdict() !== $evaluation->verdict) {
 			return true;
 		}
 
@@ -215,7 +268,7 @@ class RuleRunSummaryMapper extends QBMapper {
 			return true;
 		}
 
-		return (($moment->getTimestamp() - $lastRun->getTimestamp()) >= self::THROTTLE_SECONDS);
+		return (($evaluation->moment->getTimestamp() - $lastRun->getTimestamp()) >= self::THROTTLE_SECONDS);
 
 	}//end worthWriting()
 }//end class

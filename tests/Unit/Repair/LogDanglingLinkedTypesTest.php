@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
  * Unit tests for the dangling-linkedType repair step.
  *
  * @covers \OCA\OpenRegister\Repair\LogDanglingLinkedTypes
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class LogDanglingLinkedTypesTest extends TestCase {
 

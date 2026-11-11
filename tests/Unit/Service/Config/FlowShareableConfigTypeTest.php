@@ -12,6 +12,7 @@ namespace Unit\Service\Config;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigType;
+use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -29,6 +30,13 @@ class FlowShareableConfigTypeTest extends TestCase {
 
 	private FlowService&MockObject $flows;
 
+	/**
+	 * Who the installer is, and which organisation they write into.
+	 *
+	 * @var FlowCaller&MockObject
+	 */
+	private FlowCaller&MockObject $caller;
+
 	private FlowShareableConfigType $type;
 
 	protected function setUp(): void {
@@ -36,9 +44,10 @@ class FlowShareableConfigTypeTest extends TestCase {
 		$this->flows = $this->createMock(FlowService::class);
 		// deserialise() now REFUSES to store a flow that belongs to nobody, so
 		// every install test needs a caller. Individual tests override this.
-		$this->flows->method('callerOwnership')
+		$this->caller = $this->createMock(FlowCaller::class);
+		$this->caller->method('ownership')
 			->willReturn(['owner' => 'installer', 'organisation' => 'org-here']);
-		$this->type = new FlowShareableConfigType($this->mapper, $this->flows);
+		$this->type = new FlowShareableConfigType($this->mapper, $this->flows, $this->caller);
 	}//end setUp()
 
 	private function storedFlow(): Flow {
@@ -225,10 +234,10 @@ class FlowShareableConfigTypeTest extends TestCase {
 	 * reported success". The rule was fixed there and never reached this writer.
 	 */
 	public function testInstallRefusesWhenTheCallerHasNoOwnership(): void {
-		$flows = $this->createMock(FlowService::class);
-		$flows->method('callerOwnership')
+		$caller = $this->createMock(FlowCaller::class);
+		$caller->method('ownership')
 			->willReturn(['owner' => null, 'organisation' => null]);
-		$type = new FlowShareableConfigType($this->mapper, $flows);
+		$type = new FlowShareableConfigType($this->mapper, $this->flows, $caller);
 
 		$this->mapper->expects($this->never())->method('insert');
 		$this->expectException(DoesNotExistException::class);

@@ -64,13 +64,13 @@ class Version1Date20260707000000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_audit_trails') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_audit_trails');
 
 		if ($table->hasIndex('idx_audit_register_schema') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addIndex(['register', 'schema', 'created'], 'idx_audit_register_schema');

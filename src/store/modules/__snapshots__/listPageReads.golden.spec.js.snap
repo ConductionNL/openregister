@@ -1,0 +1,2008 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`paged list reads (golden) auditTrail matches the recorded behaviour 1`] = `
+{
+  "all/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?limit=5&page=2&search=q%26x&user=bob&sort=created&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "all/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?limit=5&page=2&search=q%26x&user=bob&sort=created&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "empty/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "empty/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?search=stored+search&register=7&user=alice&sort=object&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "filters/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?action=create&d=0&e=false",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "filters/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?search=stored+search&register=7&user=alice&action=create&d=0&e=false&sort=object&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "none/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "none/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?search=stored+search&register=7&user=alice&sort=object&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "paging/clean/bare": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "returnedBody": true,
+  },
+  "paging/clean/errorNamed": {
+    "consoleError": [
+      [
+        "Error fetching audit trails:",
+        "Server says no",
+      ],
+    ],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "thrown": "Server says no",
+  },
+  "paging/clean/errorUnnamed": {
+    "consoleError": [
+      [
+        "Error fetching audit trails:",
+        "Failed to fetch audit trails",
+      ],
+    ],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "thrown": "Failed to fetch audit trails",
+  },
+  "paging/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "paging/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?limit=20&offset=40&page=3&search=stored+search&register=7&user=alice&sort=object&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "search/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?search=needle+haystack",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "search/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?search=needle+haystack&register=7&user=alice&sort=object&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "sort/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?sort=created&order=DESC&sort=action&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "sort/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?search=stored+search&register=7&user=alice&sort=created&order=DESC&sort=action&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "zeroPaging/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "zeroPaging/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/audit-trails?search=stored+search&register=7&user=alice&sort=object&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+}
+`;
+
+exports[`paged list reads (golden) deleted matches the recorded behaviour 1`] = `
+{
+  "all/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?limit=5&page=2&search=q%26x&user=bob&sort=created&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "all/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?limit=5&page=2&search=q%26x&user=bob&sort=created&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "empty/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "empty/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?search=stored+search&register=7&user=alice",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "filters/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?action=create&d=0&e=false",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "filters/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?search=stored+search&register=7&user=alice&action=create&d=0&e=false",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "none/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "none/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?search=stored+search&register=7&user=alice",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "paging/clean/bare": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "returnedBody": true,
+  },
+  "paging/clean/errorNamed": {
+    "consoleError": [
+      [
+        "Error fetching deleted objects:",
+        "Server says no",
+      ],
+    ],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "thrown": "Server says no",
+  },
+  "paging/clean/errorUnnamed": {
+    "consoleError": [
+      [
+        "Error fetching deleted objects:",
+        "Failed to fetch deleted objects",
+      ],
+    ],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "thrown": "Failed to fetch deleted objects",
+  },
+  "paging/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "paging/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?limit=20&offset=40&page=3&search=stored+search&register=7&user=alice",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "search/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?search=needle+haystack",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "search/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?search=needle+haystack&register=7&user=alice",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "sort/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?sort=created&order=DESC&sort=action&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "sort/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?search=stored+search&register=7&user=alice&sort=created&order=DESC&sort=action&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "zeroPaging/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "zeroPaging/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/deleted?search=stored+search&register=7&user=alice",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": true,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+}
+`;
+
+exports[`paged list reads (golden) searchTrail matches the recorded behaviour 1`] = `
+{
+  "all/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?limit=5&page=2&search=q%26x&user=bob&sort=created&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "all/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?limit=5&page=2&search=q%26x&user=bob&sort=created&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "empty/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "empty/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?search=stored+search&register=7&user=alice",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "filters/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?action=create&d=0&e=false",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "filters/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?search=stored+search&register=7&user=alice&action=create&d=0&e=false",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "none/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "none/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?search=stored+search&register=7&user=alice",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "paging/clean/bare": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "returnedBody": true,
+  },
+  "paging/clean/errorNamed": {
+    "consoleError": [
+      [
+        "Error fetching search trails:",
+        "Server says no",
+      ],
+    ],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "thrown": "Server says no",
+  },
+  "paging/clean/errorUnnamed": {
+    "consoleError": [
+      [
+        "Error fetching search trails:",
+        "Failed to fetch search trails",
+      ],
+    ],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "thrown": "Failed to fetch search trails",
+  },
+  "paging/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?limit=20&offset=40&page=3",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "paging/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?limit=20&offset=40&page=3&search=stored+search&register=7&user=alice",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "search/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?search=needle+haystack",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "search/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?search=needle+haystack&register=7&user=alice",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "sort/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?sort=created&order=DESC&sort=action&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "sort/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?search=stored+search&register=7&user=alice&sort=created&order=DESC&sort=action&order=ASC",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "zeroPaging/clean/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+  "zeroPaging/stored/full": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/search-trails?search=stored+search&register=7&user=alice",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
+          },
+          "method": "GET",
+        },
+      ],
+    ],
+    "list": [
+      {
+        "id": 1,
+        "nested": {
+          "a": 1,
+        },
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "listIsResults": false,
+    "loading": false,
+    "pagination": {
+      "limit": 5,
+      "offset": 5,
+      "page": 2,
+      "pages": 3,
+      "total": 12,
+    },
+    "returnedBody": true,
+  },
+}
+`;

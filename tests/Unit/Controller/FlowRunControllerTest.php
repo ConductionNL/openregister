@@ -12,14 +12,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowRunControllerFactory;
 use OCA\OpenRegister\Controller\FlowRunController;
+use OCA\OpenRegister\Db\FlowActivityWindow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunSubjectScope;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http;
@@ -74,6 +79,13 @@ class FlowRunControllerTest extends TestCase {
 	private \OCA\OpenRegister\Service\Flow\FlowService&MockObject $flows;
 
 	/**
+	 * Which flows the caller owns, for the history scoping.
+	 *
+	 * @var \OCA\OpenRegister\Service\Flow\FlowCaller&MockObject
+	 */
+	private \OCA\OpenRegister\Service\Flow\FlowCaller&MockObject $flowOwnership;
+
+	/**
 	 * User session mock.
 	 *
 	 * @var IUserSession&MockObject
@@ -102,6 +114,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->resolvers = $this->createMock(FlowLocator::class);
 		$this->organisations = $this->createMock(OrganisationService::class);
 		$this->flows = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowService::class);
+		$this->flowOwnership = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowCaller::class);
 
 		// A session is required for the history read to return anything: the
 		// scoping rule is "runs you triggered, plus runs of flows you own", and
@@ -125,7 +138,7 @@ class FlowRunControllerTest extends TestCase {
 		// and failing as a TypeError. Positionally, both look like a correct
 		// call right up until the type happens not to match — and a nullable
 		// parameter would have accepted the wrong value in silence.
-		$this->controller = new FlowRunController(
+		$this->controller = FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -133,8 +146,8 @@ class FlowRunControllerTest extends TestCase {
 			resolvers: $this->resolvers,
 			userSession: $this->userSession,
 			organisationService: $this->organisations,
-			flows: $this->flows,
-			access: $this->access
+			guard: new FlowRunnableGuard(flows: $this->flows, access: $this->access),
+			flowOwnership: $this->flowOwnership
 		);
 	}//end setUp()
 
@@ -190,7 +203,7 @@ class FlowRunControllerTest extends TestCase {
 		// No `subject` on the request means NO subject predicate reaches the
 		// mapper: the org-wide widget's read is bit-identical to before.
 		$this->mapper->expects($this->once())->method('findActive')
-			->with('org-a', 10, null)
+			->with(new FlowRunSubjectScope(organisation: 'org-a', subject: null), 10)
 			->willReturn([]);
 		$this->mapper->expects($this->once())->method('countActive')
 			->with('org-a', null)
@@ -207,7 +220,7 @@ class FlowRunControllerTest extends TestCase {
 		// the total is counted with the same filter, so a case widget can say
 		// "2 running" rather than the tenant-wide number.
 		$this->mapper->expects($this->once())->method('findActive')
-			->with('org-a', 10, 'case-x')
+			->with(new FlowRunSubjectScope(organisation: 'org-a', subject: 'case-x'), 10)
 			->willReturn([]);
 		$this->mapper->expects($this->once())->method('countActive')
 			->with('org-a', 'case-x')
@@ -236,7 +249,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->activeOrganisation('org-a');
 
 		$this->mapper->expects($this->once())->method('findActive')
-			->with('org-a', 10, null)
+			->with(new FlowRunSubjectScope(organisation: 'org-a', subject: null), 10)
 			->willReturn([]);
 		$this->mapper->method('countActive')->willReturn(0);
 
@@ -288,7 +301,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->activeOrganisation('org-a');
 
 		$this->mapper->expects($this->once())->method('findCompletedForSubject')
-			->with('org-a', 'case-x', 50)
+			->with(new FlowRunSubjectScope(organisation: 'org-a', subject: 'case-x'), 50)
 			->willReturn([]);
 		$this->mapper->expects($this->once())->method('countCompletedForSubject')
 			->with('org-a', 'case-x')
@@ -423,83 +436,12 @@ class FlowRunControllerTest extends TestCase {
 		$this->activeOrganisation('org-a');
 
 		$this->mapper->expects($this->once())->method('findActive')
-			->with('org-a', 50)
+			->with(new FlowRunSubjectScope(organisation: 'org-a', subject: null), 50)
 			->willReturn([]);
 		$this->mapper->method('countActive')->willReturn(0);
 
 		$this->assertSame(50, $this->controller->active()->getData()['limit']);
 	}//end testActiveCapsTheRequestedLimit()
-
-	public function testTestWithoutAFlowIdIsABadRequest(): void {
-		$this->params([]);
-		$res = $this->controller->test();
-		$this->assertSame(Http::STATUS_BAD_REQUEST, $res->getStatus());
-	}//end testTestWithoutAFlowIdIsABadRequest()
-
-	public function testTestWithAnUnknownFlowIsNotFound(): void {
-		$this->params(['flowId' => 'ghost']);
-		$this->resolvers->method('resolveFlow')->willReturn(null);
-
-		$res = $this->controller->test();
-		$this->assertSame(Http::STATUS_NOT_FOUND, $res->getStatus());
-	}//end testTestWithAnUnknownFlowIsNotFound()
-
-	public function testTestRunsSynchronouslyAndReturnsTheResult(): void {
-		$this->params(
-			[
-				'flowId' => 'f1',
-				'startAt' => 'middle',
-				'pins' => ['first' => [['json' => ['x' => 1]]]],
-			]
-		);
-		$this->resolvers->method('resolveFlow')->with('f1')->willReturn(['id' => 'f1', 'edges' => []]);
-
-		$queued = new FlowRun();
-		$queued->setStatus(FlowRun::STATUS_QUEUED);
-		$this->runner->method('queue')->willReturn($queued);
-
-		$done = new FlowRun();
-		$done->setStatus(FlowRun::STATUS_COMPLETED);
-		$done->setLog([['transition' => 'second', 'status' => 'completed']]);
-
-		// The controller must pass the parsed startAt through to execute().
-		$this->runner->expects($this->once())->method('execute')
-			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				'middle'
-			)
-			->willReturn($done);
-
-		$res = $this->controller->test();
-		$body = $res->getData();
-
-		$this->assertSame(Http::STATUS_OK, $res->getStatus());
-		$this->assertSame(FlowRun::STATUS_COMPLETED, $body['status']);
-	}//end testTestRunsSynchronouslyAndReturnsTheResult()
-
-	public function testTestPassesPinsOnTheRunContext(): void {
-		$pins = ['first' => [['json' => ['pinned' => true]]]];
-		$this->params(['flowId' => 'f1', 'pins' => $pins]);
-		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'f1']);
-
-		// Queue() must receive the pins on the context so the engine can read them.
-		$this->runner->expects($this->once())->method('queue')
-			->with(
-				'f1',
-				$this->anything(),
-				'test',
-				['pins' => $pins]
-			)
-			->willReturn(new FlowRun());
-		$done = new FlowRun();
-		$done->setStatus(FlowRun::STATUS_COMPLETED);
-		$this->runner->method('execute')->willReturn($done);
-
-		$this->controller->test();
-	}//end testTestPassesPinsOnTheRunContext()
 
 	/**
 	 * REGRESSION GUARD. The history read must never be unscoped.
@@ -515,17 +457,13 @@ class FlowRunControllerTest extends TestCase {
 	 */
 	public function testTheHistoryReadIsScopedToTheCaller(): void {
 		$this->params([]);
-		$this->flows->method('idsOwnedByCaller')->willReturn(['owned-flow']);
+		$this->flowOwnership->method('idsOwnedByCaller')->willReturn(['owned-flow']);
 
 		$this->mapper->expects($this->once())
 			->method('findAllRuns')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				'alice',
-				['owned-flow']
+				new FlowRunViewer(requesterUid: 'alice', ownedFlowIds: ['owned-flow'])
 			)
 			->willReturn([]);
 
@@ -544,7 +482,7 @@ class FlowRunControllerTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(null);
 
-		$controller = new FlowRunController(
+		$controller = FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -552,13 +490,119 @@ class FlowRunControllerTest extends TestCase {
 			resolvers: $this->resolvers,
 			userSession: $session,
 			organisationService: $this->organisations,
-			flows: $this->flows
+			guard: new FlowRunnableGuard(flows: $this->flows, access: $this->access),
+			flowOwnership: $this->flowOwnership
 		);
 
 		$this->mapper->expects($this->never())->method('findAllRuns');
 
 		$this->assertSame([], $controller->index()->getData()['results']);
 	}//end testTheHistoryReadReturnsNothingWithoutASession()
+
+	public function testTheSummaryIsScopedToTheCallerAndDefaultsToSevenDays(): void {
+		$this->params(['flowIds' => 'flow-a, flow-b,,flow-a']);
+		$this->flowOwnership->method('idsOwnedByCaller')->willReturn(['flow-a']);
+
+		$this->mapper->expects($this->once())
+			->method('summarizeByFlow')
+			->willReturnCallback(function (FlowActivityWindow $window, FlowRunViewer $viewer): array {
+				$this->assertSame(['flow-a', 'flow-b'], $window->flowIds);
+				$this->assertSame('alice', $viewer->requesterUid);
+				$this->assertSame(['flow-a'], $viewer->ownedFlowIds);
+				$this->assertEqualsWithDelta((new \DateTime('-7 days'))->getTimestamp(), $window->since->getTimestamp(), 60);
+				return ['flow-a' => ['lastRun' => null, 'runsSince' => 3]];
+			});
+
+		$data = $this->controller->summary()->getData();
+
+		$this->assertSame(3, $data['results']->{'flow-a'}['runsSince']);
+	}
+
+	public function testTheSummaryReadsNothingWithoutASession(): void {
+		$this->params(['flowIds' => 'flow-a']);
+
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn(null);
+
+		$controller = FlowRunControllerFactory::create(
+			appName: 'openregister',
+			request: $this->request,
+			mapper: $this->mapper,
+			runner: $this->runner,
+			resolvers: $this->resolvers,
+			userSession: $session,
+			organisationService: $this->organisations,
+			guard: new FlowRunnableGuard(flows: $this->flows, access: $this->access),
+			flowOwnership: $this->flowOwnership
+		);
+
+		$this->mapper->expects($this->never())->method('summarizeByFlow');
+
+		$this->assertSame([], (array) $controller->summary()->getData()['results']);
+	}
+
+	public function testAnUnreadableSinceIsRefusedOnTheSummaryAndTheHistory(): void {
+		$this->params(['since' => 'not-a-date', 'flowIds' => 'flow-a']);
+
+		$this->mapper->expects($this->never())->method('summarizeByFlow');
+		$this->mapper->expects($this->never())->method('findAllRuns');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->summary()->getStatus());
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->index()->getStatus());
+	}
+
+	public function testTheHistoryNarrowsToSeveralFlowsAndASinceMoment(): void {
+		$this->params(['since' => '2026-10-12T00:00:00+00:00', 'flowIds' => ['flow-a', 'flow-b']]);
+
+		$this->mapper->expects($this->once())
+			->method('findAllRuns')
+			->willReturnCallback(function (...$args): array {
+				$this->assertSame('2026-10-12', $args[0]->filter->since->format('Y-m-d'));
+				$this->assertSame(['flow-a', 'flow-b'], $args[0]->filter->flowIds);
+				return [];
+			});
+
+		$this->controller->index();
+	}
+
+	/**
+	 * A `since` with a UTC offset is bound as the UTC instant it names.
+	 *
+	 * `12:00:00+02:00` is 10:00:00Z; binding the object's own wall clock compared
+	 * it as 12:00:00, two hours off, on both the history and the summary.
+	 *
+	 * @return void
+	 */
+	public function testASinceWithAnOffsetIsBoundAsUtc(): void {
+		$this->params(['since' => '2026-10-19T12:00:00+02:00', 'flowIds' => ['flow-a']]);
+
+		$this->mapper->expects($this->once())
+			->method('findAllRuns')
+			->willReturnCallback(function (...$args): array {
+				$this->assertSame('2026-10-19 10:00:00', $args[0]->filter->since->format('Y-m-d H:i:s'));
+				$this->assertSame('UTC', $args[0]->filter->since->getTimezone()->getName());
+				return [];
+			});
+		$this->controller->index();
+	}//end testASinceWithAnOffsetIsBoundAsUtc()
+
+	/**
+	 * The same normalisation on the summary's `runsSince`.
+	 *
+	 * @return void
+	 */
+	public function testTheSummaryBindsAnOffsetSinceAsUtc(): void {
+		$this->params(['since' => '2026-10-19T12:00:00+02:00', 'flowIds' => 'flow-a']);
+		$this->flowOwnership->method('idsOwnedByCaller')->willReturn([]);
+
+		$this->mapper->expects($this->once())
+			->method('summarizeByFlow')
+			->willReturnCallback(function (FlowActivityWindow $window): array {
+				$this->assertSame('2026-10-19 10:00:00', $window->since->format('Y-m-d H:i:s'));
+				return [];
+			});
+		$this->controller->summary();
+	}//end testTheSummaryBindsAnOffsetSinceAsUtc()
 
 	public function testResumeSignalsTheSuspendedRunWithTheRequestBody(): void {
 		$run = new FlowRun();
@@ -616,6 +660,33 @@ class FlowRunControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 		$this->assertStringContainsString('No such flow', $response->getData()['error']);
 	}//end testResumeIsNotFoundWhenTheCallerMayNotSeeTheFlow()
+
+	public function testRetryIsNotFoundForAnUnknownRun(): void {
+		$this->mapper->method('findByUuid')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no such run'));
+		$this->runner->expects($this->never())->method('retry');
+
+		$response = $this->controller->retry('nope');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame('No such run', $response->getData()['error']);
+	}//end testRetryIsNotFoundForAnUnknownRun()
+
+	public function testRetryIsNotFoundWhenTheCallerMayNotSeeTheFlow(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('someone-elses-flow');
+		$run->setStatus(FlowRun::STATUS_FAILED);
+
+		$this->mapper->method('findByUuid')->willReturn($run);
+		$this->flows->method('find')->willThrowException(new \RuntimeException('not visible'));
+		$this->runner->expects($this->never())->method('retry');
+
+		$response = $this->controller->retry('run-1');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertStringContainsString('No such flow', $response->getData()['error']);
+	}//end testRetryIsNotFoundWhenTheCallerMayNotSeeTheFlow()
 
 	public function testResumeConflictsWhenTheRunIsNotSuspended(): void {
 		$run = new FlowRun();
@@ -753,7 +824,7 @@ class FlowRunControllerTest extends TestCase {
 		IUserSession $session,
 		?IGroupManager $groupManager = null,
 	): FlowRunController {
-		return new FlowRunController(
+		return FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -761,8 +832,9 @@ class FlowRunControllerTest extends TestCase {
 			resolvers: $this->resolvers,
 			userSession: $session,
 			organisationService: $this->organisations,
+			guard: new FlowRunnableGuard(flows: $this->flows, access: $this->access),
 			groupManager: $groupManager,
-			flows: $this->flows
+			flowOwnership: $this->flowOwnership
 		);
 	}//end controllerWith()
 
@@ -955,224 +1027,4 @@ class FlowRunControllerTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	private function aTestRunOf(string $flowId): void {
-		$this->request->method('getParam')->willReturnCallback(
-			static function (string $key, $default = null) use ($flowId) {
-				return match ($key) {
-					'flowId' => $flowId,
-					'pins' => [],
-					default => $default,
-				};
-			}
-		);
-
-		$this->flows->method('find')->willReturn(new \OCA\OpenRegister\Db\Flow());
-		$this->resolvers->method('resolveFlow')->willReturn(['nodes' => [], 'edges' => []]);
-	}//end aTestRunOf()
-
-	/**
-	 * 🔴 A LIFECYCLE REFUSAL ON THE TEST-RUN PATH IS A 409, NOT A 500.
-	 *
-	 * `FlowRunController::test()` is the OTHER dispatch a person presses, and it
-	 * let `FlowLifecycleRefused` escape exactly as `FlowController::run()` did:
-	 * the editor got an HTML error page — "the server is broken" — for what is
-	 * actually "publish this flow first". Removing the catch turns this red with
-	 * the exception escaping, which is the defect itself.
-	 *
-	 * @return void
-	 */
-	public function testARefusedTestRunIs409WithAReason(): void {
-		$this->aTestRunOf('flow-1');
-		$this->runner->method('queue')->willThrowException(
-			new FlowLifecycleRefused(
-				reason: FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
-				flowId: 'flow-1',
-				state: null
-			)
-		);
-
-		$response = $this->controller->test();
-
-		$this->assertSame(
-			Http::STATUS_CONFLICT,
-			$response->getStatus(),
-			'a test run refused by the flow lifecycle must be a 409, not a fault'
-		);
-		$this->assertSame(
-			FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
-			$response->getData()['reason'],
-			'the refusal must name its reason as a field — "publish a version" and '
-				. '"create a draft" want opposite buttons from the editor'
-		);
-	}//end testARefusedTestRunIs409WithAReason()
-
-	/**
-	 * A dead end on the test-run path is the same kind of answer: the author
-	 * wired a node a token cannot leave, and the engine has already written the
-	 * sentence that says which one. Escaping as a 500 threw that sentence away.
-	 *
-	 * @return void
-	 */
-	public function testADeadEndTestRunIs409NamingTheDefect(): void {
-		$this->aTestRunOf('flow-2');
-		$this->runner->method('queue')->willThrowException(
-			new FlowDeadEnd(nodeIds: ['step-a'])
-		);
-
-		$response = $this->controller->test();
-
-		$this->assertSame(
-			Http::STATUS_CONFLICT,
-			$response->getStatus(),
-			'a dead end is the author\'s document, not a server fault'
-		);
-		$this->assertSame('dead-end', $response->getData()['reason']);
-		$this->assertStringContainsString(
-			'step-a',
-			(string)$response->getData()['error'],
-			'the refusal must still name the node, which is the one fact the author needs'
-		);
-	}//end testADeadEndTestRunIs409NamingTheDefect()
-
-	/**
-	 * 🔴 or#3643 — THE UNGUARDED FLOW-RUN ENDPOINT.
-	 *
-	 * `test()` used to reach the engine with no check on the CALLER at all —
-	 * only {@see FlowService::find()}'s organisation scoping, which passes for
-	 * every signed-in member of the flow's organisation, editor or not. This is
-	 * the test that must fail against the vulnerable code and pass against the
-	 * fix: a caller who holds no `flow.update` right is refused, and — this is
-	 * the part a status-code-only assertion would miss — the engine is NEVER
-	 * reached, so the run has no side effect at all.
-	 *
-	 * Mutation check: comment out the `refuseUnlessMayEditFlow()` call (or make
-	 * `refuseUnlessMayEditFlow()` always return null) in
-	 * `FlowRunController::test()` and this test reddens — `queue()` gets called
-	 * and the status is 200, not 403.
-	 *
-	 * @return void
-	 */
-	public function testTestRefusesACallerWithoutTheEditRight(): void {
-		$this->aTestRunOf('flow-1');
-		$this->access = $this->createMock(FlowAccess::class);
-		$this->access->method('currentUser')->willReturn($this->createMock(\OCP\IUser::class));
-		$this->access->method('may')->with($this->anything(), 'flow.update')->willReturn(false);
-
-		$controller = new FlowRunController(
-			appName: 'openregister',
-			request: $this->request,
-			mapper: $this->mapper,
-			runner: $this->runner,
-			resolvers: $this->resolvers,
-			userSession: $this->userSession,
-			organisationService: $this->organisations,
-			flows: $this->flows,
-			access: $this->access
-		);
-
-		$this->runner->expects($this->never())->method('queue');
-
-		$response = $controller->test();
-
-		$this->assertSame(
-			Http::STATUS_FORBIDDEN,
-			$response->getStatus(),
-			'a caller without the flow.update right must be refused, not run the flow'
-		);
-	}//end testTestRefusesACallerWithoutTheEditRight()
-
-	/**
-	 * An anonymous caller (no session `FlowAccess::currentUser()` can resolve)
-	 * gets 401, not 403 — "sign in" and "you may not do this" are different
-	 * answers and {@see FlowAccess} exists precisely so callers do not collapse
-	 * them.
-	 *
-	 * @return void
-	 */
-	public function testTestRefusesAnAnonymousCallerWithUnauthorized(): void {
-		$this->aTestRunOf('flow-1');
-		$this->access = $this->createMock(FlowAccess::class);
-		$this->access->method('currentUser')->willReturn(null);
-
-		$controller = new FlowRunController(
-			appName: 'openregister',
-			request: $this->request,
-			mapper: $this->mapper,
-			runner: $this->runner,
-			resolvers: $this->resolvers,
-			userSession: $this->userSession,
-			organisationService: $this->organisations,
-			flows: $this->flows,
-			access: $this->access
-		);
-
-		$this->runner->expects($this->never())->method('queue');
-
-		$response = $controller->test();
-
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-	}//end testTestRefusesAnAnonymousCallerWithUnauthorized()
-
-	/**
-	 * FAIL CLOSED: no `FlowAccess` collaborator at all (the DI failure mode —
-	 * same posture as `$flows === null` elsewhere in this controller) must
-	 * refuse, not silently allow. An absent collaborator is "no way to decide",
-	 * and this controller's rule for that is always refusal.
-	 *
-	 * @return void
-	 */
-	public function testTestFailsClosedWithoutTheAccessCollaborator(): void {
-		$this->aTestRunOf('flow-1');
-		$controller = new FlowRunController(
-			appName: 'openregister',
-			request: $this->request,
-			mapper: $this->mapper,
-			runner: $this->runner,
-			resolvers: $this->resolvers,
-			userSession: $this->userSession,
-			organisationService: $this->organisations,
-			flows: $this->flows
-		);
-
-		$this->runner->expects($this->never())->method('queue');
-
-		$response = $controller->test();
-
-		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-	}//end testTestFailsClosedWithoutTheAccessCollaborator()
-
-	/**
-	 * The edit-right check runs before the flow is even resolved: an
-	 * unprivileged caller gets refused for a flow that does not exist, exactly
-	 * as for one that does — no oracle for "does this flow id exist" leaks
-	 * through which 4xx comes back first.
-	 *
-	 * @return void
-	 */
-	public function testTestChecksTheEditRightBeforeResolvingTheFlow(): void {
-		$this->params(['flowId' => 'ghost']);
-		$this->access = $this->createMock(FlowAccess::class);
-		$this->access->method('currentUser')->willReturn($this->createMock(\OCP\IUser::class));
-		$this->access->method('may')->willReturn(false);
-
-		$controller = new FlowRunController(
-			appName: 'openregister',
-			request: $this->request,
-			mapper: $this->mapper,
-			runner: $this->runner,
-			resolvers: $this->resolvers,
-			userSession: $this->userSession,
-			organisationService: $this->organisations,
-			flows: $this->flows,
-			access: $this->access
-		);
-
-		$this->flows->expects($this->never())->method('find');
-		$this->resolvers->expects($this->never())->method('resolveFlow');
-
-		$response = $controller->test();
-
-		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-	}//end testTestChecksTheEditRightBeforeResolvingTheFlow()
-
 }//end class

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -43,6 +44,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\File\FolderAccessCheck;
 
 /**
  * System-context recognition and managed-folder re-validation.
@@ -93,7 +95,8 @@ class FolderManagementHandlerSystemContextTest extends TestCase {
 			groupManager: $this->createMock(IGroupManager::class),
 			logger: $this->createMock(LoggerInterface::class),
 			auditTrailMapper: $this->auditTrailMapper,
-			mountCache: $this->mountCache
+			mountCache: $this->mountCache,
+			folderRecorder: $this->createMock(RegisterFolderRecorder::class)
 		);
 		$this->handler->setFileService($this->fileService);
 
@@ -178,7 +181,7 @@ class FolderManagementHandlerSystemContextTest extends TestCase {
 		$this->auditTrailMapper->expects($this->never())->method('insert');
 
 		$resolved = SystemOperationContext::run(
-			fn (): Folder => $this->handler->assertFolderIsAccessible(folderId: '42')
+			fn (): Folder => $this->handler->assertFolderIsAccessible(check: new FolderAccessCheck(folderId: '42'))
 		);
 
 		$this->assertSame($folder, $resolved);
@@ -202,7 +205,7 @@ class FolderManagementHandlerSystemContextTest extends TestCase {
 		$this->expectException(FolderAccessDeniedException::class);
 
 		SystemOperationContext::run(
-			fn (): Folder => $this->handler->assertFolderIsAccessible(folderId: '77')
+			fn (): Folder => $this->handler->assertFolderIsAccessible(check: new FolderAccessCheck(folderId: '77'))
 		);
 
 	}//end testSystemContextStillChecksTheFolder()
@@ -222,7 +225,7 @@ class FolderManagementHandlerSystemContextTest extends TestCase {
 		$this->auditTrailMapper->expects($this->once())->method('insert');
 		$this->expectException(FolderAccessDeniedException::class);
 
-		$this->handler->assertFolderIsAccessible(folderId: '42');
+		$this->handler->assertFolderIsAccessible(check: new FolderAccessCheck(folderId: '42'));
 
 	}//end testUserlessRequestOutsideASystemScopeIsStillDenied()
 
@@ -237,10 +240,7 @@ class FolderManagementHandlerSystemContextTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($this->makeUser('bob'));
 		$this->mockMountPath(folderId: 167, path: '/alice/files/Open Registers/Cases Register/case-1');
 
-		$this->handler->assertManagedFolderIsAccessible(
-			folderId: '167',
-			objectEntity: $this->makeObjectEntity('167')
-		);
+		$this->handler->assertManagedFolderIsAccessible(check: new FolderAccessCheck(folderId: '167', objectEntity: $this->makeObjectEntity('167')));
 
 		// No exception is the assertion; make it explicit for the reader.
 		$this->addToAssertionCount(1);
@@ -261,10 +261,7 @@ class FolderManagementHandlerSystemContextTest extends TestCase {
 
 		$this->expectException(FolderAccessDeniedException::class);
 
-		$this->handler->assertManagedFolderIsAccessible(
-			folderId: '242',
-			objectEntity: $this->makeObjectEntity('242')
-		);
+		$this->handler->assertManagedFolderIsAccessible(check: new FolderAccessCheck(folderId: '242', objectEntity: $this->makeObjectEntity('242')));
 
 	}//end testBindingOutsideTheManagedTreeIsStillRefused()
 
@@ -284,10 +281,7 @@ class FolderManagementHandlerSystemContextTest extends TestCase {
 
 		$this->auditTrailMapper->expects($this->never())->method('insert');
 
-		$this->handler->assertManagedFolderIsAccessible(
-			folderId: '167',
-			objectEntity: $this->makeObjectEntity('167')
-		);
+		$this->handler->assertManagedFolderIsAccessible(check: new FolderAccessCheck(folderId: '167', objectEntity: $this->makeObjectEntity('167')));
 
 		$this->addToAssertionCount(1);
 
@@ -307,10 +301,7 @@ class FolderManagementHandlerSystemContextTest extends TestCase {
 		$folder->method('isReadable')->willReturn(true);
 		$this->mockUserFolderLookup(uid: 'alice', folderId: 167, nodes: [$folder]);
 
-		$this->handler->assertManagedFolderIsAccessible(
-			folderId: '167',
-			objectEntity: $this->makeObjectEntity('167')
-		);
+		$this->handler->assertManagedFolderIsAccessible(check: new FolderAccessCheck(folderId: '167', objectEntity: $this->makeObjectEntity('167')));
 
 		$this->addToAssertionCount(1);
 

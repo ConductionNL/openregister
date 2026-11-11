@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -83,11 +84,11 @@ class ObjectsControllerPatchConcurrencyTest extends TestCase {
 		$this->webhookService = $this->createMock(WebhookService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// resolveRegisterSchemaIds() reuses the entities resolved by
+		// resolveRegisterSchemaRef() reuses the entities resolved by
 		// ObjectService::setRegister()/setSchema(); the ObjectService mock
 		// returns null from the entity getters by default, so entities stay
 		// null and the numeric ids passed in tests ('1' / '2') are used as-is.
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -224,4 +225,24 @@ class ObjectsControllerPatchConcurrencyTest extends TestCase {
 
 		$this->assertSame(200, $result->getStatus());
 	}//end testPatchSucceedsWhenExpectedUpdatedIsOmitted()
+	/**
+	 * A frozen object refuses a PATCH with 409 and the reason, as a revert does,
+	 * instead of a bare 500 (#4161).
+	 */
+	public function testPatchOnAFrozenObjectAnswers409NamingTheFreeze(): void {
+		$this->setupAdminUser();
+		$existing = $this->stubExistingObject('2026-07-01T10:00:00+00:00');
+
+		$this->request->method('getParams')->willReturn(['title' => 'Patched']);
+		$this->request->method('getHeader')->willReturn('application/json');
+		$this->mockExpectedUpdatedParam(null);
+
+		$refusal = \OCA\OpenRegister\Exception\ObjectStateWriteException::frozen($existing);
+		$this->objectService->method('saveObject')->willThrowException($refusal);
+
+		$result = $this->controller->patch('1', '2', 'uuid-123', $this->objectService);
+
+		$this->assertSame(409, $result->getStatus());
+		$this->assertSame($refusal->getMessage(), $result->getData()['error']);
+	}//end testPatchOnAFrozenObjectAnswers409NamingTheFreeze()
 }//end class

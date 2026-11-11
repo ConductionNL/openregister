@@ -91,7 +91,7 @@ class NextcloudVaultCredentialStore implements CredentialStore {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	public function put(string $uuid, string $secret, string $scope = 'personal'): void {
+	public function put(string $uuid, #[\SensitiveParameter] string $secret, string $scope = 'personal'): void {
 		$this->credentialsManager->store(
 			$this->vaultOwner(scope: $scope),
 			self::KEY_PREFIX . $uuid,

@@ -15,15 +15,18 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Audit\AuditSink;
-use OCA\OpenRegister\Service\Audit\AuditSinkStatus;
+use OCA\OpenRegister\Controller\Support\AdminGroupMembership;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\AuditSinkControllerServices;
+use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
+use OCA\OpenRegister\Service\Audit\AuditSinkStatusInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -38,28 +41,52 @@ use OCP\IUserSession;
  * detail an ordinary caller has no business learning, and acknowledging a gap
  * is an operator's decision about evidence.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class AuditSinkController extends Controller {
 	/**
+	 * The configured sink.
+	 *
+	 * @var AuditSinkInterface
+	 */
+	private readonly AuditSinkInterface $sink;
+
+	/**
+	 * The sink's health.
+	 *
+	 * @var AuditSinkStatusInterface
+	 */
+	private readonly AuditSinkStatusInterface $status;
+
+	/**
+	 * Current user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager, for the admin gate.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string          $appName      App identifier.
 	 * @param IRequest        $request      Active request.
-	 * @param AuditSink       $sink         The configured sink.
-	 * @param AuditSinkStatus $status       The sink's health.
-	 * @param IUserSession    $userSession  Current user session.
-	 * @param IGroupManager   $groupManager Group manager, for the admin gate.
+	 * @param AuditSinkControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly AuditSink $sink,
-		private readonly AuditSinkStatus $status,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		AuditSinkControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->sink = $services->sink;
+		$this->status = $services->status;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 	}//end __construct()
 
 	/**
@@ -75,37 +102,56 @@ class AuditSinkController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function show(): JSONResponse {
 		if ($this->isAdmin() === false) {
 			return $this->forbidden();
 		}
 
+		return new JSONResponse(data: $this->sinkReport());
+	}//end show()
+
+	/**
+	 * Where the trail is written and how the shipping is going.
+	 *
+	 * @return array<string, mixed> The sink's configuration and status
+	 */
+	private function sinkReport(): array {
 		$configured = $this->sink->isConfigured();
 		$status = $this->status->read();
 
-		// Null, not false. An instance that ships nothing has not been found
-		// unhealthy, it has not been asked.
-		$healthy = null;
+		return [
+			'configured' => $configured,
+			'path' => $this->sink->path(),
+			'format' => $this->sink->format(),
+			'healthy' => self::healthOf(configured: $configured, status: $status),
+			'lastSuccessAt' => $status['lastSuccessAt'],
+			'lastFailureAt' => $status['lastFailureAt'],
+			'lastError' => $status['lastError'],
+			'unshipped' => $status['unshipped'],
+			'acknowledgedAt' => $status['acknowledgedAt'],
+		];
+	}//end sinkReport()
+
+	/**
+	 * Whether the sink is healthy.
+	 *
+	 * Null, not false. An instance that ships nothing has not been found
+	 * unhealthy, it has not been asked.
+	 *
+	 * @param bool                 $configured Whether a sink is configured
+	 * @param array<string, mixed> $status     The shipping status
+	 *
+	 * @return mixed The reported health, or null for an unconfigured sink
+	 */
+	private static function healthOf(bool $configured, array $status): mixed {
 		if ($configured === true) {
-			$healthy = $status['healthy'];
+			return $status['healthy'];
 		}
 
-		return new JSONResponse(
-			data: [
-				'configured' => $configured,
-				'path' => $this->sink->path(),
-				'format' => $this->sink->format(),
-				'healthy' => $healthy,
-				'lastSuccessAt' => $status['lastSuccessAt'],
-				'lastFailureAt' => $status['lastFailureAt'],
-				'lastError' => $status['lastError'],
-				'unshipped' => $status['unshipped'],
-				'acknowledgedAt' => $status['acknowledgedAt'],
-			]
-		);
-	}//end show()
+		return null;
+	}//end healthOf()
 
 	/**
 	 * POST /api/audit/sink/acknowledge — an operator says the gap is handled.
@@ -119,7 +165,7 @@ class AuditSinkController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function acknowledge(): JSONResponse {
 		if ($this->isAdmin() === false) {
@@ -134,19 +180,10 @@ class AuditSinkController extends Controller {
 	 *
 	 * @return bool True when the caller is in the admin group.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function isAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return in_array(
-			needle: 'admin',
-			haystack: $this->groupManager->getUserGroupIds($user),
-			strict: true
-		);
+		return AdminGroupMembership::ofCaller(userSession: $this->userSession, groupManager: $this->groupManager);
 	}//end isAdmin()
 
 	/**
@@ -154,7 +191,7 @@ class AuditSinkController extends Controller {
 	 *
 	 * @return JSONResponse HTTP 403.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function forbidden(): JSONResponse {
 		return new JSONResponse(

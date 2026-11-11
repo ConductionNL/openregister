@@ -72,7 +72,7 @@ final class AutoTransitionCandidate {
 	 * @param string $to The lifecycle value the move would reach.
 	 * @param string $mode The execution mode, one of the flow engine's two values.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(string $action, string $from, string $to, string $mode) {
 		$this->action = $action;
@@ -90,7 +90,7 @@ final class AutoTransitionCandidate {
 	 *
 	 * @return boolean True for a sync move, false for a queued one.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function isSync(): bool {
 		return $this->mode === Flow::MODE_SYNC;

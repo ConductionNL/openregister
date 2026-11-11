@@ -102,7 +102,7 @@ class Version1Date20260829160000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_verwerkingsactiviteiten') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_verwerkingsactiviteiten');
@@ -119,7 +119,7 @@ class Version1Date20260829160000 extends SimpleMigrationStep {
 
 		if ($dropped === 0) {
 			// The upgrade path already dropped them in 20260818230000's postSchemaChange.
-			return null;
+			return $schema;
 		}
 
 		$output->info(

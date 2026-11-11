@@ -44,15 +44,11 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 /**
  * A validated, memoising working calendar.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of the definition
- * validators' refusal branches: every malformed rule shape is named in its own
- * message rather than absorbed, which is the point of refusing rather than
- * downgrading.
  * @SuppressWarnings(PHPMD.ShortVariable) {@see easterSunday()} uses the
  * single-letter names of the published anonymous Gregorian computus so the
  * code can be checked line by line against its reference.
  */
-final class WorkingCalendar {
+final class WorkingCalendar implements WorkingCalendarInterface {
 
 	/**
 	 * The seeded national default.
@@ -69,46 +65,21 @@ final class WorkingCalendar {
 	public const RULE_KINDS = ['fixed', 'easter', 'observedShift'];
 
 	/**
-	 * Weekday names accepted by an observed-shift rule, ISO numbered.
+	 * The calendar's non-working dates, memoised per year.
 	 *
-	 * @var array<string, int>
+	 * @var WorkingCalendarHolidays
 	 */
-	private const WEEKDAYS = [
-		'monday' => 1,
-		'tuesday' => 2,
-		'wednesday' => 3,
-		'thursday' => 4,
-		'friday' => 5,
-		'saturday' => 6,
-		'sunday' => 7,
-	];
-
-	/**
-	 * Non-working dates per year, memoised for the life of this instance.
-	 *
-	 * @var array<int, array<string, string>>
-	 */
-	private array $yearCache = [];
+	private readonly WorkingCalendarHolidays $holidays;
 
 	/**
 	 * Constructor. Use {@see fromArray()}.
 	 *
-	 * @param string $slug The calendar's name.
-	 * @param string|null $organisation The organisation it is configured for, when any.
-	 * @param array<int, int> $workingWeekdays ISO weekdays (1 = Monday) that are working days.
-	 * @param float $hoursPerWorkingDay Working hours in one working day.
-	 * @param array<int, array<string, mixed>> $rules The computed non-working-date rules.
-	 * @param array<string, string> $exceptions Enumerated one-off closures, `Y-m-d` => name.
+	 * @param WorkingCalendarDefinition $definition The validated definition.
 	 */
 	private function __construct(
-		private readonly string $slug,
-		private readonly ?string $organisation,
-		private readonly array $workingWeekdays,
-		private readonly float $hoursPerWorkingDay,
-		private readonly array $rules,
-		private readonly array $exceptions,
+		private readonly WorkingCalendarDefinition $definition,
 	) {
-
+		$this->holidays = new WorkingCalendarHolidays(definition: $definition);
 	}//end __construct()
 
 	/**
@@ -123,49 +94,24 @@ final class WorkingCalendar {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public static function fromArray(array $definition): self {
-		$slug = trim((string)($definition['slug'] ?? ''));
-		if ($slug === '') {
-			throw new FlowTimerValidationException(message: 'A working calendar requires a non-empty slug.');
-		}
-
-		$hours = ($definition['hoursPerWorkingDay'] ?? null);
-		if (is_numeric($hours) === false || (float)$hours <= 0 || (float)$hours > 24) {
-			throw new FlowTimerValidationException(
-				message: sprintf(
-					"Working calendar '%s' requires hoursPerWorkingDay between 0 and 24; without it hours and businessDays are not commensurable.",
-					$slug
-				)
-			);
-		}
-
-		$weekdays = self::validWeekdays(slug: $slug, value: ($definition['workingWeekdays'] ?? null));
-		$rules = self::validRules(slug: $slug, value: ($definition['rules'] ?? []));
-		$exceptions = self::validExceptions(slug: $slug, value: ($definition['exceptions'] ?? []));
-
-		if ($rules === [] && $exceptions !== []) {
-			throw new FlowTimerValidationException(
-				message: sprintf(
-					"Working calendar '%s' consists only of enumerated dates and would expire after '%s'; declare computed rules.",
-					$slug,
-					(string)array_key_last($exceptions)
-				)
-			);
-		}
-
-		$organisation = null;
-		if (trim((string)($definition['organisation'] ?? '')) !== '') {
-			$organisation = trim((string)$definition['organisation']);
-		}
-
-		return new self(
-			slug: $slug,
-			organisation: $organisation,
-			workingWeekdays: $weekdays,
-			hoursPerWorkingDay: (float)$hours,
-			rules: $rules,
-			exceptions: $exceptions
-		);
+		return new self(definition: new WorkingCalendarDefinition(raw: $definition));
 	}//end fromArray()
+
+	/**
+	 * The hours of the day this calendar's clock runs, per weekday.
+	 *
+	 * Empty on a calendar that declares none, and every caller has to ask
+	 * {@see ServiceHours::areDeclared()} before using it: an undeclared
+	 * calendar counts hours exactly as it did before service hours existed,
+	 * which is what lets an instance upgrade without recomputing live terms.
+	 *
+	 * @return ServiceHours The declared windows.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+	 */
+	public function getServiceHours(): ServiceHours {
+		return $this->definition->getServiceHours();
+	}//end getServiceHours()
 
 	/**
 	 * The calendar's name.
@@ -175,7 +121,7 @@ final class WorkingCalendar {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getSlug(): string {
-		return $this->slug;
+		return $this->definition->getSlug();
 	}//end getSlug()
 
 	/**
@@ -186,7 +132,7 @@ final class WorkingCalendar {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getOrganisation(): ?string {
-		return $this->organisation;
+		return $this->definition->getOrganisation();
 	}//end getOrganisation()
 
 	/**
@@ -202,7 +148,7 @@ final class WorkingCalendar {
 	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-working-calendars-are-administered-under-nextcloud-admin-settings
 	 */
 	public function getWorkingWeekdays(): array {
-		return $this->workingWeekdays;
+		return $this->definition->getWorkingWeekdays();
 	}//end getWorkingWeekdays()
 
 	/**
@@ -213,8 +159,70 @@ final class WorkingCalendar {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getHoursPerWorkingDay(): float {
-		return $this->hoursPerWorkingDay;
+		return $this->definition->getHoursPerWorkingDay();
 	}//end getHoursPerWorkingDay()
+
+	/**
+	 * The minute of the day the working day opens.
+	 *
+	 * WHY THE CALENDAR CARRIES A TIME OF DAY AT ALL. Until now a calendar
+	 * answered which DAYS are worked and how many hours one of them holds,
+	 * which is everything a deadline needs: "five business days from now"
+	 * never asks what time the office opens. Elapsed business time does ask.
+	 * A case entered at 16:00 on Friday and left at 09:00 on Monday spans one
+	 * working hour or eight depending entirely on where the day starts, and
+	 * there is no honest way to answer without knowing.
+	 *
+	 * The window is start plus `hoursPerWorkingDay`, so the two can never
+	 * disagree: a calendar cannot say the day is eight hours long and then
+	 * describe a nine-hour window.
+	 *
+	 * @return integer Minutes past midnight.
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md
+	 */
+	public function getDayStartsAtMinute(): int {
+		return $this->definition->getDayStartsAtMinute();
+	}//end getDayStartsAtMinute()
+
+	/**
+	 * The minute of the day the working day closes.
+	 *
+	 * @return integer Minutes past midnight, never beyond the end of the day.
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md
+	 */
+	public function getDayEndsAtMinute(): int {
+		$end = ($this->getDayStartsAtMinute() + (int)round($this->getHoursPerWorkingDay() * 60));
+
+		// A twelve-hour day starting at 18:00 would close at 06:00 the next
+		// morning, which is a second day's worth of bookkeeping for a case
+		// nobody has. Clamped instead, so the window stays inside its day and
+		// the measurement below never has to cross midnight.
+		return min($end, (24 * 60));
+	}//end getDayEndsAtMinute()
+
+	/**
+	 * The zone the organisation counts its days in.
+	 *
+	 * WHY A CALENDAR HAS A ZONE, AND WHY IT IS NOT THE VIEWER'S. A calendar
+	 * date is not an instant: "the term ends on 2 June" becomes a moment only
+	 * once somebody says where midnight is. Without a zone the answer is the
+	 * server's, which means a term computed at 23:30 UTC lands a day early for
+	 * an organisation in Amsterdam and nothing on screen says why.
+	 *
+	 * It is the ORGANISATION's zone and not the signed-in person's. A display
+	 * preference must not move a statutory deadline: two handlers on one case
+	 * would then be owed different days, and the one who travelled would be
+	 * right.
+	 *
+	 * @return string An IANA zone name.
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md
+	 */
+	public function getTimezone(): string {
+		return $this->definition->getTimezone();
+	}//end getTimezone()
 
 	/**
 	 * Whether the calendar day containing this instant is a working day.
@@ -226,7 +234,7 @@ final class WorkingCalendar {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function isWorkingDay(DateTimeInterface $moment): bool {
-		if (in_array((int)$moment->format('N'), $this->workingWeekdays, true) === false) {
+		if (in_array((int)$moment->format('N'), $this->getWorkingWeekdays(), true) === false) {
 			return false;
 		}
 
@@ -245,27 +253,7 @@ final class WorkingCalendar {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function nonWorkingDates(int $year): array {
-		if (array_key_exists($year, $this->yearCache) === true) {
-			return $this->yearCache[$year];
-		}
-
-		$dates = [];
-		$easter = self::easterSunday(year: $year);
-		foreach ($this->rules as $rule) {
-			$date = $this->ruleDate(rule: $rule, year: $year, easter: $easter);
-			$dates[$date->format('Y-m-d')] = (string)($rule['name'] ?? $rule['kind']);
-		}
-
-		foreach ($this->exceptions as $date => $name) {
-			if (str_starts_with($date, (string)$year . '-') === true) {
-				$dates[$date] = $name;
-			}
-		}
-
-		ksort($dates);
-		$this->yearCache[$year] = $dates;
-
-		return $dates;
+		return ($this->holidays->cached(year: $year) ?? $this->holidays->remember(year: $year, easter: self::easterSunday(year: $year)));
 	}//end nonWorkingDates()
 
 	/**
@@ -278,6 +266,21 @@ final class WorkingCalendar {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public static function easterSunday(int $year): DateTimeImmutable {
+		$sum = self::computus(year: $year);
+		$month = intdiv($sum, 31);
+		$day = (($sum % 31) + 1);
+
+		return new DateTimeImmutable(sprintf('%04d-%02d-%02d 00:00:00', $year, $month, $day), new DateTimeZone('UTC'));
+	}//end easterSunday()
+
+	/**
+	 * The anonymous Gregorian computus, up to the sum that encodes Easter's month and day.
+	 *
+	 * @param int $year The year.
+	 *
+	 * @return integer `h + l - 7m + 114`: month is its quotient by 31, day its remainder plus one.
+	 */
+	private static function computus(int $year): int {
 		$a = ($year % 19);
 		$b = intdiv($year, 100);
 		$c = ($year % 100);
@@ -290,244 +293,8 @@ final class WorkingCalendar {
 		$k = ($c % 4);
 		$l = ((32 + 2 * $e + 2 * $i - $h - $k) % 7);
 		$m = intdiv(($a + 11 * $h + 22 * $l), 451);
-		$month = intdiv(($h + $l - 7 * $m + 114), 31);
-		$day = ((($h + $l - 7 * $m + 114) % 31) + 1);
 
-		return new DateTimeImmutable(sprintf('%04d-%02d-%02d 00:00:00', $year, $month, $day), new DateTimeZone('UTC'));
-	}//end easterSunday()
+		return ($h + $l - 7 * $m + 114);
+	}//end computus()
 
-	/**
-	 * Resolve one rule to its date in a year.
-	 *
-	 * @param array<string, mixed> $rule The validated rule.
-	 * @param int $year The year.
-	 * @param DateTimeImmutable $easter Easter Sunday of that year.
-	 *
-	 * @return DateTimeImmutable The date.
-	 */
-	private function ruleDate(array $rule, int $year, DateTimeImmutable $easter): DateTimeImmutable {
-		if ($rule['kind'] === 'easter') {
-			return self::shift(moment: $easter, modifier: sprintf('%+d days', (int)$rule['offset']));
-		}
-
-		$date = new DateTimeImmutable(
-			sprintf('%04d-%02d-%02d 00:00:00', $year, (int)$rule['month'], (int)$rule['day']),
-			new DateTimeZone('UTC')
-		);
-		$shift = ($rule['observedShift'] ?? null);
-		if (is_array($shift) === true && (int)$date->format('N') === (int)$shift['whenWeekday']) {
-			return self::shift(moment: $date, modifier: sprintf('%+d days', (int)$shift['days']));
-		}
-
-		return $date;
-	}//end ruleDate()
-
-	/**
-	 * Validate the working weekdays.
-	 *
-	 * @param string $slug The calendar, for the message.
-	 * @param mixed $value The declared weekdays.
-	 *
-	 * @return array<int, int> ISO weekdays.
-	 *
-	 * @throws FlowTimerValidationException When absent, empty or out of range.
-	 */
-	private static function validWeekdays(string $slug, mixed $value): array {
-		if (is_array($value) === false || $value === []) {
-			throw new FlowTimerValidationException(
-				message: sprintf("Working calendar '%s' must declare its workingWeekdays (ISO 1..7).", $slug)
-			);
-		}
-
-		$weekdays = [];
-		foreach ($value as $weekday) {
-			if (is_int($weekday) === false || $weekday < 1 || $weekday > 7) {
-				throw new FlowTimerValidationException(
-					message: sprintf("Working calendar '%s' has an invalid weekday '%s'; use ISO 1..7.", $slug, var_export($weekday, true))
-				);
-			}
-
-			$weekdays[] = $weekday;
-		}
-
-		return array_values(array_unique($weekdays));
-	}//end validWeekdays()
-
-	/**
-	 * Validate the rules.
-	 *
-	 * @param string $slug The calendar, for the message.
-	 * @param mixed $value The declared rules.
-	 *
-	 * @return array<int, array<string, mixed>> The normalised rules.
-	 *
-	 * @throws FlowTimerValidationException On an unknown kind or a malformed rule.
-	 */
-	private static function validRules(string $slug, mixed $value): array {
-		if (is_array($value) === false) {
-			throw new FlowTimerValidationException(message: sprintf("Working calendar '%s' rules must be an array.", $slug));
-		}
-
-		$rules = [];
-		foreach ($value as $rule) {
-			$kind = (string)($rule['kind'] ?? '');
-			if (is_array($rule) === false || in_array($kind, self::RULE_KINDS, true) === false) {
-				throw new FlowTimerValidationException(
-					message: sprintf("Working calendar '%s' has a rule of unknown kind '%s'; known kinds: %s.", $slug, $kind, implode(', ', self::RULE_KINDS))
-				);
-			}
-
-			if ($kind === 'easter') {
-				if (is_int($rule['offset'] ?? null) === false) {
-					throw new FlowTimerValidationException(
-						message: sprintf("Working calendar '%s': an easter rule requires an integer offset.", $slug)
-					);
-				}
-
-				$rules[] = ['kind' => 'easter', 'offset' => (int)$rule['offset'], 'name' => (string)($rule['name'] ?? 'easter')];
-				continue;
-			}
-
-			$rules[] = self::validFixedRule(slug: $slug, rule: $rule, kind: $kind);
-		}
-
-		return $rules;
-	}//end validRules()
-
-	/**
-	 * Validate a fixed or observed-shift rule.
-	 *
-	 * @param string $slug The calendar, for the message.
-	 * @param array<string, mixed> $rule The rule.
-	 * @param string $kind `fixed` or `observedShift`.
-	 *
-	 * @return array<string, mixed> The normalised rule.
-	 *
-	 * @throws FlowTimerValidationException On a malformed month, day or shift.
-	 */
-	private static function validFixedRule(string $slug, array $rule, string $kind): array {
-		$month = ($rule['month'] ?? null);
-		$day = ($rule['day'] ?? null);
-		if (is_int($month) === false || $month < 1 || $month > 12 || is_int($day) === false || $day < 1 || $day > 31) {
-			throw new FlowTimerValidationException(
-				message: sprintf("Working calendar '%s': a %s rule requires an integer month 1..12 and day 1..31.", $slug, $kind)
-			);
-		}
-
-		$normalised = ['kind' => $kind, 'month' => $month, 'day' => $day, 'name' => (string)($rule['name'] ?? $kind)];
-		$shift = self::declaredShift(rule: $rule, kind: $kind);
-		if ($shift === null) {
-			return $normalised;
-		}
-
-		$normalised['observedShift'] = self::validShift(slug: $slug, shift: $shift);
-
-		return $normalised;
-	}//end validFixedRule()
-
-	/**
-	 * The shift a rule declares: `observedShift` on a fixed rule, or the flat
-	 * `whenWeekday`/`days` shorthand of an `observedShift` rule.
-	 *
-	 * @param array<string, mixed> $rule The rule.
-	 * @param string $kind `fixed` or `observedShift`.
-	 *
-	 * @return mixed The declared shift, or null when the rule has none.
-	 */
-	private static function declaredShift(array $rule, string $kind): mixed {
-		$shift = ($rule['observedShift'] ?? null);
-		if ($kind === 'observedShift' && is_array($shift) === false) {
-			return ['whenWeekday' => ($rule['whenWeekday'] ?? null), 'days' => ($rule['days'] ?? null)];
-		}
-
-		return $shift;
-	}//end declaredShift()
-
-	/**
-	 * Validate an observed shift: a weekday (name or ISO number) and a day delta.
-	 *
-	 * @param string $slug The calendar, for the message.
-	 * @param mixed $shift The declared shift.
-	 *
-	 * @return array{whenWeekday: int, days: int} The normalised shift.
-	 *
-	 * @throws FlowTimerValidationException On a malformed shift.
-	 */
-	private static function validShift(string $slug, mixed $shift): array {
-		if (is_array($shift) === false || is_int($shift['days'] ?? null) === false) {
-			throw new FlowTimerValidationException(
-				message: sprintf("Working calendar '%s': an observed shift requires whenWeekday and an integer days.", $slug)
-			);
-		}
-
-		$weekday = ($shift['whenWeekday'] ?? null);
-		if (is_string($weekday) === true) {
-			$weekday = (self::WEEKDAYS[strtolower($weekday)] ?? null);
-		}
-
-		if (is_int($weekday) === false || $weekday < 1 || $weekday > 7) {
-			throw new FlowTimerValidationException(
-				message: sprintf("Working calendar '%s': observed shift whenWeekday must be a weekday name or ISO 1..7.", $slug)
-			);
-		}
-
-		return ['whenWeekday' => $weekday, 'days' => (int)$shift['days']];
-	}//end validShift()
-
-	/**
-	 * Apply a relative modifier, refusing PHP's silent `false`.
-	 *
-	 * @param DateTimeImmutable $moment The instant.
-	 * @param string $modifier A relative modifier such as `+39 days`.
-	 *
-	 * @return DateTimeImmutable The shifted instant.
-	 *
-	 * @throws FlowTimerValidationException When the modifier is unparseable.
-	 */
-	private static function shift(DateTimeImmutable $moment, string $modifier): DateTimeImmutable {
-		$shifted = $moment->modify($modifier);
-		if ($shifted === false) {
-			throw new FlowTimerValidationException(message: sprintf("Date modifier '%s' is not parseable.", $modifier));
-		}
-
-		return $shifted;
-	}//end shift()
-
-	/**
-	 * Validate the enumerated exceptions.
-	 *
-	 * @param string $slug The calendar, for the message.
-	 * @param mixed $value The declared exceptions: `Y-m-d` strings or `{date, name}` objects.
-	 *
-	 * @return array<string, string> `Y-m-d` => name, sorted.
-	 *
-	 * @throws FlowTimerValidationException On a malformed date.
-	 */
-	private static function validExceptions(string $slug, mixed $value): array {
-		if (is_array($value) === false) {
-			throw new FlowTimerValidationException(message: sprintf("Working calendar '%s' exceptions must be an array.", $slug));
-		}
-
-		$exceptions = [];
-		foreach ($value as $entry) {
-			$date = $entry;
-			$name = 'exception';
-			if (is_array($entry) === true) {
-				$date = ($entry['date'] ?? null);
-				$name = (string)($entry['name'] ?? 'exception');
-			}
-
-			if (is_string($date) === false || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
-				throw new FlowTimerValidationException(
-					message: sprintf("Working calendar '%s' has an exception that is not a Y-m-d date: '%s'.", $slug, var_export($date, true))
-				);
-			}
-
-			$exceptions[$date] = $name;
-		}
-
-		ksort($exceptions);
-
-		return $exceptions;
-	}//end validExceptions()
 }//end class

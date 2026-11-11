@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileSearchController;
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Files\Controller\FileSearchController;
+use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -28,11 +29,13 @@ class FileSearchControllerDeepTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new FileSearchController(
-			'openregister',
-			$this->request,
-			$this->vectorService,
-			$this->chunkMapper,
-			$this->logger
+			request: $this->request,
+			services: new FileSearchControllerServices(
+				vectorService: $this->vectorService,
+				chunkMapper: $this->chunkMapper,
+				readScope: $this->passThroughScope(),
+				logger: $this->logger
+			)
 		);
 	}
 
@@ -91,4 +94,16 @@ class FileSearchControllerDeepTest extends TestCase {
 
 		$this->assertEquals(500, $response->getStatus());
 	}
+
+	/**
+	 * A read scope that keeps every hit: these tests are about the response shape, not the scope.
+	 *
+	 * @return \OCA\OpenRegister\Files\Service\File\FileReadScope
+	 */
+	private function passThroughScope(): \OCA\OpenRegister\Files\Service\File\FileReadScope {
+		$scope = $this->createMock(\OCA\OpenRegister\Files\Service\File\FileReadScope::class);
+		$scope->method('readableResults')->willReturnArgument(0);
+
+		return $scope;
+	}//end passThroughScope()
 }

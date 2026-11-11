@@ -1,8 +1,10 @@
 # mdm-merge Specification
 
 ## Purpose
-TBD - created by archiving change mdm-merge-engine. Update Purpose after archive.
+Merging duplicate records into one, for any schema that declares it: a preview that offers the choice per property, an atomic merge that can be reversed within a window, an audit record of every merge operation, an event downstream apps act on, and a REST surface scoped by RBAC.
+
 ## Requirements
+
 ### Requirement: Declarative merge annotation and vocabulary
 
 OpenRegister SHALL support a schema annotation `x-openregister-merge` that declares how
@@ -154,3 +156,68 @@ every controller method returning a Response MUST be routed (ADR-029 reachabilit
 - **WHEN** a client calls the reverse route with a reversible `mergeOperation` id
 - **THEN** the controller MUST return the updated operation from `MergeService::reverseMerge`
 
+### Requirement: A merge preview offers the choice per property, and execution applies the choice (REQ-DMD-001)
+
+`previewMerge(from, into)` SHALL return, for every property the two objects
+declare, the value held by each and the value `SurvivorshipResolver`
+proposes. `executeMerge()` SHALL accept a decision map naming, per property,
+which of the two values survives, and SHALL apply exactly that map. A
+decision map that names a property absent from the preview, or that omits a
+property the preview offered, SHALL be refused with HTTP 422 naming the
+property, and nothing SHALL be written. When no decision map is supplied the
+resolver's proposal SHALL apply, so the existing behaviour is unchanged.
+
+#### Scenario: the reviewer keeps the older address and the newer phone number
+
+- **GIVEN** two party records, one with the correct address and the other with the correct phone number
+- **WHEN** the merge is previewed and executed with a decision map naming the first for `address` and the second for `phone`
+- **THEN** the survivor holds that address and that phone number
+- @e2e exclude {service-level merge, covered by MergeService unit tests}
+
+#### Scenario: a decision map that does not match the preview is refused
+
+- **GIVEN** a preview offering the properties `address`, `phone` and `email`
+- **WHEN** execution is requested with a map naming only `address`
+- **THEN** the merge is refused with HTTP 422 naming the omitted properties
+- **AND** neither object is changed
+
+#### Scenario: no map behaves exactly as today
+
+- **GIVEN** two readable objects and a merge requested with no decision map
+- **WHEN** it executes
+- **THEN** the survivor is the one `SurvivorshipResolver` computes, unchanged from before this change
+
+### Requirement: A merge is refused when the merger cannot read everything being merged (REQ-DMD-002)
+
+A merge SHALL be refused when either object carries a property the caller
+may not read under field-level security. The refusal SHALL name the
+properties, SHALL NOT disclose their values, and SHALL be recorded on the
+audit trail of both objects as an attempted merge.
+
+#### Scenario: a handler without the medical domain cannot merge two clients
+
+- **GIVEN** a party record carrying a property restricted to a group the caller is not in
+- **WHEN** the caller requests a merge of that record with another
+- **THEN** the merge is refused naming the property and not its value
+- **AND** both objects carry an audit entry for the attempt
+
+### Requirement: Parties merge through the existing merge primitive (REQ-PRM-005)
+
+Two parties that turn out to be one person SHALL merge through the
+entity-type-agnostic merge, with a declared party vocabulary naming which
+properties survive, how addresses combine and how roles on objects are
+carried over. The merge SHALL keep every role both parties held, on every
+object, and the reversal window SHALL restore both parties and their roles.
+
+#### Scenario: two party records become one, keeping both case histories
+
+- **GIVEN** party A holding a role on two objects and party B holding a role on one
+- **WHEN** B is merged into A
+- **THEN** A holds all three roles and the merge is on the merge audit register
+
+#### Scenario: a merged party is restored within the window
+
+- **GIVEN** the merge above, inside the reversal window
+- **WHEN** the merge is reversed
+- **THEN** both parties exist again and each holds the roles it held before
+- @e2e exclude {reversal path, covered by the merge unit tests}

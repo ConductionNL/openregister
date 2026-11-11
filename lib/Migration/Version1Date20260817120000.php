@@ -100,12 +100,12 @@ class Version1Date20260817120000 extends SimpleMigrationStep {
 			}
 
 			$output->info(message: 'ℹ️  smart_picker_enabled column already exists, skipping...');
-			return null;
+			return $schema;
 		}//end if
 
 		$output->info(message: '⚠️  Schemas table not found, skipping smart_picker_enabled column addition');
 
-		return null;
+		return $schema;
 	}//end changeSchema()
 
 	/**

@@ -23,16 +23,23 @@ declare(strict_types=1);
 
 namespace Unit\Service\Timeline;
 
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Notifications\Service\Timeline\WrittenEntry;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\Timeline\EntryMentionService;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
+use OCA\OpenRegister\Notifications\Service\Timeline\MentionDelivery;
+use OCA\OpenRegister\Notifications\Service\Timeline\MentionPrincipals;
+use OCA\OpenRegister\Notifications\Service\Timeline\MentionReadCheck;
+use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -91,6 +98,27 @@ class EntryMentionServiceTest extends TestCase {
 	private INotificationManager&MockObject $notifications;
 
 	/**
+	 * Deep-link registry mock.
+	 *
+	 * @var DeepLinkRegistryService&MockObject
+	 */
+	private DeepLinkRegistryService&MockObject $deepLinks;
+
+	/**
+	 * URL generator mock.
+	 *
+	 * @var IURLGenerator&MockObject
+	 */
+	private IURLGenerator&MockObject $urls;
+
+	/**
+	 * The notification the service builds.
+	 *
+	 * @var INotification&MockObject
+	 */
+	private INotification&MockObject $notification;
+
+	/**
 	 * Service under test.
 	 *
 	 * @var EntryMentionService
@@ -107,28 +135,37 @@ class EntryMentionServiceTest extends TestCase {
 		$this->permissions = $this->createMock(PermissionHandler::class);
 		$this->notifications = $this->createMock(INotificationManager::class);
 
+		$this->deepLinks = $this->createMock(DeepLinkRegistryService::class);
+		$this->urls = $this->createMock(IURLGenerator::class);
+
 		$notification = $this->createMock(INotification::class);
 		$notification->method('setApp')->willReturnSelf();
 		$notification->method('setUser')->willReturnSelf();
 		$notification->method('setDateTime')->willReturnSelf();
 		$notification->method('setObject')->willReturnSelf();
 		$notification->method('setSubject')->willReturnSelf();
+		$this->notification = $notification;
 		$this->notifications->method('createNotification')->willReturn($notification);
 
 		$this->service = new EntryMentionService(
-			$this->watchers,
-			$this->userManager,
-			$this->userSession,
-			$this->schemaMapper,
-			$this->permissions,
-			$this->notifications,
+			new MentionPrincipals($this->watchers, $this->userManager, $this->userSession),
+			new MentionReadCheck($this->schemaMapper, $this->permissions),
+			new MentionDelivery($this->notifications, $this->deepLinks, $this->urls),
 			$this->createMock(LoggerInterface::class)
 		);
+	}
+
+	private function written(string $text): WrittenEntry {
+		$entry = new TimelineEntry();
+		$entry->setUuid('entry-a');
+
+		return new WrittenEntry($this->object(), $entry, $text);
 	}
 
 	private function object(): ObjectEntity {
 		$object = new ObjectEntity();
 		$object->setUuid('case-1');
+		$object->setRegister('7');
 		$object->setSchema('3');
 
 		return $object;
@@ -184,7 +221,7 @@ class EntryMentionServiceTest extends TestCase {
 			->willReturn(new Watcher());
 		$this->notifications->expects($this->once())->method('notify');
 
-		$pulled = $this->service->apply($this->object(), 'entry-a', 'Graag jouw blik hierop @jurist');
+		$pulled = $this->service->apply($this->written('Graag jouw blik hierop @jurist'));
 
 		$this->assertSame(['jurist'], $pulled);
 	}
@@ -199,7 +236,7 @@ class EntryMentionServiceTest extends TestCase {
 		$this->watchers->expects($this->never())->method('subscribeMentioned');
 		$this->notifications->expects($this->never())->method('notify');
 
-		$this->assertSame([], $this->service->apply($this->object(), 'entry-a', 'Kijk jij hier even naar @buitenstaander'));
+		$this->assertSame([], $this->service->apply($this->written('Kijk jij hier even naar @buitenstaander')));
 	}
 
 	public function testAnUnresolvableSchemaRefusesTheMention(): void {
@@ -209,7 +246,7 @@ class EntryMentionServiceTest extends TestCase {
 		$this->permissions->expects($this->never())->method('hasPermission');
 		$this->watchers->expects($this->never())->method('subscribeMentioned');
 
-		$this->assertSame([], $this->service->apply($this->object(), 'entry-a', '@jurist'));
+		$this->assertSame([], $this->service->apply($this->written('@jurist')));
 	}
 
 	public function testNamingYourselfIsNotAMention(): void {
@@ -218,7 +255,74 @@ class EntryMentionServiceTest extends TestCase {
 		$this->allowRead(true);
 		$this->watchers->expects($this->never())->method('subscribeMentioned');
 
-		$this->assertSame([], $this->service->apply($this->object(), 'entry-a', 'Nota bene voor @handler zelf'));
+		$this->assertSame([], $this->service->apply($this->written('Nota bene voor @handler zelf')));
+	}
+
+	public function testAQuotedIdWithASpaceIsAMention(): void {
+		$this->userManager->method('userExists')->willReturnCallback(
+			static fn (string $uid): bool => ($uid === 'jan de vries')
+		);
+
+		$this->assertSame(['jan de vries'], $this->service->parse('Graag jouw blik @"jan de vries", dank'));
+	}
+
+	public function testAQuotedIdHoldingAnAtSignIsAMention(): void {
+		$this->userManager->method('userExists')->willReturnCallback(
+			static fn (string $uid): bool => ($uid === 'jan@gemeente.nl')
+		);
+
+		$this->assertSame(['jan@gemeente.nl'], $this->service->parse('Voor @"jan@gemeente.nl" ter info'));
+	}
+
+	public function testAnApostropheInABareIdIsPartOfTheId(): void {
+		$this->userManager->method('userExists')->willReturnCallback(
+			static fn (string $uid): bool => ($uid === "o'brien")
+		);
+
+		$this->assertSame(["o'brien"], $this->service->parse("Kijk jij even, @o'brien?"));
+	}
+
+	public function testAPossessiveAfterABareIdStillNamesThePerson(): void {
+		$this->userManager->method('userExists')->willReturnCallback(
+			static fn (string $uid): bool => ($uid === 'jurist')
+		);
+
+		$this->assertSame(['jurist'], $this->service->parse("Dit is @jurist's dossier"));
+	}
+
+	public function testTheMentionNotificationLinksToTheAppThatOwnsTheObject(): void {
+		$this->signIn();
+		$this->everybodyExists();
+		$this->allowRead(true);
+		$this->watchers->method('subscribeMentioned')->willReturn(new Watcher());
+		$this->deepLinks->method('resolveUrl')
+			->with(7, 3, $this->anything())
+			->willReturn('https://nc.example/apps/dossiq/cases/case-1');
+
+		$this->notification->expects($this->once())
+			->method('setLink')
+			->with('https://nc.example/apps/dossiq/cases/case-1')
+			->willReturnSelf();
+
+		$this->service->apply($this->written('@jurist'));
+	}
+
+	public function testWithoutARegisteredDeepLinkTheNotificationLinksToOpenRegistersObjectPage(): void {
+		$this->signIn();
+		$this->everybodyExists();
+		$this->allowRead(true);
+		$this->watchers->method('subscribeMentioned')->willReturn(new Watcher());
+		$this->deepLinks->method('resolveUrl')->willReturn(null);
+		$this->urls->method('linkToRouteAbsolute')
+			->with('openregister.ui.objectDetail', ['register' => 7, 'schema' => 3, 'id' => 'case-1'])
+			->willReturn('https://nc.example/index.php/apps/openregister/objects/7/3/case-1');
+
+		$this->notification->expects($this->once())
+			->method('setLink')
+			->with('https://nc.example/index.php/apps/openregister/objects/7/3/case-1')
+			->willReturnSelf();
+
+		$this->service->apply($this->written('@jurist'));
 	}
 
 	public function testASubscriptionThatFailsDoesNotProduceANotification(): void {
@@ -228,6 +332,6 @@ class EntryMentionServiceTest extends TestCase {
 		$this->watchers->method('subscribeMentioned')->willThrowException(new \RuntimeException('no row'));
 		$this->notifications->expects($this->never())->method('notify');
 
-		$this->assertSame([], $this->service->apply($this->object(), 'entry-a', '@jurist'));
+		$this->assertSame([], $this->service->apply($this->written('@jurist')));
 	}
 }

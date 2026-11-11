@@ -25,12 +25,14 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\TaskMapper
  * @covers \OCA\OpenRegister\Event\TaskTerminalEvent
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class TaskMapperTerminalityTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -54,7 +56,7 @@ class TaskMapperTerminalityTest extends TestCase {
 				&& $event->getState() === Task::STATE_COMPLETED
 				&& $event->getOutcome() === 'approved'
 		));
-		$mapper = new TaskMapper(db: $this->connectionWith(affectedRows: 1), dispatcher: $dispatcher);
+		$mapper = new TaskMapper(db: $this->connectionWith(affectedRows: 1), entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 		self::assertTrue($mapper->updateIfOpen(task: $this->task(Task::STATE_COMPLETED)));
 	}//end testAWinningConditionalUpdateOfATerminalTaskDispatches()
 
@@ -62,10 +64,10 @@ class TaskMapperTerminalityTest extends TestCase {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->expects(self::never())->method('dispatchTyped');
 
-		$lost = new TaskMapper(db: $this->connectionWith(affectedRows: 0), dispatcher: $dispatcher);
+		$lost = new TaskMapper(db: $this->connectionWith(affectedRows: 0), entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 		self::assertFalse($lost->updateIfOpen(task: $this->task(Task::STATE_COMPLETED)), 'the row was closed by someone else');
 
-		$open = new TaskMapper(db: $this->connectionWith(affectedRows: 1), dispatcher: $dispatcher);
+		$open = new TaskMapper(db: $this->connectionWith(affectedRows: 1), entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 		self::assertTrue($open->updateIfOpen(task: $this->task(Task::STATE_ACTIVE)));
 	}//end testALostRaceAndAnOpenTaskDispatchNothing()
 

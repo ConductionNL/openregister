@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  * channel, the `actions[]` hard cap of 2 plus action-shape errors, and the
  * `originApp` shape error.
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 class NotificationAnnotationValidatorWebPushTest extends TestCase {
 	private NotificationAnnotationValidator $v;

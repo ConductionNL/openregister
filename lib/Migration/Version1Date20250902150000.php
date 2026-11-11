@@ -65,7 +65,7 @@ class Version1Date20250902150000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_schemas') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_schemas');

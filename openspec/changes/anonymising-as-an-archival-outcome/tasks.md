@@ -10,6 +10,7 @@
 
 - [ ] 2.1 An anonymisation profile on the schema: per property, remove, fixed value, stable pseudonym or generalise.
 - [ ] 2.2 Schema save refuses a profile naming a property the schema does not declare.
+- [ ] 2.2a The profile is also read from `archive.anonymisation` (design D-6), and a profile in both places is refused at save. Verify: `AnonymisationPlannerTest` reads a profile from the `archive` block, and a schema-save test refuses one declared twice.
 - [ ] 2.3 An outcome or result type names the archival action, so the choice is configuration.
 
 ## 3. The act

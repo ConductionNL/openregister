@@ -1,0 +1,165 @@
+{
+    "postgres": {
+        "day": {
+            "plain": "TO_CHAR(publicatiedatum, 'YYYY-MM-DD')",
+            "aliased": "TO_CHAR(t.publicatiedatum, 'YYYY-MM-DD')"
+        },
+        "week": {
+            "plain": "TO_CHAR(publicatiedatum, 'IYYY-IW')",
+            "aliased": "TO_CHAR(t.publicatiedatum, 'IYYY-IW')"
+        },
+        "month": {
+            "plain": "TO_CHAR(publicatiedatum, 'YYYY-MM')",
+            "aliased": "TO_CHAR(t.publicatiedatum, 'YYYY-MM')"
+        },
+        "quarter": {
+            "plain": "TO_CHAR(publicatiedatum, 'YYYY-\"Q\"Q')",
+            "aliased": "TO_CHAR(t.publicatiedatum, 'YYYY-\"Q\"Q')"
+        },
+        "year": {
+            "plain": "TO_CHAR(publicatiedatum, 'YYYY')",
+            "aliased": "TO_CHAR(t.publicatiedatum, 'YYYY')"
+        },
+        "hour": {
+            "plain": "TO_CHAR(publicatiedatum, 'YYYY-MM')",
+            "aliased": "TO_CHAR(t.publicatiedatum, 'YYYY-MM')"
+        },
+        "": {
+            "plain": "TO_CHAR(publicatiedatum, 'YYYY-MM')",
+            "aliased": "TO_CHAR(t.publicatiedatum, 'YYYY-MM')"
+        },
+        "Month": {
+            "plain": "TO_CHAR(publicatiedatum, 'YYYY-MM')",
+            "aliased": "TO_CHAR(t.publicatiedatum, 'YYYY-MM')"
+        },
+        "QUARTER": {
+            "plain": "TO_CHAR(publicatiedatum, 'YYYY-MM')",
+            "aliased": "TO_CHAR(t.publicatiedatum, 'YYYY-MM')"
+        }
+    },
+    "mariadb": {
+        "day": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m-%d')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m-%d')"
+        },
+        "week": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%x-%v')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%x-%v')"
+        },
+        "month": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "quarter": {
+            "plain": "CONCAT(YEAR(publicatiedatum), '-Q', QUARTER(publicatiedatum))",
+            "aliased": "CONCAT(YEAR(t.publicatiedatum), '-Q', QUARTER(t.publicatiedatum))"
+        },
+        "year": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y')"
+        },
+        "hour": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "Month": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "QUARTER": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        }
+    },
+    "mysql": {
+        "day": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m-%d')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m-%d')"
+        },
+        "week": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%x-%v')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%x-%v')"
+        },
+        "month": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "quarter": {
+            "plain": "CONCAT(YEAR(publicatiedatum), '-Q', QUARTER(publicatiedatum))",
+            "aliased": "CONCAT(YEAR(t.publicatiedatum), '-Q', QUARTER(t.publicatiedatum))"
+        },
+        "year": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y')"
+        },
+        "hour": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "Month": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "QUARTER": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        }
+    },
+    "sqlite": {
+        "day": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m-%d')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m-%d')"
+        },
+        "week": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%x-%v')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%x-%v')"
+        },
+        "month": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "quarter": {
+            "plain": "CONCAT(YEAR(publicatiedatum), '-Q', QUARTER(publicatiedatum))",
+            "aliased": "CONCAT(YEAR(t.publicatiedatum), '-Q', QUARTER(t.publicatiedatum))"
+        },
+        "year": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y')"
+        },
+        "hour": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "Month": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        },
+        "QUARTER": {
+            "plain": "DATE_FORMAT(publicatiedatum, '%Y-%m')",
+            "aliased": "DATE_FORMAT(t.publicatiedatum, '%Y-%m')"
+        }
+    },
+    "format": {
+        "day": "YYYY-MM-DD",
+        "week": "IYYY-IW",
+        "month": "YYYY-MM",
+        "quarter": "YYYY-\"Q\"Q",
+        "year": "YYYY",
+        "hour": "YYYY-MM",
+        "": "YYYY-MM",
+        "Month": "YYYY-MM",
+        "QUARTER": "YYYY-MM"
+    }
+}

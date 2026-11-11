@@ -1,0 +1,355 @@
+{
+    "agent findAll / none": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent count / none": {
+        "result": 3,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_agents, NULL)",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll / null": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent count / null": {
+        "result": 3,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_agents, NULL)",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll / active true": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(active, :p1, NULL)",
+            "#1 andWhere(eq(active, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent count / active true": {
+        "result": 3,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(active, :p1, NULL)",
+            "#1 andWhere(eq(active, :p1, NULL))",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll / active false": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = false, boolean",
+            "#1 expr.eq(active, :p1, NULL)",
+            "#1 andWhere(eq(active, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent count / active false": {
+        "result": 3,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = false, boolean",
+            "#1 expr.eq(active, :p1, NULL)",
+            "#1 andWhere(eq(active, :p1, NULL))",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll / list": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = [\"chat\",\"tool\"], 102",
+            "#1 expr.in(type, :p1, NULL)",
+            "#1 andWhere(in(type, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent count / list": {
+        "result": 3,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = [\"chat\",\"tool\"], 102",
+            "#1 expr.in(type, :p1, NULL)",
+            "#1 andWhere(in(type, :p1, NULL))",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll / scalar and route and null": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = x, 2",
+            "#1 expr.eq(name, :p1, NULL)",
+            "#1 andWhere(eq(name, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(id, :p2, NULL)",
+            "#1 andWhere(eq(id, :p2, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent count / scalar and route and null": {
+        "result": 3,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_agents, NULL)",
+            "#1 param :p1 = x, 2",
+            "#1 expr.eq(name, :p1, NULL)",
+            "#1 andWhere(eq(name, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(id, :p2, NULL)",
+            "#1 andWhere(eq(id, :p2, NULL))",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / none": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / null": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / fields": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 addOrderBy(name, ASC)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / list shaped": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 addOrderBy(0, ASC)",
+            "#1 addOrderBy(x, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / paged": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 addOrderBy(name, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / limit only": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "flow run / older than, all flows": {
+        "result": [
+            "a",
+            "2"
+        ],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.lt(updated, :p1, NULL)",
+            "#1 where(lt(updated, :p1, NULL))",
+            "#1 param :p2 = [\"completed\",\"stopped\",\"dead_letter\",\"failed\"], 102",
+            "#1 expr.in(status, :p2, NULL)",
+            "#1 andWhere(in(status, :p2, NULL))",
+            "#1 executeQuery()",
+            "#2 delete(openregister_flow_runs, NULL)",
+            "#2 param :p3 = [\"a\",\"2\"], 102",
+            "#2 expr.in(uuid, :p3, NULL)",
+            "#2 where(in(uuid, :p3, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "flow run / older than, one flow": {
+        "result": [
+            "a"
+        ],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.lt(updated, :p1, NULL)",
+            "#1 where(lt(updated, :p1, NULL))",
+            "#1 param :p2 = [\"completed\",\"stopped\",\"dead_letter\",\"failed\"], 102",
+            "#1 expr.in(status, :p2, NULL)",
+            "#1 andWhere(in(status, :p2, NULL))",
+            "#1 param :p3 = flow-1, 2",
+            "#1 expr.eq(flow_id, :p3, NULL)",
+            "#1 andWhere(eq(flow_id, :p3, NULL))",
+            "#1 executeQuery()",
+            "#2 delete(openregister_flow_runs, NULL)",
+            "#2 param :p4 = [\"a\"], 102",
+            "#2 expr.in(uuid, :p4, NULL)",
+            "#2 where(in(uuid, :p4, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "flow run / older than, empty flow id": {
+        "result": [],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.lt(updated, :p1, NULL)",
+            "#1 where(lt(updated, :p1, NULL))",
+            "#1 param :p2 = [\"completed\",\"stopped\",\"dead_letter\",\"failed\"], 102",
+            "#1 expr.in(status, :p2, NULL)",
+            "#1 andWhere(in(status, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "flow run / excluding none": {
+        "result": [
+            "b"
+        ],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.lt(updated, :p1, NULL)",
+            "#1 where(lt(updated, :p1, NULL))",
+            "#1 param :p2 = [\"completed\",\"stopped\",\"dead_letter\",\"failed\"], 102",
+            "#1 expr.in(status, :p2, NULL)",
+            "#1 andWhere(in(status, :p2, NULL))",
+            "#1 executeQuery()",
+            "#2 delete(openregister_flow_runs, NULL)",
+            "#2 param :p3 = [\"b\"], 102",
+            "#2 expr.in(uuid, :p3, NULL)",
+            "#2 where(in(uuid, :p3, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "flow run / excluding some": {
+        "result": [],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.lt(updated, :p1, NULL)",
+            "#1 where(lt(updated, :p1, NULL))",
+            "#1 param :p2 = [\"completed\",\"stopped\",\"dead_letter\",\"failed\"], 102",
+            "#1 expr.in(status, :p2, NULL)",
+            "#1 andWhere(in(status, :p2, NULL))",
+            "#1 param :p3 = [\"f1\",\"f2\"], 102",
+            "#1 expr.notIn(flow_id, :p3, NULL)",
+            "#1 andWhere(notIn(flow_id, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "flow run / by flow": {
+        "result": [
+            "c",
+            "d"
+        ],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = flow-9, 2",
+            "#1 expr.eq(flow_id, :p1, NULL)",
+            "#1 where(eq(flow_id, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 delete(openregister_flow_runs, NULL)",
+            "#2 param :p2 = [\"c\",\"d\"], 102",
+            "#2 expr.in(uuid, :p2, NULL)",
+            "#2 where(in(uuid, :p2, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "flow run / by flow, nothing found": {
+        "result": [],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = flow-9, 2",
+            "#1 expr.eq(flow_id, :p1, NULL)",
+            "#1 where(eq(flow_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "flow run / by empty flow": {
+        "result": [],
+        "queries": []
+    }
+}

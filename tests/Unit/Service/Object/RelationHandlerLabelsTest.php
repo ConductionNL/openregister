@@ -38,8 +38,10 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
+use OCA\OpenRegister\Service\Object\RelationMap;
+use OCA\OpenRegister\Service\Object\RelationLink;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -47,6 +49,11 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
+ * @covers \OCA\OpenRegister\Service\Object\RelationMap
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\RelationLink
+ * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  */
 class RelationHandlerLabelsTest extends TestCase {
 	private RelationHandler $handler;
@@ -55,13 +62,14 @@ class RelationHandlerLabelsTest extends TestCase {
 		parent::setUp();
 
 		$this->handler = new RelationHandler(
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			performanceHandler: $this->createMock(PerformanceHandler::class),
+			stores: new RelationHandlerStores(
+				objects: $this->createMock(MagicMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				registers: $this->createMock(RegisterMapper::class),
+				relationTypes: new RelationTypeResolver()
+			),
 			rbacHandler: $this->createMock(MagicRbacHandler::class),
-			logger: $this->createMock(LoggerInterface::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			relationTypes: new RelationTypeResolver()
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 
@@ -80,6 +88,17 @@ class RelationHandlerLabelsTest extends TestCase {
 
 		return $callable->invokeArgs($this->handler, $arguments);
 	}//end call()
+
+	/**
+	 * The path of a relation map that holds a uuid.
+	 *
+	 * @param array{relations: array<mixed, mixed>, uuid: string} $arguments The map and the uuid.
+	 *
+	 * @return string|null
+	 */
+	private function pathIn(array $arguments): ?string {
+		return (new RelationMap(relations: $arguments['relations']))->pathHolding(uuid: $arguments['uuid']);
+	}//end pathIn()
 
 	/**
 	 * A schema declaring `blokkeert` as a typed relation.
@@ -114,7 +133,7 @@ class RelationHandlerLabelsTest extends TestCase {
 	public function testASingleReferenceIsFoundUnderItsProperty(): void {
 		$this->assertSame(
 			'owner',
-			$this->call('pathHolding', ['relations' => ['owner' => 'uuid-o'], 'uuid' => 'uuid-o'])
+			$this->pathIn(['relations' => ['owner' => 'uuid-o'], 'uuid' => 'uuid-o'])
 		);
 	}//end testASingleReferenceIsFoundUnderItsProperty()
 
@@ -122,8 +141,7 @@ class RelationHandlerLabelsTest extends TestCase {
 	 * An array reference keeps its index, and the index is not the property.
 	 */
 	public function testAnArrayReferenceKeepsItsIndex(): void {
-		$path = $this->call(
-			'pathHolding',
+		$path = $this->pathIn(
 			['relations' => ['blokkeert.0' => 'uuid-a', 'blokkeert.1' => 'uuid-b'], 'uuid' => 'uuid-b']
 		);
 
@@ -138,8 +156,7 @@ class RelationHandlerLabelsTest extends TestCase {
 	public function testAListValuedRelationMapResolves(): void {
 		$this->assertSame(
 			'blokkeert.1',
-			$this->call(
-				'pathHolding',
+			$this->pathIn(
 				['relations' => ['blokkeert' => ['uuid-a', 'uuid-b']], 'uuid' => 'uuid-b']
 			)
 		);
@@ -152,8 +169,7 @@ class RelationHandlerLabelsTest extends TestCase {
 	public function testAReferenceStoredAsAUrlIsMatched(): void {
 		$this->assertSame(
 			'owner',
-			$this->call(
-				'pathHolding',
+			$this->pathIn(
 				[
 					'relations' => ['owner' => 'https://example.org/api/objects/1/2/uuid-o'],
 					'uuid' => 'uuid-o',
@@ -167,10 +183,10 @@ class RelationHandlerLabelsTest extends TestCase {
 	 */
 	public function testAUuidNothingHoldsResolvesToNull(): void {
 		$this->assertNull(
-			$this->call('pathHolding', ['relations' => ['owner' => 'uuid-o'], 'uuid' => 'uuid-x'])
+			$this->pathIn(['relations' => ['owner' => 'uuid-o'], 'uuid' => 'uuid-x'])
 		);
 		$this->assertNull(
-			$this->call('pathHolding', ['relations' => ['owner' => 'uuid-o'], 'uuid' => ''])
+			$this->pathIn(['relations' => ['owner' => 'uuid-o'], 'uuid' => ''])
 		);
 	}//end testAUuidNothingHoldsResolvesToNull()
 
@@ -184,9 +200,7 @@ class RelationHandlerLabelsTest extends TestCase {
 			'withRelation',
 			[
 				'row' => ['id' => 'uuid-b'],
-				'schema' => $this->schema(),
-				'path' => 'blokkeert.0',
-				'direction' => RelationTypeResolver::DIRECTION_OUTGOING,
+				'link' => new RelationLink(schema: $this->schema(), path: 'blokkeert.0'),
 			]
 		);
 
@@ -206,9 +220,7 @@ class RelationHandlerLabelsTest extends TestCase {
 			'withRelation',
 			[
 				'row' => ['id' => 'uuid-a'],
-				'schema' => $this->schema(),
-				'path' => 'blokkeert.0',
-				'direction' => RelationTypeResolver::DIRECTION_INCOMING,
+				'link' => (new RelationLink(schema: $this->schema(), path: 'blokkeert.0'))->incoming(),
 			]
 		);
 
@@ -229,9 +241,7 @@ class RelationHandlerLabelsTest extends TestCase {
 			'withRelation',
 			[
 				'row' => ['id' => 'uuid-p'],
-				'schema' => $this->schema(),
-				'path' => 'owner',
-				'direction' => RelationTypeResolver::DIRECTION_INCOMING,
+				'link' => (new RelationLink(schema: $this->schema(), path: 'owner'))->incoming(),
 			]
 		);
 
@@ -249,9 +259,7 @@ class RelationHandlerLabelsTest extends TestCase {
 			'withRelation',
 			[
 				'row' => ['id' => 'uuid-b'],
-				'schema' => null,
-				'path' => 'blokkeert.0',
-				'direction' => RelationTypeResolver::DIRECTION_INCOMING,
+				'link' => (new RelationLink(schema: null, path: 'blokkeert.0'))->incoming(),
 			]
 		);
 
@@ -266,12 +274,13 @@ class RelationHandlerLabelsTest extends TestCase {
 	 */
 	public function testWithoutAResolverTheRowIsUntouched(): void {
 		$handler = new RelationHandler(
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			performanceHandler: $this->createMock(PerformanceHandler::class),
+			stores: new RelationHandlerStores(
+				objects: $this->createMock(MagicMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				registers: $this->createMock(RegisterMapper::class)
+			),
 			rbacHandler: $this->createMock(MagicRbacHandler::class),
-			logger: $this->createMock(LoggerInterface::class),
-			registerMapper: $this->createMock(RegisterMapper::class)
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$reflection = new ReflectionClass(RelationHandler::class);
@@ -282,9 +291,7 @@ class RelationHandlerLabelsTest extends TestCase {
 			$handler,
 			[
 				'row' => ['id' => 'uuid-b'],
-				'schema' => $this->schema(),
-				'path' => 'blokkeert.0',
-				'direction' => RelationTypeResolver::DIRECTION_OUTGOING,
+				'link' => new RelationLink(schema: $this->schema(), path: 'blokkeert.0'),
 			]
 		);
 

@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/or-chat-proxy-deprecation/tasks.md
+ * @spec openspec/changes/archive/2026-10-05-or-chat-proxy-deprecation/tasks.md
  */
 
 declare(strict_types=1);
@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\ChatCompatMiddleware
+ * @uses \OCA\OpenRegister\Middleware\Exception\ChatProxiedResponseException
  */
 class ChatCompatMiddlewareTest extends TestCase {
 

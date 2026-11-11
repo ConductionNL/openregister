@@ -109,6 +109,37 @@ class NotifierTest extends TestCase {
 		}
 	}
 
+	/**
+	 * The relink notification opens OpenRegister's own page at the user settings dialog, not Nextcloud's personal settings.
+	 */
+	public function testTheRelinkNotificationLinksToTheUserSettingsDialog(): void {
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('credential_relink_needed');
+		$notification->method('getSubjectParameters')->willReturn(['provider' => 'Exact']);
+		$notification->method('setParsedSubject')->willReturnSelf();
+		$notification->method('setParsedMessage')->willReturnSelf();
+		$notification->method('setIcon')->willReturnSelf();
+		$link = null;
+		$notification->method('setLink')->willReturnCallback(
+			function (string $value) use (&$link, $notification): INotification {
+				$link = $value;
+				return $notification;
+			}
+		);
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text, array $args = []): string => vsprintf($text, $args));
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/apps/openregister/img/app.svg');
+		$this->urlGenerator->method('linkToRouteAbsolute')
+			->with('openregister.dashboard.page')
+			->willReturn('https://example.com/apps/openregister/');
+
+		$this->notifier->prepare($notification, 'en');
+
+		$this->assertSame('https://example.com/apps/openregister/#user-settings', $link);
+	}//end testTheRelinkNotificationLinksToTheUserSettingsDialog()
+
 	public function testPrepareConfigurationUpdateWithoutConfigId(): void {
 		$notification = $this->createMock(INotification::class);
 		$notification->method('getApp')->willReturn('openregister');
@@ -630,5 +661,192 @@ class NotifierTest extends TestCase {
 		$this->assertStringContainsString('legal hold', $joined);
 		$this->assertStringContainsString('list-42', $joined);
 		$this->assertStringContainsString('1 record on destruction list', $joined);
+	}
+
+	/**
+	 * The announcement REQ-ATS-004 is about. An unknown subject throws out of
+	 * prepare(), so without the case the beheerteam hears nothing.
+	 */
+	public function testPrepareSecuritySettingChanged(): void {
+		$parsed = $this->renderSubject(
+			'security_setting_changed',
+			[
+				'setting' => 'rbac.enabled',
+				'label' => 'Access control',
+				'actor' => 'Jan Jansen',
+				'secret' => false,
+				'oldValue' => 'on',
+				'newValue' => 'off',
+			]
+		);
+
+		$joined = implode(' ', $parsed);
+		$this->assertStringContainsString('Access control', $joined);
+		$this->assertStringContainsString('Jan Jansen', $joined);
+		$this->assertStringContainsString('"on"', $joined);
+		$this->assertStringContainsString('"off"', $joined);
+	}
+
+	/**
+	 * A secret is announced as changed and neither value is shown.
+	 */
+	public function testPrepareSecuritySettingChangedQuotesNoSecret(): void {
+		$parsed = $this->renderSubject(
+			'security_setting_changed',
+			[
+				'setting' => 'solr.password',
+				'label' => 'Search index password',
+				'actor' => 'Jan Jansen',
+				'secret' => true,
+			]
+		);
+
+		$joined = implode(' ', $parsed);
+		$this->assertStringContainsString('Search index password', $joined);
+		$this->assertStringContainsString('neither value is shown', $joined);
+		$this->assertStringNotContainsString('"', $joined, 'a secret announcement quotes no value at all');
+	}
+
+	/**
+	 * A view alert names the view, the count and the line it crossed. Without the case
+	 * prepare() throws and Nextcloud drops the notification the sweep raised.
+	 */
+	public function testPrepareViewAlertCrossedAbove(): void {
+		$parsed = $this->renderSubject(
+			'view_alert_crossed',
+			['view' => 'Overdue cases', 'viewId' => 'view-uuid-1', 'count' => 23, 'operator' => 'gte', 'threshold' => 20]
+		);
+
+		$this->assertSame('Overdue cases is at 23', $parsed[0]);
+		$this->assertSame('The view Overdue cases counts 23, at or above its threshold of 20.', $parsed[1]);
+	}
+
+	/**
+	 * An author whose form a schema change broke is told which form, which schema, and what to do.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function testPrepareFormUnpublished(): void {
+		$parsed = $this->renderSubject('form_unpublished', ['formTitle' => 'Melding openbare ruimte', 'schema' => 'ticket', 'count' => 2]);
+
+		$this->assertSame('Your form "Melding openbare ruimte" was taken offline', $parsed[0]);
+		$this->assertSame('A change to "ticket" left 2 problems in the form. Fix them and publish the form again.', $parsed[1]);
+	}
+
+	/**
+	 * The holder of an external grant is told when and what access ends.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
+	 */
+	public function testPrepareExternalGrantLapsing(): void {
+		$parsed = $this->renderSubject(
+			'external_grant_lapsing',
+			['schema' => 'Zaken', 'action' => 'update', 'endsAt' => '2026-11-12T00:00:00+00:00', 'daysLeft' => 7]
+		);
+
+		$this->assertSame('Your access to "Zaken" ends in 7 days', $parsed[0]);
+		$this->assertSame(
+			'Your update access ends on 2026-11-12T00:00:00+00:00. Finish or hand over your work before then, or ask for an extension.',
+			$parsed[1]
+		);
+	}
+
+	/**
+	 * A falling count reads as falling, not as the same sentence with the numbers swapped.
+	 */
+	public function testPrepareViewAlertCrossedBelow(): void {
+		$parsed = $this->renderSubject(
+			'view_alert_crossed',
+			['view' => 'Free beds', 'viewId' => 'view-uuid-2', 'count' => 2, 'operator' => 'lte', 'threshold' => 5]
+		);
+
+		$this->assertSame('Free beds is at 2', $parsed[0]);
+		$this->assertSame('The view Free beds counts 2, at or below its threshold of 5.', $parsed[1]);
+	}
+
+	/**
+	 * The previous owner is told, and told who took the record.
+	 *
+	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS: an unknown subject
+	 * throws out of prepare(), so the handover would be announced to nobody,
+	 * which is the silent handover the capability exists to fix.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	public function testPrepareOwnershipChanged(): void {
+		$parsed = $this->renderSubject(
+			'object_ownership_changed',
+			[
+				'objectTitle' => 'Besluit over de Nieuwstraat',
+				'objectUuid' => 'uuid-1',
+				'previousOwner' => 'alice',
+				'newOwner' => 'bob',
+				'actor' => 'bob',
+			]
+		);
+
+		$this->assertSame('A record you owned changed hands', $parsed[0]);
+		$this->assertStringContainsString('bob', $parsed[1]);
+		$this->assertStringContainsString('Besluit over de Nieuwstraat', $parsed[1]);
+	}//end testPrepareOwnershipChanged()
+
+	/**
+	 * An unresolvable new owner still produces a sentence.
+	 *
+	 * A notification that renders half a sentence is worse than a plainer one:
+	 * the reader is told their record moved and cannot tell to whom.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	public function testPrepareOwnershipChangedWithoutANewOwner(): void {
+		$parsed = $this->renderSubject(
+			'object_ownership_changed',
+			['objectTitle' => 'Besluit over de Nieuwstraat', 'previousOwner' => 'alice']
+		);
+
+		$this->assertSame('A record you owned changed hands', $parsed[0]);
+		$this->assertStringContainsString('has a new owner', $parsed[2] ?? $parsed[1]);
+	}//end testPrepareOwnershipChangedWithoutANewOwner()
+
+	/**
+	 * Render one subject and collect the parsed subject and message.
+	 *
+	 * @param string $subject The notification subject.
+	 * @param array $parameters Its subject parameters.
+	 *
+	 * @return string[] The parsed subject and message.
+	 */
+	private function renderSubject(string $subject, array $parameters): array {
+		$parsed = [];
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn($subject);
+		$notification->method('getSubjectParameters')->willReturn($parameters);
+		$notification->method('setParsedSubject')->willReturnCallback(
+			function (string $text) use (&$parsed, $notification): INotification {
+				$parsed[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setParsedMessage')->willReturnCallback(
+			function (string $text) use (&$parsed, $notification): INotification {
+				$parsed[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setIcon')->willReturnSelf();
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/icon.svg');
+
+		$this->notifier->prepare($notification, 'en');
+
+		return $parsed;
 	}
 }

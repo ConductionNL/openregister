@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+ * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
  */
 
 declare(strict_types=1);
@@ -35,11 +35,13 @@ namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\InjectableSecretRequest;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2ClientResolver
@@ -84,7 +86,8 @@ class OAuth2ClientResolverTest extends TestCase {
 	public function testAProviderWithNoClientConfiguredAnywhereIsRefused(): void {
 		$resolver = $this->makeResolver(config: [], secret: null);
 
-		$this->expectException(CredentialAccessDeniedException::class);
+		// The narrow type is what lets the connect start answer 409 rather than 403.
+		$this->expectException(OAuth2ClientNotConfiguredException::class);
 		$this->expectExceptionMessage('no OAuth2 client id is configured');
 
 		$resolver->resolve(credential: [], provider: 'x', actingUserId: 'alice');
@@ -148,12 +151,12 @@ class OAuth2ClientResolverTest extends TestCase {
 		);
 
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->method('resolveInjectable')->willReturnCallback(
-			function (string $credentialId, string $appId, ?string $actingUserId = null) use ($secret): ?string {
+		$broker->method('resolveInjectableFor')->willReturnCallback(
+			function (InjectableSecretRequest $request) use ($secret): ?string {
 				$this->resolutions[] = [
-					'credentialId' => $credentialId,
-					'appId' => $appId,
-					'actingUserId' => $actingUserId,
+					'credentialId' => $request->credentialId,
+					'appId' => $request->appId,
+					'actingUserId' => $request->actingUserId,
 				];
 
 				return $secret;

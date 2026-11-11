@@ -46,6 +46,8 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -76,12 +78,9 @@ class ValidateObjectUnusableRefTest extends TestCase {
 		$urlGenerator->method('getBaseUrl')->willReturn('http://localhost:8080');
 
 		$this->handler = new ValidateObject(
-			$this->createMock(IAppConfig::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$urlGenerator,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->createMock(IAppConfig::class), schemaMapper: $this->createMock(SchemaMapper::class), urlGenerator: $urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->createMock(MagicMapper::class), userManager: $this->createMock(IUserManager::class)),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 	}//end setUp()
@@ -199,5 +198,87 @@ class ValidateObjectUnusableRefTest extends TestCase {
 		);
 
 	}//end testDroppingTheRefStillLeavesTheTypeEnforced()
+
+	/**
+	 * A schema whose link property declares a `$ref` and NO type.
+	 *
+	 * @param string $ref The stored reference.
+	 *
+	 * @return object
+	 */
+	private function schemaWithTypelessRef(string $ref): object {
+		return json_decode(
+			json_encode(
+				[
+					'type' => 'object',
+					'properties' => [
+						'onderwerp' => ['type' => 'string'],
+						'besluit' => ['$ref' => $ref],
+					],
+				]
+			)
+		);
+	}//end schemaWithTypelessRef()
+
+	/**
+	 * A `$ref` with no `type` beside it is a relation marker, not a reference.
+	 *
+	 * It matches none of the transform branches — not array, not object, not
+	 * string — so the slug reached Opis and every object write of the schema
+	 * failed with `Unresolved reference: schema:///besluit#`, while the schema
+	 * itself had saved with a 200.
+	 *
+	 * @return void
+	 */
+	public function testATypelessRefDoesNotThrow(): void {
+		$object = [
+			'onderwerp' => 'Aanvraag',
+			'besluit' => '550e8400-e29b-41d4-a716-446655440000',
+		];
+
+		$result = $this->handler->validateObject(
+			$object,
+			$this->schema(),
+			$this->schemaWithTypelessRef('besluit')
+		);
+
+		$this->assertTrue(
+			$result->isValid(),
+			'a bare $ref slug was handed to Opis, which cannot resolve it'
+		);
+	}//end testATypelessRefDoesNotThrow()
+
+	/**
+	 * A `$ref` that IS a JSON Schema reference is left alone.
+	 *
+	 * The control: the fix must not start dropping refs that resolve. A
+	 * fragment pointer is the shape this app never writes and Opis always
+	 * means, so it keeps its meaning — here, that the value must be an
+	 * integer.
+	 *
+	 * @return void
+	 */
+	public function testAFragmentPointerRefIsStillHonoured(): void {
+		$schema = json_decode(
+			json_encode(
+				[
+					'type' => 'object',
+					'$defs' => ['nummer' => ['type' => 'integer']],
+					'properties' => ['besluit' => ['$ref' => '#/$defs/nummer']],
+				]
+			)
+		);
+
+		$result = $this->handler->validateObject(
+			['besluit' => 'niet een getal'],
+			$this->schema(),
+			$schema
+		);
+
+		$this->assertFalse(
+			$result->isValid(),
+			'a fragment pointer was dropped, so a real JSON Schema reference stopped validating'
+		);
+	}//end testAFragmentPointerRefIsStillHonoured()
 
 }//end class

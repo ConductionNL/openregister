@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 declare(strict_types=1);
@@ -26,6 +26,7 @@ namespace Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -34,10 +35,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -66,7 +67,7 @@ final class SchemasControllerListPresentationTest extends TestCase {
 
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->controller = new SchemasController(
+		$this->controller = SchemasControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(IAppConfig::class),
@@ -77,7 +78,7 @@ final class SchemasControllerListPresentationTest extends TestCase {
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(OrganisationService::class),
 			$this->createMock(SchemaCacheHandler::class),
-			$this->createMock(FacetCacheHandler::class),
+			$this->createMock(FacetResultCacheClearer::class),
 			$this->createMock(SchemaService::class),
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(ContainerInterface::class),

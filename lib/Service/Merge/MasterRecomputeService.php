@@ -39,35 +39,36 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+ * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Merge;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Recompute a reverse-FK master's golden record by re-persisting it.
  *
- * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+ * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
-class MasterRecomputeService {
+class MasterRecomputeService implements MasterRecomputeInterface {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ObjectService $objectService Object read/write path (RBAC + tenant scoped).
+	 * @param ObjectOperationsInterface $objectService Object read/write path (RBAC + tenant scoped).
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -85,7 +86,7 @@ class MasterRecomputeService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) `MergeService::normaliseRoundTripDates`
 	 *   is a pure stateless date-format utility shared with the merge relink;
@@ -98,7 +99,7 @@ class MasterRecomputeService {
 		}
 
 		try {
-			$master = $this->objectService->find(id: $masterUuid, _rbac: true, _multitenancy: true);
+			$master = WriteCause::asLookup(fn () => $this->objectService->find(id: $masterUuid, _rbac: true, _multitenancy: true));
 			if ($master === null) {
 				return;
 			}

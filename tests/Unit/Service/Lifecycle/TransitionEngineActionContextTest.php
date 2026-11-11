@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -93,16 +93,10 @@ class TransitionEngineActionContextTest extends TestCase {
 
 		$this->context = new LifecycleActionContext();
 		$this->engine = new TransitionEngine(
-			$this->objectService,
-			$schemaMapper,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$permission,
-			$this->createMock(RegisterMapper::class),
-			$appConfig,
-			$this->createMock(LoggerInterface::class),
-			new LifecycleWriteBoundary($this->context),
-			$this->createMock(LifecycleActionProviderRegistry::class)
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->createMock(RegisterMapper::class), $schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary($this->context), $this->createMock(LifecycleActionProviderRegistry::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $appConfig, $this->createMock(LoggerInterface::class)),
+			$permission
 		);
 	}//end setUp()
 

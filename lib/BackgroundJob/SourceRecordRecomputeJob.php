@@ -46,45 +46,36 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Merge\MasterRecomputeInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\IUserManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 
 /**
  * Deferred reverse-FK master recompute under the forwarded actor.
  *
- * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+ * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
 class SourceRecordRecomputeJob extends ActorForwardedJob {
 	/**
 	 * Wire the recompute collaborator on top of the actor plumbing.
 	 *
 	 * @param ITimeFactory $time Time factory for the parent job class.
-	 * @param IUserSession $userSession Session to impersonate on / restore.
-	 * @param IUserManager $userManager Resolver for the captured user id.
-	 * @param OrganisationService $organisation Active-organisation resolver.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param MasterRecomputeService $recompute Shared golden-record recompute.
+	 * @param ActorForwardingServices $actor The identity plumbing the parent job runs the work as.
+	 * @param MasterRecomputeInterface $recompute Shared golden-record recompute.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		IUserSession $userSession,
-		IUserManager $userManager,
-		OrganisationService $organisation,
-		LoggerInterface $logger,
-		private readonly MasterRecomputeService $recompute,
+		ActorForwardingServices $actor,
+		private readonly MasterRecomputeInterface $recompute,
 	) {
 		parent::__construct(
 			time: $time,
-			userSession: $userSession,
-			userManager: $userManager,
-			organisation: $organisation,
-			logger: $logger
+			userSession: $actor->userSession,
+			userManager: $actor->userManager,
+			organisation: $actor->organisation,
+			logger: $actor->logger
 		);
 	}//end __construct()
 

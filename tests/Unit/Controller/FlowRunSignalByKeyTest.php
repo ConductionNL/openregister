@@ -30,7 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowRunControllerFactory;
 use OCA\OpenRegister\Controller\FlowRunController;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
@@ -46,8 +48,14 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\FlowRunController
+ * @uses \OCA\OpenRegister\Controller\Support\FlowRunRuns
+ * @uses \OCA\OpenRegister\Controller\Support\FlowRunAccess
+ * @uses \OCA\OpenRegister\Controller\Support\FlowRunPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\FlowRunControllerServices
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunAssignee
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunSignalService
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunnableGuard
  */
 class FlowRunSignalByKeyTest extends TestCase {
 
@@ -70,7 +78,7 @@ class FlowRunSignalByKeyTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn($user);
 
-		$this->controller = new FlowRunController(
+		$this->controller = FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -78,7 +86,8 @@ class FlowRunSignalByKeyTest extends TestCase {
 			resolvers: $this->createMock(FlowLocator::class),
 			userSession: $userSession,
 			organisationService: $this->createMock(OrganisationService::class),
-			flows: $this->flows
+			guard: new FlowRunnableGuard(flows: $this->flows, access: null),
+			flowOwnership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowCaller::class)
 		);
 	}//end setUp()
 

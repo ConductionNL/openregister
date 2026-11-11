@@ -36,16 +36,13 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Exception\FlowRunRefused;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Db\FlowRunStepMapper;
-use OCA\OpenRegister\Db\FlowStateMapper;
-use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IUserSession;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -58,10 +55,14 @@ use Throwable;
  * itself depends on all of them.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every constructor parameter is
  * an injected collaborator; Nextcloud's container wires them by type.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) delete() and deleteStored() are
+ * one cascade with and without the caller check; an example set removing the
+ * flow it wrote has no caller to check. Moving the cascade out would split one
+ * flow's delete over two classes.
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
-class FlowService {
+class FlowService implements FlowServiceInterface {
 	/**
 	 * The app id a flow is attributed to when the caller names none.
 	 *
@@ -70,33 +71,66 @@ class FlowService {
 	private const DEFAULT_APP = 'openregister';
 
 	/**
+	 * The client-editable string fields and their setters, in apply order.
+	 *
+	 * Part of the allowlist that IS the security boundary — see
+	 * {@see applyEditableFields()}.
+	 *
+	 * @var array<string, string>
+	 */
+	private const EDITABLE_STRING_FIELDS = [
+		'name' => 'setName',
+		'description' => 'setDescription',
+		'trigger' => 'setTrigger',
+		'triggerRegister' => 'setTriggerRegister',
+		'triggerSchema' => 'setTriggerSchema',
+		'cron' => 'setCron',
+		'executionMode' => 'setExecutionMode',
+		'notes' => 'setNotes',
+		'comment' => 'setComment',
+		'applicationSlug' => 'setApplicationSlug',
+	];
+
+	/**
+	 * The client-editable array fields and their setters, in apply order.
+	 *
+	 * @var array<string, string>
+	 */
+	private const EDITABLE_ARRAY_FIELDS = [
+		'nodes' => 'setNodes',
+		'edges' => 'setEdges',
+		'limits' => 'setLimits',
+	];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $mapper Reads and writes flow definitions.
-	 * @param FlowTriggerIndex $triggerIndex Keeps the trigger index derived from the nodes.
-	 * @param FlowRunService $runner Queues and executes runs.
-	 * @param FlowRunAdvancer $advancer Advances a run inline for a synchronous caller.
-	 * @param FlowRunMapper $runs Sweeps a deleted flow's runs.
-	 * @param FlowRunStepMapper $steps Sweeps those runs' step rows.
-	 * @param FlowStateMapper $state Sweeps a deleted flow's carried state.
-	 * @param IUserSession $userSession Identifies the acting user.
-	 * @param LoggerInterface $logger Records refusals and failures.
-	 * @param ContainerInterface $container Resolves OrganisationService lazily.
+	 * @param FlowDefinitionStore $definitions The flow table and the trigger index derived from its nodes.
+	 * @param FlowRunDispatch $dispatch The run queue and executor, the inline advancer and the run authorization.
+	 * @param FlowDeletionSweep $sweep The runs, step rows and carried state a deleted flow takes with it.
+	 * @param FlowServicePlatform $platform The acting user, the log and the lazy service lookup.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
-		private readonly FlowTriggerIndex $triggerIndex,
-		private readonly FlowRunService $runner,
-		private readonly FlowRunAdvancer $advancer,
-		private readonly FlowRunMapper $runs,
-		private readonly FlowRunStepMapper $steps,
-		private readonly FlowStateMapper $state,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
+		private readonly FlowDefinitionStore $definitions,
+		private readonly FlowRunDispatch $dispatch,
+		private readonly FlowDeletionSweep $sweep,
+		private readonly FlowServicePlatform $platform,
 	) {
-
 	}//end __construct()
+
+	/**
+	 * Who is asking, and which flows are theirs.
+	 *
+	 * Stateless: every answer is read from the session and the flow table at
+	 * the moment it is asked, so a fresh reader per question answers the same.
+	 *
+	 * @return FlowCaller
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function caller(): FlowCaller {
+		return new FlowCaller(mapper: $this->definitions->mapper, platform: $this->platform);
+	}//end caller()
 
 	/**
 	 * List the caller's flows, newest first.
@@ -109,31 +143,41 @@ class FlowService {
 	 *
 	 * @return array<int, Flow> The flows visible to the caller.
 	 *
+	 * Kept for its callers (FlowController, other apps); delegates to listFlows().
+	 *
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function findAll(
-		?string $app = null,
-		?string $applicationSlug = null,
-		?bool $enabled = null,
-		int $limit = 100,
-		int $offset = 0,
-	): array {
-		$organisation = $this->activeOrganisation();
+	public function findAll(?string $app=null, ?string $applicationSlug=null, ?bool $enabled=null, int $limit=100, int $offset=0): array {
+		$filters = ['app' => $app, 'applicationSlug' => $applicationSlug, 'enabled' => $enabled];
+		return $this->listFlows(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
+	}//end findAll()
+
+	/**
+	 * List the caller's flows in their active organisation, newest first.
+	 *
+	 * @param ListQuery $query The page, and the `app`, `applicationSlug` and `enabled` filters (each null for any).
+	 *
+	 * @return array<int, Flow> The flows visible to the caller.
+	 *
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 */
+	public function listFlows(ListQuery $query): array {
+		$organisation = $this->caller()->activeOrganisation();
 		if ($organisation === null) {
 			// No resolvable tenant means no flows, never every tenant's flows.
 			return [];
 		}
 
-		return $this->mapper->findAllFlows(
-			app: $app,
-			applicationSlug: $applicationSlug,
-			organisation: $organisation,
-			enabled: $enabled,
-			limit: $limit,
-			offset: $offset
+		return $this->definitions->mapper->findAllFlows(
+			selection: new FlowSelection(
+				app: $query->filters['app'] ?? null,
+				applicationSlug: $query->filters['applicationSlug'] ?? null,
+				organisation: $organisation,
+				enabled: $query->filters['enabled'] ?? null
+			),
+			query: new ListQuery(limit: $query->limit, offset: ($query->offset ?? 0))
 		);
-
-	}//end findAll()
+	}//end listFlows()
 
 	/**
 	 * Count the flows visible to the caller.
@@ -146,42 +190,14 @@ class FlowService {
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
 	public function count(?string $app = null, ?string $applicationSlug = null): int {
-		$organisation = $this->activeOrganisation();
+		$organisation = $this->caller()->activeOrganisation();
 		if ($organisation === null) {
 			return 0;
 		}
 
-		return $this->mapper->countFlows(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		return $this->definitions->mapper->countFlows(selection: $selection);
 	}//end count()
-
-	/**
-	 * The ids of the flows the acting user owns.
-	 *
-	 * Used by the run-history visibility rule, which shows a caller the runs
-	 * they triggered PLUS the runs of flows they own — the second half matters
-	 * because `triggered_by` is null for cron- and trigger-fired runs.
-	 *
-	 * @return array<int, string> The flow uuids.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 */
-	public function idsOwnedByCaller(): array {
-		$uid = $this->actingUser();
-		if ($uid === null) {
-			return [];
-		}
-
-		try {
-			return $this->mapper->findIdsOwnedBy($uid);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[FlowService] Could not list the caller\'s owned flows: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [];
-		}
-
-	}//end idsOwnedByCaller()
 
 	/**
 	 * Load one flow the caller is allowed to see.
@@ -199,14 +215,48 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function find(string $uuid): Flow {
-		$flow = $this->mapper->findByUuid($uuid);
+		$flow = $this->definitions->mapper->findByUuid($uuid);
 
-		if ($flow->belongsTo($this->activeOrganisation()) === false) {
+		if ($flow->belongsTo($this->caller()->activeOrganisation()) === false) {
 			throw new DoesNotExistException('No such flow');
 		}
 
 		return $flow;
 	}//end find()
+
+	/**
+	 * Refuse unless this caller may run THIS flow.
+	 *
+	 * 🔴 THE CONTROL LIVES HERE BECAUSE THIS IS WHERE THE FLOW IS READ. The
+	 * `scope: private` declared on the `flow` schema governs the object store,
+	 * which `MigrateRegisterFlowsToTable` drained precisely because nothing
+	 * reads it — so a reader of that declaration believed a run answered to the
+	 * flow's owner while it answered to `flow.run`, seeded `@authenticated`,
+	 * plus an organisation. Put the decision beside `find()` and a run path that
+	 * forgets to ask is one that also forgot to resolve the flow, which none of
+	 * them can do.
+	 *
+	 * @param Flow $flow The flow being run.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowRunRefused When the caller may not run it.
+	 *
+	 * @spec openspec/changes/flow-runs-honour-their-declaration/specs/flow-engine/spec.md
+	 */
+	public function assertRunnable(Flow $flow): void {
+		$authorization = ($this->dispatch->runAuthorization ?? new FlowRunAuthorization());
+
+		$verdict = $authorization->verdictFor(flow: $flow);
+		if ($verdict === FlowRunAuthorization::ALLOWED) {
+			return;
+		}
+
+		throw new FlowRunRefused(
+			verdict: $verdict,
+			message: $authorization->messageFor(verdict: $verdict)
+		);
+	}//end assertRunnable()
 
 	/**
 	 * Make the CALLING user the flow's owner — the adoption seam.
@@ -245,10 +295,10 @@ class FlowService {
 	 * @throws FlowAdoptionRefused When there is no acting user, or the flow
 	 *                             already belongs to someone else.
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function adopt(Flow $flow): Flow {
-		$uid = $this->actingUser();
+		$uid = $this->caller()->actingUser();
 		if ($uid === null) {
 			throw new FlowAdoptionRefused(
 				reason: FlowAdoptionRefused::REASON_NO_ACTING_USER,
@@ -270,9 +320,9 @@ class FlowService {
 
 		$flow->setOwner($uid);
 		$flow->setUpdated(new DateTime());
-		$stored = $this->mapper->update($flow);
+		$stored = $this->definitions->mapper->update($flow);
 
-		$this->logger->info(
+		$this->platform->logger->info(
 			message: '[FlowService] Flow "' . (string)$stored->getUuid() . '" ("' . (string)$stored->getName()
 				. '", app "' . (string)$stored->getApp() . '") was ADOPTED by "' . $uid
 				. '": it now has an owner and will dispatch once enabled.',
@@ -334,7 +384,7 @@ class FlowService {
 		$graphBefore = $this->graphSignature(flow: $flow);
 
 		$this->applyEditableFields(flow: $flow, data: $data);
-		(new FlowTriggerValidator($this->container, $this->logger))->validate(flow: $flow);
+		(new FlowTriggerValidator($this->platform->container, $this->platform->logger))->validate(flow: $flow);
 
 		// A published version is immutable. Only a DEFINITION change is
 		// refused, deliberately: renaming a flow, editing its description or
@@ -343,9 +393,8 @@ class FlowService {
 		// uneditable.
 		if ($this->graphSignature(flow: $flow) !== $graphBefore) {
 			(new FlowLifecycleGuard(
-				$this->runs,
-				$this->container->get(FlowNodePreflight::class),
-				$this->logger
+				$this->platform->container->get(FlowNodePreflight::class),
+				$this->platform->logger
 			))->refuseEditUnlessDraft(
 				flowId: (string)$flow->getUuid(),
 				state: $flow->getLifecycleStatus()
@@ -362,7 +411,7 @@ class FlowService {
 		// the published version's — the opposite of both rules. Deriving from
 		// the published version is also what keeps an `enabled` toggle working
 		// while a draft is open.
-		$this->triggerIndex->reindex(flow: $stored);
+		$this->definitions->triggerIndex->reindex(flow: $stored);
 
 		return $stored;
 	}//end save()
@@ -378,7 +427,7 @@ class FlowService {
 	 *
 	 * @return string The signature.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function graphSignature(Flow $flow): string {
 		return (string)json_encode([
@@ -409,10 +458,10 @@ class FlowService {
 	 */
 	private function persistFlow(Flow $flow, ?string $uuid): Flow {
 		if (($uuid ?? '') === '') {
-			return $this->mapper->insert($flow);
+			return $this->definitions->mapper->insert($flow);
 		}
 
-		return $this->mapper->update($flow);
+		return $this->definitions->mapper->update($flow);
 	}//end persistFlow()
 
 	/**
@@ -436,7 +485,7 @@ class FlowService {
 			return $this->find(uuid: $uuid);
 		}
 
-		['owner' => $owner, 'organisation' => $organisation] = $this->callerOwnership();
+		['owner' => $owner, 'organisation' => $organisation] = $this->caller()->ownership();
 
 		// REFUSE rather than stamp nulls. `Flow::belongsTo()` is fail-closed on
 		// both sides, so a flow with no organisation belongs to nobody: it does
@@ -481,53 +530,10 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function applyEditableFields(Flow $flow, array $data): void {
-		$strings = [
-			'name' => 'setName',
-			'description' => 'setDescription',
-			'trigger' => 'setTrigger',
-			'triggerRegister' => 'setTriggerRegister',
-			'triggerSchema' => 'setTriggerSchema',
-			'cron' => 'setCron',
-			'executionMode' => 'setExecutionMode',
-			'notes' => 'setNotes',
-			'comment' => 'setComment',
-			'applicationSlug' => 'setApplicationSlug',
-		];
+		$data = self::withNormalisedComment(data: $data);
 
-		// A flow authored as a definition file carries its rationale under the
-		// top-level `$comment` key — the JSON-Schema convention for "a human
-		// wrote this, no reader should interpret it". That key cannot be a
-		// column name, so it is normalised here rather than at every call site.
-		//
-		// `comment` wins when both are present: the explicit API field is a
-		// deliberate write, `$comment` is whatever the file happened to carry.
-		if (array_key_exists('$comment', $data) === true && array_key_exists('comment', $data) === false) {
-			$data['comment'] = $data['$comment'];
-		}
-
-		foreach ($strings as $key => $setter) {
-			if (array_key_exists($key, $data) === true) {
-				$value = $data[$key];
-				if ($value === null) {
-					$flow->$setter(null);
-					continue;
-				}
-
-				$flow->$setter((string)$value);
-			}
-		}
-
-		$arrays = [
-			'nodes' => 'setNodes',
-			'edges' => 'setEdges',
-			'limits' => 'setLimits',
-		];
-
-		foreach ($arrays as $key => $setter) {
-			if (array_key_exists($key, $data) === true) {
-				$flow->$setter((array)($data[$key] ?? []));
-			}
-		}
+		self::applyStringFields(flow: $flow, data: $data);
+		self::applyArrayFields(flow: $flow, data: $data);
 
 		if (array_key_exists('enabled', $data) === true) {
 			$flow->setEnabled((bool)$data['enabled']);
@@ -536,6 +542,69 @@ class FlowService {
 		$this->applyInheritableSettings(flow: $flow, data: $data);
 
 	}//end applyEditableFields()
+
+	/**
+	 * The payload with a definition file's `$comment` carried over to `comment`.
+	 *
+	 * A flow authored as a definition file carries its rationale under the
+	 * top-level `$comment` key — the JSON-Schema convention for "a human
+	 * wrote this, no reader should interpret it". That key cannot be a
+	 * column name, so it is normalised here rather than at every call site.
+	 *
+	 * `comment` wins when both are present: the explicit API field is a
+	 * deliberate write, `$comment` is whatever the file happened to carry.
+	 *
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return array<string, mixed> The fields, normalised.
+	 */
+	private static function withNormalisedComment(array $data): array {
+		if (array_key_exists('$comment', $data) === true && array_key_exists('comment', $data) === false) {
+			$data['comment'] = $data['$comment'];
+		}
+
+		return $data;
+	}//end withNormalisedComment()
+
+	/**
+	 * Apply the present string fields: null is stored, anything else stringified.
+	 *
+	 * @param Flow                 $flow The flow to mutate.
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return void
+	 */
+	private static function applyStringFields(Flow $flow, array $data): void {
+		foreach (self::EDITABLE_STRING_FIELDS as $key => $setter) {
+			if (array_key_exists($key, $data) === false) {
+				continue;
+			}
+
+			$value = $data[$key];
+			if ($value === null) {
+				$flow->$setter(null);
+				continue;
+			}
+
+			$flow->$setter((string)$value);
+		}
+	}//end applyStringFields()
+
+	/**
+	 * Apply the present array fields: null becomes an empty array, a scalar a one-element array.
+	 *
+	 * @param Flow                 $flow The flow to mutate.
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return void
+	 */
+	private static function applyArrayFields(Flow $flow, array $data): void {
+		foreach (self::EDITABLE_ARRAY_FIELDS as $key => $setter) {
+			if (array_key_exists($key, $data) === true) {
+				$flow->$setter((array)($data[$key] ?? []));
+			}
+		}
+	}//end applyArrayFields()
 
 	/**
 	 * Apply the three settings a flow may inherit from the administrator default.
@@ -557,7 +626,6 @@ class FlowService {
 		$inheritable = [
 			'retentionDays' => ['setRetentionDays', static fn ($value): int => max(1, (int)$value)],
 			'auditEnabled' => ['setAuditEnabled', static fn ($value): bool => (bool)$value],
-			'oversightEnabled' => ['setOversightEnabled', static fn ($value): bool => (bool)$value],
 		];
 
 		foreach ($inheritable as $key => [$setter, $cast]) {
@@ -588,12 +656,29 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function delete(string $uuid): void {
-		$this->mapper->delete($this->find(uuid: $uuid));
+		$this->deleteStored(flow: $this->find(uuid: $uuid));
+
+	}//end delete()
+
+	/**
+	 * Delete a stored flow with its trigger rows, runs, state and versions,
+	 * without asking whose it is. For callers that already decided they may,
+	 * such as an example set removing the flow it wrote.
+	 *
+	 * @param Flow $flow The stored flow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 */
+	public function deleteStored(Flow $flow): void {
+		$uuid = (string)$flow->getUuid();
+		$this->definitions->mapper->delete($flow);
 
 		// Drop the flow's trigger rows too. An orphaned row is read on every
 		// matching object event and names a flow that can no longer be loaded,
 		// so it costs a failed lookup per event, forever.
-		$this->triggerIndex->forget(flowUuid: $uuid);
+		$this->definitions->triggerIndex->forget(flowUuid: $uuid);
 
 		// And its execution history, by the same reasoning. `flow_runs` and
 		// `flow_state` key on the flow UUID, so once the flow row is gone every
@@ -607,12 +692,12 @@ class FlowService {
 		// run, not the flow, so dropping the runs first would strand the steps
 		// with no way left to find them.
 		try {
-			$runUuids = $this->runs->deleteByFlow(flowId: $uuid);
+			$runUuids = $this->sweep->runs->deleteByFlow(flowId: $uuid);
 			foreach ($runUuids as $runUuid) {
-				$this->steps->deleteByRun(runUuid: $runUuid);
+				$this->sweep->steps->deleteByRun(runUuid: $runUuid);
 			}
 
-			$this->state->deleteByFlow(flowId: $uuid);
+			$this->sweep->state->deleteByFlow(flowId: $uuid);
 
 			// 🔴 AND ITS VERSION ROWS, for exactly the same reason — I added
 			// the table and did not extend this cascade, so every deleted flow
@@ -628,18 +713,18 @@ class FlowService {
 			// content-addressed and SHARED — two flows holding the same graph
 			// share one row — so deleting by flow would pull a definition out
 			// from under an unrelated flow's version.
-			$this->container->get(FlowVersionMapper::class)->deleteByFlow(flowUuid: $uuid);
+			$this->platform->container->get(FlowVersionMapperInterface::class)->deleteByFlow(flowUuid: $uuid);
 		} catch (Throwable $e) {
 			// The flow itself is already gone, so this must not turn a
 			// successful delete into an error the caller has to retry — a retry
 			// would 404 on the flow and never reach this cascade anyway.
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[FlowService] Deleted flow ' . $uuid . ' but could not sweep its history: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
 
-	}//end delete()
+	}//end deleteStored()
 
 	/**
 	 * Queue a manual run of a flow the caller owns.
@@ -667,6 +752,7 @@ class FlowService {
 	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
 	 * @throws FlowDeadEnd When a node's token has nowhere to go, so the run is refused.
 	 * @throws FlowLifecycleRefused When the trigger requires a published version and there is none.
+	 * @throws FlowRunRefused When the caller may not run this flow (no owner, not theirs).
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $sync chooses WHO advances the
 	 * run, not what running means: the same run row is queued either way, and
@@ -675,24 +761,81 @@ class FlowService {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function run(
-		string $uuid,
-		array $subject = [],
-		array $context = [],
-		bool $sync = false,
-		string $trigger = Flow::TRIGGER_MANUAL
-	): FlowRun {
-		$flow = $this->find(uuid: $uuid);
+	public function run(string $uuid, array $subject=[], array $context=[], bool $sync=false, string $trigger=Flow::TRIGGER_MANUAL): FlowRun {
+		return $this->runFlow(uuid: $uuid, options: new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: $trigger));
+	}//end run()
 
-		$run = $this->runner->queue(
+	/**
+	 * Queue a run of a flow the caller owns, as run() describes it.
+	 *
+	 * The flow is resolved in the caller's organisation and the owner check runs
+	 * before anything is queued.
+	 *
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject, run metadata, whether to wait, and the trigger.
+	 *
+	 * @return FlowRun The queued run, or the finished run when the caller waits.
+	 *
+	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+	 * @throws FlowRunRefused When the caller may not run this flow (no owner, not theirs).
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	public function runFlow(string $uuid, FlowRunOptions $options): FlowRun {
+		$flow = $this->find(uuid: $uuid);
+		$this->assertRunnable(flow: $flow);
+
+		return $this->start(flow: $flow, options: $options);
+	}//end runFlow()
+
+	/**
+	 * Run a flow on behalf of a declared action whose right the caller already holds.
+	 *
+	 * For the system-held flow inline `steps` are lowered to
+	 * ({@see \OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow}).
+	 * That flow has no owner and belongs to no person, so the owner check in
+	 * {@see assertRunnable()} would refuse everyone: the action's own right on
+	 * the subject, checked by the caller before this, is the authorisation
+	 * (ADR-023). The run still executes as the acting user, so every write
+	 * inside it is checked against their rights.
+	 *
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject (`{uuid, register, schema}`), run-level metadata, whether to
+	 *                                execute inline, and the trigger (manual for an action).
+	 *
+	 * @return FlowRun The queued run, or the finished run when the options ask for a sync run.
+	 *
+	 * @throws DoesNotExistException When no such flow exists.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
+	 */
+	public function runForAction(string $uuid, FlowRunOptions $options): FlowRun {
+		return $this->start(flow: $this->definitions->mapper->findByUuid($uuid), options: $options);
+	}//end runForAction()
+
+	/**
+	 * Queue a run of a flow already resolved and authorised, attributed to the
+	 * acting user, and advance it inline when the caller asked to wait.
+	 *
+	 * @param Flow           $flow    The flow to run.
+	 * @param FlowRunOptions $options The subject, run metadata, whether to wait, and the trigger.
+	 *
+	 * @return FlowRun The queued run, or the finished run when the caller waits.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function start(Flow $flow, FlowRunOptions $options): FlowRun {
+		$run = $this->dispatch->runner->queueRun(
 			flowId: (string)$flow->getUuid(),
-			subject: $subject,
-			trigger: $trigger,
-			context: $context,
-			user: $this->actingUser()
+			options: new FlowRunQueueOptions(
+				subject: $options->subject,
+				trigger: $options->trigger,
+				context: $options->context,
+				user: $this->caller()->actingUser()
+			)
 		);
 
-		if ($sync === false) {
+		if ($options->sync === false) {
 			return $run;
 		}
 
@@ -705,77 +848,8 @@ class FlowService {
 		// `rethrow: true` because this call is answering a request ABOUT this
 		// run: a caller who asked to wait has earned the error. The worker
 		// swallows for the opposite reason — one bad run must not stop a queue.
-		return $this->advancer->advance(run: $run, rethrow: true);
-	}//end run()
-
-	/**
-	 * The owner and organisation a flow written by THIS caller must carry.
-	 *
-	 * 🔴 PUBLIC BECAUSE IT HAS A SECOND WRITER. `flowToSave()` is not the only
-	 * path that inserts a Flow: `FlowShareableConfigType::deserialise()` writes
-	 * one when a federated bundle is installed, and it used to stamp nulls —
-	 * reproducing, on that path, the permanent orphan the refusal below exists
-	 * to prevent. Two writers each deriving ownership their own way is how the
-	 * rule came to hold on one of them and not the other; this is the one place
-	 * that decides it.
-	 *
-	 * @return array{owner: string|null, organisation: string|null} The caller's ownership, either field null when it does not resolve.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 */
-	public function callerOwnership(): array {
-		return [
-			'owner'        => $this->actingUser(),
-			'organisation' => $this->activeOrganisation(),
-		];
-	}//end callerOwnership()
-
-	/**
-	 * The acting user's uid, or null when there is no session.
-	 *
-	 * @return string|null The uid.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 */
-	private function actingUser(): ?string {
-		$uid = (string)($this->userSession->getUser()?->getUID() ?? '');
-		if ($uid === '') {
-			return null;
-		}
-
-		return $uid;
-	}//end actingUser()
-
-	/**
-	 * The caller's active organisation uuid, or null when none resolves.
-	 *
-	 * Resolved lazily through the container for the same reason
-	 * `FlowRunService` does it: this service is reachable from paths that run
-	 * without a session, and dragging the whole organisation/RBAC graph in to
-	 * read a value that will be null there is wasted work.
-	 *
-	 * @return string|null The organisation uuid.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 */
-	private function activeOrganisation(): ?string {
-		try {
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-			$uuid = $organisationService->getActiveOrganisation()?->getUuid();
-		} catch (Throwable $e) {
-			$this->logger->debug(
-				message: '[FlowService] Could not resolve the active organisation: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}
-
-		if ((string)$uuid === '') {
-			return null;
-		}
-
-		return (string)$uuid;
-	}//end activeOrganisation()
+		return $this->dispatch->advancer->advance(run: $run, rethrow: true);
+	}//end start()
 
 	/**
 	 * Mint a v4 uuid.

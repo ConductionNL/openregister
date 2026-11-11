@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
  */
 
 declare(strict_types=1);
@@ -39,7 +39,9 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<TaskSequence>
  */
-class TaskSequenceMapper extends QBMapper {
+class TaskSequenceMapper extends QBMapper implements TaskSequenceMapperInterface {
+
+	use SelectByColumnTrait;
 
 	/**
 	 * Constructor.
@@ -59,15 +61,10 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @throws DoesNotExistException When no such sequence exists.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public function findByUuid(string $uuid): TaskSequence {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'uuid', value: $uuid)));
 	}//end findByUuid()
 
 	/**
@@ -81,14 +78,11 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @return TaskSequence|null The running sequence, or null.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
+	 * @spec openspec/specs/approval-workflow/spec.md#req-007
 	 */
 	public function findRunning(string $anchorObjectUuid, string $templateId): ?TaskSequence {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('anchor_object_uuid', $qb->createNamedParameter($anchorObjectUuid)))
-			->andWhere($qb->expr()->eq('template_id', $qb->createNamedParameter($templateId)))
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'anchor_object_uuid', value: $anchorObjectUuid));
+		$qb->andWhere($qb->expr()->eq('template_id', $qb->createNamedParameter($templateId)))
 			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(TaskSequence::STATUS_RUNNING)))
 			->orderBy('id', 'DESC')
 			->setMaxResults(1);
@@ -119,14 +113,11 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @return TaskSequence|null The newest sequence for the template, or null when none has run.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public function findNewestForTemplate(string $templateId): ?TaskSequence {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('template_id', $qb->createNamedParameter($templateId)))
-			->orderBy('opened_at', 'DESC')
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'template_id', value: $templateId));
+		$qb->orderBy('opened_at', 'DESC')
 			->addOrderBy('id', 'DESC')
 			->setMaxResults(1);
 
@@ -146,14 +137,11 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @return array<int, TaskSequence> The sequences, newest first.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
 	 */
 	public function findForAnchor(string $anchorObjectUuid, string $templateId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('anchor_object_uuid', $qb->createNamedParameter($anchorObjectUuid)))
-			->andWhere($qb->expr()->eq('template_id', $qb->createNamedParameter($templateId)))
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'anchor_object_uuid', value: $anchorObjectUuid));
+		$qb->andWhere($qb->expr()->eq('template_id', $qb->createNamedParameter($templateId)))
 			->orderBy('opened_at', 'DESC')
 			->addOrderBy('id', 'DESC');
 
@@ -168,7 +156,7 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @return TaskSequence|null The newest sequence, or null.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
+	 * @spec openspec/specs/approval-workflow/spec.md#req-007
 	 */
 	public function findNewestForAnchor(string $anchorObjectUuid, string $templateId): ?TaskSequence {
 		$rows = $this->findForAnchor(anchorObjectUuid: $anchorObjectUuid, templateId: $templateId);

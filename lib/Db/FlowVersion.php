@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\FlowVersion\FlowVersionFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -64,7 +65,7 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime|null getCreated()
  * @method void          setCreated(?DateTime $created)
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class FlowVersion extends Entity implements \JsonSerializable {
 	/**
@@ -206,19 +207,9 @@ class FlowVersion extends Entity implements \JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'flowUuid', type: 'string');
-		$this->addType(fieldName: 'version', type: 'integer');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'definitionHash', type: 'string');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'publishedAt', type: 'datetime');
-		$this->addType(fieldName: 'publishedBy', type: 'string');
-		$this->addType(fieldName: 'deprecatedAt', type: 'datetime');
-		$this->addType(fieldName: 'semver', type: 'string');
-		$this->addType(fieldName: 'semverSource', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-
+		foreach (FlowVersionFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -231,7 +222,7 @@ class FlowVersion extends Entity implements \JsonSerializable {
 	 *
 	 * @return boolean True when this version is published.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function isPublished(): bool {
 		return $this->status === self::STATUS_PUBLISHED;
@@ -243,7 +234,7 @@ class FlowVersion extends Entity implements \JsonSerializable {
 	 *
 	 * @return boolean True when this version is a draft.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function isDraft(): bool {
 		return $this->status === self::STATUS_DRAFT;
@@ -255,26 +246,9 @@ class FlowVersion extends Entity implements \JsonSerializable {
 	 *
 	 * @return array<string, mixed> The version as an array.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->getId(),
-			'flowUuid' => $this->flowUuid,
-			'version' => $this->version,
-			'semver' => $this->semver,
-			// Where it came from, beside the value: a back-filled version can
-			// then be distrusted correctly.
-			'semverSource' => $this->semverSource,
-			'status' => $this->status,
-			'definitionHash' => $this->definitionHash,
-			'owner' => $this->owner,
-			'organisation' => $this->organisation,
-			'publishedAt' => $this->publishedAt?->format('c'),
-			'publishedBy' => $this->publishedBy,
-			'deprecatedAt' => $this->deprecatedAt?->format('c'),
-			'created' => $this->created?->format('c'),
-		];
-
+		return ['id' => $this->getId()] + (new TypedFieldsJson())->pick(values: get_object_vars($this), names: FlowVersionFieldTypes::JSON_ORDER);
 	}//end jsonSerialize()
 }//end class

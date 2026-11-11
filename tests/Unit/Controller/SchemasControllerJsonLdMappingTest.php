@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -28,10 +29,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use OCP\IURLGenerator;
@@ -73,7 +74,7 @@ class SchemasControllerJsonLdMappingTest extends TestCase {
 		$urlGenerator = $this->createMock(IURLGenerator::class);
 		$urlGenerator->method('linkToRouteAbsolute')->willReturn('https://nc.test/ctx');
 
-		$this->controller = new SchemasController(
+		$this->controller = SchemasControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
@@ -85,7 +86,7 @@ class SchemasControllerJsonLdMappingTest extends TestCase {
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(OrganisationService::class),
 			$this->createMock(SchemaCacheHandler::class),
-			$this->createMock(FacetCacheHandler::class),
+			$this->createMock(FacetResultCacheClearer::class),
 			$this->createMock(SchemaService::class),
 			$this->createMock(LoggerInterface::class),
 			$container,
@@ -133,5 +134,73 @@ class SchemasControllerJsonLdMappingTest extends TestCase {
 		$response = $this->controller->create();
 
 		$this->assertSame(201, $response->getStatus());
+	}
+	/**
+	 * 🔴 ASSERTED FROM THE CALLER, not from the guard. The operand check had
+	 * a full implementation and a full set of messages and no call site at
+	 * all, and a unit test of the guard alone would have passed the whole
+	 * time it was dead. What this pins is that `create()` reaches it.
+	 *
+	 * @return void
+	 */
+	public function testCreateRefusesAFilterReadingAPropertyTheSchemaDoesNotDeclare(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'title' => 'Zaak',
+				'properties' => [
+					'municipality' => ['type' => 'string'],
+					'caseType' => [
+						'$ref' => 'case-type',
+						'x-openregister-reference-filter' => [
+							['field' => 'municipality', 'op' => 'eq', 'from' => 'gemeente'],
+						],
+					],
+				],
+			]
+		);
+
+		$far = new Schema();
+		$far->setProperties(['municipality' => ['type' => 'string']]);
+		$this->schemaMapper->method('find')->willReturn($far);
+
+		// Nothing is written: the author is refused before the schema exists.
+		$this->schemaMapper->expects($this->never())->method('createFromArray');
+
+		$response = $this->controller->create();
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertStringContainsString('this schema does not declare it', $response->getData()['error']);
+	}
+
+	/**
+	 * The control: the same payload with the operand declared saves.
+	 *
+	 * @return void
+	 */
+	public function testCreateAcceptsAFilterWhoseOperandsBothExist(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'title' => 'Zaak',
+				'properties' => [
+					'municipality' => ['type' => 'string'],
+					'caseType' => [
+						'$ref' => 'case-type',
+						'x-openregister-reference-filter' => [
+							['field' => 'municipality', 'op' => 'eq', 'from' => 'municipality'],
+						],
+					],
+				],
+			]
+		);
+
+		$far = new Schema();
+		$far->setProperties(['municipality' => ['type' => 'string']]);
+
+		$created = new Schema();
+		$created->setId(1);
+		$this->schemaMapper->method('find')->willReturn($far);
+		$this->schemaMapper->expects($this->once())->method('createFromArray')->willReturn($created);
+
+		$this->assertSame(201, $this->controller->create()->getStatus());
 	}
 }

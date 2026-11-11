@@ -27,54 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCP\EventDispatcher\Event;
-
 /**
  * Event dispatched to end a registry subscription on an object.
  *
  * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
  */
-class RegistrySubscriptionEndedEvent extends Event {
-
-	/**
-	 * Constructor.
-	 *
-	 * @param string $objectUuid UUID of the object ending its subscription.
-	 * @param string $registry The registry id (`brp`, `kvk`, ...).
-	 * @param string $identityValue The object's identity value at that registry.
-	 */
-	public function __construct(
-		private readonly string $objectUuid,
-		private readonly string $registry,
-		private readonly string $identityValue,
-	) {
-		parent::__construct();
-	}//end __construct()
-
-	/**
-	 * Get the object's UUID.
-	 *
-	 * @return string
-	 */
-	public function getObjectUuid(): string {
-		return $this->objectUuid;
-	}//end getObjectUuid()
-
-	/**
-	 * Get the registry id (`brp`, `kvk`, ...).
-	 *
-	 * @return string
-	 */
-	public function getRegistry(): string {
-		return $this->registry;
-	}//end getRegistry()
-
-	/**
-	 * Get the object's identity value at the registry.
-	 *
-	 * @return string
-	 */
-	public function getIdentityValue(): string {
-		return $this->identityValue;
-	}//end getIdentityValue()
+class RegistrySubscriptionEndedEvent extends AbstractRegistrySubscriptionEvent {
 }//end class

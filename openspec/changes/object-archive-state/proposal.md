@@ -12,6 +12,11 @@ the working lists and the search results, refuses writes, keeps its audit
 trail and its references, and comes back with one action. It is not
 deleted, it is not in the trash, and it is not a destruction date.
 
+- Woo programme (wave 1) amendment, supporting: it closes no row itself and supports 5.18 and 19.15 (not statutory) by refusing every file write on a frozen or archived object (REQ-OAS-007). See the amendment section below.
+- Dependencies: none. Consumers `opencatalogi/publication-withdrawal-aftercare` and `dossiq/woo-delivered-set-is-a-record` (wave 2).
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Ledger rows
 
 | row | capability | rating | size |
@@ -170,3 +175,22 @@ zaak in bezwaar, a dossier awaiting overbrenging, a vastgesteld besluit.
 - **A note may be locked.** A locked note refuses edits, which is what
   `note-edit-history` calls the iTop-shaped answer, and the lock is an
   audit fact.
+
+## Woo capability programme amendment (2026-10-05)
+
+The Woo capability programme (round 1 build plan, wave 1) amends this change as a supporting change: it closes no row itself, and it is what two rows need from OpenRegister.
+
+| row | capability | needs from here |
+|---|---|---|
+| 5.18 | A withdrawn record is frozen: edits to it and to its documents are refused, and the product says why | `opencatalogi/publication-withdrawal-aftercare` (wave 2) freezes the publication on withdrawal; its files must refuse writes too |
+| 19.15 | The set delivered to a requester is itself a record, with its own identity, its contents fixed, and a manifest | `dossiq/woo-delivered-set-is-a-record` (wave 2) freezes the delivered set; its files must stay what was delivered |
+
+Re-read on `development` at 1dc6a4667 immediately before writing: the change is open at 14 of 19 tasks; the freeze (REQ-OAS-004) is built (`ArchiveHandler::freeze()`, routes `objectState#freeze` and `objectState#unfreeze`), and `SaveObject` refuses a data write with `ObjectStateWriteException::frozen()`. The file paths do not: `FilesController` (`create`, `save`, `createMultipart`, `update`, `delete`, `rename`, `move`, `batch`, `lock`, `unlock`) and a write through Nextcloud Files into the object's folder all ignore the marker. So a frozen publication's attachment can still be replaced. Nothing already done is rewritten.
+
+What the amendment adds:
+
+- REQ-OAS-007: every file write that targets a frozen or archived object is refused with the same exception the data guard raises, naming who froze it, when and why. Reads, downloads and previews stay allowed.
+- The guard sits in one place both doors reach: a `FileWriteGuard` called from every write action of `FilesController` and `FileService`, and a listener on Nextcloud's `BeforeNodeWrittenEvent`, `BeforeNodeDeletedEvent`, `BeforeNodeRenamedEvent` and `BeforeNodeCreatedEvent` that calls `abortOperation()` for a node inside a frozen object's folder (available on Nextcloud 32, the app's minimum).
+- An unfreeze lifts the refusal; the freeze and unfreeze audit entries already exist.
+
+Fail closed: if the guard cannot resolve the owning object of a node inside the register folder tree, the write is refused rather than allowed.

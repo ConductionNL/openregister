@@ -245,6 +245,49 @@ out-of-vocabulary label independently.
 - **WHEN** its tools are resolved against the live catalog
 - **THEN** the command capability MUST NOT be present
 
+### Requirement: An agent is held to its tool grant on every path
+
+An agent SHALL only call the tools its grant lists, in chat and over MCP alike. An MCP client names the agent it acts as with the `agent` parameter of `initialize` (or the `X-OpenRegister-Agent` header); from then on `tools/list` shows only the granted tools and `tools/call` refuses any other tool, or an argument an argument-scoped grant does not allow, before the tool runs. The grant is read on every call, so narrowing an agent narrows its open sessions. An agent that does not exist, is inactive or is not available to the signed-in user SHALL be refused at `initialize`, never ignored. A session that names no agent keeps the signed-in user's rights. The agent's owner SHALL set the grant on the agents screen.
+
+#### Scenario: an MCP call outside the grant is refused
+
+- **GIVEN** an agent allowed only the tool `openregister.objects.search`, and an MCP session initialised with that agent
+- **WHEN** the session calls `openregister.objects.delete`
+- **THEN** the call is refused with a message naming `openregister.objects.delete`, and the tool does not run
+- @e2e exclude {covered by tests/Unit/Controller/McpAgentLimitsTest.php, which drives the real MCP controller; there is no browser surface}
+
+#### Scenario: an unavailable agent is refused at initialize
+
+- **GIVEN** an agent that is unknown, inactive or private to another user
+- **WHEN** an MCP client initialises with that agent
+- **THEN** initialize is refused and no session is created
+- @e2e exclude {covered by tests/Unit/Controller/McpAgentLimitsTest.php; there is no browser surface}
+
+#### Scenario: the owner narrows an agent on the agents screen
+
+- **GIVEN** the agents screen and an agent the signed-in user owns
+- **WHEN** the owner removes a tool and saves
+- **THEN** the agent's grant no longer lists that tool, and an MCP session of that agent is refused it on its next call
+- @e2e exclude {covered by src/views/agents/AgentsIndex.spec.js (save) and McpAgentLimitsTest::testANarrowedGrantAppliesToAnOpenSession (refusal)}
+
+### Requirement: An agent reads only the views it is granted
+
+An agent with one or more views SHALL only find objects inside those views when its chat searches for context, and the agent's owner SHALL set those views on the agents screen. Membership is asked of the view-scoped object search with the user's RBAC on and the view as a required bound, so a view that cannot be resolved or does not narrow the search withholds the objects rather than widening it. A chat that picks only views the agent is not granted finds no objects. File results are not objects of a view and are not limited. Over MCP the data scope stays the user's until a view-scoped search tool exists.
+
+#### Scenario: an object outside the agent's views is not found
+
+- **GIVEN** an agent granted only the view `open-cases`
+- **WHEN** the agent's chat searches for context
+- **THEN** an object outside `open-cases` is not returned
+- @e2e exclude {covered by tests/Unit/Service/Chat/ContextRetrievalAgentViewsTest.php, which drives the real ContextRetrievalHandler; the chat context has no browser surface of its own}
+
+#### Scenario: the owner removes a view
+
+- **GIVEN** the agents screen and an agent the signed-in user owns
+- **WHEN** the owner removes a view and saves
+- **THEN** the agent no longer finds objects of that view
+- @e2e exclude {covered by src/views/agents/AgentsIndex.spec.js (the save sends the views) and ContextRetrievalAgentViewsTest (the search honours them)}
+
 ## Non-Functional Requirements
 
 - **Performance:** Constraint checking MUST complete before any dispatch, so a refused invocation
@@ -304,7 +347,6 @@ out-of-vocabulary label independently.
   ADR-035 (frozen `Agent.tools` shape), ADR-041 (cross-app commands), ADR-063 (MCP verb/scope
   hints), ADR-065 (one flow engine).
 
-
 <!--
   Two further scenarios from the same delta. They sit UNDER a requirement the
   promoted spec already carried, so appending the requirement block would have
@@ -326,5 +368,3 @@ out-of-vocabulary label independently.
 - **WHEN** the tool is classified for default-deny, dry-run and approval purposes
 - **THEN** it MUST still classify write/destructive
 - **AND** the narrowing MUST NOT cause it to be treated as read-only or auto-allowed
-
-## ADDED Requirements

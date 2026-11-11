@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
  */
 
 declare(strict_types=1);
@@ -68,7 +68,7 @@ final class FlowAdvanceBudget {
 	 *
 	 * @return self A zero budget.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public static function none(): self {
 		return new self(transitions: 0);
@@ -89,7 +89,7 @@ final class FlowAdvanceBudget {
 	 * @throws UnexpectedValueException When the value is null, empty, negative,
 	 *                                  fractional or any string but "all".
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public static function fromConfig(array $config, string $key = 'advance'): self {
 		if (array_key_exists($key, $config) === false) {
@@ -109,42 +109,82 @@ final class FlowAdvanceBudget {
 	 * @throws UnexpectedValueException When the value is not `0`, a positive
 	 *                                  integer or the string "all".
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public static function fromValue(mixed $value): self {
 		if ($value === null) {
-			throw new UnexpectedValueException(
-				'advance is null. A null budget reads as 0 at every PHP and JSON coercion, so it is refused: '
-				. 'unlimited is spelled "all", the default is 0, and any other value is a positive number of transitions.'
-			);
+			throw self::nullBudget();
 		}
 
 		if (is_string($value) === true && strtolower(trim($value)) === self::ALL) {
 			return new self(transitions: null);
 		}
 
-		if (is_bool($value) === false && is_numeric($value) === true) {
-			$asFloat = (float)$value;
-			$asInt = (int)$value;
-			if ($asFloat === (float)$asInt && $asInt >= 0) {
-				return new self(transitions: $asInt);
-			}
+		$transitions = self::wholeTransitions(value: $value);
+		if ($transitions !== null) {
+			return new self(transitions: $transitions);
 		}
 
-		throw new UnexpectedValueException(
+		throw self::notABudget(value: $value);
+	}//end fromValue()
+
+	/**
+	 * The refusal of a value that is neither "all" nor a whole number of transitions.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return UnexpectedValueException The refusal.
+	 */
+	private static function notABudget(mixed $value): UnexpectedValueException {
+		return new UnexpectedValueException(
 			sprintf(
 				'advance %s is not a budget. Use 0 to park the run for the worker, a positive number of transitions, or "all".',
 				var_export($value, true)
 			)
 		);
-	}//end fromValue()
+	}//end notABudget()
+
+	/**
+	 * The refusal of a null budget.
+	 *
+	 * @return UnexpectedValueException The refusal.
+	 */
+	private static function nullBudget(): UnexpectedValueException {
+		return new UnexpectedValueException(
+			'advance is null. A null budget reads as 0 at every PHP and JSON coercion, so it is refused: '
+			. 'unlimited is spelled "all", the default is 0, and any other value is a positive number of transitions.'
+		);
+	}//end nullBudget()
+
+	/**
+	 * The value as a non-negative whole number of transitions, or null.
+	 *
+	 * Booleans are not numbers here, however PHP would cast them.
+	 *
+	 * @param mixed $value The stored or configured value.
+	 *
+	 * @return int|null The transitions, or null when the value is not one.
+	 */
+	private static function wholeTransitions(mixed $value): int|null {
+		if (is_bool($value) === true || is_numeric($value) === false) {
+			return null;
+		}
+
+		$asFloat = (float)$value;
+		$asInt = (int)$value;
+		if ($asFloat === (float)$asInt && $asInt >= 0) {
+			return $asInt;
+		}
+
+		return null;
+	}//end wholeTransitions()
 
 	/**
 	 * Whether the completing request should advance the run at all.
 	 *
 	 * @return boolean False for the default zero budget.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function advancesInRequest(): bool {
 		return ($this->transitions !== 0);
@@ -155,7 +195,7 @@ final class FlowAdvanceBudget {
 	 *
 	 * @return boolean True when the walk runs to its next natural stop.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function isUnlimited(): bool {
 		return ($this->transitions === null);
@@ -166,7 +206,7 @@ final class FlowAdvanceBudget {
 	 *
 	 * @return integer|null The number of transitions the completion may push.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function transitions(): ?int {
 		return $this->transitions;
@@ -181,7 +221,7 @@ final class FlowAdvanceBudget {
 	 *
 	 * @return integer|string The stored form.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function toStored(): int|string {
 		if ($this->transitions === null) {

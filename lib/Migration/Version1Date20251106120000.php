@@ -264,7 +264,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep {
 		if ($updated === false) {
 			$output->info(message: '');
 			$output->info(message: 'ℹ️  No changes needed - all organisation columns already configured correctly');
-			return null;
+			return $schema;
 		}
 
 		$output->info(message: '');

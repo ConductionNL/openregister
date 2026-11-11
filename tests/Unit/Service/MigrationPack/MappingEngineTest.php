@@ -31,11 +31,13 @@ use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use PHPUnit\Framework\TestCase;
 
 class MappingEngineTest extends TestCase {
+	use PassThroughL10nTrait;
+
 	private MappingEngine $engine;
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->engine = new MappingEngine();
+		$this->engine = new MappingEngine($this->passThroughL10n());
 	}
 
 	private function pack(array $fieldMappings, array $extra = []): array {
@@ -303,4 +305,36 @@ class MappingEngineTest extends TestCase {
 	public function testIsRowSkippedDefaultsToFalseWhenNoSkipRows(): void {
 		$this->assertFalse($this->engine->isRowSkipped([], 1));
 	}
+
+	/**
+	 * The row errors the preview and the import show go through the app's translations.
+	 *
+	 * @return void
+	 */
+	public function testEveryRowErrorIsTranslated(): void {
+		$engine = new MappingEngine($this->passThroughL10n(prefix: 'NL:'));
+		$result = $engine->mapRow(
+			$this->pack(
+				[
+					['source' => 'Req', 'target' => 'a', 'required' => true],
+					['source' => 'Odd', 'target' => 'b', 'transform' => ['type' => 'weird']],
+					['source' => 'When', 'target' => 'c', 'transform' => ['type' => 'date', 'sourceFormat' => 'Y-m-d']],
+					['source' => 'Looked', 'target' => 'd', 'transform' => ['type' => 'lookup', 'map' => ['x' => 1]]],
+				]
+			),
+			['Odd' => 'v', 'When' => 'not a date', 'Looked' => 'y'],
+			1
+		);
+
+		$messages = array_column($result['errors'], 'message');
+		$this->assertCount(4, $messages);
+		foreach ($messages as $message) {
+			$this->assertStringStartsWith('NL:', $message);
+		}
+
+		$this->assertContains('NL:Required source field "Req" is missing or empty', $messages);
+		$this->assertContains('NL:Unknown transform type "weird"', $messages);
+		$this->assertContains('NL:Could not parse date "not a date" with format "Y-m-d"', $messages);
+		$this->assertContains('NL:Value "y" has no mapping and no default is configured', $messages);
+	}//end testEveryRowErrorIsTranslated()
 }

@@ -61,21 +61,21 @@ final class Version1Date20260911060000 extends SimpleMigrationStep {
 	 * @param Closure(): ISchemaWrapper $schemaClosure The schema closure.
 	 * @param array<string, mixed> $options Migration options.
 	 *
-	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
+	 * @return ISchemaWrapper The changed schema.
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/* @var ISchemaWrapper $schema The schema wrapper. */
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::TABLE) === false) {
 			$output->warning(message: 'openregister_organisations is absent; skipping the retained_at column');
 
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
 		if ($table->hasColumn(self::COLUMN) === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn(

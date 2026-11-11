@@ -37,7 +37,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 
 declare(strict_types=1);
@@ -47,16 +47,39 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Schema\ITable;
+use Doctrine\DBAL\Schema\Table;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Creates the task, candidate-index, relation and audit tables.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 class Version1Date20260831120000 extends SimpleMigrationStep {
 
+	/*
+	 * NO NATIVE TYPE HINT on the $table parameters below, deliberately.
+	 *
+	 * ISchemaWrapper hands out `Doctrine\DBAL\Schema\Table` on NC 32-34 and
+	 * `OCP\DB\Schema\ITable` on NC 35 — and ITable does not exist at all
+	 * before 35 (lib/public/DB/Schema/ITable.php is absent on stable33 and
+	 * stable34). A native hint for EITHER type is therefore a TypeError on the
+	 * other half of the range this app declares, and it fires during
+	 * `occ app:enable` -> Installer::installApp() -> MigrationService::migrate(),
+	 * so the app does not install at all rather than failing a test:
+	 *
+	 *   TypeError: addColumns(): Argument #1 ($table) must be of type
+	 *   OCP\DB\Schema\ITable, Doctrine\DBAL\Schema\Table given
+	 *
+	 * The docblocks name the union `ITable|Table`: the analysers resolve
+	 * against `nextcloud/ocp: ^35.0`, where ISchemaWrapper returns ITable, while
+	 * NC 32-34 still pass the Doctrine Table at runtime. Both objects carry the
+	 * same addColumn/addIndex/hasIndex surface these helpers use. A docblock
+	 * naming a class that is absent on 32-34 is harmless there: it is never
+	 * loaded.
+	 */
 	/**
 	 * The task table.
 	 */
@@ -86,7 +109,7 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
@@ -117,7 +140,7 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		return $schema;
@@ -133,7 +156,7 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	private function createTasksTable(ISchemaWrapper $schema): void {
 		$table = $schema->createTable(self::TABLE_TASKS);
@@ -235,13 +258,13 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 	/**
 	 * The task table's indexes: one per query the inbox and propagation run.
 	 *
-	 * @param \Doctrine\DBAL\Schema\Table $table The task table.
+	 * @param ITable|Table $table The task table.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
-	private function addTaskIndexes(\Doctrine\DBAL\Schema\Table $table): void {
+	private function addTaskIndexes($table): void {
 		$table->setPrimaryKey(['id']);
 		$table->addUniqueIndex(['uuid'], 'or_tasks_uuid');
 		// "My open work": the inbox's hot path.
@@ -261,7 +284,7 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	private function createCandidatesTable(ISchemaWrapper $schema): void {
 		$table = $schema->createTable(self::TABLE_CANDIDATES);
@@ -283,7 +306,7 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
 	 */
 	private function createRelationsTable(ISchemaWrapper $schema): void {
 		$table = $schema->createTable(self::TABLE_RELATIONS);
@@ -305,7 +328,7 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	private function createAuditTable(ISchemaWrapper $schema): void {
 		$table = $schema->createTable(self::TABLE_AUDIT);

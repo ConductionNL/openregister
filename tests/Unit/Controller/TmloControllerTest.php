@@ -30,12 +30,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TmloControllerFactory;
 use OCA\OpenRegister\Controller\TmloController;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TmloService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -93,6 +95,13 @@ class TmloControllerTest extends TestCase {
 	 */
 	private TmloController $controller;
 
+	/**
+	 * The export verb, allowing unless a case says otherwise.
+	 *
+	 * @var ExportGate
+	 */
+	private ExportGate $exportGate;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -102,14 +111,22 @@ class TmloControllerTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new TmloController(
+		// The gate allows by default, so the cases below stay about the TMLO
+		// shaping they were written for. The refusal arm is its own case, and
+		// it is the one that proves the wiring: a controller that ignored the
+		// gate would pass every other case in this file.
+		$this->exportGate = $this->createMock(ExportGate::class);
+		$this->exportGate->method('refusalFor')->willReturn(null);
+
+		$this->controller = TmloControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->tmloService,
 			$this->objectService,
 			$this->registerMapper,
 			$this->schemaMapper,
-			new NullLogger()
+			new NullLogger(),
+			$this->exportGate
 		);
 	}//end setUp()
 
@@ -351,4 +368,58 @@ class TmloControllerTest extends TestCase {
 		$this->assertSame(1, $captured['filters']['register'] ?? null, 'register id must scope the query');
 		$this->assertSame(7, $captured['filters']['schema'] ?? null, 'schema id must scope the query');
 	}//end testExportBatchScopesTheQueryInsideFilters()
+
+	/**
+	 * A caller the export gate refuses gets the refusal, and no metadata.
+	 *
+	 * The archival export is the object's data in another shape, so it meets
+	 * the export verb like every other export path (REQ-EXP-001). Without this
+	 * case, deleting the gate call from the controller leaves every other test
+	 * in this file green.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 *
+	 * @return void
+	 */
+	public function testARefusedCallerGetsNoArchivalMetadata(): void {
+		$gate = $this->createMock(ExportGate::class);
+		$gate->method('refusalFor')->willReturn(
+			new \OCP\AppFramework\Http\JSONResponse(
+				['error' => 'EXPORT_REFUSED', 'verb' => 'export'],
+				403
+			)
+		);
+
+		$controller = TmloControllerFactory::create(
+			'openregister',
+			$this->request,
+			$this->tmloService,
+			$this->objectService,
+			$this->registerMapper,
+			$this->schemaMapper,
+			new NullLogger(),
+			$gate
+		);
+
+		$register = new Register();
+		$register->setId(1);
+		$register->setSchemas([7]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->tmloService->method('isTmloEnabled')->willReturn(true);
+
+		$schema = new Schema();
+		$schema->setId(7);
+		$this->schemaMapper->method('findInIds')->willReturn($schema);
+
+		// The objects are never read: a refusal that had already run the query
+		// would have taken the data off the database before deciding it may
+		// not leave the instance.
+		$this->objectService->expects($this->never())->method('findAll');
+
+		$response = $controller->exportBatch('zaken', 'zaak');
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame('export', $response->getData()['verb']);
+	}//end testARefusedCallerGetsNoArchivalMetadata()
+
 }//end class

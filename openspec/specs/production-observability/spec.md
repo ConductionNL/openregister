@@ -8,7 +8,9 @@ status: implemented
 
 @e2e exclude Prometheus metrics/health backend — covered by PHPUnit
 Provide production-grade observability for OpenRegister deployments through Prometheus metrics, structured logging, health/readiness endpoints, and audit-compliant monitoring. This capability enables operations teams to monitor application health, track SLA compliance, detect anomalies in real-time, and satisfy BIO (Baseline Informatiebeveiliging Overheid) audit logging requirements for Dutch government deployments.
+
 ## Requirements
+
 ### Requirement: Prometheus Metrics Endpoint
 The system SHALL expose a dedicated metrics endpoint that returns all application metrics in Prometheus text exposition format (version 0.0.4). The endpoint MUST be served at `GET /index.php/apps/openregister/api/metrics` and MUST return the `Content-Type: text/plain; version=0.0.4; charset=utf-8` header. The `MetricsController` (`lib/Controller/MetricsController.php`) already implements this endpoint with basic gauge metrics; this requirement extends it with counters, histograms, and richer labels.
 
@@ -336,12 +338,7 @@ Since PHP is a request-scoped runtime without persistent in-memory state, the sy
 - **AND** the deletion count MUST be logged at INFO level
 
 ### Requirement: Performance Baseline Metrics
-The system MUST expose metrics from the `PerformanceHandler` (`lib/Service/Object/PerformanceHandler.php`) and `PerformanceOptimizationHandler` to track internal optimization effectiveness. These metrics enable capacity planning and regression detection.
-
-#### Scenario: Fast-path detection rate
-- **GIVEN** the `PerformanceHandler.optimizeRequestForPerformance()` classifies requests as simple or complex
-- **WHEN** the metrics endpoint is scraped
-- **THEN** `openregister_fast_path_requests_total` and `openregister_slow_path_requests_total` counters MUST be present
+The system MUST expose metrics from the `PerformanceOptimizationHandler` to track internal optimization effectiveness. These metrics enable capacity planning and regression detection.
 
 #### Scenario: Cache hit ratio
 - **GIVEN** the `CacheHandler` serves cached objects for repeated lookups
@@ -545,13 +542,7 @@ testing.
 
 ### Requirement: Metrics aggregation helpers MUST summarize operational metrics from the metrics table
 
-`MetricsService` MUST aggregate rows from the `openregister_metrics` table into the per-day, per-type, and summary shapes consumed by the dashboard and operational reporting, plus the supporting numeric helpers those aggregations rely on.
-
-#### Scenario: Files processed per day
-
-- **GIVEN** file-processed metrics recorded over the last N days
-- **WHEN** `getFilesProcessedPerDay(days)` runs
-- **THEN** it MUST return a `[date => count]` map, grouped by `%Y-%m-%d` and ordered ascending, restricted to rows within the window
+`MetricsService` MUST aggregate rows from the `openregister_metrics` table into the per-type and summary shapes consumed by operational reporting, plus the supporting numeric helpers those aggregations rely on.
 
 #### Scenario: Embedding statistics with success rate and cost
 
@@ -566,12 +557,11 @@ testing.
 - **WHEN** `getSearchLatencyStats(days)` runs
 - **THEN** it MUST return `[type => {count, avg_ms, min_ms, max_ms}]` computed per search type
 
-#### Scenario: Storage growth and dashboard composition
+#### Scenario: Storage growth
 
 - **GIVEN** recorded vector/storage metrics
 - **WHEN** `getStorageGrowth(days)` runs
 - **THEN** it MUST return per-day vector additions plus current storage and an average derived from `calculateAverageVectorsPerDay()`
-- **AND** `getDashboardMetrics()` MUST compose `files_processed` (30d), `embedding_stats` (30d), `search_latency` (7d), and `storage_growth` (30d) into a single bundle
 
 #### Scenario: Numeric helper behavior
 
@@ -581,22 +571,25 @@ testing.
 - **AND** `roundAverageMs(value)` MUST coerce a numeric (possibly string) value to a float rounded to two decimals, returning `0.0` for non-numeric input
 - **AND** `calculateAverageVectorsPerDay(growthData)` MUST return `0.0` for empty data, otherwise the total divided by the number of days rounded to two decimals
 
-### Requirement: Realtime change records MUST be emitted as CloudEvent-shaped envelopes
+### Requirement: Render and read paths log at debug level per request
 
-`RealtimeService` MUST record a CloudEvents 1.0 shaped change record for a register object on create, update, delete, and transition, persisting it to the realtime event store. A write failure MUST NOT break the originating save pipeline.
+The system SHALL emit log statements that fire on every render or read request — batch-preload
+progress in the object renderer, per-request RBAC/flow tracing in the objects controller — at
+`debug` level, never `info` or higher. `info` level on these paths is reserved for genuine business events
+(e.g. a bulk operation skipping an object due to a RESTRICT constraint) and explicit administrative
+batch operations; routine per-request progress MUST NOT appear in production logs at the default
+log level.
 
-#### Scenario: Record a change event
+#### Scenario: Extended list render emits no info logs
 
-- **GIVEN** an object change of a known type (`or.object.created`, `or.object.updated`, `or.object.deleted`, `or.object.transitioned`)
-- **WHEN** `record(eventType, object, extra)` runs
-- **THEN** it MUST build a CloudEvents 1.0 envelope with `specversion: "1.0"`, the event type, a `source` of `<baseUrl>/apps/openregister`, a subject of the object URN (or its uuid), a unique id, an ISO 8601 `time`, and a `data` block carrying register, schema, uuid, urn, organisation, owner, actor (session UID), and trigger-specific `extra`
-- **AND** it MUST persist a `RealtimeEvent` with the matching fields and the JSON-encoded payload, returning the inserted entity
+- **WHEN** a list of objects is rendered with `_extend` set
+- **THEN** the batch-preload progress messages are logged at `debug` level only
 
-#### Scenario: Failure is non-fatal
+#### Scenario: Object PATCH emits no per-request info tracing
 
-- **GIVEN** the underlying realtime store write throws
-- **WHEN** `record()` executes
-- **THEN** it MUST catch the error, log a warning, and return `null` so a missed realtime event never breaks the actual save
+- **WHEN** an object is updated via PATCH
+- **THEN** the request-flow tracing messages (settings dump, save-succeeded, preparing-response)
+  are logged at `debug` level only
 
 ## Current Implementation Status
 - **Implemented -- Prometheus metrics endpoint**: `MetricsController` (`lib/Controller/MetricsController.php`) exposes `/api/metrics` with `openregister_info`, `openregister_up`, `openregister_registers_total`, `openregister_schemas_total`, `openregister_objects_total` (by register/schema), and `openregister_search_requests_total` gauges. Content-Type header is correctly set to Prometheus exposition format.
@@ -605,7 +598,7 @@ testing.
 - **Implemented -- metrics recording service**: `MetricsService` (`lib/Service/MetricsService.php`) records operational metrics to `openregister_metrics` table with support for file processing, embedding generation, search latency, and storage growth tracking. Includes 90-day retention cleanup.
 - **Implemented -- audit trail**: `AuditTrail` entity, `AuditTrailMapper`, `AuditHandler`, `LogService`, and `AuditTrailController` provide complete object-level audit logging with export support (CSV, JSON, XML, TXT).
 - **Implemented -- webhook logging**: `WebhookLog` entity and `WebhookLogMapper` track webhook delivery attempts, success/failure, retry counts, and response data.
-- **Implemented -- performance tracking**: `PerformanceHandler` and `PerformanceOptimizationHandler` track fast-path detection, extend optimization, and cache preloading.
+- **Implemented -- performance tracking**: `PerformanceOptimizationHandler` tracks extend optimization and cache preloading.
 - **Not implemented -- request duration histograms**: No middleware tracks per-request duration as histogram data with Prometheus bucket boundaries.
 - **Not implemented -- CRUD operation counters**: No counters for create/update/delete operations in Prometheus format (MetricsService records metrics but MetricsController does not format them as counters with register/schema labels).
 - **Not implemented -- readiness endpoint**: No `/api/ready` endpoint that checks migration status.

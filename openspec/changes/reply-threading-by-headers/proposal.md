@@ -16,6 +16,11 @@ whose subject a citizen edited cannot be matched. This change records the
 a resolve endpoint that answers `In-Reply-To` and `References` before any
 subject tag is consulted.
 
+- Woo programme (wave 1) amendment: closes 19.6 (not statutory) by assembling collected `.eml` files into threads by their headers only. See the amendment section below.
+- Dependencies: `openregister/send-at-on-the-messaging-leaf` (open, 0 of 6 tasks, no issue yet), as before the amendment. `dossiq/woo-review-triage` reads the thread endpoint.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Ledger rows
 
 | row | capability | rating | size |
@@ -83,3 +88,22 @@ References is the email leaf; integriq's intake hands it the message".
   `lib/Controller/EmailsController.php` (resolve), the dispatch leaf's
   outbound hook.
 - Size: M.
+
+## Woo capability programme amendment (2026-10-05)
+
+The Woo capability programme (round 1 build plan, wave 1) amends this change with one row. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open at 0 of 7 tasks, with `ReplyThreadResolver` built for the header order and the refusals. Nothing already done is rewritten.
+
+| row | capability | ours today (the round 1 baseline) |
+|---|---|---|
+| 19.6 | An email conversation is assembled as a thread, and a message is read with the messages around it | no: `EmlParser::extractHeaders()` reads From, To, Cc, Subject, Date and `Message-ID`, and splits body from attachments, so a message is a first-class source; nothing reads `In-Reply-To` or `References`, and nothing assembles collected messages into a thread |
+
+This change threads a live reply onto an object. A Woo request has the other need: hundreds of `.eml` files collected into one corpus, which a reviewer must read as conversations. The same header rules apply, so the amendment reuses `ReplyThreadResolver`'s reading of the headers (case-insensitive names, `References` walked from its last entry, nothing guessed from the subject).
+
+What the amendment adds:
+
+- `EmlParser` also reads `In-Reply-To` and `References` into `EmlStructure`, and extraction stores the three ids per `.eml` file in a `openregister_mail_headers` table (`file_id`, `message_id`, `in_reply_to`, `references`, `sent_at`).
+- `MailThreadAssembler` builds threads over a set of `.eml` files (an object's files, a folder, or a list) by those headers only. A parent that is not in the set is kept as a named gap (its `Message-ID`, "not in this set"), so the thread does not silently close up. Two messages sharing a `Message-ID` are shown as duplicates of one node. The subject is never used.
+- `GET /api/files/{fileId}/thread` returns the thread the message belongs to, in date order with parent links, the position of the asked message, and gaps; only files the caller may read are included, and an unreadable member is a gap like a missing one, never a leak of its headers.
+- The files sidebar of an `.eml` file gets a "Conversation" section listing the messages around it, each opening that message.
+
+Dependencies: none new. Consumer: `dossiq/woo-review-triage` (wave 3) reads the thread endpoint for its reader. Without dossiq, the sidebar section is the reader. Closes 19.6.

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 use OCA\OpenRegister\Service\Rules\DependentValueTable;
 use OCA\OpenRegister\Service\Rules\DependentValueValidator;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Rules\DependentValueWrite;
 
 /**
  * Task 4.3 and REQ-REO-005.
@@ -33,7 +34,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class DependentValueTableTest extends TestCase {
 
@@ -85,7 +86,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASoundTableIsAccepted(): void {
 		$this->assertSame([], $this->codesFor($this->properties()));
@@ -96,12 +97,12 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAValueOutsideTheTableIsRefusedNamingBothProperties(): void {
 		$violations = (new DependentValueTable())->violations(
 			properties: $this->properties(),
-			data: ['zaaktype' => 'bezwaar', 'resultaat' => 'verleend']
+			write: new DependentValueWrite(data: ['zaaktype' => 'bezwaar', 'resultaat' => 'verleend'], stored: [])
 		);
 
 		$this->assertCount(1, $violations);
@@ -117,14 +118,14 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAValueInsideTheTableIsAllowed(): void {
 		$this->assertSame(
 			[],
 			(new DependentValueTable())->violations(
 				properties: $this->properties(),
-				data: ['zaaktype' => 'bezwaar', 'resultaat' => 'ongegrond']
+				write: new DependentValueWrite(data: ['zaaktype' => 'bezwaar', 'resultaat' => 'ongegrond'], stored: [])
 			)
 		);
 	}//end testAValueInsideTheTableIsAllowed()
@@ -138,13 +139,12 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAPartialWriteIsJudgedAgainstTheStoredControllingValue(): void {
 		$violations = (new DependentValueTable())->violations(
 			properties: $this->properties(),
-			data: ['resultaat' => 'verleend'],
-			stored: ['zaaktype' => 'bezwaar', 'resultaat' => 'gegrond']
+			write: new DependentValueWrite(data: ['resultaat' => 'verleend'], stored: ['zaaktype' => 'bezwaar', 'resultaat' => 'gegrond'])
 		);
 
 		$this->assertCount(1, $violations);
@@ -159,14 +159,14 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnUnlistedControllingValueConstrainsNothing(): void {
 		$this->assertSame(
 			[],
 			(new DependentValueTable())->violations(
 				properties: $this->properties(),
-				data: ['zaaktype' => 'melding', 'resultaat' => 'verleend']
+				write: new DependentValueWrite(data: ['zaaktype' => 'melding', 'resultaat' => 'verleend'], stored: [])
 			)
 		);
 	}//end testAnUnlistedControllingValueConstrainsNothing()
@@ -176,7 +176,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testATableNamingAnUnknownPropertyIsRefusedAtSchemaSave(): void {
 		$codes = $this->codesFor(
@@ -191,7 +191,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheUnknownPropertyRefusalNamesIt(): void {
 		$errors = (new DependentValueValidator())->validate(
@@ -206,7 +206,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnUnknownControllingValueIsRefusedAtSchemaSave(): void {
 		$codes = $this->codesFor(
@@ -221,7 +221,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAListedValueThePropertyCannotTakeIsRefused(): void {
 		$codes = $this->codesFor(
@@ -236,7 +236,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAPropertyCannotControlItself(): void {
 		$codes = $this->codesFor(
@@ -251,7 +251,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAMalformedTableIsRefused(): void {
 		$this->assertContains(DependentValueValidator::CODE_MALFORMED, $this->codesFor($this->properties(['controlledBy' => 'zaaktype'])));
@@ -263,7 +263,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASchemaWithNoTableIsUntouched(): void {
 		$properties = ['zaaktype' => ['type' => 'string'], 'resultaat' => ['type' => 'string']];
@@ -271,7 +271,7 @@ class DependentValueTableTest extends TestCase {
 
 		$this->assertFalse($table->declaresAny(properties: $properties));
 		$this->assertSame([], $table->tablesOf(properties: $properties));
-		$this->assertSame([], $table->violations(properties: $properties, data: ['resultaat' => 'anything']));
+		$this->assertSame([], $table->violations(properties: $properties, write: new DependentValueWrite(data: ['resultaat' => 'anything'], stored: [])));
 		$this->assertSame([], $this->codesFor($properties));
 	}//end testASchemaWithNoTableIsUntouched()
 
@@ -280,14 +280,14 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnAbsentDependentValueIsNotRefused(): void {
 		$this->assertSame(
 			[],
 			(new DependentValueTable())->violations(
 				properties: $this->properties(),
-				data: ['zaaktype' => 'bezwaar']
+				write: new DependentValueWrite(data: ['zaaktype' => 'bezwaar'], stored: [])
 			)
 		);
 	}//end testAnAbsentDependentValueIsNotRefused()

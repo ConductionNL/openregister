@@ -120,7 +120,7 @@ class Version1Date20260903090000 extends SimpleMigrationStep {
 
 		if ($changed === 0) {
 			$output->info('quality metadata: every per-schema object table already has _quality, nothing to do');
-			return null;
+			return $schema;
 		}
 
 		$output->info(sprintf('quality metadata: added _quality to %d per-schema object table(s)', $changed));

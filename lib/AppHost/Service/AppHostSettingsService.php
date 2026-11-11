@@ -59,25 +59,64 @@ class AppHostSettingsService {
 	protected const DEFAULT_CONFIG_KEYS = ['register'];
 
 	/**
+	 * The resolved feature declarations, for this request only.
+	 *
+	 * Resolving them reads the register JSON and its fragments off disk, and
+	 * `isFeatureEnabled()` is meant to be callable inside a guard.
+	 *
+	 * @var array<int, mixed>|null
+	 */
+	private ?array $featureDeclarations = null;
+
+	/**
+	 * App config store.
+	 *
+	 * @var IAppConfig
+	 */
+	protected readonly IAppConfig $appConfig;
+
+	/**
+	 * App manager (OR availability).
+	 *
+	 * @var IAppManager
+	 */
+	protected readonly IAppManager $appManager;
+
+	/**
+	 * DI container (lazy OR service resolution).
+	 *
+	 * @var ContainerInterface
+	 */
+	protected readonly ContainerInterface $container;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	protected readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
+	 * The group manager and user session decide the admin check, so they stay
+	 * direct parameters rather than part of the platform bundle.
+	 *
 	 * @param string $appId The calling (leaf) app id.
-	 * @param IAppConfig $appConfig App config store.
-	 * @param IAppManager $appManager App manager (OR availability).
-	 * @param ContainerInterface $container DI container (lazy OR service resolution).
+	 * @param AppHostSettingsServices $services Config store, app manager, container and logger.
 	 * @param IGroupManager $groupManager Group manager (admin check).
 	 * @param IUserSession $userSession Current user session.
-	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
 		protected readonly string $appId,
-		protected readonly IAppConfig $appConfig,
-		protected readonly IAppManager $appManager,
-		protected readonly ContainerInterface $container,
+		AppHostSettingsServices $services,
 		protected readonly IGroupManager $groupManager,
 		protected readonly IUserSession $userSession,
-		protected readonly LoggerInterface $logger,
 	) {
+		$this->appConfig = $services->appConfig;
+		$this->appManager = $services->appManager;
+		$this->container = $services->container;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -142,14 +181,289 @@ class AppHostSettingsService {
 	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
 	 */
 	public function updateSettings(array $data): array {
+		// Read BEFORE the write, because after it there is nothing to compare
+		// against: `IAppConfig` has no history, so the old value exists only
+		// in this variable and only for the next three lines (ledger row
+		// Q10.13).
+		$before = $this->getSettings();
+
 		foreach ($this->configKeys() as $key) {
 			if (isset($data[$key]) === true) {
 				$this->appConfig->setValueString($this->appId, $key, (string)$data[$key]);
 			}
 		}
 
-		return $this->getSettings();
+		$after = $this->getSettings();
+		$this->auditSettingsChange(before: $before, after: $after);
+
+		return $after;
 	}//end updateSettings()
+
+	/**
+	 * Record who changed what, on the hash-chained audit trail.
+	 *
+	 * 🔑 THE AUDITOR IS RESOLVED FROM THE CONTAINER AND MAY BE ABSENT. This
+	 * service is the AppHost base every fleet app extends, and it is
+	 * constructed in apps that do not have OpenRegister's own container: a
+	 * hard dependency here would be a fatal on settings pages across the
+	 * fleet. An unresolvable auditor means the change is not recorded, which
+	 * is the state every one of those apps was in before this existed.
+	 *
+	 * 🔴 IT NEVER THROWS. The setting has already been stored by the time this
+	 * runs, so a failure here would report a failed save for a change that in
+	 * fact happened: the value moved and the response denies it.
+	 *
+	 * @param array<string, mixed> $before The settings before the write.
+	 * @param array<string, mixed> $after The settings after it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	private function auditSettingsChange(array $before, array $after): void {
+		try {
+			$this->recordSettingsChange(before: $before, after: $after);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf(
+					'[AppHost:%s] Settings change was stored but not audited: %s',
+					$this->appId,
+					$e->getMessage()
+				)
+			);
+		}
+	}//end auditSettingsChange()
+
+	/**
+	 * Hand a settings change to OpenRegister's settings-change auditor, when it can record one.
+	 *
+	 * @param array<string, mixed> $before The values before the change.
+	 * @param array<string, mixed> $after  The values after the change.
+	 *
+	 * @return void
+	 */
+	private function recordSettingsChange(array $before, array $after): void {
+		$auditor = $this->container->get(
+			'OCA\\OpenRegister\\Service\\Rbac\\SettingsChangeAuditor'
+		);
+
+		if (method_exists($auditor, 'recordUpdate') === false) {
+			return;
+		}
+
+		$auditor->recordUpdate(
+			$this->appId,
+			$before,
+			$after,
+			$this->secretKeysFor(auditor: $auditor, changedKeys: array_keys(array_merge($before, $after)))
+		);
+	}//end recordSettingsChange()
+
+	/**
+	 * The feature toggles this app declares.
+	 *
+	 * 🔑 THE DECLARATION HAS TO BE READABLE ON THE SERVER. The change names the
+	 * manifest as where an app declares its toggles, and the manifest is a
+	 * client artefact: PHP cannot ask it whether a guard is on. So the
+	 * server-side declaration is the `features` block of the app's register
+	 * configuration, which this service already resolves, and the manifest half
+	 * (task 1.1, in nextcloud-vue) is the same list for the client. When the
+	 * manifest schema lands, one loader feeds both and this hook is where it
+	 * arrives; nothing that reads a toggle changes.
+	 *
+	 * Overridable, like {@see self::configKeys()}.
+	 *
+	 * @return array<int, mixed> The declared toggles.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	protected function featureDeclarations(): array {
+		if ($this->featureDeclarations !== null) {
+			return $this->featureDeclarations;
+		}
+
+		$this->featureDeclarations = $this->declaredFeatures();
+
+		return $this->featureDeclarations;
+	}//end featureDeclarations()
+
+	/**
+	 * The `features` block of the register configuration, as a list; none when it is unreadable.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function declaredFeatures(): array {
+		$declarations = [];
+		try {
+			[$data]   = $this->resolveRegisterConfiguration();
+			$declared = ($data[FeatureToggleService::DECLARATION_KEY] ?? null);
+			if (is_array($declared) === true) {
+				$declarations = array_values($declared);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[AppHost:%s] feature declarations unreadable, no toggles offered: %s', $this->appId, $e->getMessage())
+			);
+		}
+
+		return $declarations;
+	}//end declaredFeatures()
+
+	/**
+	 * The effective feature toggles: declared defaults under instance overrides.
+	 *
+	 * @return array<string, bool> The toggles.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function getFeatures(): array {
+		$toggles = $this->featureToggles();
+		if ($toggles === null) {
+			return [];
+		}
+
+		return $toggles->merged(app: $this->appId, declarations: $this->featureDeclarations());
+	}//end getFeatures()
+
+	/**
+	 * Set instance overrides for declared toggles.
+	 *
+	 * @param array<string, mixed> $overrides The submitted overrides.
+	 *
+	 * @return array<string, bool> The toggles after the write.
+	 *
+	 * @throws \OCA\OpenRegister\AppHost\Exception\FeatureToggleRefusedException When a key is not declared.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function updateFeatures(array $overrides): array {
+		$toggles = $this->featureToggles();
+		if ($toggles === null) {
+			return [];
+		}
+
+		return $toggles->update(
+			app: $this->appId,
+			declarations: $this->featureDeclarations(),
+			overrides: $overrides
+		);
+	}//end updateFeatures()
+
+	/**
+	 * Whether one declared feature is on.
+	 *
+	 * 🔴 AN ABSENT TOGGLE SERVICE READS FALSE, not true. This service is the
+	 * base every fleet app extends and the toggle service is resolved from the
+	 * container, so "I cannot tell" is a real answer here — and the safe
+	 * reading of it is that the feature is off. Returning true would mean a
+	 * container problem silently switches every guarded feature on.
+	 *
+	 * @param string $key The toggle.
+	 *
+	 * @return bool True when the feature is on.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function isFeatureEnabled(string $key): bool {
+		$toggles = $this->featureToggles();
+		if ($toggles === null) {
+			return false;
+		}
+
+		return $toggles->isEnabled(app: $this->appId, key: $key, declarations: $this->featureDeclarations());
+	}//end isFeatureEnabled()
+
+	/**
+	 * The toggle service, or null when it cannot be resolved.
+	 *
+	 * @return FeatureToggleService|null The service.
+	 */
+	private function featureToggles(): ?FeatureToggleService {
+		try {
+			$service = $this->container->get(FeatureToggleService::class);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[AppHost:%s] feature toggle service unavailable; every toggle reads off: %s', $this->appId, $e->getMessage())
+			);
+			return null;
+		}
+
+		if (($service instanceof FeatureToggleService) === false) {
+			return null;
+		}
+
+		return $service;
+	}//end featureToggles()
+
+	/**
+	 * The secret keys to mask: the hook's, plus those the register configuration declares.
+	 *
+	 * A declaration is an entry `"<key>": {"x-openregister-secret": true}` at
+	 * the top level of the app's register document. When the document cannot be
+	 * read in full, nobody can tell which keys it declares, so every changed key
+	 * is masked: the trail is append-only and a value on it stays there.
+	 *
+	 * @param object             $auditor     The settings auditor.
+	 * @param array<int, string> $changedKeys The keys of this save.
+	 *
+	 * @return array<int, string> The secret keys.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/apphost-settings-plane/spec.md
+	 */
+	private function secretKeysFor(object $auditor, array $changedKeys): array {
+		$keys = $this->secretConfigKeys();
+		if (method_exists($auditor, 'secretKeysIn') === false) {
+			return $keys;
+		}
+
+		$data = $this->readableRegisterConfiguration();
+		if ($data === null) {
+			return array_values(array_unique(array_merge($keys, $changedKeys)));
+		}
+
+		return array_values(array_unique(array_merge($keys, $auditor->secretKeysIn($data))));
+	}//end secretKeysFor()
+
+	/**
+	 * The register configuration, or null when it could not be read in full.
+	 *
+	 * @return array<string, mixed>|null The configuration.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/apphost-settings-plane/spec.md
+	 */
+	private function readableRegisterConfiguration(): ?array {
+		try {
+			$resolved = $this->resolveRegisterConfiguration();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[AppHost:%s] Register configuration unreadable: %s', $this->appId, $e->getMessage())
+			);
+			return null;
+		}
+
+		if (is_array($resolved[0]) === false || ($resolved[2] ?? true) === false) {
+			return null;
+		}
+
+		return $resolved[0];
+	}//end readableRegisterConfiguration()
+
+	/**
+	 * Which of this app's config keys hold a secret.
+	 *
+	 * Overridable hook, like {@see self::configKeys()}. An app that stores a
+	 * token or a password widens this list, and those keys are then recorded
+	 * as CHANGED WITH BOTH VALUES MASKED rather than omitted: the credential
+	 * somebody rotated is the row worth having most, and the trail is
+	 * append-only, so the value itself must never reach it.
+	 *
+	 * @return array<int, string> The secret keys.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	protected function secretConfigKeys(): array {
+		return [];
+	}//end secretConfigKeys()
 
 	/**
 	 * Import the app's register JSON via OpenRegister's ConfigurationService.
@@ -167,77 +481,124 @@ class AppHostSettingsService {
 	 */
 	public function loadConfiguration(bool $force = false): array {
 		if ($this->isOpenRegisterAvailable() === false) {
-			$this->logger->warning(sprintf('[AppHost:%s] OpenRegister not available, skipping register initialization', $this->appId));
-			return [
-				'success' => false,
-				'message' => 'OpenRegister is not installed or enabled.',
-			];
+			return $this->openRegisterUnavailable();
 		}
 
 		try {
-			[$data, $version] = $this->resolveRegisterConfiguration();
-			if ($data === null) {
-				$message = sprintf(
-					'Configuration file %s_register.json not found under the %s app path.',
-					$this->appId,
-					$this->appId
-				);
-				$this->logger->warning(sprintf('[AppHost:%s] %s', $this->appId, $message));
-				return [
-					'success' => false,
-					'message' => $message,
-				];
-			}
-
-			$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
-			$result = $configurationService->importFromApp(appId: $this->appId, data: $data, version: $version, force: $force);
-
-			if (empty($result) === false) {
-				$this->logger->info(sprintf('[AppHost:%s] register configuration imported successfully', $this->appId));
-				// Stamp the app version the config was imported for, so the admin
-				// page can show a REAL up-to-date check (config_version === app version).
-				$this->appConfig->setValueString($this->appId, 'config_version', $this->appManager->getAppVersion($this->appId));
-				return [
-					'success' => true,
-					'message' => 'Configuration imported successfully.',
-					'version' => ($result['version'] ?? 'unknown'),
-				];
-			}
-
-			return [
-				'success' => false,
-				'message' => 'Import returned an empty result.',
-			];
+			return $this->importRegisterConfiguration(force: $force);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				sprintf('[AppHost:%s] configuration import failed', $this->appId),
-				['exception' => $e->getMessage()]
-			);
-			return [
-				'success' => false,
-				'message' => $e->getMessage(),
-			];
-		}//end try
+			return $this->registerImportFailed(error: $e);
+		}
 	}//end loadConfiguration()
 
 	/**
-	 * Resolve the leaf app's register JSON + `register.d/` fragments so they can be
-	 * passed to {@see \OCA\OpenRegister\Service\ConfigurationService::importFromApp()},
-	 * which requires both a `$data` array and a `$version` string.
+	 * Log and report that OpenRegister is not there to import into.
 	 *
-	 * Mirrors the fleet convention hand-rolled by every bespoke per-app
-	 * `SettingsService::doLoadConfiguration()` (e.g. openbuild, procest, scholiq,
-	 * pipelinq): `lib/Settings/{appId}_register.json` as the base document, with
-	 * `lib/Settings/register.d/*.json` fragments deep-merged on top in sorted
-	 * filename order. The fragment signature (filename + content hash of every
-	 * fragment) is folded into the returned version string so OpenRegister's
-	 * version-gated import re-imports whenever a fragment changes, even when the
-	 * base document's own `info.version` did not change.
+	 * @return array{success: bool, message: string}
+	 */
+	private function openRegisterUnavailable(): array {
+		$this->logger->warning(sprintf('[AppHost:%s] OpenRegister not available, skipping register initialization', $this->appId));
+		return [
+			'success' => false,
+			'message' => 'OpenRegister is not installed or enabled.',
+		];
+	}//end openRegisterUnavailable()
+
+	/**
+	 * Read the app's register JSON and import it through the ConfigurationService.
 	 *
-	 * Uses {@see IAppManager::getAppPath()} to locate the leaf app's install
-	 * directory, since - unlike each app's own bespoke SettingsService - this
-	 * generic service lives inside OpenRegister itself and has no `__DIR__`
-	 * relative to the calling (leaf) app.
+	 * @param bool $force Force re-import even when already configured.
+	 *
+	 * @return array<string, mixed> Result with `success`, `message`, and `version`.
+	 */
+	private function importRegisterConfiguration(bool $force): array {
+		[$data, $version] = $this->resolveRegisterConfiguration();
+		if ($data === null) {
+			return $this->registerJsonNotFound();
+		}
+
+		$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationServiceInterface');
+		$result = $configurationService->importFromApp(appId: $this->appId, data: $data, version: $version, force: $force);
+
+		if (empty($result) === false) {
+			return $this->registerImportSucceeded(result: $result);
+		}
+
+		return $this->registerImportEmpty();
+	}//end importRegisterConfiguration()
+
+	/**
+	 * Log and report that the app ships no register JSON.
+	 *
+	 * @return array{success: bool, message: string}
+	 */
+	private function registerJsonNotFound(): array {
+		$message = sprintf(
+			'Configuration file %s_register.json not found under the %s app path.',
+			$this->appId,
+			$this->appId
+		);
+		$this->logger->warning(sprintf('[AppHost:%s] %s', $this->appId, $message));
+		return [
+			'success' => false,
+			'message' => $message,
+		];
+	}//end registerJsonNotFound()
+
+	/**
+	 * Log and report a failed import.
+	 *
+	 * @param Throwable $error The failure.
+	 *
+	 * @return array{success: bool, message: string}
+	 */
+	private function registerImportFailed(Throwable $error): array {
+		$this->logger->error(
+			sprintf('[AppHost:%s] configuration import failed', $this->appId),
+			['exception' => $error->getMessage()]
+		);
+		return [
+			'success' => false,
+			'message' => $error->getMessage(),
+		];
+	}//end registerImportFailed()
+
+	/**
+	 * Log a successful import, stamp the version it was imported for and report it.
+	 *
+	 * @param array<string, mixed> $result The non-empty import result.
+	 *
+	 * @return array{success: bool, message: string, version: mixed}
+	 */
+	protected function registerImportSucceeded(array $result): array {
+		$this->logger->info(sprintf('[AppHost:%s] register configuration imported successfully', $this->appId));
+		// Stamp the app version the config was imported for, so the admin
+		// page can show a REAL up-to-date check (config_version === app version).
+		$this->appConfig->setValueString($this->appId, 'config_version', $this->appManager->getAppVersion($this->appId));
+		return [
+			'success' => true,
+			'message' => 'Configuration imported successfully.',
+			'version' => ($result['version'] ?? 'unknown'),
+		];
+	}//end registerImportSucceeded()
+
+	/**
+	 * The report of an import that returned nothing: an explicit non-success.
+	 *
+	 * @return array{success: bool, message: string}
+	 */
+	protected function registerImportEmpty(): array {
+		return [
+			'success' => false,
+			'message' => 'Import returned an empty result.',
+		];
+	}//end registerImportEmpty()
+
+	/**
+	 * Resolve the leaf app's register JSON + `register.d/` fragments.
+	 *
+	 * The reading lives in {@see RegisterDocumentLoader}. This stays as the
+	 * hook a subclass overrides, which several leaf apps do.
 	 *
 	 * @return array{0: array<string, mixed>|null, 1: string} `[$data, $version]`;
 	 *                                                        `$data` is `null` when
@@ -246,94 +607,7 @@ class AppHostSettingsService {
 	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
 	 */
 	protected function resolveRegisterConfiguration(): array {
-		try {
-			$appPath = $this->appManager->getAppPath($this->appId);
-		} catch (Throwable $e) {
-			return [null, ''];
-		}
-
-		$configPath = $appPath . '/lib/Settings/' . $this->appId . '_register.json';
-		if (file_exists($configPath) === false) {
-			return [null, ''];
-		}
-
-		$configContent = file_get_contents($configPath);
-		if ($configContent === false) {
-			return [null, ''];
-		}
-
-		$configData = json_decode($configContent, true);
-		if (json_last_error() !== JSON_ERROR_NONE || is_array($configData) === false) {
-			return [null, ''];
-		}
-
-		// ADR-037: merge modular register fragments from Settings/register.d/*.json,
-		// same as every bespoke per-app SettingsService.
-		$fragmentDir = $appPath . '/lib/Settings/register.d';
-		$fragmentSig = '';
-		if (is_dir($fragmentDir) === true) {
-			$fragmentFiles = glob($fragmentDir . '/*.json');
-			sort($fragmentFiles);
-			foreach ($fragmentFiles as $fragmentFile) {
-				$fragmentContent = file_get_contents($fragmentFile);
-				if ($fragmentContent === false) {
-					continue;
-				}
-
-				$fragmentData = json_decode($fragmentContent, true);
-				if (json_last_error() !== JSON_ERROR_NONE || is_array($fragmentData) === false) {
-					continue;
-				}
-
-				$configData = self::deepMergeConfig(base: $configData, overlay: $fragmentData);
-				$fragmentSig .= basename($fragmentFile) . ':' . md5($fragmentContent) . ';';
-			}
-		}
-
-		$version = (string)($configData['info']['version'] ?? '0.0.0');
-		if ($fragmentSig !== '') {
-			$version .= '+frag.' . substr(md5($fragmentSig), 0, 8);
-		}
-
-		return [$configData, $version];
+		return (new RegisterDocumentLoader(appManager: $this->appManager))->load(appId: $this->appId);
 	}//end resolveRegisterConfiguration()
 
-	/**
-	 * Recursively deep-merges an overlay config onto a base config.
-	 *
-	 * Keyed (associative) arrays are merged key-by-key (recursing into nested
-	 * arrays); list arrays (sequential integer keys) are concatenated. Scalars
-	 * in the overlay win. Identical semantics to every bespoke per-app
-	 * `SettingsService::deepMergeConfig()` (e.g. openbuild), duplicated here so
-	 * the generic AppHost path merges `register.d/` fragments the same way.
-	 *
-	 * @param array<string, mixed> $base The base configuration array.
-	 * @param array<string, mixed> $overlay The overlay to merge onto the base.
-	 *
-	 * @return array<string, mixed> The merged configuration.
-	 *
-	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
-	 */
-	protected static function deepMergeConfig(array $base, array $overlay): array {
-		foreach ($overlay as $key => $value) {
-			$bothArrays = (is_array($value) === true
-				&& isset($base[$key]) === true
-				&& is_array($base[$key]) === true);
-			if ($bothArrays === false) {
-				$base[$key] = $value;
-				continue;
-			}
-
-			$baseIsList = ($base[$key] === [] || array_keys($base[$key]) === range(0, (count($base[$key]) - 1)));
-			$overlayIsList = ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
-			if ($baseIsList === true && $overlayIsList === true) {
-				$base[$key] = array_merge($base[$key], $value);
-				continue;
-			}
-
-			$base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
-		}
-
-		return $base;
-	}//end deepMergeConfig()
 }//end class

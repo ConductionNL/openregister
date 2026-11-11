@@ -1,12 +1,14 @@
 ---
-status: done
+status: in-progress
 ---
 
 # archival-annotation-vocabulary Specification
 
 ## Purpose
 Gives schemas a retention and archival vocabulary via the `x-openregister-archival` annotation, enforcing data-retention policy on object rows. Schemas declare a default retention plus condition-based rules; an hourly cron sweeps and deletes expired rows, object reads surface a computed `_retention` block, and user-driven deletes on archival schemas are blocked with HTTP 403. Validates retention declarations at save time and recognises the annotation through the import path so it round-trips without being dropped.
+
 ## Requirements
+
 ### Requirement: ANNOTATION_VOCABULARY recognises x-openregister-archival and x-openregister-seed
 
 The `Schema::ANNOTATION_VOCABULARY` constant in `lib/Db/Schema.php` SHALL include the keys `x-openregister-archival` and `x-openregister-seed`. Schemas declaring either annotation at top-level or under `configuration` MUST round-trip through the import path without being silently dropped by `validateConfigurationArray()`, and the SchemaMapper's "Dropped unknown x-openregister-* key(s)" warning MUST NOT fire for these keys.
@@ -54,11 +56,17 @@ The platform SHALL ship an `OCA\OpenRegister\Service\Archival\ArchivalAnnotation
 
 #### Scenario: Unknown key at the top level is reported, not rejected
 - @e2e exclude schema-save validation — covered by PHPUnit
-- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, category: "Archiefwet 1995 selectielijst", action: "destroy" }`
+- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, aggregatieniveau: "Dossier" }`
 - **WHEN** the schema is saved
 - **THEN** the save SHALL succeed
 - **AND** `SchemaMapper` SHALL log one warning naming the schema and every ignored key
 - **AND** the import of a register declaring that schema SHALL link it, not drop it
+
+#### Scenario: A key the archive reader reads is not unknown
+- @e2e exclude schema-save validation — covered by PHPUnit
+- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, category: "1.1", categoryProperty: "selectielijstCategorie", action: "bewaren" }`
+- **WHEN** the schema is saved
+- **THEN** no `archival-unknown-key` finding SHALL be made, because `ArchivalDeclarationReader` and `ClassificationOverride` read all three keys
 
 #### Scenario: Well-formed annotation passes
 - **GIVEN** a schema declares `x-openregister-archival.retention = { default: "P30D", rules: [{ condition: "statusCode < 400", retention: "PT1H", reason: "successful integrations" }] }`
@@ -127,7 +135,7 @@ The gate SHALL read `Schema::hasArchivalAnnotation()`, which is the single defin
 
 `SchemaDeletionService` is the single implementation of "delete every object of a schema", reached by `POST /api/bulk/{register}/{schema}/delete-objects`, its legacy twin `/delete-schema`, `DELETE /api/schemas/{id}?deleteObjects=true` and `occ openregister:schemas:prune-retired`. It SHALL apply the archival gate that `ObjectService::deleteObject()` applies, reading `Schema::hasArchivalAnnotation()` rather than the annotation itself.
 
-`deleteObjectsBySchema()` SHALL refuse an archival schema unconditionally and SHALL expose no override parameter: both of its callers are HTTP routes, and an override they could pass through would put archival destruction back on the network. `cascadeDeleteSchema()` SHALL refuse unless the caller passes an explicit `archivalOverride`, which only `occ openregister:schemas:prune-retired --force-archival` passes — the same bargain `occ openregister:objects:purge --force` strikes, on the same reasoning that shell access is an authorization boundary an HTTP caller cannot cross.
+`deleteObjectsBySchema()` SHALL refuse an archival schema unconditionally and SHALL expose no override parameter: both of its callers are HTTP routes, and an override they could pass through would put archival destruction back on the network. `cascadeDeleteSchema()` SHALL refuse unless the caller passes a `SchemaTeardownOverride` with `archivalSchema` set, which only `occ openregister:schemas:prune-retired --force-archival` passes — the same bargain `occ openregister:objects:purge --force` strikes, on the same reasoning that shell access is an authorization boundary an HTTP caller cannot cross.
 
 `--force-archival` SHALL be a distinct flag from `--force`. `--force` means "this schema still owns objects"; an operator pruning a retired test schema passes it without having said anything about retained records, so it MUST NOT authorise their destruction.
 
@@ -371,3 +379,34 @@ term and the document that cites it cannot disagree.
 - @e2e exclude schema-save validation — covered by PHPUnit
 - **WHEN** a schema declares `aggregatieniveau` at the top level, or a literal `start` inside `temporalCoverage`
 - **THEN** the schema save SHALL fail, naming the allowed keys, so a typo cannot declare nothing in silence
+
+### Requirement: The CLI purge MUST accept an import job instead of a list of UUIDs
+
+`occ openregister:objects:purge --import-job <id>` SHALL resolve the objects whose `create`
+audit row carries that job id and SHALL purge each with the command's existing rules: dry
+run unless `--apply`, an archival record and a live object refused unless `--force`, an
+archival record named as such in the output. UUID arguments and `--import-job` MAY be
+combined; the command SHALL refuse to run when given neither. In job mode an object that no
+longer exists SHALL be reported as already gone and SHALL NOT count as a failure, so the
+command can be re-run after a partial purge.
+
+@e2e exclude CLI command with no UI surface. Asserted in tests/Unit/Command/PurgeObjectCommandTest.php (testImportJobPurgesTheObjectsTheJobCreated, testImportJobKeepsTheArchivalRefusal, testImportJobReportsAMissingObjectAsAlreadyGone, testRefusesToRunWithNeitherUuidsNorAnImportJob). Covered by PHPUnit.
+
+#### Scenario: Purging a removed example set
+
+- **GIVEN** an app import job whose objects were soft-deleted by the app's wizard
+- **WHEN** `occ openregister:objects:purge --import-job <id> --apply` runs
+- **THEN** every non-archival object the job created MUST be destroyed
+- **AND** every archival one MUST be refused, naming `--force`
+
+#### Scenario: Re-running after a partial purge
+
+- **GIVEN** a job whose objects are partly destroyed already
+- **WHEN** the command runs again with `--import-job <id> --apply`
+- **THEN** the destroyed ones MUST be reported as already gone
+- **AND** the exit code MUST be 0 when nothing else failed
+
+#### Scenario: Nothing named
+
+- **WHEN** the command runs with no UUID and no `--import-job`
+- **THEN** it MUST exit 1 and destroy nothing

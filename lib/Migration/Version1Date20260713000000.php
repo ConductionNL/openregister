@@ -84,7 +84,7 @@ class Version1Date20260713000000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_scheduled_reports') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable('openregister_scheduled_reports');

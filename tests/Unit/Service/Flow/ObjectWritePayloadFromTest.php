@@ -32,7 +32,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -102,7 +106,13 @@ class ObjectWritePayloadFromTest extends TestCase {
 		$this->appConfig = $this->createMock(IAppConfig::class);
 
 		$user = $this->createMock(IUser::class);
+		// `isEnabled()` is stubbed EXPLICITLY. The runAs guards read `isEnabled() === false`,
+		// and NC 35 declares `isEnabled(): bool` where NC 32-34 leave it untyped — so an
+		// unstubbed mock answers null there and false here, and the run is refused as if
+		// alice had been offboarded. These tests are about an ENABLED identity; the disabled
+		// path has its own cases.
 		$user->method('getUID')->willReturn('admin');
+		$user->method('isEnabled')->willReturn(true);
 		$this->userManager->method('get')->willReturn($user);
 		$this->userManager->method('search')->willReturn([$user]);
 
@@ -139,13 +149,9 @@ class ObjectWritePayloadFromTest extends TestCase {
 		);
 
 		$this->node = new ObjectWriteNode(
-			$this->objects,
-			$registers,
-			$schemas,
-			$this->userManager,
-			$this->appConfig,
-			$l10n,
-			$urls
+			new ObjectWriteStores($this->objects, $registers, $schemas),
+			new ObjectWritePlatform($this->userManager, $this->appConfig),
+			new FlowNodePresentation($l10n, $urls)
 		);
 
 		$this->registerContext = ['runAs' => 'admin'];
@@ -215,11 +221,11 @@ class ObjectWritePayloadFromTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
-			$this->items([['source' => ['name' => 'a', 'title' => 'A', 'nested' => ['x' => 1]]]]),
-			$this->config(),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['source' => ['name' => 'a', 'title' => 'A', 'nested' => ['x' => 1]]]]),
+			config: $this->config(),
+			context: $this->registerContext
+		));
 
 		$this->assertSame(
 			['name' => 'a', 'title' => 'A', 'nested' => ['x' => 1]],
@@ -242,11 +248,11 @@ class ObjectWritePayloadFromTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/payloadFrom/');
 
-		$this->node->execute(
-			$this->items([['somethingElse' => ['name' => 'a']]]),
-			$this->config(),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['somethingElse' => ['name' => 'a']]]),
+			config: $this->config(),
+			context: $this->registerContext
+		));
 	}//end testAnUnresolvablePathThrowsRatherThanWritingBlank()
 
 	/**
@@ -260,11 +266,11 @@ class ObjectWritePayloadFromTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute(
-			$this->items([['source' => 'not-an-object']]),
-			$this->config(),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['source' => 'not-an-object']]),
+			config: $this->config(),
+			context: $this->registerContext
+		));
 	}//end testAScalarAtThePathThrows()
 
 	/**
@@ -277,11 +283,11 @@ class ObjectWritePayloadFromTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessageMatches('/alternatives/');
 
-		$this->node->execute(
-			$this->items([['source' => ['name' => 'a']]]),
-			$this->config(['fields' => ['title' => '{{source.name}}']]),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['source' => ['name' => 'a']]]),
+			config: $this->config(['fields' => ['title' => '{{source.name}}']]),
+			context: $this->registerContext
+		));
 	}//end testFieldsAndPayloadFromTogetherAreRefused()
 
 	/**
@@ -296,11 +302,11 @@ class ObjectWritePayloadFromTest extends TestCase {
 
 		$this->expectException(UnexpectedValueException::class);
 
-		$this->node->execute(
-			$this->items([['source' => ['name' => 'a']]]),
-			$config,
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['source' => ['name' => 'a']]]),
+			config: $config,
+			context: $this->registerContext
+		));
 	}//end testNeitherFieldsNorPayloadFromIsRefused()
 
 	/**
@@ -312,17 +318,17 @@ class ObjectWritePayloadFromTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessageMatches('/payloadFrom/');
 
-		$this->node->execute(
-			$this->items([['source' => ['name' => 'a']]]),
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['source' => ['name' => 'a']]]),
+			config: $this->config(
 				[
 					'operation' => ObjectWriteNode::OP_DELETE,
 					'match' => [['property' => 'name', 'value' => '{{source.name}}']],
 					'confirmDelete' => true,
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 	}//end testPayloadFromIsMeaninglessForADelete()
 
 	/**

@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
@@ -32,6 +33,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 class MagicSearchHandlerEncryptedFilterTest extends TestCase {
 	private IDBConnection&MockObject $db;
@@ -60,7 +63,8 @@ class MagicSearchHandlerEncryptedFilterTest extends TestCase {
 			rbacHandler: $this->rbacHandler,
 			organizationHandler: $this->organizationHandler,
 			schemaTypeConverter: new SchemaTypeConverter(),
-			dateTimeNormalizer: new DateTimeNormalizer($this->logger)
+			dateTimeNormalizer: new DateTimeNormalizer($this->logger),
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
 		);
 	}//end setUp()
 
@@ -70,7 +74,7 @@ class MagicSearchHandlerEncryptedFilterTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $qb, $filters, $schema);
+		$method->invoke($this->handler, new TableFilterRun(qb: $qb, query: [], table: new MagicReadTable(schema: $schema)), $filters);
 	}//end invokeApplyObjectFilters()
 
 	public function testFilteringOnEncryptedPropertyThrows(): void {

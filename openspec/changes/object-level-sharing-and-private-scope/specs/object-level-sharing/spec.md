@@ -31,6 +31,12 @@ only and SHALL NEVER be a tenant discriminator.
 - **WHEN** a principal outside the object's organisation is invited
 - **THEN** they are still denied
 
+#### Scenario: A grant cannot cross a tenant boundary on a cross-register read
+
+- **WHEN** an authenticated non-admin searches across two or more register and schema pairs in one request
+- **THEN** the answer contains only rows of organisations that caller may read
+- **AND** a per-object grant on a row of another organisation does not add it to the answer
+
 #### Scenario: Revocation denies immediately
 
 - **WHEN** an owner revokes a principal's grant

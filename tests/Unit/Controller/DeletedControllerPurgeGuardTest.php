@@ -27,8 +27,13 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DeletedControllerFactory;
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
+use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
+use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
@@ -108,21 +113,29 @@ class DeletedControllerPurgeGuardTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->controller = new DeletedController(
+		$deletion = new DeletionServiceBundle(
+			$this->createMock(originalClassName: DeletionWindowService::class),
+			$this->createMock(originalClassName: DestroyRightService::class),
+			$this->createMock(originalClassName: RetentionClockService::class),
+			new DestructionServices($this->createMock(originalClassName: DestructionScopeService::class), $this->createMock(originalClassName: DestructionRecorder::class)),
+		);
+
+		$authorizer = new DeletedObjectAuthorizer(
+			$this->schemaMapper,
+			new CallerContext($this->userSession, $this->groupManager),
+			$this->createMock(originalClassName: PermissionHandler::class),
+		);
+
+		$this->controller = DeletedControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectMapper,
 			$this->createMock(RegisterMapper::class),
-			$this->schemaMapper,
 			$this->userSession,
-			$this->groupManager,
-			$this->createMock(originalClassName: PermissionHandler::class),
-			$this->createMock(originalClassName: DeletionWindowService::class),
-			$this->createMock(originalClassName: DestroyRightService::class),
-			$this->createMock(originalClassName: DestructionScopeService::class),
-			$this->createMock(originalClassName: DestructionRecorder::class),
-			$this->createMock(originalClassName: RetentionClockService::class),
-			$this->createMock(originalClassName: AuditTrailMapper::class)
+			$this->createMock(originalClassName: AuditTrailMapper::class),
+			$deletion,
+			$authorizer,
+			$this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class)
 		);
 
 		$user = $this->createMock(IUser::class);
@@ -313,8 +326,19 @@ class DeletedControllerPurgeGuardTest extends TestCase {
 		$this->request->method('getParam')->willReturnMap(
 			[['ids', [], ['live-2', 'arch-2', 'trash-2']]]
 		);
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
-			->willReturn([$live, $archival, $trashed]);
+		$rows = ['live-2' => $live, 'arch-2' => $archival, 'trash-2' => $trashed];
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn(
+			array_map(
+				static function (ObjectEntity $full): ObjectEntity {
+					$slim = new ObjectEntity();
+					$slim->setUuid($full->getUuid());
+					$slim->setSchema($full->getSchema());
+					return $slim;
+				},
+				array_values($rows)
+			)
+		);
+		$this->objectMapper->method('find')->willReturnCallback(static fn (...$args): ObjectEntity => $rows[$args[0]]);
 		$this->spyOnPurges();
 
 		$response = $this->controller->destroyMultiple();

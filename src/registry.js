@@ -48,13 +48,10 @@ import { defineAsyncComponent } from 'vue'
  * @return {object} A `{ kind: "page", component }` registry entry.
  */
 function page(component) {
-	return {
-		kind: 'page',
-		component:
-			typeof component === 'function'
-				? defineAsyncComponent(component)
-				: component,
+	if (typeof component !== 'function') {
+		return { kind: 'page', component }
 	}
+	return { kind: 'page', component: defineAsyncComponent(component) }
 }
 
 export default {
@@ -64,6 +61,12 @@ export default {
 	SchemasIndex: page(() => import('./views/schema/SchemasIndex.vue')),
 	SchemaDetails: page(() => import('./views/schema/SchemaDetails.vue')),
 	SourcesIndex: page(() => import('./views/source/SourcesIndex.vue')),
+	MigrationPacksIndex: page(
+		() => import('./views/migrationPack/MigrationPacksIndex.vue'),
+	),
+	MigrationPackDetail: page(
+		() => import('./views/migrationPack/MigrationPackDetail.vue'),
+	),
 	OrganisationsIndex: page(
 		() => import('./views/organisation/OrganisationsIndex.vue'),
 	),
@@ -85,6 +88,7 @@ export default {
 	WebhooksIndex: page(() => import('./views/webhooks/WebhooksIndex.vue')),
 	FlowDetailSidebar: page(() => import('./views/flows/FlowDetailSidebar.vue')),
 	WebhookLogsIndex: page(() => import('./views/webhooks/WebhookLogsIndex.vue')),
+	AgentsIndex: page(() => import('./views/agents/AgentsIndex.vue')),
 	EndpointsIndex: page(() => import('./views/Endpoint/EndpointsIndex.vue')),
 	EntitiesIndex: page(() => import('./views/entities/EntitiesIndex.vue')),
 	EntityDetail: page(() => import('./views/entities/EntityDetail.vue')),
@@ -103,6 +107,9 @@ export default {
 		() => import('./views/quality/MasterEntitiesIndex.vue'),
 	),
 	QueueHealthIndex: page(() => import('./views/quality/QueueHealthIndex.vue')),
+	OperationsConsoleIndex: page(
+		() => import('./views/operations/OperationsConsoleIndex.vue'),
+	),
 	MergeOperationsIndex: page(
 		() => import('./views/quality/MergeOperationsIndex.vue'),
 	),

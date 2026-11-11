@@ -27,10 +27,12 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowControllerFactory;
 use OCA\OpenRegister\Controller\FlowController;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCP\AppFramework\Http\JSONResponse;
@@ -43,6 +45,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\FlowController
+ * @uses \OCA\OpenRegister\Controller\Support\FlowCatalogue
+ * @uses \OCA\OpenRegister\Controller\Support\FlowNodeTypes
+ * @uses \OCA\OpenRegister\Controller\Support\FlowDefinitions
+ * @uses \OCA\OpenRegister\Controller\Support\FlowControllerServices
  *
  * The uses-list below is load-bearing, not decoration. phpunit.xml sets
  * `beStrictAboutCoverageMetadata`, so a covers-tagged test that executes an
@@ -55,6 +61,14 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowState
  * @uses \OCA\OpenRegister\Service\Flow\FlowAdoptionRefused
+ * @uses \OCA\OpenRegister\Exception\BpmnSchemaInvalid
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter
+ * @uses \OCA\OpenRegister\Exception\FlowRunRefused
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnDiagramLayout
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnMappingReport
  */
 class FlowControllerTest extends TestCase {
 
@@ -152,7 +166,7 @@ class FlowControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($adminUser);
 		$this->groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FlowController(
+		$this->controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->eventCatalog,
@@ -190,8 +204,7 @@ class FlowControllerTest extends TestCase {
 		\OCA\OpenRegister\Service\OpenRegisterActionAuthService $actionAuth,
 	): FlowAccess {
 		return new FlowAccess(
-			userSession: $userSession,
-			groupManager: $groupManager,
+			caller: new CallerContext(userSession: $userSession, groupManager: $groupManager),
 			actionAuth: $actionAuth
 		);
 
@@ -315,7 +328,7 @@ class FlowControllerTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn('slots');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -366,7 +379,7 @@ class FlowControllerTest extends TestCase {
 		$this->flows->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('No such flow'));
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -403,7 +416,7 @@ class FlowControllerTest extends TestCase {
 		$this->flows->method('find')->willReturn(new \OCA\OpenRegister\Db\Flow());
 		$this->request->method('getParam')->willReturn('');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -452,7 +465,7 @@ class FlowControllerTest extends TestCase {
 				]
 			);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -488,7 +501,7 @@ class FlowControllerTest extends TestCase {
 		);
 		$this->request->method('getParam')->willReturn('');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -515,7 +528,7 @@ class FlowControllerTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn('');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -650,7 +663,7 @@ class FlowControllerTest extends TestCase {
 			->with(IManager::SCOPE_USER)
 			->willReturn([]);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -685,7 +698,7 @@ class FlowControllerTest extends TestCase {
 			->with(IManager::SCOPE_USER)
 			->willReturn([]);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -718,7 +731,7 @@ class FlowControllerTest extends TestCase {
 			->with(IManager::SCOPE_USER)
 			->willReturn([]);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -751,7 +764,7 @@ class FlowControllerTest extends TestCase {
 		$denying = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
 		$denying->method('can')->willReturn(false);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -780,6 +793,31 @@ class FlowControllerTest extends TestCase {
 		}
 
 	}//end testAWriteIsRefusedWhenTheRightIsNotHeld()
+
+	/**
+	 * A flow the caller may not run answers 403 with the reason, not a 500.
+	 *
+	 * An imported flow arrives with no owner, so "Run now" is refused with
+	 * "Adopt it first". That refusal escaped the controller and the page
+	 * could only say that something broke.
+	 *
+	 * @return void
+	 */
+	public function testARunRefusalAnswersWithItsReason(): void {
+		$this->flows->method('run')->willThrowException(
+			new \OCA\OpenRegister\Exception\FlowRunRefused(
+				verdict: \OCA\OpenRegister\Service\Flow\FlowRunAuthorization::NO_OWNER,
+				message: 'This flow has no owner, so it cannot run. Adopt it first.'
+			)
+		);
+
+		$response = $this->controller->run('x');
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame('This flow has no owner, so it cannot run. Adopt it first.', $response->getData()['error']);
+		$this->assertSame(\OCA\OpenRegister\Service\Flow\FlowRunAuthorization::NO_OWNER, $response->getData()['verdict']);
+
+	}//end testARunRefusalAnswersWithItsReason()
 
 	/**
 	 * A helper that answers a fixed value for named `getParam()` keys and the
@@ -981,7 +1019,7 @@ class FlowControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function testAdoptSetsTheCallerAsOwner(): void {
 		$flow = new Flow();
@@ -1007,13 +1045,13 @@ class FlowControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function testAdoptIsRefusedWithoutTheRight(): void {
 		$denying = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
 		$denying->method('can')->willReturn(false);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -1035,13 +1073,13 @@ class FlowControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function testAdoptRequiresASession(): void {
 		$anonymous = $this->createMock(IUserSession::class);
 		$anonymous->method('getUser')->willReturn(null);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -1064,7 +1102,7 @@ class FlowControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function testAdoptAnswersNotFoundForAFlowTheCallerMayNotSee(): void {
 		$this->flows->method('find')->willThrowException(
@@ -1081,7 +1119,7 @@ class FlowControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function testAdoptAnswersConflictWhenAlreadyOwned(): void {
 		$flow = new Flow();
@@ -1101,4 +1139,187 @@ class FlowControllerTest extends TestCase {
 		$this->assertSame(409, $response->getStatus());
 		$this->assertSame('already-owned', $response->getData()['reason']);
 	}//end testAdoptAnswersConflictWhenAlreadyOwned()
+
+	// =========================================================================
+	// The BPMN interchange pair. Both endpoints shipped publicly reachable
+	// with no contract test at all, which is gate-25's finding: a wire
+	// contract nobody asserts is a contract only the implementation knows.
+	// =========================================================================
+
+	/**
+	 * A flow this caller may read comes back as a BPMN file, not JSON.
+	 *
+	 * @return void
+	 */
+	public function testExportBpmnAnswersTheFlowAsAnXmlDownload(): void {
+		$this->flows->method('find')->willReturn($this->exportableFlow());
+
+		$response = $this->controller->exportBpmn('7f1e2a10-0000-4000-8000-000000000001');
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $response);
+		$this->assertSame(200, $response->getStatus());
+		$this->assertStringContainsString('Bezwaar behandelen.bpmn', (string)$response->getHeaders()['Content-Disposition']);
+		$xml = $response->render();
+		$this->assertStringContainsString('<bpmn:definitions', $xml);
+		$this->assertStringContainsString('Bezwaar behandelen', $xml);
+	}//end testExportBpmnAnswersTheFlowAsAnXmlDownload()
+
+	/**
+	 * An unknown uuid is a 404 that names it, not a blank file.
+	 *
+	 * @return void
+	 */
+	public function testExportBpmnAnswers404WhenNoFlowCarriesThatUuid(): void {
+		$this->flows->method('find')->willThrowException(new \RuntimeException('gone'));
+
+		$response = $this->controller->exportBpmn('no-such-flow');
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(404, $response->getStatus());
+		$this->assertStringContainsString('no-such-flow', $response->getData()['error']);
+	}//end testExportBpmnAnswers404WhenNoFlowCarriesThatUuid()
+
+	/**
+	 * A document the OMG schema refuses is answered as malformed, with no
+	 * report: nothing was mapped, so a report would describe constructs when
+	 * the problem is the file.
+	 *
+	 * @return void
+	 */
+	public function testImportBpmnAnswersMalformedForADocumentTheSchemaRefuses(): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) {
+				if ($key === 'xml') {
+					return '<nonsense/>';
+				}
+
+				return $default;
+			}
+		);
+
+		$response = $this->controller->importBpmn();
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertTrue($response->getData()['malformed']);
+		$this->assertArrayNotHasKey('report', $response->getData());
+	}//end testImportBpmnAnswersMalformedForADocumentTheSchemaRefuses()
+
+	/**
+	 * A readable file becomes a stored flow, and the report comes back with
+	 * it. The report is the point of the endpoint: a lenient import that
+	 * dropped three constructs and answered 201 with only a flow is what this
+	 * whole surface was written against.
+	 *
+	 * @return void
+	 */
+	public function testImportBpmnStoresTheFlowAndReturnsTheReport(): void {
+		$xml = (new \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter(
+			vocabulary: new \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary(),
+			validator: new \OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator()
+		))->export(flow: $this->exportableFlow());
+
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) use ($xml) {
+				if ($key === 'xml') {
+					return $xml;
+				}
+
+				return $default;
+			}
+		);
+
+		$stored = new Flow();
+		$stored->setUuid('7f1e2a10-0000-4000-8000-000000000001');
+		$stored->setName('Bezwaar behandelen');
+		$this->flows->expects($this->once())->method('save')->willReturn($stored);
+
+		$response = $this->controller->importBpmn();
+
+		$this->assertSame(201, $response->getStatus());
+		$this->assertSame('Bezwaar behandelen', $response->getData()['flow']['name']);
+		$this->assertArrayHasKey('report', $response->getData());
+	}//end testImportBpmnStoresTheFlowAndReturnsTheReport()
+
+	/**
+	 * A file sent as a multipart upload (field `file`) imports the same way a
+	 * raw body does: the browser's file picker posts a form, not an XML body.
+	 *
+	 * @return void
+	 */
+	public function testImportBpmnReadsAMultipartUpload(): void {
+		$xml = (new \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter(
+			vocabulary: new \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary(),
+			validator: new \OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator()
+		))->export(flow: $this->exportableFlow());
+
+		$tmp = tempnam(sys_get_temp_dir(), 'bpmn');
+		file_put_contents($tmp, $xml);
+
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => $default
+		);
+		$this->request->method('getUploadedFile')->willReturnCallback(
+			static fn (string $key) => ($key === 'file' ? ['name' => 'bezwaar.bpmn', 'tmp_name' => $tmp, 'error' => UPLOAD_ERR_OK, 'size' => strlen($xml)] : null)
+		);
+
+		$stored = new Flow();
+		$stored->setUuid('7f1e2a10-0000-4000-8000-000000000001');
+		$stored->setName('Bezwaar behandelen');
+		$this->flows->expects($this->once())->method('save')->willReturn($stored);
+
+		$response = $this->controller->importBpmn();
+		unlink($tmp);
+
+		$this->assertSame(201, $response->getStatus());
+		$this->assertArrayHasKey('report', $response->getData());
+	}//end testImportBpmnReadsAMultipartUpload()
+
+	/**
+	 * An upload that failed in transit is answered 400 and names the upload,
+	 * rather than reaching the importer as an empty document and coming back
+	 * as "malformed", which would send the user hunting in a file that is fine.
+	 *
+	 * @return void
+	 */
+	public function testImportBpmnRefusesAFailedUploadWith400(): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => $default
+		);
+		$this->request->method('getUploadedFile')->willReturn(
+			['name' => 'bezwaar.bpmn', 'tmp_name' => '', 'error' => UPLOAD_ERR_PARTIAL, 'size' => 0]
+		);
+		$this->flows->expects($this->never())->method('save');
+
+		$response = $this->controller->importBpmn();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertFalse($response->getData()['malformed']);
+		$this->assertStringContainsString('upload', $response->getData()['error']);
+	}//end testImportBpmnRefusesAFailedUploadWith400()
+
+	/**
+	 * A flow the exporter can serialise, borrowed from the round-trip suite.
+	 *
+	 * @return Flow The flow.
+	 */
+	private function exportableFlow(): Flow {
+		$flow = new Flow();
+		$flow->setUuid('7f1e2a10-0000-4000-8000-000000000001');
+		$flow->setName('Bezwaar behandelen');
+		$flow->setNodes(
+			[
+				['id' => 'start', 'name' => 'Start', 'type' => 'openregister.trigger-manual'],
+				['id' => 'mail', 'name' => 'Stuur mail', 'type' => 'openregister.send-email', 'config' => ['to' => 'a@b.nl']],
+				['id' => 'klaar', 'name' => 'Klaar', 'type' => 'openregister.end'],
+			]
+		);
+		$flow->setEdges(
+			[
+				['id' => 'e1', 'from' => 'start', 'to' => 'mail'],
+				['id' => 'e2', 'from' => 'mail', 'to' => 'klaar'],
+			]
+		);
+
+		return $flow;
+	}//end exportableFlow()
 }//end class

@@ -76,6 +76,50 @@
 			</section>
 
 			<section class="calendar-form__block">
+				<h4>{{ t('openregister', 'Opening hours') }}</h4>
+				<p class="calendar-form__hint">
+					{{
+						t(
+							'openregister',
+							'The hours of the day this calendar counts. A deadline in hours only advances while you are open, so a counter that closes over lunch does not count the break. Leave a day empty and it counts from the hour above instead.',
+						)
+					}}
+				</p>
+
+				<div
+					v-for="weekday in openWeekdays"
+					:key="'hours-' + weekday.iso"
+					class="calendar-form__hours"
+					:data-testid="'working-calendar-hours-' + weekday.iso">
+					<h5 class="calendar-form__weekday">{{ weekday.label }}</h5>
+
+					<div
+						v-for="(window, index) in windowsFor(weekday.iso)"
+						:key="'window-' + weekday.iso + '-' + index"
+						class="calendar-form__row"
+						data-testid="working-calendar-window">
+						<NcTextField
+							v-model="window.start"
+							type="time"
+							:label="t('openregister', 'Opens at')" />
+						<NcTextField
+							v-model="window.end"
+							type="time"
+							:label="t('openregister', 'Closes at')" />
+						<CalendarRowButton
+							action="remove"
+							:label="t('openregister', 'Remove these hours')"
+							@click="removeWindow(weekday.iso, index)" />
+					</div>
+
+					<CalendarRowButton
+						:data-testid="'working-calendar-add-window-' + weekday.iso"
+						:label="t('openregister', 'Add hours')"
+						@click="addWindow(weekday.iso)" />
+				</div>
+			</section>
+
+			<section class="calendar-form__block">
 				<h4>{{ t('openregister', 'Rules') }}</h4>
 				<p class="calendar-form__hint">
 					{{
@@ -127,25 +171,16 @@
 							type="number"
 							:label="t('openregister', 'Moves by days')" />
 					</template>
-					<NcButton
-						variant="tertiary"
-						:ariaLabel="t('openregister', 'Remove this rule')"
-						@click="removeRule(index)">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-					</NcButton>
+					<CalendarRowButton
+						action="remove"
+						:label="t('openregister', 'Remove this rule')"
+						@click="removeRule(index)" />
 				</div>
 
-				<NcButton
-					variant="secondary"
+				<CalendarRowButton
 					data-testid="working-calendar-add-rule"
-					@click="addRule">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					{{ t('openregister', 'Add a rule') }}
-				</NcButton>
+					:label="t('openregister', 'Add a rule')"
+					@click="addRule" />
 			</section>
 
 			<section class="calendar-form__block">
@@ -171,25 +206,16 @@
 					<NcTextField
 						v-model="exception.name"
 						:label="t('openregister', 'Why it is closed')" />
-					<NcButton
-						variant="tertiary"
-						:ariaLabel="t('openregister', 'Remove this closure day')"
-						@click="removeException(index)">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-					</NcButton>
+					<CalendarRowButton
+						action="remove"
+						:label="t('openregister', 'Remove this closure day')"
+						@click="removeException(index)" />
 				</div>
 
-				<NcButton
-					variant="secondary"
+				<CalendarRowButton
 					data-testid="working-calendar-add-exception"
-					@click="addException">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					{{ t('openregister', 'Add a closure day') }}
-				</NcButton>
+					:label="t('openregister', 'Add a closure day')"
+					@click="addException" />
 			</section>
 
 			<section class="calendar-form__block">
@@ -241,23 +267,12 @@
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="saving" @click="$emit('close')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton
-				variant="primary"
+			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="saving" @click="$emit('close')" />
+			<SaveButton
+				:saving="saving"
 				:disabled="saving"
 				data-testid="working-calendar-save"
-				@click="save">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<ContentSave v-else :size="20" />
-				</template>
-				{{ t('openregister', 'Save') }}
-			</NcButton>
+				@click="save" />
 		</template>
 	</NcDialog>
 </template>
@@ -275,10 +290,9 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import Calendar from 'vue-material-design-icons/Calendar.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import SaveButton from '../../components/shared/SaveButton.vue'
+import CalendarRowButton from './CalendarRowButton.vue'
 
 /**
  * Edits one working calendar and previews what its rules mean in a year.
@@ -293,14 +307,95 @@ import Plus from 'vue-material-design-icons/Plus.vue'
  * shape that produced half-written rules in the form this replaces. It is
  * rebuilt on the way out.
  */
+/**
+ * A stored calendar's working weekdays, Monday to Friday when it has none.
+ *
+ * @param {object} value The stored calendar
+ * @return {Array<number>} The ISO weekdays, as a copy
+ */
+function storedWeekdays(value) {
+	return Array.isArray(value.workingWeekdays)
+		? [...value.workingWeekdays]
+		: [1, 2, 3, 4, 5]
+}
+
+/**
+ * One stored rule as a form row, its nested shift flattened.
+ *
+ * @param {object} rule The stored rule
+ * @return {object} The form row
+ */
+function ruleToForm(rule) {
+	return {
+		kind: rule.kind === 'easter' ? 'easter' : 'fixed',
+		name: rule.name || '',
+		month: String(rule.month ?? ''),
+		day: String(rule.day ?? ''),
+		offset: String(rule.offset ?? ''),
+		shiftWeekday: rule.observedShift?.whenWeekday || '',
+		shiftDays: String(rule.observedShift?.days ?? ''),
+	}
+}
+
+/**
+ * One stored exception as a form row.
+ *
+ * @param {object} entry The stored exception
+ * @return {object} The form row
+ */
+function exceptionToForm(entry) {
+	return {
+		date: entry.date || '',
+		name: entry.name || '',
+	}
+}
+
+/**
+ * The exception rows that have a date, named `exception` when unnamed.
+ *
+ * @param {Array<object>} exceptions The form rows
+ * @return {Array<object>} The exceptions as the engine stores them
+ */
+function datedExceptions(exceptions) {
+	return exceptions
+		.filter((entry) => entry.date)
+		.map((entry) => ({
+			date: entry.date,
+			name: entry.name || 'exception',
+		}))
+}
+
+/**
+ * A fixed-date rule from its form row, with its observed shift when one is set.
+ *
+ * @param {object} rule The form row
+ * @return {object} The rule as the engine stores it
+ */
+function fixedRule(rule) {
+	const fixed = {
+		kind: 'fixed',
+		name: rule.name,
+		month: Number(rule.month),
+		day: Number(rule.day),
+	}
+
+	if (rule.shiftWeekday) {
+		fixed.observedShift = {
+			whenWeekday: rule.shiftWeekday,
+			days: Number(rule.shiftDays),
+		}
+	}
+
+	return fixed
+}
+
 export default {
 	name: 'EditWorkingCalendarModal',
 
 	components: {
 		Calendar,
-		Cancel,
-		ContentSave,
-		Delete,
+		CalendarRowButton,
+		CloseCancelButton,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcDialog,
@@ -308,7 +403,7 @@ export default {
 		NcNoteCard,
 		NcSelect,
 		NcTextField,
-		Plus,
+		SaveButton,
 	},
 
 	props: {
@@ -411,6 +506,25 @@ export default {
 		 *
 		 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-working-calendars-are-administered-under-nextcloud-admin-settings
 		 */
+		/**
+		 * The weekdays that can carry opening hours: the ones this calendar
+		 * works, and only those.
+		 *
+		 * The engine refuses a window on a day the calendar does not work
+		 * rather than ignoring it, because a dropped window leaves somebody
+		 * believing the counter is open on Saturday. Not offering the row is
+		 * how the form says the same thing before the save does.
+		 *
+		 * @return {Array<object>} The working weekdays, in week order.
+		 *
+		 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+		 */
+		openWeekdays() {
+			return this.weekdayOptions.filter((weekday) =>
+				this.form.workingWeekdays.includes(weekday.iso),
+			)
+		},
+
 		kindOptions() {
 			return [
 				{
@@ -460,9 +574,133 @@ export default {
 				organisation: '',
 				workingWeekdays: [1, 2, 3, 4, 5],
 				hoursPerWorkingDay: '8',
+				serviceHours: {},
 				rules: [],
 				exceptions: [],
 			}
+		},
+
+		/**
+		 * The ISO weekday each stored `serviceHours` key names.
+		 *
+		 * @return {object} Weekday name to ISO number.
+		 *
+		 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+		 */
+		weekdayKeys() {
+			return {
+				monday: 1,
+				tuesday: 2,
+				wednesday: 3,
+				thursday: 4,
+				friday: 5,
+				saturday: 6,
+				sunday: 7,
+			}
+		},
+
+		/**
+		 * The windows currently held for one weekday.
+		 *
+		 * @param {number} iso The ISO weekday.
+		 * @return {Array<object>} The rows, created on first ask.
+		 *
+		 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+		 */
+		windowsFor(iso) {
+			return this.form.serviceHours[iso] || []
+		},
+
+		/**
+		 * Add one window to a weekday.
+		 *
+		 * @param {number} iso The ISO weekday.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+		 */
+		addWindow(iso) {
+			this.form.serviceHours = {
+				...this.form.serviceHours,
+				[iso]: [...this.windowsFor(iso), { start: '09:00', end: '17:00' }],
+			}
+		},
+
+		/**
+		 * Remove one window from a weekday.
+		 *
+		 * @param {number} iso The ISO weekday.
+		 * @param {number} index The row.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+		 */
+		removeWindow(iso, index) {
+			this.form.serviceHours = {
+				...this.form.serviceHours,
+				[iso]: this.windowsFor(iso).filter((row, at) => at !== index),
+			}
+		},
+
+		/**
+		 * Read a stored `serviceHours` map into the form, keyed by ISO number.
+		 *
+		 * @param {object|undefined} stored The stored map, keyed by weekday name.
+		 * @return {object} The form's map, keyed by ISO weekday.
+		 *
+		 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+		 */
+		serviceHoursToForm(stored) {
+			const windows = {}
+			for (const [name, iso] of Object.entries(this.weekdayKeys())) {
+				const rows = stored?.[name] || stored?.[iso] || stored?.[String(iso)]
+				if (!Array.isArray(rows) || rows.length === 0) {
+					continue
+				}
+
+				windows[iso] = rows.map((row) => ({
+					start: row.start || '',
+					end: row.end || '',
+				}))
+			}
+
+			return windows
+		},
+
+		/**
+		 * Build the `serviceHours` map the engine stores.
+		 *
+		 * An empty map is left OFF the definition rather than written as an
+		 * empty object. A calendar that declares none counts hours the way it
+		 * always did, and the absence is what says so; an empty object saved
+		 * over a calendar that had windows would read the same and mean
+		 * something else.
+		 *
+		 * @return {object|null} The map keyed by weekday name, or null when empty.
+		 *
+		 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+		 */
+		serviceHoursToDefinition() {
+			const declared = {}
+			for (const [name, iso] of Object.entries(this.weekdayKeys())) {
+				const rows = this.windowsFor(iso).filter(
+					(row) => row.start && row.end,
+				)
+				if (rows.length === 0) {
+					continue
+				}
+
+				declared[name] = rows.map((row) => ({
+					start: row.start,
+					end: row.end,
+				}))
+			}
+
+			if (Object.keys(declared).length === 0) {
+				return null
+			}
+
+			return declared
 		},
 
 		/**
@@ -482,25 +720,12 @@ export default {
 				slug: value.slug || '',
 				title: value.title || '',
 				organisation: value.organisation || '',
-				workingWeekdays: Array.isArray(value.workingWeekdays)
-					? [...value.workingWeekdays]
-					: [1, 2, 3, 4, 5],
+				workingWeekdays: storedWeekdays(value),
 
 				hoursPerWorkingDay: String(value.hoursPerWorkingDay ?? '8'),
-				rules: (value.rules || []).map((rule) => ({
-					kind: rule.kind === 'easter' ? 'easter' : 'fixed',
-					name: rule.name || '',
-					month: String(rule.month ?? ''),
-					day: String(rule.day ?? ''),
-					offset: String(rule.offset ?? ''),
-					shiftWeekday: rule.observedShift?.whenWeekday || '',
-					shiftDays: String(rule.observedShift?.days ?? ''),
-				})),
-
-				exceptions: (value.exceptions || []).map((entry) => ({
-					date: entry.date || '',
-					name: entry.name || '',
-				})),
+				serviceHours: this.serviceHoursToForm(value.serviceHours),
+				rules: (value.rules || []).map(ruleToForm),
+				exceptions: (value.exceptions || []).map(exceptionToForm),
 			}
 		},
 
@@ -521,19 +746,31 @@ export default {
 
 				hoursPerWorkingDay: Number(this.form.hoursPerWorkingDay),
 				rules: this.form.rules.map((rule) => this.toRule(rule)),
-				exceptions: this.form.exceptions
-					.filter((entry) => entry.date)
-					.map((entry) => ({
-						date: entry.date,
-						name: entry.name || 'exception',
-					})),
+				exceptions: datedExceptions(this.form.exceptions),
 			}
 
+			this.addOptionalFields(definition)
+			return definition
+		},
+
+		/**
+		 * Add the organisation and the service hours to a definition, each
+		 * only when the form sets it.
+		 *
+		 * @param {object} definition The definition being built.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-every-write-of-a-working-calendar-is-validated-the-same-way
+		 */
+		addOptionalFields(definition) {
 			if (this.form.organisation.trim()) {
 				definition.organisation = this.form.organisation.trim()
 			}
 
-			return definition
+			const serviceHours = this.serviceHoursToDefinition()
+			if (serviceHours) {
+				definition.serviceHours = serviceHours
+			}
 		},
 
 		/**
@@ -553,21 +790,7 @@ export default {
 				}
 			}
 
-			const fixed = {
-				kind: 'fixed',
-				name: rule.name,
-				month: Number(rule.month),
-				day: Number(rule.day),
-			}
-
-			if (rule.shiftWeekday) {
-				fixed.observedShift = {
-					whenWeekday: rule.shiftWeekday,
-					days: Number(rule.shiftDays),
-				}
-			}
-
-			return fixed
+			return fixedRule(rule)
 		},
 
 		/**
@@ -799,6 +1022,20 @@ export default {
 
 .calendar-form__hint--bad {
 	color: var(--color-error);
+}
+
+.calendar-form__hours {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	padding-block-end: 0.5rem;
+}
+
+.calendar-form__weekday {
+	margin: 0;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--color-text-maxcontrast);
 }
 
 .calendar-form__weekdays {

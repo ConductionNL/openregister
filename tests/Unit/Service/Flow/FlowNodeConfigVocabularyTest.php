@@ -57,6 +57,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 require_once __DIR__ . '/FiltersFlowLevelFindings.php';
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -87,6 +88,29 @@ use UnexpectedValueException;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodePreflight
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodeRegistry
+ * @uses \OCA\OpenRegister\Service\Flow\FlowConnectivity
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeTaxonomyResolver
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\EndNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FilterNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LoopNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\MergeNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\RouterNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\WaitNode
+ * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
  */
 class FlowNodeConfigVocabularyTest extends TestCase {
 	use FiltersFlowLevelFindings;
@@ -537,7 +561,8 @@ class FlowNodeConfigVocabularyTest extends TestCase {
 			public function validateConfig(array $config): void {
 			}
 
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};
@@ -648,7 +673,7 @@ class FlowNodeConfigVocabularyTest extends TestCase {
 		$byId = array_column($palette, null, 'id');
 
 		$this->assertArrayHasKey('openregister.end', $byId);
-		$this->assertSame(['error', 'message'], $byId['openregister.end']['configKeys']);
+		$this->assertSame(['error', 'message', 'next'], $byId['openregister.end']['configKeys']);
 
 		// An empty declaration must survive as `[]`, not vanish — "reads no
 		// config" and "did not say" are different answers.

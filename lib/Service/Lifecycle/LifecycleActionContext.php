@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * engine would declare on one instance and the listeners would read an empty
  * one, and every named call would silently fall back to value matching.
  */
-class LifecycleActionContext {
+class LifecycleActionContext implements LifecycleActionContextInterface {
 
 	/**
 	 * Declared actions, a stack per object uuid.
@@ -59,6 +59,20 @@ class LifecycleActionContext {
 	 * @var array<string, list<string>>
 	 */
 	private array $declared = [];
+
+	/**
+	 * Apps a transition runs as the system for, a stack per object uuid.
+	 *
+	 * @var array<string, list<string>>
+	 */
+	private array $system = [];
+
+	/**
+	 * Objects whose write sets declared state rather than moving through a transition, with a nesting count.
+	 *
+	 * @var array<string, int>
+	 */
+	private array $declaredState = [];
 
 	/**
 	 * Declare that the named transition is being performed on this object.
@@ -71,7 +85,7 @@ class LifecycleActionContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declare(string $uuid, string $action): void {
 		$this->declared[$uuid][] = $action;
@@ -84,7 +98,7 @@ class LifecycleActionContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function release(string $uuid): void {
 		if (isset($this->declared[$uuid]) === false) {
@@ -104,7 +118,7 @@ class LifecycleActionContext {
 	 *
 	 * @return string|null The innermost declared action, or null when none.
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaredFor(string $uuid): ?string {
 		$stack = ($this->declared[$uuid] ?? []);
@@ -114,4 +128,112 @@ class LifecycleActionContext {
 
 		return $stack[array_key_last($stack)];
 	}//end declaredFor()
+
+	/**
+	 * Mark that a transition on this object runs as the system, for an app.
+	 *
+	 * Set only by {@see TransitionEngine::transitionAsSystem()}, around the
+	 * write, and read by the audit trail so the row says the move skipped
+	 * OpenRegister's own read and update checks and which app took that
+	 * responsibility. The row's user is still the real caller. Pair every call
+	 * with leaveSystem() in a `finally`.
+	 *
+	 * @param string $uuid The object's uuid.
+	 * @param string $app  The app id that approved the caller itself.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function enterSystem(string $uuid, string $app): void {
+		$this->system[$uuid][] = $app;
+	}//end enterSystem()
+
+	/**
+	 * Release the innermost system mark for this object.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function leaveSystem(string $uuid): void {
+		if (isset($this->system[$uuid]) === false) {
+			return;
+		}
+
+		array_pop($this->system[$uuid]);
+		if ($this->system[$uuid] === []) {
+			unset($this->system[$uuid]);
+		}
+	}//end leaveSystem()
+
+	/**
+	 * The app a transition on this object currently runs as the system for, if any.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return string|null The innermost app id, or null for an ordinary write.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function systemAppFor(string $uuid): ?string {
+		$stack = ($this->system[$uuid] ?? []);
+		if ($stack === []) {
+			return null;
+		}
+
+		return $stack[array_key_last($stack)];
+	}//end systemAppFor()
+
+	/**
+	 * Mark that the next write of this object sets declared state, as a seed or example-set refresh does.
+	 *
+	 * Read by the lifecycle guard, which lets such a write set the declared
+	 * status without a matching transition, and only inside the system scope.
+	 * Pair every call with leaveDeclaredState() in a `finally`.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function enterDeclaredState(string $uuid): void {
+		$this->declaredState[$uuid] = (($this->declaredState[$uuid] ?? 0) + 1);
+	}//end enterDeclaredState()
+
+	/**
+	 * Release one declared-state mark for this object.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function leaveDeclaredState(string $uuid): void {
+		if (isset($this->declaredState[$uuid]) === false) {
+			return;
+		}
+
+		$this->declaredState[$uuid]--;
+		if ($this->declaredState[$uuid] <= 0) {
+			unset($this->declaredState[$uuid]);
+		}
+	}//end leaveDeclaredState()
+
+	/**
+	 * Whether a write of this object currently sets declared state.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function writesDeclaredState(string $uuid): bool {
+		return isset($this->declaredState[$uuid]);
+	}//end writesDeclaredState()
 }//end class

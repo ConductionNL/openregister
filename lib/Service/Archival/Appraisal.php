@@ -50,7 +50,7 @@ namespace OCA\OpenRegister\Service\Archival;
 /**
  * The MDTO `waardering` values, and every spelling that means each one.
  */
-final class Appraisal {
+final class Appraisal implements AppraisalInterface {
 
 	/**
 	 * Keep forever. The record goes to an e-Depot, it is never destroyed.
@@ -61,6 +61,23 @@ final class Appraisal {
 	 * Destroy once the disposal date has passed and nothing holds it.
 	 */
 	public const DESTROY = 'destroy';
+
+	/**
+	 * Keep the record, lose the person in it.
+	 *
+	 * The fourth word. A municipality that wants the case for its statistics
+	 * and not the citizen in it had to choose between keeping personal data it
+	 * no longer needs and destroying a record it still uses. Neither is lawful
+	 * and neither is useful, so both were being answered by keeping.
+	 *
+	 * It is not a softer destroy. A destroyed record is gone and the destruction
+	 * log says it was here; an anonymised record stays, and what it lost is
+	 * gone from it, from everything derived from it, and from the values stored
+	 * on its own audit trail. That last one is the exception to the rule that
+	 * history is preserved, and it is deliberate: a trail that keeps the old
+	 * name re-identifies the record it was removed from.
+	 */
+	public const ANONYMISE = 'anonymise';
 
 	/**
 	 * No decision has been recorded yet. Neither sweep may act on this.
@@ -75,20 +92,9 @@ final class Appraisal {
 	public const ALL = [
 		self::RETAIN_PERMANENTLY,
 		self::DESTROY,
+		self::ANONYMISE,
 		self::NOT_YET_DETERMINED,
 	];
-
-	/**
-	 * Every spelling that means RETAIN_PERMANENTLY.
-	 *
-	 * Three occur in the wild for "keep forever": MDTO and the selectielijst use
-	 * `blijvend_bewaren`, a ZGW resultaattype may carry the shorter `bewaren`,
-	 * and TMLO's own constant is `blijvend_bewaren` again. They mean the same
-	 * thing to an archivist and must not reach a reader as two appraisals.
-	 *
-	 * @var string[]
-	 */
-	public const RETAIN_PERMANENTLY_ALIASES = ['retain_permanently', 'bewaren', 'blijvend_bewaren'];
 
 	/**
 	 * Every spelling that means DESTROY.
@@ -96,6 +102,18 @@ final class Appraisal {
 	 * @var string[]
 	 */
 	public const DESTROY_ALIASES = ['destroy', 'vernietigen'];
+
+	/**
+	 * Every spelling that means ANONYMISE.
+	 *
+	 * Both English spellings, because a schema written by a Dutch team and one
+	 * written by an English-speaking integrator will not agree, and a record
+	 * whose spelling is not recognised is worse here than anywhere else in this
+	 * file: see {@see ArchivalDeclarationReader::declaredAppraisal()}.
+	 *
+	 * @var string[]
+	 */
+	public const ANONYMISE_ALIASES = ['anonymise', 'anonymize', 'anonymiseren'];
 
 	/**
 	 * Every spelling that means NOT_YET_DETERMINED.
@@ -115,6 +133,9 @@ final class Appraisal {
 		'blijvend_bewaren',
 		'destroy',
 		'vernietigen',
+		'anonymise',
+		'anonymize',
+		'anonymiseren',
 		'not_yet_determined',
 		'nog_niet_bepaald',
 	];
@@ -136,6 +157,9 @@ final class Appraisal {
 		'blijvend_bewaren' => self::RETAIN_PERMANENTLY,
 		'destroy' => self::DESTROY,
 		'vernietigen' => self::DESTROY,
+		'anonymise' => self::ANONYMISE,
+		'anonymize' => self::ANONYMISE,
+		'anonymiseren' => self::ANONYMISE,
 		'not_yet_determined' => self::NOT_YET_DETERMINED,
 		'nog_niet_bepaald' => self::NOT_YET_DETERMINED,
 	];

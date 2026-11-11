@@ -32,6 +32,55 @@ class ObjectEntityTest extends TestCase {
 		return $session;
 	}
 
+	// --- filterAsRecord ---
+
+	public function testFilterAsRecordAddsNoSelfToARowWithoutOne(): void {
+		$this->entity->setUuid('record-1');
+		$this->entity->setOrganisation('org-a');
+		$seen = null;
+
+		$filtered = $this->entity->filterAsRecord(
+			['title' => 'x'],
+			static function (array $probe) use (&$seen): array {
+				$seen = $probe;
+				return $probe;
+			}
+		);
+
+		$this->assertSame(['title' => 'x'], $filtered);
+		$this->assertSame('record-1', $seen['@self']['id']);
+		$this->assertSame('org-a', $seen['@self']['organisation']);
+	}
+
+	public function testFilterAsRecordGivesARowItsOwnSelfBack(): void {
+		$this->entity->setUuid('record-1');
+		$own = ['id' => 'as-rendered', 'organisation' => 'as-rendered-org'];
+		$seen = null;
+
+		$filtered = $this->entity->filterAsRecord(
+			['title' => 'x', '@self' => $own],
+			static function (array $probe) use (&$seen): array {
+				$seen = $probe;
+				return $probe;
+			}
+		);
+
+		$this->assertSame(['title' => 'x', '@self' => $own], $filtered);
+		$this->assertSame('record-1', $seen['@self']['id']);
+	}
+
+	public function testFilterAsRecordKeepsWhatTheFilterRemoves(): void {
+		$filtered = $this->entity->filterAsRecord(
+			['title' => 'x', 'secret' => 'y'],
+			static function (array $probe): array {
+				unset($probe['secret']);
+				return $probe;
+			}
+		);
+
+		$this->assertSame(['title' => 'x'], $filtered);
+	}
+
 	// --- Constructor ---
 
 	public function testConstructorFieldTypes(): void {
@@ -546,5 +595,44 @@ class ObjectEntityTest extends TestCase {
 		$config = new Configuration();
 		$config->setObjects([10]);
 		$this->assertNull($this->entity->getManagedByConfiguration([$config]));
+	}
+
+	/**
+	 * The match envelope's `@self` is the record's metadata, not the data's own `@self`.
+	 */
+	public function testMatchEnvelopeTakesSelfFromTheRecord(): void {
+		$record = new ObjectEntity();
+		$record->setUuid('rec-1');
+		$record->setOwner('bob');
+		$record->setOrganisation('org-b');
+		$record->setSchema('7');
+		$record->setRegister('3');
+		$record->setObject(['title' => 't', '@self' => ['owner' => 'alice', 'organisation' => 'org-a', 'published' => true]]);
+
+		$envelope = $record->getMatchEnvelope();
+
+		$this->assertSame(['id', 'title', '@self'], array_keys($envelope));
+		$this->assertSame(array_merge($record->getObjectArray(), ['expires' => null]), $envelope['@self']);
+		$this->assertSame('bob', $envelope['@self']['owner']);
+		$this->assertSame('org-b', $envelope['@self']['organisation']);
+		$this->assertSame('7', $envelope['@self']['schema']);
+		$this->assertSame('3', $envelope['@self']['register']);
+		$this->assertArrayNotHasKey('published', $envelope['@self']);
+	}
+
+	/**
+	 * Body keys that name a metadata field are dropped, also when the record's field is empty; other keys stay.
+	 */
+	public function testMatchEnvelopeDropsBodyKeysThatNameMetadata(): void {
+		$record = new ObjectEntity();
+		$record->setUuid('rec-2');
+		$record->setOwner('bob');
+		$record->setObject(['_owner' => 'alice', '_organisation' => 'org-a', '_register' => '3', '_custom' => 'kept', 'title' => 't']);
+
+		$envelope = $record->getMatchEnvelope();
+
+		$this->assertSame(['id' => 'rec-2', '_custom' => 'kept', 'title' => 't'], array_diff_key($envelope, ['@self' => true]));
+		$this->assertNull($envelope['@self']['organisation']);
+		$this->assertSame('alice', $record->getObject()['_owner']);
 	}
 }

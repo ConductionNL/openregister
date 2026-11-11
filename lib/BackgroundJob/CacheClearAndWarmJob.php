@@ -1,0 +1,69 @@
+<?php
+
+/**
+ * CacheClearAndWarmJob: clearing and warming the cache, as an observable job.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category BackgroundJob
+ * @package  OCA\OpenRegister\BackgroundJob
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/operations-console/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\BackgroundJob;
+
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
+
+/**
+ * Clears every cache and warms the name cache again, leaving a run row.
+ *
+ * Clearing and warming are one act on purpose: a clear on its own leaves the
+ * instance slow until something happens to warm it, and the administrator who
+ * pressed the button has no way to tell whether that has happened yet. One job
+ * with one outcome answers "is the cache back".
+ *
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
+ */
+class CacheClearAndWarmJob extends RecordedQueuedJob {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param RecordedJobRuntime $runtime The scheduler clock and the recorder that writes the run row.
+	 * @param ObjectNameCacheInterface $cache The caches being cleared and warmed.
+	 */
+	public function __construct(
+		RecordedJobRuntime $runtime,
+		private readonly ObjectNameCacheInterface $cache,
+	) {
+		parent::__construct(time: $runtime->time, recorder: $runtime->recorder);
+
+	}//end __construct()
+
+	/**
+	 * Clear, then warm.
+	 *
+	 * @param mixed $argument The job argument: the actor, when a person asked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/operations-console/spec.md
+	 */
+	protected function runRecorded(mixed $argument): void {
+		$this->cache->clearAllCaches();
+		$this->cache->warmupNameCache();
+
+	}//end runRecorded()
+}//end class

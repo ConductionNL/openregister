@@ -20,7 +20,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -44,6 +44,10 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Middleware\ApiVersionMiddleware
  * @covers \OCA\OpenRegister\Middleware\Exception\ApiVersionRefusedException
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator
  */
 class ApiVersionMiddlewareTest extends TestCase {
 

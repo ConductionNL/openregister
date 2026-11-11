@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use OCP\IUserSession;
  * who wants a rule to spare a role says so with `groups`, which is the axis
  * that exists for exactly that.
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The branches are the declaration's
  *   tolerated shapes, not logic: three rule kinds, two spellings of a condition, two of a
@@ -56,7 +56,7 @@ use OCP\IUserSession;
  *   across classes would put the schema's grammar in two places, which is the drift the
  *   single-reading rule in the docblock above exists to prevent.
  */
-class StateFieldRuleResolver {
+class StateFieldRuleResolver implements StateFieldRuleResolverInterface {
 
 	/**
 	 * The three rule kinds a state's `fields` block may declare.
@@ -81,7 +81,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -97,7 +97,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return array<string, mixed>|null The annotation.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function annotationOf(Schema $schema): ?array {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -120,7 +120,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return string The field name, empty when the annotation names none.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function fieldOf(array $annotation): string {
 		return (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
@@ -134,7 +134,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return string|null The state, or null when the object carries no value.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function stateOf(array $annotation, array $data): ?string {
 		$field = $this->fieldOf(annotation: $annotation);
@@ -159,7 +159,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return StateFieldRules The three lists, already decided.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function resolve(Schema $schema, array $data, ?string $state = null): StateFieldRules {
 		$annotation = $this->annotationOf(schema: $schema);
@@ -173,25 +173,18 @@ class StateFieldRuleResolver {
 		}
 
 		// Per-request memo, per openregister ADR-009. The key is the triple the
-		// answer actually depends on when no condition is declared: the schema,
-		// the state and who is asking. A state whose rules DO read the object's
-		// data is deliberately not cached — the requirement is that
-		// `@self.fieldRules` reports the rules that apply to this object as it
-		// stands, and a memo across objects would report the first object's.
-		$key = null;
-		if ($this->isConditional(annotation: $annotation, state: $state) === false) {
-			$key = implode('|', [(string)$schema->getId(), $state, $this->groupsKey()]);
-			if (isset($this->memo[$key]) === true) {
-				return $this->memo[$key];
-			}
+		// answer depends on when no condition is declared: the schema, the state
+		// and who is asking. A state whose rules DO read the object's data is
+		// deliberately not cached: `@self.fieldRules` reports the rules that
+		// apply to this object as it stands, and a memo across objects would
+		// report the first object's.
+		if ($this->isConditional(annotation: $annotation, state: $state) === true) {
+			return $this->resolveFromAnnotation(annotation: $annotation, data: $data, state: $state);
 		}
 
-		$rules = $this->resolveFromAnnotation(annotation: $annotation, data: $data, state: $state);
-		if ($key !== null) {
-			$this->memo[$key] = $rules;
-		}
-
-		return $rules;
+		$key = implode('|', [(string)$schema->getId(), $state, $this->groupsKey()]);
+		$this->memo[$key] ??= $this->resolveFromAnnotation(annotation: $annotation, data: $data, state: $state);
+		return $this->memo[$key];
 	}//end resolve()
 
 	/**
@@ -212,29 +205,50 @@ class StateFieldRuleResolver {
 			return true;
 		}
 
-		$fields = ($block['fields'] ?? []);
+		return self::hasConditionalFields(fields: ($block['fields'] ?? []));
+	}//end isConditional()
+
+	/**
+	 * Whether a block's `fields` hold an entry with a `when` / `condition`.
+	 *
+	 * @param mixed $fields The block's `fields`.
+	 *
+	 * @return bool
+	 */
+	private static function hasConditionalFields(mixed $fields): bool {
 		if (is_array($fields) === false) {
 			return false;
 		}
 
 		foreach ($fields as $entries) {
-			if (is_array($entries) === false) {
-				continue;
-			}
-
-			foreach ($entries as $entry) {
-				if (is_array($entry) === false) {
-					continue;
-				}
-
-				if (($entry['when'] ?? ($entry['condition'] ?? null)) !== null) {
-					return true;
-				}
+			if (self::hasConditionalEntry(entries: $entries) === true) {
+				return true;
 			}
 		}
 
 		return false;
-	}//end isConditional()
+	}//end hasConditionalFields()
+
+	/**
+	 * Whether a list of field-rule entries holds one with a `when` / `condition`.
+	 *
+	 * @param mixed $entries The entries of one kind.
+	 *
+	 * @return bool
+	 */
+	private static function hasConditionalEntry(mixed $entries): bool {
+		if (is_array($entries) === false) {
+			return false;
+		}
+
+		foreach ($entries as $entry) {
+			if (is_array($entry) === true && ($entry['when'] ?? ($entry['condition'] ?? null)) !== null) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasConditionalEntry()
 
 	/**
 	 * A stable key for the current user's group membership.
@@ -266,7 +280,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return StateFieldRules The three lists, already decided.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each branch is one way the declaration
 	 *   can legitimately say "nothing applies"; see the class docblock.
@@ -283,23 +297,70 @@ class StateFieldRuleResolver {
 			return new StateFieldRules(state: $state);
 		}
 
-		$document = $this->document(data: $data, state: $state);
+		return $this->rulesFromBlock(block: $block, document: $this->document(data: $data, state: $state));
+	}//end resolveFromAnnotation()
+
+	/**
+	 * The rules a state block yields for this object and caller.
+	 *
+	 * @param array<string, mixed> $block    The state's block.
+	 * @param array<string, mixed> $document The condition document; its `state` is the state the block belongs to.
+	 *
+	 * @return StateFieldRules
+	 */
+	private function rulesFromBlock(array $block, array $document): StateFieldRules {
+		$state = $document['state'];
 
 		// The state block's own `condition` gates the whole block. It is the
 		// condition `RuleInventoryService` publishes for a `stateFieldRule`, so
 		// honouring it here is what keeps the operator's inventory honest: a
 		// rule listed as conditional must actually be conditional.
-		$blockCondition = ($block['condition'] ?? null);
-		if ($blockCondition !== null && $this->dialect->holds(node: $blockCondition, document: $document) === false) {
+		if ($this->blockConditionHolds(block: $block, document: $document) === false) {
 			return new StateFieldRules(state: $state);
 		}
 
-		$resolved = ['hidden' => [], 'readOnly' => [], 'required' => []];
-		$messages = [];
 		$fields = ($block['fields'] ?? []);
 		if (is_array($fields) === false) {
 			return new StateFieldRules(state: $state);
 		}
+
+		[$resolved, $messages] = $this->collectFields(fields: $fields, document: $document);
+
+		return new StateFieldRules(
+			state: $state,
+			fields: new StateFieldLists(
+				hidden: array_values($resolved['hidden']),
+				readOnly: array_values($resolved['readOnly']),
+				required: array_values($resolved['required'])
+			),
+			messages: $messages
+		);
+	}//end rulesFromBlock()
+
+	/**
+	 * Whether the block's own `condition` holds (a block without one always holds).
+	 *
+	 * @param array<string, mixed> $block    The state's block.
+	 * @param array<string, mixed> $document The condition document.
+	 *
+	 * @return bool
+	 */
+	private function blockConditionHolds(array $block, array $document): bool {
+		$blockCondition = ($block['condition'] ?? null);
+		return $blockCondition === null || $this->dialect->holds(node: $blockCondition, document: $document) === true;
+	}//end blockConditionHolds()
+
+	/**
+	 * The fields each kind names for this caller and object, and the first message per field.
+	 *
+	 * @param array<string, mixed> $fields   The block's `fields`.
+	 * @param array<string, mixed> $document The condition document.
+	 *
+	 * @return array{0: array<string, array<string, string>>, 1: array<string, string>} [fields by kind, messages].
+	 */
+	private function collectFields(array $fields, array $document): array {
+		$resolved = ['hidden' => [], 'readOnly' => [], 'required' => []];
+		$messages = [];
 
 		foreach (self::KINDS as $kind) {
 			$entries = ($fields[$kind] ?? []);
@@ -309,24 +370,35 @@ class StateFieldRuleResolver {
 
 			foreach ($entries as $entry) {
 				$names = $this->applicableFields(entry: $entry, document: $document);
-				foreach ($names as $name) {
-					$resolved[$kind][$name] = $name;
-					$message = ($entry['message'] ?? null);
-					if (is_string($message) === true && $message !== '' && isset($messages[$name]) === false) {
-						$messages[$name] = $message;
-					}
-				}
+				// `+=` keeps the first message a field was given, and a field already listed.
+				$resolved[$kind] += array_combine($names, $names);
+				$messages        += self::messagesFor(entry: $entry, names: $names);
 			}
 		}
 
-		return new StateFieldRules(
-			state: $state,
-			hidden: array_values($resolved['hidden']),
-			readOnly: array_values($resolved['readOnly']),
-			required: array_values($resolved['required']),
-			messages: $messages
-		);
-	}//end resolveFromAnnotation()
+		return [$resolved, $messages];
+	}//end collectFields()
+
+	/**
+	 * The message an entry gives each of the fields it applies to.
+	 *
+	 * @param mixed              $entry The rule entry.
+	 * @param array<int, string> $names The fields the entry applies to.
+	 *
+	 * @return array<string, string> Field to message; empty when the entry has no usable message.
+	 */
+	private static function messagesFor(mixed $entry, array $names): array {
+		if ($names === []) {
+			return [];
+		}
+
+		$message = ($entry['message'] ?? null);
+		if (is_string($message) === false || $message === '') {
+			return [];
+		}
+
+		return array_fill_keys($names, $message);
+	}//end messagesFor()
 
 	/**
 	 * The state block, when the state declares one and it is switched on.
@@ -336,7 +408,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return array<string, mixed>|null The block, or null when there is none to apply.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function blockFor(array $annotation, string $state): ?array {
 		$states = ($annotation['states'] ?? []);
@@ -345,19 +417,31 @@ class StateFieldRuleResolver {
 		}
 
 		$block = ($states[$state] ?? null);
-		if (is_array($block) === false || $block === []) {
-			return null;
-		}
-
-		// `enabled: false` is the switch `RuleEnablementService` writes. A
-		// resolver that ignored it would make the operator's off switch a
-		// silent no-op, which is worse than not having one.
-		if (($block['enabled'] ?? true) === false) {
+		if (self::isEnabledBlock(block: $block) === false) {
 			return null;
 		}
 
 		return $block;
 	}//end blockFor()
+
+	/**
+	 * Whether a state block is a non-empty object that is not switched off.
+	 *
+	 * `enabled: false` is the switch `RuleEnablementService` writes. A
+	 * resolver that ignored it would make the operator's off switch a
+	 * silent no-op, which is worse than not having one.
+	 *
+	 * @param mixed $block The state's block.
+	 *
+	 * @return bool
+	 */
+	private static function isEnabledBlock(mixed $block): bool {
+		if (is_array($block) === false || $block === []) {
+			return false;
+		}
+
+		return ($block['enabled'] ?? true) !== false;
+	}//end isEnabledBlock()
 
 	/**
 	 * The document a state rule's condition is evaluated against.
@@ -367,20 +451,12 @@ class StateFieldRuleResolver {
 	 *
 	 * @return array<string, mixed> The evaluation document.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function document(array $data, string $state): array {
-		$user = $this->userSession->getUser();
-		$uid = '';
-		$groups = [];
-		if ($user !== null) {
-			$uid = $user->getUID();
-			$groups = $this->groupManager->getUserGroupIds($user);
-		}
-
 		return [
 			'object' => $data,
-			'user' => ['uid' => $uid, 'groups' => $groups],
+			'user' => ConditionUser::of(userSession: $this->userSession, groupManager: $this->groupManager),
 			'state' => $state,
 		];
 	}//end document()
@@ -405,11 +481,34 @@ class StateFieldRuleResolver {
 			return [];
 		}
 
-		$when = ($entry['when'] ?? ($entry['condition'] ?? null));
-		if ($when !== null && $this->dialect->holds(node: $when, document: $document) === false) {
+		if ($this->whenHolds(entry: $entry, document: $document) === false) {
 			return [];
 		}
 
+		return self::entryFieldNames(entry: $entry);
+	}//end applicableFields()
+
+	/**
+	 * Whether an entry's `when` / `condition` holds (an entry without one always holds).
+	 *
+	 * @param array<string, mixed> $entry    The rule entry.
+	 * @param array<string, mixed> $document The condition document.
+	 *
+	 * @return bool
+	 */
+	private function whenHolds(array $entry, array $document): bool {
+		$when = ($entry['when'] ?? ($entry['condition'] ?? null));
+		return $when === null || $this->dialect->holds(node: $when, document: $document) === true;
+	}//end whenHolds()
+
+	/**
+	 * The non-empty field names an entry lists under `fields` (or `field`), one string or a list.
+	 *
+	 * @param array<string, mixed> $entry The rule entry.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function entryFieldNames(array $entry): array {
 		$names = ($entry['fields'] ?? ($entry['field'] ?? []));
 		if (is_string($names) === true) {
 			$names = [$names];
@@ -419,15 +518,26 @@ class StateFieldRuleResolver {
 			return [];
 		}
 
+		return self::nonEmptyStrings(values: $names);
+	}//end entryFieldNames()
+
+	/**
+	 * The non-empty strings of a list, in order.
+	 *
+	 * @param array<int|string, mixed> $values The list.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function nonEmptyStrings(array $values): array {
 		$out = [];
-		foreach ($names as $name) {
-			if (is_string($name) === true && $name !== '') {
-				$out[] = $name;
+		foreach ($values as $value) {
+			if (is_string($value) === true && $value !== '') {
+				$out[] = $value;
 			}
 		}
 
 		return $out;
-	}//end applicableFields()
+	}//end nonEmptyStrings()
 
 	/**
 	 * Whether an entry's `groups` clause covers the current user.
@@ -445,43 +555,54 @@ class StateFieldRuleResolver {
 	 * @SuppressWarnings(PHPMD.NPathComplexity) Same reason.
 	 */
 	private function appliesToUser(array $entry): bool {
-		$groups = ($entry['groups'] ?? null);
+		$groups = self::entryGroups(entry: $entry);
 		if ($groups === null) {
 			return true;
 		}
 
-		if (is_string($groups) === true) {
-			$groups = [$groups];
-		}
-
-		if (is_array($groups) === false || $groups === []) {
-			return true;
-		}
-
-		$user = $this->userSession->getUser();
-		$userGroups = [];
-		if ($user !== null) {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
-		}
-
+		$admitting = $this->admittingGroups();
 		foreach ($groups as $group) {
-			if (is_string($group) === false) {
-				continue;
-			}
-
-			if ($group === 'public') {
-				return true;
-			}
-
-			if ($group === 'authenticated' && $user !== null) {
-				return true;
-			}
-
-			if (in_array($group, $userGroups, true) === true) {
+			if (is_string($group) === true && in_array($group, $admitting, true) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end appliesToUser()
+
+	/**
+	 * The scoping groups that admit the caller: `public` always, `authenticated` when signed in, and the caller's own groups.
+	 *
+	 * @return array<int, string>
+	 */
+	private function admittingGroups(): array {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return ['public'];
+		}
+
+		return array_merge(['public', 'authenticated'], $this->groupManager->getUserGroupIds($user));
+	}//end admittingGroups()
+
+	/**
+	 * The groups an entry is scoped to, or null when it applies to everyone.
+	 *
+	 * A missing, empty or unreadable (non-list, non-string) `groups` scopes the entry to no one in particular.
+	 *
+	 * @param array<string, mixed> $entry The rule entry.
+	 *
+	 * @return array<int|string, mixed>|null
+	 */
+	private static function entryGroups(array $entry): ?array {
+		$groups = ($entry['groups'] ?? null);
+		if (is_string($groups) === true) {
+			$groups = [$groups];
+		}
+
+		if (is_array($groups) === false || $groups === []) {
+			return null;
+		}
+
+		return $groups;
+	}//end entryGroups()
 }//end class

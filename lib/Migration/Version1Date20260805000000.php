@@ -62,7 +62,7 @@ class Version1Date20260805000000 extends SimpleMigrationStep {
 
 		if ($schema->hasTable('openregister_audit_trails') === false) {
 			$output->info('openregister_audit_trails does not exist yet; nothing to alter.');
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_audit_trails');
@@ -89,7 +89,7 @@ class Version1Date20260805000000 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		return $schema;

@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -37,6 +38,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\File\ObjectFolderOptions;
 
 /**
  * Unit tests for `@self.folder` access-control on `createObjectFolderById()`.
@@ -105,7 +107,8 @@ class FolderManagementHandlerAccessControlTest extends TestCase {
 			groupManager: $this->groupManager,
 			logger: $this->logger,
 			auditTrailMapper: $this->auditTrailMapper,
-			mountCache: $this->mountCache
+			mountCache: $this->mountCache,
+			folderRecorder: $this->createMock(RegisterFolderRecorder::class)
 		);
 
 	}//end setUp()
@@ -284,10 +287,7 @@ class FolderManagementHandlerAccessControlTest extends TestCase {
 		$folder->method('isReadable')->willReturn(true);
 		$this->mockUserFolderLookup(uid: 'bob', folderId: 42, nodes: [$folder]);
 
-		$result = $this->handler->createObjectFolderById(
-			objectEntity: $this->makeObjectEntity(folder: '42'),
-			currentUser: $bob
-		);
+		$result = $this->handler->createObjectFolderById(objectEntity: $this->makeObjectEntity(folder: '42'), options: new ObjectFolderOptions(currentUser: $bob));
 
 		$this->assertSame($folder, $result);
 

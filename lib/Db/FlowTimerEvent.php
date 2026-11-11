@@ -50,11 +50,16 @@ use OCP\AppFramework\Db\Entity;
  * @method float|null getDaysImpact()
  * @method void setDaysImpact(?float $daysImpact)
  * @method string|null getBasis()
+ * @method DateTime|null getUnrolledAt()
+ * @method void setUnrolledAt(?DateTime $unrolledAt)
+ * @method string|null getRolledBy()
+ * @method void setRolledBy(?string $rolledBy)
  * @method void setBasis(?string $basis)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  */
 class FlowTimerEvent extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Event types.
@@ -132,6 +137,24 @@ class FlowTimerEvent extends Entity implements JsonSerializable {
 	protected ?string $basis = null;
 
 	/**
+	 * Where the budget put the deadline, when a roll moved it.
+	 *
+	 * On the EVENT as well as on the timer: a timer carries only its current
+	 * deadline, and an auditor reading why a term ended on Tuesday a year later
+	 * is reading the ledger, not the row.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $unrolledAt = null;
+
+	/**
+	 * The name of the rule that moved it.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $rolledBy = null;
+
+	/**
 	 * Creation stamp: the moment of the event.
 	 *
 	 * @var DateTime|null
@@ -150,44 +173,9 @@ class FlowTimerEvent extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'newFireAt', type: 'datetime');
 		$this->addType(fieldName: 'daysImpact', type: 'float');
 		$this->addType(fieldName: 'basis', type: 'string');
+		$this->addType(fieldName: 'unrolledAt', type: 'datetime');
+		$this->addType(fieldName: 'rolledBy', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 
 	}//end __construct()
-
-	/**
-	 * Serialise for the API.
-	 *
-	 * @return array<string, mixed> The event.
-	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'timerUuid' => $this->timerUuid,
-			'type' => $this->type,
-			'actor' => $this->actor,
-			'reason' => $this->reason,
-			'priorFireAt' => $this->format(value: $this->priorFireAt),
-			'newFireAt' => $this->format(value: $this->newFireAt),
-			'daysImpact' => $this->daysImpact,
-			'basis' => $this->basis,
-			'created' => $this->format(value: $this->created),
-		];
-	}//end jsonSerialize()
-
-	/**
-	 * ISO-8601 or null.
-	 *
-	 * @param DateTime|null $value The moment.
-	 *
-	 * @return string|null The formatted moment.
-	 */
-	private function format(?DateTime $value): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		return $value->format('c');
-	}//end format()
 }//end class

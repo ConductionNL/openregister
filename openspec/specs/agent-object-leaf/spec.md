@@ -1,4 +1,6 @@
-# agent-object-leaf (delta)
+# agent-object-leaf Specification
+
+## Purpose
 
 Extends the existing agent leaf so it works on the `hydra-console` OpenBuild app's
 pages, and adds the triage surface as **data** rather than code. Two corrections to
@@ -10,7 +12,7 @@ No new HTTP endpoint, no new run path, no new tool. The forge write this surface
 ultimately commands is **not** in this capability and **not** Hermiq code — see the
 `nc-native-tools` and `agent-tool-governance` deltas in this same change.
 
-## MODIFIED Requirements
+## Requirements
 
 <!--
   RELOCATED SUBSET — the canonical home for this capability is hermiq.

@@ -50,7 +50,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCP\Constants;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Container\ContainerInterface;
@@ -60,7 +59,7 @@ use Throwable;
 /**
  * Resolves the object UUIDs a caller has been granted, from core's shares.
  */
-class ObjectGrantResolver {
+class ObjectGrantResolver implements ObjectGrantResolverInterface {
 
 	/**
 	 * Share types that name a PRINCIPAL, and so can grant an object.
@@ -118,16 +117,59 @@ class ObjectGrantResolver {
 	private array $verbs = [];
 
 	/**
+	 * Which ancestor each INHERITED grant came from, keyed by object UUID.
+	 *
+	 * Populated by the same resolve as the map above and cleared by the same
+	 * `forget()`, so the two cannot disagree about which request they describe.
+	 * An object absent from this map holds a DIRECT grant, which is what makes
+	 * the two distinguishable in the audit (REQ-RIC-004).
+	 *
+	 * @var array<string, string>
+	 */
+	private array $inheritedFrom = [];
+
+	/**
+	 * Object UUIDs whose grant is marked as not travelling to descendants.
+	 *
+	 * Keyed by object and cleared by the same `forget()` as the maps above,
+	 * for the same reason: this decides an authorization answer and a stale
+	 * entry is wrong in both directions.
+	 *
+	 * @var array<string, bool>
+	 */
+	private array $notInheritable = [];
+
+	/**
+	 * Reads what a share declares about a grant; stateless, made on first use.
+	 *
+	 * @var ShareGrantAttributes|null
+	 */
+	private ?ShareGrantAttributes $shareAttributes = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger.
 	 * @param ContainerInterface $container App container the share manager is resolved from on demand.
+	 * @param HierarchyGrantExpander|null $hierarchy Expands a grant down every declared hierarchy. Nullable and
+	 *                                               last so adding it is not a fatal at an existing construction
+	 *                                               site; absent means nothing is inherited, which scopes.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
+		private readonly ?HierarchyGrantExpander $hierarchy = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The reader of what a share declares about a grant.
+	 *
+	 * @return ShareGrantAttributes The reader.
+	 */
+	private function shareAttributes(): ShareGrantAttributes {
+		return $this->shareAttributes ??= new ShareGrantAttributes();
+	}//end shareAttributes()
 
 	/**
 	 * The object UUIDs granted to a caller, mapped to the permission bitmask.
@@ -135,6 +177,8 @@ class ObjectGrantResolver {
 	 * @param string|null $userId The caller, or null when anonymous.
 	 *
 	 * @return array<string, int> Object UUID => core permission bitmask.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function grantedObjectUuids(?string $userId): array {
 		// An anonymous caller holds no principal grants. A link or email
@@ -148,8 +192,19 @@ class ObjectGrantResolver {
 			return $this->memoised[$userId];
 		}
 
-		$granted = [];
+		$this->memoised[$userId] = $this->resolve(userId: $userId);
 
+		return $this->memoised[$userId];
+	}//end grantedObjectUuids()
+
+	/**
+	 * Resolve a caller's grants from core's share manager, uncached.
+	 *
+	 * @param string $userId The caller.
+	 *
+	 * @return array<string, int> Object UUID => core permission bitmask.
+	 */
+	private function resolve(string $userId): array {
 		$manager = $this->shareManager();
 		if ($manager === null) {
 			// Fail CLOSED: an unreachable share manager means "no grants", which
@@ -159,23 +214,72 @@ class ObjectGrantResolver {
 				message: '[ObjectGrantResolver] Share manager unreachable; treating the caller as holding no grants',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'userId' => $userId]
 			);
-			$this->memoised[$userId] = [];
 			return [];
 		}
 
+		$run = new ShareGrantRun(manager: $manager, userId: $userId);
 		foreach (self::PRINCIPAL_SHARE_TYPES as $shareType) {
-			$this->collectForType(
-				manager: $manager,
-				userId: $userId,
-				shareType: $shareType,
-				granted: $granted
-			);
+			$run->shareType = $shareType;
+			$this->collectForType(run: $run);
 		}
 
-		$this->memoised[$userId] = $granted;
+		return $this->expandDownHierarchies(granted: $run->granted);
+	}//end resolve()
 
-		return $granted;
-	}//end grantedObjectUuids()
+	/**
+	 * Expand a direct grant map down every declared hierarchy.
+	 *
+	 * @param array<string, int> $granted The caller's direct grants.
+	 *
+	 * @return array<string, int> The grants including inherited ones.
+	 */
+	private function expandDownHierarchies(array $granted): array {
+		// A GRANT ON A PARENT REACHES ITS CHILDREN (ledger row Q13.23). The
+		// expansion happens HERE, on the map, rather than at each decision,
+		// because this map is the one funnel every path takes: the per-object
+		// check reads it through `isGranted()` and both list emitters read it
+		// through `grantedObjectUuidsFor()`. Expanding it once is the only
+		// placement where a list and an object read cannot disagree, which is
+		// exactly what the change's D-3 is about and is not a theoretical
+		// worry: the two are compiled by different code into different
+		// languages.
+		//
+		// It runs BEFORE the memo is written, so the expansion is paid once per
+		// request like everything else here, and `forget()` drops it with the
+		// rest.
+		// Only the grants that TRAVEL seed the descent. A grant marked as not
+		// inheritable still admits the object it was written on; it simply
+		// stops there, which is what lets an access review finish.
+		$seeds = array_diff_key($granted, $this->notInheritable);
+
+		$expanded = $this->hierarchy?->expand(granted: $granted, seeds: $seeds);
+		if ($expanded === null) {
+			return $granted;
+		}
+
+		$this->inheritedFrom = ($this->inheritedFrom + $expanded['sources']);
+
+		return $expanded['granted'];
+	}//end expandDownHierarchies()
+
+	/**
+	 * Which ancestor a grant came from, or null when it was written on the object.
+	 *
+	 * The provenance the discovery endpoint and the scope audit report
+	 * (REQ-RIC-004). An administrator looking at a descendant sees access they
+	 * cannot otherwise explain and cannot remove, because the grant is not on
+	 * the object in front of them; naming the ancestor is what turns that into
+	 * an answer.
+	 *
+	 * @param string $objectUuid The object.
+	 *
+	 * @return string|null The ancestor's UUID, or null for a direct grant.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function inheritedFrom(string $objectUuid): ?string {
+		return ($this->inheritedFrom[$objectUuid] ?? null);
+	}//end inheritedFrom()
 
 	/**
 	 * Whether the caller holds any grant at all.
@@ -202,20 +306,20 @@ class ObjectGrantResolver {
 	 * grants visibility only and an extension verb is enforced at the endpoint
 	 * that performs it.
 	 *
+	 * The table itself lives in {@see PermissionBit}, so the hierarchy expander
+	 * can reach the SAME answer without an instance of this service. ONE table,
+	 * not two: a second copy of this map is a second answer to "which bit is
+	 * update", and the day they disagree an inherited grant carries a verb the
+	 * ancestor never had.
+	 *
 	 * @param string $action The action being decided.
 	 *
 	 * @return integer|null The required bit, or null when the action has none.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function permissionFor(string $action): ?int {
-		$bits = [
-			'read' => Constants::PERMISSION_READ,
-			'update' => Constants::PERMISSION_UPDATE,
-			'create' => Constants::PERMISSION_CREATE,
-			'delete' => Constants::PERMISSION_DELETE,
-			'share' => Constants::PERMISSION_SHARE,
-		];
-
-		return ($bits[$action] ?? null);
+		return PermissionBit::forAction(action: $action);
 	}//end permissionFor()
 
 	/**
@@ -250,22 +354,26 @@ class ObjectGrantResolver {
 	/**
 	 * Whether one object is granted to the caller for one action.
 	 *
-	 * @param string|null $userId The caller.
-	 * @param string|null $objectUuid The object's UUID.
-	 * @param string $action The action being decided.
+	 * @param GrantLookup $lookup The caller and the object's UUID.
+	 * @param string      $action The action being decided.
 	 *
 	 * @return bool True when a grant exists that carries the action's permission.
 	 */
-	public function isGranted(?string $userId, ?string $objectUuid, string $action = 'read'): bool {
-		if ($objectUuid === null || $objectUuid === '') {
-			return false;
-		}
-
-		return array_key_exists(
-			$objectUuid,
-			$this->grantedObjectUuidsFor(userId: $userId, action: $action)
-		);
+	public function isGranted(GrantLookup $lookup, string $action = 'read'): bool {
+		return $this->namesAnObject(objectUuid: $lookup->objectUuid) === true
+			&& array_key_exists((string)$lookup->objectUuid, $this->grantedObjectUuidsFor(userId: $lookup->userId, action: $action));
 	}//end isGranted()
+
+	/**
+	 * Whether a uuid names an object at all; no grant answers for a missing one.
+	 *
+	 * @param string|null $objectUuid The object.
+	 *
+	 * @return bool False for null and for the empty string.
+	 */
+	private function namesAnObject(?string $objectUuid): bool {
+		return $objectUuid !== null && $objectUuid !== '';
+	}//end namesAnObject()
 
 	/**
 	 * Forget the memoised grants.
@@ -276,11 +384,15 @@ class ObjectGrantResolver {
 	 * @param string|null $userId Only this caller, or null for everybody.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function forget(?string $userId = null): void {
 		if ($userId === null) {
 			$this->memoised = [];
 			$this->verbs = [];
+			$this->inheritedFrom = [];
+			$this->notInheritable = [];
 			return;
 		}
 
@@ -289,102 +401,161 @@ class ObjectGrantResolver {
 		// The verb map is keyed by OBJECT, not by user, so a per-user forget
 		// cannot prune it precisely. Clearing it wholly is the safe direction:
 		// it is rebuilt on the next resolve, and a stale verb would admit.
+		// The inherited-from map is keyed by object for the same reason and is
+		// cleared for the same one.
 		$this->verbs = [];
+		$this->inheritedFrom = [];
+		$this->notInheritable = [];
 	}//end forget()
 
 	/**
 	 * Page through one share type, adding folder shares to the grant map.
 	 *
-	 * @param IManager $manager Core share manager.
-	 * @param string $userId The caller.
-	 * @param integer $shareType One of PRINCIPAL_SHARE_TYPES.
-	 * @param array<string, int> $granted Grant map, modified in place.
+	 * @param ShareGrantRun $run The manager, the caller, the share type, and the grant map it fills.
 	 *
 	 * @return void
 	 */
-	private function collectForType(IManager $manager, string $userId, int $shareType, array &$granted): void {
+	private function collectForType(ShareGrantRun $run): void {
 		$page = 0;
 		while ($page < self::MAX_PAGES) {
-			try {
-				$shares = $manager->getSharedWith(
-					$userId,
-					$shareType,
-					null,
-					self::PAGE_SIZE,
-					($page * self::PAGE_SIZE)
-				);
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					message: '[ObjectGrantResolver] Could not read shares for a type; skipping it',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'shareType' => $shareType,
-						'exception' => $e->getMessage(),
-					]
-				);
-				return;
-			}
-
-			if (empty($shares) === true) {
-				return;
-			}
-
-			foreach ($shares as $share) {
-				$uuid = $this->objectUuidOf(share: $share);
-				if ($uuid === null) {
-					continue;
-				}
-
-				// A caller may hold several grants on one object (directly and
-				// through a group). The widest wins, which is how core itself
-				// composes overlapping shares.
-				$existing = ($granted[$uuid] ?? 0);
-				$granted[$uuid] = ($existing | $share->getPermissions());
-
-				// Extension verbs ride in IShare's attribute bag (ADR-010), not
-				// in the permission integer, because core's bitmask has no room
-				// for a verb it does not define. Unioned across overlapping
-				// grants for the same reason the bitmask is.
-				$verbs = $this->verbsOf(share: $share);
-				if (empty($verbs) === false) {
-					$this->verbs[$uuid] = array_values(
-						array_unique(array_merge(($this->verbs[$uuid] ?? []), $verbs))
-					);
-				}
-			}//end foreach
-
-			if (count($shares) < self::PAGE_SIZE) {
+			if ($this->absorbPage(run: $run, shares: $this->readPage(run: $run, page: $page)) === false) {
 				return;
 			}
 
 			$page++;
-		}//end while
+		}
 
+		$this->warnPagingBound(run: $run);
+	}//end collectForType()
+
+	/**
+	 * Say that the paging bound was hit, so some grants of this type were not read.
+	 *
+	 * @param ShareGrantRun $run The run: its share type.
+	 *
+	 * @return void
+	 */
+	private function warnPagingBound(ShareGrantRun $run): void {
 		$this->logger->warning(
 			message: '[ObjectGrantResolver] Hit the share paging bound; some grants were NOT read',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'shareType' => $shareType,
+				'shareType' => $run->shareType,
 				'bound' => (self::PAGE_SIZE * self::MAX_PAGES),
 			]
 		);
-	}//end collectForType()
+	}//end warnPagingBound()
 
 	/**
-	 * The attribute scope OpenRegister's extension verbs live under.
+	 * Add one page of shares to the grant map, and say whether another page may follow.
 	 *
-	 * @var string
+	 * @param ShareGrantRun $run    The run whose grant map takes the shares.
+	 * @param IShare[]      $shares The page.
+	 *
+	 * @return bool True when the page was full, so the next one must be read.
 	 */
-	public const VERB_ATTRIBUTE_SCOPE = 'openregister';
+	private function absorbPage(ShareGrantRun $run, array $shares): bool {
+		if (empty($shares) === true) {
+			return false;
+		}
+
+		foreach ($shares as $share) {
+			$this->absorbShare(share: $share, run: $run);
+		}
+
+		return count($shares) >= self::PAGE_SIZE;
+	}//end absorbPage()
 
 	/**
-	 * The attribute key holding the verb list.
+	 * Read one page of one share type, or nothing when the read failed.
 	 *
-	 * @var string
+	 * @param ShareGrantRun $run  The manager, the caller and the share type.
+	 * @param integer       $page Zero-based page number.
+	 *
+	 * @return IShare[] The shares, empty when the type must be skipped.
 	 */
-	public const VERB_ATTRIBUTE_KEY = 'verbs';
+	private function readPage(ShareGrantRun $run, int $page): array {
+		try {
+			return $run->manager->getSharedWith(
+				$run->userId,
+				$run->shareType,
+				null,
+				self::PAGE_SIZE,
+				($page * self::PAGE_SIZE)
+			);
+		} catch (Throwable $e) {
+			$this->warnUnreadableType(run: $run, error: $e);
+			return [];
+		}
+	}//end readPage()
+
+	/**
+	 * Say that the shares of one type could not be read, so the type is skipped.
+	 *
+	 * @param ShareGrantRun $run   The run: its share type.
+	 * @param Throwable     $error Why the read failed.
+	 *
+	 * @return void
+	 */
+	private function warnUnreadableType(ShareGrantRun $run, Throwable $error): void {
+		$this->logger->warning(
+			message: '[ObjectGrantResolver] Could not read shares for a type; skipping it',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'shareType' => $run->shareType,
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end warnUnreadableType()
+
+	/**
+	 * Add one share to the grant map, when it is a folder share on an object.
+	 *
+	 * @param IShare        $share The share.
+	 * @param ShareGrantRun $run   The run whose grant map takes the share.
+	 *
+	 * @return void
+	 */
+	private function absorbShare(IShare $share, ShareGrantRun $run): void {
+		$uuid = $this->shareAttributes()->objectUuidOf(share: $share);
+		if ($uuid === null) {
+			return;
+		}
+
+		// A caller may hold several grants on one object (directly and
+		// through a group). The widest wins, which is how core itself
+		// composes overlapping shares.
+		$existing = ($run->granted[$uuid] ?? 0);
+		$run->granted[$uuid] = ($existing | $share->getPermissions());
+
+		// Extension verbs ride in IShare's attribute bag (ADR-010), not
+		// in the permission integer, because core's bitmask has no room
+		// for a verb it does not define. Unioned across overlapping
+		// grants for the same reason the bitmask is.
+		$verbs = $this->shareAttributes()->verbsOf(share: $share);
+		if (empty($verbs) === false) {
+			$this->verbs[$uuid] = array_values(
+				array_unique(array_merge(($this->verbs[$uuid] ?? []), $verbs))
+			);
+		}
+
+		// A grant may be marked as NOT INHERITABLE, and then it stops at
+		// the object it was written on (ledger row 13.41). The default
+		// is inheritable, because that is what every grant written
+		// before this existed meant and silently changing them would
+		// remove access nobody asked to remove.
+		//
+		// A single non-inheritable grant on an object is enough to hold
+		// the object back, even where an overlapping grant says
+		// nothing: the two together are an administrator who wrote
+		// "not below here" once, and the widest-wins rule that composes
+		// the BITMASK must not quietly overrule that.
+		if ($this->shareAttributes()->inheritableOf(share: $share) === false) {
+			$this->notInheritable[$uuid] = true;
+		}
+	}//end absorbShare()
 
 	/**
 	 * Whether a grant carries one EXTENSION verb for this caller.
@@ -399,98 +570,50 @@ class ObjectGrantResolver {
 	 * evaluator finite and reviewable. An extension verb is asked for by the
 	 * endpoint that performs the action, and only there.
 	 *
-	 * @param string|null $userId The caller.
-	 * @param string|null $objectUuid The object.
-	 * @param string $verb The extension verb, e.g. `use`.
+	 * @param GrantLookup $lookup The caller and the object.
+	 * @param string      $verb   The extension verb, e.g. `use`.
 	 *
 	 * @return bool True when a grant to this caller carries that verb.
 	 */
-	public function grantCarriesVerb(?string $userId, ?string $objectUuid, string $verb): bool {
-		if ($objectUuid === null || $objectUuid === '') {
-			return false;
-		}
-
-		// Force the resolve — that is what populates the verb map.
-		$granted = $this->grantedObjectUuids(userId: $userId);
-		if (array_key_exists($objectUuid, $granted) === false) {
-			return false;
-		}
-
-		return in_array($verb, ($this->verbs[$objectUuid] ?? []), true);
+	public function grantCarriesVerb(GrantLookup $lookup, string $verb): bool {
+		return $this->namesAnObject(objectUuid: $lookup->objectUuid) === true
+			&& in_array($verb, $this->verbsHeldOn(userId: $lookup->userId, objectUuid: (string)$lookup->objectUuid), true);
 	}//end grantCarriesVerb()
 
 	/**
-	 * The extension verbs one share carries.
+	 * The extension verbs a caller's grants carry on one object.
 	 *
-	 * @param IShare $share The share.
+	 * @param string|null $userId The caller.
+	 * @param string $objectUuid The object.
 	 *
-	 * @return string[] The verbs, empty when it carries none.
+	 * @return string[] The verbs, empty when the object is not granted.
 	 */
-	private function verbsOf(IShare $share): array {
-		try {
-			$attributes = $share->getAttributes();
-			if ($attributes === null) {
-				return [];
-			}
-
-			$raw = $attributes->getAttribute(self::VERB_ATTRIBUTE_SCOPE, self::VERB_ATTRIBUTE_KEY);
-		} catch (Throwable $e) {
+	private function verbsHeldOn(?string $userId, string $objectUuid): array {
+		// Force the resolve — that is what populates the verb map.
+		$granted = $this->grantedObjectUuids(userId: $userId);
+		if (array_key_exists($objectUuid, $granted) === false) {
 			return [];
 		}
 
-		if (is_string($raw) === true) {
-			$raw = json_decode($raw, true);
-		}
-
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		return array_values(
-			array_filter($raw, static fn ($verb) => is_string($verb) === true && $verb !== '')
-		);
-	}//end verbsOf()
+		return ($this->verbs[$objectUuid] ?? []);
+	}//end verbsHeldOn()
 
 	/**
-	 * The object UUID a share grants, or null when it grants no object.
+	 * Whether this object's grant travels to its descendants.
 	 *
-	 * An object's folder is named after its UUID — the convention
-	 * `FolderManagementHandler` creates and `FileMapper::findOwningObjectUuid()`
-	 * already relies on. A share on a FILE inside that folder is a file share
-	 * and grants no object.
+	 * Read by the scopes surface beside the provenance, so an access review can
+	 * say of every grant either where it came from or that it is explicitly
+	 * local (ledger row 13.41).
 	 *
-	 * @param IShare $share The share to inspect.
+	 * @param string $objectUuid The object.
 	 *
-	 * @return string|null The granted object's UUID, or null.
+	 * @return bool True unless the grant is marked as local.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
-	private function objectUuidOf(IShare $share): ?string {
-		try {
-			if ($share->getNodeType() !== 'folder') {
-				return null;
-			}
-
-			// `getNode()` is typed to return a Node and `getName()` a string, so
-			// neither is re-checked here — both throw instead when the node has
-			// gone, which the catch below is for.
-			$name = $share->getNode()->getName();
-		} catch (Throwable $e) {
-			// A share whose node has gone is not a grant. Core will clean it up.
-			return null;
-		}
-
-		if ($name === '') {
-			return null;
-		}
-
-		// Only accept something UUID-shaped. Register and schema folders sit in
-		// the same tree, and admitting one of those by name would turn a share
-		// of a CONTAINER into a grant on an object that merely shares its name.
-		if (preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $name) !== 1) {
-			return null;
-		}
-
-		return $name;
-	}//end objectUuidOf()
+	public function isInheritable(string $objectUuid): bool {
+		return (array_key_exists($objectUuid, $this->notInheritable) === false);
+	}//end isInheritable()
 
 	/**
 	 * Resolve core's share manager lazily.

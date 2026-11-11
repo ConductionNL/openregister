@@ -30,28 +30,33 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
+use OCA\OpenRegister\Service\Configuration\ConfigurationGitHosts;
+use OCA\OpenRegister\Service\Configuration\ConfigurationServicePlatform;
+use OCA\OpenRegister\Service\Configuration\ConfigurationTransferHandlers;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportSelection;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
 
 /**
  * Class ConfigurationService
@@ -67,28 +72,16 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyFields)            Configuration service coordinates many handler classes
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ConfigurationService {
+class ConfigurationService implements ConfigurationServiceInterface {
 
-	/**
-	 * Schema mapper instance for handling schema operations.
-	 *
-	 * @var SchemaMapper The schema mapper instance.
-	 */
-	private SchemaMapper $schemaMapper;
 
-	/**
-	 * Register mapper instance for handling register operations.
-	 *
-	 * @var RegisterMapper The register mapper instance.
-	 */
-	private RegisterMapper $registerMapper;
 
 	/**
 	 * Configuration mapper instance for handling configuration operations.
 	 *
-	 * @var ConfigurationMapper The configuration mapper instance.
+	 * @var ConfigurationMapperInterface The configuration mapper instance.
 	 */
-	private ConfigurationMapper $configurationMapper;
+	private ConfigurationMapperInterface $configurationMapper;
 
 	/**
 	 * App manager for checking installed apps
@@ -138,26 +131,8 @@ class ConfigurationService {
 	 */
 	private readonly UploadHandler $uploadHandler;
 
-	/**
-	 * HTTP Client for making external requests.
-	 *
-	 * @var Client The HTTP client instance.
-	 */
-	private Client $client;
 
-	/**
-	 * Object service instance for handling object operations.
-	 *
-	 * @var ObjectService The object service instance.
-	 */
-	private ObjectService $objectService;
 
-	/**
-	 * Application data path
-	 *
-	 * @var string The application data path
-	 */
-	private string $appDataPath;
 
 	/**
 	 * GitHub handler for GitHub API operations
@@ -199,64 +174,33 @@ class ConfigurationService {
 	 *
 	 * Initializes service with required dependencies for configuration operations.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapper $registerMapper Register mapper for register operations
-	 * @param ConfigurationMapper $configurationMapper Configuration mapper for configuration operations
-	 * @param IAppManager $appManager App manager for checking installed apps
-	 * @param ContainerInterface $container Container for lazy service loading
-	 * @param IAppConfig $appConfig App config for configuration metadata
-	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param Client $client HTTP client for external requests
-	 * @param ObjectService $objectService Object service for object operations
-	 * @param GitHubHandler $githubHandler GitHub handler for GitHub operations
-	 * @param GitLabHandler $gitlabHandler GitLab handler for GitLab operations
-	 * @param CacheHandler $cacheHandler Cache handler for configuration caching
-	 * @param PreviewHandler $previewHandler Preview handler for preview operations
-	 * @param ExportHandler $exportHandler Export handler for export operations
-	 * @param UploadHandler $uploadHandler Upload handler for file upload operations
-	 * @param string $appDataPath Application data path
+	 * @param ConfigurationMapperInterface           $configurationMapper Configuration mapper for configuration operations
+	 * @param ConfigurationServicePlatform  $platform            App manager, container, app config and logger
+	 * @param ConfigurationGitHosts         $gitHosts            The GitHub and GitLab handlers
+	 * @param ConfigurationTransferHandlers $transfer            The cache, preview, export and upload handlers
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
-		ConfigurationMapper $configurationMapper,
-		IAppManager $appManager,
-		ContainerInterface $container,
-		IAppConfig $appConfig,
-		LoggerInterface $logger,
-		Client $client,
-		ObjectService $objectService,
-		GitHubHandler $githubHandler,
-		GitLabHandler $gitlabHandler,
-		CacheHandler $cacheHandler,
-		PreviewHandler $previewHandler,
-		ExportHandler $exportHandler,
+		ConfigurationMapperInterface $configurationMapper,
+		ConfigurationServicePlatform $platform,
+		ConfigurationGitHosts $gitHosts,
 		// NOTE: ImportHandler is lazy-loaded via getImportHandler() to prevent circular dependency.
-		UploadHandler $uploadHandler,
-		string $appDataPath,
+		ConfigurationTransferHandlers $transfer,
 	) {
 		// Store dependencies for use in service methods.
-		$this->schemaMapper = $schemaMapper;
-		$this->registerMapper = $registerMapper;
 		$this->configurationMapper = $configurationMapper;
-		$this->appManager = $appManager;
-		$this->container = $container;
-		$this->appConfig = $appConfig;
-		$this->logger = $logger;
-		$this->client = $client;
-		$this->objectService = $objectService;
-		$this->githubHandler = $githubHandler;
-		$this->gitlabHandler = $gitlabHandler;
-		$this->cacheHandler = $cacheHandler;
-		$this->previewHandler = $previewHandler;
-		$this->exportHandler = $exportHandler;
+		$this->appManager = $platform->appManager;
+		$this->container = $platform->container;
+		$this->appConfig = $platform->appConfig;
+		$this->logger = $platform->logger;
+		$this->githubHandler = $gitHosts->githubHandler;
+		$this->gitlabHandler = $gitHosts->gitlabHandler;
+		$this->cacheHandler = $transfer->cacheHandler;
+		$this->previewHandler = $transfer->previewHandler;
+		$this->exportHandler = $transfer->exportHandler;
 		// NOTE: ImportHandler is lazy-loaded via getImportHandler().
-		$this->uploadHandler = $uploadHandler;
-		$this->appDataPath = $appDataPath;
+		$this->uploadHandler = $transfer->uploadHandler;
 
 		// NOTE: PreviewHandler wiring removed to prevent circular dependency during construction.
 		// PreviewHandler should use lazy loading or dependency injection if it needs ConfigurationService.
@@ -458,7 +402,23 @@ class ConfigurationService {
 		?string $version = null,
 		bool $force = false,
 	): array {
+		$this->enableOpenConnectorFor(data: $data);
+		return $this->getImportHandler()->importFromJson(
+			data: $data, configuration: $configuration, owner: $owner,
+			appId: $appId, version: $version, force: $force
+		);
+	}//end importFromJson()
 
+	/**
+	 * Enable installing OpenConnector resources when the data carries an OpenConnector-specific component.
+	 *
+	 * @param array $data The configuration JSON content.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
+	 */
+	private function enableOpenConnectorFor(array $data): void {
 		// If a OpenConnector specific object is in the data, enable installing OpenConnector resources.
 		$openConnectorResources = ['mappings', 'jobs', 'synchronizations', 'rules', 'sources'];
 		if (count(array_intersect(array_keys($data['components']), $openConnectorResources)) > 0
@@ -466,16 +426,7 @@ class ConfigurationService {
 		) {
 			$this->getImportHandler()->setOpenConnectorConfigurationService($this->openConnectorConfigurationService);
 		}
-
-		return $this->getImportHandler()->importFromJson(
-			data: $data,
-			configuration: $configuration,
-			owner: $owner,
-			appId: $appId,
-			version: $version,
-			force: $force
-		);
-	}//end importFromJson()
+	}//end enableOpenConnectorFor()
 
 	/**
 	 * Import configuration from a file path.
@@ -518,12 +469,7 @@ class ConfigurationService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
 	 */
 	public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array {
-		return $this->getImportHandler()->importFromFilePath(
-			appId: $appId,
-			filePath: $filePath,
-			version: $version,
-			force: $force
-		);
+		return $this->getImportHandler()->importFromFilePath(appId: $appId, filePath: $filePath, version: $version, force: $force);
 	}//end importFromFilePath()
 
 	/**
@@ -565,15 +511,94 @@ class ConfigurationService {
 		// app boot happens before session resolution and webcron never has
 		// one. Run them as a scoped system operation so RBAC treats them like
 		// the CLI cron path instead of denying them as anonymous every boot.
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return SystemOperationContext::run(
-			fn (): array => $this->getImportHandler()->importFromApp(
-				appId: $appId,
-				data: $data,
-				version: $version,
-				force: $force
-			)
+			fn (): array => $this->getImportHandler()->importFromApp(appId: $appId, data: $data, version: $version, force: $force)
 		);
 	}//end importFromApp()
+
+	/**
+	 * The recorded import jobs of an app id, oldest first.
+	 *
+	 * Only jobs that created at least one traceable object are recorded, so an
+	 * empty list means there is nothing an app can remove by job; a setup
+	 * wizard hides its "remove this example set" button then.
+	 *
+	 * @param string $appId The app id the imports ran under (e.g. `learniq.demo`).
+	 *
+	 * @return array<int, array{jobId: string, version: string, created: int, importedAt: string}>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+	 */
+	public function listImportJobs(string $appId): array {
+		return $this->getImportJobRecorder()->jobs(appId: $appId);
+	}//end listImportJobs()
+
+	/**
+	 * Soft-delete every object the recorded imports of an app id created.
+	 *
+	 * The call a setup wizard's "remove this example set" makes. It runs
+	 * in-process and as a system operation, as importFromApp() did: the
+	 * objects were written by the system, and an administrator's own RBAC on,
+	 * say, an append-only schema must not stop the app removing its own
+	 * example rows. WHO may remove is the calling app's decision; nothing
+	 * routes here over HTTP.
+	 *
+	 * A job whose report has no errors is forgotten. A job with errors stays
+	 * recorded, so the removal can be retried or finished with
+	 * `occ openregister:objects:purge --import-job <id>`.
+	 *
+	 * @param string $appId The app id the imports ran under.
+	 *
+	 * @return array{appId: string, jobs: array<int, array<string, mixed>>, softDeleted: int, errors: array<int, array<string, string>>}
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the static scoped-elevation helper importFromApp() uses.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+	 */
+	public function softDeleteAppImports(string $appId): array {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
+		return SystemOperationContext::run(
+			fn (): array => $this->removeRecordedImports(appId: $appId)
+		);
+	}//end softDeleteAppImports()
+
+	/**
+	 * Remove each recorded import of an app id and forget the clean ones.
+	 *
+	 * @param string $appId The app id the imports ran under.
+	 *
+	 * @return array{appId: string, jobs: array<int, array<string, mixed>>, softDeleted: int, errors: array<int, array<string, string>>}
+	 */
+	private function removeRecordedImports(string $appId): array {
+		$recorder = $this->getImportJobRecorder();
+		$importService = $this->container->get(ImportService::class);
+
+		$summary = ['appId' => $appId, 'jobs' => [], 'softDeleted' => 0, 'errors' => []];
+		foreach ($recorder->jobs(appId: $appId) as $job) {
+			$report = $importService->softDeleteByImportJobId(importJobId: $job['jobId']);
+			$summary['jobs'][] = $report;
+			$summary['softDeleted'] += count($report['softDeleted']);
+			foreach ($report['errors'] as $error) {
+				$summary['errors'][] = ['importJobId' => $job['jobId'], 'uuid' => $error['uuid'], 'error' => $error['error']];
+			}
+
+			if ($report['errors'] === []) {
+				$recorder->forget(appId: $appId, importJobId: $job['jobId']);
+			}
+		}
+
+		return $summary;
+	}//end removeRecordedImports()
+
+	/**
+	 * The app import job recorder, resolved lazily like the ImportHandler.
+	 *
+	 * @return AppImportJobRecorder
+	 */
+	private function getImportJobRecorder(): AppImportJobRecorder {
+		return $this->container->get(AppImportJobRecorder::class);
+	}//end getImportJobRecorder()
 
 	/**
 	 * Check the remote version of a configuration
@@ -586,19 +611,59 @@ class ConfigurationService {
 	 * @return string|null The remote version, or null if check failed
 	 * @throws GuzzleException If HTTP request fails
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version check has multiple error and validation conditions
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
 	 */
 	public function checkRemoteVersion(Configuration $configuration): ?string {
-		// Only check remote sources.
+		$sourceUrl = $this->remoteSourceUrl(configuration: $configuration);
+		if ($sourceUrl === null) {
+			return null;
+		}
+
+		try {
+			$remoteVersion = $this->fetchRemoteVersion(sourceUrl: $sourceUrl);
+			if ($remoteVersion === null) {
+				return null;
+			}
+
+			$configuration->setRemoteVersion($remoteVersion);
+			$configuration->setLastChecked(new DateTime());
+			$this->configurationMapper->update($configuration);
+
+			$configId = $configuration->getId();
+			$this->logger->info(
+				message: "[ConfigurationService] Checked remote version for configuration {$configId}: {$remoteVersion}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return $remoteVersion;
+		} catch (GuzzleException $e) {
+			$configId = $configuration->getId();
+			$this->logger->error(
+				message: "[ConfigurationService] Failed to check remote version for configuration {$configId}: {$e->getMessage()}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			throw $e;
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationService] Unexpected error checking remote version: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}//end try
+	}//end checkRemoteVersion()
+
+	/**
+	 * The source URL of a remote configuration, or null (logged) when it has none to check.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 *
+	 * @return string|null The source URL.
+	 */
+	private function remoteSourceUrl(Configuration $configuration): ?string {
 		if ($configuration->isRemoteSource() === false) {
 			$this->logger->info(
 				message: '[ConfigurationService] Configuration is not from a remote source, skipping version check',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
 		}
@@ -607,81 +672,41 @@ class ConfigurationService {
 		if (empty($sourceUrl) === true) {
 			$this->logger->warning(
 				message: '[ConfigurationService] Configuration has no source URL, cannot check remote version',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
 		}
 
-		try {
-			// Fetch the remote configuration.
-			$remoteData = $this->getJSONfromURL(url: $sourceUrl);
+		return $sourceUrl;
+	}//end remoteSourceUrl()
 
-			if ($remoteData instanceof JSONResponse) {
-				$this->logger->error(
-					message: '[ConfigurationService] Failed to fetch remote configuration',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'error' => $remoteData->getData(),
-					]
-				);
-				return null;
-			}
-
-			// Extract version from remote data.
-			$remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
-
-			if ($remoteVersion === null) {
-				$this->logger->warning(
-					message: '[ConfigurationService] Remote configuration does not contain a version field',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-					]
-				);
-				return null;
-			}
-
-			// Update the configuration with remote version and last checked time.
-			$configuration->setRemoteVersion($remoteVersion);
-			$configuration->setLastChecked(new DateTime());
-			$this->configurationMapper->update($configuration);
-
-			$configId = $configuration->getId();
-			$this->logger->info(
-				message: "[ConfigurationService] Checked remote version for configuration {$configId}: {$remoteVersion}",
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
-			);
-
-			return $remoteVersion;
-		} catch (GuzzleException $e) {
-			$configId = $configuration->getId();
-			$errorMsg = $e->getMessage();
+	/**
+	 * Fetch a remote configuration and read its version: `version`, else `info.version`.
+	 *
+	 * @param string $sourceUrl The configuration's URL.
+	 *
+	 * @return mixed The version, or null (logged) when the fetch failed or there is none.
+	 */
+	private function fetchRemoteVersion(string $sourceUrl): mixed {
+		$remoteData = $this->getJSONfromURL(url: $sourceUrl);
+		if ($remoteData instanceof JSONResponse) {
 			$this->logger->error(
-				message: "[ConfigurationService] Failed to check remote version for configuration {$configId}: {$errorMsg}",
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
-			);
-			throw $e;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ConfigurationService] Unexpected error checking remote version: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
+				message: '[ConfigurationService] Failed to fetch remote configuration',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $remoteData->getData()]
 			);
 			return null;
-		}//end try
-	}//end checkRemoteVersion()
+		}
+
+		$remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
+		if ($remoteVersion === null) {
+			$this->logger->warning(
+				message: '[ConfigurationService] Remote configuration does not contain a version field',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		return $remoteVersion;
+	}//end fetchRemoteVersion()
 
 	/**
 	 * Compare versions and get update status
@@ -919,11 +944,7 @@ class ConfigurationService {
 	 * @spec exclude Facade plumbing: thin delegation to GitHubHandler::searchConfigurations, no standalone behavioral contract.
 	 */
 	public function searchGitHub(string $search = '', int $page = 1, int $perPage = 30): array {
-		return $this->githubHandler->searchConfigurations(
-			search: $search,
-			page: $page,
-			perPage: $perPage
-		);
+		return $this->githubHandler->searchConfigurations(search: $search, page: new RepositorySearchPage(page: $page, perPage: $perPage));
 	}//end searchGitHub()
 
 	/**
@@ -942,11 +963,7 @@ class ConfigurationService {
 	 * @spec exclude Facade plumbing: thin delegation to GitLabHandler::searchConfigurations, no standalone behavioral contract.
 	 */
 	public function searchGitLab(string $search = '', int $page = 1, int $perPage = 30): array {
-		return $this->gitlabHandler->searchConfigurations(
-			search: $search,
-			page: $page,
-			perPage: $perPage
-		);
+		return $this->gitlabHandler->searchConfigurations(search: $search, page: $page, perPage: $perPage);
 	}//end searchGitLab()
 
 	/**
@@ -977,23 +994,101 @@ class ConfigurationService {
 	}//end getCacheHandler()
 
 	/**
-	 * Import configuration with selection.
+	 * Import a remote configuration, whole or narrowed to a selection.
 	 *
-	 * Delegates to PreviewHandler.
+	 * The preview's import endpoint passes what the administrator picked; the
+	 * hourly ConfigurationCheckJob passes an empty selection, which means the
+	 * whole remote document (seed data included). The document is fetched
+	 * fresh, narrowed with ImportSelection, and handed to the importer, which
+	 * keeps its per-entity version gates (`force` stays false).
+	 *
+	 * The configuration then tracks every register, schema and object the
+	 * import returned, next to what it already tracked. Only a whole import
+	 * moves `localVersion` to the remote version: after a partial one the rest
+	 * of the update must stay on offer.
 	 *
 	 * @param Configuration $configuration Configuration to import
-	 * @param array $selection Selection of items to import
+	 * @param array $selection Selected `registers`/`schemas` slugs and `register:schema:slug` object keys; empty = all
 	 *
-	 * @return array Import results
+	 * @return array Import results, keyed as importFromJson() returns them
 	 *
-	 * @psalm-return array<never, never>
+	 * @throws Exception When the remote document cannot be fetched or the import fails
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-selective-configuration-import-and-auto-update-must-import-what-they-name
 	 */
 	public function importConfigurationWithSelection(Configuration $configuration, array $selection): array {
-		return $this->previewHandler->importConfigurationWithSelection(
-			_configuration: $configuration,
-			_selection: $selection
+		$remoteData = $this->fetchRemoteConfiguration(configuration: $configuration);
+		if ($remoteData instanceof JSONResponse) {
+			$error = $remoteData->getData()['error'] ?? 'unknown error';
+			throw new Exception('Failed to fetch remote configuration: ' . $error);
+		}
+
+		$whole = ImportSelection::isEmpty(selection: $selection);
+		$data = $remoteData;
+		if ($whole === false) {
+			$data = ImportSelection::filter(document: $remoteData, selection: $selection);
+			if (ImportSelection::hasContent(filtered: $data) === false) {
+				return ['registers' => [], 'schemas' => [], 'objects' => []];
+			}
+		}
+
+		$remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
+		$this->getImportHandler()->takeKeptLocalReport();
+		$result = $this->importFromJson(
+			data: $data,
+			configuration: $configuration,
+			owner: $configuration->getApp(),
+			appId: $configuration->getApp(),
+			version: $remoteVersion ?? $configuration->getVersion(),
+			force: false
 		);
+		$result['keptLocal'] = ['schemas' => $this->getImportHandler()->takeKeptLocalReport()];
+
+		$configuration->setRegisters($this->mergeIds(existing: $configuration->getRegisters(), entities: $result['registers'] ?? []));
+		$configuration->setSchemas($this->mergeIds(existing: $configuration->getSchemas(), entities: $result['schemas'] ?? []));
+		$configuration->setObjects($this->mergeIds(existing: $configuration->getObjects(), entities: $result['objects'] ?? []));
+		if ($whole === true && $remoteVersion !== null) {
+			$configuration->setLocalVersion((string)$remoteVersion);
+		}
+
+		$this->configurationMapper->update($configuration);
+
+		$this->logger->info(
+			message: '[ConfigurationService] Imported configuration ' . $configuration->getId(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'whole' => $whole,
+				'registers' => count($result['registers'] ?? []),
+				'schemas' => count($result['schemas'] ?? []),
+				'objects' => count($result['objects'] ?? []),
+			]
+		);
+
+		return $result;
 	}//end importConfigurationWithSelection()
+
+	/**
+	 * Add the ids of imported entities to a tracked id list, without duplicates.
+	 *
+	 * @param array|null $existing Ids already tracked.
+	 * @param array $entities Entities the import returned.
+	 *
+	 * @return array<int, int>
+	 */
+	private function mergeIds(?array $existing, array $entities): array {
+		$ids = array_values($existing ?? []);
+		foreach ($entities as $entity) {
+			if (($entity instanceof Entity) === false) {
+				continue;
+			}
+
+			$id = $entity->getId();
+			if ($id !== null && in_array($id, $ids, true) === false) {
+				$ids[] = $id;
+			}
+		}
+
+		return $ids;
+	}//end mergeIds()
 }//end class

@@ -25,13 +25,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use Doctrine\DBAL\Schema\Table;
 use OCA\OpenRegister\Migration\Version1Date20260809000000;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 class Version1Date20260809000000Test extends TestCase {
+	use SchemaTableMockTrait;
+
 
 	private Version1Date20260809000000 $migration;
 
@@ -96,39 +98,39 @@ class Version1Date20260809000000Test extends TestCase {
 		);
 
 		$schema->method('createTable')->willReturnCallback(
-			function (string $name): Table {
+			function (string $name) {
 				$this->columns[$name] = [];
 				$this->indexes[$name] = [];
 				$this->uniqueIndexes[$name] = [];
 				$this->primaryKeys[$name] = [];
 
-				$table = $this->createMock(Table::class);
+				$table = $this->createTableMock();
 
 				$table->method('addColumn')->willReturnCallback(
-					function (string $column) use ($name): Table {
+					function (string $column) use ($name) {
 						$this->columns[$name][] = $column;
-						return $this->createMock(Table::class);
+						return $this->createColumnMock();
 					}
 				);
 
 				$table->method('setPrimaryKey')->willReturnCallback(
-					function (array $cols) use ($name): Table {
+					function (array $cols) use ($name) {
 						$this->primaryKeys[$name] = $cols;
-						return $this->createMock(Table::class);
+						return $this->createTableMock();
 					}
 				);
 
 				$table->method('addUniqueIndex')->willReturnCallback(
-					function (array $cols, string $indexName) use ($name): Table {
+					function (array $cols, string $indexName) use ($name) {
 						$this->uniqueIndexes[$name][] = $indexName;
-						return $this->createMock(Table::class);
+						return $this->createTableMock();
 					}
 				);
 
 				$table->method('addIndex')->willReturnCallback(
-					function (array $cols, string $indexName) use ($name): Table {
+					function (array $cols, string $indexName) use ($name) {
 						$this->indexes[$name][] = $indexName;
-						return $this->createMock(Table::class);
+						return $this->createTableMock();
 					}
 				);
 
@@ -173,12 +175,11 @@ class Version1Date20260809000000Test extends TestCase {
 	}//end testCreatesSchemaCacheTableWithEveryColumnTheHandlerWrites()
 
 	/**
-	 * The facet cache table must carry every column setCachedFacetData() writes.
+	 * The facet cache table must carry every column a facet cache row holds.
 	 *
-	 * Source of truth: FacetCacheHandler::setCachedFacetData(), whose insert
-	 * names schema_id, facet_type, field_name, facet_config, cache_data,
-	 * created, updated and expires; its update arm keys on
-	 * (schema_id, field_name) and getCacheStatistics() groups by facet_type.
+	 * A row names schema_id, facet_type, field_name, facet_config, cache_data,
+	 * created, updated and expires; rows are keyed on (schema_id, field_name)
+	 * and its statistics grouped by facet_type.
 	 *
 	 * @return void
 	 */
@@ -203,7 +204,7 @@ class Version1Date20260809000000Test extends TestCase {
 			$this->assertContains(
 				$column,
 				$this->columns['openregister_schema_facet_cache'],
-				"openregister_schema_facet_cache is missing the '{$column}' column, which FacetCacheHandler writes."
+				"openregister_schema_facet_cache is missing the '{$column}' column."
 			);
 		}
 
@@ -211,7 +212,7 @@ class Version1Date20260809000000Test extends TestCase {
 		$this->assertContains(
 			'or_facet_cache_field_uniq',
 			$this->uniqueIndexes['openregister_schema_facet_cache'],
-			'setCachedFacetData() updates on (schema_id, field_name); without a UNIQUE index its upsert can duplicate.'
+			'Facet cache rows are keyed on (schema_id, field_name); without a UNIQUE index an upsert can duplicate.'
 		);
 		$this->assertContains('or_facet_cache_type_idx', $this->indexes['openregister_schema_facet_cache']);
 	}//end testCreatesFacetCacheTableWithEveryColumnTheHandlerWrites()
@@ -229,7 +230,7 @@ class Version1Date20260809000000Test extends TestCase {
 
 		$result = $this->migration->changeSchema($this->createMock(IOutput::class), fn () => $schema, []);
 
-		$this->assertNull($result, 'An unchanged schema must be reported as null, not returned.');
+		$this->assertSame($schema, $result, 'An unchanged run must still hand the schema back so migrateSchemaOnly() reuses one snapshot.');
 	}//end testIsIdempotentWhenBothTablesAlreadyExist()
 
 	/**
@@ -253,8 +254,9 @@ class Version1Date20260809000000Test extends TestCase {
 	public function testMigrationCreatesExactlyTheTablesTheHandlersQuery(): void {
 		$schemaCacheTable = (new \ReflectionClass(\OCA\OpenRegister\Service\Schemas\SchemaCacheHandler::class))
 			->getConstant('CACHE_TABLE');
-		$facetCacheTable = (new \ReflectionClass(\OCA\OpenRegister\Service\Schemas\FacetCacheHandler::class))
-			->getConstant('FACET_CACHE_TABLE');
+		// Nothing reads the facet cache table any more; it stays until a later
+		// migration drops it, so it is named here rather than read off a handler.
+		$facetCacheTable = 'openregister_schema_facet_cache';
 
 		$this->assertIsString($schemaCacheTable);
 		$this->assertIsString($facetCacheTable);
@@ -271,7 +273,7 @@ class Version1Date20260809000000Test extends TestCase {
 		$this->assertSame(
 			$expected,
 			$created,
-			'The migration must create exactly the tables SchemaCacheHandler and FacetCacheHandler query. '
+			'The migration must create exactly the schema cache table SchemaCacheHandler queries and the facet cache table. '
 			. 'If this fails, one side was renamed and the cache is silently dead again.'
 		);
 	}//end testMigrationCreatesExactlyTheTablesTheHandlersQuery()

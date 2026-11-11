@@ -1,0 +1,12 @@
+{
+  "id": "stackiq-topdesk-municipality",
+  "name": "CMDB import options to stackiq municipality",
+  "description": "Maps the import options row (municipalityName), not a sheet row, to the consuming organisation of type Municipality.",
+  "sourceFormat": "excel",
+  "version": "1.0.0",
+  "fieldMappings": [
+    { "source": "municipalityName", "target": "name", "required": true, "transform": { "type": "trim" } }
+  ],
+  "defaults": { "type": "Municipality", "status": "Active" },
+  "idStrategy": { "type": "generate" }
+}

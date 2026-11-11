@@ -13,6 +13,7 @@ retrofit_extensions:
 @e2e exclude backend workflow/archival — covered by PHPUnit
 
 Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen. This capability builds on the archivering-vernietiging spec and integrates with the immutable audit trail and deletion audit trail for legally required evidence trails.
+
 ## Requirements
 
 ### REQ-001: DestructionCheckJob and Destruction List Generation
@@ -271,22 +272,6 @@ The `DestructionCheckJob` MUST scan for objects whose `archiefactiedatum` falls 
 - **WHEN** the `DestructionCheckJob` runs
 - **THEN** the notification subject MUST be "Object requires e-Depot transfer" rather than "Object approaching destruction date"
 
-### REQ-010: (REMOVED 2026-07-14) ArchivalService::setRetentionMetadata
-
-**Removed** with the `ArchivalService` class in `revive-or-dead-capabilities` (openregister#393).
-
-This requirement was a *retrofit* — reverse-engineered from observed code — and it
-documented a method that **never ran**: `ArchivalService` had zero references anywhere
-in `lib/` (no DI registration, controller, route, or job), so no API or job ever invoked
-`setRetentionMetadata()`. The spec claimed a retention-metadata validation write-path that
-the product did not actually perform.
-
-Rather than keep a requirement whose implementation nothing calls, the class and the
-requirement are removed together. **No live equivalent exists**: OpenRegister currently
-does not validate `archiefnominatie` / `archiefstatus` / `archiefactiedatum` on the object
-write path. If that validation is wanted, it must be wired for real (e.g. a listener on
-`ObjectCreatingEvent` / `ObjectUpdatingEvent`) — tracked as a follow-up on openregister#393.
-
 ### REQ-011: Rejected/excluded objects have their archiefactiedatum extended
 
 When a destruction-list rejection or partial-approval exclusion requires extending an
@@ -366,3 +351,119 @@ field on service failure.
 - **WHEN** `updateArchivalSettings` runs
 - **THEN** it MUST persist them via `SettingsService::updateArchivalSettingsOnly()` and return the result
 
+### Requirement: Each matter holds an object with its own legal hold
+
+An object SHALL carry one legal hold per matter in `retention.legalHold.holds`,
+each with an `id`, an `ownerKey`, a `reason`, `placedBy` and `placedDate`.
+Placing a hold with an owner key that already holds the object SHALL update
+that hold's reason and SHALL NOT add a second one. Releasing a hold with an
+owner key SHALL lift only that owner's hold and move it to `history`; a release
+naming no owner SHALL lift every hold. `retention.legalHold.active` SHALL be
+true while any hold is in the list. A stored hold without a `holds` list SHALL
+be read as one hold owned by `openregister:manual`.
+
+#### Scenario: releasing one matter keeps the other hold
+
+- **GIVEN** an object held by a lawsuit and by an audit, each with its own owner key
+- **WHEN** the audit's hold is released with its owner key
+- **THEN** the object MUST still have an active legal hold with the lawsuit's reason
+- **AND** `history` MUST hold exactly the released audit hold with its release reason
+- @e2e exclude covered by LegalHoldPerMatterTest (real LegalHoldService over a real ObjectEntity)
+
+#### Scenario: a stored single-slot hold stays valid
+
+- **GIVEN** an object whose stored `legalHold` is a single active slot with no `holds` list
+- **WHEN** a matter places and then releases its own hold
+- **THEN** the stored hold MUST still be active with its original reason
+- **AND** a release naming no owner MUST lift it
+- @e2e exclude covered by LegalHoldPerMatterTest
+
+### Requirement: Another app can create a destruction list for objects OpenRegister finds eligible
+
+`POST /api/archival/destruction-lists` and `DestructionListCreator::createFor()` SHALL accept a list of object uuids and SHALL create a destruction list holding only the objects that pass the same eligibility rule the daily sweep applies. Every refused uuid SHALL be returned with the rule that refused it. When no uuid is eligible, no list SHALL be created and the route SHALL answer 422.
+
+#### Scenario: an object under legal hold is refused, the rest is listed
+
+- **GIVEN** two objects nominated for destruction with a past action date, one of them under an active legal hold
+- **WHEN** an archivist posts both uuids
+- **THEN** the response is 201 and the stored list holds only the object without a hold
+- **AND** `refused` names the held object with reason `legal_hold`
+- @e2e exclude {asserted over the real RetentionService in tests/Unit/Service/Archival/DestructionListCreatorTest.php}
+
+#### Scenario: nothing eligible creates nothing
+
+- **GIVEN** an object nominated to be kept
+- **WHEN** its uuid is posted
+- **THEN** the response is 422, no list is saved, and `refused` names it with reason `not_nominated_for_destruction`
+- @e2e exclude {asserted in tests/Unit/Service/Archival/DestructionListCreatorTest.php and tests/Unit/Controller/ArchivalCertificatesTest.php}
+
+### Requirement: The certificates route returns the stored destruction certificates
+
+`GET /api/archival/certificates` SHALL return the certificate stored for each executed destruction list, optionally narrowed to one list, and SHALL name under `missing` every executed list whose certificate is not stored.
+
+#### Scenario: an executed list's certificate is returned
+
+- **GIVEN** an executed destruction list whose `certificateUuid` points at a stored `verklaring_van_vernietiging`
+- **WHEN** an archivist reads the certificates
+- **THEN** the result holds that certificate with its `destructionListUuid` and `totalDestroyed`
+- @e2e exclude {asserted over the real DestructionListRepository in tests/Unit/Controller/ArchivalCertificatesTest.php}
+
+### Requirement: An app's register import can ship selectielijst categories
+
+An app's register import SHALL accept `components.selectionLists` entries with `category`, `retentionYears`, `action`, `description` and `organisation`, and SHALL write each as a row of the configured selectielijst register, matched on category and organisation so a second import changes nothing.
+
+#### Scenario: a second import is a no-op
+
+- **GIVEN** an app import carrying category `2.1` with action `vernietigen` and 10 retention years
+- **WHEN** the import runs twice
+- **THEN** exactly one selectielijst row exists for `2.1`, with `bewaartermijn` `P10Y`, and the second run reports it unchanged
+- @e2e exclude {asserted in tests/Unit/Service/Archival/SelectionListSeederTest.php}
+
+#### Scenario: a category shipped by an app drives retention
+
+- **GIVEN** the row written for category `2.1`
+- **WHEN** retention resolves a schema whose `archive.classification` is `2.1`
+- **THEN** it applies `vernietigen` and `P10Y`
+- @e2e exclude {asserted with the real SelectielijstResolver in tests/Unit/Service/Archival/SelectionListSeederTest.php}
+
+### Requirement: The selectielijst category is declared on the schema and can be overridden per object
+
+A schema SHALL declare its selectielijst category (`archive.classification`, or `category` in `x-openregister-archival`) and MAY name an object property that carries a per-object override (`archive.classificationProperty`, or `categoryProperty`). The effective category of a record SHALL be the override when it is a non-empty string and the schema's category otherwise. Retention derived at creation, the nomination derived at a terminal state, and `retention.classification` (which destruction and transfer routing read) SHALL all follow the effective category. An override naming a category without a selectielijst row SHALL be refused.
+
+#### Scenario: an object without an override takes the schema's category
+
+- **GIVEN** a schema with `archive.classification` `1.1` and `classificationProperty` `selectielijstCategorie`
+- **WHEN** an object is created without a value for `selectielijstCategorie`
+- **THEN** its `retention.classification` is `1.1` and its retention period is row `1.1`'s
+- @e2e exclude {asserted over the real SelectielijstResolver in tests/Unit/Service/RetentionClassificationOverrideTest.php}
+
+#### Scenario: an object with an override takes its own category
+
+- **GIVEN** the same schema and a selectielijst holding rows `1.1` (P5Y, destroy) and `2.3` (P20Y, retain)
+- **WHEN** an object is created with `selectielijstCategorie` `2.3`
+- **THEN** its `retention.classification` is `2.3`, its nomination and retention period are row `2.3`'s, and the nomination at its terminal state names row `2.3`
+- @e2e exclude {asserted in tests/Unit/Service/RetentionClassificationOverrideTest.php and tests/Unit/Service/Archival/ArchivalNominationServiceTest.php}
+
+#### Scenario: an invalid category is refused
+
+- **GIVEN** the same schema
+- **WHEN** an object is saved with `selectielijstCategorie` `9.9`, which no selectielijst row has
+- **THEN** the save is refused with a validation error naming `9.9`
+- @e2e exclude {asserted in tests/Unit/Service/RetentionClassificationOverrideTest.php}
+
+#### Scenario: routing reads the effective category
+
+- **GIVEN** an active object created under the schema's category `1.1`
+- **WHEN** it is updated with `selectielijstCategorie` `2.3`
+- **THEN** its `retention.classification`, nomination and action date are re-derived from row `2.3`, which is what the destruction sweep and the destruction certificate read
+- **AND** the same change on an object already nominated at its terminal state is refused with 409
+- @e2e exclude {asserted in tests/Unit/Service/RetentionClassificationOverrideTest.php}
+
+### Requirement: An archivist lists the records under an active legal hold
+
+`GET /api/archival/legal-holds` SHALL list every record whose `retention.legalHold` is active, across the magic tables and the legacy blob table, each with its active holds. A released hold SHALL NOT be listed. When the scan stops at its cap the answer SHALL say `truncated: true`. Only an archivist or an administrator SHALL get the list.
+
+#### Scenario: one held record among three
+- **GIVEN** a record with an active hold, one with a released hold and one without a hold
+- **WHEN** an archivist asks for the legal holds
+- **THEN** the answer SHALL list the first record with its hold and `total` 1

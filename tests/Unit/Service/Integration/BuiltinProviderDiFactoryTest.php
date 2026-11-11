@@ -8,7 +8,7 @@
  * per-provider *Test classes) construct each provider DIRECTLY with
  * mocked constructor args. That shape proves a provider behaves
  * correctly once built, but it is blind to a mis-wired DI factory
- * closure in Application::registerBuiltinIntegrationProviders().
+ * closure in IntegrationWiring::registerBuiltinIntegrationProviders().
  *
  * That blind spot bit us in production: when CalendarProvider,
  * EmailProvider and TasksProvider gained Tier-2 constructor args, their
@@ -47,13 +47,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
+use OCA\OpenRegister\Service\Integration\IntegrationWiring;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
 use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
@@ -119,10 +119,7 @@ class BuiltinProviderDiFactoryTest extends TestCase {
 				}
 			);
 
-		$app = new Application();
-		$method = new ReflectionMethod(Application::class, 'registerBuiltinIntegrationProviders');
-		$method->setAccessible(true);
-		$method->invoke($app, $context);
+		(new ReflectionMethod(IntegrationWiring::class, 'registerBuiltinIntegrationProviders'))->invoke(null, $context);
 
 		return $factories;
 	}//end captureFactories()

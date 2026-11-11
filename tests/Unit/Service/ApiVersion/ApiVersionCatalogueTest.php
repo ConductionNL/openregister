@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -30,6 +30,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  */
 class ApiVersionCatalogueTest extends TestCase {
 

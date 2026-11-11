@@ -341,6 +341,19 @@ export default defineConfig({
 		// piece of instance state the file writes — the `objectArchiveRetention`
 		// setting — is read first and written back at the end of the same test.
 		'archival-retention.spec.ts',
+
+		// Admitted 2026-10-05. The first executed browser test for seven manifest
+		// pages: EntitiesIndex, OperationsConsoleIndex and the five data quality
+		// pages. Their only screenshots sit under visual/**, which this config
+		// does not collect, so CI had never opened them.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: it seeds nothing and needs no occ, docker or seed data.
+		//      Each page is asserted in the state it draws on a fresh instance.
+		//   2. Non-mutating: it navigates and reads, and writes nothing.
+		//   3. No conditional asserts: every assertion is unconditional.
+		//   4. No test.skip at all.
+		'spec-coverage/quality-and-operations-pages.spec.ts',
 	],
 	globalSetup: path.resolve(__dirname, '../global-setup.ts'),
 	timeout: 45_000,

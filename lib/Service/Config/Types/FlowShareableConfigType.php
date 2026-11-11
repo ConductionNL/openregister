@@ -31,16 +31,18 @@ namespace OCA\OpenRegister\Service\Config\Types;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
+use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 
 /**
  * Serialises and installs flows through the federated-config engine.
  */
-class FlowShareableConfigType implements IShareableConfigType {
+class FlowShareableConfigType implements IShareableConfigType, FlowShareableConfigTypeInterface {
 
 	/**
 	 * The portable fields a flow carries when shared (never id/uuid/owner/org).
@@ -68,12 +70,14 @@ class FlowShareableConfigType implements IShareableConfigType {
 	 * `FlowMapper::findByUuid()` applies no organisation scoping — the engine
 	 * needs that (a queue worker has no session), a request does not.
 	 *
-	 * @param FlowMapper $mapper Writes flow definitions on install.
+	 * @param FlowMapperInterface $mapper Writes flow definitions on install.
 	 * @param FlowService $flows Reads flows the CALLER is allowed to see.
+	 * @param FlowCaller $caller Who is installing, and which organisation they write into.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
+		private readonly FlowMapperInterface $mapper,
 		private readonly FlowService $flows,
+		private readonly FlowCaller $caller,
 	) {
 
 	}//end __construct()
@@ -198,7 +202,7 @@ class FlowShareableConfigType implements IShareableConfigType {
 			// comment describing this exact outcome — the rule was fixed on the
 			// create path and never reached this one. Both now read the same
 			// method, so there is one place that decides ownership.
-			['owner' => $owner, 'organisation' => $organisation] = $this->flows->callerOwnership();
+			['owner' => $owner, 'organisation' => $organisation] = $this->caller->ownership();
 			if ($owner === null || $organisation === null) {
 				throw new DoesNotExistException(
 					'Installing a flow needs a signed-in owner and an active organisation; '
@@ -229,11 +233,7 @@ class FlowShareableConfigType implements IShareableConfigType {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	private function newUuid(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+		return Uuid::v4()->toRfc4122();
 	}//end newUuid()
 
 	/**

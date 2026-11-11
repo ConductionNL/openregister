@@ -57,7 +57,7 @@ class Version1Date20250908180000 extends SimpleMigrationStep {
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		// Get schema wrapper instance from closure (validation only).
-		$schemaClosure();
+		$schema = $schemaClosure();
 
 		// This migration requires raw SQL as Nextcloud's schema wrapper doesn't.
 		// Support the ON UPDATE CURRENT_TIMESTAMP syntax directly.
@@ -65,7 +65,7 @@ class Version1Date20250908180000 extends SimpleMigrationStep {
 		$output->info(message: 'ℹ️  Nextcloud schema wrapper has limited support for MySQL-specific timestamp features');
 
 		// No schema changes via wrapper - will use postSchemaChange.
-		return null;
+		return $schema;
 	}//end changeSchema()
 
 	/**

@@ -28,17 +28,19 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
-use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
-use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
+use OCA\OpenRegister\Listener\Support\ConflictVeto;
+use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
+use OCA\OpenRegister\Service\Vocabulary\ConceptRepositoryInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -50,6 +52,7 @@ use Throwable;
  * @template-implements IEventListener<ObjectDeletingEvent>
  */
 class ConceptDeleteGuardListener implements IEventListener {
+	use ConflictVeto;
 
 	/**
 	 * The error code a refused delete of a system-defined value carries.
@@ -68,15 +71,15 @@ class ConceptDeleteGuardListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptDeleteGuard $guard Recognises a concept and counts its holders.
-	 * @param ConceptRepository $concepts Resolves the scheme a concept belongs to.
-	 * @param SchemaMapper $schemas Resolves the schema an object belongs to.
-	 * @param LoggerInterface $logger The logger.
+	 * @param ConceptDeleteGuardInterface $guard    Recognises a concept and counts its holders.
+	 * @param ConceptRepositoryInterface  $concepts Resolves the scheme a concept belongs to.
+	 * @param SchemaMapperInterface       $schemas  Resolves the schema an object belongs to.
+	 * @param LoggerInterface             $logger   The logger.
 	 */
 	public function __construct(
-		private readonly ConceptDeleteGuard $guard,
-		private readonly ConceptRepository $concepts,
-		private readonly SchemaMapper $schemas,
+		private readonly ConceptDeleteGuardInterface $guard,
+		private readonly ConceptRepositoryInterface $concepts,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -89,60 +92,25 @@ class ConceptDeleteGuardListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectDeletingEvent === false) {
-			return;
+		if ($event instanceof ObjectDeletingEvent) {
+			$this->guardFailingOpen(event: $event);
 		}
 
+	}//end handle()
+
+	/**
+	 * Run the guard, letting the delete through when the guard itself fails.
+	 *
+	 * @param ObjectDeletingEvent $event The delete event.
+	 *
+	 * @return void
+	 */
+	private function guardFailingOpen(ObjectDeletingEvent $event): void {
 		try {
-			$object = $event->getObject();
-			$reference = $object->getSchema();
-			if ($reference === null || $reference === '') {
-				return;
-			}
-
-			$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
-			if ($this->guard->isConcept(schema: $schema) === false) {
-				return;
-			}
-
-			$concept = $object->getObject();
-			if (is_array($concept) === false) {
-				return;
-			}
-
-			if ($this->guard->isSystemDefined(concept: $concept) === true) {
-				$this->refuse(
-					event: $event,
-					code: self::ERROR_CODE_SYSTEM,
-					message: $this->guard->systemDefinedMessage(concept: $concept),
-					detail: ['concept' => (string)($concept['uri'] ?? ''), 'systemDefined' => true]
-				);
-				return;
-			}
-
-			$schemeUri = $this->schemeUriOf(concept: $concept);
-			if ($schemeUri === null) {
-				return;
-			}
-
-			$usage = $this->guard->usage(concept: $concept, schemeUri: $schemeUri);
-			if ($usage['count'] === 0) {
-				return;
-			}
-
-			$this->refuse(
-				event: $event,
-				code: self::ERROR_CODE_IN_USE,
-				message: $this->guard->inUseMessage(concept: $concept, usage: $usage),
-				detail: [
-					'concept' => (string)($concept['uri'] ?? ''),
-					'inUse' => $usage['count'],
-					'holders' => $usage['holders'],
-				]
-			);
+			$this->guardDelete(event: $event);
 		} catch (Throwable $failure) {
 			// A guard that cannot read the holding tables must not also become
 			// the reason nothing can be deleted. The delete proceeds and the
@@ -153,33 +121,103 @@ class ConceptDeleteGuardListener implements IEventListener {
 			);
 		}//end try
 
-	}//end handle()
+	}//end guardFailingOpen()
 
 	/**
-	 * Stop the delete, carrying the refusal and its 409.
+	 * Refuse the delete when the concept is system-defined or still held.
+	 *
+	 * The checks live here so {@see handle()} is only the event guard and the
+	 * fail-open try/catch: a guard that throws must not itself block deletes.
 	 *
 	 * @param ObjectDeletingEvent $event The delete event.
-	 * @param string $code The machine-readable refusal code.
-	 * @param string $message The refusal in words.
-	 * @param array<string,mixed> $detail The figures behind the refusal.
 	 *
 	 * @return void
 	 */
-	private function refuse(ObjectDeletingEvent $event, string $code, string $message, array $detail): void {
-		$event->setErrors(
-			array_merge(
-				[
-					'code' => $code,
-					'message' => $message,
-					// A referenced row refused is a conflict, not a malformed
-					// body; the delete handler reads this and answers 409.
-					'status' => 409,
-				],
-				$detail
-			)
+	private function guardDelete(ObjectDeletingEvent $event): void {
+		$concept = $this->conceptOf(object: $event->getObject());
+		if ($concept === null) {
+			return;
+		}
+
+		if ($this->guard->isSystemDefined(concept: $concept) === true) {
+			$this->vetoAsConflict(
+				event: $event,
+				refusal: ['code' => self::ERROR_CODE_SYSTEM, 'message' => $this->guard->systemDefinedMessage(concept: $concept)],
+				detail: ['concept' => (string)($concept['uri'] ?? ''), 'systemDefined' => true]
+			);
+			return;
+		}
+
+		$this->refuseWhenHeld(event: $event, concept: $concept);
+	}//end guardDelete()
+
+	/**
+	 * The concept data of the object being deleted, or null when it is no concept.
+	 *
+	 * @param ObjectEntity $object The object being deleted.
+	 *
+	 * @return array<string,mixed>|null The concept's decoded object data.
+	 */
+	private function conceptOf(ObjectEntity $object): ?array {
+		$reference = (string)$object->getSchema();
+		if ($reference === '') {
+			return null;
+		}
+
+		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+		if ($this->guard->isConcept(schema: $schema) === false) {
+			return null;
+		}
+
+		$concept = $object->getObject();
+		if (is_array($concept) === false) {
+			return null;
+		}
+
+		return $concept;
+	}//end conceptOf()
+
+	/**
+	 * Refuse the delete when objects in the concept's scheme still hold it.
+	 *
+	 * @param ObjectDeletingEvent $event   The delete event.
+	 * @param array<string,mixed> $concept The concept's decoded object data.
+	 *
+	 * @return void
+	 */
+	private function refuseWhenHeld(ObjectDeletingEvent $event, array $concept): void {
+		$usage = $this->usageOf(concept: $concept);
+		if ($usage === null) {
+			return;
+		}
+
+		$this->vetoAsConflict(
+			event: $event,
+			refusal: ['code' => self::ERROR_CODE_IN_USE, 'message' => $this->guard->inUseMessage(concept: $concept, usage: $usage)],
+			detail: ['concept' => (string)($concept['uri'] ?? ''), 'inUse' => $usage['count'], 'holders' => $usage['holders']]
 		);
-		$event->stopPropagation();
-	}//end refuse()
+	}//end refuseWhenHeld()
+
+	/**
+	 * Who holds the concept in its scheme, or null when its scheme is unknown or nothing holds it.
+	 *
+	 * @param array<string,mixed> $concept The concept's decoded object data.
+	 *
+	 * @return array{count: int, holders: array<mixed>}|null The usage.
+	 */
+	private function usageOf(array $concept): ?array {
+		$schemeUri = $this->schemeUriOf(concept: $concept);
+		if ($schemeUri === null) {
+			return null;
+		}
+
+		$usage = $this->guard->usage(concept: $concept, schemeUri: $schemeUri);
+		if ($usage['count'] === 0) {
+			return null;
+		}
+
+		return $usage;
+	}//end usageOf()
 
 	/**
 	 * The uri of the scheme a concept belongs to, or null.
@@ -189,35 +227,37 @@ class ConceptDeleteGuardListener implements IEventListener {
 	 * @return string|null The scheme uri.
 	 */
 	private function schemeUriOf(array $concept): ?string {
-		$reference = ($concept['inScheme'] ?? null);
-		if (is_array($reference) === true) {
-			$reference = ($reference['uri'] ?? ($reference['id'] ?? ($reference['uuid'] ?? null)));
-		}
-
-		if (is_string($reference) === false) {
-			return null;
-		}
-
-		$reference = trim($reference);
-		if ($reference === '') {
-			return null;
-		}
-
-		if (str_contains($reference, '://') === true) {
+		$reference = $this->schemeReferenceOf(concept: $concept);
+		if ($reference === null || str_contains($reference, '://') === true) {
 			return $reference;
 		}
 
 		$scheme = $this->concepts->schemeByReference(reference: $reference);
-		if ($scheme === null) {
-			return null;
-		}
-
 		$uri = trim((string)($scheme['uri'] ?? ''));
-
 		if ($uri === '') {
 			return null;
 		}
 
 		return $uri;
 	}//end schemeUriOf()
+
+	/**
+	 * The trimmed reference a concept's `inScheme` makes, or null when it names nothing.
+	 *
+	 * @param array<string,mixed> $concept The concept's decoded object data.
+	 *
+	 * @return string|null The uri, id or uuid of the scheme.
+	 */
+	private function schemeReferenceOf(array $concept): ?string {
+		$reference = ($concept['inScheme'] ?? null);
+		if (is_array($reference) === true) {
+			$reference = ($reference['uri'] ?? ($reference['id'] ?? ($reference['uuid'] ?? null)));
+		}
+
+		if (is_string($reference) === false || trim($reference) === '') {
+			return null;
+		}
+
+		return trim($reference);
+	}//end schemeReferenceOf()
 }//end class

@@ -43,6 +43,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setReason(?string $reason)
  * @method string|null getSchemaVersion()
  * @method void setSchemaVersion(?string $schemaVersion)
+ * @method array|null getPriorValues()
+ * @method void setPriorValues(?array $priorValues)
+ * @method array|null getAppliedValues()
+ * @method void setAppliedValues(?array $appliedValues)
  * @method bool getAddedAtCommit()
  * @method void setAddedAtCommit(bool $addedAtCommit)
  * @method DateTime|null getAppliedAt()
@@ -55,6 +59,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class BulkJobMember extends Entity implements JsonSerializable {
+	use HydrateBySettersTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The action would apply, or did apply, to this member.
@@ -125,6 +131,30 @@ class BulkJobMember extends Entity implements JsonSerializable {
 	protected ?string $schemaVersion = null;
 
 	/**
+	 * The properties the job changed on this member, with their values before
+	 * the change. Only those properties, never a snapshot of the object (D-2).
+	 *
+	 * Null when the action did not declare itself reversible, which is what
+	 * makes the reversal route's refusal honest rather than a silent no-op.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $priorValues = null;
+
+	/**
+	 * The values the job wrote on this member.
+	 *
+	 * The reversal compares these against the object's CURRENT values. A
+	 * property that no longer holds what the job wrote means somebody edited
+	 * the object afterwards, and a reversal never writes a prior value over a
+	 * later change (D-3). Reading the prior values alone cannot tell the two
+	 * apart.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $appliedValues = null;
+
+	/**
 	 * True when the member appeared only at commit, because a query-backed
 	 * selection grew between preview and commit (D-2).
 	 *
@@ -167,54 +197,12 @@ class BulkJobMember extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'outcome', type: 'string');
 		$this->addType(fieldName: 'reason', type: 'string');
 		$this->addType(fieldName: 'schemaVersion', type: 'string');
+		$this->addType(fieldName: 'priorValues', type: 'json');
+		$this->addType(fieldName: 'appliedValues', type: 'json');
 		$this->addType(fieldName: 'addedAtCommit', type: 'boolean');
 		$this->addType(fieldName: 'appliedAt', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 
 	}//end __construct()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
-	 */
-	public function hydrate(array $object): static {
-		foreach ($object as $key => $value) {
-			$method = 'set'.ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
-
-	/**
-	 * JSON serialisation.
-	 *
-	 * @return array<string, mixed> The serialised member.
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'jobId' => $this->jobId,
-			'objectUuid' => $this->objectUuid,
-			'outcome' => $this->outcome,
-			'reason' => $this->reason,
-			'schemaVersion' => $this->schemaVersion,
-			'addedAtCommit' => $this->addedAtCommit,
-			'appliedAt' => $this->appliedAt?->format(DateTime::ATOM),
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
-
-	}//end jsonSerialize()
 }//end class

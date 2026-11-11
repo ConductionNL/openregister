@@ -26,7 +26,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use OCP\Util;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 class PushClientScriptListener implements IEventListener {
 	/**
@@ -68,7 +68,7 @@ class PushClientScriptListener implements IEventListener {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof BeforeTemplateRenderedEvent === false) {
